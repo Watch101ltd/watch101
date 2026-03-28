@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fantasy Watch 101</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c10;--surface:#0d1117;--surface2:#131920;--surface3:#1a2330;
+  --border:#1e2d3d;--border2:#253545;
+  --gold:#f0a500;--gold2:#c47f00;
+  --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+
+.header{background:linear-gradient(135deg,#080c10 0%,#0d1520 50%,#080c10 100%);border-bottom:1px solid var(--border);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo-wrap{display:flex;align-items:baseline;gap:12px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:0.05em;color:var(--gold);line-height:1}
+.logo span{color:#fff}
+.logo-sub{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--text3);text-transform:uppercase}
+.header-right{display:flex;align-items:center;gap:10px}
+.last-updated{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)}
+.btn{padding:7px 14px;border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid;transition:all 0.15s;letter-spacing:0.05em}
+.btn-gold{background:var(--gold);color:#000;border-color:var(--gold);font-weight:500}
+.btn-gold:hover{background:#fbbf24;border-color:#fbbf24}
+.btn-outline{background:transparent;color:var(--text2);border-color:var(--border2)}
+.btn-outline:hover{background:var(--surface2);color:var(--text);border-color:var(--text3)}
+.btn-red{background:transparent;color:var(--red);border-color:#7f1d1d}
+.btn-red:hover{background:#7f1d1d22;border-color:var(--red)}
+.btn-blue{background:transparent;color:var(--blue);border-color:#1e3a8a}
+.btn-blue:hover{background:#1e3a8a22;border-color:var(--blue)}
+
+.toolbar{padding:0.75rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:200px;max-width:320px}
+.search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 12px 7px 32px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none}
+.search-wrap input:focus{border-color:var(--gold2)}
+.search-wrap input::placeholder{color:var(--text3)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px}
+.filter-tabs{display:flex;gap:4px}
+.filter-tab{padding:6px 12px;border-radius:5px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);transition:all 0.15s;letter-spacing:0.05em}
+.filter-tab.active{background:var(--surface3);color:var(--text);border-color:var(--border2)}
+.filter-tab:hover:not(.active){color:var(--text2)}
+.toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.count-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:5px}
+
+.table-wrap{overflow-x:auto;padding:0 1.5rem 2rem}
+table{width:100%;border-collapse:collapse;min-width:1200px;margin-top:1rem}
+thead tr{border-bottom:2px solid var(--gold2)}
+th{padding:8px 10px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);text-align:left;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface)}
+th:hover{color:var(--text2)}
+th.sorted{color:var(--gold)}
+th .sort-arrow{margin-left:4px;opacity:0.5;font-size:9px}
+th.sorted .sort-arrow{opacity:1;color:var(--gold)}
+th:first-child{width:50px;text-align:center;cursor:default}
+th.col-note{min-width:180px;cursor:default}
+
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s}
+tbody tr:hover{background:var(--surface2)}
+tbody tr.highlight-up{border-left:3px solid var(--green)}
+tbody tr.highlight-down{border-left:3px solid var(--red)}
+tbody tr.highlight-new{border-left:3px solid var(--gold)}
+
+td{padding:7px 10px;font-size:13px;vertical-align:middle}
+td:first-child{text-align:center}
+
+.rank-cell{display:flex;align-items:center;justify-content:center;gap:4px}
+.rank-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--text2);line-height:1;min-width:28px;text-align:center}
+.rank-num.top10{color:var(--gold)}
+.rank-num.top25{color:var(--text)}
+.move-badge{font-family:'DM Mono',monospace;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:500}
+.move-up{background:#14532d33;color:var(--green);border:1px solid #14532d}
+.move-down{background:#7f1d1d33;color:var(--red);border:1px solid #7f1d1d}
+.move-new{background:#78350f33;color:var(--gold);border:1px solid #78350f}
+
+.name-cell{display:flex;flex-direction:column;gap:2px}
+.player-name{font-weight:500;font-size:14px;color:var(--text)}
+.player-team{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+
+.pos-badge{display:inline-block;padding:2px 5px;border-radius:3px;font-size:10px;font-family:'DM Mono',monospace;font-weight:500;margin:1px}
+.pos-SP{background:#1e3a5f;color:#60a5fa;border:1px solid #1e40af}
+.pos-RP{background:#1e3a5f;color:#93c5fd;border:1px solid #1e3a8a}
+.pos-C{background:#3b1f5e;color:#c4b5fd;border:1px solid #4c1d95}
+.pos-1B,.pos-2B,.pos-3B,.pos-SS{background:#1a3a1a;color:#86efac;border:1px solid #166534}
+.pos-OF{background:#3a2a0a;color:#fcd34d;border:1px solid #92400e}
+.pos-DH{background:#2a1a1a;color:#fca5a5;border:1px solid #7f1d1d}
+.pos-P{background:#1e3a5f;color:#60a5fa;border:1px solid #1e40af}
+
+.stat-cell{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);text-align:right}
+.stat-na{color:var(--text3);font-size:11px}
+.yahoo-rank{font-family:'DM Mono',monospace;font-size:12px;color:var(--blue);text-align:right}
+
+.note-display{font-size:12px;color:var(--text2);font-style:italic;cursor:pointer;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 6px;border-radius:4px;border:1px solid transparent;transition:all 0.15s}
+.note-display:hover{border-color:var(--border2);background:var(--surface2)}
+.note-display.empty{color:var(--text3)}
+.note-input{width:100%;background:var(--surface3);border:1px solid var(--gold2);border-radius:4px;padding:4px 8px;font-size:12px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;min-width:180px}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:#000000cc;z-index:200;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:1.5rem;width:580px;max-width:95vw}
+.player-search-wrap{margin-bottom:1rem;background:var(--surface2);border:2px solid var(--gold);border-radius:8px;padding:12px}
+.player-search-wrap label{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:6px}
+.player-search-input{width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none}
+.player-search-input:focus{border-color:var(--gold)}
+.modal h2{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold);margin-bottom:1rem;letter-spacing:0.05em}
+
+/* PLAYER SEARCH */
+.player-search-wrap{position:relative;margin-bottom:1rem}
+.player-search-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none}
+.player-search-input:focus{border-color:var(--gold)}
+.player-search-input::placeholder{color:var(--text3)}
+.search-results{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-top:4px;z-index:300;max-height:240px;overflow-y:auto;display:none}
+.search-results.open{display:block}
+.search-result-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s}
+.search-result-item:hover{background:var(--surface3)}
+.search-result-item:last-child{border-bottom:none}
+.sri-name{font-size:14px;font-weight:500;color:var(--text)}
+.sri-meta{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px}
+.search-loading{padding:12px 14px;color:var(--text3);font-size:13px;font-style:italic}
+.search-status{font-family:'DM Mono',monospace;font-size:11px;margin-bottom:1rem;padding:8px 12px;border-radius:6px;display:none}
+.search-status.success{background:#0d2e22;color:var(--green);border:1px solid #166534;display:block}
+.search-status.error{background:#2a0a0a;color:var(--red);border:1px solid #7f1d1d;display:block}
+.search-status.loading{background:var(--surface2);color:var(--text3);border:1px solid var(--border);display:block}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3)}
+.form-group input,.form-group select,.form-group textarea{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;width:100%}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--gold2)}
+.form-group input[readonly]{color:var(--text3);cursor:default}
+.form-group textarea{resize:vertical;min-height:60px}
+.stat-section-label{grid-column:1/-1;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;color:var(--gold);text-transform:uppercase;padding-top:0.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.api-badge{font-size:9px;padding:2px 6px;background:#0d2e22;color:var(--green);border:1px solid #166534;border-radius:3px}
+
+/* POSITION CHECKBOXES */
+.pos-checkboxes{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0}
+.pos-cb-label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.pos-cb-label input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;cursor:pointer}
+.pos-cb-label span{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)}
+.pos-cb-label:has(input:checked) span{color:var(--gold)}
+
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--text3)}
+.empty-state h3{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text2);margin-bottom:0.5rem}
+.empty-state p{font-size:14px;margin-bottom:1.5rem}
+
+.drag-handle{color:var(--text3);cursor:grab;font-size:14px;padding:0 4px;user-select:none}
+.drag-handle:active{cursor:grabbing}
+tr.dragging{opacity:0.4}
+tr.drag-over{border-top:2px solid var(--gold)}
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-wrap">
+    <div class="logo"><span>Fantasy</span> Watch <span style="color:var(--gold)">101</span></div>
+    <div class="logo-sub">Player Rankings · 2026 Season</div>
+  </div>
+  <div class="header-right">
+    <div class="last-updated" id="last-updated">Not yet saved</div>
+    <button class="btn btn-blue" onclick="refreshAllStats()" title="Pull latest stats from MLB API">⟳ Refresh Stats</button>
+    <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+    <button class="btn btn-gold" onclick="openModal()">+ Add Player</button>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search" placeholder="Filter watch list..." oninput="renderTable()">
+  </div>
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="setFilter('ALL',this)">All</button>
+    <button class="filter-tab" onclick="setFilter('HITTER',this)">Hitters</button>
+    <button class="filter-tab" onclick="setFilter('PITCHER',this)">Pitchers</button>
+    <button class="filter-tab" onclick="setFilter('TOP25',this)">Top 25</button>
+    <button class="filter-tab" onclick="setFilter('MOVERS',this)">Movers</button>
+  </div>
+  <div class="toolbar-right">
+    <div class="count-badge" id="count-badge">0 players</div>
+    <button class="btn btn-outline" onclick="saveData()">💾 Save</button>
+    <button class="btn btn-red" onclick="confirmClear()">Clear All</button>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table id="main-table">
+    <thead>
+      <tr>
+        <th style="cursor:default">☰</th>
+        <th onclick="sortBy('rank')">Rank <span class="sort-arrow" id="arr-rank">↕</span></th>
+        <th onclick="sortBy('name')">Player <span class="sort-arrow" id="arr-name">↕</span></th>
+        <th style="cursor:default">Pos</th>
+        <th onclick="sortBy('team')">Team <span class="sort-arrow" id="arr-team">↕</span></th>
+        <th onclick="sortBy('yahoo_rank')" title="Yahoo Rank">YHO <span class="sort-arrow" id="arr-yahoo_rank">↕</span></th>
+        <th onclick="sortBy('roster_pct')" title="Roster %">RST% <span class="sort-arrow" id="arr-roster_pct">↕</span></th>
+        <th onclick="sortBy('avg')" title="Batting Avg">AVG <span class="sort-arrow" id="arr-avg">↕</span></th>
+        <th onclick="sortBy('obp')" title="On Base %">OBP <span class="sort-arrow" id="arr-obp">↕</span></th>
+        <th onclick="sortBy('ops')" title="OPS">OPS <span class="sort-arrow" id="arr-ops">↕</span></th>
+        <th onclick="sortBy('hr')" title="Home Runs">HR <span class="sort-arrow" id="arr-hr">↕</span></th>
+        <th onclick="sortBy('rbi')" title="RBI">RBI <span class="sort-arrow" id="arr-rbi">↕</span></th>
+        <th onclick="sortBy('r')" title="Runs">R <span class="sort-arrow" id="arr-r">↕</span></th>
+        <th onclick="sortBy('sb')" title="Stolen Bases">SB <span class="sort-arrow" id="arr-sb">↕</span></th>
+        <th onclick="sortBy('era')" title="ERA">ERA <span class="sort-arrow" id="arr-era">↕</span></th>
+        <th onclick="sortBy('whip')" title="WHIP">WHIP <span class="sort-arrow" id="arr-whip">↕</span></th>
+        <th onclick="sortBy('k')" title="Strikeouts">K <span class="sort-arrow" id="arr-k">↕</span></th>
+        <th onclick="sortBy('w')" title="Wins">W <span class="sort-arrow" id="arr-w">↕</span></th>
+        <th onclick="sortBy('sv')" title="Saves">SV <span class="sort-arrow" id="arr-sv">↕</span></th>
+        <th onclick="sortBy('hld')" title="Holds">HLD <span class="sort-arrow" id="arr-hld">↕</span></th>
+        <th onclick="sortBy('kbb')" title="K/BB%">K/BB <span class="sort-arrow" id="arr-kbb">↕</span></th>
+        <th onclick="sortBy('adds')" title="Adds">ADD <span class="sort-arrow" id="arr-adds">↕</span></th>
+        <th onclick="sortBy('drops')" title="Drops">DRP <span class="sort-arrow" id="arr-drops">↕</span></th>
+        <th class="col-note">Movement Note</th>
+        <th style="cursor:default;width:80px">Action</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty-state" id="empty-state" style="display:none">
+    <h3>The Watch List Awaits</h3>
+    <p>Search for any MLB player to add them to the Fantasy Watch 101.</p>
+    <button class="btn btn-gold" onclick="openModal()">+ Add First Player</button>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modal-title">Add Player</h2>
+
+    <div class="player-search-wrap" id="player-search-section">
+      <label>🔍 Search MLB Players</label>
+      <input type="text" class="player-search-input" id="player-search" placeholder="Type a player name... (e.g. 'Chisholm', 'Ohtani', 'Judge')" oninput="searchMLBPlayers(this.value)" autocomplete="off">
+      <div class="search-results" id="search-results"></div>
+    </div>
+    <div class="search-status" id="search-status"></div>
+
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Player Name</label>
+        <input type="text" id="f-name" placeholder="Auto-filled from search" readonly>
+      </div>
+
+      <div class="form-group full">
+        <label>Positions (check all that apply)</label>
+        <div class="pos-checkboxes">
+          <label class="pos-cb-label"><input type="checkbox" name="pos" value="C"><span>C</span></label>
+          <label class="pos-cb-label"><input type="checkbox" name="pos" value="1B"><span>1B</span></label>
+          <label class="pos-cb-label"><input type="checkbox" name="pos" value="2B"><span>2B</span></label>
+          <label class="pos-cb-label"><input type="checkbox" name="pos" value="3B"><span>3B</span></label>
+          <label class="pos-cb-label"><input type="checkbox" name="pos" value="SS"><span>SS</span></label>
+          <label class="pos-cb-label"><input type="checkbox" name="pos" value="OF"><span>OF</span></label>
+          <label class="pos-cb-label"><input type="checkbox" name="pos" value="DH"><span>DH</span></label>
+          <label class="pos-cb-label"><input type="checkbox" name="pos" value="SP"><span>SP</span></label>
+          <label class="pos-cb-label"><input type="checkbox" name="pos" value="RP"><span>RP</span></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Team</label>
+        <input type="text" id="f-team" placeholder="Auto-filled" readonly>
+      </div>
+      <div class="form-group">
+        <label>MLB Player ID</label>
+        <input type="text" id="f-mlb-id" placeholder="Auto-filled" readonly>
+      </div>
+      <div class="form-group">
+        <label>Matt's Rank (1-101)</label>
+        <input type="number" id="f-rank" placeholder="e.g. 1" min="1" max="101">
+      </div>
+      <div class="form-group">
+        <label>Yahoo Rank</label>
+        <input type="number" id="f-yahoo" placeholder="e.g. 5">
+      </div>
+      <div class="form-group">
+        <label>Roster %</label>
+        <input type="number" id="f-roster" placeholder="e.g. 98.2" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>Movement</label>
+        <select id="f-move">
+          <option value="">None</option>
+          <option value="up">↑ Moved Up</option>
+          <option value="down">↓ Moved Down</option>
+          <option value="new">★ New Entry</option>
+        </select>
+      </div>
+
+      <div class="stat-section-label">
+        <span>Stats</span>
+        <span class="api-badge">● MLB API</span>
+      </div>
+      <div class="form-group"><label>AVG</label><input type="number" id="f-avg" placeholder="—" step="0.001"></div>
+      <div class="form-group"><label>OBP</label><input type="number" id="f-obp" placeholder="—" step="0.001"></div>
+      <div class="form-group"><label>OPS</label><input type="number" id="f-ops" placeholder="—" step="0.001"></div>
+      <div class="form-group"><label>HR</label><input type="number" id="f-hr" placeholder="—"></div>
+      <div class="form-group"><label>RBI</label><input type="number" id="f-rbi" placeholder="—"></div>
+      <div class="form-group"><label>R (Runs)</label><input type="number" id="f-r" placeholder="—"></div>
+      <div class="form-group"><label>SB</label><input type="number" id="f-sb" placeholder="—"></div>
+      <div class="form-group"><label>ERA</label><input type="number" id="f-era" placeholder="—" step="0.01"></div>
+      <div class="form-group"><label>WHIP</label><input type="number" id="f-whip" placeholder="—" step="0.01"></div>
+      <div class="form-group"><label>K</label><input type="number" id="f-k" placeholder="—"></div>
+      <div class="form-group"><label>W</label><input type="number" id="f-w" placeholder="—"></div>
+      <div class="form-group"><label>SV</label><input type="number" id="f-sv" placeholder="—"></div>
+      <div class="form-group"><label>HLD</label><input type="number" id="f-hld" placeholder="—"></div>
+      <div class="form-group"><label>K/BB%</label><input type="number" id="f-kbb" placeholder="—" step="0.1"></div>
+      <div class="form-group"><label>Adds</label><input type="number" id="f-adds" placeholder="—"></div>
+      <div class="form-group"><label>Drops</label><input type="number" id="f-drops" placeholder="—"></div>
+
+      <div class="form-group full">
+        <label>Movement Note</label>
+        <textarea id="f-note" placeholder="Why did this player move? e.g. Dominant start vs NYY — 8 IP, 1 ER, 12 K. Command looking elite."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="savePlayer()">Save to Watch List</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let players = [];
+let sortCol = 'rank';
+let sortDir = 1;
+let filter = 'ALL';
+let editingId = null;
+let dragSrcIdx = null;
+let searchTimeout = null;
+let selectedMlbId = null;
+
+const PITCHER_POS = ['SP','RP'];
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function loadData(){
+  try{ const d = localStorage.getItem('fw101_v2'); if(d) players = JSON.parse(d); }catch(e){}
+  const ts = localStorage.getItem('fw101_saved');
+  if(ts) document.getElementById('last-updated').textContent = 'Saved: ' + ts;
+}
+
+function saveData(){
+  localStorage.setItem('fw101_v2', JSON.stringify(players));
+  const now = new Date().toLocaleString();
+  localStorage.setItem('fw101_saved', now);
+  document.getElementById('last-updated').textContent = 'Saved: ' + now;
+}
+
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderTable();
+}
+
+function sortBy(col){
+  if(sortCol === col) sortDir *= -1;
+  else{ sortCol = col; sortDir = 1; }
+  document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
+  document.querySelectorAll('.sort-arrow').forEach(a => a.textContent = '↕');
+  const arr = document.getElementById('arr-'+col);
+  if(arr){ arr.textContent = sortDir===1?'↑':'↓'; arr.closest('th').classList.add('sorted'); }
+  renderTable();
+}
+
+function isPitcher(p){
+  if(!p.positions || p.positions.length === 0) return false;
+  return p.positions.every(pos => PITCHER_POS.includes(pos));
+}
+
+function getFiltered(){
+  let q = document.getElementById('search').value.toLowerCase();
+  let list = [...players];
+  if(q) list = list.filter(p => p.name.toLowerCase().includes(q)||(p.team||'').toLowerCase().includes(q));
+  if(filter==='HITTER') list = list.filter(p => !isPitcher(p));
+  if(filter==='PITCHER') list = list.filter(p => isPitcher(p));
+  if(filter==='TOP25') list = list.filter(p => p.rank && p.rank<=25);
+  if(filter==='MOVERS') list = list.filter(p => p.move && p.move!=='');
+  list.sort((a,b)=>{
+    let av = a[sortCol], bv = b[sortCol];
+    if(sortCol==='rank'){ av=a.rank||999; bv=b.rank||999; }
+    if(av===undefined||av===null||av==='') av=sortDir===1?Infinity:-Infinity;
+    if(bv===undefined||bv===null||bv==='') bv=sortDir===1?Infinity:-Infinity;
+    if(typeof av==='string') return av.localeCompare(bv)*sortDir;
+    return (av-bv)*sortDir;
+  });
+  return list;
+}
+
+function fmt(val, dec=0){
+  if(val===undefined||val===null||val==='') return '<span class="stat-na">—</span>';
+  if(dec>0) return parseFloat(val).toFixed(dec);
+  return val;
+}
+function fmtAvg(val){
+  if(val===undefined||val===null||val==='') return '<span class="stat-na">—</span>';
+  const s = parseFloat(val).toFixed(3);
+  return '.'+s.split('.')[1];
+}
+function moveBadge(move){
+  if(!move) return '';
+  if(move==='up') return '<span class="move-badge move-up">▲</span>';
+  if(move==='down') return '<span class="move-badge move-down">▼</span>';
+  if(move==='new') return '<span class="move-badge move-new">★</span>';
+  return '';
+}
+function rowClass(move){
+  if(move==='up') return 'highlight-up';
+  if(move==='down') return 'highlight-down';
+  if(move==='new') return 'highlight-new';
+  return '';
+}
+function posBadges(positions){
+  if(!positions||positions.length===0) return '<span class="stat-na">—</span>';
+  return positions.map(p=>`<span class="pos-badge pos-${p}">${p}</span>`).join('');
+}
+
+function renderTable(){
+  const list = getFiltered();
+  const tbody = document.getElementById('tbody');
+  document.getElementById('count-badge').textContent = list.length+' player'+(list.length!==1?'s':'');
+  document.getElementById('empty-state').style.display = players.length===0?'block':'none';
+  if(players.length===0){tbody.innerHTML='';return;}
+  tbody.innerHTML = list.map((p,i)=>{
+    const pit = isPitcher(p);
+    const rankClass = p.rank<=10?'top10':p.rank<=25?'top25':'';
+    return `<tr class="${rowClass(p.move)}" draggable="true" data-id="${p.id}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
+      <td><span class="drag-handle">⠿</span></td>
+      <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
+      <td><div class="name-cell"><span class="player-name">${p.name}</span><span class="player-team">${p.team||''}</span></div></td>
+      <td>${posBadges(p.positions)}</td>
+      <td class="stat-cell">${p.team||'<span class="stat-na">—</span>'}</td>
+      <td class="yahoo-rank">${fmt(p.yahoo_rank)}</td>
+      <td class="stat-cell">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${!pit?fmtAvg(p.avg):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${!pit?fmtAvg(p.obp):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${!pit?fmt(p.ops,3):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${!pit?fmt(p.hr):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${!pit?fmt(p.rbi):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${!pit?fmt(p.r):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${!pit?fmt(p.sb):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${pit?fmt(p.era,2):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${pit?fmt(p.whip,2):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${pit?fmt(p.k):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${pit?fmt(p.w):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${pit?fmt(p.sv):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${pit?fmt(p.hld):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${pit?fmt(p.kbb,1):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${fmt(p.adds)}</td>
+      <td class="stat-cell">${fmt(p.drops)}</td>
+      <td><div class="note-display ${!p.note?'empty':''}" onclick="editNote('${p.id}',this)" title="${(p.note||'').replace(/"/g,'&quot;')}">${p.note||'Add note...'}</div></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;margin-right:3px" onclick="editPlayer('${p.id}')">Edit</button>
+        <button class="btn btn-red" style="padding:4px 8px;font-size:11px" onclick="deletePlayer('${p.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// MLB API SEARCH
+async function searchMLBPlayers(query){
+  clearTimeout(searchTimeout);
+  const resultsEl = document.getElementById('search-results');
+  const statusEl = document.getElementById('search-status');
+  if(!query || query.length < 2){ resultsEl.classList.remove('open'); return; }
+  searchTimeout = setTimeout(async ()=>{
+    resultsEl.innerHTML = '<div class="search-loading">Searching MLB roster...</div>';
+    resultsEl.classList.add('open');
+    try{
+      const res = await fetch(`https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&gameType=R`);
+      const data = await res.json();
+      const allPlayers = data.people || [];
+      const players = allPlayers.filter(p => p.fullName.toLowerCase().includes(query.toLowerCase()));
+      if(players.length === 0){
+        resultsEl.innerHTML = '<div class="search-loading">No players found. Try a different spelling.</div>';
+        return;
+      }
+      resultsEl.innerHTML = players.slice(0,10).map(p=>`
+        <div class="search-result-item" onclick="selectPlayer(${p.id},'${p.fullName.replace(/'/g,"\\'")}','${(p.currentTeam&&p.currentTeam.abbreviation)||''}','${p.primaryPosition&&p.primaryPosition.abbreviation||''}')">
+          <div class="sri-name">${p.fullName}</div>
+          <div class="sri-meta">${(p.currentTeam&&p.currentTeam.name)||'Free Agent'} · ${p.primaryPosition&&p.primaryPosition.name||''} · #${p.primaryNumber||'—'}</div>
+        </div>`).join('');
+    }catch(e){
+      resultsEl.innerHTML = '<div class="search-loading">Search unavailable. Enter player manually.</div>';
+    }
+  }, 350);
+}
+
+async function selectPlayer(mlbId, name, team, primaryPos){
+  document.getElementById('search-results').classList.remove('open');
+  document.getElementById('player-search').value = name;
+  document.getElementById('f-name').value = name;
+  document.getElementById('f-team').value = team;
+  document.getElementById('f-mlb-id').value = mlbId;
+  selectedMlbId = mlbId;
+  document.querySelectorAll('input[name="pos"]').forEach(cb => cb.checked = false);
+  if(primaryPos){
+    const cb = document.querySelector(`input[name="pos"][value="${primaryPos}"]`);
+    if(cb) cb.checked = true;
+  }
+  const statusEl = document.getElementById('search-status');
+  statusEl.className = 'search-status loading';
+  statusEl.textContent = '⟳ Fetching 2026 stats from MLB API...';
+  await fetchPlayerStats(mlbId);
+}
+
+async function fetchPlayerStats(mlbId){
+  const statusEl = document.getElementById('search-status');
+  try{
+    const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}/stats?stats=season&season=2026&group=hitting,pitching`);
+    const data = await res.json();
+    const stats = data.stats || [];
+    let filled = false;
+    for(const group of stats){
+      if(!group.splits||group.splits.length===0) continue;
+      const s = group.splits[0].stat;
+      if(group.group&&group.group.displayName==='hitting'){
+        if(s.avg) document.getElementById('f-avg').value = s.avg;
+        if(s.obp) document.getElementById('f-obp').value = s.obp;
+        if(s.ops) document.getElementById('f-ops').value = s.ops;
+        if(s.homeRuns!==undefined) document.getElementById('f-hr').value = s.homeRuns;
+        if(s.rbi!==undefined) document.getElementById('f-rbi').value = s.rbi;
+        if(s.runs!==undefined) document.getElementById('f-r').value = s.runs;
+        if(s.stolenBases!==undefined) document.getElementById('f-sb').value = s.stolenBases;
+        filled = true;
+      }
+      if(group.group&&group.group.displayName==='pitching'){
+        if(s.era) document.getElementById('f-era').value = s.era;
+        if(s.whip) document.getElementById('f-whip').value = s.whip;
+        if(s.strikeOuts!==undefined) document.getElementById('f-k').value = s.strikeOuts;
+        if(s.wins!==undefined) document.getElementById('f-w').value = s.wins;
+        if(s.saves!==undefined) document.getElementById('f-sv').value = s.saves;
+        if(s.holds!==undefined) document.getElementById('f-hld').value = s.holds;
+        filled = true;
+      }
+    }
+    if(filled){
+      statusEl.className = 'search-status success';
+      statusEl.textContent = '✓ Stats loaded from MLB API — review and adjust if needed';
+    } else {
+      statusEl.className = 'search-status error';
+      statusEl.textContent = '⚠ No 2026 stats yet (season may not have started for this player). Enter manually.';
+    }
+  }catch(e){
+    statusEl.className = 'search-status error';
+    statusEl.textContent = '⚠ Could not fetch stats. Enter manually below.';
+  }
+}
+
+async function refreshAllStats(){
+  if(players.length===0){alert('No players on the watch list yet.');return;}
+  const withIds = players.filter(p=>p.mlb_id);
+  if(withIds.length===0){alert('No players have MLB IDs — stats were entered manually and cannot be auto-refreshed.');return;}
+  if(!confirm(`Refresh stats for ${withIds.length} players from the MLB API?`)) return;
+  document.getElementById('last-updated').textContent = 'Refreshing stats...';
+  let updated = 0;
+  for(const p of withIds){
+    try{
+      const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching`);
+      const data = await res.json();
+      const stats = data.stats||[];
+      for(const group of stats){
+        if(!group.splits||group.splits.length===0) continue;
+        const s = group.splits[0].stat;
+        if(group.group&&group.group.displayName==='hitting'){
+          if(s.avg) p.avg=parseFloat(s.avg);
+          if(s.obp) p.obp=parseFloat(s.obp);
+          if(s.ops) p.ops=parseFloat(s.ops);
+          if(s.homeRuns!==undefined) p.hr=s.homeRuns;
+          if(s.rbi!==undefined) p.rbi=s.rbi;
+          if(s.runs!==undefined) p.r=s.runs;
+          if(s.stolenBases!==undefined) p.sb=s.stolenBases;
+        }
+        if(group.group&&group.group.displayName==='pitching'){
+          if(s.era) p.era=parseFloat(s.era);
+          if(s.whip) p.whip=parseFloat(s.whip);
+          if(s.strikeOuts!==undefined) p.k=s.strikeOuts;
+          if(s.wins!==undefined) p.w=s.wins;
+          if(s.saves!==undefined) p.sv=s.saves;
+          if(s.holds!==undefined) p.hld=s.holds;
+        }
+      }
+      updated++;
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,100));
+  }
+  saveData();
+  renderTable();
+  document.getElementById('last-updated').textContent = `Stats refreshed for ${updated} players · ${new Date().toLocaleTimeString()}`;
+}
+
+function openModal(){
+  editingId=null;
+  selectedMlbId=null;
+  document.getElementById('modal-title').textContent='Add Player';
+  clearForm();
+  document.getElementById('player-search-section').style.display='block';
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('player-search').focus();
+}
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('search-results').classList.remove('open');
+  editingId=null;
+  selectedMlbId=null;
+}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+
+function clearForm(){
+  document.getElementById('player-search').value='';
+  document.getElementById('search-status').className='search-status';
+  document.getElementById('search-status').textContent='';
+  ['name','team','mlb-id','rank','yahoo','roster','avg','obp','ops','hr','rbi','r','sb','era','whip','k','w','sv','hld','kbb','adds','drops','note'].forEach(f=>{
+    const el=document.getElementById('f-'+f);
+    if(el) el.value='';
+  });
+  document.getElementById('f-move').value='';
+  document.querySelectorAll('input[name="pos"]').forEach(cb=>cb.checked=false);
+}
+
+function getPositions(){
+  return Array.from(document.querySelectorAll('input[name="pos"]:checked')).map(cb=>cb.value);
+}
+
+function savePlayer(){
+  const name=document.getElementById('f-name').value.trim();
+  const positions=getPositions();
+  if(!name){alert('Player name is required. Search for a player above.');return;}
+  if(positions.length===0){alert('Please select at least one position.');return;}
+  const p={
+    id:editingId||uid(),
+    mlb_id:selectedMlbId||document.getElementById('f-mlb-id').value||null,
+    name,positions,
+    team:document.getElementById('f-team').value.trim().toUpperCase(),
+    rank:parseInt(document.getElementById('f-rank').value)||null,
+    yahoo_rank:parseInt(document.getElementById('f-yahoo').value)||null,
+    roster_pct:document.getElementById('f-roster').value!==''?parseFloat(document.getElementById('f-roster').value):null,
+    move:document.getElementById('f-move').value,
+    avg:document.getElementById('f-avg').value!==''?parseFloat(document.getElementById('f-avg').value):null,
+    obp:document.getElementById('f-obp').value!==''?parseFloat(document.getElementById('f-obp').value):null,
+    ops:document.getElementById('f-ops').value!==''?parseFloat(document.getElementById('f-ops').value):null,
+    hr:document.getElementById('f-hr').value!==''?parseInt(document.getElementById('f-hr').value):null,
+    rbi:document.getElementById('f-rbi').value!==''?parseInt(document.getElementById('f-rbi').value):null,
+    r:document.getElementById('f-r').value!==''?parseInt(document.getElementById('f-r').value):null,
+    sb:document.getElementById('f-sb').value!==''?parseInt(document.getElementById('f-sb').value):null,
+    era:document.getElementById('f-era').value!==''?parseFloat(document.getElementById('f-era').value):null,
+    whip:document.getElementById('f-whip').value!==''?parseFloat(document.getElementById('f-whip').value):null,
+    k:document.getElementById('f-k').value!==''?parseInt(document.getElementById('f-k').value):null,
+    w:document.getElementById('f-w').value!==''?parseInt(document.getElementById('f-w').value):null,
+    sv:document.getElementById('f-sv').value!==''?parseInt(document.getElementById('f-sv').value):null,
+    hld:document.getElementById('f-hld').value!==''?parseInt(document.getElementById('f-hld').value):null,
+    kbb:document.getElementById('f-kbb').value!==''?parseFloat(document.getElementById('f-kbb').value):null,
+    adds:document.getElementById('f-adds').value!==''?parseInt(document.getElementById('f-adds').value):null,
+    drops:document.getElementById('f-drops').value!==''?parseInt(document.getElementById('f-drops').value):null,
+    note:document.getElementById('f-note').value.trim(),
+  };
+  if(editingId){const idx=players.findIndex(x=>x.id===editingId);if(idx!==-1)players[idx]=p;}
+  else players.push(p);
+  saveData();
+  closeModal();
+  renderTable();
+}
+
+function editPlayer(id){
+  const p=players.find(x=>x.id===id);
+  if(!p) return;
+  editingId=id;
+  selectedMlbId=p.mlb_id||null;
+  document.getElementById('modal-title').textContent='Edit Player';
+  document.getElementById('player-search-section').style.display='none';
+  document.getElementById('search-status').className='search-status';
+  document.getElementById('f-name').value=p.name||'';
+  document.getElementById('f-name').removeAttribute('readonly');
+  document.getElementById('f-team').value=p.team||'';
+  document.getElementById('f-team').removeAttribute('readonly');
+  document.getElementById('f-mlb-id').value=p.mlb_id||'';
+  document.getElementById('f-rank').value=p.rank||'';
+  document.getElementById('f-yahoo').value=p.yahoo_rank||'';
+  document.getElementById('f-roster').value=p.roster_pct!==null?p.roster_pct:'';
+  document.getElementById('f-move').value=p.move||'';
+  document.querySelectorAll('input[name="pos"]').forEach(cb=>cb.checked=(p.positions||[]).includes(cb.value));
+  ['avg','obp','ops','hr','rbi','r','sb','era','whip','k','w','sv','hld','kbb','adds','drops'].forEach(f=>{
+    const el=document.getElementById('f-'+f);
+    if(el) el.value=p[f]!==null&&p[f]!==undefined?p[f]:'';
+  });
+  document.getElementById('f-note').value=p.note||'';
+  document.getElementById('modal').classList.add('open');
+}
+
+function deletePlayer(id){
+  if(!confirm('Remove this player from the Watch List?')) return;
+  players=players.filter(x=>x.id!==id);
+  saveData();renderTable();
+}
+function confirmClear(){
+  if(!confirm('Clear ALL players? This cannot be undone.')) return;
+  players=[];saveData();renderTable();
+}
+
+function editNote(id,el){
+  const p=players.find(x=>x.id===id);
+  if(!p) return;
+  const input=document.createElement('input');
+  input.type='text';input.className='note-input';
+  input.value=p.note||'';input.placeholder='Why did this player move?';
+  el.replaceWith(input);input.focus();
+  input.addEventListener('blur',()=>{p.note=input.value;saveData();renderTable();});
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();});
+}
+
+function exportCSV(){
+  if(players.length===0){alert('No players to export');return;}
+  const headers=['Rank','Player','Positions','Team','MLB ID','Yahoo Rank','Roster%','AVG','OBP','OPS','HR','RBI','R','SB','ERA','WHIP','K','W','SV','HLD','K/BB','Adds','Drops','Movement','Note'];
+  const rows=getFiltered().map(p=>[
+    p.rank||'',p.name,(p.positions||[]).join('/'),p.team||'',p.mlb_id||'',
+    p.yahoo_rank||'',p.roster_pct||'',p.avg||'',p.obp||'',p.ops||'',
+    p.hr||'',p.rbi||'',p.r||'',p.sb||'',p.era||'',p.whip||'',
+    p.k||'',p.w||'',p.sv||'',p.hld||'',p.kbb||'',p.adds||'',p.drops||'',
+    p.move||'',`"${(p.note||'').replace(/"/g,'""')}"`
+  ]);
+  const csv=[headers,...rows].map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='fantasy_watch_101_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+}
+
+function dragStart(e,idx){dragSrcIdx=idx;e.currentTarget.classList.add('dragging');}
+function dragOver(e,idx){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function drop(e,idx){
+  e.preventDefault();e.currentTarget.classList.remove('drag-over');
+  if(dragSrcIdx===null||dragSrcIdx===idx) return;
+  const list=getFiltered();
+  const srcId=list[dragSrcIdx].id,tgtId=list[idx].id;
+  const si=players.findIndex(p=>p.id===srcId),ti=players.findIndex(p=>p.id===tgtId);
+  const[moved]=players.splice(si,1);players.splice(ti,0,moved);
+  dragSrcIdx=null;saveData();renderTable();
+}
+document.addEventListener('dragend',()=>{document.querySelectorAll('tr').forEach(r=>r.classList.remove('dragging','drag-over'));});
+
+loadData();
+renderTable();
+</script>
+</body>
+</html>
