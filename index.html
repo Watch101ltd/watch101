@@ -1296,9 +1296,9 @@ async function buildRosterCache(){
   rosterCacheLoading = true;
   try{
     const [mlbRes, aaaRes, aaRes] = await Promise.all([
-      fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&gameType=R&hydrate=currentTeam'),
-      fetch('https://statsapi.mlb.com/api/v1/sports/11/players?season=2026&gameType=R&hydrate=currentTeam'),
-      fetch('https://statsapi.mlb.com/api/v1/sports/12/players?season=2026&gameType=R&hydrate=currentTeam')
+      fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam'),
+      fetch('https://statsapi.mlb.com/api/v1/sports/11/players?season=2026&hydrate=currentTeam'),
+      fetch('https://statsapi.mlb.com/api/v1/sports/12/players?season=2026&hydrate=currentTeam')
     ]);
     const [mlbData, aaaData, aaData] = await Promise.all([
       mlbRes.ok ? mlbRes.json() : {people:[]},
@@ -2205,19 +2205,10 @@ async function loadPoolPlayers(){
   document.getElementById('pool-tbody').innerHTML = '';
   document.getElementById('pool-status').textContent = 'Loading MLB roster...';
   try {
-    // Step 1: Load all players — use 40-man roster type to include IL players with no stats yet
-    const [activeRes, fortyManRes] = await Promise.all([
-      fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&gameType=R&hydrate=currentTeam'),
-      fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam')
-    ]);
-    const activeData = await activeRes.json();
-    const fortyManData = await fortyManRes.json();
-    // Merge both lists, deduplicate by mlb_id
-    const allPeopleMap = {};
-    for(const p of [...(fortyManData.people||[]), ...(activeData.people||[])]){
-      allPeopleMap[p.id] = p; // active data wins on conflict
-    }
-    poolPlayers = Object.values(allPeopleMap).map(p => ({
+    // Step 1: Load all rostered players (no gameType=R so IL players like Wheeler are included)
+    const res = await fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam');
+    const data = await res.json();
+    poolPlayers = (data.people || []).map(p => ({
       mlb_id: p.id,
       name: p.fullName,
       team: (p.currentTeam && p.currentTeam.abbreviation) || '',
@@ -2370,7 +2361,10 @@ function poolSearchInput(val){
   poolSearchTimer = setTimeout(()=>{
     if(!poolLoaded){ dd.innerHTML='<div class="pool-sri"><div class="pool-sri-name">Still loading roster...</div></div>'; dd.classList.add('open'); return; }
     const q = normalize(val);
-    const matches = poolPlayers.filter(p => normalize(p.name).includes(q)).slice(0,12);
+    let searchList = poolPlayers;
+    if(poolPosFilter === 'PITCHER') searchList = poolPlayers.filter(p => isPitcherPos(p.primaryPos));
+    if(poolPosFilter === 'HITTER')  searchList = poolPlayers.filter(p => !isPitcherPos(p.primaryPos));
+    const matches = searchList.filter(p => normalize(p.name).includes(q)).slice(0,12);
     if(matches.length===0){ dd.innerHTML='<div class="pool-sri"><div class="pool-sri-name" style="color:var(--text3)">No players found</div></div>'; dd.classList.add('open'); return; }
     dd.innerHTML = matches.map(p=>`
       <div class="pool-sri" onclick="openContext(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team}','${p.primaryPos}',${p.age||0})">
