@@ -3613,69 +3613,64 @@ function destroyLeadersFixedHeader(){
 </div>
 
 // ---- PLAYER HOVER CARD ----
-(function(){
-  const card = document.getElementById('player-hover-card');
-  const photo = document.getElementById('hover-photo');
-  const nameEl = document.getElementById('hover-name');
-  const metaEl = document.getElementById('hover-meta');
-  let hideTimer = null;
+var hoverCard = document.getElementById('player-hover-card');
+var hoverPhoto = document.getElementById('hover-photo');
+var hoverName = document.getElementById('hover-name');
+var hoverMeta = document.getElementById('hover-meta');
+var hoverHideTimer = null;
 
-  function showCard(e, p){
-    clearTimeout(hideTimer);
-    const mlbId = p.mlb_id;
-    const photoUrl = mlbId
-      ? `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/${mlbId}/headshot/67/current`
-      : 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current';
-    photo.src = photoUrl;
-    nameEl.textContent = p.name || '';
-    const pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
-    metaEl.innerHTML = `${p.team||'—'} &nbsp;·&nbsp; ${pos} &nbsp;·&nbsp; Age ${p.age||'—'}`;
-    positionCard(e);
-    card.classList.add('visible');
+function hoverShowCard(e, p){
+  clearTimeout(hoverHideTimer);
+  var mlbId = p.mlb_id;
+  hoverPhoto.src = mlbId
+    ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + mlbId + '/headshot/67/current'
+    : 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current';
+  hoverName.textContent = p.name || '';
+  var pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
+  hoverMeta.innerHTML = (p.team||'—') + ' &nbsp;·&nbsp; ' + pos + ' &nbsp;·&nbsp; Age ' + (p.age||'—');
+  hoverPositionCard(e);
+  hoverCard.classList.add('visible');
+}
+
+function hoverPositionCard(e){
+  var margin = 16;
+  var x = e.clientX + 16;
+  var y = e.clientY - 60;
+  if(x + 220 + margin > window.innerWidth) x = e.clientX - 220 - 8;
+  if(y + 240 + margin > window.innerHeight) y = window.innerHeight - 240 - margin;
+  if(y < margin) y = margin;
+  hoverCard.style.left = x + 'px';
+  hoverCard.style.top = y + 'px';
+}
+
+function hoverHideCard(){
+  hoverHideTimer = setTimeout(function(){ hoverCard.classList.remove('visible'); }, 120);
+}
+
+document.addEventListener('mouseover', function(e){
+  var nameCell = e.target.closest('.name-cell');
+  if(!nameCell) return;
+  if(!nameCell.closest('#tbody')) return;
+  var row = nameCell.closest('tr');
+  if(!row) return;
+  var idx = parseInt(row.dataset.idx);
+  if(isNaN(idx)) return;
+  var filtered = getFiltered();
+  var p = filtered[idx];
+  if(p) hoverShowCard(e, p);
+});
+
+document.addEventListener('mousemove', function(e){
+  if(hoverCard && hoverCard.classList.contains('visible')){
+    var nameCell = e.target.closest('.name-cell');
+    if(nameCell && nameCell.closest('#tbody')) hoverPositionCard(e);
   }
+});
 
-  function positionCard(e){
-    const margin = 16;
-    let x = e.clientX + 16;
-    let y = e.clientY - 60;
-    if(x + 220 + margin > window.innerWidth) x = e.clientX - 220 - 8;
-    if(y + 240 + margin > window.innerHeight) y = window.innerHeight - 240 - margin;
-    if(y < margin) y = margin;
-    card.style.left = x + 'px';
-    card.style.top = y + 'px';
-  }
-
-  function hideCard(){
-    hideTimer = setTimeout(() => card.classList.remove('visible'), 120);
-  }
-
-  // Delegate mouseover on tbody
-  document.addEventListener('mouseover', function(e){
-    const nameCell = e.target.closest('.name-cell');
-    if(!nameCell) return;
-    // Only trigger for main watch list tbody, not pool or other tables
-    if(!nameCell.closest('#tbody')) return;
-    const row = nameCell.closest('tr');
-    if(!row) return;
-    const idx = parseInt(row.dataset.idx);
-    if(isNaN(idx)) return;
-    const filtered = getFiltered();
-    const p = filtered[idx];
-    if(p) showCard(e, p);
-  });
-
-  document.addEventListener('mousemove', function(e){
-    if(card.classList.contains('visible')){
-      const nameCell = e.target.closest('.name-cell');
-      if(nameCell && nameCell.closest('#tbody')) positionCard(e);
-    }
-  });
-
-  document.addEventListener('mouseout', function(e){
-    const nameCell = e.target.closest('.name-cell');
-    if(nameCell && nameCell.closest('#tbody')) hideCard();
-  });
-})();
+document.addEventListener('mouseout', function(e){
+  var nameCell = e.target.closest('.name-cell');
+  if(nameCell && nameCell.closest('#tbody')) hoverHideCard();
+});
 
 </body>
 </html>
