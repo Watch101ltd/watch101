@@ -2276,6 +2276,8 @@ function renderPool(){
   let list = [...poolPlayers];
   if(poolPosFilter === 'PITCHER') list = list.filter(p => isPitcherPos(p.primaryPos));
   if(poolPosFilter === 'HITTER')  list = list.filter(p => !isPitcherPos(p.primaryPos));
+  const poolSearchVal = (document.getElementById('pool-search')?.value || '').trim();
+  if(poolSearchVal.length >= 1) list = list.filter(p => normalize(p.name).includes(normalize(poolSearchVal)));
   list.sort((a,b)=>{
     let av = a[poolSortCol], bv = b[poolSortCol];
     if(av===undefined||av===null) av = poolSortDir===1?'zzz':0;
@@ -2327,6 +2329,7 @@ function renderPool(){
 // ---- POOL SEARCH DROPDOWN (for finding a player to open context) ----
 function poolSearchInput(val){
   clearTimeout(poolSearchTimer);
+  renderPool();
   const dd = document.getElementById('pool-dropdown');
   if(!val || val.length < 2){ dd.classList.remove('open'); return; }
   poolSearchTimer = setTimeout(()=>{
