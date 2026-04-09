@@ -124,13 +124,13 @@ td:nth-child(4){white-space:normal;width:72px;max-width:72px;vertical-align:top;
 .stat-cell{font-family:'DM Mono',monospace;font-size:12px;color:var(--turquoise);text-align:right}
 .stat-na{color:var(--text3);font-size:11px}
 .savant-col{background:rgba(201,168,76,0.06);border-left:1px solid rgba(201,168,76,0.2);}
-td.savant-col{font-size:10px;padding:3px 2px;}
+td.savant-col{font-size:10px;padding:3px 2px;width:48px;min-width:48px;max-width:48px;}
 .level-badge{display:inline-block;font-size:9px;font-family:'DM Mono',monospace;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:0.05em;margin-right:4px;vertical-align:middle}
 .level-mlb{background:#1B6CA8;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:4px;vertical-align:middle;flex-shrink:0}
 .level-aaa{background:#2a7a3a;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:4px;vertical-align:middle;flex-shrink:0}
 .level-aa{background:#7a5a2a;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:4px;vertical-align:middle;flex-shrink:0}
 .savant-col:first-of-type{border-left:2px solid rgba(201,168,76,0.4);}
-th.savant-col{color:var(--gold);font-size:8px;letter-spacing:0.03em;padding:3px 2px;}
+th.savant-col{color:var(--gold);font-size:8px;letter-spacing:0.03em;padding:3px 2px;width:48px;min-width:48px;max-width:48px;}
 #savant-indicator{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);padding:0 8px;}
 #yahoo-btn{font-family:'DM Mono',monospace;font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--border2);cursor:pointer;transition:all 0.2s;}
 #yahoo-btn.connected{background:rgba(34,197,94,0.15);color:#22c55e;border-color:#22c55e;}
@@ -304,13 +304,21 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
 .dual-diff.same{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
 
 /* Fixed stat strip that locks to top of pool-wrap when scrolling */
+#ctx-fixed-header-mask{
+  display:none;
+  position:fixed;
+  left:0;right:0;
+  z-index:59;
+  background:var(--bg);
+  height:40px;
+  pointer-events:none;
+}
 #ctx-fixed-header{
   display:none;
   position:fixed;
   left:0;right:0;
   z-index:60;
   background:var(--bg);
-  border-top:8px solid var(--bg);
   border-bottom:2px solid var(--gold2);
   overflow:hidden;
   pointer-events:auto;
@@ -321,6 +329,37 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
   table-layout:fixed;
 }
 #ctx-fixed-header th{
+  padding:5px 4px;
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  font-weight:500;
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+  color:#94a3b8;
+  text-align:right;
+  white-space:nowrap;
+  cursor:pointer;
+  user-select:none;
+  background:var(--bg);
+}
+
+#leaders-fixed-header{
+  display:none;
+  position:fixed;
+  left:0;right:0;
+  z-index:60;
+  background:var(--bg);
+  border-top:20px solid var(--bg);
+  border-bottom:2px solid var(--gold2);
+  overflow:hidden;
+  pointer-events:auto;
+}
+#leaders-fixed-header table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+#leaders-fixed-header th{
   padding:5px 4px;
   font-family:'DM Mono',monospace;
   font-size:9px;
@@ -487,6 +526,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
 
 <!-- PLAYER POOL -->
 <div class="pool-wrap" id="pool-wrap">
+  <div id="ctx-fixed-header-mask"></div>
   <div id="ctx-fixed-header"><table id="ctx-fixed-table"></table></div>
 
   <!-- TOOLBAR -->
@@ -571,6 +611,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
 
 <!-- LEAGUE LEADERS -->
 <div class="pool-wrap" id="leaders-wrap">
+  <div id="leaders-fixed-header"><table id="leaders-fixed-table"></table></div>
   <div class="pool-toolbar">
     <div style="display:flex;align-items:center;gap:12px">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em">🏆 League Leaders — 2026</div>
@@ -682,6 +723,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
       <div class="form-group"><label>AVG</label><input type="number" id="f-avg" placeholder="—" step="0.001"></div>
       <div class="form-group"><label>OBP</label><input type="number" id="f-obp" placeholder="—" step="0.001"></div>
       <div class="form-group"><label>OPS</label><input type="number" id="f-ops" placeholder="—" step="0.001"></div>
+      <div class="form-group"><label>AB</label><input type="number" id="f-ab" placeholder="—"></div>
       <div class="form-group"><label>HR</label><input type="number" id="f-hr" placeholder="—"></div>
       <div class="form-group"><label>RBI</label><input type="number" id="f-rbi" placeholder="—"></div>
       <div class="form-group"><label>R (Runs)</label><input type="number" id="f-r" placeholder="—"></div>
@@ -722,6 +764,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
       <div class="filter-tab active" id="pros-tab-all" onclick="filterProspects('all',this)">All</div>
       <div class="filter-tab" id="pros-tab-aaa" onclick="filterProspects('AAA',this)">AAA</div>
       <div class="filter-tab" id="pros-tab-aa" onclick="filterProspects('AA',this)">AA</div>
+      <div class="filter-tab" id="pros-tab-a" onclick="filterProspects('A',this)">A</div>
       <div class="filter-tab" id="pros-tab-hit" onclick="filterProspects('hit',this)">Hitters</div>
       <div class="filter-tab" id="pros-tab-pit" onclick="filterProspects('pit',this)">Pitchers</div>
       <input id="pros-search" type="text" placeholder="Search prospects..." oninput="renderProspects()"
@@ -1195,7 +1238,7 @@ function renderTable(){
     return `<tr class="${rowClass(p.move)}" draggable="true" data-id="${p.id}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
       <td><span class="drag-handle">⠿</span></td>
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
-      <td><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':'level-aa'}">${p.level}</span>` : ''}${p.name}${injuryBadge(p.injury_status)}</span></div></td>
+      <td><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}${injuryBadge(p.injury_status)}</span></div></td>
       <td>${posBadges(p.positions)}</td>
       <td class="stat-cell">${p.team||'<span class="stat-na">—</span>'}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
@@ -1341,7 +1384,7 @@ async function selectPlayer(mlbId, name, team, primaryPos, age, level='MLB'){
 async function fetchPlayerStats(mlbId, level='MLB'){
   const statusEl = document.getElementById('search-status');
   // Minor leaguers need leagueListId=milb_all to get their stats
-  const leagueParam = (level==='AAA'||level==='AA') ? '&leagueListId=milb_all' : '';
+  const leagueParam = (level==='AAA'||level==='AA'||level==='A') ? '&leagueListId=milb_all' : '';
   try{
     const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}/stats?stats=season&season=2026&group=hitting,pitching${leagueParam}`);
     const data = await res.json();
@@ -1354,6 +1397,7 @@ async function fetchPlayerStats(mlbId, level='MLB'){
         if(s.avg) document.getElementById('f-avg').value = s.avg;
         if(s.obp) document.getElementById('f-obp').value = s.obp;
         if(s.ops) document.getElementById('f-ops').value = s.ops;
+        if(s.atBats!==undefined) document.getElementById('f-ab').value = s.atBats;
         if(s.homeRuns!==undefined) document.getElementById('f-hr').value = s.homeRuns;
         if(s.rbi!==undefined) document.getElementById('f-rbi').value = s.rbi;
         if(s.runs!==undefined) document.getElementById('f-r').value = s.runs;
@@ -1392,7 +1436,7 @@ async function refreshAllStats(){
   let updated = 0;
   for(const p of withIds){
     try{
-      const lp = (p.level==='AAA'||p.level==='AA') ? '&leagueListId=milb_all' : '';
+      const lp = (p.level==='AAA'||p.level==='AA'||p.level==='A') ? '&leagueListId=milb_all' : '';
       const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${lp}`);
       const data = await res.json();
       const stats = data.stats||[];
@@ -1416,6 +1460,7 @@ async function refreshAllStats(){
           if(s.avg) p.avg=parseFloat(s.avg);
           if(s.obp) p.obp=parseFloat(s.obp);
           if(s.ops) p.ops=parseFloat(s.ops);
+          if(s.atBats!==undefined) p.ab=s.atBats;
           if(s.homeRuns!==undefined) p.hr=s.homeRuns;
           if(s.rbi!==undefined) p.rbi=s.rbi;
           if(s.runs!==undefined) p.r=s.runs;
@@ -1493,6 +1538,7 @@ function savePlayer(){
     avg:document.getElementById('f-avg').value!==''?parseFloat(document.getElementById('f-avg').value):null,
     obp:document.getElementById('f-obp').value!==''?parseFloat(document.getElementById('f-obp').value):null,
     ops:document.getElementById('f-ops').value!==''?parseFloat(document.getElementById('f-ops').value):null,
+    ab:document.getElementById('f-ab').value!==''?parseInt(document.getElementById('f-ab').value):null,
     hr:document.getElementById('f-hr').value!==''?parseInt(document.getElementById('f-hr').value):null,
     rbi:document.getElementById('f-rbi').value!==''?parseInt(document.getElementById('f-rbi').value):null,
     r:document.getElementById('f-r').value!==''?parseInt(document.getElementById('f-r').value):null,
@@ -2108,6 +2154,13 @@ function closePlayerPool(){
   poolActive = false;
   document.getElementById('pool-wrap').classList.remove('active');
   document.querySelector('.table-wrap').style.display = '';
+  // Reset context panel and search so next visit starts fresh
+  closeContext();
+  destroyFixedHeader();
+  const poolSearch = document.getElementById('pool-search');
+  if(poolSearch) poolSearch.value = '';
+  const poolDropdown = document.getElementById('pool-dropdown');
+  if(poolDropdown) poolDropdown.style.display = 'none';
 }
 
 // ---- LOAD FULL ROSTER ----
@@ -2155,6 +2208,21 @@ async function loadPoolPlayers(){
 
     poolPlayers.sort((a,b) => a.name.localeCompare(b.name));
     poolLoaded = true;
+
+    // Silently backfill missing teams on Watch 101 list using pool roster data
+    if(poolPlayers.length > 0){
+      const teamLookup = {};
+      poolPlayers.forEach(p => { if(p.name && p.team) teamLookup[p.name.toLowerCase()] = p.team; });
+      let filled = 0;
+      players.forEach(p => {
+        if(!p.team && p.name){
+          const t = teamLookup[p.name.toLowerCase()];
+          if(t){ p.team = t; filled++; }
+        }
+      });
+      if(filled > 0){ saveData(); renderTable(); }
+    }
+
     // Apply any already-fetched Yahoo data to pool players
     if(Object.keys(yahooDataByMlbId).length > 0 || Object.keys(yahooDataByName).length > 0){
       poolPlayers.forEach(p => {
@@ -2499,7 +2567,7 @@ async function fetchPoolStats(p){
       }
       if(group.group.displayName==='hitting'){
         p.stats.avg=parseFloat(s.avg)||null; p.stats.obp=parseFloat(s.obp)||null;
-        p.stats.ops=parseFloat(s.ops)||null; p.stats.hr=s.homeRuns??null;
+        p.stats.ops=parseFloat(s.ops)||null; p.stats.ab=s.atBats??null; p.stats.hr=s.homeRuns??null;
         p.stats.rbi=s.rbi??null; p.stats.r=s.runs??null; p.stats.sb=s.stolenBases??null;
       }
       if(group.group.displayName==='pitching'){
@@ -2783,6 +2851,7 @@ function openLeagueLeaders(){
 }
 
 function closeLeagueLeaders(){
+  destroyLeadersFixedHeader();
   leadersActive = false;
   document.getElementById('leaders-wrap').classList.remove('active');
   document.querySelector('.table-wrap').style.display = '';
@@ -2878,6 +2947,7 @@ async function loadLeaders(statLabel, group, statKey, statName){
     window._leaderGroup = group;
 
     renderLeadersTable(splits, statKey, isPit);
+    setTimeout(syncLeadersFixedHeader, 150);
 
     table.style.display = '';
     status.textContent = `Top ${splits.length} MLB leaders in ${statName} — 2026 season · Click any column header to sort`;
@@ -2910,8 +2980,9 @@ function renderLeadersTable(splits, highlightStat, isPit){
     const posClass = isPitcherPos(pos)?'pos-SP':pos==='C'?'pos-C':pos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(pos)?'pos-'+pos:'pos-DH';
     const rankClass = i===0?'color:var(--gold)':i<3?'color:var(--gold)':i<10?'color:var(--text)':'color:var(--text2)';
     const hl = (key) => key===highlightStat ? `style="text-align:right;color:var(--gold);font-weight:600"` : `class="stat"`;
-    // Yahoo data
-    const yw = yahooLookup[normalize(name)] || yahooLookup[normalizeName(name)];
+    // Yahoo data — check by MLB ID first (most reliable), then by name
+    const ywById = mlbId ? (yahooDataByMlbId[String(mlbId)] || null) : null;
+    const yw = ywById || yahooLookup[normalize(name)] || yahooLookup[normalizeName(name)];
     const yhooRank = yw && yw.yahoo_rank ? yw.yahoo_rank : (l.yahoo_rank || null);
     // Bats lookup from pool
     const poolP = poolPlayers.find(x => x.mlb_id === mlbId);
@@ -3030,6 +3101,39 @@ async function quickAddLeader(mlbId, name, team, primaryPos, btnEl){
 }
 
 loadData();
+
+// Silently refresh missing AB stats in background after page loads
+setTimeout(async () => {
+  const missing = players.filter(p => p.mlb_id && (p.ab === undefined || p.ab === null));
+  if(missing.length === 0) return;
+  let filled = 0;
+  for(const p of missing){
+    try{
+      const lp = (p.level==='AAA'||p.level==='AA'||p.level==='A') ? '&leagueListId=milb_all' : '';
+      const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${lp}`);
+      const data = await res.json();
+      for(const group of (data.stats||[])){
+        if(!group.splits||group.splits.length===0) continue;
+        const s = group.splits[0].stat;
+        if(group.group&&group.group.displayName==='hitting'){
+          if(s.atBats!==undefined){ p.ab=s.atBats; filled++; }
+          if(s.avg) p.avg=parseFloat(s.avg);
+          if(s.obp) p.obp=parseFloat(s.obp);
+          if(s.ops) p.ops=parseFloat(s.ops);
+          if(s.homeRuns!==undefined) p.hr=s.homeRuns;
+          if(s.rbi!==undefined) p.rbi=s.rbi;
+          if(s.runs!==undefined) p.r=s.runs;
+          if(s.stolenBases!==undefined) p.sb=s.stolenBases;
+        }
+        if(group.group&&group.group.displayName==='pitching'){
+          if(s.inningsPitched!==undefined){ p.ip=parseFloat(s.inningsPitched); filled++; }
+        }
+      }
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,80));
+  }
+  if(filled > 0){ saveData(); renderTable(); }
+}, 2000);
 checkYahooStatus();
 startYahooAutoSync();
 setTimeout(() => loadSavantData(), 500);
@@ -3069,7 +3173,7 @@ function closeProspects(){
 function filterProspects(val, el){
   document.querySelectorAll('#prospects-wrap .filter-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  if(val === 'AAA' || val === 'AA') { prosFilterLevel = val; prosFilterGroup = 'all'; }
+  if(val === 'AAA' || val === 'AA' || val === 'A') { prosFilterLevel = val; prosFilterGroup = 'all'; }
   else if(val === 'hit') { prosFilterGroup = 'hit'; prosFilterLevel = 'all'; }
   else if(val === 'pit') { prosFilterGroup = 'pit'; prosFilterLevel = 'all'; }
   else { prosFilterLevel = 'all'; prosFilterGroup = 'all'; }
@@ -3087,16 +3191,17 @@ async function loadProspects(){
   const status = document.getElementById('pros-status');
   const tableWrap = document.getElementById('pros-table-wrap');
   loading.style.display = 'block';
-  loading.textContent = 'Loading AAA & AA prospects...';
+  loading.textContent = 'Loading AAA, AA & A prospects...';
   tableWrap.style.display = 'none';
 
   try {
-    // Fetch AAA (sportId=11) and AA (sportId=12) players
-    const [aaaRes, aaRes] = await Promise.all([
+    // Fetch AAA (sportId=11), AA (sportId=12), A (sportId=13) players
+    const [aaaRes, aaRes, aRes] = await Promise.all([
       fetch('https://statsapi.mlb.com/api/v1/sports/11/players?season=2026&gameType=R&hydrate=currentTeam'),
-      fetch('https://statsapi.mlb.com/api/v1/sports/12/players?season=2026&gameType=R&hydrate=currentTeam')
+      fetch('https://statsapi.mlb.com/api/v1/sports/12/players?season=2026&gameType=R&hydrate=currentTeam'),
+      fetch('https://statsapi.mlb.com/api/v1/sports/13/players?season=2026&gameType=R&hydrate=currentTeam')
     ]);
-    const [aaaData, aaData] = await Promise.all([aaaRes.json(), aaRes.json()]);
+    const [aaaData, aaData, aData] = await Promise.all([aaaRes.json(), aaRes.json(), aRes.json()]);
 
     const mapPlayer = (p, level) => ({
       mlb_id: p.id,
@@ -3111,13 +3216,14 @@ async function loadProspects(){
 
     prospectPlayers = [
       ...(aaaData.people||[]).map(p => mapPlayer(p, 'AAA')),
-      ...(aaData.people||[]).map(p => mapPlayer(p, 'AA'))
+      ...(aaData.people||[]).map(p => mapPlayer(p, 'AA')),
+      ...(aData.people||[]).map(p => mapPlayer(p, 'A'))
     ];
 
     prospectsLoaded = true;
     loading.style.display = 'none';
     status.style.display = 'block';
-    status.textContent = prospectPlayers.length + ' prospects loaded (AAA + AA) — click a player to load stats';
+    status.textContent = prospectPlayers.length + ' prospects loaded (AAA + AA + A) — click a player to load stats';
     tableWrap.style.display = 'block';
     renderProspects();
 
@@ -3316,9 +3422,62 @@ function syncFixedHeader(){
 
 function destroyFixedHeader(){
   const fixedBar = document.getElementById('ctx-fixed-header');
+  const mask = document.getElementById('ctx-fixed-header-mask');
   const poolWrap = document.getElementById('pool-wrap');
   if(fixedBar) fixedBar.style.display = 'none';
+  if(mask) mask.style.display = 'none';
   if(poolWrap) poolWrap.onscroll = null;
+}
+
+
+// ---- LEADERS FIXED STAT STRIP ----
+function syncLeadersFixedHeader(){
+  const realThead = document.getElementById('leaders-thead');
+  const fixedBar = document.getElementById('leaders-fixed-header');
+  const fixedTable = document.getElementById('leaders-fixed-table');
+  const leadersWrap = document.getElementById('leaders-wrap');
+  if(!realThead || !fixedBar || !fixedTable || !leadersWrap) return;
+
+  const clone = realThead.cloneNode(true);
+  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  fixedTable.innerHTML = '';
+  fixedTable.appendChild(clone);
+
+  const realTable = realThead.closest('table');
+  if(realTable){
+    const realCols = realThead.querySelectorAll('th');
+    const fixedCols = fixedTable.querySelectorAll('th');
+    realCols.forEach((th, i) => {
+      if(fixedCols[i]){
+        fixedCols[i].style.width = th.offsetWidth + 'px';
+        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
+        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
+      }
+    });
+    fixedTable.style.width = realTable.offsetWidth + 'px';
+    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
+    fixedBar.style.right = 'auto';
+    fixedBar.style.width = realTable.offsetWidth + 'px';
+  }
+
+  fixedBar.style.top = '72px';
+  fixedBar.style.display = 'block';
+
+  leadersWrap.onscroll = function(){
+    const theadRect = realThead.getBoundingClientRect();
+    if(theadRect.top < 72){
+      fixedBar.style.display = 'block';
+    } else {
+      fixedBar.style.display = 'none';
+    }
+  };
+}
+
+function destroyLeadersFixedHeader(){
+  const fixedBar = document.getElementById('leaders-fixed-header');
+  const leadersWrap = document.getElementById('leaders-wrap');
+  if(fixedBar) fixedBar.style.display = 'none';
+  if(leadersWrap) leadersWrap.onscroll = null;
 }
 
 </script>
