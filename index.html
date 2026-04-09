@@ -832,7 +832,7 @@ async function loadData(){
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(`${SERVER_URL}/watchlist`, { signal: controller.signal });
+    const res = await fetch(`${SERVER_URL}/watchlist`, { signal: controller.signal, headers: {'ngrok-skip-browser-warning': 'true'} });
     clearTimeout(timeout);
     if(res.ok){
       const data = await res.json();
@@ -865,7 +865,7 @@ async function saveData(){
     const timeout = setTimeout(() => controller.abort(), 3000);
     const res = await fetch(`${SERVER_URL}/watchlist`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
       body: JSON.stringify({ players }),
       signal: controller.signal
     });
@@ -1003,7 +1003,7 @@ let yahooDataByName = {};   // global cache normalized name -> {yahoo_rank, rost
 
 async function checkYahooStatus(){
   try {
-    const res = await fetch(`${SERVER_URL}/auth/status`);
+    const res = await fetch(`${SERVER_URL}/auth/status`, {headers:{'ngrok-skip-browser-warning':'true'}});
     if(!res.ok) throw new Error('Server offline');
     const data = await res.json();
     yahooConnected = data.connected;
@@ -1054,7 +1054,7 @@ async function syncYahooData(manual = false){
   try {
     // Single call — league-ranks returns Yahoo rank + roster % for top 300
     // Uses Delta Sig & Friends 2K25 league as context for universal data
-    const res = await fetch(`${SERVER_URL}/yahoo/league-ranks/469.l.70258`);
+    const res = await fetch(`${SERVER_URL}/yahoo/league-ranks/469.l.70258`, {headers:{'ngrok-skip-browser-warning':'true'}});
     if(!res.ok) throw new Error('League ranks fetch failed');
     const data = await res.json();
 
