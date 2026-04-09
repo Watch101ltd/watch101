@@ -2177,6 +2177,11 @@ function openPlayerPool(){
   if(poolSearch) poolSearch.value = '';
   const poolDropdown = document.getElementById('pool-dropdown');
   if(poolDropdown){ poolDropdown.classList.remove('open'); poolDropdown.removeAttribute('style'); }
+  // Reset position filter to ALL on every open
+  poolPosFilter = 'ALL';
+  document.querySelectorAll('#pool-wrap .pool-filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
+  const allTab = document.getElementById('pool-pos-all');
+  if(allTab) allTab.classList.add('active');
   if(!poolLoaded) loadPoolPlayers();
   else renderPool();
 }
@@ -2200,10 +2205,19 @@ async function loadPoolPlayers(){
   document.getElementById('pool-tbody').innerHTML = '';
   document.getElementById('pool-status').textContent = 'Loading MLB roster...';
   try {
-    // Step 1: Load all players
-    const res = await fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&gameType=R&hydrate=currentTeam');
-    const data = await res.json();
-    poolPlayers = (data.people || []).map(p => ({
+    // Step 1: Load all players — use 40-man roster type to include IL players with no stats yet
+    const [activeRes, fortyManRes] = await Promise.all([
+      fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&gameType=R&hydrate=currentTeam'),
+      fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam')
+    ]);
+    const activeData = await activeRes.json();
+    const fortyManData = await fortyManRes.json();
+    // Merge both lists, deduplicate by mlb_id
+    const allPeopleMap = {};
+    for(const p of [...(fortyManData.people||[]), ...(activeData.people||[])]){
+      allPeopleMap[p.id] = p; // active data wins on conflict
+    }
+    poolPlayers = Object.values(allPeopleMap).map(p => ({
       mlb_id: p.id,
       name: p.fullName,
       team: (p.currentTeam && p.currentTeam.abbreviation) || '',
