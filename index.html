@@ -124,13 +124,13 @@ td:nth-child(4){white-space:normal;width:72px;max-width:72px;vertical-align:top;
 .stat-cell{font-family:'DM Mono',monospace;font-size:12px;color:var(--turquoise);text-align:right}
 .stat-na{color:var(--text3);font-size:11px}
 .savant-col{background:rgba(201,168,76,0.06);border-left:1px solid rgba(201,168,76,0.2);}
-td.savant-col{font-size:10px;padding:3px 2px;}
+td.savant-col{font-size:10px;padding:3px 2px;width:48px;min-width:48px;max-width:48px;}
 .level-badge{display:inline-block;font-size:9px;font-family:'DM Mono',monospace;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:0.05em;margin-right:4px;vertical-align:middle}
 .level-mlb{background:#1B6CA8;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:4px;vertical-align:middle;flex-shrink:0}
 .level-aaa{background:#2a7a3a;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:4px;vertical-align:middle;flex-shrink:0}
 .level-aa{background:#7a5a2a;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:4px;vertical-align:middle;flex-shrink:0}
 .savant-col:first-of-type{border-left:2px solid rgba(201,168,76,0.4);}
-th.savant-col{color:var(--gold);font-size:8px;letter-spacing:0.03em;padding:3px 2px;max-width:48px;width:48px;}
+th.savant-col{color:var(--gold);font-size:8px;letter-spacing:0.03em;padding:3px 2px;width:48px;min-width:48px;max-width:48px;}
 #savant-indicator{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);padding:0 8px;}
 #yahoo-btn{font-family:'DM Mono',monospace;font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--border2);cursor:pointer;transition:all 0.2s;}
 #yahoo-btn.connected{background:rgba(34,197,94,0.15);color:#22c55e;border-color:#22c55e;}
@@ -206,7 +206,7 @@ tr.drag-over{border-top:2px solid var(--gold)}
 
 /* PLAYER POOL */
 .pool-wrap{display:none;padding:0.75rem 1.5rem 2rem}
-.pool-wrap.active{display:block;position:fixed;inset:0;top:72px;z-index:50;background:var(--bg);overflow-y:auto;padding:0.75rem 1.5rem 2rem}
+.pool-wrap.active{display:block;position:fixed;inset:0;top:72px;z-index:50;background:var(--bg);overflow-y:scroll;padding:0.75rem 1.5rem 2rem}
 .pool-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
 .pool-search-wrap{position:relative;flex:1;min-width:250px;max-width:400px}
 .pool-search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px 8px 34px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none}
@@ -263,8 +263,8 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .compare-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none}
 .compare-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-top:4px;z-index:400;max-height:220px;overflow-y:auto;display:none;box-shadow:0 8px 24px #00000088}
 .compare-dropdown.open{display:block}
-.context-table-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 280px)}
-.context-table-wrap .pool-table thead th{position:sticky;top:0;z-index:10;background:var(--surface);box-shadow:0 2px 0 var(--gold2)}
+.context-table-wrap{overflow-x:visible}
+.context-table-wrap .pool-table thead th{background:var(--surface);}
 #pros-table-wrap thead th{background:var(--surface)}
 .ctx-count-row td{background:var(--surface2);padding:5px 12px;font-family:'DM Mono',monospace;font-size:11px;border-bottom:1px solid var(--border)}
 tr.ctx-highlight td{background:#1a1200 !important}
@@ -302,8 +302,79 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
 .dual-diff.up{background:#14532d33;color:var(--green);border:1px solid #14532d}
 .dual-diff.down{background:#7f1d1d33;color:var(--red);border:1px solid #7f1d1d}
 .dual-diff.same{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+
+/* Fixed stat strip that locks to top of pool-wrap when scrolling */
+#ctx-fixed-header-mask{
+  display:none;
+  position:fixed;
+  left:0;right:0;
+  z-index:59;
+  background:var(--bg);
+  height:40px;
+  pointer-events:none;
+}
+#ctx-fixed-header{
+  display:none;
+  position:fixed;
+  left:0;right:0;
+  z-index:60;
+  background:var(--bg);
+  border-bottom:2px solid var(--gold2);
+  overflow:hidden;
+  pointer-events:auto;
+}
+#ctx-fixed-header table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+#ctx-fixed-header th{
+  padding:5px 4px;
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  font-weight:500;
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+  color:#94a3b8;
+  text-align:right;
+  white-space:nowrap;
+  cursor:pointer;
+  user-select:none;
+  background:var(--bg);
+}
+
+#leaders-fixed-header{
+  display:none;
+  position:fixed;
+  left:0;right:0;
+  z-index:60;
+  background:var(--bg);
+  border-top:20px solid var(--bg);
+  border-bottom:2px solid var(--gold2);
+  overflow:hidden;
+  pointer-events:auto;
+}
+#leaders-fixed-header table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+#leaders-fixed-header th{
+  padding:5px 4px;
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  font-weight:500;
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+  color:#94a3b8;
+  text-align:right;
+  white-space:nowrap;
+  cursor:pointer;
+  user-select:none;
+  background:var(--bg);
+}
 </style>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.mini.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -361,7 +432,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
         <th onclick="sortBy('age')" title="Age">Age <span class="sort-arrow" id="arr-age">↕</span></th>
         <th onclick="sortBy('bats')" title="Bats (L/R/S)">Bats <span class="sort-arrow" id="arr-bats">↕</span></th>
         <th onclick="sortBy('rank_delta')" title="Movement from previous save (+ up / - down)">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
-        <th onclick="sortBy('yahoo_rank')" title="Yahoo Rank">YHO <span class="sort-arrow" id="arr-yahoo_rank">↕</span></th>
+        <th onclick="sortBy('yahoo_rank')" title="Yahoo Rank">CURR <span class="sort-arrow" id="arr-yahoo_rank">↕</span></th>
         <th onclick="sortBy('preseason_rank')" title="Yahoo Preseason Rank">PRE <span class="sort-arrow" id="arr-preseason_rank">↕</span></th>
         <th onclick="sortBy('roster_pct')" title="Roster %">RST% <span class="sort-arrow" id="arr-roster_pct">↕</span></th>
         <th onclick="sortBy('ab')" title="AB / IP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AB</span><span style="color:#86efac;font-size:8px">IP</span></div></th>
@@ -455,6 +526,8 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
 
 <!-- PLAYER POOL -->
 <div class="pool-wrap" id="pool-wrap">
+  <div id="ctx-fixed-header-mask"></div>
+  <div id="ctx-fixed-header"><table id="ctx-fixed-table"></table></div>
 
   <!-- TOOLBAR -->
   <div class="pool-toolbar">
@@ -523,7 +596,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
           <th onclick="sortPool('team')">Team <span class="sort-arrow" id="parr-team">↕</span></th>
           <th onclick="sortPool('age')" style="text-align:right">Age <span class="sort-arrow" id="parr-age">↕</span></th>
           <th style="text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase">BATS</th>
-          <th onclick="sortPool('yahoo_rank')" title="Yahoo Rank" style="text-align:right;color:var(--blue)">YHO <span class="sort-arrow" id="parr-yahoo_rank">↕</span></th>
+          <th onclick="sortPool('yahoo_rank')" title="Yahoo Rank" style="text-align:right;color:var(--blue)">CURR <span class="sort-arrow" id="parr-yahoo_rank">↕</span></th>
           <th onclick="sortPool('preseason_rank')" title="Yahoo Preseason Rank" style="text-align:right;color:var(--text3)">PRE <span class="sort-arrow" id="parr-preseason_rank">↕</span></th>
           <th onclick="sortPool('roster_pct')" title="Yahoo Roster %" style="text-align:right;color:var(--blue)">RST% <span class="sort-arrow" id="parr-roster_pct">↕</span></th>
           <th class="no-sort" style="width:120px"></th>
@@ -538,6 +611,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
 
 <!-- LEAGUE LEADERS -->
 <div class="pool-wrap" id="leaders-wrap">
+  <div id="leaders-fixed-header"><table id="leaders-fixed-table"></table></div>
   <div class="pool-toolbar">
     <div style="display:flex;align-items:center;gap:12px">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em">🏆 League Leaders — 2026</div>
@@ -649,6 +723,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
       <div class="form-group"><label>AVG</label><input type="number" id="f-avg" placeholder="—" step="0.001"></div>
       <div class="form-group"><label>OBP</label><input type="number" id="f-obp" placeholder="—" step="0.001"></div>
       <div class="form-group"><label>OPS</label><input type="number" id="f-ops" placeholder="—" step="0.001"></div>
+      <div class="form-group"><label>AB</label><input type="number" id="f-ab" placeholder="—"></div>
       <div class="form-group"><label>HR</label><input type="number" id="f-hr" placeholder="—"></div>
       <div class="form-group"><label>RBI</label><input type="number" id="f-rbi" placeholder="—"></div>
       <div class="form-group"><label>R (Runs)</label><input type="number" id="f-r" placeholder="—"></div>
@@ -689,6 +764,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
       <div class="filter-tab active" id="pros-tab-all" onclick="filterProspects('all',this)">All</div>
       <div class="filter-tab" id="pros-tab-aaa" onclick="filterProspects('AAA',this)">AAA</div>
       <div class="filter-tab" id="pros-tab-aa" onclick="filterProspects('AA',this)">AA</div>
+      <div class="filter-tab" id="pros-tab-a" onclick="filterProspects('A',this)">A</div>
       <div class="filter-tab" id="pros-tab-hit" onclick="filterProspects('hit',this)">Hitters</div>
       <div class="filter-tab" id="pros-tab-pit" onclick="filterProspects('pit',this)">Pitchers</div>
       <input id="pros-search" type="text" placeholder="Search prospects..." oninput="renderProspects()"
@@ -756,7 +832,7 @@ async function loadData(){
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(`${SERVER_URL}/watchlist`, { signal: controller.signal });
+    const res = await fetch(`${SERVER_URL}/watchlist`, { signal: controller.signal, headers: {'ngrok-skip-browser-warning': 'true'} });
     clearTimeout(timeout);
     if(res.ok){
       const data = await res.json();
@@ -789,7 +865,7 @@ async function saveData(){
     const timeout = setTimeout(() => controller.abort(), 3000);
     const res = await fetch(`${SERVER_URL}/watchlist`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
       body: JSON.stringify({ players }),
       signal: controller.signal
     });
@@ -927,7 +1003,7 @@ let yahooDataByName = {};   // global cache normalized name -> {yahoo_rank, rost
 
 async function checkYahooStatus(){
   try {
-    const res = await fetch(`${SERVER_URL}/auth/status`);
+    const res = await fetch(`${SERVER_URL}/auth/status`, {headers:{'ngrok-skip-browser-warning':'true'}});
     if(!res.ok) throw new Error('Server offline');
     const data = await res.json();
     yahooConnected = data.connected;
@@ -970,15 +1046,18 @@ function yahooButtonClick(){
   }
 }
 
+let yahooSyncing = false;
 async function syncYahooData(manual = false){
   if(!yahooConnected || players.length === 0) return;
+  if(yahooSyncing && !manual) return; // prevent overlapping calls
+  yahooSyncing = true;
   const btn = document.getElementById('yahoo-btn');
   if(btn){ btn.className = 'loading'; btn.textContent = '⚾ Syncing...'; }
 
   try {
     // Single call — league-ranks returns Yahoo rank + roster % for top 300
     // Uses Delta Sig & Friends 2K25 league as context for universal data
-    const res = await fetch(`${SERVER_URL}/yahoo/league-ranks/469.l.70258`);
+    const res = await fetch(`${SERVER_URL}/yahoo/league-ranks/469.l.70258`, {headers:{'ngrok-skip-browser-warning':'true'}});
     if(!res.ok) throw new Error('League ranks fetch failed');
     const data = await res.json();
 
@@ -1088,8 +1167,11 @@ function getFiltered(){
     if(typeof av==='string') return av.localeCompare(bv)*sortDir;
     const diff = (av-bv)*sortDir;
     if(diff !== 0) return diff;
-    // Tie-break: fall back to Matt's rank order
-    return (a.rank||999) - (b.rank||999);
+    // Tie-break 1: Matt's rank
+    const ar = (a.rank||999), br = (b.rank||999);
+    if(ar !== br) return ar - br;
+    // Tie-break 2: Yahoo rank
+    return (a.yahoo_rank||9999) - (b.yahoo_rank||9999);
   });
   return list;
 }
@@ -1159,7 +1241,7 @@ function renderTable(){
     return `<tr class="${rowClass(p.move)}" draggable="true" data-id="${p.id}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
       <td><span class="drag-handle">⠿</span></td>
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
-      <td><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':'level-aa'}">${p.level}</span>` : ''}${p.name}${injuryBadge(p.injury_status)}</span></div></td>
+      <td><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}${injuryBadge(p.injury_status)}</span></div></td>
       <td>${posBadges(p.positions)}</td>
       <td class="stat-cell">${p.team||'<span class="stat-na">—</span>'}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
@@ -1305,7 +1387,7 @@ async function selectPlayer(mlbId, name, team, primaryPos, age, level='MLB'){
 async function fetchPlayerStats(mlbId, level='MLB'){
   const statusEl = document.getElementById('search-status');
   // Minor leaguers need leagueListId=milb_all to get their stats
-  const leagueParam = (level==='AAA'||level==='AA') ? '&leagueListId=milb_all' : '';
+  const leagueParam = (level==='AAA'||level==='AA'||level==='A') ? '&leagueListId=milb_all' : '';
   try{
     const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}/stats?stats=season&season=2026&group=hitting,pitching${leagueParam}`);
     const data = await res.json();
@@ -1318,6 +1400,7 @@ async function fetchPlayerStats(mlbId, level='MLB'){
         if(s.avg) document.getElementById('f-avg').value = s.avg;
         if(s.obp) document.getElementById('f-obp').value = s.obp;
         if(s.ops) document.getElementById('f-ops').value = s.ops;
+        if(s.atBats!==undefined) document.getElementById('f-ab').value = s.atBats;
         if(s.homeRuns!==undefined) document.getElementById('f-hr').value = s.homeRuns;
         if(s.rbi!==undefined) document.getElementById('f-rbi').value = s.rbi;
         if(s.runs!==undefined) document.getElementById('f-r').value = s.runs;
@@ -1356,7 +1439,7 @@ async function refreshAllStats(){
   let updated = 0;
   for(const p of withIds){
     try{
-      const lp = (p.level==='AAA'||p.level==='AA') ? '&leagueListId=milb_all' : '';
+      const lp = (p.level==='AAA'||p.level==='AA'||p.level==='A') ? '&leagueListId=milb_all' : '';
       const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${lp}`);
       const data = await res.json();
       const stats = data.stats||[];
@@ -1380,6 +1463,7 @@ async function refreshAllStats(){
           if(s.avg) p.avg=parseFloat(s.avg);
           if(s.obp) p.obp=parseFloat(s.obp);
           if(s.ops) p.ops=parseFloat(s.ops);
+          if(s.atBats!==undefined) p.ab=s.atBats;
           if(s.homeRuns!==undefined) p.hr=s.homeRuns;
           if(s.rbi!==undefined) p.rbi=s.rbi;
           if(s.runs!==undefined) p.r=s.runs;
@@ -1457,6 +1541,7 @@ function savePlayer(){
     avg:document.getElementById('f-avg').value!==''?parseFloat(document.getElementById('f-avg').value):null,
     obp:document.getElementById('f-obp').value!==''?parseFloat(document.getElementById('f-obp').value):null,
     ops:document.getElementById('f-ops').value!==''?parseFloat(document.getElementById('f-ops').value):null,
+    ab:document.getElementById('f-ab').value!==''?parseInt(document.getElementById('f-ab').value):null,
     hr:document.getElementById('f-hr').value!==''?parseInt(document.getElementById('f-hr').value):null,
     rbi:document.getElementById('f-rbi').value!==''?parseInt(document.getElementById('f-rbi').value):null,
     r:document.getElementById('f-r').value!==''?parseInt(document.getElementById('f-r').value):null,
@@ -2064,19 +2149,28 @@ function openPlayerPool(){
   document.getElementById('pool-wrap').classList.add('active');
   document.querySelectorAll('.filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('pool-tab').classList.add('active');
+  // Always reset context and search on open
+  closeContext();
+  destroyFixedHeader();
+  const poolSearch = document.getElementById('pool-search');
+  if(poolSearch) poolSearch.value = '';
+  const poolDropdown = document.getElementById('pool-dropdown');
+  if(poolDropdown) poolDropdown.style.display = 'none';
   if(!poolLoaded) loadPoolPlayers();
   else renderPool();
 }
 
 function closePlayerPool(){
   poolActive = false;
-  contextAnchor = null;
-  contextCompares = [];
-  document.getElementById('context-panel').style.display = 'none';
-  document.getElementById('pool-search').value = '';
-  document.getElementById('pool-dropdown').classList.remove('open');
   document.getElementById('pool-wrap').classList.remove('active');
   document.querySelector('.table-wrap').style.display = '';
+  // Reset context panel and search so next visit starts fresh
+  closeContext();
+  destroyFixedHeader();
+  const poolSearch = document.getElementById('pool-search');
+  if(poolSearch) poolSearch.value = '';
+  const poolDropdown = document.getElementById('pool-dropdown');
+  if(poolDropdown) poolDropdown.style.display = 'none';
 }
 
 // ---- LOAD FULL ROSTER ----
@@ -2124,6 +2218,21 @@ async function loadPoolPlayers(){
 
     poolPlayers.sort((a,b) => a.name.localeCompare(b.name));
     poolLoaded = true;
+
+    // Silently backfill missing teams on Watch 101 list using pool roster data
+    if(poolPlayers.length > 0){
+      const teamLookup = {};
+      poolPlayers.forEach(p => { if(p.name && p.team) teamLookup[p.name.toLowerCase()] = p.team; });
+      let filled = 0;
+      players.forEach(p => {
+        if(!p.team && p.name){
+          const t = teamLookup[p.name.toLowerCase()];
+          if(t){ p.team = t; filled++; }
+        }
+      });
+      if(filled > 0){ saveData(); renderTable(); }
+    }
+
     // Apply any already-fetched Yahoo data to pool players
     if(Object.keys(yahooDataByMlbId).length > 0 || Object.keys(yahooDataByName).length > 0){
       poolPlayers.forEach(p => {
@@ -2175,7 +2284,10 @@ function renderPool(){
     if(av===undefined||av===null) av = poolSortDir===1?'zzz':0;
     if(bv===undefined||bv===null) bv = poolSortDir===1?'zzz':0;
     if(typeof av==='string') return av.localeCompare(bv)*poolSortDir;
-    return (av-bv)*poolSortDir;
+    const diff = (av-bv)*poolSortDir;
+    if(diff !== 0) return diff;
+    // Tie-break: Yahoo rank
+    return (a.yahoo_rank||9999) - (b.yahoo_rank||9999);
   });
   const display = list.slice(0,200);
   document.getElementById('pool-empty').style.display = list.length===0?'block':'none';
@@ -2270,6 +2382,7 @@ async function openContext(mlbId, name, team, primaryPos, age){
   document.getElementById('compare-search').value = '';
   buildContextHeaders(isPit);
   document.getElementById('ctx-loading').style.display = 'block';
+  setTimeout(syncFixedHeader, 150);
   document.getElementById('ctx-tbody').innerHTML = '';
   await loadContextStats(isPit, isPit ? 'full' : 'positional');
 }
@@ -2285,6 +2398,7 @@ async function switchContextView(mode){
 
 function closeContext(){
   document.getElementById('context-panel').style.display = 'none';
+  destroyFixedHeader();
   contextAnchor = null;
   contextCompares = [];
 }
@@ -2304,7 +2418,7 @@ function buildContextHeaders(isPit){
       <th onclick="sortCtx('w')" style="text-align:right">W <span id="carr-w">↕</span></th>
       <th onclick="sortCtx('sv')" style="text-align:right">SV <span id="carr-sv">↕</span></th>
       <th onclick="sortCtx('ip')" style="text-align:right">IP <span id="carr-ip">↕</span></th>
-      <th onclick="sortCtx('yahoo_rank')" style="text-align:right;color:var(--blue)">YHO <span id="carr-yahoo_rank">↕</span></th>
+      <th onclick="sortCtx('yahoo_rank')" style="text-align:right;color:var(--blue)">CURR <span id="carr-yahoo_rank">↕</span></th>
       <th onclick="sortCtx('preseason_rank')" style="text-align:right;color:var(--text3)">PRE <span id="carr-preseason_rank">↕</span></th>
       <th onclick="sortCtx('roster_pct')" style="text-align:right;color:var(--blue)">RST% <span id="carr-roster_pct">↕</span></th>
       <th class="no-sort" style="width:120px"></th>
@@ -2323,8 +2437,8 @@ function buildContextHeaders(isPit){
       <th onclick="sortCtx('rbi')" style="text-align:right">RBI <span id="carr-rbi">↕</span></th>
       <th onclick="sortCtx('r')" style="text-align:right">R <span id="carr-r">↕</span></th>
       <th onclick="sortCtx('sb')" style="text-align:right">SB <span id="carr-sb">↕</span></th>
-      <th onclick="sortCtx('bats')" style="text-align:center;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;color:#94a3b8;cursor:pointer">BATS <span id="carr-bats">↕</span></th>
-      <th onclick="sortCtx('yahoo_rank')" style="text-align:right;color:var(--blue)">YHO <span id="carr-yahoo_rank">↕</span></th>
+      <th onclick="sortCtx('bats')" style="text-align:center;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;color:#94a3b8">BATS</th>
+      <th onclick="sortCtx('yahoo_rank')" style="text-align:right;color:var(--blue)">CURR <span id="carr-yahoo_rank">↕</span></th>
       <th onclick="sortCtx('preseason_rank')" style="text-align:right;color:var(--text3)">PRE <span id="carr-preseason_rank">↕</span></th>
       <th onclick="sortCtx('roster_pct')" style="text-align:right;color:var(--blue)">RST% <span id="carr-roster_pct">↕</span></th>
       <th class="no-sort" style="width:120px"></th>
@@ -2463,7 +2577,7 @@ async function fetchPoolStats(p){
       }
       if(group.group.displayName==='hitting'){
         p.stats.avg=parseFloat(s.avg)||null; p.stats.obp=parseFloat(s.obp)||null;
-        p.stats.ops=parseFloat(s.ops)||null; p.stats.hr=s.homeRuns??null;
+        p.stats.ops=parseFloat(s.ops)||null; p.stats.ab=s.atBats??null; p.stats.hr=s.homeRuns??null;
         p.stats.rbi=s.rbi??null; p.stats.r=s.runs??null; p.stats.sb=s.stolenBases??null;
       }
       if(group.group.displayName==='pitching'){
@@ -2498,10 +2612,6 @@ function renderContext(){
   players.forEach(wp => { yahooLookupForSort[wp.name.toLowerCase()] = wp; });
   const getCtxVal = (p, col) => {
     if(col === 'age') return parseInt(p.age)||null;
-    if(col === 'bats') return p.bats||null;
-    if(col === 'name') return p.name||null;
-    if(col === 'team') return p.team||null;
-    if(col === 'primaryPos') return p.primaryPos||null;
     if(col === 'yahoo_rank' || col === 'roster_pct'){
       // Check watch list first, then global Yahoo cache
       const yw = yahooLookupForSort[normalize(p.name||'')] 
@@ -2518,7 +2628,11 @@ function renderContext(){
     if(av===null&&bv===null) return a.name.localeCompare(b.name);
     if(av===null) return 1; if(bv===null) return -1;
     if(typeof av==='string') return av.localeCompare(bv)*ctxSortDir;
-    return (av-bv)*ctxSortDir;
+    const diff = (av-bv)*ctxSortDir;
+    if(diff !== 0) return diff;
+    // Tie-break: Yahoo rank
+    const ayr = a.yahoo_rank||9999, byr = b.yahoo_rank||9999;
+    return ayr - byr;
   });
   // Insert anchor at correct position
   const anchorStat = getCtxVal(contextAnchor, ctxSortCol);
@@ -2613,7 +2727,7 @@ function renderContext(){
 // ---- SORT CONTEXT TABLE ----
 function sortCtx(col){
   if(ctxSortCol===col) ctxSortDir*=-1;
-  else { ctxSortCol=col; ctxSortDir = (col==='era'||col==='whip')?1:(col==='bats')?1:-1; }
+  else { ctxSortCol=col; ctxSortDir = (col==='era'||col==='whip')?1:-1; }
   document.querySelectorAll('[id^="carr-"]').forEach(a=>{a.textContent='↕'; a.closest('th')&&a.closest('th').classList.remove('sorted');});
   const arr=document.getElementById('carr-'+col);
   if(arr){ arr.textContent=ctxSortDir===1?'↑':'↓'; arr.closest('th').classList.add('sorted'); }
@@ -2747,6 +2861,7 @@ function openLeagueLeaders(){
 }
 
 function closeLeagueLeaders(){
+  destroyLeadersFixedHeader();
   leadersActive = false;
   document.getElementById('leaders-wrap').classList.remove('active');
   document.querySelector('.table-wrap').style.display = '';
@@ -2810,7 +2925,7 @@ async function loadLeaders(statLabel, group, statKey, statName){
         <th onclick="sortLeadersCol(this,'wins',false)" style="text-align:right;cursor:pointer${statKey==='w'?';color:var(--gold)':''}">W</th>
         <th onclick="sortLeadersCol(this,'saves',false)" style="text-align:right;cursor:pointer${statKey==='sv'?';color:var(--gold)':''}">SV</th>
         <th onclick="sortLeadersCol(this,'inningsPitched',false)" style="text-align:right;cursor:pointer${statKey==='ip'?';color:var(--gold)':''}">IP</th>
-        <th onclick="sortLeadersCol(this,'yahoo_rank',false)" style="text-align:right;cursor:pointer;color:var(--blue)">YHO</th>
+        <th onclick="sortLeadersCol(this,'yahoo_rank',false)" style="text-align:right;cursor:pointer;color:var(--blue)">CURR</th>
         <th onclick="sortLeadersCol(this,'roster_pct',false)" style="text-align:right;cursor:pointer;color:var(--blue)">RST%</th>
         <th class="no-sort" style="width:150px"></th>
       </tr>`;
@@ -2829,7 +2944,7 @@ async function loadLeaders(statLabel, group, statKey, statName){
         <th style="text-align:right;cursor:pointer${statKey==='avg'?';color:var(--gold)':''}" onclick="sortLeadersCol(this,'avg',false)">AVG</th>
         <th style="text-align:right;cursor:pointer${statKey==='obp'?';color:var(--gold)':''}" onclick="sortLeadersCol(this,'obp',false)">OBP</th>
         <th style="text-align:right;cursor:pointer${statKey==='ops'?';color:var(--gold)':''}" onclick="sortLeadersCol(this,'ops',false)">OPS</th>
-        <th onclick="sortLeadersCol(this,'yahoo_rank',false)" style="text-align:right;cursor:pointer;color:var(--blue)">YHO</th>
+        <th onclick="sortLeadersCol(this,'yahoo_rank',false)" style="text-align:right;cursor:pointer;color:var(--blue)">CURR</th>
         <th onclick="sortLeadersCol(this,'roster_pct',false)" style="text-align:right;cursor:pointer;color:var(--blue)">RST%</th>
         <th class="no-sort" style="width:150px"></th>
       </tr>`;
@@ -2842,6 +2957,7 @@ async function loadLeaders(statLabel, group, statKey, statName){
     window._leaderGroup = group;
 
     renderLeadersTable(splits, statKey, isPit);
+    setTimeout(syncLeadersFixedHeader, 150);
 
     table.style.display = '';
     status.textContent = `Top ${splits.length} MLB leaders in ${statName} — 2026 season · Click any column header to sort`;
@@ -2874,8 +2990,9 @@ function renderLeadersTable(splits, highlightStat, isPit){
     const posClass = isPitcherPos(pos)?'pos-SP':pos==='C'?'pos-C':pos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(pos)?'pos-'+pos:'pos-DH';
     const rankClass = i===0?'color:var(--gold)':i<3?'color:var(--gold)':i<10?'color:var(--text)':'color:var(--text2)';
     const hl = (key) => key===highlightStat ? `style="text-align:right;color:var(--gold);font-weight:600"` : `class="stat"`;
-    // Yahoo data
-    const yw = yahooLookup[normalize(name)] || yahooLookup[normalizeName(name)];
+    // Yahoo data — check by MLB ID first (most reliable), then by name
+    const ywById = mlbId ? (yahooDataByMlbId[String(mlbId)] || null) : null;
+    const yw = ywById || yahooLookup[normalize(name)] || yahooLookup[normalizeName(name)];
     const yhooRank = yw && yw.yahoo_rank ? yw.yahoo_rank : (l.yahoo_rank || null);
     // Bats lookup from pool
     const poolP = poolPlayers.find(x => x.mlb_id === mlbId);
@@ -2994,6 +3111,39 @@ async function quickAddLeader(mlbId, name, team, primaryPos, btnEl){
 }
 
 loadData();
+
+// Silently refresh missing AB stats in background after page loads
+setTimeout(async () => {
+  const missing = players.filter(p => p.mlb_id && (p.ab === undefined || p.ab === null));
+  if(missing.length === 0) return;
+  let filled = 0;
+  for(const p of missing){
+    try{
+      const lp = (p.level==='AAA'||p.level==='AA'||p.level==='A') ? '&leagueListId=milb_all' : '';
+      const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${lp}`);
+      const data = await res.json();
+      for(const group of (data.stats||[])){
+        if(!group.splits||group.splits.length===0) continue;
+        const s = group.splits[0].stat;
+        if(group.group&&group.group.displayName==='hitting'){
+          if(s.atBats!==undefined){ p.ab=s.atBats; filled++; }
+          if(s.avg) p.avg=parseFloat(s.avg);
+          if(s.obp) p.obp=parseFloat(s.obp);
+          if(s.ops) p.ops=parseFloat(s.ops);
+          if(s.homeRuns!==undefined) p.hr=s.homeRuns;
+          if(s.rbi!==undefined) p.rbi=s.rbi;
+          if(s.runs!==undefined) p.r=s.runs;
+          if(s.stolenBases!==undefined) p.sb=s.stolenBases;
+        }
+        if(group.group&&group.group.displayName==='pitching'){
+          if(s.inningsPitched!==undefined){ p.ip=parseFloat(s.inningsPitched); filled++; }
+        }
+      }
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,80));
+  }
+  if(filled > 0){ saveData(); renderTable(); }
+}, 2000);
 checkYahooStatus();
 startYahooAutoSync();
 setTimeout(() => loadSavantData(), 500);
@@ -3033,7 +3183,7 @@ function closeProspects(){
 function filterProspects(val, el){
   document.querySelectorAll('#prospects-wrap .filter-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  if(val === 'AAA' || val === 'AA') { prosFilterLevel = val; prosFilterGroup = 'all'; }
+  if(val === 'AAA' || val === 'AA' || val === 'A') { prosFilterLevel = val; prosFilterGroup = 'all'; }
   else if(val === 'hit') { prosFilterGroup = 'hit'; prosFilterLevel = 'all'; }
   else if(val === 'pit') { prosFilterGroup = 'pit'; prosFilterLevel = 'all'; }
   else { prosFilterLevel = 'all'; prosFilterGroup = 'all'; }
@@ -3051,16 +3201,17 @@ async function loadProspects(){
   const status = document.getElementById('pros-status');
   const tableWrap = document.getElementById('pros-table-wrap');
   loading.style.display = 'block';
-  loading.textContent = 'Loading AAA & AA prospects...';
+  loading.textContent = 'Loading AAA, AA & A prospects...';
   tableWrap.style.display = 'none';
 
   try {
-    // Fetch AAA (sportId=11) and AA (sportId=12) players
-    const [aaaRes, aaRes] = await Promise.all([
+    // Fetch AAA (sportId=11), AA (sportId=12), A (sportId=13) players
+    const [aaaRes, aaRes, aRes] = await Promise.all([
       fetch('https://statsapi.mlb.com/api/v1/sports/11/players?season=2026&gameType=R&hydrate=currentTeam'),
-      fetch('https://statsapi.mlb.com/api/v1/sports/12/players?season=2026&gameType=R&hydrate=currentTeam')
+      fetch('https://statsapi.mlb.com/api/v1/sports/12/players?season=2026&gameType=R&hydrate=currentTeam'),
+      fetch('https://statsapi.mlb.com/api/v1/sports/13/players?season=2026&gameType=R&hydrate=currentTeam')
     ]);
-    const [aaaData, aaData] = await Promise.all([aaaRes.json(), aaRes.json()]);
+    const [aaaData, aaData, aData] = await Promise.all([aaaRes.json(), aaRes.json(), aRes.json()]);
 
     const mapPlayer = (p, level) => ({
       mlb_id: p.id,
@@ -3075,13 +3226,14 @@ async function loadProspects(){
 
     prospectPlayers = [
       ...(aaaData.people||[]).map(p => mapPlayer(p, 'AAA')),
-      ...(aaData.people||[]).map(p => mapPlayer(p, 'AA'))
+      ...(aaData.people||[]).map(p => mapPlayer(p, 'AA')),
+      ...(aData.people||[]).map(p => mapPlayer(p, 'A'))
     ];
 
     prospectsLoaded = true;
     loading.style.display = 'none';
     status.style.display = 'block';
-    status.textContent = prospectPlayers.length + ' prospects loaded (AAA + AA) — click a player to load stats';
+    status.textContent = prospectPlayers.length + ' prospects loaded (AAA + AA + A) — click a player to load stats';
     tableWrap.style.display = 'block';
     renderProspects();
 
@@ -3223,6 +3375,120 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
   renderTable();
 }
 
+
+
+// ---- FIXED STAT STRIP ----
+function syncFixedHeader(){
+  const realThead = document.getElementById('ctx-thead');
+  const fixedBar = document.getElementById('ctx-fixed-header');
+  const fixedTable = document.getElementById('ctx-fixed-table');
+  const poolWrap = document.getElementById('pool-wrap');
+  if(!realThead || !fixedBar || !fixedTable || !poolWrap) return;
+
+  // Clone the thead row into the fixed bar
+  const clone = realThead.cloneNode(true);
+  // Remove IDs from clone to avoid duplicates
+  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  // Re-wire sort clicks on clone to call same functions
+  clone.querySelectorAll('th[onclick]').forEach(th => {
+    const fn = th.getAttribute('onclick');
+    th.setAttribute('onclick', fn);
+  });
+  fixedTable.innerHTML = '';
+  fixedTable.appendChild(clone);
+
+  // Match column widths from real table
+  const realTable = realThead.closest('table');
+  if(realTable){
+    const realCols = realThead.querySelectorAll('th');
+    const fixedCols = fixedTable.querySelectorAll('th');
+    realCols.forEach((th, i) => {
+      if(fixedCols[i]){
+        fixedCols[i].style.width = th.offsetWidth + 'px';
+        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
+        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
+      }
+    });
+    fixedTable.style.width = realTable.offsetWidth + 'px';
+    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
+    fixedBar.style.right = 'auto';
+    fixedBar.style.width = realTable.offsetWidth + 'px';
+  }
+
+  // Position: top of pool-wrap (72px from top = app header height)
+  fixedBar.style.top = '72px';
+  fixedBar.style.display = 'block';
+
+  // Show/hide based on scroll — hide when real thead is visible
+  poolWrap.onscroll = function(){
+    const theadRect = realThead.getBoundingClientRect();
+    if(theadRect.top < 72){
+      fixedBar.style.display = 'block';
+    } else {
+      fixedBar.style.display = 'none';
+    }
+  };
+}
+
+function destroyFixedHeader(){
+  const fixedBar = document.getElementById('ctx-fixed-header');
+  const mask = document.getElementById('ctx-fixed-header-mask');
+  const poolWrap = document.getElementById('pool-wrap');
+  if(fixedBar) fixedBar.style.display = 'none';
+  if(mask) mask.style.display = 'none';
+  if(poolWrap) poolWrap.onscroll = null;
+}
+
+
+// ---- LEADERS FIXED STAT STRIP ----
+function syncLeadersFixedHeader(){
+  const realThead = document.getElementById('leaders-thead');
+  const fixedBar = document.getElementById('leaders-fixed-header');
+  const fixedTable = document.getElementById('leaders-fixed-table');
+  const leadersWrap = document.getElementById('leaders-wrap');
+  if(!realThead || !fixedBar || !fixedTable || !leadersWrap) return;
+
+  const clone = realThead.cloneNode(true);
+  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  fixedTable.innerHTML = '';
+  fixedTable.appendChild(clone);
+
+  const realTable = realThead.closest('table');
+  if(realTable){
+    const realCols = realThead.querySelectorAll('th');
+    const fixedCols = fixedTable.querySelectorAll('th');
+    realCols.forEach((th, i) => {
+      if(fixedCols[i]){
+        fixedCols[i].style.width = th.offsetWidth + 'px';
+        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
+        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
+      }
+    });
+    fixedTable.style.width = realTable.offsetWidth + 'px';
+    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
+    fixedBar.style.right = 'auto';
+    fixedBar.style.width = realTable.offsetWidth + 'px';
+  }
+
+  fixedBar.style.top = '72px';
+  fixedBar.style.display = 'block';
+
+  leadersWrap.onscroll = function(){
+    const theadRect = realThead.getBoundingClientRect();
+    if(theadRect.top < 72){
+      fixedBar.style.display = 'block';
+    } else {
+      fixedBar.style.display = 'none';
+    }
+  };
+}
+
+function destroyLeadersFixedHeader(){
+  const fixedBar = document.getElementById('leaders-fixed-header');
+  const leadersWrap = document.getElementById('leaders-wrap');
+  if(fixedBar) fixedBar.style.display = 'none';
+  if(leadersWrap) leadersWrap.onscroll = null;
+}
 
 </script>
 </body>
