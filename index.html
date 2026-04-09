@@ -3651,8 +3651,10 @@ function destroyLeadersFixedHeader(){
 
   // Delegate mouseover on tbody
   document.addEventListener('mouseover', function(e){
-    const nameCell = e.target.closest('#tbody .name-cell');
+    const nameCell = e.target.closest('.name-cell');
     if(!nameCell) return;
+    // Only trigger for main watch list tbody, not pool or other tables
+    if(!nameCell.closest('#tbody')) return;
     const row = nameCell.closest('tr');
     if(!row) return;
     const idx = parseInt(row.dataset.idx);
@@ -3664,14 +3666,14 @@ function destroyLeadersFixedHeader(){
 
   document.addEventListener('mousemove', function(e){
     if(card.classList.contains('visible')){
-      const nameCell = e.target.closest('#tbody .name-cell');
-      if(nameCell) positionCard(e);
+      const nameCell = e.target.closest('.name-cell');
+      if(nameCell && nameCell.closest('#tbody')) positionCard(e);
     }
   });
 
   document.addEventListener('mouseout', function(e){
-    const nameCell = e.target.closest('#tbody .name-cell');
-    if(nameCell) hideCard();
+    const nameCell = e.target.closest('.name-cell');
+    if(nameCell && nameCell.closest('#tbody')) hideCard();
   });
 })();
 
