@@ -1331,6 +1331,25 @@ async function searchMLBPlayers(query){
       const normalizedQuery = normalize(query);
       const matched = playerRosterCache.filter(p => normalize(p.fullName).includes(normalizedQuery));
       if(matched.length === 0){
+        // Fallback: search Yahoo data for IL/injured players not in MLB API yet
+        const yahooFallback = Object.values(yahooDataByName).filter(p =>
+          p.name && normalize(p.name).includes(normalizedQuery)
+        ).slice(0,12);
+        if(yahooFallback.length > 0){
+          resultsEl.innerHTML = yahooFallback.map(p => {
+            const mlbId = p.mlb_id || 0;
+            const pName = p.name || '';
+            const pTeam = p.team || '';
+            const pPos = p.pitcher_type || (p.eligible_positions && p.eligible_positions[0]) || '';
+            const pAge = p.age || 0;
+            const injLabel = p.injury_status ? ' <span style="color:#f87171;font-size:11px">' + p.injury_status + '</span>' : '';
+            return '<div class="search-result-item" onclick="selectPlayer(' + mlbId + ',\'' + pName.replace(/\'/g,"\\'") + '\',\'' + pTeam + '\',\'' + pPos + '\',' + pAge + ',\'MLB\')">'
+              + '<div class="sri-name"><span class="level-badge level-mlb">MLB</span>' + pName + injLabel + '</div>'
+              + '<div class="sri-meta">' + (pTeam||'—') + ' · ' + (pPos||'—') + ' · Yahoo #' + (p.yahoo_rank||'—') + '</div>'
+              + '</div>';
+          }).join('');
+          return;
+        }
         resultsEl.innerHTML = '<div class="search-loading">No players found. Try a different spelling.</div>';
         return;
       }
@@ -2365,7 +2384,27 @@ function poolSearchInput(val){
     if(poolPosFilter === 'PITCHER') searchList = poolPlayers.filter(p => isPitcherPos(p.primaryPos));
     if(poolPosFilter === 'HITTER')  searchList = poolPlayers.filter(p => !isPitcherPos(p.primaryPos));
     const matches = searchList.filter(p => normalize(p.name).includes(q)).slice(0,12);
-    if(matches.length===0){ dd.innerHTML='<div class="pool-sri"><div class="pool-sri-name" style="color:var(--text3)">No players found</div></div>'; dd.classList.add('open'); return; }
+    if(matches.length===0){
+      // Fallback to Yahoo data for IL players not in MLB pool yet
+      const yahooFallback = Object.values(yahooDataByName).filter(p =>
+        p.name && normalize(p.name).includes(q)
+      ).slice(0,12);
+      if(yahooFallback.length > 0){
+        dd.innerHTML = yahooFallback.map(p => {
+          const mlbId = p.mlb_id || 0;
+          const pName = p.name || '';
+          const pTeam = p.team || '';
+          const pPos = p.pitcher_type || (p.eligible_positions && p.eligible_positions[0]) || '';
+          const injB = p.injury_status ? ' <span style="color:#f87171;font-size:10px">' + p.injury_status + '</span>' : '';
+          return '<div class="pool-sri" onclick="openContext(' + mlbId + ',\'' + pName.replace(/\'/g,"\\'") + '\',\'' + pTeam + '\',\'' + pPos + '\',0)">'
+            + '<div class="pool-sri-name">' + pName + injB + '</div>'
+            + '<div class="pool-sri-meta">' + (pTeam||'—') + ' · ' + (pPos||'—') + ' · Yahoo #' + (p.yahoo_rank||'—') + '</div>'
+            + '</div>';
+        }).join('');
+        dd.classList.add('open'); return;
+      }
+      dd.innerHTML='<div class="pool-sri"><div class="pool-sri-name" style="color:var(--text3)">No players found</div></div>'; dd.classList.add('open'); return;
+    }
     dd.innerHTML = matches.map(p=>`
       <div class="pool-sri" onclick="openContext(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team}','${p.primaryPos}',${p.age||0})">
         <div class="pool-sri-name">${p.name}${injuryBadge(p.injury_status)}</div>
