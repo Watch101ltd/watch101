@@ -1264,9 +1264,15 @@ function rowClass(move){
 function posBadges(positions){
   if(!positions||positions.length===0) return '<span class="stat-na">—</span>';
   // CI/MI are internal group labels only — never displayed as badges
-  const display = positions.filter(p => !['CI','MI'].includes(p));
-  if(display.length===0) return '<span class="stat-na">—</span>';
-  return display.map(p=>`<span class="pos-badge pos-${p}">${p}</span>`).join('');
+  // IL is a Yahoo injury designation — never a real position badge
+  // LF/CF/RF all map to OF
+  const display = positions
+    .filter(p => !['CI','MI','IL'].includes(p))
+    .map(p => (['LF','CF','RF'].includes(p) ? 'OF' : p));
+  // deduplicate (multiple outfield slots become one OF badge)
+  const unique = [...new Set(display)];
+  if(unique.length===0) return '<span class="stat-na">—</span>';
+  return unique.map(p=>`<span class="pos-badge pos-${p}">${p}</span>`).join('');
 }
 
 function decimalAge(p){
