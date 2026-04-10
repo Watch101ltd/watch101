@@ -50,7 +50,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
 .count-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:5px}
 
-.table-wrap{overflow-x:auto;padding:0 0.5rem 2rem}
+.table-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 130px);padding:0 0.5rem 2rem}
 thead{position:sticky;top:0;z-index:10}
 table{width:100%;border-collapse:separate;border-spacing:0;min-width:1120px;margin-top:1rem;table-layout:fixed}
 thead tr{}
@@ -123,6 +123,10 @@ td:nth-child(4){text-align:left}
 
 .stat-cell{font-family:'DM Mono',monospace;font-size:12px;color:var(--turquoise);text-align:right}
 .stat-na{color:var(--text3);font-size:11px}
+/* PERCENTILE SHADING */
+.pct-shade{position:relative;}
+.pct-shade::before{content:'';position:absolute;inset:0;border-radius:2px;pointer-events:none;z-index:0;}
+.pct-shade span,.pct-shade .stat-na{position:relative;z-index:1;}
 .savant-col{background:rgba(201,168,76,0.06);border-left:1px solid rgba(201,168,76,0.2);}
 td.savant-col{font-size:10px;padding:3px 2px;width:48px;min-width:48px;max-width:48px;}
 .savant-adv-col{background:rgba(201,168,76,0.06);border-left:1px solid rgba(201,168,76,0.2);display:none;}
@@ -1011,6 +1015,7 @@ async function loadSavantData(){
     if(hAdvRes.ok){ parseSavantCSV(await hAdvRes.text(), savantHitters); }
     if(pAdvRes.ok){ parseSavantCSV(await pAdvRes.text(), savantPitchers); }
     savantLoaded = true;
+    buildPercentileMaps();
     // Merge into existing players and re-render
     players.forEach(p => mergeSavant(p));
     renderTable();
@@ -1067,6 +1072,91 @@ function mergeSavant(p){
   if(src['ev95percent'])           p.sv_ev95      = parseFloat(src['ev95percent']);
   // Pitcher only
   if(pit && src['xera'])           p.sv_xera      = parseFloat(src['xera']);
+}
+
+// ── PERCENTILE SHADING ────────────────────────────────────────────────────────
+// Advanced stat fields and whether higher = better
+const ADV_STAT_CONFIG = {
+  sv_xba:      { higher: true  },
+  sv_xwoba:    { higher: true  },
+  sv_ev:       { higher: true  },
+  sv_sweetspot:{ higher: true  },
+  sv_barrel:   { higher: true  },
+  sv_ev95:     { higher: true  },
+  sv_maxev:    { higher: true  },
+  sv_xera:     { higher: false }, // lower xERA is better
+};
+
+// Build percentile lookup maps from the full savant pool (all loaded players)
+let pctMaps = {}; // { fieldName: sortedArray of values }
+
+function buildPercentileMaps(){
+  pctMaps = {};
+  const hitterFields = ['sv_xba','sv_xwoba','sv_ev','sv_sweetspot','sv_barrel','sv_ev95','sv_maxev'];
+  const pitcherFields = ['sv_xwoba','sv_ev','sv_sweetspot','sv_barrel','sv_ev95','sv_maxev','sv_xera'];
+
+  // Collect all values from the savant data stores (full MLB pool, not just watch list)
+  hitterFields.forEach(field => {
+    const key = field.replace('sv_','');
+    const apiKey = {
+      xba:'est_ba', xwoba:'est_woba', ev:'avg_hit_speed',
+      sweetspot:'anglesweetspotpercent', barrel:'brl_percent',
+      ev95:'ev95percent', maxev:'max_hit_speed'
+    }[key];
+    if(!apiKey) return;
+    const vals = Object.values(savantHitters)
+      .map(r => parseFloat(r[apiKey]))
+      .filter(v => !isNaN(v));
+    vals.sort((a,b) => a-b);
+    pctMaps['h_'+field] = vals;
+  });
+
+  pitcherFields.forEach(field => {
+    const key = field.replace('sv_','');
+    const apiKey = {
+      xwoba:'est_woba', ev:'avg_hit_speed',
+      sweetspot:'anglesweetspotpercent', barrel:'brl_percent',
+      ev95:'ev95percent', maxev:'max_hit_speed', xera:'xera'
+    }[key];
+    if(!apiKey) return;
+    const vals = Object.values(savantPitchers)
+      .map(r => parseFloat(r[apiKey]))
+      .filter(v => !isNaN(v));
+    vals.sort((a,b) => a-b);
+    pctMaps['p_'+field] = vals;
+  });
+}
+
+function getPercentile(val, field, isPit){
+  if(val === undefined || val === null || isNaN(val)) return null;
+  const key = (isPit ? 'p_' : 'h_') + field;
+  const arr = pctMaps[key];
+  if(!arr || arr.length === 0) return null;
+  // Binary search for position
+  let lo = 0, hi = arr.length;
+  while(lo < hi){ const mid = (lo+hi)>>1; if(arr[mid] <= val) lo=mid+1; else hi=mid; }
+  return lo / arr.length; // 0.0 to 1.0
+}
+
+function pctShadeStyle(pct, higherIsBetter){
+  if(pct === null) return '';
+  // pct = 0.0 (worst) to 1.0 (best)
+  const effective = higherIsBetter ? pct : (1 - pct);
+  // Dead zone: 35th–65th percentile = no shading
+  if(effective >= 0.35 && effective <= 0.65) return '';
+  let r, g, b, a;
+  if(effective > 0.65){
+    // Red shading: scales from faint (65th) to strong (100th)
+    const intensity = (effective - 0.65) / 0.35; // 0 to 1
+    a = 0.12 + intensity * 0.38; // 0.12 to 0.50
+    r=220; g=Math.round(60 - intensity*40); b=Math.round(60 - intensity*40);
+  } else {
+    // Blue shading: scales from faint (35th) to strong (0th)
+    const intensity = (0.35 - effective) / 0.35; // 0 to 1
+    a = 0.12 + intensity * 0.38;
+    r=Math.round(40 - intensity*20); g=Math.round(80 - intensity*40); b=220;
+  }
+  return `background:rgba(${r},${g},${b},${a.toFixed(2)});`;
 }
 
 function renderDelta(p){
@@ -1450,13 +1540,13 @@ function renderTable(){
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmtAvg(p.avg)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.era,2)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmtAvg(p.obp)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.whip,2)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.ops,3)}</span>`:`<span style="color:${pitStatColor}">${p.sv_xera!=null?p.sv_xera.toFixed(2):'—'}</span>`}</td>
-      <td class="stat-cell savant-col" title="xBA (Statcast)">${!pit?fmtSavant(p.sv_xba):'<span class="stat-na">—</span>'}</td>
-      <td class="stat-cell savant-col" title="xwOBA (Statcast)">${fmtSavant(p.sv_xwoba)}</td>
-      <td class="stat-cell savant-adv-col" title="Avg Exit Velocity">${!pit?`<span style="color:var(--gold)">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`}</td>
-      <td class="stat-cell savant-adv-col" title="Sweet Spot %">${!pit?`<span style="color:var(--gold)">${p.sv_sweetspot!=null?p.sv_sweetspot.toFixed(1)+'%':'—'}</span>`:`<span style="color:#94a3b8">${p.sv_sweetspot!=null?p.sv_sweetspot.toFixed(1)+'%':'—'}</span>`}</td>
-      <td class="stat-cell savant-adv-col" title="Barrel %">${!pit?`<span style="color:var(--gold)">${p.sv_barrel!=null?p.sv_barrel.toFixed(1)+'%':'—'}</span>`:`<span style="color:#94a3b8">${p.sv_barrel!=null?p.sv_barrel.toFixed(1)+'%':'—'}</span>`}</td>
-      <td class="stat-cell savant-adv-col" title="EV 95th Percentile">${!pit?`<span style="color:var(--gold)">${p.sv_ev95!=null?p.sv_ev95.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_ev95!=null?p.sv_ev95.toFixed(1):'—'}</span>`}</td>
-      <td class="stat-cell savant-adv-col" title="Max Exit Velocity">${!pit?`<span style="color:var(--gold)">${p.sv_maxev!=null?p.sv_maxev.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_maxev!=null?p.sv_maxev.toFixed(1):'—'}</span>`}</td>
+      <td class="stat-cell savant-col pct-shade" title="xBA (Statcast)" style="${advancedMode&&!pit?pctShadeStyle(getPercentile(p.sv_xba,'sv_xba',false),true):''}">${!pit?fmtSavant(p.sv_xba):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell savant-col pct-shade" title="xwOBA (Statcast)" style="${advancedMode?pctShadeStyle(getPercentile(p.sv_xwoba,'sv_xwoba',pit),true):''}">${fmtSavant(p.sv_xwoba)}</td>
+      <td class="stat-cell savant-adv-col pct-shade" title="Avg Exit Velocity" style="${pctShadeStyle(getPercentile(p.sv_ev,'sv_ev',pit),true)}">${!pit?`<span style="color:var(--gold)">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`}</td>
+      <td class="stat-cell savant-adv-col pct-shade" title="Sweet Spot %" style="${pctShadeStyle(getPercentile(p.sv_sweetspot,'sv_sweetspot',pit),true)}">${!pit?`<span style="color:var(--gold)">${p.sv_sweetspot!=null?p.sv_sweetspot.toFixed(1)+'%':'—'}</span>`:`<span style="color:#94a3b8">${p.sv_sweetspot!=null?p.sv_sweetspot.toFixed(1)+'%':'—'}</span>`}</td>
+      <td class="stat-cell savant-adv-col pct-shade" title="Barrel %" style="${pctShadeStyle(getPercentile(p.sv_barrel,'sv_barrel',pit),true)}">${!pit?`<span style="color:var(--gold)">${p.sv_barrel!=null?p.sv_barrel.toFixed(1)+'%':'—'}</span>`:`<span style="color:#94a3b8">${p.sv_barrel!=null?p.sv_barrel.toFixed(1)+'%':'—'}</span>`}</td>
+      <td class="stat-cell savant-adv-col pct-shade" title="EV 95th Percentile" style="${pctShadeStyle(getPercentile(p.sv_ev95,'sv_ev95',pit),true)}">${!pit?`<span style="color:var(--gold)">${p.sv_ev95!=null?p.sv_ev95.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_ev95!=null?p.sv_ev95.toFixed(1):'—'}</span>`}</td>
+      <td class="stat-cell savant-adv-col pct-shade" title="Max Exit Velocity" style="${pctShadeStyle(getPercentile(p.sv_maxev,'sv_maxev',pit),true)}">${!pit?`<span style="color:var(--gold)">${p.sv_maxev!=null?p.sv_maxev.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_maxev!=null?p.sv_maxev.toFixed(1):'—'}</span>`}</td>
       <td class="col-note"><div class="note-display ${!p.note?'empty':''}" onclick="editNote('${p.id}',this)" title="${(p.note||'').replace(/"/g,'&quot;')}">${p.note||'Add note...'}</div></td>
       <td style="white-space:nowrap">
         <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;margin-right:3px" onclick="editPlayer('${p.id}')">Edit</button>
