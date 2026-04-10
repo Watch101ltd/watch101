@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v51</title>
+<title>Watch 101 MLB — TESTING v52</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -51,7 +51,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .count-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:5px}
 
 .table-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 130px);padding:0 0.5rem 2rem}
-thead{position:sticky;top:0;z-index:10}
+thead{position:sticky;top:0;z-index:20}
+thead th{position:relative;z-index:20;background:var(--surface)!important;}
 table{width:100%;border-collapse:separate;border-spacing:0;min-width:1120px;margin-top:1rem;table-layout:fixed}
 thead tr{}
 th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface);overflow:hidden;border-bottom:2px solid var(--gold2)}
@@ -394,6 +395,63 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
   cursor:pointer;
   user-select:none;
   background:var(--bg);
+}
+
+/* ---- PERCENTILE CHART CARD ---- */
+#pct-chart-card{
+  position:fixed;
+  z-index:9998;
+  background:var(--surface);
+  border:1px solid var(--gold2);
+  border-radius:12px;
+  padding:16px 18px;
+  width:380px;
+  box-shadow:0 8px 40px #000000dd;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.15s;
+}
+#pct-chart-card.visible{opacity:1;pointer-events:auto;}
+#pct-chart-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;
+}
+#pct-chart-name{
+  font-family:'Bebas Neue',sans-serif;font-size:20px;
+  color:var(--gold);letter-spacing:0.05em;
+}
+#pct-chart-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:2px;}
+#pct-chart-close{
+  background:transparent;border:1px solid var(--border2);border-radius:5px;
+  color:var(--text3);font-size:13px;cursor:pointer;padding:2px 8px;
+  font-family:'DM Mono',monospace;transition:all 0.15s;
+}
+#pct-chart-close:hover{border-color:var(--red);color:var(--red);}
+#pct-chart-bars{display:flex;flex-direction:column;gap:7px;}
+.pct-bar-row{display:flex;align-items:center;gap:8px;}
+.pct-bar-label{
+  font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);
+  width:52px;text-align:right;flex-shrink:0;letter-spacing:0.03em;
+}
+.pct-bar-track{
+  flex:1;height:14px;background:var(--surface2);border-radius:3px;
+  overflow:hidden;position:relative;border:1px solid var(--border);
+}
+.pct-bar-fill{
+  height:100%;border-radius:3px;transition:width 0.4s ease;
+}
+.pct-bar-val{
+  font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);
+  width:38px;text-align:left;flex-shrink:0;
+}
+.pct-bar-pct{
+  font-family:'DM Mono',monospace;font-size:9px;
+  width:28px;text-align:right;flex-shrink:0;
+}
+#pct-chart-note{
+  font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);
+  margin-top:10px;padding-top:8px;border-top:1px solid var(--border);
+  text-align:center;letter-spacing:0.03em;
 }
 
 /* ---- PLAYER HOVER CARD ---- */
@@ -3850,6 +3908,129 @@ function destroyLeadersFixedHeader(){
   if(leadersWrap) leadersWrap.onscroll = null;
 }
 
+</script>
+
+<!-- PERCENTILE CHART CARD -->
+<div id="pct-chart-card">
+  <div id="pct-chart-header">
+    <div>
+      <div id="pct-chart-name"></div>
+      <div id="pct-chart-meta"></div>
+    </div>
+    <button id="pct-chart-close" onclick="closePctCard()">✕</button>
+  </div>
+  <div id="pct-chart-bars"></div>
+  <div id="pct-chart-note">vs. all qualified MLB players · Statcast 2026</div>
+</div>
+
+<script>
+// ---- PERCENTILE CHART CARD ----
+var pctCard = document.getElementById('pct-chart-card');
+
+var PCT_CHART_STATS = [
+  { field:'sv_xwoba',  label:'xwOBA',  higher:true,  fmt:function(v){return v!=null?v.toFixed(3):'—';} },
+  { field:'sv_xba',    label:'xBA',    higher:true,  fmt:function(v){return v!=null?v.toFixed(3):'—';}, hitterOnly:true },
+  { field:'sv_ev',     label:'Avg EV', higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
+  { field:'sv_ev95',   label:'EV95',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
+  { field:'sv_maxev',  label:'MaxEV',  higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
+  { field:'sv_barrel', label:'Brl%',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'sv_sweetspot',label:'SS%',  higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'sv_xera',   label:'xERA',   higher:false, fmt:function(v){return v!=null?v.toFixed(2):'—';}, pitcherOnly:true },
+];
+
+function openPctCard(e, p){
+  // Only show on Advanced tab
+  if(!advancedMode) return;
+
+  var pit = isPitcher(p);
+  var stats = PCT_CHART_STATS.filter(function(s){
+    if(s.hitterOnly && pit) return false;
+    if(s.pitcherOnly && !pit) return false;
+    return true;
+  });
+
+  // Header
+  document.getElementById('pct-chart-name').textContent = p.name || '';
+  var pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
+  document.getElementById('pct-chart-meta').textContent = (p.team||'—') + ' · ' + pos + ' · Age ' + (p.age||'—');
+
+  // Build bars
+  var barsHtml = stats.map(function(s){
+    var val = p[s.field];
+    var pct = getPercentile(val, s.field, pit);
+    var effective = pct === null ? null : (s.higher ? pct : 1 - pct);
+    var pctLabel = pct === null ? '—' : Math.round(effective * 100) + 'th';
+
+    var fillColor, width;
+    if(effective === null){
+      fillColor = 'var(--border)';
+      width = 0;
+    } else {
+      width = Math.round(effective * 100);
+      if(effective > 0.65){
+        var intensity = (effective - 0.65) / 0.35;
+        var g = Math.round(60 - intensity*40);
+        var b = Math.round(60 - intensity*40);
+        fillColor = 'rgba(220,'+g+','+b+',0.85)';
+      } else if(effective < 0.35){
+        var intensity2 = (0.35 - effective) / 0.35;
+        var r2 = Math.round(40 - intensity2*20);
+        var g2 = Math.round(80 - intensity2*40);
+        fillColor = 'rgba('+r2+','+g2+',220,0.85)';
+      } else {
+        fillColor = 'rgba(100,120,140,0.5)';
+      }
+    }
+
+    var pctColor = effective === null ? 'var(--text3)' :
+      effective > 0.65 ? '#fca5a5' :
+      effective < 0.35 ? '#93c5fd' : 'var(--text3)';
+
+    return '<div class="pct-bar-row">'
+      + '<div class="pct-bar-label">'+s.label+'</div>'
+      + '<div class="pct-bar-track">'
+      +   '<div class="pct-bar-fill" style="width:'+width+'%;background:'+fillColor+'"></div>'
+      + '</div>'
+      + '<div class="pct-bar-val">'+s.fmt(val)+'</div>'
+      + '<div class="pct-bar-pct" style="color:'+pctColor+'">'+pctLabel+'</div>'
+      + '</div>';
+  }).join('');
+  document.getElementById('pct-chart-bars').innerHTML = barsHtml;
+
+  // Position card near the click, smart-fit to viewport
+  var cardW = 380, cardH = 320;
+  var margin = 16;
+  var x = e.clientX + 20;
+  var y = e.clientY - 60;
+  if(x + cardW + margin > window.innerWidth) x = e.clientX - cardW - 12;
+  if(y + cardH + margin > window.innerHeight) y = window.innerHeight - cardH - margin;
+  if(y < margin) y = margin;
+  pctCard.style.left = x + 'px';
+  pctCard.style.top = y + 'px';
+  pctCard.classList.add('visible');
+}
+
+function closePctCard(){
+  pctCard.classList.remove('visible');
+}
+
+// Click on name cell in advanced mode opens chart; click elsewhere closes it
+document.addEventListener('click', function(e){
+  if(e.target.closest('#pct-chart-card')) return; // click inside card — ignore
+  var nameCell = e.target.closest('.name-cell');
+  if(nameCell && nameCell.closest('#tbody')){
+    var row = nameCell.closest('tr');
+    if(!row) return;
+    var idx = parseInt(row.dataset.idx);
+    if(isNaN(idx)) return;
+    var filtered = getFiltered();
+    var p = filtered[idx];
+    if(p) openPctCard(e, p);
+    return;
+  }
+  // Clicked outside card and outside a name cell — close
+  closePctCard();
+});
 </script>
 
 <!-- PLAYER HOVER CARD -->
