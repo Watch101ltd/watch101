@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v53</title>
+<title>Watch 101 MLB — TESTING v54</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -55,7 +55,7 @@ thead{position:sticky;top:0;z-index:20}
 thead th{position:sticky;top:0;z-index:20;background:var(--surface)!important;box-shadow:0 2px 0 var(--gold2);}
 table{width:100%;border-collapse:collapse;min-width:1120px;margin-top:1rem;table-layout:fixed}
 thead tr{}
-th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface);overflow:hidden;border-bottom:none;}
+th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface);overflow:hidden;border-bottom:none;isolation:isolate;}
 th:hover{color:var(--gold)}
 th.sorted{color:var(--gold)}
 th .sort-arrow{margin-left:2px;opacity:0.5;font-size:8px}
@@ -1170,8 +1170,8 @@ function buildPercentileMaps(){
     }[key];
     if(!apiKey) return;
     const vals = Object.values(savantHitters)
-      .map(r => parseFloat(r[apiKey]))
-      .filter(v => !isNaN(v));
+      .map(r => parseFloat(r[apiKey] || r['estimated_ba_using_speedangle'] || ''))
+      .filter(v => !isNaN(v) && v > 0);
     vals.sort((a,b) => a-b);
     pctMaps['h_'+field] = vals;
   });
@@ -4019,26 +4019,7 @@ function closePctCard(){
   pctCard.classList.remove('visible');
 }
 
-// Click on name cell in advanced mode opens chart; click elsewhere closes it
-document.addEventListener('click', function(e){
-  if(e.target.closest('#pct-chart-card')) return; // click inside card — ignore
-  var nameCell = e.target.closest('.name-cell');
-  if(nameCell && nameCell.closest('#tbody')){
-    var row = nameCell.closest('tr');
-    if(!row) return;
-    var idx = parseInt(row.dataset.idx);
-    if(isNaN(idx)) return;
-    var filtered = getFiltered();
-    var p = filtered[idx];
-    if(p) openPctCard(e, p);
-    return;
-  }
-  // Clicked outside card and outside a name cell — close
-  closePctCard();
-});
-</script>
-
-<!-- PLAYER HOVER CARD (click-triggered portrait card for main list) -->
+function closePctCard(){
 <div id="player-hover-card" style="position:relative">
   <button id="hover-close" onclick="closeHoverCard()">✕</button>
   <img id="hover-photo" src="" alt="" onerror="this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current'">
