@@ -1545,19 +1545,14 @@ async function selectPlayer(mlbId, name, team, primaryPos, age, level='MLB'){
     const person = data.people && data.people[0];
     if(person){
       if(person.currentAge) document.getElementById('f-age').value = person.currentAge;
-      // For minor leaguers, first try roster cache which has parentOrgName
+      // For minor leaguers, currentTeam.name from individual API IS the parent MLB org
       const isMinorLeague = level === 'AAA' || level === 'AA' || level === 'A';
       let teamAbbr = '';
-      if(isMinorLeague && playerRosterCache){
-        const cached = playerRosterCache.find(r => r.id === mlbId || r.id === parseInt(mlbId));
-        if(cached && cached.currentTeam && cached.currentTeam.id){
-          teamAbbr = orgIdToAbbr(cached.currentTeam.id);
-        }
+      if(isMinorLeague && person.currentTeam && person.currentTeam.name){
+        teamAbbr = orgNameToAbbr(person.currentTeam.name);
       }
       if(!teamAbbr){
-        const parentAbbr = orgNameToAbbr((person.currentTeam && person.currentTeam.parentOrgName) || (person.currentTeam && person.currentTeam.name) || '');
-        teamAbbr = (isMinorLeague && parentAbbr) ? parentAbbr :
-                   (person.currentTeam && person.currentTeam.abbreviation) ||
+        teamAbbr = (person.currentTeam && person.currentTeam.abbreviation) ||
                    (person.currentTeam && person.currentTeam.teamCode) ||
                    (person.currentTeam && person.currentTeam.clubName) || '';
       }
