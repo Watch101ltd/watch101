@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v48</title>
+<title>Watch 101 MLB — TESTING v49</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -516,7 +516,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
         <th onclick="sortBy('sb')" title="SB / HLD" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">SB</span><span style="color:#86efac;font-size:8px">HLD</span></div></th>
         <th onclick="sortBy('avg')" title="AVG / ERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AVG</span><span style="color:#86efac;font-size:8px">ERA</span></div></th>
         <th onclick="sortBy('obp')" title="OBP / WHIP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OBP</span><span style="color:#86efac;font-size:8px">WHIP</span></div></th>
-        <th onclick="sortBy('ops')" title="OPS" style="text-align:right;cursor:pointer"><span style="color:#c084fc">OPS</span> <span class="sort-arrow" id="arr-ops">↕</span></th>
+        <th onclick="sortBy('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS</span><span style="color:#86efac;font-size:8px">xERA</span></div> <span class="sort-arrow" id="arr-ops">↕</span></th>
         <th class="savant-col" onclick="sortBy('sv_xba')" title="Expected Batting Average (Statcast)">xBA <span class="sort-arrow" id="arr-sv_xba">↕</span></th>
         <th class="savant-col" onclick="sortBy('sv_xwoba')" title="Expected wOBA (Statcast)">xwOBA <span class="sort-arrow" id="arr-sv_xwoba">↕</span></th>
         <th class="col-note">Movement Note</th>
@@ -1054,7 +1054,7 @@ function mergeSavant(p){
     if(src['bb_percent'])            p.sv_bb_pct   = parseFloat(src['bb_percent']);
   } else {
     // Pitcher Statcast fields
-    if(src['est_era'])               p.sv_xera     = parseFloat(src['est_era']);
+    if(src['xera'])                  p.sv_xera     = parseFloat(src['xera']);
     if(src['est_ba'])                p.sv_xba      = parseFloat(src['est_ba']);
     if(src['est_woba'])              p.sv_xwoba    = parseFloat(src['est_woba']);
     if(src['exit_velocity_avg'])     p.sv_ev       = parseFloat(src['exit_velocity_avg']);
@@ -1422,7 +1422,7 @@ function renderTable(){
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.sb)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.hld)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmtAvg(p.avg)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.era,2)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmtAvg(p.obp)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.whip,2)}</span>`}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.ops,3)}</span>`:`<span style="color:${pitStatColor}">—</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.ops,3)}</span>`:`<span style="color:${pitStatColor}">${p.sv_xera!=null?p.sv_xera.toFixed(2):'—'}</span>`}</td>
       <td class="stat-cell savant-col" title="xBA (Statcast)">${!pit?fmtSavant(p.sv_xba):'<span class="stat-na">—</span>'}</td>
       <td class="stat-cell savant-col" title="xwOBA (Statcast)">${fmtSavant(p.sv_xwoba)}</td>
       <td class="col-note"><div class="note-display ${!p.note?'empty':''}" onclick="editNote('${p.id}',this)" title="${(p.note||'').replace(/"/g,'&quot;')}">${p.note||'Add note...'}</div></td>
