@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v46</title>
+<title>Watch 101 MLB — TESTING v47</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -3588,8 +3588,17 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
   const p = prospectPlayers.find(x => x.mlb_id === mlbId) || { mlb_id:mlbId, name, team, primaryPos, age, stats:null, level };
   if(!p.stats) await fetchProspectStats(p);
   const s = p.stats || {};
+  // Fetch parent MLB org for minor leaguers
+  let finalTeam = team || '—';
+  try{
+    const pr = await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}?hydrate=currentTeam`);
+    const pd = await pr.json();
+    const ct = pd.people && pd.people[0] && pd.people[0].currentTeam;
+    if(ct && ct.parentOrgId) finalTeam = orgIdToAbbr(ct.parentOrgId) || finalTeam;
+  }catch(e){}
+  const s = p.stats || {};
   const newPlayer = {
-    id: uid(), mlb_id: mlbId, name, team,
+    id: uid(), mlb_id: mlbId, name, team: finalTeam,
     positions: primaryPos ? [primaryPos] : [], age: p.age || parseInt(age) || null,
     rank: players.length + 1, move: 'new', prev_rank: null, note: '',
     avg: s.avg||null, obp: s.obp||null, ops: s.ops||null, hr: s.hr??null,
