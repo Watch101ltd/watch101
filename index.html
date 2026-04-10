@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v69</title>
+<title>Watch 101 MLB — TESTING v70</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -418,10 +418,10 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
   background:var(--bg);
 }
 
-/* ---- PERCENTILE CHART CARD ---- */
-#pct-chart-card{
+/* ---- UNIFIED PLAYER CARD ---- */
+#player-card{
   position:fixed;
-  z-index:9998;
+  z-index:9999;
   background:var(--surface);
   border:1px solid var(--gold2);
   border-radius:12px;
@@ -432,23 +432,28 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
   pointer-events:none;
   transition:opacity 0.15s;
 }
-#pct-chart-card.visible{opacity:1;pointer-events:auto;}
-#pct-chart-header{
+#player-card.visible{opacity:1;pointer-events:auto;}
+#player-card-header{
   display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;
+  margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:10px;
 }
-#pct-chart-name{
-  font-family:'Bebas Neue',sans-serif;font-size:20px;
-  color:var(--gold);letter-spacing:0.05em;
+#player-card-identity{display:flex;align-items:center;gap:10px;}
+#player-card-photo{
+  width:48px;height:48px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--gold2);background:var(--surface3);flex-shrink:0;
 }
-#pct-chart-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:2px;}
-#pct-chart-close{
+#player-card-name{
+  font-family:'Bebas Neue',sans-serif;font-size:22px;
+  color:var(--gold);letter-spacing:0.05em;line-height:1;
+}
+#player-card-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:3px;}
+#player-card-close{
   background:transparent;border:1px solid var(--border2);border-radius:5px;
   color:var(--text3);font-size:13px;cursor:pointer;padding:2px 8px;
-  font-family:'DM Mono',monospace;transition:all 0.15s;
+  font-family:'DM Mono',monospace;transition:all 0.15s;align-self:flex-start;
 }
-#pct-chart-close:hover{border-color:var(--red);color:var(--red);}
-#pct-chart-bars{display:flex;flex-direction:column;gap:7px;}
+#player-card-close:hover{border-color:var(--red);color:var(--red);}
+#player-card-bars{display:flex;flex-direction:column;gap:7px;}
 .pct-bar-row{display:flex;align-items:center;gap:8px;}
 .pct-bar-label{
   font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);
@@ -458,72 +463,20 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
   flex:1;height:14px;background:var(--surface2);border-radius:3px;
   overflow:hidden;position:relative;border:1px solid var(--border);
 }
-.pct-bar-fill{
-  height:100%;border-radius:3px;transition:width 0.4s ease;
-}
-.pct-bar-val{
-  font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);
-  width:38px;text-align:left;flex-shrink:0;
-}
-.pct-bar-pct{
-  font-family:'DM Mono',monospace;font-size:9px;
-  width:28px;text-align:right;flex-shrink:0;
-}
-#pct-chart-note{
-  font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);
+.pct-bar-fill{height:100%;border-radius:3px;transition:width 0.4s ease;}
+.pct-bar-val{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);width:38px;text-align:left;flex-shrink:0;}
+.pct-bar-pct{font-family:'DM Mono',monospace;font-size:9px;width:28px;text-align:right;flex-shrink:0;}
+#player-card-footer{
   margin-top:10px;padding-top:8px;border-top:1px solid var(--border);
-  text-align:center;letter-spacing:0.03em;
+  display:flex;align-items:center;justify-content:space-between;
 }
-
-/* ---- PLAYER HOVER CARD ---- */
-#player-hover-card {
-  position:fixed;
-  z-index:9999;
-  background:var(--surface2);
-  border:1px solid var(--border2);
-  border-radius:12px;
-  padding:14px;
-  width:220px;
-  box-shadow:0 8px 32px #000000cc;
-  pointer-events:none;
-  opacity:0;
-  transition:opacity 0.15s;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:8px;
+#player-card-note{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.03em;}
+#player-card-adv-btn{
+  background:transparent;border:1px solid var(--indigo);border-radius:5px;
+  color:var(--indigo);font-size:9px;cursor:pointer;padding:3px 8px;
+  font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em;
 }
-#player-hover-card.visible { opacity:1; pointer-events:auto; }
-#hover-close{
-  position:absolute;top:8px;right:8px;
-  background:transparent;border:1px solid var(--border2);border-radius:4px;
-  color:var(--text3);font-size:11px;cursor:pointer;padding:1px 6px;
-  font-family:'DM Mono',monospace;transition:all 0.15s;line-height:1.4;
-}
-#hover-close:hover{border-color:var(--red);color:var(--red);}
-#hover-photo {
-  width:90px;
-  height:90px;
-  border-radius:50%;
-  object-fit:cover;
-  border:2px solid var(--gold2);
-  background:var(--surface3);
-}
-#hover-name {
-  font-family:'Bebas Neue',sans-serif;
-  font-size:18px;
-  color:var(--gold);
-  letter-spacing:0.05em;
-  text-align:center;
-  line-height:1.1;
-}
-#hover-meta {
-  font-family:'DM Mono',monospace;
-  font-size:11px;
-  color:var(--text3);
-  text-align:center;
-  line-height:1.6;
-}
+#player-card-adv-btn:hover{background:rgba(99,102,241,0.15);color:#a5b4fc;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
 </head>
@@ -3977,176 +3930,135 @@ window.addEventListener('load', function(){
 
 </script>
 
-<!-- PERCENTILE CHART CARD -->
-<div id="pct-chart-card">
-  <div id="pct-chart-header">
-    <div style="display:flex;align-items:center;gap:10px">
-      <img id="pct-chart-photo" src="" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--gold2);background:var(--surface3);flex-shrink:0" onerror="this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current'">
+<!-- UNIFIED PLAYER CARD -->
+<div id="player-card">
+  <div id="player-card-header">
+    <div id="player-card-identity">
+      <img id="player-card-photo" src="" alt="" onerror="this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current'">
       <div>
-        <div id="pct-chart-name"></div>
-        <div id="pct-chart-meta"></div>
+        <div id="player-card-name"></div>
+        <div id="player-card-meta"></div>
       </div>
     </div>
-    <button id="pct-chart-close" onclick="closePctCard()">✕</button>
+    <button id="player-card-close" onclick="closePlayerCard()">✕</button>
   </div>
-  <div id="pct-chart-bars"></div>
-  <div id="pct-chart-note">vs. all qualified MLB players · Statcast 2026</div>
+  <div id="player-card-bars"></div>
+  <div id="player-card-footer">
+    <div id="player-card-note">vs. all qualified MLB players · Statcast 2026</div>
+    <button id="player-card-adv-btn" onclick="goToAdvanced()">⚡ Advanced Stats →</button>
+  </div>
 </div>
 
 <script>
-// ---- PERCENTILE CHART CARD ----
-var pctCard = document.getElementById('pct-chart-card');
+// ---- UNIFIED PLAYER CARD ----
+var playerCard = document.getElementById('player-card');
+var currentCardPlayer = null;
 
 var PCT_CHART_STATS = [
-  { field:'sv_xwoba',  label:'xwOBA',  higher:true,  fmt:function(v){return v!=null?v.toFixed(3):'—';} },
-  { field:'sv_xba',    label:'xBA',    higher:true,  fmt:function(v){return v!=null?v.toFixed(3):'—';}, hitterOnly:true },
-  { field:'sv_ev',     label:'Avg EV', higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
-  { field:'sv_ev95',   label:'EV95',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
-  { field:'sv_maxev',  label:'MaxEV',  higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
-  { field:'sv_barrel', label:'Brl%',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
-  { field:'sv_sweetspot',label:'SS%',  higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
-  { field:'sv_xera',   label:'xERA',   higher:false, fmt:function(v){return v!=null?v.toFixed(2):'—';}, pitcherOnly:true },
+  { field:'sv_xwoba',   label:'xwOBA',  higher:true,  fmt:function(v){return v!=null?v.toFixed(3):'—';} },
+  { field:'sv_xba',     label:'xBA',    higher:true,  fmt:function(v){return v!=null?v.toFixed(3):'—';}, hitterOnly:true },
+  { field:'sv_ev',      label:'Avg EV', higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
+  { field:'sv_ev95',    label:'EV95',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
+  { field:'sv_maxev',   label:'MaxEV',  higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
+  { field:'sv_barrel',  label:'Brl%',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'sv_sweetspot',label:'SS%',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'sv_xera',    label:'xERA',   higher:false, fmt:function(v){return v!=null?v.toFixed(2):'—';}, pitcherOnly:true },
 ];
 
-function openPctCard(e, p){
+function openPlayerCard(e, p){
+  currentCardPlayer = p;
   var pit = isPitcher(p);
+
+  // Photo
+  var mlbId = p.mlb_id;
+  document.getElementById('player-card-photo').src = mlbId
+    ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+mlbId+'/headshot/67/current'
+    : 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current';
+
+  // Name and meta
+  document.getElementById('player-card-name').textContent = p.name || '';
+  var pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
+  document.getElementById('player-card-meta').textContent = (p.team||'—') + ' · ' + pos + ' · Age ' + (p.age||'—');
+
+  // Show/hide advanced button — hide it when already in advanced mode
+  var advBtn = document.getElementById('player-card-adv-btn');
+  advBtn.style.display = advancedMode ? 'none' : 'inline-block';
+
+  // Build bars
   var stats = PCT_CHART_STATS.filter(function(s){
     if(s.hitterOnly && pit) return false;
     if(s.pitcherOnly && !pit) return false;
     return true;
   });
 
-  // Portrait
-  var mlbId = p.mlb_id;
-  var photoEl = document.getElementById('pct-chart-photo');
-  photoEl.src = mlbId
-    ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + mlbId + '/headshot/67/current'
-    : 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current';
-
-  // Header
-  document.getElementById('pct-chart-name').textContent = p.name || '';
-  var pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
-  document.getElementById('pct-chart-meta').textContent = (p.team||'—') + ' · ' + pos + ' · Age ' + (p.age||'—');
-
-  // Build bars
   var barsHtml = stats.map(function(s){
     var val = p[s.field];
     var pct = getPercentile(val, s.field, pit);
     var effective = pct === null ? null : (s.higher ? pct : 1 - pct);
     var pctLabel = pct === null ? '—' : Math.round(effective * 100) + 'th';
-
     var fillColor, width;
     if(effective === null){
-      fillColor = 'var(--border)';
-      width = 0;
+      fillColor = 'var(--border)'; width = 0;
     } else {
       width = Math.round(effective * 100);
       if(effective > 0.65){
         var intensity = (effective - 0.65) / 0.35;
-        var g = Math.round(60 - intensity*40);
-        var b = Math.round(60 - intensity*40);
-        fillColor = 'rgba(220,'+g+','+b+',0.85)';
+        fillColor = 'rgba(220,'+Math.round(60-intensity*40)+','+Math.round(60-intensity*40)+',0.85)';
       } else if(effective < 0.35){
         var intensity2 = (0.35 - effective) / 0.35;
-        var r2 = Math.round(40 - intensity2*20);
-        var g2 = Math.round(80 - intensity2*40);
-        fillColor = 'rgba('+r2+','+g2+',220,0.85)';
+        fillColor = 'rgba('+Math.round(40-intensity2*20)+','+Math.round(80-intensity2*40)+',220,0.85)';
       } else {
         fillColor = 'rgba(100,120,140,0.5)';
       }
     }
-
-    var pctColor = effective === null ? 'var(--text3)' :
-      effective > 0.65 ? '#fca5a5' :
-      effective < 0.35 ? '#93c5fd' : 'var(--text3)';
-
+    var pctColor = effective===null?'var(--text3)':effective>0.65?'#fca5a5':effective<0.35?'#93c5fd':'var(--text3)';
     return '<div class="pct-bar-row">'
       + '<div class="pct-bar-label">'+s.label+'</div>'
-      + '<div class="pct-bar-track">'
-      +   '<div class="pct-bar-fill" style="width:'+width+'%;background:'+fillColor+'"></div>'
-      + '</div>'
+      + '<div class="pct-bar-track"><div class="pct-bar-fill" style="width:'+width+'%;background:'+fillColor+'"></div></div>'
       + '<div class="pct-bar-val">'+s.fmt(val)+'</div>'
       + '<div class="pct-bar-pct" style="color:'+pctColor+'">'+pctLabel+'</div>'
       + '</div>';
   }).join('');
-  document.getElementById('pct-chart-bars').innerHTML = barsHtml;
+  document.getElementById('player-card-bars').innerHTML = barsHtml;
 
-  positionCard(pctCard, e, 380, 360);
-  pctCard.classList.add('visible');
-}
-
-function closePctCard(){
-  pctCard.classList.remove('visible');
-}
-
-// Click on name cell in advanced mode opens chart; click elsewhere closes it
-document.addEventListener('click', function(e){
-  if(e.target.closest('#pct-chart-card')) return; // click inside card — ignore
-  var nameCell = e.target.closest('.name-cell');
-  if(nameCell && nameCell.closest('#tbody')){
-    var row = nameCell.closest('tr');
-    if(!row) return;
-    var idx = parseInt(row.dataset.idx);
-    if(isNaN(idx)) return;
-    var filtered = getFiltered();
-    var p = filtered[idx];
-    if(p) openPctCard(e, p);
-    return;
-  }
-  // Clicked outside card and outside a name cell — close
-  closePctCard();
-});
-</script>
-
-<!-- PLAYER HOVER CARD (click-triggered portrait card for main list) -->
-<div id="player-hover-card" style="position:relative">
-  <button id="hover-close" onclick="closeHoverCard()">✕</button>
-  <img id="hover-photo" src="" alt="" onerror="this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current'">
-  <div id="hover-name"></div>
-  <div id="hover-meta"></div>
-</div>
-
-
-<script>
-// ---- PLAYER PORTRAIT CARD (click-triggered, main list) ----
-var hoverCard = document.getElementById('player-hover-card');
-var hoverPhoto = document.getElementById('hover-photo');
-var hoverName = document.getElementById('hover-name');
-var hoverMeta = document.getElementById('hover-meta');
-
-function showPortraitCard(e, p){
-  var mlbId = p.mlb_id;
-  hoverPhoto.src = mlbId
-    ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + mlbId + '/headshot/67/current'
-    : 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current';
-  hoverName.textContent = p.name || '';
-  var pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
-  hoverMeta.innerHTML = (p.team||'—') + ' &nbsp;·&nbsp; ' + pos + ' &nbsp;·&nbsp; Age ' + (p.age||'—');
-  positionCard(hoverCard, e, 220, 260);
-  hoverCard.classList.add('visible');
-}
-
-function closeHoverCard(){
-  hoverCard.classList.remove('visible');
-}
-
-function positionCard(card, e, cardW, cardH){
-  var margin = 16;
-  var x = e.clientX + 20;
-  var y = e.clientY - 60;
+  // Position card near click
+  var margin = 16, cardW = 380, cardH = 360;
+  var x = e.clientX + 20, y = e.clientY - 60;
   if(x + cardW + margin > window.innerWidth) x = e.clientX - cardW - 12;
   if(y + cardH + margin > window.innerHeight) y = window.innerHeight - cardH - margin;
   if(y < margin) y = margin;
-  card.style.left = x + 'px';
-  card.style.top = y + 'px';
+  playerCard.style.left = x + 'px';
+  playerCard.style.top = y + 'px';
+  playerCard.classList.add('visible');
 }
 
-// ---- UNIFIED CLICK HANDLER ----
-document.addEventListener('click', function(e){
-  // Clicks inside either card — ignore
-  if(e.target.closest('#player-hover-card')) return;
-  if(e.target.closest('#pct-chart-card')) return;
+function closePlayerCard(){
+  playerCard.classList.remove('visible');
+  currentCardPlayer = null;
+}
 
+function goToAdvanced(){
+  // Switch to advanced mode and reopen card for same player
+  if(!currentCardPlayer) return;
+  closePlayerCard();
+  advancedMode = true;
+  var table = document.getElementById('main-table');
+  if(table) table.classList.add('advanced-mode');
+  var advBtn = document.getElementById('adv-tab');
+  if(advBtn) advBtn.classList.add('active');
+  renderTable();
+  // Brief delay so table re-renders before we reopen
+  var p = currentCardPlayer;
+  setTimeout(function(){
+    // Fake a click event in center of screen
+    var fakeE = { clientX: window.innerWidth/2, clientY: window.innerHeight/2 };
+    openPlayerCard(fakeE, p);
+  }, 100);
+}
+
+// ---- CLICK HANDLER ----
+document.addEventListener('click', function(e){
+  if(e.target.closest('#player-card')) return;
   var nameCell = e.target.closest('.name-cell');
   if(nameCell && nameCell.closest('#tbody')){
     var row = nameCell.closest('tr');
@@ -4155,23 +4067,10 @@ document.addEventListener('click', function(e){
     if(isNaN(idx)) return;
     var filtered = getFiltered();
     var p = filtered[idx];
-    if(!p) return;
-
-    if(advancedMode){
-      // Advanced tab — show percentile chart card (with portrait inside)
-      closeHoverCard();
-      openPctCard(e, p);
-    } else {
-      // Main list — show portrait card
-      closePctCard();
-      showPortraitCard(e, p);
-    }
+    if(p) openPlayerCard(e, p);
     return;
   }
-
-  // Clicked outside both cards and outside a name cell — close both
-  closeHoverCard();
-  closePctCard();
+  closePlayerCard();
 });
 </script>
 
