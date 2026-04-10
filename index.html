@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v50</title>
+<title>Watch 101 MLB — TESTING v51</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -125,6 +125,12 @@ td:nth-child(4){text-align:left}
 .stat-na{color:var(--text3);font-size:11px}
 .savant-col{background:rgba(201,168,76,0.06);border-left:1px solid rgba(201,168,76,0.2);}
 td.savant-col{font-size:10px;padding:3px 2px;width:48px;min-width:48px;max-width:48px;}
+.savant-adv-col{background:rgba(201,168,76,0.06);border-left:1px solid rgba(201,168,76,0.2);display:none;}
+td.savant-adv-col{font-size:10px;padding:3px 2px;width:48px;min-width:48px;max-width:48px;display:none;}
+.advanced-mode .savant-adv-col{display:table-cell;}
+.advanced-mode td.savant-adv-col{display:table-cell;}
+.advanced-mode .col-note{display:none;}
+.advanced-mode td.col-note{display:none;}
 .level-badge{display:inline-block;font-size:9px;font-family:'DM Mono',monospace;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:0.05em;margin-right:4px;vertical-align:middle}
 .level-mlb{background:#1B6CA8;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:4px;vertical-align:middle;flex-shrink:0}
 .level-aaa{background:#2a7a3a;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:4px;vertical-align:middle;flex-shrink:0}
@@ -455,6 +461,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
       <button class="filter-tab" onclick="setFilter('PITCHER',this)">Pitchers</button>
       <button class="filter-tab" onclick="setFilter('TOP25',this)">Top 25</button>
       <button class="filter-tab" onclick="setFilter('MOVERS',this)">Movers</button>
+      <button class="filter-tab" id="adv-tab" onclick="toggleAdvancedMode(this)">⚡ Advanced</button>
     </div>
     <div class="filter-tabs">
       <button class="filter-tab" id="pool-tab" onclick="openPlayerPool()">⚾ Player Pool</button>
@@ -519,6 +526,11 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
         <th onclick="sortBy('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS <span class="sort-arrow" id="arr-ops">↕</span></span><span style="color:#86efac;font-size:8px">xERA</span></div></th>
         <th class="savant-col" onclick="sortBy('sv_xba')" title="Expected Batting Average (Statcast)">xBA <span class="sort-arrow" id="arr-sv_xba">↕</span></th>
         <th class="savant-col" onclick="sortBy('sv_xwoba')" title="Expected wOBA (Statcast)">xwOBA <span class="sort-arrow" id="arr-sv_xwoba">↕</span></th>
+        <th class="savant-adv-col" onclick="sortBy('sv_ev')" title="Average Exit Velocity (Statcast)"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:var(--gold);font-size:8px">EV</span><span style="color:#94a3b8;font-size:8px">EV</span></div></th>
+        <th class="savant-adv-col" onclick="sortBy('sv_sweetspot')" title="Sweet Spot % (Statcast)"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:var(--gold);font-size:8px">SS%</span><span style="color:#94a3b8;font-size:8px">SS%</span></div></th>
+        <th class="savant-adv-col" onclick="sortBy('sv_barrel')" title="Barrel % (Statcast)"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:var(--gold);font-size:8px">BBL%</span><span style="color:#94a3b8;font-size:8px">BBL%</span></div></th>
+        <th class="savant-adv-col" onclick="sortBy('sv_ev95')" title="EV 95th Percentile (Statcast)"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:var(--gold);font-size:8px">EV95</span><span style="color:#94a3b8;font-size:8px">EV95</span></div></th>
+        <th class="savant-adv-col" onclick="sortBy('sv_maxev')" title="Max Exit Velocity (Statcast)"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:var(--gold);font-size:8px">MaxEV</span><span style="color:#94a3b8;font-size:8px">MaxEV</span></div></th>
         <th class="col-note">Movement Note</th>
         <th style="cursor:default;width:60px">Action</th>
       </tr>
@@ -981,24 +993,23 @@ async function saveData(){
 async function loadSavantData(){
   if(savantLoaded) return;
   try{
-    // Hitter expected stats: xBA, xSLG, xwOBA, EV, Barrel%, HardHit%, K%, BB%
     const hitterUrl = 'https://baseballsavant.mlb.com/leaderboard/expected_statistics?type=batter&year=2026&position=&team=&filterType=pa&min=1&csv=true';
     const pitcherUrl = 'https://baseballsavant.mlb.com/leaderboard/expected_statistics?type=pitcher&year=2026&position=&team=&filterType=pa&min=1&csv=true';
+    const hitterAdvUrl = 'https://baseballsavant.mlb.com/leaderboard/statcast?type=batter&year=2026&position=&team=&min=1&csv=true';
+    const pitcherAdvUrl = 'https://baseballsavant.mlb.com/leaderboard/statcast?type=pitcher&year=2026&position=&team=&min=1&csv=true';
 
     const timeout = (ms) => new Promise((_,reject) => setTimeout(()=>reject(new Error('timeout')),ms));
-    const [hRes, pRes] = await Promise.all([
-      Promise.race([fetch(hitterUrl), timeout(5000)]),
-      Promise.race([fetch(pitcherUrl), timeout(5000)])
+    const [hRes, pRes, hAdvRes, pAdvRes] = await Promise.all([
+      Promise.race([fetch(hitterUrl), timeout(8000)]),
+      Promise.race([fetch(pitcherUrl), timeout(8000)]),
+      Promise.race([fetch(hitterAdvUrl), timeout(8000)]),
+      Promise.race([fetch(pitcherAdvUrl), timeout(8000)])
     ]);
 
-    if(hRes.ok){
-      const text = await hRes.text();
-      parseSavantCSV(text, savantHitters);
-    }
-    if(pRes.ok){
-      const text = await pRes.text();
-      parseSavantCSV(text, savantPitchers);
-    }
+    if(hRes.ok){ parseSavantCSV(await hRes.text(), savantHitters); }
+    if(pRes.ok){ parseSavantCSV(await pRes.text(), savantPitchers); }
+    if(hAdvRes.ok){ parseSavantCSV(await hAdvRes.text(), savantHitters); }
+    if(pAdvRes.ok){ parseSavantCSV(await pAdvRes.text(), savantPitchers); }
     savantLoaded = true;
     // Merge into existing players and re-render
     players.forEach(p => mergeSavant(p));
@@ -1044,27 +1055,18 @@ function mergeSavant(p){
   const pit = isPitcher(p);
   const src = pit ? savantPitchers[id] : savantHitters[id];
   if(!src) return;
-  if(!pit){
-    // Hitter Statcast fields — actual column names from expected_statistics CSV
-    if(src['est_ba'])                p.sv_xba      = parseFloat(src['est_ba']);
-    if(src['est_slg'])               p.sv_xslg     = parseFloat(src['est_slg']);
-    if(src['est_woba'])              p.sv_xwoba    = parseFloat(src['est_woba']);
-    if(src['exit_velocity_avg'])     p.sv_ev       = parseFloat(src['exit_velocity_avg']);
-    if(src['barrel_batted_rate'])    p.sv_barrel   = parseFloat(src['barrel_batted_rate']);
-    if(src['hard_hit_percent'])      p.sv_hardhit  = parseFloat(src['hard_hit_percent']);
-    if(src['k_percent'])             p.sv_k_pct    = parseFloat(src['k_percent']);
-    if(src['bb_percent'])            p.sv_bb_pct   = parseFloat(src['bb_percent']);
-  } else {
-    // Pitcher Statcast fields
-    if(src['xera'])                  p.sv_xera     = parseFloat(src['xera']);
-    if(src['est_ba'])                p.sv_xba      = parseFloat(src['est_ba']);
-    if(src['est_woba'])              p.sv_xwoba    = parseFloat(src['est_woba']);
-    if(src['exit_velocity_avg'])     p.sv_ev       = parseFloat(src['exit_velocity_avg']);
-    if(src['barrel_batted_rate'])    p.sv_barrel   = parseFloat(src['barrel_batted_rate']);
-    if(src['hard_hit_percent'])      p.sv_hardhit  = parseFloat(src['hard_hit_percent']);
-    if(src['k_percent'])             p.sv_k_pct    = parseFloat(src['k_percent']);
-    if(src['bb_percent'])            p.sv_bb_pct   = parseFloat(src['bb_percent']);
-  }
+  // Fields from expected_statistics endpoint
+  if(src['est_ba'])                p.sv_xba       = parseFloat(src['est_ba']);
+  if(src['est_slg'])               p.sv_xslg      = parseFloat(src['est_slg']);
+  if(src['est_woba'])              p.sv_xwoba     = parseFloat(src['est_woba']);
+  // Fields from statcast endpoint
+  if(src['avg_hit_speed'])         p.sv_ev        = parseFloat(src['avg_hit_speed']);
+  if(src['max_hit_speed'])         p.sv_maxev     = parseFloat(src['max_hit_speed']);
+  if(src['anglesweetspotpercent']) p.sv_sweetspot = parseFloat(src['anglesweetspotpercent']);
+  if(src['brl_percent'])           p.sv_barrel    = parseFloat(src['brl_percent']);
+  if(src['ev95percent'])           p.sv_ev95      = parseFloat(src['ev95percent']);
+  // Pitcher only
+  if(pit && src['xera'])           p.sv_xera      = parseFloat(src['xera']);
 }
 
 function renderDelta(p){
@@ -1260,8 +1262,31 @@ function startYahooAutoSync(){
   }, 10 * 60 * 1000);
 }
 
+let advancedMode = false;
+
+function toggleAdvancedMode(el){
+  advancedMode = !advancedMode;
+  const table = document.querySelector('table');
+  if(advancedMode){
+    table.classList.add('advanced-mode');
+    el.classList.add('active');
+  } else {
+    table.classList.remove('advanced-mode');
+    el.classList.remove('active');
+  }
+  renderTable();
+}
+
 function setFilter(f, el){
   filter = f;
+  // Turn off advanced mode when switching tabs
+  if(advancedMode){
+    advancedMode = false;
+    const table = document.querySelector('table');
+    if(table) table.classList.remove('advanced-mode');
+    const advBtn = document.getElementById('adv-tab');
+    if(advBtn) advBtn.classList.remove('active');
+  }
   if(typeof poolActive !== 'undefined' && poolActive) closePlayerPool();
   if(typeof leadersActive !== 'undefined' && leadersActive) closeLeagueLeaders();
   if(typeof prospectsActive !== 'undefined' && prospectsActive) closeProspects();
@@ -1427,6 +1452,11 @@ function renderTable(){
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.ops,3)}</span>`:`<span style="color:${pitStatColor}">${p.sv_xera!=null?p.sv_xera.toFixed(2):'—'}</span>`}</td>
       <td class="stat-cell savant-col" title="xBA (Statcast)">${!pit?fmtSavant(p.sv_xba):'<span class="stat-na">—</span>'}</td>
       <td class="stat-cell savant-col" title="xwOBA (Statcast)">${fmtSavant(p.sv_xwoba)}</td>
+      <td class="stat-cell savant-adv-col" title="Avg Exit Velocity">${!pit?`<span style="color:var(--gold)">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`}</td>
+      <td class="stat-cell savant-adv-col" title="Sweet Spot %">${!pit?`<span style="color:var(--gold)">${p.sv_sweetspot!=null?p.sv_sweetspot.toFixed(1)+'%':'—'}</span>`:`<span style="color:#94a3b8">${p.sv_sweetspot!=null?p.sv_sweetspot.toFixed(1)+'%':'—'}</span>`}</td>
+      <td class="stat-cell savant-adv-col" title="Barrel %">${!pit?`<span style="color:var(--gold)">${p.sv_barrel!=null?p.sv_barrel.toFixed(1)+'%':'—'}</span>`:`<span style="color:#94a3b8">${p.sv_barrel!=null?p.sv_barrel.toFixed(1)+'%':'—'}</span>`}</td>
+      <td class="stat-cell savant-adv-col" title="EV 95th Percentile">${!pit?`<span style="color:var(--gold)">${p.sv_ev95!=null?p.sv_ev95.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_ev95!=null?p.sv_ev95.toFixed(1):'—'}</span>`}</td>
+      <td class="stat-cell savant-adv-col" title="Max Exit Velocity">${!pit?`<span style="color:var(--gold)">${p.sv_maxev!=null?p.sv_maxev.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_maxev!=null?p.sv_maxev.toFixed(1):'—'}</span>`}</td>
       <td class="col-note"><div class="note-display ${!p.note?'empty':''}" onclick="editNote('${p.id}',this)" title="${(p.note||'').replace(/"/g,'&quot;')}">${p.note||'Add note...'}</div></td>
       <td style="white-space:nowrap">
         <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;margin-right:3px" onclick="editPlayer('${p.id}')">Edit</button>
