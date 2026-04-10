@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v49</title>
+<title>Watch 101 MLB — TESTING v50</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -516,7 +516,7 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
         <th onclick="sortBy('sb')" title="SB / HLD" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">SB</span><span style="color:#86efac;font-size:8px">HLD</span></div></th>
         <th onclick="sortBy('avg')" title="AVG / ERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AVG</span><span style="color:#86efac;font-size:8px">ERA</span></div></th>
         <th onclick="sortBy('obp')" title="OBP / WHIP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OBP</span><span style="color:#86efac;font-size:8px">WHIP</span></div></th>
-        <th onclick="sortBy('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS</span><span style="color:#86efac;font-size:8px">xERA</span></div> <span class="sort-arrow" id="arr-ops">↕</span></th>
+        <th onclick="sortBy('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS <span class="sort-arrow" id="arr-ops">↕</span></span><span style="color:#86efac;font-size:8px">xERA</span></div></th>
         <th class="savant-col" onclick="sortBy('sv_xba')" title="Expected Batting Average (Statcast)">xBA <span class="sort-arrow" id="arr-sv_xba">↕</span></th>
         <th class="savant-col" onclick="sortBy('sv_xwoba')" title="Expected wOBA (Statcast)">xwOBA <span class="sort-arrow" id="arr-sv_xwoba">↕</span></th>
         <th class="col-note">Movement Note</th>
@@ -1003,6 +1003,8 @@ async function loadSavantData(){
     // Merge into existing players and re-render
     players.forEach(p => mergeSavant(p));
     renderTable();
+    // Safety net re-render after short delay in case first render was too early
+    setTimeout(() => { players.forEach(p => mergeSavant(p)); renderTable(); }, 1000);
     // Update toolbar indicator
     const ind = document.getElementById('savant-indicator');
     if(ind){
