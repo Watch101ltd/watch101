@@ -1291,11 +1291,11 @@ const MLB_ORG_ABBR = {
   'Athletics':'ATH'
 };
 const MLB_ORG_ID = {
+  108:'LAA',109:'ARI',110:'BAL',111:'BOS',112:'CHC',113:'CIN',114:'CLE',
+  115:'COL',116:'DET',117:'HOU',118:'KC',119:'LAD',120:'WSH',121:'NYM',
   133:'OAK',134:'PIT',135:'SD',136:'SEA',137:'SF',138:'STL',139:'TB',
   140:'TEX',141:'TOR',142:'MIN',143:'PHI',144:'ATL',145:'CWS',146:'MIA',
-  147:'NYY',158:'MIL',108:'LAA',109:'ARI',110:'BAL',111:'BOS',112:'CHC',
-  113:'CIN',114:'CLE',115:'COL',116:'DET',117:'HOU',118:'KC',119:'LAD',
-  120:'WSH',121:'NYM',135:'SD',145:'CWS'
+  147:'NYY',158:'MIL'
 };
 function orgNameToAbbr(name){ return MLB_ORG_ABBR[name] || name || ''; }
 function orgIdToAbbr(id){ return MLB_ORG_ID[parseInt(id)] || ''; }
@@ -1545,11 +1545,11 @@ async function selectPlayer(mlbId, name, team, primaryPos, age, level='MLB'){
     const person = data.people && data.people[0];
     if(person){
       if(person.currentAge) document.getElementById('f-age').value = person.currentAge;
-      // For minor leaguers, currentTeam.name from individual API IS the parent MLB org
+      // For minor leaguers, parentOrgId is the reliable field for the MLB parent org
       const isMinorLeague = level === 'AAA' || level === 'AA' || level === 'A';
       let teamAbbr = '';
-      if(isMinorLeague && person.currentTeam && person.currentTeam.name){
-        teamAbbr = orgNameToAbbr(person.currentTeam.name);
+      if(isMinorLeague && person.currentTeam && person.currentTeam.parentOrgId){
+        teamAbbr = orgIdToAbbr(person.currentTeam.parentOrgId);
       }
       if(!teamAbbr){
         teamAbbr = (person.currentTeam && person.currentTeam.abbreviation) ||
