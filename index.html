@@ -101,11 +101,12 @@ td:nth-child(4){text-align:left}
 .move-down{background:#7f1d1d33;color:var(--red);border:1px solid #7f1d1d}
 .move-new{background:#78350f33;color:var(--gold);border:1px solid #78350f}
 
-.name-cell{display:flex;flex-direction:row;align-items:center;gap:5px;flex-wrap:nowrap}
-.player-name{font-weight:500;font-size:13px;color:#ffffff;white-space:nowrap}
+.name-cell{display:flex;flex-direction:column;align-items:flex-start;gap:2px;max-width:160px}
+.player-name{font-weight:500;font-size:13px;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.badge-row{display:flex;flex-wrap:wrap;gap:2px;max-width:160px}
 .player-team{font-size:11px;color:#94a3b8;font-family:'DM Mono',monospace}
 
-.pos-badge{display:inline-block;padding:1px 3px;border-radius:2px;font-size:8px;font-family:'DM Mono',monospace;font-weight:600;margin:1px 1px 0 0;line-height:1.4;letter-spacing:0.02em}
+.pos-badge{display:inline-block;padding:1px 2px;border-radius:2px;font-size:7px;font-family:'DM Mono',monospace;font-weight:600;margin:0;line-height:1.4;letter-spacing:0.02em}
 td:nth-child(4){white-space:normal;width:72px;max-width:72px;vertical-align:top;padding-top:6px}
 .pos-SP{background:#1e3a5f;color:#60a5fa;border:1px solid #1e40af}
 .pos-RP{background:#0f2a4f;color:#93c5fd;border:1px solid #1e3a8a}
@@ -115,7 +116,7 @@ td:nth-child(4){white-space:normal;width:72px;max-width:72px;vertical-align:top;
 .pos-OF{background:#3a2a0a;color:#fcd34d;border:1px solid #92400e}
 .pos-DH{background:#2a1a1a;color:#fca5a5;border:1px solid #7f1d1d}
 .pos-P{background:#1e3a5f;color:#60a5fa;border:1px solid #1e40af}
-.injury-badge{display:inline-block;font-size:8px;font-family:'DM Mono',monospace;font-weight:700;padding:1px 3px;border-radius:2px;letter-spacing:0.03em;flex-shrink:0}
+.injury-badge{display:inline-block;font-size:7px;font-family:'DM Mono',monospace;font-weight:700;padding:1px 2px;border-radius:2px;letter-spacing:0.03em;flex-shrink:0}
 .injury-il10{background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444}
 .injury-il60{background:#4a0000;color:#f87171;border:1px solid #dc2626}
 .injury-dtd{background:#78350f;color:#fcd34d;border:1px solid #f59e0b}
@@ -1314,7 +1315,7 @@ function renderTable(){
     return `<tr class="${rowClass(p.move)}" draggable="true" data-id="${p.id}" data-idx="${i}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
       <td><span class="drag-handle">⠿</span></td>
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
-      <td><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${posBadges(p.positions)}</div></td>
+      <td><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span><div class="badge-row">${p.injury_status ? injuryBadge(p.injury_status) : ''}${posBadges(p.positions)}</div></div></td>
       <td class="stat-cell">${p.team||'<span class="stat-na">—</span>'}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell">${p.bats||'<span class="stat-na">—</span>'}</td>
