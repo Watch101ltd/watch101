@@ -1497,7 +1497,7 @@ async function searchMLBPlayers(query){
       });
       resultsEl.innerHTML = matched.slice(0,12).map(p=>{
         const isMinor = p._level === 'AAA' || p._level === 'AA' || p._level === 'A';
-        const parentAbbr = orgNameToAbbr((p.currentTeam&&p.currentTeam.parentOrgName) || '');
+        const parentAbbr = orgNameToAbbr((p.currentTeam&&p.currentTeam.parentOrgName) || (p.currentTeam&&p.currentTeam.name) || '');
         const teamAbbr = (isMinor && parentAbbr) ? parentAbbr : (p.currentTeam&&p.currentTeam.abbreviation) || '';
         const teamName = (p.currentTeam&&p.currentTeam.name) || '';
         const teamDisplay = teamAbbr || teamName || 'Free Agent';
@@ -1537,13 +1537,22 @@ async function selectPlayer(mlbId, name, team, primaryPos, age, level='MLB'){
     const person = data.people && data.people[0];
     if(person){
       if(person.currentAge) document.getElementById('f-age').value = person.currentAge;
-      // Try multiple paths to get team — for minor leaguers use parent MLB org
+      // For minor leaguers, first try roster cache which has parentOrgName
       const isMinorLeague = level === 'AAA' || level === 'AA' || level === 'A';
-      const parentAbbr = orgNameToAbbr((person.currentTeam && person.currentTeam.parentOrgName) || '');
-      const teamAbbr = (isMinorLeague && parentAbbr) ? parentAbbr :
-                       (person.currentTeam && person.currentTeam.abbreviation) ||
-                       (person.currentTeam && person.currentTeam.teamCode) ||
-                       (person.currentTeam && person.currentTeam.clubName) || '';
+      let teamAbbr = '';
+      if(isMinorLeague && playerRosterCache){
+        const cached = playerRosterCache.find(r => r.id === mlbId || r.id === parseInt(mlbId));
+        if(cached && cached.currentTeam && cached.currentTeam.parentOrgName){
+          teamAbbr = orgNameToAbbr(cached.currentTeam.parentOrgName);
+        }
+      }
+      if(!teamAbbr){
+        const parentAbbr = orgNameToAbbr((person.currentTeam && person.currentTeam.parentOrgName) || (person.currentTeam && person.currentTeam.name) || '');
+        teamAbbr = (isMinorLeague && parentAbbr) ? parentAbbr :
+                   (person.currentTeam && person.currentTeam.abbreviation) ||
+                   (person.currentTeam && person.currentTeam.teamCode) ||
+                   (person.currentTeam && person.currentTeam.clubName) || '';
+      }
       if(teamAbbr) document.getElementById('f-team').value = teamAbbr;
       if(person.primaryPosition){
         document.querySelectorAll('input[name="pos"]').forEach(cb => cb.checked = false);
