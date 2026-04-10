@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v65</title>
+<title>Watch 101 MLB — TESTING v68</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -325,6 +325,28 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
 .dual-diff.down{background:#7f1d1d33;color:var(--red);border:1px solid #7f1d1d}
 .dual-diff.same{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
 
+/* ---- MAIN TABLE FIXED HEADER ---- */
+#main-fixed-header{
+  display:none;
+  position:fixed;
+  left:0;right:0;
+  z-index:60;
+  background:var(--bg);
+  border-bottom:2px solid var(--gold2);
+  overflow:hidden;
+  pointer-events:auto;
+}
+#main-fixed-header table{
+  width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;
+}
+#main-fixed-header th{
+  padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
+  letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;
+  white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);
+}
+#main-fixed-header th.savant-col{background:rgba(201,168,76,0.06);color:var(--gold);}
+#main-fixed-header th.savant-adv-col{background:rgba(201,168,76,0.06);color:var(--gold);}
+
 /* Fixed stat strip that locks to top of pool-wrap when scrolling */
 #ctx-fixed-header-mask{
   display:none;
@@ -549,6 +571,8 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
     <button class="btn btn-red" onclick="confirmClear()">Clear All</button>
   </div>
 </div>
+
+<div id="main-fixed-header"><table id="main-fixed-table"></table></div>
 
 <div class="table-wrap">
   <table id="main-table">
@@ -1601,6 +1625,8 @@ function renderTable(){
       </td>
     </tr>`;
   }).join('');
+  // Re-sync fixed header after render so column widths stay accurate
+  setTimeout(syncMainFixedHeader, 50);
 }
 
 // MLB API SEARCH
@@ -3896,6 +3922,58 @@ function destroyLeadersFixedHeader(){
   if(fixedBar) fixedBar.style.display = 'none';
   if(leadersWrap) leadersWrap.onscroll = null;
 }
+
+// ---- MAIN TABLE FIXED HEADER ----
+function syncMainFixedHeader(){
+  const realThead = document.querySelector('#main-table thead');
+  const fixedBar = document.getElementById('main-fixed-header');
+  const fixedTable = document.getElementById('main-fixed-table');
+  if(!realThead || !fixedBar || !fixedTable) return;
+
+  // Clone thead and wire up sort clicks
+  const clone = realThead.cloneNode(true);
+  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  fixedTable.innerHTML = '';
+  fixedTable.appendChild(clone);
+
+  // Match column widths exactly from real table
+  const realTable = document.getElementById('main-table');
+  if(realTable){
+    const realCols = realThead.querySelectorAll('th');
+    const fixedCols = fixedTable.querySelectorAll('th');
+    realCols.forEach((th, i) => {
+      if(fixedCols[i]){
+        fixedCols[i].style.width = th.offsetWidth + 'px';
+        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
+        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
+      }
+    });
+    fixedTable.style.width = realTable.offsetWidth + 'px';
+    fixedBar.style.width = realTable.offsetWidth + 'px';
+    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
+  }
+
+  // Position just below the app header
+  const appHeader = document.querySelector('.header');
+  const topOffset = appHeader ? appHeader.offsetHeight : 72;
+  fixedBar.style.top = topOffset + 'px';
+  fixedBar.style.display = 'none';
+
+  // Show when real thead scrolls out of view, hide when it comes back
+  window.addEventListener('scroll', function(){
+    const theadRect = realThead.getBoundingClientRect();
+    if(theadRect.top < topOffset){
+      fixedBar.style.display = 'block';
+    } else {
+      fixedBar.style.display = 'none';
+    }
+  });
+}
+
+// Initialize after page loads
+window.addEventListener('load', function(){
+  setTimeout(syncMainFixedHeader, 300);
+});
 
 </script>
 
