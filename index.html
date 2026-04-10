@@ -1290,7 +1290,15 @@ const MLB_ORG_ABBR = {
   'Texas Rangers':'TEX','Toronto Blue Jays':'TOR','Washington Nationals':'WSH',
   'Athletics':'ATH'
 };
+const MLB_ORG_ID = {
+  133:'OAK',134:'PIT',135:'SD',136:'SEA',137:'SF',138:'STL',139:'TB',
+  140:'TEX',141:'TOR',142:'MIN',143:'PHI',144:'ATL',145:'CWS',146:'MIA',
+  147:'NYY',158:'MIL',108:'LAA',109:'ARI',110:'BAL',111:'BOS',112:'CHC',
+  113:'CIN',114:'CLE',115:'COL',116:'DET',117:'HOU',118:'KC',119:'LAD',
+  120:'WSH',121:'NYM',135:'SD',145:'CWS'
+};
 function orgNameToAbbr(name){ return MLB_ORG_ABBR[name] || name || ''; }
+function orgIdToAbbr(id){ return MLB_ORG_ID[parseInt(id)] || ''; }
 
 function isPitcher(p){
   if(!p.positions || p.positions.length === 0) return false;
@@ -1542,8 +1550,8 @@ async function selectPlayer(mlbId, name, team, primaryPos, age, level='MLB'){
       let teamAbbr = '';
       if(isMinorLeague && playerRosterCache){
         const cached = playerRosterCache.find(r => r.id === mlbId || r.id === parseInt(mlbId));
-        if(cached && cached.currentTeam && cached.currentTeam.parentOrgName){
-          teamAbbr = orgNameToAbbr(cached.currentTeam.parentOrgName);
+        if(cached && cached.currentTeam && cached.currentTeam.id){
+          teamAbbr = orgIdToAbbr(cached.currentTeam.id);
         }
       }
       if(!teamAbbr){
