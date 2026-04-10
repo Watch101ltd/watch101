@@ -79,7 +79,7 @@ th:nth-child(17){width:44px}
 th:nth-child(18){width:44px}
 th:nth-child(19){width:44px}
 th:nth-child(20){width:50px}
-th.col-note{width:60px;text-align:left;cursor:default}
+th.col-note{width:40px;text-align:left;cursor:default}
 
 tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s}
 tbody tr:hover{background:var(--surface2)}
@@ -101,7 +101,7 @@ td:nth-child(4){text-align:left}
 .move-down{background:#7f1d1d33;color:var(--red);border:1px solid #7f1d1d}
 .move-new{background:#78350f33;color:var(--gold);border:1px solid #78350f}
 
-.name-cell{display:flex;flex-direction:row;align-items:center;gap:4px;flex-wrap:wrap;min-width:180px;max-width:240px}
+.name-cell{display:flex;flex-direction:row;align-items:center;gap:4px;flex-wrap:wrap;min-width:220px;max-width:300px}
 .player-name{font-weight:500;font-size:13px;color:#ffffff;white-space:nowrap}
 .badge-row{display:flex;flex-wrap:wrap;gap:2px;align-items:center}
 .player-team{font-size:11px;color:#94a3b8;font-family:'DM Mono',monospace}
@@ -139,7 +139,7 @@ th.savant-col{color:var(--gold);font-size:8px;letter-spacing:0.03em;padding:3px 
 #yahoo-btn.loading{background:rgba(201,168,76,0.15);color:var(--gold);border-color:var(--gold);}
 .yahoo-rank{font-family:'DM Mono',monospace;font-size:12px;color:var(--blue);text-align:right}
 
-.note-display{font-size:12px;color:#cbd5e1;font-style:italic;cursor:pointer;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 6px;border-radius:4px;border:1px solid transparent;transition:all 0.15s}
+.note-display{font-size:12px;color:#cbd5e1;font-style:italic;cursor:pointer;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 6px;border-radius:4px;border:1px solid transparent;transition:all 0.15s}
 .note-display:hover{border-color:var(--gold);background:var(--surface2);color:var(--gold)}
 .note-display.empty{color:#475569}
 .note-input{width:100%;background:var(--surface3);border:1px solid var(--gold2);border-radius:4px;padding:4px 8px;font-size:12px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;min-width:180px}
@@ -1413,7 +1413,9 @@ async function searchMLBPlayers(query){
         return (levelOrder[a._level]||3) - (levelOrder[b._level]||3);
       });
       resultsEl.innerHTML = matched.slice(0,12).map(p=>{
-        const teamAbbr = (p.currentTeam&&p.currentTeam.abbreviation) || '';
+        const isMinor = p._level === 'AAA' || p._level === 'AA' || p._level === 'A';
+        const parentAbbr = (p.currentTeam&&p.currentTeam.parentOrgAbbreviation) || (p.currentTeam&&p.currentTeam.parentOrg) || '';
+        const teamAbbr = (isMinor && parentAbbr) ? parentAbbr : (p.currentTeam&&p.currentTeam.abbreviation) || '';
         const teamName = (p.currentTeam&&p.currentTeam.name) || '';
         const teamDisplay = teamAbbr || teamName || 'Free Agent';
         const levelClass = p._level === 'MLB' ? 'level-mlb' : p._level === 'AAA' ? 'level-aaa' : 'level-aa';
@@ -1452,8 +1454,12 @@ async function selectPlayer(mlbId, name, team, primaryPos, age, level='MLB'){
     const person = data.people && data.people[0];
     if(person){
       if(person.currentAge) document.getElementById('f-age').value = person.currentAge;
-      // Try multiple paths to get team
-      const teamAbbr = (person.currentTeam && person.currentTeam.abbreviation) ||
+      // Try multiple paths to get team — for minor leaguers use parent MLB org
+      const isMinorLeague = level === 'AAA' || level === 'AA' || level === 'A';
+      const parentAbbr = (person.currentTeam && person.currentTeam.parentOrgAbbreviation) ||
+                         (person.currentTeam && person.currentTeam.parentOrg) || '';
+      const teamAbbr = (isMinorLeague && parentAbbr) ? parentAbbr :
+                       (person.currentTeam && person.currentTeam.abbreviation) ||
                        (person.currentTeam && person.currentTeam.teamCode) ||
                        (person.currentTeam && person.currentTeam.clubName) || '';
       if(teamAbbr) document.getElementById('f-team').value = teamAbbr;
