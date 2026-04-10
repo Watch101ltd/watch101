@@ -146,6 +146,18 @@ th.savant-col{color:var(--gold);font-size:8px;letter-spacing:0.03em;padding:3px 
 .note-input{width:100%;background:var(--surface3);border:1px solid var(--gold2);border-radius:4px;padding:4px 8px;font-size:12px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;min-width:180px}
 
 /* MODAL */
+/* RETRO YAHOO LOADER */
+#retro-loader{display:none;position:fixed;inset:0;background:#008080;z-index:999;align-items:center;justify-content:center;}
+#retro-loader.open{display:flex;}
+.retro-window{background:#c0c0c0;border-top:2px solid #ffffff;border-left:2px solid #ffffff;border-right:2px solid #808080;border-bottom:2px solid #808080;width:320px;font-family:'Courier New',monospace;}
+.retro-titlebar{background:linear-gradient(90deg,#000080,#1084d0);color:#ffffff;font-size:12px;font-weight:bold;padding:3px 6px;display:flex;justify-content:space-between;align-items:center;user-select:none;}
+.retro-titlebar-btn{background:#c0c0c0;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #808080;border-bottom:1px solid #808080;width:16px;height:14px;font-size:10px;line-height:14px;text-align:center;color:#000;cursor:default;}
+.retro-body{padding:16px 20px 20px;}
+.retro-body p{font-size:13px;color:#000;margin:0 0 12px;text-align:center;}
+.retro-bar-outer{background:#ffffff;border-top:1px solid #808080;border-left:1px solid #808080;border-right:1px solid #fff;border-bottom:1px solid #fff;height:20px;width:100%;overflow:hidden;}
+.retro-bar-inner{height:100%;width:0%;background:repeating-linear-gradient(90deg,#000080 0px,#000080 14px,#1084d0 14px,#1084d0 16px);transition:width 0.4s linear;}
+.retro-status{font-size:11px;color:#000080;margin-top:8px;text-align:center;}
+
 .modal-overlay{display:none;position:fixed;inset:0;background:#000000cc;z-index:200;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
 .modal-overlay.open{display:flex}
 .modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:1.5rem;width:580px;max-width:95vw}
@@ -710,6 +722,20 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
   </div>
 </div>
 
+<div id="retro-loader">
+  <div class="retro-window">
+    <div class="retro-titlebar">
+      <span>⚾ Baseball Watch 101</span>
+      <div class="retro-titlebar-btn">✕</div>
+    </div>
+    <div class="retro-body">
+      <p id="retro-msg">Loading...</p>
+      <div class="retro-bar-outer"><div class="retro-bar-inner" id="retro-bar"></div></div>
+      <div class="retro-status" id="retro-status">Connecting to Yahoo Fantasy...</div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <h2 id="modal-title">Add Player</h2>
@@ -1113,10 +1139,39 @@ function yahooButtonClick(){
 let yahooSyncing = false;
 async function syncYahooData(manual = false){
   if(!yahooConnected || players.length === 0) return;
-  if(yahooSyncing && !manual) return; // prevent overlapping calls
+  if(yahooSyncing && !manual) return;
   yahooSyncing = true;
   const btn = document.getElementById('yahoo-btn');
   if(btn){ btn.className = 'loading'; btn.textContent = '⚾ Syncing...'; }
+
+  // Show retro loader
+  var loader = document.getElementById('retro-loader');
+  var bar = document.getElementById('retro-bar');
+  var retroStatus = document.getElementById('retro-status');
+  var retroMsg = document.getElementById('retro-msg');
+  var loaderProgress = 0;
+  var loaderDone = false;
+  if(loader){ loader.classList.add('open'); bar.style.width='0%'; }
+  var loaderMessages = [
+    'Connecting to Yahoo Fantasy...',
+    'Retrieving league data...',
+    'Loading player rankings...',
+    'Calculating roster percentages...',
+    'Almost there...',
+    'Please do not turn off your computer...'
+  ];
+  var msgIdx = 0;
+  var loaderInterval = setInterval(function(){
+    if(loaderDone){ clearInterval(loaderInterval); return; }
+    // Crawl fast to 80%, then slow to 95%
+    if(loaderProgress < 80) loaderProgress += 4;
+    else if(loaderProgress < 95) loaderProgress += 0.5;
+    if(bar) bar.style.width = loaderProgress + '%';
+    if(retroStatus && msgIdx < loaderMessages.length){
+      retroStatus.textContent = loaderMessages[Math.min(msgIdx, loaderMessages.length-1)];
+      msgIdx++;
+    }
+  }, 600);
 
   try {
     // Single call — league-ranks returns Yahoo rank + roster % for top 300
@@ -1174,12 +1229,26 @@ async function syncYahooData(manual = false){
     if(btn){ btn.className = 'connected'; btn.textContent = `⚾ Yahoo ✓`; }
     if(manual) document.getElementById('last-updated').textContent = `Yahoo synced: ${new Date().toLocaleTimeString()}`;
 
+    // Complete the loader bar and close
+    loaderDone = true;
+    clearInterval(loaderInterval);
+    if(bar) bar.style.width = '100%';
+    if(retroStatus) retroStatus.textContent = 'Done!';
+    if(retroMsg) retroMsg.textContent = 'Loading complete.';
+    setTimeout(function(){ if(loader) loader.classList.remove('open'); }, 800);
+
   } catch(e) {
     console.error('Yahoo sync error:', e);
     if(btn){ btn.className = 'disconnected'; btn.textContent = '⚾ Yahoo Error'; }
-    // Token may have expired — re-check status
+    loaderDone = true;
+    clearInterval(loaderInterval);
+    if(retroMsg) retroMsg.textContent = 'An error has occurred.';
+    if(retroStatus) retroStatus.textContent = 'Yahoo connection failed. Please try again.';
+    if(bar){ bar.style.background = '#800000'; bar.style.width = '100%'; }
+    setTimeout(function(){ if(loader) loader.classList.remove('open'); }, 2000);
     setTimeout(checkYahooStatus, 2000);
   }
+  yahooSyncing = false;
 }
 
 // Auto-sync Yahoo every 10 minutes if connected
@@ -3633,6 +3702,7 @@ var hoverPhoto = document.getElementById('hover-photo');
 var hoverName = document.getElementById('hover-name');
 var hoverMeta = document.getElementById('hover-meta');
 var hoverHideTimer = null;
+var hoverShowTimer = null;
 
 function hoverShowCard(e, p){
   clearTimeout(hoverHideTimer);
@@ -3672,7 +3742,10 @@ document.addEventListener('mouseover', function(e){
   if(isNaN(idx)) return;
   var filtered = getFiltered();
   var p = filtered[idx];
-  if(p) hoverShowCard(e, p);
+  if(p){
+    clearTimeout(hoverShowTimer);
+    hoverShowTimer = setTimeout(function(){ hoverShowCard(e, p); }, 1000);
+  }
 });
 
 document.addEventListener('mousemove', function(e){
@@ -3684,7 +3757,10 @@ document.addEventListener('mousemove', function(e){
 
 document.addEventListener('mouseout', function(e){
   var nameCell = e.target.closest('.name-cell');
-  if(nameCell && nameCell.closest('#tbody')) hoverHideCard();
+  if(nameCell && nameCell.closest('#tbody')){
+    clearTimeout(hoverShowTimer);
+    hoverHideCard();
+  }
 });
 </script>
 
