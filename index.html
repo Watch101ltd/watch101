@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v52</title>
+<title>Watch 101 MLB — TESTING v53</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -52,10 +52,10 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 .table-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 130px);padding:0 0.5rem 2rem}
 thead{position:sticky;top:0;z-index:20}
-thead th{position:relative;z-index:20;background:var(--surface)!important;}
-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1120px;margin-top:1rem;table-layout:fixed}
+thead th{position:sticky;top:0;z-index:20;background:var(--surface)!important;box-shadow:0 2px 0 var(--gold2);}
+table{width:100%;border-collapse:collapse;min-width:1120px;margin-top:1rem;table-layout:fixed}
 thead tr{}
-th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface);overflow:hidden;border-bottom:2px solid var(--gold2)}
+th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface);overflow:hidden;border-bottom:none;}
 th:hover{color:var(--gold)}
 th.sorted{color:var(--gold)}
 th .sort-arrow{margin-left:2px;opacity:0.5;font-size:8px}
@@ -472,7 +472,14 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
   align-items:center;
   gap:8px;
 }
-#player-hover-card.visible { opacity:1; }
+#player-hover-card.visible { opacity:1; pointer-events:auto; }
+#hover-close{
+  position:absolute;top:8px;right:8px;
+  background:transparent;border:1px solid var(--border2);border-radius:4px;
+  color:var(--text3);font-size:11px;cursor:pointer;padding:1px 6px;
+  font-family:'DM Mono',monospace;transition:all 0.15s;line-height:1.4;
+}
+#hover-close:hover{border-color:var(--red);color:var(--red);}
 #hover-photo {
   width:90px;
   height:90px;
@@ -3913,9 +3920,12 @@ function destroyLeadersFixedHeader(){
 <!-- PERCENTILE CHART CARD -->
 <div id="pct-chart-card">
   <div id="pct-chart-header">
-    <div>
-      <div id="pct-chart-name"></div>
-      <div id="pct-chart-meta"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img id="pct-chart-photo" src="" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--gold2);background:var(--surface3);flex-shrink:0" onerror="this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current'">
+      <div>
+        <div id="pct-chart-name"></div>
+        <div id="pct-chart-meta"></div>
+      </div>
     </div>
     <button id="pct-chart-close" onclick="closePctCard()">✕</button>
   </div>
@@ -3939,15 +3949,19 @@ var PCT_CHART_STATS = [
 ];
 
 function openPctCard(e, p){
-  // Only show on Advanced tab
-  if(!advancedMode) return;
-
   var pit = isPitcher(p);
   var stats = PCT_CHART_STATS.filter(function(s){
     if(s.hitterOnly && pit) return false;
     if(s.pitcherOnly && !pit) return false;
     return true;
   });
+
+  // Portrait
+  var mlbId = p.mlb_id;
+  var photoEl = document.getElementById('pct-chart-photo');
+  photoEl.src = mlbId
+    ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + mlbId + '/headshot/67/current'
+    : 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current';
 
   // Header
   document.getElementById('pct-chart-name').textContent = p.name || '';
@@ -3997,16 +4011,7 @@ function openPctCard(e, p){
   }).join('');
   document.getElementById('pct-chart-bars').innerHTML = barsHtml;
 
-  // Position card near the click, smart-fit to viewport
-  var cardW = 380, cardH = 320;
-  var margin = 16;
-  var x = e.clientX + 20;
-  var y = e.clientY - 60;
-  if(x + cardW + margin > window.innerWidth) x = e.clientX - cardW - 12;
-  if(y + cardH + margin > window.innerHeight) y = window.innerHeight - cardH - margin;
-  if(y < margin) y = margin;
-  pctCard.style.left = x + 'px';
-  pctCard.style.top = y + 'px';
+  positionCard(pctCard, e, 380, 360);
   pctCard.classList.add('visible');
 }
 
@@ -4033,24 +4038,23 @@ document.addEventListener('click', function(e){
 });
 </script>
 
-<!-- PLAYER HOVER CARD -->
-<div id="player-hover-card">
+<!-- PLAYER HOVER CARD (click-triggered portrait card for main list) -->
+<div id="player-hover-card" style="position:relative">
+  <button id="hover-close" onclick="closeHoverCard()">✕</button>
   <img id="hover-photo" src="" alt="" onerror="this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/0/headshot/67/current'">
   <div id="hover-name"></div>
   <div id="hover-meta"></div>
 </div>
 
+
 <script>
-// ---- PLAYER HOVER CARD ----
+// ---- PLAYER PORTRAIT CARD (click-triggered, main list) ----
 var hoverCard = document.getElementById('player-hover-card');
 var hoverPhoto = document.getElementById('hover-photo');
 var hoverName = document.getElementById('hover-name');
 var hoverMeta = document.getElementById('hover-meta');
-var hoverHideTimer = null;
-var hoverShowTimer = null;
 
-function hoverShowCard(e, p){
-  clearTimeout(hoverHideTimer);
+function showPortraitCard(e, p){
   var mlbId = p.mlb_id;
   hoverPhoto.src = mlbId
     ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + mlbId + '/headshot/67/current'
@@ -4058,54 +4062,56 @@ function hoverShowCard(e, p){
   hoverName.textContent = p.name || '';
   var pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
   hoverMeta.innerHTML = (p.team||'—') + ' &nbsp;·&nbsp; ' + pos + ' &nbsp;·&nbsp; Age ' + (p.age||'—');
-  hoverPositionCard(e);
+  positionCard(hoverCard, e, 220, 260);
   hoverCard.classList.add('visible');
 }
 
-function hoverPositionCard(e){
+function closeHoverCard(){
+  hoverCard.classList.remove('visible');
+}
+
+function positionCard(card, e, cardW, cardH){
   var margin = 16;
-  var x = e.clientX + 16;
+  var x = e.clientX + 20;
   var y = e.clientY - 60;
-  if(x + 220 + margin > window.innerWidth) x = e.clientX - 220 - 8;
-  if(y + 240 + margin > window.innerHeight) y = window.innerHeight - 240 - margin;
+  if(x + cardW + margin > window.innerWidth) x = e.clientX - cardW - 12;
+  if(y + cardH + margin > window.innerHeight) y = window.innerHeight - cardH - margin;
   if(y < margin) y = margin;
-  hoverCard.style.left = x + 'px';
-  hoverCard.style.top = y + 'px';
+  card.style.left = x + 'px';
+  card.style.top = y + 'px';
 }
 
-function hoverHideCard(){
-  hoverHideTimer = setTimeout(function(){ hoverCard.classList.remove('visible'); }, 120);
-}
+// ---- UNIFIED CLICK HANDLER ----
+document.addEventListener('click', function(e){
+  // Clicks inside either card — ignore
+  if(e.target.closest('#player-hover-card')) return;
+  if(e.target.closest('#pct-chart-card')) return;
 
-document.addEventListener('mouseover', function(e){
-  var nameCell = e.target.closest('.name-cell');
-  if(!nameCell) return;
-  if(!nameCell.closest('#tbody')) return;
-  var row = nameCell.closest('tr');
-  if(!row) return;
-  var idx = parseInt(row.dataset.idx);
-  if(isNaN(idx)) return;
-  var filtered = getFiltered();
-  var p = filtered[idx];
-  if(p){
-    clearTimeout(hoverShowTimer);
-    hoverShowTimer = setTimeout(function(){ hoverShowCard(e, p); }, 1000);
-  }
-});
-
-document.addEventListener('mousemove', function(e){
-  if(hoverCard && hoverCard.classList.contains('visible')){
-    var nameCell = e.target.closest('.name-cell');
-    if(nameCell && nameCell.closest('#tbody')) hoverPositionCard(e);
-  }
-});
-
-document.addEventListener('mouseout', function(e){
   var nameCell = e.target.closest('.name-cell');
   if(nameCell && nameCell.closest('#tbody')){
-    clearTimeout(hoverShowTimer);
-    hoverHideCard();
+    var row = nameCell.closest('tr');
+    if(!row) return;
+    var idx = parseInt(row.dataset.idx);
+    if(isNaN(idx)) return;
+    var filtered = getFiltered();
+    var p = filtered[idx];
+    if(!p) return;
+
+    if(advancedMode){
+      // Advanced tab — show percentile chart card (with portrait inside)
+      closeHoverCard();
+      openPctCard(e, p);
+    } else {
+      // Main list — show portrait card
+      closePctCard();
+      showPortraitCard(e, p);
+    }
+    return;
   }
+
+  // Clicked outside both cards and outside a name cell — close both
+  closeHoverCard();
+  closePctCard();
 });
 </script>
 
