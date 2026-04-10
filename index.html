@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v54</title>
+<title>Watch 101 MLB — TESTING v55</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -52,7 +52,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 .table-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 130px);padding:0 0.5rem 2rem}
 thead{position:sticky;top:0;z-index:20}
-thead th{position:sticky;top:0;z-index:20;background:var(--surface)!important;box-shadow:0 2px 0 var(--gold2);}
+thead th{position:sticky;top:0;z-index:20;background:var(--surface)!important;box-shadow:0 2px 0 var(--gold2);will-change:transform;}
 table{width:100%;border-collapse:collapse;min-width:1120px;margin-top:1rem;table-layout:fixed}
 thead tr{}
 th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface);overflow:hidden;border-bottom:none;isolation:isolate;}
@@ -1113,9 +1113,12 @@ function parseSavantCSV(text, target){
     const vals = lines[i].split(',').map(v => v.trim().replace(/"/g,''));
     const row = {};
     headers.forEach((h,idx) => { row[h] = vals[idx] || ''; });
-    // player_id is the MLBAM ID — same as our mlb_id
     const id = row['player_id'];
-    if(id) target[id] = row;
+    if(id){
+      // MERGE into existing record so both endpoints keep their fields
+      if(target[id]){ Object.assign(target[id], row); }
+      else { target[id] = row; }
+    }
   }
 }
 
@@ -1589,7 +1592,7 @@ function renderTable(){
     return `<tr class="${rowClass(p.move)}" draggable="true" data-id="${p.id}" data-idx="${i}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
       <td><span class="drag-handle">⠿</span></td>
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
-      <td><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span><div class="badge-row">${p.injury_status ? injuryBadge(p.injury_status) : ''}${posBadges(p.positions)}</div></div></td>
+      <td><div class="name-cell" onclick="handleNameClick(event,${i})"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span><div class="badge-row">${p.injury_status ? injuryBadge(p.injury_status) : ''}${posBadges(p.positions)}</div></div></td>
       <td class="stat-cell">${p.team||'<span class="stat-na">—</span>'}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell">${p.bats||'<span class="stat-na">—</span>'}</td>
@@ -4062,35 +4065,25 @@ function positionCard(card, e, cardW, cardH){
   card.style.top = y + 'px';
 }
 
+function handleNameClick(e, idx){
+  e.stopPropagation();
+  var filtered = getFiltered();
+  var p = filtered[idx];
+  if(!p) return;
+  if(advancedMode){
+    closeHoverCard();
+    openPctCard(e, p);
+  } else {
+    closePctCard();
+    showPortraitCard(e, p);
+  }
+}
+
 // ---- UNIFIED CLICK HANDLER ----
 document.addEventListener('click', function(e){
-  // Clicks inside either card — ignore
   if(e.target.closest('#player-hover-card')) return;
   if(e.target.closest('#pct-chart-card')) return;
-
-  var nameCell = e.target.closest('.name-cell');
-  if(nameCell && nameCell.closest('#tbody')){
-    var row = nameCell.closest('tr');
-    if(!row) return;
-    var idx = parseInt(row.dataset.idx);
-    if(isNaN(idx)) return;
-    var filtered = getFiltered();
-    var p = filtered[idx];
-    if(!p) return;
-
-    if(advancedMode){
-      // Advanced tab — show percentile chart card (with portrait inside)
-      closeHoverCard();
-      openPctCard(e, p);
-    } else {
-      // Main list — show portrait card
-      closePctCard();
-      showPortraitCard(e, p);
-    }
-    return;
-  }
-
-  // Clicked outside both cards and outside a name cell — close both
+  if(e.target.closest('.name-cell')) return; // handled by handleNameClick
   closeHoverCard();
   closePctCard();
 });
