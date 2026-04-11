@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v82</title>
+<title>Watch 101 MLB — TESTING v84</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -51,7 +51,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .count-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:5px}
 
 .table-wrap{overflow-x:auto;padding:0 0.5rem 2rem}
-thead{position:sticky;top:0;z-index:10}
+.table-wrap thead{position:sticky;top:0;z-index:10}
 table{width:100%;border-collapse:separate;border-spacing:0;min-width:1120px;margin-top:1rem;table-layout:fixed}
 thead tr{}
 th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface);overflow:hidden;border-bottom:2px solid var(--gold2)}
@@ -245,7 +245,7 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .pool-filter-tabs{display:flex;gap:4px}
 .pool-status{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;white-space:nowrap}
 .pool-table-wrap{overflow-x:auto}
-.pool-table-wrap thead{position:sticky;top:var(--pool-thead-top,0);z-index:10}
+.pool-table-wrap thead{position:relative;z-index:1}
 .pool-table-wrap .pool-table th{background:var(--surface)}
 .pool-table{width:100%;border-collapse:separate;border-spacing:0;min-width:900px}
 .pool-table thead tr{border-bottom:2px solid var(--border2)}
@@ -288,7 +288,7 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .compare-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-top:4px;z-index:400;max-height:220px;overflow-y:auto;display:none;box-shadow:0 8px 24px #00000088}
 .compare-dropdown.open{display:block}
 .context-table-wrap{overflow-x:visible}
-.context-table-wrap .pool-table thead th{background:var(--surface);}
+.context-table-wrap .pool-table thead th{background:var(--surface);position:relative;}
 #pros-table-wrap thead th{background:var(--surface)}
 .ctx-count-row td{background:var(--surface2);padding:5px 12px;font-family:'DM Mono',monospace;font-size:11px;border-bottom:1px solid var(--border)}
 tr.ctx-highlight td{background:#1a1200 !important}
@@ -359,6 +359,28 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
 #pool-fixed-header th{
   padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
   letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;
+  white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);
+}
+#pool-roster-fixed-header{
+  display:none;position:fixed;left:0;right:0;z-index:61;
+  background:var(--bg);border-bottom:2px solid var(--gold2);
+  overflow:hidden;pointer-events:auto;
+}
+#pool-roster-fixed-header table{width:100%;border-collapse:collapse;table-layout:fixed;}
+#pool-roster-fixed-header th{
+  padding:6px 8px;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+  letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;
+  white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);
+}
+#pros-fixed-header{
+  display:none;position:fixed;left:0;right:0;z-index:61;
+  background:var(--bg);border-bottom:2px solid var(--gold2);
+  overflow:hidden;pointer-events:auto;
+}
+#pros-fixed-header table{width:100%;border-collapse:collapse;table-layout:fixed;}
+#pros-fixed-header th{
+  padding:5px 8px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
+  letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;
   white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);
 }
 
@@ -737,6 +759,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 
 <!-- PLAYER POOL -->
 <div id="pool-fixed-header"><table id="pool-fixed-table"></table></div>
+<div id="pool-roster-fixed-header"><table id="pool-roster-fixed-table"></table></div>
 
 <div class="pool-wrap" id="pool-wrap">
   <div id="ctx-fixed-header-mask"></div>
@@ -809,7 +832,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
   <!-- FULL ROSTER TABLE - hidden, loads in background for API data -->
   <div class="pool-table-wrap" style="display:none">
     <table class="pool-table" id="pool-main-table">
-      <thead>
+      <thead id="pool-main-thead">
         <tr>
           <th onclick="sortPool('name')" style="width:160px;min-width:160px;max-width:160px">Player <span class="sort-arrow" id="parr-name">↕</span></th>
           <th onclick="sortPool('primaryPos')">Pos <span class="sort-arrow" id="parr-primaryPos">↕</span></th>
@@ -1003,6 +1026,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 <!-- ============================================================ -->
 <!-- PROSPECTS PANEL -->
 <!-- ============================================================ -->
+<div id="pros-fixed-header"><table id="pros-fixed-table"></table></div>
 <div class="pool-wrap" id="prospects-wrap">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
     <div style="display:flex;align-items:center;gap:12px">
@@ -1022,9 +1046,9 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
   </div>
   <div id="pros-loading" style="color:var(--text2);font-family:'DM Mono',monospace;font-size:13px;padding:2rem 0">Loading prospects...</div>
   <div id="pros-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:0.5rem;display:none"></div>
-  <div id="pros-table-wrap" style="display:none;overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 200px)">
+  <div id="pros-table-wrap" style="display:none;overflow-x:auto">
     <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:13px">
-      <thead style="position:sticky;top:0;z-index:10">
+      <thead id="pros-thead" style="position:relative;z-index:1">
         <tr style="border-bottom:2px solid var(--gold2)">
           <th style="text-align:left;padding:5px 8px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer" onclick="sortProspects('name')">Player</th>
           <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase">POS</th>
@@ -2909,6 +2933,7 @@ async function openContext(mlbId, name, team, primaryPos, age){
   buildContextHeaders(isPit);
   document.getElementById('ctx-loading').style.display = 'block';
   setTimeout(syncFixedHeader, 150);
+  setTimeout(syncRosterFixedHeader, 150);
   document.getElementById('ctx-tbody').innerHTML = '';
   await loadContextStats(isPit, isPit ? 'full' : 'positional');
 }
@@ -3937,12 +3962,15 @@ function openProspects(){
   document.getElementById('prospects-tab').classList.add('active');
   if(!prospectsLoaded) loadProspects();
   setTimeout(setPoolWrapTop, 0);
+  setTimeout(syncProspectsFixedHeader, 300);
 }
 
 function closeProspects(){
   prospectsActive = false;
   document.getElementById('prospects-wrap').classList.remove('active');
   document.querySelector('.table-wrap').style.display = '';
+  const prosBar = document.getElementById('pros-fixed-header');
+  if(prosBar) prosBar.style.display = 'none';
 }
 
 function filterProspects(val, el){
@@ -4115,6 +4143,7 @@ function renderProspects(){
       }
     })();
   }
+  setTimeout(syncProspectsFixedHeader, 50);
 }
 
 async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnEl){
@@ -4202,10 +4231,54 @@ function syncFixedHeader(){
 
 function destroyFixedHeader(){
   const fixedBar = document.getElementById('pool-fixed-header');
+  const rosterBar = document.getElementById('pool-roster-fixed-header');
   const poolWrap = document.getElementById('pool-wrap');
   if(fixedBar) fixedBar.style.display = 'none';
+  if(rosterBar) rosterBar.style.display = 'none';
   if(poolWrap && poolScrollHandler) poolWrap.removeEventListener('scroll', poolScrollHandler);
   poolScrollHandler = null;
+}
+
+function syncRosterFixedHeader(){
+  const realThead = document.getElementById('pool-main-thead');
+  const fixedBar = document.getElementById('pool-roster-fixed-header');
+  const fixedTable = document.getElementById('pool-roster-fixed-table');
+  const poolWrap = document.getElementById('pool-wrap');
+  if(!realThead || !fixedBar || !fixedTable || !poolWrap) return;
+
+  const clone = realThead.cloneNode(true);
+  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  fixedTable.innerHTML = '';
+  fixedTable.appendChild(clone);
+
+  const realTable = document.getElementById('pool-main-table');
+  if(realTable){
+    const realCols = realThead.querySelectorAll('th');
+    const fixedCols = fixedTable.querySelectorAll('th');
+    realCols.forEach((th, i) => {
+      if(fixedCols[i]){
+        fixedCols[i].style.width = th.offsetWidth + 'px';
+        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
+        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
+      }
+    });
+    fixedTable.style.width = realTable.offsetWidth + 'px';
+    fixedBar.style.width = realTable.offsetWidth + 'px';
+    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
+  }
+
+  const topOffset = 72;
+  fixedBar.style.top = topOffset + 'px';
+  fixedBar.style.display = 'none';
+
+  poolWrap.addEventListener('scroll', function(){
+    const theadRect = realThead.getBoundingClientRect();
+    if(theadRect.top < topOffset){
+      fixedBar.style.display = 'block';
+    } else {
+      fixedBar.style.display = 'none';
+    }
+  });
 }
 
 
@@ -4257,6 +4330,48 @@ function destroyLeadersFixedHeader(){
   const leadersWrap = document.getElementById('leaders-wrap');
   if(fixedBar) fixedBar.style.display = 'none';
   if(leadersWrap) leadersWrap.onscroll = null;
+}
+
+function syncProspectsFixedHeader(){
+  const realThead = document.getElementById('pros-thead');
+  const fixedBar = document.getElementById('pros-fixed-header');
+  const fixedTable = document.getElementById('pros-fixed-table');
+  const prosWrap = document.getElementById('prospects-wrap');
+  if(!realThead || !fixedBar || !fixedTable || !prosWrap) return;
+
+  const clone = realThead.cloneNode(true);
+  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  fixedTable.innerHTML = '';
+  fixedTable.appendChild(clone);
+
+  const realTable = realThead.closest('table');
+  if(realTable){
+    const realCols = realThead.querySelectorAll('th');
+    const fixedCols = fixedTable.querySelectorAll('th');
+    realCols.forEach((th, i) => {
+      if(fixedCols[i]){
+        fixedCols[i].style.width = th.offsetWidth + 'px';
+        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
+        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
+      }
+    });
+    fixedTable.style.width = realTable.offsetWidth + 'px';
+    fixedBar.style.width = realTable.offsetWidth + 'px';
+    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
+  }
+
+  const topOffset = 72;
+  fixedBar.style.top = topOffset + 'px';
+  fixedBar.style.display = 'none';
+
+  prosWrap.onscroll = function(){
+    const theadRect = realThead.getBoundingClientRect();
+    if(theadRect.top < topOffset){
+      fixedBar.style.display = 'block';
+    } else {
+      fixedBar.style.display = 'none';
+    }
+  };
 }
 
 // ---- MAIN TABLE FIXED HEADER ----
