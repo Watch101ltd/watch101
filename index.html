@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v74</title>
+<title>Watch 101 MLB — TESTING v75</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -418,6 +418,28 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
   background:var(--bg);
 }
 
+/* ---- DATE RANGE LOADING BAR ---- */
+#daterange-status{
+  display:none;
+  padding:6px 1.5rem;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  color:var(--turquoise);
+  letter-spacing:0.04em;
+}
+#daterange-status.active{ display:flex; align-items:center; gap:10px; }
+#daterange-progress-track{
+  flex:1; max-width:200px; height:3px;
+  background:var(--surface3); border-radius:2px; overflow:hidden;
+}
+#daterange-progress-fill{
+  height:100%; background:var(--turquoise2); border-radius:2px;
+  transition:width 0.2s ease; width:0%;
+}
+select.daterange-active{ border-color:var(--turquoise2) !important; color:var(--turquoise) !important; }
+
 /* ---- PRESENTATION MODE ---- */
 #present-btn.active{background:var(--gold);color:#000;border-color:var(--gold);font-weight:600;}
 body.present-mode{cursor:zoom-in;}
@@ -546,6 +568,12 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <option value="TOR">TOR — Blue Jays</option>
     <option value="WSH">WSH — Nationals</option>
   </select>
+  <select id="daterange-select" onchange="setDateRange(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
+    <option value="season">Season Stats</option>
+    <option value="7">Last 7 Days</option>
+    <option value="14">Last 14 Days</option>
+    <option value="30">Last 30 Days</option>
+  </select>
   <div style="display:flex;flex-direction:column;gap:6px">
     <div class="filter-tabs">
       <button class="filter-tab active" onclick="setFilter('ALL',this)">All</button>
@@ -576,6 +604,12 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 </div>
 
 <div id="main-fixed-header"><table id="main-fixed-table"></table></div>
+
+<div id="daterange-status">
+  <span id="daterange-status-text">⟳ Loading stats…</span>
+  <div id="daterange-progress-track"><div id="daterange-progress-fill"></div></div>
+  <span id="daterange-status-count"></span>
+</div>
 
 <div class="table-wrap">
   <table id="main-table">
@@ -1591,32 +1625,41 @@ function renderTable(){
   document.getElementById('count-badge').textContent = list.length+' player'+(list.length!==1?'s':'');
   document.getElementById('empty-state').style.display = players.length===0?'block':'none';
   if(players.length===0){tbody.innerHTML='';return;}
+  const usingDateRange = dateRange !== 'season';
   tbody.innerHTML = list.map((p,i)=>{
     const pit = isPitcher(p);
     const rankClass = p.rank<=10?'top10':p.rank<=25?'top25':'';
     const isMinor = p.level && p.level !== 'MLB';
     const statColor = isMinor ? '#f472b6' : '#c084fc';
     const pitStatColor = isMinor ? '#facc15' : '#86efac';
+    // s = stat source: date-range cache if active, otherwise player object
+    const s = usingDateRange ? getDisplayStats(p) : p;
+    const loading = usingDateRange && !s; // still fetching this player
+    const sc = loading ? null : s; // safe stat container
+    const na = '<span class="stat-na">—</span>';
+    const pending = `<span style="color:var(--border2);font-size:10px">…</span>`;
+    const statVal = (val, dec=0) => loading ? pending : fmt(val, dec);
+    const statAvg = (val) => loading ? pending : fmtAvg(val);
     return `<tr class="${rowClass(p.move)}" draggable="true" data-id="${p.id}" data-idx="${i}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
       <td><span class="drag-handle">⠿</span></td>
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
       <td><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span><div class="badge-row">${p.injury_status ? injuryBadge(p.injury_status) : ''}${posBadges(p.positions)}</div></div></td>
-      <td class="stat-cell">${p.team||'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
-      <td class="stat-cell">${p.bats||'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${p.bats||na}</td>
       <td class="stat-cell">${renderDelta(p)}</td>
       <td class="yahoo-rank" style="color:var(--text3)">${fmt(p.preseason_rank)}</td>
       <td class="yahoo-rank">${fmt(p.yahoo_rank)}</td>
-      <td class="stat-cell">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':'<span class="stat-na">—</span>'}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.ab)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.ip,1)}</span>`}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.r)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.k)}</span>`}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.hr)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.w)}</span>`}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.rbi)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.sv)}</span>`}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.sb)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.hld)}</span>`}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmtAvg(p.avg)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.era,2)}</span>`}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmtAvg(p.obp)}</span>`:`<span style="color:${pitStatColor}">${fmt(p.whip,2)}</span>`}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${fmt(p.ops,3)}</span>`:`<span style="color:${pitStatColor}">${p.sv_xera!=null?p.sv_xera.toFixed(2):'—'}</span>`}</td>
-      <td class="stat-cell savant-col pct-shade" title="xBA (Statcast)" style="${advancedMode&&!pit?pctShadeStyle(getPercentile(p.sv_xba,'sv_xba',false),true):''}">${!pit?fmtSavant(p.sv_xba):'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.ab)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.ip,1)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.r)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.k)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.hr)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.w)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.rbi)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.sv)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.sb)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.hld)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statAvg(sc&&sc.avg)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.era,2)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statAvg(sc&&sc.obp)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.whip,2)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.ops,3)}</span>`:`<span style="color:${pitStatColor}">${p.sv_xera!=null?p.sv_xera.toFixed(2):'—'}</span>`}</td>
+      <td class="stat-cell savant-col pct-shade" title="xBA (Statcast)" style="${advancedMode&&!pit?pctShadeStyle(getPercentile(p.sv_xba,'sv_xba',false),true):''}">${!pit?fmtSavant(p.sv_xba):na}</td>
       <td class="stat-cell savant-col pct-shade" title="xwOBA (Statcast)" style="${advancedMode?pctShadeStyle(getPercentile(p.sv_xwoba,'sv_xwoba',pit),true):''}">${fmtSavant(p.sv_xwoba)}</td>
       <td class="stat-cell savant-adv-col pct-shade" title="Avg Exit Velocity" style="${pctShadeStyle(getPercentile(p.sv_ev,'sv_ev',pit),true)}">${!pit?`<span style="color:var(--gold)">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`}</td>
       <td class="stat-cell savant-adv-col pct-shade" title="Sweet Spot %" style="${pctShadeStyle(getPercentile(p.sv_sweetspot,'sv_sweetspot',pit),true)}">${!pit?`<span style="color:var(--gold)">${p.sv_sweetspot!=null?p.sv_sweetspot.toFixed(1)+'%':'—'}</span>`:`<span style="color:#94a3b8">${p.sv_sweetspot!=null?p.sv_sweetspot.toFixed(1)+'%':'—'}</span>`}</td>
@@ -3539,6 +3582,133 @@ async function quickAddLeader(mlbId, name, team, primaryPos, btnEl){
   players.push(newPlayer); reorderRanks(); saveData();
   btnEl.textContent='✓ On List'; btnEl.className='btn-add-pool added';
 }
+
+// ============================================================
+// DATE RANGE STATS
+// ============================================================
+let dateRange = 'season';          // 'season' | '7' | '14' | '30'
+let dateRangeCache = {};           // keyed by `${playerId}_${range}`
+let dateRangeFetching = false;
+
+function setDateRange(val){
+  dateRange = val;
+  const sel = document.getElementById('daterange-select');
+  if(val === 'season'){
+    sel.classList.remove('daterange-active');
+    renderTable();
+  } else {
+    sel.classList.add('daterange-active');
+    fetchDateRangeStats(val);
+  }
+}
+
+function getDateRangeWindow(days){
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - parseInt(days));
+  const fmt = d => d.toISOString().slice(0,10); // YYYY-MM-DD
+  return { startDate: fmt(start), endDate: fmt(end) };
+}
+
+function getDisplayStats(p){
+  // Returns the stat object to display — either stored season stats,
+  // or cached date-range stats if available
+  if(dateRange === 'season') return p;
+  const cached = dateRangeCache[p.id + '_' + dateRange];
+  if(cached) return cached;
+  return null; // still loading for this player
+}
+
+async function fetchDateRangeStats(days){
+  if(dateRangeFetching) return;
+  dateRangeFetching = true;
+
+  const needsFetch = players.filter(p => p.mlb_id && !dateRangeCache[p.id + '_' + days]);
+  const total = needsFetch.length;
+  const already = players.length - total;
+
+  const statusEl = document.getElementById('daterange-status');
+  const statusText = document.getElementById('daterange-status-text');
+  const statusCount = document.getElementById('daterange-status-count');
+  const progressFill = document.getElementById('daterange-progress-fill');
+
+  const labelMap = {'7':'Last 7 Days','14':'Last 14 Days','30':'Last 30 Days'};
+  const label = labelMap[days] || days + ' days';
+
+  if(total === 0){
+    // Everything already cached — just re-render
+    dateRangeFetching = false;
+    renderTable();
+    return;
+  }
+
+  statusEl.classList.add('active');
+  statusText.textContent = `⟳ Loading ${label} stats…`;
+  progressFill.style.width = already > 0 ? Math.round((already / players.length) * 100) + '%' : '0%';
+  statusCount.textContent = `${already}/${players.length}`;
+
+  const { startDate, endDate } = getDateRangeWindow(days);
+  let done = already;
+
+  for(const p of needsFetch){
+    // If user switched away from this range mid-fetch, abort
+    if(dateRange !== days){ break; }
+    try{
+      const lp = (p.level==='AAA'||p.level==='AA'||p.level==='A') ? '&leagueListId=milb_all' : '';
+      const url = `https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=byDateRange&startDate=${startDate}&endDate=${endDate}&season=2026&group=hitting,pitching${lp}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const stats = data.stats || [];
+      const entry = { id: p.id };
+      for(const group of stats){
+        if(!group.splits || group.splits.length === 0) continue;
+        const s = group.splits[0].stat;
+        if(group.group && group.group.displayName === 'hitting'){
+          entry.avg  = s.avg  ? parseFloat(s.avg)  : null;
+          entry.obp  = s.obp  ? parseFloat(s.obp)  : null;
+          entry.ops  = s.ops  ? parseFloat(s.ops)  : null;
+          entry.ab   = s.atBats   !== undefined ? s.atBats   : null;
+          entry.hr   = s.homeRuns !== undefined ? s.homeRuns : null;
+          entry.rbi  = s.rbi      !== undefined ? s.rbi      : null;
+          entry.r    = s.runs     !== undefined ? s.runs     : null;
+          entry.sb   = s.stolenBases !== undefined ? s.stolenBases : null;
+        }
+        if(group.group && group.group.displayName === 'pitching'){
+          entry.era  = s.era  ? parseFloat(s.era)  : null;
+          entry.whip = s.whip ? parseFloat(s.whip) : null;
+          entry.k    = s.strikeOuts !== undefined ? s.strikeOuts : null;
+          entry.w    = s.wins       !== undefined ? s.wins       : null;
+          entry.sv   = s.saves      !== undefined ? s.saves      : null;
+          entry.hld  = s.holds      !== undefined ? s.holds      : null;
+          entry.ip   = s.inningsPitched !== undefined ? parseFloat(s.inningsPitched) : null;
+        }
+      }
+      dateRangeCache[p.id + '_' + days] = entry;
+    } catch(e){
+      // On error, cache an empty object so we don't retry endlessly
+      dateRangeCache[p.id + '_' + days] = { id: p.id };
+    }
+    done++;
+    const pct = Math.round((done / players.length) * 100);
+    progressFill.style.width = pct + '%';
+    statusCount.textContent = `${done}/${players.length}`;
+    renderTable();
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  dateRangeFetching = false;
+
+  // Only hide bar if we're still on this range
+  if(dateRange === days){
+    statusEl.classList.remove('active');
+    progressFill.style.width = '0%';
+    renderTable();
+  }
+}
+
+// Clear date range cache when stats are manually refreshed
+// (hook into existing refreshAllStats flow)
+const _origRefreshBtn = window.refreshAllStats;
 
 loadData();
 
