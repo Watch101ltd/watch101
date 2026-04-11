@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v75</title>
+<title>Watch 101 MLB — TESTING v76</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -569,7 +569,8 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <option value="WSH">WSH — Nationals</option>
   </select>
   <select id="daterange-select" onchange="setDateRange(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
-    <option value="season">Season Stats</option>
+    <option value="live">🔴 Live</option>
+    <option value="season" selected>Season Stats</option>
     <option value="7">Last 7 Days</option>
     <option value="14">Last 14 Days</option>
     <option value="30">Last 30 Days</option>
@@ -3598,16 +3599,26 @@ function setDateRange(val){
     renderTable();
   } else {
     sel.classList.add('daterange-active');
+    if(val === 'live'){
+      Object.keys(dateRangeCache).forEach(k => {
+        if(k.endsWith('_live')) delete dateRangeCache[k];
+      });
+    }
     fetchDateRangeStats(val);
   }
 }
 
-function getDateRangeWindow(days){
+function getDateRangeWindow(range){
+  const fmtDate = d => d.toISOString().slice(0,10);
+  const now = new Date();
+  if(range === 'live'){
+    const todayStr = new Date().toLocaleDateString('en-CA', {timeZone:'America/New_York'});
+    return { startDate: todayStr, endDate: todayStr };
+  }
   const end = new Date();
   const start = new Date();
-  start.setDate(end.getDate() - parseInt(days));
-  const fmt = d => d.toISOString().slice(0,10); // YYYY-MM-DD
-  return { startDate: fmt(start), endDate: fmt(end) };
+  start.setDate(end.getDate() - parseInt(range));
+  return { startDate: fmtDate(start), endDate: fmtDate(end) };
 }
 
 function getDisplayStats(p){
@@ -3632,7 +3643,7 @@ async function fetchDateRangeStats(days){
   const statusCount = document.getElementById('daterange-status-count');
   const progressFill = document.getElementById('daterange-progress-fill');
 
-  const labelMap = {'7':'Last 7 Days','14':'Last 14 Days','30':'Last 30 Days'};
+  const labelMap = {'live':'🔴 Live','7':'Last 7 Days','14':'Last 14 Days','30':'Last 30 Days'};
   const label = labelMap[days] || days + ' days';
 
   if(total === 0){
