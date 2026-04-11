@@ -61,7 +61,7 @@ th .sort-arrow{margin-left:2px;opacity:0.5;font-size:8px}
 th.sorted .sort-arrow{opacity:1;color:var(--gold)}
 th:first-child{width:18px;text-align:center;cursor:default;padding:5px 2px}
 th:nth-child(2){width:36px;text-align:center}
-th:nth-child(3){width:260px;text-align:left}
+th:nth-child(3){width:190px;text-align:left}
 th:nth-child(4){width:34px}
 th:nth-child(5){width:30px}
 th:nth-child(6){width:26px}
@@ -89,7 +89,7 @@ tbody tr.highlight-new{border-left:3px solid var(--gold)}
 
 td{padding:5px 4px;font-size:11px;vertical-align:middle;text-align:right;white-space:nowrap}
 td:first-child{text-align:center;padding:5px 2px}
-td:nth-child(3){text-align:left}
+td:nth-child(3){text-align:left;overflow:hidden}
 td:nth-child(4){text-align:left}
 .rank-cell{display:flex;align-items:center;justify-content:center;gap:2px}
 .rank-num{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#94a3b8;line-height:1;min-width:20px;text-align:center}
@@ -100,7 +100,7 @@ td:nth-child(4){text-align:left}
 .move-down{background:#7f1d1d33;color:var(--red);border:1px solid #7f1d1d}
 .move-new{background:#78350f33;color:var(--gold);border:1px solid #78350f}
 
-.name-cell{display:flex;flex-direction:row;align-items:center;gap:4px;flex-wrap:wrap;min-width:220px;max-width:300px}
+.name-cell{display:flex;flex-direction:row;align-items:center;gap:4px;flex-wrap:wrap;min-width:0;max-width:100%}
 .player-name{font-weight:500;font-size:14px;color:#ffffff;white-space:nowrap}
 .badge-row{display:flex;flex-wrap:wrap;gap:2px;align-items:center}
 .player-team{font-size:11px;color:#94a3b8;font-family:'DM Mono',monospace}
@@ -4286,6 +4286,14 @@ function syncMainFixedHeader(){
       fixedBar.style.display = 'none';
     }
   });
+
+  // Keep fixed header aligned when table scrolls horizontally
+  const tableWrap = document.querySelector('.table-wrap');
+  if(tableWrap){
+    tableWrap.addEventListener('scroll', function(){
+      fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
+    });
+  }
 }
 
 // Initialize after page loads
