@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v84</title>
+<title>Watch 101 MLB — TESTING v85</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -4212,7 +4212,8 @@ function syncFixedHeader(){
     fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
   }
 
-  const topOffset = 72;
+  // Use the actual position of the thead as the trigger point
+  const topOffset = realThead.getBoundingClientRect().top;
   fixedBar.style.top = topOffset + 'px';
   fixedBar.style.display = 'none';
 
@@ -4267,7 +4268,7 @@ function syncRosterFixedHeader(){
     fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
   }
 
-  const topOffset = 72;
+  const topOffset = realThead.getBoundingClientRect().top;
   fixedBar.style.top = topOffset + 'px';
   fixedBar.style.display = 'none';
 
@@ -4312,12 +4313,13 @@ function syncLeadersFixedHeader(){
     fixedBar.style.width = realTable.offsetWidth + 'px';
   }
 
-  fixedBar.style.top = '72px';
+  const leadersTopOffset = realThead.getBoundingClientRect().top;
+  fixedBar.style.top = leadersTopOffset + 'px';
   fixedBar.style.display = 'none'; // start hidden, show on scroll
 
   leadersWrap.onscroll = function(){
     const theadRect = realThead.getBoundingClientRect();
-    if(theadRect.top < 72){
+    if(theadRect.top < leadersTopOffset){
       fixedBar.style.display = 'block';
     } else {
       fixedBar.style.display = 'none';
@@ -4360,7 +4362,7 @@ function syncProspectsFixedHeader(){
     fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
   }
 
-  const topOffset = 72;
+  const topOffset = realThead.getBoundingClientRect().top;
   fixedBar.style.top = topOffset + 'px';
   fixedBar.style.display = 'none';
 
