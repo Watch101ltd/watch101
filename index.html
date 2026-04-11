@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v80</title>
+<title>Watch 101 MLB — TESTING v81</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -228,7 +228,7 @@ tr.drag-over{border-top:2px solid var(--gold)}
 
 /* PLAYER POOL */
 .pool-wrap{display:none;padding:0.75rem 1.5rem 2rem}
-.pool-wrap.active{display:block;position:fixed;inset:0;top:0;z-index:50;background:var(--bg);overflow-y:scroll;padding:0.75rem 1.5rem 2rem;scroll-padding-top:60px}
+.pool-wrap.active{display:block;position:fixed;inset:0;top:72px;z-index:50;background:var(--bg);overflow-y:scroll;padding:0.75rem 1.5rem 2rem;scroll-padding-top:60px}
 .pool-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
 .pool-search-wrap{position:relative;flex:1;min-width:250px;max-width:400px}
 .pool-search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px 8px 34px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none}
@@ -4173,26 +4173,17 @@ function syncFixedHeader(){
     fixedBar.style.width = realTable.offsetWidth + 'px';
   }
 
-  // Position: top of pool-wrap (72px from top = app header height)
+  // Position: top of pool-wrap
   fixedBar.style.top = '72px';
   fixedBar.style.display = 'none'; // start hidden, show on scroll
-
-  // Position mask to cover gap above fixed bar (prevents row bleed-through)
-  const mask = document.getElementById('ctx-fixed-header-mask');
-  if(mask){
-    mask.style.top = '0px';
-    mask.style.height = '72px';
-  }
 
   // Show/hide based on scroll — hide when real thead is visible
   poolWrap.onscroll = function(){
     const theadRect = realThead.getBoundingClientRect();
     if(theadRect.top < 72){
       fixedBar.style.display = 'block';
-      if(mask) mask.style.display = 'block';
     } else {
       fixedBar.style.display = 'none';
-      if(mask) mask.style.display = 'none';
     }
   };
 }
