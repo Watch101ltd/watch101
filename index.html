@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v73</title>
+<title>Watch 101 MLB — TESTING v74</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -513,6 +513,39 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <span class="search-icon">⌕</span>
     <input type="text" id="search" placeholder="Filter watch list..." oninput="renderTable()">
   </div>
+  <select id="team-filter" onchange="teamFilter=this.value;renderTable()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
+    <option value="ALL">All Teams</option>
+    <option value="ARI">ARI — D-backs</option>
+    <option value="ATL">ATL — Braves</option>
+    <option value="BAL">BAL — Orioles</option>
+    <option value="BOS">BOS — Red Sox</option>
+    <option value="CHC">CHC — Cubs</option>
+    <option value="CWS">CWS — White Sox</option>
+    <option value="CIN">CIN — Reds</option>
+    <option value="CLE">CLE — Guardians</option>
+    <option value="COL">COL — Rockies</option>
+    <option value="DET">DET — Tigers</option>
+    <option value="HOU">HOU — Astros</option>
+    <option value="KC">KC — Royals</option>
+    <option value="LAA">LAA — Angels</option>
+    <option value="LAD">LAD — Dodgers</option>
+    <option value="MIA">MIA — Marlins</option>
+    <option value="MIL">MIL — Brewers</option>
+    <option value="MIN">MIN — Twins</option>
+    <option value="NYM">NYM — Mets</option>
+    <option value="NYY">NYY — Yankees</option>
+    <option value="ATH">ATH — Athletics</option>
+    <option value="PHI">PHI — Phillies</option>
+    <option value="PIT">PIT — Pirates</option>
+    <option value="SD">SD — Padres</option>
+    <option value="SF">SF — Giants</option>
+    <option value="SEA">SEA — Mariners</option>
+    <option value="STL">STL — Cardinals</option>
+    <option value="TB">TB — Rays</option>
+    <option value="TEX">TEX — Rangers</option>
+    <option value="TOR">TOR — Blue Jays</option>
+    <option value="WSH">WSH — Nationals</option>
+  </select>
   <div style="display:flex;flex-direction:column;gap:6px">
     <div class="filter-tabs">
       <button class="filter-tab active" onclick="setFilter('ALL',this)">All</button>
@@ -955,6 +988,7 @@ let savantLoaded = false;
 let sortCol = 'rank';
 let sortDir = 1;
 let filter = 'ALL';
+let teamFilter = 'ALL';
 let editingId = null;
 let dragSrcIdx = null;
 let searchTimeout = null;
@@ -1472,6 +1506,7 @@ function getFiltered(){
   if(filter==='PITCHER') list = list.filter(p => isPitcher(p));
   if(filter==='TOP25') list = list.filter(p => p.rank && p.rank<=25);
   if(filter==='MOVERS') list = list.filter(p => p.move && p.move!=='');
+  if(teamFilter !== 'ALL') list = list.filter(p => (p.team||'').toUpperCase() === teamFilter);
   list.sort((a,b)=>{
     let av = a[sortCol], bv = b[sortCol];
     if(sortCol==='rank'){ av=a.rank||999; bv=b.rank||999; }
