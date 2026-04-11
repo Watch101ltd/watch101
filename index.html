@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v81</title>
+<title>Watch 101 MLB — TESTING v82</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -348,6 +348,19 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
 }
 #main-fixed-header th.savant-col{background:rgba(201,168,76,0.06);color:var(--gold);}
 #main-fixed-header th.savant-adv-col{background:rgba(201,168,76,0.06);color:var(--gold);}
+
+/* Pool context fixed header - same clone bar approach as main table */
+#pool-fixed-header{
+  display:none;position:fixed;left:0;right:0;z-index:61;
+  background:var(--bg);border-bottom:2px solid var(--gold2);
+  overflow:hidden;pointer-events:auto;
+}
+#pool-fixed-header table{width:100%;border-collapse:collapse;table-layout:fixed;}
+#pool-fixed-header th{
+  padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;
+  letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;
+  white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);
+}
 
 /* Fixed stat strip that locks to top of pool-wrap when scrolling */
 #ctx-fixed-header-mask{
@@ -723,6 +736,8 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 </div>
 
 <!-- PLAYER POOL -->
+<div id="pool-fixed-header"><table id="pool-fixed-table"></table></div>
+
 <div class="pool-wrap" id="pool-wrap">
   <div id="ctx-fixed-header-mask"></div>
   <div id="ctx-fixed-header"><table id="ctx-fixed-table"></table></div>
@@ -4135,27 +4150,23 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
 
 
 
-// ---- FIXED STAT STRIP ----
+// ---- POOL CONTEXT FIXED HEADER (clone bar, same as main table) ----
+var poolScrollHandler = null;
+
 function syncFixedHeader(){
   const realThead = document.getElementById('ctx-thead');
-  const fixedBar = document.getElementById('ctx-fixed-header');
-  const fixedTable = document.getElementById('ctx-fixed-table');
+  const fixedBar = document.getElementById('pool-fixed-header');
+  const fixedTable = document.getElementById('pool-fixed-table');
   const poolWrap = document.getElementById('pool-wrap');
   if(!realThead || !fixedBar || !fixedTable || !poolWrap) return;
 
-  // Clone the thead row into the fixed bar
+  // Clone thead and wire sort clicks
   const clone = realThead.cloneNode(true);
-  // Remove IDs from clone to avoid duplicates
   clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-  // Re-wire sort clicks on clone to call same functions
-  clone.querySelectorAll('th[onclick]').forEach(th => {
-    const fn = th.getAttribute('onclick');
-    th.setAttribute('onclick', fn);
-  });
   fixedTable.innerHTML = '';
   fixedTable.appendChild(clone);
 
-  // Match column widths from real table
+  // Match column widths
   const realTable = realThead.closest('table');
   if(realTable){
     const realCols = realThead.querySelectorAll('th');
@@ -4168,33 +4179,33 @@ function syncFixedHeader(){
       }
     });
     fixedTable.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
-    fixedBar.style.right = 'auto';
     fixedBar.style.width = realTable.offsetWidth + 'px';
+    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
   }
 
-  // Position: top of pool-wrap
-  fixedBar.style.top = '72px';
-  fixedBar.style.display = 'none'; // start hidden, show on scroll
+  const topOffset = 72;
+  fixedBar.style.top = topOffset + 'px';
+  fixedBar.style.display = 'none';
 
-  // Show/hide based on scroll — hide when real thead is visible
-  poolWrap.onscroll = function(){
+  // Use pool-wrap scroll (it's a fixed overflow-y:scroll container)
+  if(poolScrollHandler) poolWrap.removeEventListener('scroll', poolScrollHandler);
+  poolScrollHandler = function(){
     const theadRect = realThead.getBoundingClientRect();
-    if(theadRect.top < 72){
+    if(theadRect.top < topOffset){
       fixedBar.style.display = 'block';
     } else {
       fixedBar.style.display = 'none';
     }
   };
+  poolWrap.addEventListener('scroll', poolScrollHandler);
 }
 
 function destroyFixedHeader(){
-  const fixedBar = document.getElementById('ctx-fixed-header');
-  const mask = document.getElementById('ctx-fixed-header-mask');
+  const fixedBar = document.getElementById('pool-fixed-header');
   const poolWrap = document.getElementById('pool-wrap');
   if(fixedBar) fixedBar.style.display = 'none';
-  if(mask) mask.style.display = 'none';
-  if(poolWrap) poolWrap.onscroll = null;
+  if(poolWrap && poolScrollHandler) poolWrap.removeEventListener('scroll', poolScrollHandler);
+  poolScrollHandler = null;
 }
 
 
