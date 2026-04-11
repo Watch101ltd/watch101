@@ -257,7 +257,7 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .pool-table tbody tr:hover{background:var(--surface2)}
 .pool-table tbody tr.already-added{opacity:0.45}
 .pool-table td{padding:6px 8px;font-size:13px;vertical-align:middle}
-.pool-table td:first-child{width:150px;min-width:120px}
+.pool-table td:first-child{min-width:0}
 .pool-table td.stat{text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:#38bdf8}
 .context-table-wrap td:first-child{width:150px;min-width:120px}
 .context-table-wrap td.stat{text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:#38bdf8}
@@ -794,7 +794,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <table class="pool-table" id="pool-main-table">
       <thead>
         <tr>
-          <th onclick="sortPool('name')" style="width:180px;min-width:180px">Player <span class="sort-arrow" id="parr-name">↕</span></th>
+          <th onclick="sortPool('name')" style="min-width:0">Player <span class="sort-arrow" id="parr-name">↕</span></th>
           <th onclick="sortPool('primaryPos')">Pos <span class="sort-arrow" id="parr-primaryPos">↕</span></th>
           <th onclick="sortPool('team')">Team <span class="sort-arrow" id="parr-team">↕</span></th>
           <th onclick="sortPool('age')" style="text-align:right">Age <span class="sort-arrow" id="parr-age">↕</span></th>
@@ -2917,7 +2917,7 @@ function buildContextHeaders(isPit){
   if(isPit){
     thead.innerHTML = `<tr>
       <th class="no-sort" style="text-align:center;width:40px;color:var(--gold);">#</th>
-      <th onclick="sortCtx('name')" style="width:180px;min-width:180px"><span id="carr-name-count" style="color:var(--gold);font-weight:700"></span> <span id="carr-name">↕</span></th>
+      <th onclick="sortCtx('name')" style="min-width:0"><span id="carr-name-count" style="color:var(--gold);font-weight:700"></span> <span id="carr-name">↕</span></th>
       <th onclick="sortCtx('primaryPos')">Pos <span id="carr-primaryPos">↕</span></th>
       <th onclick="sortCtx('team')">Team <span id="carr-team">↕</span></th>
       <th onclick="sortCtx('age')" style="text-align:right">Age <span id="carr-age">↕</span></th>
@@ -2936,7 +2936,7 @@ function buildContextHeaders(isPit){
   } else {
     thead.innerHTML = `<tr>
       <th class="no-sort" style="text-align:center;width:40px;color:var(--gold);">#</th>
-      <th onclick="sortCtx('name')" style="width:180px;min-width:180px"><span id="carr-name-count" style="color:var(--gold);font-weight:700"></span> <span id="carr-name">↕</span></th>
+      <th onclick="sortCtx('name')" style="min-width:0"><span id="carr-name-count" style="color:var(--gold);font-weight:700"></span> <span id="carr-name">↕</span></th>
       <th onclick="sortCtx('primaryPos')">Pos <span id="carr-primaryPos">↕</span></th>
       <th onclick="sortCtx('team')">Team <span id="carr-team">↕</span></th>
       <th onclick="sortCtx('age')" style="text-align:right">Age <span id="carr-age">↕</span></th>
@@ -3441,7 +3441,7 @@ async function loadLeaders(statLabel, group, statKey, statName){
     if(isPit){
       thead.innerHTML = `<tr>
         <th style="width:40px;text-align:center">RK</th>
-        <th style="width:180px;min-width:180px">Player</th>
+        <th style="min-width:0">Player</th>
         <th>Pos</th><th onclick="sortLeadersCol(this,'teamName',false)" style="cursor:pointer">Team</th>
         <th onclick="sortLeadersCol(this,'currentAge',false)" style="text-align:right;cursor:pointer">Age</th>
         <th style="text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase">BATS</th>
@@ -3458,7 +3458,7 @@ async function loadLeaders(statLabel, group, statKey, statName){
     } else {
       thead.innerHTML = `<tr>
         <th style="width:40px;text-align:center">RK</th>
-        <th style="width:180px;min-width:180px">Player</th>
+        <th style="min-width:0">Player</th>
         <th>Pos</th>
         <th style="cursor:pointer" onclick="sortLeadersCol(this,'teamName',false)">Team</th>
         <th style="text-align:right;cursor:pointer" onclick="sortLeadersCol(this,'currentAge',false)">Age</th>
@@ -4161,9 +4161,10 @@ function syncFixedHeader(){
       }
     });
     fixedTable.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
-    fixedBar.style.right = 'auto';
-    fixedBar.style.width = realTable.offsetWidth + 'px';
+    fixedTable.style.marginLeft = realTable.getBoundingClientRect().left + 'px';
+    fixedBar.style.left = '0';
+    fixedBar.style.right = '0';
+    fixedBar.style.width = '';
   }
 
   // Position: top of pool-wrap (72px from top = app header height)
