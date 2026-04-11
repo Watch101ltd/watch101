@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v79</title>
+<title>Watch 101 MLB — TESTING v80</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -4177,13 +4177,22 @@ function syncFixedHeader(){
   fixedBar.style.top = '72px';
   fixedBar.style.display = 'none'; // start hidden, show on scroll
 
+  // Position mask to cover gap above fixed bar (prevents row bleed-through)
+  const mask = document.getElementById('ctx-fixed-header-mask');
+  if(mask){
+    mask.style.top = '0px';
+    mask.style.height = '72px';
+  }
+
   // Show/hide based on scroll — hide when real thead is visible
   poolWrap.onscroll = function(){
     const theadRect = realThead.getBoundingClientRect();
     if(theadRect.top < 72){
       fixedBar.style.display = 'block';
+      if(mask) mask.style.display = 'block';
     } else {
       fixedBar.style.display = 'none';
+      if(mask) mask.style.display = 'none';
     }
   };
 }
