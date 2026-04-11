@@ -228,7 +228,7 @@ tr.drag-over{border-top:2px solid var(--gold)}
 
 /* PLAYER POOL */
 .pool-wrap{display:none;padding:0.75rem 1.5rem 2rem}
-.pool-wrap.active{display:block;position:fixed;inset:0;top:72px;z-index:50;background:var(--bg);overflow-y:scroll;padding:0.75rem 1.5rem 2rem;scroll-padding-top:60px}
+.pool-wrap.active{display:block;position:fixed;inset:0;top:0;z-index:50;background:var(--bg);overflow-y:scroll;padding:0.75rem 1.5rem 2rem;scroll-padding-top:60px}
 .pool-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
 .pool-search-wrap{position:relative;flex:1;min-width:250px;max-width:400px}
 .pool-search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px 8px 34px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none}
@@ -2624,6 +2624,7 @@ function openPlayerPool(){
   if(allTab) allTab.classList.add('active');
   if(!poolLoaded) loadPoolPlayers();
   else renderPool();
+  setTimeout(setPoolWrapTop, 0);
 }
 
 function closePlayerPool(){
@@ -3375,6 +3376,7 @@ function openLeagueLeaders(){
   document.getElementById('leaders-wrap').classList.add('active');
   document.querySelectorAll('.filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('leaders-tab').classList.add('active');
+  setTimeout(setPoolWrapTop, 0);
 }
 
 function closeLeagueLeaders(){
@@ -3662,6 +3664,15 @@ function setDateRange(val){
   }
 }
 
+function setPoolWrapTop(){
+  const header = document.querySelector('.header');
+  const toolbar = document.querySelector('.toolbar');
+  const offset = (header ? header.offsetHeight : 0) + (toolbar ? toolbar.offsetHeight : 0);
+  document.querySelectorAll('.pool-wrap.active').forEach(el => {
+    el.style.top = offset + 'px';
+  });
+}
+
 function syncDateRangeDropdowns(val){
   // Keep all three dropdowns in sync visually
   ['daterange-select','daterange-select-pool','daterange-select-leaders'].forEach(id => {
@@ -3903,6 +3914,7 @@ function openProspects(){
   document.querySelectorAll('.filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('prospects-tab').classList.add('active');
   if(!prospectsLoaded) loadProspects();
+  setTimeout(setPoolWrapTop, 0);
 }
 
 function closeProspects(){
