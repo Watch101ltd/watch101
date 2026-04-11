@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v76</title>
+<title>Watch 101 MLB — TESTING v77</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -795,6 +795,14 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
           <th onclick="sortPool('yahoo_rank')" title="Yahoo Rank" style="text-align:right;color:var(--blue)">CURR <span class="sort-arrow" id="parr-yahoo_rank">↕</span></th>
           <th onclick="sortPool('preseason_rank')" title="Yahoo Preseason Rank" style="text-align:right;color:var(--text3)">PRE <span class="sort-arrow" id="parr-preseason_rank">↕</span></th>
           <th onclick="sortPool('roster_pct')" title="Yahoo Roster %" style="text-align:right;color:var(--blue)">RST% <span class="sort-arrow" id="parr-roster_pct">↕</span></th>
+          <th onclick="sortPool('ab')" title="AB / IP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AB</span><span style="color:#86efac;font-size:8px">IP</span></div></th>
+          <th onclick="sortPool('r')" title="R / K" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">R</span><span style="color:#86efac;font-size:8px">K</span></div></th>
+          <th onclick="sortPool('hr')" title="HR / W" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">HR</span><span style="color:#86efac;font-size:8px">W</span></div></th>
+          <th onclick="sortPool('rbi')" title="RBI / SV" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">RBI</span><span style="color:#86efac;font-size:8px">SV</span></div></th>
+          <th onclick="sortPool('sb')" title="SB / HLD" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">SB</span><span style="color:#86efac;font-size:8px">HLD</span></div></th>
+          <th onclick="sortPool('avg')" title="AVG / ERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AVG</span><span style="color:#86efac;font-size:8px">ERA</span></div></th>
+          <th onclick="sortPool('obp')" title="OBP / WHIP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OBP</span><span style="color:#86efac;font-size:8px">WHIP</span></div></th>
+          <th onclick="sortPool('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS</span><span style="color:#86efac;font-size:8px">xERA</span></div></th>
           <th class="no-sort" style="width:120px"></th>
         </tr>
       </thead>
@@ -2567,6 +2575,8 @@ let poolActive = false;
 let poolSortCol = 'name';
 let poolSortDir = 1;
 let poolSearchTimer = null;
+let poolDateRangeCache = {};       // keyed by `${mlb_id}_${range}`
+let poolDateRangeFetching = false;
 let contextAnchor = null;       // the main clicked player
 let contextCompares = [];       // additional comparison players added
 let ctxSortCol = 'ops';
@@ -2744,18 +2754,37 @@ function renderPool(){
   tbody.innerHTML = display.map(p => {
     const isAdded = addedNames.has(p.name.toLowerCase());
     const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
+    const pit = isPitcherPos(p.primaryPos);
     // Merge Yahoo data from watch list if available
     const yw = yahooLookup[p.name.toLowerCase()];
     if(yw) { if(yw.yahoo_rank) p.yahoo_rank = yw.yahoo_rank; if(yw.roster_pct!==null) p.roster_pct = yw.roster_pct; }
+    // Date range stat overlay
+    const usingDR = dateRange !== 'season';
+    const sc = usingDR ? poolDateRangeCache[p.mlb_id + '_' + dateRange] : p;
+    const loading = usingDR && !sc;
+    const pending = `<span style="color:var(--border2);font-size:10px">…</span>`;
+    const na = '<span style="color:var(--text3)">—</span>';
+    const sv = (val, dec=0) => loading ? pending : (val===undefined||val===null||val==='' ? na : (dec>0?parseFloat(val).toFixed(dec):val));
+    const svAvg = (val) => loading ? pending : (val===undefined||val===null||val==='' ? na : '.'+parseFloat(val).toFixed(3).split('.')[1]);
+    const statColor = '#c084fc';
+    const pitColor = '#86efac';
     return `<tr class="${isAdded?'already-added':''}">
       <td><div class="pool-player-name"><span class="pname">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
       <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
       <td class="stat">${p.team||'—'}</td>
       <td class="stat">${decimalAge(p)}</td>
-      <td class="stat" style="text-align:center">${p.bats||'<span style="color:var(--text3)">—</span>'}</td>
-      <td class="stat" style="color:var(--blue)">${p.yahoo_rank||'<span style=\'color:var(--text3)\'>—</span>'}</td>
-      <td class="stat" style="color:var(--text3)">${p.preseason_rank||'<span style=\'color:var(--text3)\'>—</span>'}</td>
-      <td class="stat" style="color:var(--blue)">${p.roster_pct!==undefined&&p.roster_pct!==null?parseFloat(p.roster_pct).toFixed(1)+'%':'<span style=\'color:var(--text3)\'>—</span>'}</td>
+      <td class="stat" style="text-align:center">${p.bats||na}</td>
+      <td class="stat" style="color:var(--blue)">${p.yahoo_rank||na}</td>
+      <td class="stat" style="color:var(--text3)">${p.preseason_rank||na}</td>
+      <td class="stat" style="color:var(--blue)">${p.roster_pct!==undefined&&p.roster_pct!==null?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ab)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.ip,1)}</span>`}</td>
+      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.r)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.k)}</span>`}</td>
+      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.hr)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.w)}</span>`}</td>
+      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.rbi)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.sv)}</span>`}</td>
+      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.sb)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.hld)}</span>`}</td>
+      <td class="stat">${!pit?`<span style="color:${statColor}">${svAvg(sc&&sc.avg)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
+      <td class="stat">${!pit?`<span style="color:${statColor}">${svAvg(sc&&sc.obp)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.whip,2)}</span>`}</td>
+      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ops,3)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
       <td style="text-align:right">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
         : `<button class="btn-add-pool" onclick="quickAddFromPool(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add to Watch 101</button>`
@@ -3370,7 +3399,14 @@ async function loadLeaders(statLabel, group, statKey, statName){
   const sortStat = sortStatMap[statKey] || statKey;
 
   try {
-    const url = `https://statsapi.mlb.com/api/v1/stats?stats=season&season=2026&group=${group}&gameType=R&limit=50&sortStat=${sortStat}&order=${order}&hydrate=person,team`;
+    let url;
+    if(dateRange !== 'season'){
+      // Date range mode — use byDateRange stats type
+      const { startDate, endDate } = getDateRangeWindow(dateRange);
+      url = `https://statsapi.mlb.com/api/v1/stats?stats=byDateRange&startDate=${startDate}&endDate=${endDate}&season=2026&group=${group}&gameType=R&limit=50&sortStat=${sortStat}&order=${order}&hydrate=person,team`;
+    } else {
+      url = `https://statsapi.mlb.com/api/v1/stats?stats=season&season=2026&group=${group}&gameType=R&limit=50&sortStat=${sortStat}&order=${order}&hydrate=person,team`;
+    }
     const res = await fetch(url);
     const data = await res.json();
     const splits = (data.stats && data.stats[0] && data.stats[0].splits) || [];
@@ -3433,8 +3469,10 @@ async function loadLeaders(statLabel, group, statKey, statName){
     renderLeadersTable(splits, statKey, isPit);
     setTimeout(syncLeadersFixedHeader, 150);
 
+    const labelMap = {'live':'🔴 Live','7':'Last 7 Days','14':'Last 14 Days','30':'Last 30 Days'};
+    const rangeLabel = dateRange !== 'season' ? ` · ${labelMap[dateRange]||dateRange}` : ' · 2026 Season';
     table.style.display = '';
-    status.textContent = `Top ${splits.length} MLB leaders in ${statName} — 2026 season · Click any column header to sort`;
+    status.textContent = `Top ${splits.length} MLB leaders in ${statName}${rangeLabel} · Click any column header to sort`;
     status.style.display = 'block';
 
   } catch(e) {
@@ -3597,14 +3635,16 @@ function setDateRange(val){
   if(val === 'season'){
     sel.classList.remove('daterange-active');
     renderTable();
+    if(poolActive) renderPool();
   } else {
     sel.classList.add('daterange-active');
     if(val === 'live'){
-      Object.keys(dateRangeCache).forEach(k => {
-        if(k.endsWith('_live')) delete dateRangeCache[k];
-      });
+      Object.keys(dateRangeCache).forEach(k => { if(k.endsWith('_live')) delete dateRangeCache[k]; });
+      Object.keys(poolDateRangeCache).forEach(k => { if(k.endsWith('_live')) delete poolDateRangeCache[k]; });
     }
+    // Fire both simultaneously — pool runs silently in background
     fetchDateRangeStats(val);
+    fetchPoolDateRangeStats(val);
   }
 }
 
@@ -3720,6 +3760,63 @@ async function fetchDateRangeStats(days){
 // Clear date range cache when stats are manually refreshed
 // (hook into existing refreshAllStats flow)
 const _origRefreshBtn = window.refreshAllStats;
+
+// ---- POOL BACKGROUND DATE RANGE FETCH ----
+async function fetchPoolDateRangeStats(range){
+  if(poolDateRangeFetching) return;
+  // Wait for pool to be loaded first — if not loaded yet, wait up to 30s
+  let waited = 0;
+  while(!poolLoaded && waited < 30000){
+    await new Promise(r => setTimeout(r, 500));
+    waited += 500;
+  }
+  if(!poolLoaded) return; // pool never loaded, give up
+
+  poolDateRangeFetching = true;
+  const needsFetch = poolPlayers.filter(p => p.mlb_id && !poolDateRangeCache[p.mlb_id + '_' + range]);
+  const { startDate, endDate } = getDateRangeWindow(range);
+
+  for(const p of needsFetch){
+    if(dateRange !== range){ break; } // user switched away, abort
+    try{
+      const url = `https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=byDateRange&startDate=${startDate}&endDate=${endDate}&season=2026&group=hitting,pitching`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const entry = { mlb_id: p.mlb_id };
+      for(const group of (data.stats||[])){
+        if(!group.splits || group.splits.length === 0) continue;
+        const s = group.splits[0].stat;
+        if(group.group && group.group.displayName === 'hitting'){
+          entry.avg  = s.avg  ? parseFloat(s.avg)  : null;
+          entry.obp  = s.obp  ? parseFloat(s.obp)  : null;
+          entry.ops  = s.ops  ? parseFloat(s.ops)  : null;
+          entry.ab   = s.atBats      !== undefined ? s.atBats      : null;
+          entry.hr   = s.homeRuns    !== undefined ? s.homeRuns    : null;
+          entry.rbi  = s.rbi         !== undefined ? s.rbi         : null;
+          entry.r    = s.runs        !== undefined ? s.runs        : null;
+          entry.sb   = s.stolenBases !== undefined ? s.stolenBases : null;
+        }
+        if(group.group && group.group.displayName === 'pitching'){
+          entry.era  = s.era  ? parseFloat(s.era)  : null;
+          entry.whip = s.whip ? parseFloat(s.whip) : null;
+          entry.k    = s.strikeOuts     !== undefined ? s.strikeOuts     : null;
+          entry.w    = s.wins           !== undefined ? s.wins           : null;
+          entry.sv   = s.saves          !== undefined ? s.saves          : null;
+          entry.hld  = s.holds          !== undefined ? s.holds          : null;
+          entry.ip   = s.inningsPitched !== undefined ? parseFloat(s.inningsPitched) : null;
+        }
+      }
+      poolDateRangeCache[p.mlb_id + '_' + range] = entry;
+    } catch(e){
+      poolDateRangeCache[p.mlb_id + '_' + range] = { mlb_id: p.mlb_id };
+    }
+    // Re-render pool live as data comes in (only if pool is currently open)
+    if(poolActive && poolLoaded) renderPool();
+    await new Promise(r => setTimeout(r, 80));
+  }
+  poolDateRangeFetching = false;
+  if(poolActive && poolLoaded) renderPool();
+}
 
 loadData();
 
