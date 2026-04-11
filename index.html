@@ -762,12 +762,12 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 </div>
 
 <!-- PLAYER POOL -->
-<div id="pool-fixed-header"><table id="pool-fixed-table"></table></div>
-<div id="pool-roster-fixed-header"><table id="pool-roster-fixed-table"></table></div>
+<div id="pool-fixed-header" style="display:none!important"><table id="pool-fixed-table"></table></div>
+<div id="pool-roster-fixed-header" style="display:none!important"><table id="pool-roster-fixed-table"></table></div>
 
 <div class="pool-wrap" id="pool-wrap">
-  <div id="ctx-fixed-header-mask"></div>
-  <div id="ctx-fixed-header"><table id="ctx-fixed-table"></table></div>
+  <div id="ctx-fixed-header-mask" style="display:none!important"></div>
+  <div id="ctx-fixed-header" style="display:none!important"><table id="ctx-fixed-table"></table></div>
 
   <!-- TOOLBAR -->
   <div class="pool-toolbar">
@@ -792,7 +792,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <div class="pool-status" id="pool-status">Loading players...</div>
   </div>
   <!-- PERMANENT STAT HEADER - always visible, never scrolls -->
-  <div id="pool-static-header" style="background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
+  <div id="pool-static-header" style="position:sticky;top:0;z-index:55;background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
     <table class="pool-table" style="margin:0;min-width:900px">
       <thead id="ctx-thead-static">
         <tr>
@@ -890,7 +890,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 
 <!-- LEAGUE LEADERS -->
 <div class="pool-wrap" id="leaders-wrap">
-  <div id="leaders-fixed-header"><table id="leaders-fixed-table"></table></div>
+  <div id="leaders-fixed-header" style="display:none!important"><table id="leaders-fixed-table"></table></div>
   <div class="pool-toolbar">
     <div style="display:flex;align-items:center;gap:12px">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em">🏆 League Leaders — 2026</div>
@@ -924,7 +924,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
   </div>
   <div id="leaders-status" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);padding:0 1.5rem 0.75rem;display:none"></div>
   <!-- PERMANENT STAT HEADER - always visible, never scrolls -->
-  <div id="leaders-static-header" style="background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
+  <div id="leaders-static-header" style="position:sticky;top:0;z-index:55;background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
     <table class="pool-table" style="margin:0">
       <thead id="leaders-thead-static">
         <tr>
@@ -1078,7 +1078,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 <!-- ============================================================ -->
 <!-- PROSPECTS PANEL -->
 <!-- ============================================================ -->
-<div id="pros-fixed-header"><table id="pros-fixed-table"></table></div>
+<div id="pros-fixed-header" style="display:none!important"><table id="pros-fixed-table"></table></div>
 <div class="pool-wrap" id="prospects-wrap">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
     <div style="display:flex;align-items:center;gap:12px">
@@ -1099,7 +1099,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
   <div id="pros-loading" style="color:var(--text2);font-family:'DM Mono',monospace;font-size:13px;padding:2rem 0">Loading prospects...</div>
   <div id="pros-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:0.5rem;display:none"></div>
   <!-- PERMANENT STAT HEADER - always visible, never scrolls -->
-  <div id="pros-static-header" style="background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
+  <div id="pros-static-header" style="position:sticky;top:0;z-index:55;background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
     <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:13px">
       <thead id="pros-thead">
         <tr style="border-bottom:2px solid var(--gold2)">
@@ -4246,160 +4246,16 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
 
 
 
-// ---- POOL CONTEXT FIXED HEADER (clone bar, same as main table) ----
+// ---- POOL CONTEXT FIXED HEADER (clone approach removed - static header used instead) ----
 var poolScrollHandler = null;
-
-function syncFixedHeader(){
-  const realThead = document.getElementById('ctx-thead');
-  const fixedBar = document.getElementById('pool-fixed-header');
-  const fixedTable = document.getElementById('pool-fixed-table');
-  const poolWrap = document.getElementById('pool-wrap');
-  if(!realThead || !fixedBar || !fixedTable || !poolWrap) return;
-
-  // Clone thead and wire sort clicks
-  const clone = realThead.cloneNode(true);
-  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-  fixedTable.innerHTML = '';
-  fixedTable.appendChild(clone);
-
-  // Match column widths
-  const realTable = realThead.closest('table');
-  if(realTable){
-    const realCols = realThead.querySelectorAll('th');
-    const fixedCols = fixedTable.querySelectorAll('th');
-    realCols.forEach((th, i) => {
-      if(fixedCols[i]){
-        fixedCols[i].style.width = th.offsetWidth + 'px';
-        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
-        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
-      }
-    });
-    fixedTable.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
-  }
-
-  // Use the actual position of the thead as the trigger point
-  const topOffset = realThead.getBoundingClientRect().top;
-  fixedBar.style.top = topOffset + 'px';
-  fixedBar.style.display = 'none';
-
-  // Use pool-wrap scroll (it's a fixed overflow-y:scroll container)
-  if(poolScrollHandler) poolWrap.removeEventListener('scroll', poolScrollHandler);
-  poolScrollHandler = function(){
-    const theadRect = realThead.getBoundingClientRect();
-    if(theadRect.top < topOffset){
-      fixedBar.style.display = 'block';
-    } else {
-      fixedBar.style.display = 'none';
-    }
-  };
-  poolWrap.addEventListener('scroll', poolScrollHandler);
-}
-
-function destroyFixedHeader(){
-  const fixedBar = document.getElementById('pool-fixed-header');
-  const rosterBar = document.getElementById('pool-roster-fixed-header');
-  const poolWrap = document.getElementById('pool-wrap');
-  if(fixedBar) fixedBar.style.display = 'none';
-  if(rosterBar) rosterBar.style.display = 'none';
-  if(poolWrap && poolScrollHandler) poolWrap.removeEventListener('scroll', poolScrollHandler);
-  poolScrollHandler = null;
-}
-
-function syncRosterFixedHeader(){
-  const realThead = document.getElementById('pool-main-thead');
-  const fixedBar = document.getElementById('pool-roster-fixed-header');
-  const fixedTable = document.getElementById('pool-roster-fixed-table');
-  const poolWrap = document.getElementById('pool-wrap');
-  if(!realThead || !fixedBar || !fixedTable || !poolWrap) return;
-
-  const clone = realThead.cloneNode(true);
-  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-  fixedTable.innerHTML = '';
-  fixedTable.appendChild(clone);
-
-  const realTable = document.getElementById('pool-main-table');
-  if(realTable){
-    const realCols = realThead.querySelectorAll('th');
-    const fixedCols = fixedTable.querySelectorAll('th');
-    realCols.forEach((th, i) => {
-      if(fixedCols[i]){
-        fixedCols[i].style.width = th.offsetWidth + 'px';
-        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
-        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
-      }
-    });
-    fixedTable.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
-  }
-
-  const topOffset = realThead.getBoundingClientRect().top;
-  fixedBar.style.top = topOffset + 'px';
-  fixedBar.style.display = 'none';
-
-  poolWrap.addEventListener('scroll', function(){
-    const theadRect = realThead.getBoundingClientRect();
-    if(theadRect.top < topOffset){
-      fixedBar.style.display = 'block';
-    } else {
-      fixedBar.style.display = 'none';
-    }
-  });
-}
+function syncFixedHeader(){ /* no-op: static header handles this */ }
+function destroyFixedHeader(){ poolScrollHandler = null; }
+function syncRosterFixedHeader(){ /* no-op: static header handles this */ }
 
 
-// ---- LEADERS FIXED STAT STRIP ----
-function syncLeadersFixedHeader(){
-  const realThead = document.getElementById('leaders-thead');
-  const fixedBar = document.getElementById('leaders-fixed-header');
-  const fixedTable = document.getElementById('leaders-fixed-table');
-  const leadersWrap = document.getElementById('leaders-wrap');
-  if(!realThead || !fixedBar || !fixedTable || !leadersWrap) return;
-
-  const clone = realThead.cloneNode(true);
-  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-  fixedTable.innerHTML = '';
-  fixedTable.appendChild(clone);
-
-  const realTable = realThead.closest('table');
-  if(realTable){
-    const realCols = realThead.querySelectorAll('th');
-    const fixedCols = fixedTable.querySelectorAll('th');
-    realCols.forEach((th, i) => {
-      if(fixedCols[i]){
-        fixedCols[i].style.width = th.offsetWidth + 'px';
-        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
-        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
-      }
-    });
-    fixedTable.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
-    fixedBar.style.right = 'auto';
-    fixedBar.style.width = realTable.offsetWidth + 'px';
-  }
-
-  const leadersTopOffset = realThead.getBoundingClientRect().top;
-  fixedBar.style.top = leadersTopOffset + 'px';
-  fixedBar.style.display = 'none'; // start hidden, show on scroll
-
-  leadersWrap.onscroll = function(){
-    const theadRect = realThead.getBoundingClientRect();
-    if(theadRect.top < leadersTopOffset){
-      fixedBar.style.display = 'block';
-    } else {
-      fixedBar.style.display = 'none';
-    }
-  };
-}
-
-function destroyLeadersFixedHeader(){
-  const fixedBar = document.getElementById('leaders-fixed-header');
-  const leadersWrap = document.getElementById('leaders-wrap');
-  if(fixedBar) fixedBar.style.display = 'none';
-  if(leadersWrap) leadersWrap.onscroll = null;
-}
+// ---- LEADERS FIXED STAT STRIP (clone approach removed - static header used instead) ----
+function syncLeadersFixedHeader(){ /* no-op: static header handles this */ }
+function destroyLeadersFixedHeader(){ }
 
 function setCtxTheadTop(){
   const poolToolbar = document.querySelector('#pool-wrap .pool-toolbar');
@@ -4434,47 +4290,8 @@ function setProsTheadTop(){
   wrap.style.setProperty('--pros-thead-top', offset + 'px');
 }
 
-function syncProspectsFixedHeader(){
-  const realThead = document.getElementById('pros-thead');
-  const fixedBar = document.getElementById('pros-fixed-header');
-  const fixedTable = document.getElementById('pros-fixed-table');
-  const prosWrap = document.getElementById('prospects-wrap');
-  if(!realThead || !fixedBar || !fixedTable || !prosWrap) return;
-
-  const clone = realThead.cloneNode(true);
-  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-  fixedTable.innerHTML = '';
-  fixedTable.appendChild(clone);
-
-  const realTable = realThead.closest('table');
-  if(realTable){
-    const realCols = realThead.querySelectorAll('th');
-    const fixedCols = fixedTable.querySelectorAll('th');
-    realCols.forEach((th, i) => {
-      if(fixedCols[i]){
-        fixedCols[i].style.width = th.offsetWidth + 'px';
-        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
-        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
-      }
-    });
-    fixedTable.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
-  }
-
-  const topOffset = realThead.getBoundingClientRect().top;
-  fixedBar.style.top = topOffset + 'px';
-  fixedBar.style.display = 'none';
-
-  prosWrap.onscroll = function(){
-    const theadRect = realThead.getBoundingClientRect();
-    if(theadRect.top < topOffset){
-      fixedBar.style.display = 'block';
-    } else {
-      fixedBar.style.display = 'none';
-    }
-  };
-}
+// Prospects fixed header (clone approach removed - static header used instead)
+function syncProspectsFixedHeader(){ /* no-op: static header handles this */ }
 
 // ---- MAIN TABLE FIXED HEADER ----
 function syncMainFixedHeader(){
