@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch 101 MLB — TESTING v77</title>
+<title>Watch 101 MLB — TESTING v78</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Ops+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -568,7 +568,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <option value="TOR">TOR — Blue Jays</option>
     <option value="WSH">WSH — Nationals</option>
   </select>
-  <select id="daterange-select" onchange="setDateRange(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
+  <select id="daterange-select" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
     <option value="live">🔴 Live</option>
     <option value="season" selected>Season Stats</option>
     <option value="7">Last 7 Days</option>
@@ -728,6 +728,13 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
   <!-- TOOLBAR -->
   <div class="pool-toolbar">
     <button onclick="closePlayerPool()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em;white-space:nowrap" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
+    <select id="daterange-select-pool" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
+      <option value="live">🔴 Live</option>
+      <option value="season" selected>Season Stats</option>
+      <option value="7">Last 7 Days</option>
+      <option value="14">Last 14 Days</option>
+      <option value="30">Last 30 Days</option>
+    </select>
     <div class="pool-search-wrap">
       <span class="pool-search-icon">⌕</span>
       <input type="text" id="pool-search" placeholder="Search any MLB player to view context..." oninput="poolSearchInput(this.value)" autocomplete="off">
@@ -820,6 +827,13 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <div style="display:flex;align-items:center;gap:12px">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em">🏆 League Leaders — 2026</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">Select a stat category</div>
+      <select id="daterange-select-leaders" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
+        <option value="live">🔴 Live</option>
+        <option value="season" selected>Season Stats</option>
+        <option value="7">Last 7 Days</option>
+        <option value="14">Last 14 Days</option>
+        <option value="30">Last 30 Days</option>
+      </select>
       <button onclick="closeLeagueLeaders()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:4px 12px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
     </div>
   </div>
@@ -3646,6 +3660,15 @@ function setDateRange(val){
     fetchDateRangeStats(val);
     fetchPoolDateRangeStats(val);
   }
+}
+
+function syncDateRangeDropdowns(val){
+  // Keep all three dropdowns in sync visually
+  ['daterange-select','daterange-select-pool','daterange-select-leaders'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = val;
+    if(el) el.classList.toggle('daterange-active', val !== 'season');
+  });
 }
 
 function getDateRangeWindow(range){
