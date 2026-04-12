@@ -228,8 +228,9 @@ tr.drag-over{border-top:2px solid var(--gold)}
 
 /* PLAYER POOL */
 .pool-wrap{display:none;padding:0.75rem 1.5rem 2rem}
-.pool-wrap.active{display:block;position:fixed;inset:0;top:72px;z-index:50;background:var(--bg);overflow-y:scroll;padding:0;scroll-padding-top:60px}
-.pool-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:30;background:var(--bg);padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);}
+.pool-wrap.active{display:flex;flex-direction:column;position:fixed;inset:0;top:72px;z-index:50;background:var(--bg);overflow:hidden;padding:0;}
+.pool-rows-scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
+.pool-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;background:var(--bg);padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);}
 .pool-search-wrap{position:relative;flex:1;min-width:250px;max-width:400px}
 .pool-search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px 8px 34px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none}
 .pool-search-wrap input:focus{border-color:var(--gold)}
@@ -792,7 +793,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <div class="pool-status" id="pool-status">Loading players...</div>
   </div>
   <!-- PERMANENT STAT HEADER - always visible, never scrolls -->
-  <div id="pool-static-header" style="position:sticky;top:0;z-index:55;background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
+  <div id="pool-static-header" style="background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;">
     <table class="pool-table" style="margin:0;min-width:900px">
       <thead id="ctx-thead-static">
         <tr>
@@ -815,6 +816,9 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
       </thead>
     </table>
   </div>
+
+  <!-- SCROLLING ROWS ONLY - toolbar and stat header stay fixed above -->
+  <div class="pool-rows-scroll" id="pool-rows-scroll">
 
   <!-- CONTEXT PANEL (hidden until player clicked) -->
   <div class="context-panel" id="context-panel" style="display:none">
@@ -886,6 +890,8 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <div class="pool-loading" id="pool-loading">Loading MLB roster from API...</div>
     <div class="pool-empty" id="pool-empty" style="display:none">No players match your filter.</div>
   </div>
+
+  </div><!-- end pool-rows-scroll -->
 </div>
 
 <!-- LEAGUE LEADERS -->
@@ -905,7 +911,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
       <button onclick="closeLeagueLeaders()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:4px 12px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
     </div>
   </div>
-  <div style="display:flex;flex-wrap:wrap;gap:8px;padding:0 1.5rem 1rem">
+  <div style="display:flex;flex-wrap:wrap;gap:8px;padding:0 1.5rem 1rem;flex-shrink:0">
     <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;width:100%;padding-top:4px">Hitting</div>
     <button class="filter-tab" onclick="loadLeaders('R','hitting','runs','Runs')">R</button>
     <button class="filter-tab" onclick="loadLeaders('HR','hitting','homeRuns','Home Runs')">HR</button>
@@ -922,9 +928,9 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <button class="filter-tab" onclick="loadLeaders('SV','pitching','saves','Saves')">SV</button>
     <button class="filter-tab" onclick="loadLeaders('IP','pitching','inningsPitched','Innings Pitched')">IP</button>
   </div>
-  <div id="leaders-status" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);padding:0 1.5rem 0.75rem;display:none"></div>
+  <div id="leaders-status" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);padding:0 1.5rem 0.75rem;display:none;flex-shrink:0"></div>
   <!-- PERMANENT STAT HEADER - always visible, never scrolls -->
-  <div id="leaders-static-header" style="position:sticky;top:0;z-index:55;background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
+  <div id="leaders-static-header" style="flex-shrink:0;background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
     <table class="pool-table" style="margin:0">
       <thead id="leaders-thead-static">
         <tr>
@@ -947,6 +953,8 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
       </thead>
     </table>
   </div>
+  <!-- SCROLLING ROWS ONLY -->
+  <div class="pool-rows-scroll" id="leaders-rows-scroll">
   <div class="pool-table-wrap">
     <table class="pool-table" id="leaders-table" style="display:none">
       <thead id="leaders-thead"></thead>
@@ -954,6 +962,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     </table>
     <div class="pool-loading" id="leaders-loading" style="display:none">Loading league leaders...</div>
   </div>
+  </div><!-- end leaders-rows-scroll -->
 </div>
 
 <div id="retro-loader">
@@ -1080,7 +1089,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 <!-- ============================================================ -->
 <div id="pros-fixed-header" style="display:none!important"><table id="pros-fixed-table"></table></div>
 <div class="pool-wrap" id="prospects-wrap">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;flex-shrink:0;padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg);">
     <div style="display:flex;align-items:center;gap:12px">
       <button onclick="closeProspects()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em">🌱 MiLB Prospects — 2026</div>
@@ -1096,10 +1105,10 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:13px;color:#fff;font-family:'DM Sans',sans-serif;outline:none;width:200px">
     </div>
   </div>
-  <div id="pros-loading" style="color:var(--text2);font-family:'DM Mono',monospace;font-size:13px;padding:2rem 0">Loading prospects...</div>
-  <div id="pros-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:0.5rem;display:none"></div>
+  <div id="pros-loading" style="color:var(--text2);font-family:'DM Mono',monospace;font-size:13px;padding:2rem 1.5rem;flex-shrink:0">Loading prospects...</div>
+  <div id="pros-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);padding:0 1.5rem 0.5rem;display:none;flex-shrink:0"></div>
   <!-- PERMANENT STAT HEADER - always visible, never scrolls -->
-  <div id="pros-static-header" style="position:sticky;top:0;z-index:55;background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
+  <div id="pros-static-header" style="flex-shrink:0;background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
     <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:13px">
       <thead id="pros-thead">
         <tr style="border-bottom:2px solid var(--gold2)">
@@ -1124,11 +1133,14 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
       </thead>
     </table>
   </div>
+  <!-- SCROLLING ROWS ONLY -->
+  <div class="pool-rows-scroll" id="pros-rows-scroll">
   <div id="pros-table-wrap" style="display:none;overflow-x:auto">
     <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:13px">
       <tbody id="pros-tbody"></tbody>
     </table>
   </div>
+  </div><!-- end pros-rows-scroll -->
 </div>
 
 
@@ -4246,53 +4258,17 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
 
 
 
-// ---- POOL CONTEXT FIXED HEADER (clone approach removed - static header used instead) ----
+// ---- ALL CLONE FIXED HEADERS REMOVED - static layout handles this ----
 var poolScrollHandler = null;
-function syncFixedHeader(){ /* no-op: static header handles this */ }
+function syncFixedHeader(){ }
 function destroyFixedHeader(){ poolScrollHandler = null; }
-function syncRosterFixedHeader(){ /* no-op: static header handles this */ }
-
-
-// ---- LEADERS FIXED STAT STRIP (clone approach removed - static header used instead) ----
-function syncLeadersFixedHeader(){ /* no-op: static header handles this */ }
+function syncRosterFixedHeader(){ }
+function syncLeadersFixedHeader(){ }
 function destroyLeadersFixedHeader(){ }
-
-function setCtxTheadTop(){
-  const poolToolbar = document.querySelector('#pool-wrap .pool-toolbar');
-  const contextPanel = document.getElementById('context-panel');
-  if(!poolToolbar || !contextPanel) return;
-  const top = poolToolbar.offsetHeight + contextPanel.offsetHeight;
-  document.getElementById('pool-wrap').style.setProperty('--ctx-thead-top', top + 'px');
-}
-
-function setLeadersTheadTop(){
-  const wrap = document.getElementById('leaders-wrap');
-  if(!wrap) return;
-  const thead = document.getElementById('leaders-thead');
-  if(!thead) return;
-  // Measure everything above the table
-  const table = document.getElementById('leaders-table');
-  if(!table) return;
-  const wrapTop = wrap.getBoundingClientRect().top;
-  const tableTop = table.getBoundingClientRect().top;
-  const offset = tableTop - wrapTop;
-  wrap.style.setProperty('--leaders-thead-top', offset + 'px');
-}
-
-function setProsTheadTop(){
-  const wrap = document.getElementById('prospects-wrap');
-  if(!wrap) return;
-  const tableWrap = document.getElementById('pros-table-wrap');
-  if(!tableWrap) return;
-  const wrapTop = wrap.getBoundingClientRect().top;
-  const tableWrapTop = tableWrap.getBoundingClientRect().top;
-  const offset = tableWrapTop - wrapTop;
-  wrap.style.setProperty('--pros-thead-top', offset + 'px');
-}
-
-// Prospects fixed header (clone approach removed - static header used instead)
-function syncProspectsFixedHeader(){ /* no-op: static header handles this */ }
-
+function syncProspectsFixedHeader(){ }
+function setCtxTheadTop(){ }
+function setLeadersTheadTop(){ }
+function setProsTheadTop(){ }
 // ---- MAIN TABLE FIXED HEADER ----
 function syncMainFixedHeader(){
   const realThead = document.querySelector('#main-table thead');
