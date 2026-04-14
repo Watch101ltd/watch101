@@ -251,8 +251,7 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .pool-table-wrap .pool-table th{background:var(--surface)}
 #leaders-wrap .pool-table-wrap thead{position:sticky;top:var(--leaders-thead-top,0px);z-index:10;}
 #leaders-wrap .pool-table-wrap .pool-table th{background:var(--surface);}
-#prospects-wrap #pros-table-wrap thead{position:sticky;top:var(--pros-thead-top,0px);z-index:10;}
-#pros-table-wrap thead th{background:var(--surface)}
+/* Prospects uses clone-header approach; thead stickiness handled via JS, not CSS */
 .pool-table{width:100%;border-collapse:separate;border-spacing:0;min-width:900px}
 .pool-table thead tr{border-bottom:2px solid var(--border2)}
 .pool-table th{padding:6px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);text-align:left;background:var(--surface);white-space:nowrap;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;user-select:none}
@@ -296,9 +295,11 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .context-table-wrap{overflow-x:auto;padding:0 0 2rem}
 .context-table-wrap .pool-table thead th{background:var(--surface);}
 /* Pool clone fixed header - appears when pool thead scrolls off screen */
-#pool-clone-header,#leaders-clone-header{display:none;position:fixed;left:0;right:0;z-index:62;background:var(--bg);border-bottom:2px solid var(--gold2);overflow:hidden;pointer-events:auto;}
-#pool-clone-header table,#leaders-clone-header table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
-#pool-clone-header th,#leaders-clone-header th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);}
+#pool-clone-header,#leaders-clone-header,#pros-clone-header{display:none;position:fixed;left:0;right:0;z-index:62;background:var(--bg);border-bottom:2px solid var(--gold2);overflow:hidden;pointer-events:auto;}
+#pool-clone-header table,#leaders-clone-header table,#pros-clone-header table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
+#pool-clone-header th,#leaders-clone-header th,#pros-clone-header th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);}
+/* Prospects table: auto layout so global nth-child widths don't corrupt the different column set */
+#pros-main-table{table-layout:auto;}
 #pros-table-wrap thead th{background:var(--surface)}
 .ctx-count-row td{background:var(--surface2);padding:5px 12px;font-family:'DM Mono',monospace;font-size:11px;border-bottom:1px solid var(--border)}
 tr.ctx-highlight td{background:#1a1200 !important}
@@ -1098,59 +1099,61 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 <!-- ============================================================ -->
 <!-- PROSPECTS PANEL -->
 <!-- ============================================================ -->
-<div id="pros-fixed-header" style="display:none!important"><table id="pros-fixed-table"></table></div>
+<!-- PROSPECTS CLONE FIXED HEADER — appears when stat thead scrolls off screen -->
+<div id="pros-clone-header"><table id="pros-clone-table" style="width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;"></table></div>
+
 <div class="pool-wrap" id="prospects-wrap">
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;flex-shrink:0;padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg);">
-    <div style="display:flex;align-items:center;gap:12px">
-      <button onclick="closeProspects()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em">🌱 MiLB Prospects — 2026</div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <div class="filter-tab active" id="pros-tab-all" onclick="filterProspects('all',this)">All</div>
-      <div class="filter-tab" id="pros-tab-aaa" onclick="filterProspects('AAA',this)">AAA</div>
-      <div class="filter-tab" id="pros-tab-aa" onclick="filterProspects('AA',this)">AA</div>
-      <div class="filter-tab" id="pros-tab-a" onclick="filterProspects('A',this)">A</div>
-      <div class="filter-tab" id="pros-tab-hit" onclick="filterProspects('hit',this)">Hitters</div>
-      <div class="filter-tab" id="pros-tab-pit" onclick="filterProspects('pit',this)">Pitchers</div>
-      <input id="pros-search" type="text" placeholder="Search prospects..." oninput="renderProspects()"
-        style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:13px;color:#fff;font-family:'DM Sans',sans-serif;outline:none;width:200px">
-    </div>
-  </div>
-  <div id="pros-loading" style="color:var(--text2);font-family:'DM Mono',monospace;font-size:13px;padding:2rem 1.5rem;flex-shrink:0">Loading prospects...</div>
-  <div id="pros-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);padding:0 1.5rem 0.5rem;display:none;flex-shrink:0"></div>
-  <!-- PERMANENT STAT HEADER - always visible, never scrolls -->
-  <div id="pros-static-header" style="flex-shrink:0;background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
-    <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:13px">
-      <thead id="pros-thead">
-        <tr style="border-bottom:2px solid var(--gold2)">
-          <th style="text-align:left;padding:5px 8px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer" onclick="sortProspects('name')">Player</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase">POS</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase">ORG</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase">LVL</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('age')">AGE</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('avg')">AVG</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('obp')">OBP</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('ops')">OPS</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('hr')">HR</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('rbi')">RBI</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('r')">R</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('sb')">SB</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('era')">ERA</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('whip')">WHIP</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('k')">K</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right" onclick="sortProspects('ip')">IP</th>
-          <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;text-align:right">ACTION</th>
-        </tr>
-      </thead>
-    </table>
-  </div>
-  <!-- SCROLLING ROWS ONLY -->
+  <!-- Everything scrolls together: secondary header slides under main header, stat row sticks via clone -->
   <div class="pool-rows-scroll" id="pros-rows-scroll">
-  <div id="pros-table-wrap" style="display:none;overflow-x:auto">
-    <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:13px">
-      <tbody id="pros-tbody"></tbody>
-    </table>
-  </div>
+
+    <!-- SECONDARY HEADER — scrolls away under the main title header -->
+    <div class="pool-toolbar" id="pros-toolbar">
+      <button onclick="closeProspects()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em;white-space:nowrap" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);letter-spacing:0.05em;white-space:nowrap">🌱 MiLB Prospects — 2026</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <div class="filter-tab active" id="pros-tab-all" onclick="filterProspects('all',this)">All</div>
+        <div class="filter-tab" id="pros-tab-aaa" onclick="filterProspects('AAA',this)">AAA</div>
+        <div class="filter-tab" id="pros-tab-aa" onclick="filterProspects('AA',this)">AA</div>
+        <div class="filter-tab" id="pros-tab-a" onclick="filterProspects('A',this)">A</div>
+        <div class="filter-tab" id="pros-tab-hit" onclick="filterProspects('hit',this)">Hitters</div>
+        <div class="filter-tab" id="pros-tab-pit" onclick="filterProspects('pit',this)">Pitchers</div>
+        <input id="pros-search" type="text" placeholder="Search prospects..." oninput="renderProspects()"
+          style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:13px;color:#fff;font-family:'DM Sans',sans-serif;outline:none;width:200px">
+      </div>
+      <div class="pool-status" id="pros-status">Loading prospects...</div>
+    </div>
+
+    <!-- MAIN PLAYER TABLE — thead + tbody in one table; clone header handles sticky-on-scroll -->
+    <div id="pros-table-section">
+      <div id="pros-loading" style="display:none;color:var(--text2);font-family:'DM Mono',monospace;font-size:13px;padding:2rem 1.5rem">Loading prospects...</div>
+      <div id="pros-table-wrap" style="display:none;overflow-x:auto">
+        <table id="pros-main-table" style="width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:900px">
+          <thead id="pros-main-thead">
+            <tr>
+              <th style="text-align:left;padding:5px 8px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('name')">Player <span class="sort-arrow" id="sparr-name">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;background:var(--surface);border-bottom:2px solid var(--gold2)">POS</th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;background:var(--surface);border-bottom:2px solid var(--gold2)">ORG</th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;background:var(--surface);border-bottom:2px solid var(--gold2)">LVL</th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('age')">AGE <span class="sort-arrow" id="sparr-age">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('avg')">AVG <span class="sort-arrow" id="sparr-avg">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('obp')">OBP <span class="sort-arrow" id="sparr-obp">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('ops')">OPS <span class="sort-arrow" id="sparr-ops">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('hr')">HR <span class="sort-arrow" id="sparr-hr">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('rbi')">RBI <span class="sort-arrow" id="sparr-rbi">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('r')">R <span class="sort-arrow" id="sparr-r">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('sb')">SB <span class="sort-arrow" id="sparr-sb">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('era')">ERA <span class="sort-arrow" id="sparr-era">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('whip')">WHIP <span class="sort-arrow" id="sparr-whip">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('k')">K <span class="sort-arrow" id="sparr-k">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;cursor:pointer;text-align:right;background:var(--surface);border-bottom:2px solid var(--gold2)" onclick="sortProspects('ip')">IP <span class="sort-arrow" id="sparr-ip">↕</span></th>
+              <th style="padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase;text-align:right;cursor:default;background:var(--surface);border-bottom:2px solid var(--gold2)">Action</th>
+            </tr>
+          </thead>
+          <tbody id="pros-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
   </div><!-- end pros-rows-scroll -->
 </div>
 
@@ -4346,6 +4349,7 @@ function openProspects(){
   poolActive = false;
   if(typeof leadersActive !== 'undefined' && leadersActive) closeLeagueLeaders();
   closePlayerPool();
+  document.querySelector('.toolbar').style.display = 'none';
   document.querySelector('.table-wrap').style.display = 'none';
   document.getElementById('dual-wrap').classList.remove('active');
   document.getElementById('pool-wrap').classList.remove('active');
@@ -4353,17 +4357,21 @@ function openProspects(){
   document.getElementById('prospects-wrap').classList.add('active');
   document.querySelectorAll('.filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('prospects-tab').classList.add('active');
+  // Scroll to top so the secondary header (toolbar) is visible first
+  const prosScroll = document.getElementById('pros-rows-scroll');
+  if(prosScroll) prosScroll.scrollTop = 0;
   if(!prospectsLoaded) loadProspects();
+  else renderProspects();
   setTimeout(setPoolWrapTop, 0);
-  setTimeout(syncProspectsFixedHeader, 300);
+  setTimeout(attachProspectsScrollHandler, 150);
 }
 
 function closeProspects(){
+  destroyProspectsFixedHeader();
   prospectsActive = false;
   document.getElementById('prospects-wrap').classList.remove('active');
+  document.querySelector('.toolbar').style.display = '';
   document.querySelector('.table-wrap').style.display = '';
-  const prosBar = document.getElementById('pros-fixed-header');
-  if(prosBar) prosBar.style.display = 'none';
 }
 
 function filterProspects(val, el){
@@ -4379,6 +4387,9 @@ function filterProspects(val, el){
 function sortProspects(col){
   if(prosSortCol === col) prosSortDir *= -1;
   else { prosSortCol = col; prosSortDir = col === 'name' ? 1 : -1; }
+  document.querySelectorAll('[id^="sparr-"]').forEach(a => { a.textContent='↕'; });
+  const arr = document.getElementById('sparr-' + col);
+  if(arr) arr.textContent = prosSortDir === 1 ? '↑' : '↓';
   renderProspects();
 }
 
@@ -4388,6 +4399,7 @@ async function loadProspects(){
   const tableWrap = document.getElementById('pros-table-wrap');
   loading.style.display = 'block';
   loading.textContent = 'Loading AAA, AA & A prospects...';
+  if(status) status.textContent = 'Loading prospects...';
   tableWrap.style.display = 'none';
 
   try {
@@ -4418,10 +4430,10 @@ async function loadProspects(){
 
     prospectsLoaded = true;
     loading.style.display = 'none';
-    status.style.display = 'block';
-    status.textContent = prospectPlayers.length + ' prospects loaded (AAA + AA + A) — click a player to load stats';
+    if(status) status.textContent = prospectPlayers.length + ' prospects loaded (AAA + AA + A) — click a player to load stats';
     tableWrap.style.display = 'block';
     renderProspects();
+    setTimeout(attachProspectsScrollHandler, 150);
 
   } catch(e) {
     loading.textContent = '⚠ Could not load prospect data. Check your connection.';
@@ -4536,8 +4548,8 @@ function renderProspects(){
       }
     })();
   }
+  // Rebuild clone header to match any new column widths (e.g. after lazy-loading stats)
   setTimeout(syncProspectsFixedHeader, 50);
-  setTimeout(setProsTheadTop, 100);
 }
 
 async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnEl){
@@ -4677,10 +4689,80 @@ function destroyLeadersFixedHeader(){
   const cloneBar = document.getElementById('leaders-clone-header');
   if(cloneBar) cloneBar.style.display = 'none';
 }
-function syncProspectsFixedHeader(){ }
+function syncProspectsFixedHeader(){ attachProspectsScrollHandler(); }
+function destroyProspectsFixedHeader(){
+  const scrollEl = document.getElementById('pros-rows-scroll');
+  if(scrollEl && prosScrollHandler) scrollEl.removeEventListener('scroll', prosScrollHandler);
+  prosScrollHandler = null;
+  const cloneBar = document.getElementById('pros-clone-header');
+  if(cloneBar) cloneBar.style.display = 'none';
+}
+var prosScrollHandler = null;
+function attachProspectsScrollHandler(){
+  const scrollEl  = document.getElementById('pros-rows-scroll');
+  const cloneBar   = document.getElementById('pros-clone-header');
+  const cloneTable = document.getElementById('pros-clone-table');
+  if(!scrollEl || !cloneBar || !cloneTable) return;
+
+  if(prosScrollHandler) scrollEl.removeEventListener('scroll', prosScrollHandler);
+
+  function buildClone(){
+    const realThead = document.getElementById('pros-main-thead');
+    if(!realThead) return;
+    const clone = realThead.cloneNode(true);
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    clone.querySelectorAll('th[onclick]').forEach((th, i) => {
+      const realTh = realThead.querySelectorAll('th')[i];
+      if(realTh && realTh.getAttribute('onclick')) th.setAttribute('onclick', realTh.getAttribute('onclick'));
+    });
+    cloneTable.innerHTML = '';
+    cloneTable.appendChild(clone);
+    // Read actual rendered widths from the real thead (works with table-layout:auto)
+    const realTable = realThead.closest('table');
+    if(realTable){
+      const realCols = realThead.querySelectorAll('th');
+      const fixedCols = cloneTable.querySelectorAll('th');
+      realCols.forEach((th, i) => {
+        if(fixedCols[i]){
+          fixedCols[i].style.width = th.offsetWidth + 'px';
+          fixedCols[i].style.minWidth = th.offsetWidth + 'px';
+        }
+      });
+      cloneTable.style.width = realTable.offsetWidth + 'px';
+    }
+  }
+
+  function positionCloneBar(){
+    const prosWrap = document.getElementById('prospects-wrap');
+    const wrapTop = prosWrap ? prosWrap.getBoundingClientRect().top : 0;
+    cloneBar.style.top = wrapTop + 'px';
+    cloneBar.style.left = '0';
+    cloneBar.style.right = '0';
+  }
+
+  // Threshold = toolbar height. Once scrollTop exceeds it, clone bar appears.
+  const toolbarEl = document.getElementById('pros-toolbar');
+  const cachedThreshold = toolbarEl ? toolbarEl.offsetHeight : 56;
+
+  buildClone();
+  positionCloneBar();
+
+  let cloneVisible = false;
+  prosScrollHandler = function(){
+    const shouldShow = scrollEl.scrollTop > cachedThreshold;
+    if(shouldShow && !cloneVisible){
+      cloneBar.style.display = 'block';
+      cloneVisible = true;
+    } else if(!shouldShow && cloneVisible){
+      cloneBar.style.display = 'none';
+      cloneVisible = false;
+    }
+  };
+  scrollEl.addEventListener('scroll', prosScrollHandler);
+}
 function setCtxTheadTop(){ }
 function setLeadersTheadTop(){ } // no-op — clone header approach handles this
-function setProsTheadTop(){ }
+function setProsTheadTop(){ }    // no-op — clone header approach handles this
 // ---- MAIN TABLE FIXED HEADER ----
 function syncMainFixedHeader(){
   const realThead = document.querySelector('#main-table thead');
