@@ -230,7 +230,7 @@ tr.drag-over{border-top:2px solid var(--gold)}
 /* PLAYER POOL */
 .pool-wrap{display:none;padding:0.75rem 1.5rem 2rem}
 .pool-wrap.active{display:flex;flex-direction:column;position:fixed;inset:0;z-index:50;background:var(--bg);overflow:hidden;padding:0;}
-.pool-rows-scroll{flex:1;overflow-y:auto;overflow-x:auto;}
+.pool-rows-scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
 .pool-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;background:var(--bg);padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);}
 .pool-search-wrap{position:relative;flex:1;min-width:250px;max-width:400px}
 .pool-search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px 8px 34px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none}
@@ -773,30 +773,30 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 
 <div class="pool-wrap" id="pool-wrap">
 
-  <!-- POOL TOOLBAR -->
-  <div class="pool-toolbar">
-    <button onclick="closePlayerPool()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em;white-space:nowrap" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
-    <select id="daterange-select-pool" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
-      <option value="live">🔴 Live</option>
-      <option value="season" selected>Season Stats</option>
-      <option value="7">Last 7 Days</option>
-      <option value="14">Last 14 Days</option>
-      <option value="30">Last 30 Days</option>
-    </select>
-    <div class="pool-search-wrap">
-      <span class="pool-search-icon">⌕</span>
-      <input type="text" id="pool-search" placeholder="Filter players..." oninput="poolSearchInput(this.value)" autocomplete="off">
-    </div>
-    <div class="pool-filter-tabs">
-      <button class="filter-tab active" id="pool-pos-all" onclick="setPoolPos('ALL',this)">All</button>
-      <button class="filter-tab" onclick="setPoolPos('HITTER',this)">Hitters</button>
-      <button class="filter-tab" onclick="setPoolPos('PITCHER',this)">Pitchers</button>
-    </div>
-    <div class="pool-status" id="pool-status">Loading players...</div>
-  </div>
-
-  <!-- SCROLLING AREA — everything below the toolbar scrolls here -->
+  <!-- SCROLLING AREA — toolbar + content all scroll together, toolbar slides under main header -->
   <div class="pool-rows-scroll" id="pool-rows-scroll">
+
+    <!-- POOL SECONDARY HEADER — scrolls away under the main title header as you scroll down -->
+    <div class="pool-toolbar" id="pool-toolbar">
+      <button onclick="closePlayerPool()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em;white-space:nowrap" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
+      <select id="daterange-select-pool" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
+        <option value="live">🔴 Live</option>
+        <option value="season" selected>Season Stats</option>
+        <option value="7">Last 7 Days</option>
+        <option value="14">Last 14 Days</option>
+        <option value="30">Last 30 Days</option>
+      </select>
+      <div class="pool-search-wrap">
+        <span class="pool-search-icon">⌕</span>
+        <input type="text" id="pool-search" placeholder="Filter players..." oninput="poolSearchInput(this.value)" autocomplete="off">
+      </div>
+      <div class="pool-filter-tabs">
+        <button class="filter-tab active" id="pool-pos-all" onclick="setPoolPos('ALL',this)">All</button>
+        <button class="filter-tab" onclick="setPoolPos('HITTER',this)">Hitters</button>
+        <button class="filter-tab" onclick="setPoolPos('PITCHER',this)">Pitchers</button>
+      </div>
+      <div class="pool-status" id="pool-status">Loading players...</div>
+    </div>
 
     <!-- CONTEXT PANEL (hidden until a player is clicked from the list) -->
     <div class="context-panel" id="context-panel" style="display:none">
@@ -2734,6 +2734,9 @@ function openPlayerPool(){
   if(allTab) allTab.classList.add('active');
   if(!poolLoaded) loadPoolPlayers();
   else renderPool();
+  // Always scroll to top so the toolbar (secondary header) is visible first
+  const poolScroll = document.getElementById('pool-rows-scroll');
+  if(poolScroll) poolScroll.scrollTop = 0;
   setTimeout(setPoolWrapTop, 0);
   // Attach pool scroll handler for the clone fixed header
   setTimeout(attachPoolScrollHandler, 100);
@@ -3869,17 +3872,12 @@ function setDateRange(val){
 }
 
 function setPoolWrapTop(){
+  // Pool-wrap starts just below the main title header (toolbar is hidden/not part of offset)
   const header = document.querySelector('.header');
-  const toolbar = document.querySelector('.toolbar');
-  const offset = (header ? header.offsetHeight : 0) + (toolbar ? toolbar.offsetHeight : 0);
+  const offset = header ? header.offsetHeight : 0;
   document.querySelectorAll('.pool-wrap').forEach(el => {
     if(el.classList.contains('active')) el.style.top = offset + 'px';
   });
-  // Set CSS variable so sticky thead sticks just below the pool toolbar
-  // The pool toolbar is roughly 56px tall
-  const poolToolbar = document.querySelector('.pool-wrap.active .pool-toolbar');
-  const theadTop = poolToolbar ? poolToolbar.offsetHeight : 56;
-  document.documentElement.style.setProperty('--pool-thead-top', theadTop + 'px');
 }
 
 function syncDateRangeDropdowns(val){
@@ -4395,13 +4393,11 @@ function attachPoolScrollHandler(){
     }
   }
 
-  // Position the clone bar just below the pool toolbar
+  // Position the clone bar right at the top of pool-wrap (just below the main title header)
   function positionCloneBar(){
     const poolWrap = document.getElementById('pool-wrap');
-    const poolToolbar = poolWrap ? poolWrap.querySelector('.pool-toolbar') : null;
     const wrapTop = poolWrap ? poolWrap.getBoundingClientRect().top : 0;
-    const toolbarH = poolToolbar ? poolToolbar.offsetHeight : 52;
-    cloneBar.style.top = (wrapTop + toolbarH) + 'px';
+    cloneBar.style.top = wrapTop + 'px';
     cloneBar.style.left = '0';
     cloneBar.style.right = '0';
   }
@@ -4409,12 +4405,11 @@ function attachPoolScrollHandler(){
   buildClone();
   positionCloneBar();
 
-  // Cache threshold at attach time — position doesn't change during scrolling
+  // Cache threshold at attach time — toolbar now scrolls with content, so clone appears
+  // right at the top of pool-wrap (= bottom of main title header)
   const poolWrapEl = document.getElementById('pool-wrap');
-  const poolToolbarEl = poolWrapEl ? poolWrapEl.querySelector('.pool-toolbar') : null;
   const cachedWrapTop = poolWrapEl ? poolWrapEl.getBoundingClientRect().top : 0;
-  const cachedToolbarH = poolToolbarEl ? poolToolbarEl.offsetHeight : 52;
-  const cachedThreshold = cachedWrapTop + cachedToolbarH;
+  const cachedThreshold = cachedWrapTop + 2; // +2px hysteresis to avoid flicker
 
   let cloneVisible = false;
   poolScrollHandler = function(){
