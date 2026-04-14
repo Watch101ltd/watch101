@@ -83,6 +83,7 @@ td.col-note{width:60px;max-width:60px;overflow:hidden}
 
 tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s}
 tbody tr:hover{background:var(--surface2)}
+tbody tr.already-added{opacity:0.45}
 tbody tr.highlight-up{border-left:3px solid var(--green)}
 tbody tr.highlight-down{border-left:3px solid var(--red)}
 tbody tr.highlight-new{border-left:3px solid var(--gold)}
@@ -229,7 +230,7 @@ tr.drag-over{border-top:2px solid var(--gold)}
 /* PLAYER POOL */
 .pool-wrap{display:none;padding:0.75rem 1.5rem 2rem}
 .pool-wrap.active{display:flex;flex-direction:column;position:fixed;inset:0;z-index:50;background:var(--bg);overflow:hidden;padding:0;}
-.pool-rows-scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
+.pool-rows-scroll{flex:1;overflow-y:auto;overflow-x:auto;}
 .pool-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;background:var(--bg);padding:0.75rem 1.5rem;border-bottom:1px solid var(--border);}
 .pool-search-wrap{position:relative;flex:1;min-width:250px;max-width:400px}
 .pool-search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px 8px 34px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none}
@@ -841,36 +842,46 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
       </div>
     </div>
 
-    <!-- MAIN ROSTER TABLE — shows all MLB players, visible by default -->
-    <div id="pool-table-section" style="overflow-x:auto">
-      <table class="pool-table" id="pool-main-table" style="min-width:900px;margin-top:0">
-        <thead id="pool-main-thead">
-          <tr>
-            <th onclick="sortPool('name')" style="width:200px;min-width:200px;max-width:200px;text-align:left">Player <span class="sort-arrow" id="parr-name">↕</span></th>
-            <th onclick="sortPool('primaryPos')" style="text-align:left">Pos <span class="sort-arrow" id="parr-primaryPos">↕</span></th>
-            <th onclick="sortPool('team')" style="text-align:left">Team <span class="sort-arrow" id="parr-team">↕</span></th>
-            <th onclick="sortPool('age')" style="text-align:right">Age <span class="sort-arrow" id="parr-age">↕</span></th>
-            <th style="text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase">BATS</th>
-            <th onclick="sortPool('yahoo_rank')" title="Yahoo Current Rank" style="text-align:right;color:var(--blue)">CURR <span class="sort-arrow" id="parr-yahoo_rank">↕</span></th>
-            <th onclick="sortPool('preseason_rank')" title="Yahoo Preseason Rank" style="text-align:right;color:var(--text3)">PRE <span class="sort-arrow" id="parr-preseason_rank">↕</span></th>
-            <th onclick="sortPool('roster_pct')" title="Yahoo Roster %" style="text-align:right;color:var(--blue)">RST% <span class="sort-arrow" id="parr-roster_pct">↕</span></th>
-            <th onclick="sortPool('ab')" title="AB / IP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AB</span><span style="color:#86efac;font-size:8px">IP</span></div></th>
-            <th onclick="sortPool('r')" title="R / K" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">R</span><span style="color:#86efac;font-size:8px">K</span></div></th>
-            <th onclick="sortPool('hr')" title="HR / W" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">HR</span><span style="color:#86efac;font-size:8px">W</span></div></th>
-            <th onclick="sortPool('rbi')" title="RBI / SV" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">RBI</span><span style="color:#86efac;font-size:8px">SV</span></div></th>
-            <th onclick="sortPool('sb')" title="SB / HLD" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">SB</span><span style="color:#86efac;font-size:8px">HLD</span></div></th>
-            <th onclick="sortPool('avg')" title="AVG / ERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AVG</span><span style="color:#86efac;font-size:8px">ERA</span></div></th>
-            <th onclick="sortPool('obp')" title="OBP / WHIP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OBP</span><span style="color:#86efac;font-size:8px">WHIP</span></div></th>
-            <th onclick="sortPool('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS</span><span style="color:#86efac;font-size:8px">xERA</span></div></th>
-            <th onclick="sortPool('sv_xba')" title="Expected Batting Average (Statcast)" class="savant-col">xBA <span class="sort-arrow" id="parr-sv_xba">↕</span></th>
-            <th onclick="sortPool('sv_xwoba')" title="Expected wOBA (Statcast)" class="savant-col">xwOBA <span class="sort-arrow" id="parr-sv_xwoba">↕</span></th>
-            <th class="no-sort" style="width:130px;text-align:right">Action</th>
-          </tr>
-        </thead>
-        <tbody id="pool-tbody"></tbody>
-      </table>
-      <div class="pool-loading" id="pool-loading" style="padding:2.5rem;text-align:center;font-family:'DM Mono',monospace;font-size:13px;color:var(--text3)">Loading MLB roster from API...</div>
-      <div class="pool-empty" id="pool-empty" style="display:none;padding:2.5rem;text-align:center;color:var(--text3);font-size:14px">No players match your filter.</div>
+    <!-- MAIN ROSTER TABLE — same CSS as the main Watch 101 table -->
+    <div id="pool-table-section">
+      <div class="table-wrap">
+        <table id="pool-main-table">
+          <thead id="pool-main-thead">
+            <tr>
+              <th style="cursor:default">⚾</th>
+              <th onclick="sortPool('primaryPos')" title="Position">Pos <span class="sort-arrow" id="parr-primaryPos">↕</span></th>
+              <th onclick="sortPool('name')" style="text-align:left">Player <span class="sort-arrow" id="parr-name">↕</span></th>
+              <th onclick="sortPool('team')">Team <span class="sort-arrow" id="parr-team">↕</span></th>
+              <th onclick="sortPool('age')" title="Age">Age <span class="sort-arrow" id="parr-age">↕</span></th>
+              <th onclick="sortPool('bats')" title="Bats (L/R/S)">Bats <span class="sort-arrow" id="parr-bats">↕</span></th>
+              <th style="cursor:default;width:24px"></th>
+              <th onclick="sortPool('preseason_rank')" title="Yahoo Preseason Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>PRE <span class="sort-arrow" id="parr-preseason_rank">↕</span></span></div></th>
+              <th onclick="sortPool('yahoo_rank')" title="Yahoo Current Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>CURR <span class="sort-arrow" id="parr-yahoo_rank">↕</span></span></div></th>
+              <th onclick="sortPool('roster_pct')" title="Roster %" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RST% <span class="sort-arrow" id="parr-roster_pct">↕</span></span></div></th>
+              <th onclick="sortPool('ab')" title="AB / IP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AB</span><span style="color:#86efac;font-size:8px">IP</span></div></th>
+              <th onclick="sortPool('r')" title="R / K" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">R</span><span style="color:#86efac;font-size:8px">K</span></div></th>
+              <th onclick="sortPool('hr')" title="HR / W" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">HR</span><span style="color:#86efac;font-size:8px">W</span></div></th>
+              <th onclick="sortPool('rbi')" title="RBI / SV" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">RBI</span><span style="color:#86efac;font-size:8px">SV</span></div></th>
+              <th onclick="sortPool('sb')" title="SB / HLD" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">SB</span><span style="color:#86efac;font-size:8px">HLD</span></div></th>
+              <th onclick="sortPool('avg')" title="AVG / ERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AVG</span><span style="color:#86efac;font-size:8px">ERA</span></div></th>
+              <th onclick="sortPool('obp')" title="OBP / WHIP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OBP</span><span style="color:#86efac;font-size:8px">WHIP</span></div></th>
+              <th onclick="sortPool('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS <span class="sort-arrow" id="parr-ops">↕</span></span><span style="color:#86efac;font-size:8px">xERA</span></div></th>
+              <th class="savant-col" onclick="sortPool('sv_xba')" title="Expected Batting Average (Statcast)">xBA <span class="sort-arrow" id="parr-sv_xba">↕</span></th>
+              <th class="savant-col" onclick="sortPool('sv_xwoba')" title="Expected wOBA (Statcast)">xwOBA <span class="sort-arrow" id="parr-sv_xwoba">↕</span></th>
+              <th style="cursor:default;width:60px">Action</th>
+            </tr>
+          </thead>
+          <tbody id="pool-tbody"></tbody>
+        </table>
+        <div class="empty-state" id="pool-loading" style="display:none">
+          <h3>⟳ Loading Players</h3>
+          <p id="pool-loading-msg">Fetching MLB roster from API...</p>
+        </div>
+        <div class="empty-state" id="pool-empty" style="display:none">
+          <h3>No Players Found</h3>
+          <p>Try adjusting your filter or position tab.</p>
+        </div>
+      </div>
     </div>
 
   </div><!-- end pool-rows-scroll -->
@@ -2986,27 +2997,29 @@ function renderPool(){
     const pitColor  = '#86efac';
     const safeName  = p.name.replace(/'/g,"\\'");
     return `<tr class="${isAdded?'already-added':''}" style="cursor:pointer" onclick="openContext(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0})">
-      <td style="text-align:left"><div class="pool-player-name"><span class="pname" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
-      <td style="text-align:left"><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
-      <td class="stat" style="text-align:left">${p.team||'—'}</td>
-      <td class="stat">${decimalAge(p)}</td>
-      <td class="stat" style="text-align:center">${p.bats||na}</td>
-      <td class="stat" style="color:var(--blue)">${p.yahoo_rank||na}</td>
-      <td class="stat" style="color:var(--text3)">${p.preseason_rank||na}</td>
-      <td class="stat" style="color:var(--blue)">${p.roster_pct!==undefined&&p.roster_pct!==null?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
-      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ab)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.ip,1)}</span>`}</td>
-      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.r)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.k)}</span>`}</td>
-      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.hr)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.w)}</span>`}</td>
-      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.rbi)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.sv)}</span>`}</td>
-      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.sb)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.hld)}</span>`}</td>
-      <td class="stat">${!pit?`<span style="color:${statColor}">${svAvg(sc&&sc.avg)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
-      <td class="stat">${!pit?`<span style="color:${statColor}">${svAvg(sc&&sc.obp)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.whip,2)}</span>`}</td>
-      <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ops,3)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
-      <td class="stat savant-col">${!pit?svSav(p.sv_xba):na}</td>
-      <td class="stat savant-col">${!pit?svSav(p.sv_xwoba):na}</td>
-      <td style="text-align:right" onclick="event.stopPropagation()">${isAdded
+      <td></td>
+      <td style="text-align:center"><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
+      <td><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
+      <td>${p.team||na}</td>
+      <td class="stat-cell">${decimalAge(p)}</td>
+      <td class="stat-cell" style="text-align:center">${p.bats||na}</td>
+      <td></td>
+      <td class="yahoo-rank" style="color:var(--text3)">${p.preseason_rank||na}</td>
+      <td class="yahoo-rank">${p.yahoo_rank||na}</td>
+      <td class="stat-cell">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ab)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.ip,1)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.r)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.k)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.hr)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.w)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.rbi)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.sv)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.sb)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.hld)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${svAvg(sc&&sc.avg)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${svAvg(sc&&sc.obp)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.whip,2)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ops,3)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
+      <td class="stat-cell savant-col">${!pit?fmtSavant(p.sv_xba):na}</td>
+      <td class="stat-cell savant-col">${fmtSavant(p.sv_xwoba)}</td>
+      <td style="text-align:right;padding:4px 6px" onclick="event.stopPropagation()">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
-        : `<button class="btn-add-pool" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add to Watch 101</button>`
+        : `<button class="btn-add-pool" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
       }</td>
     </tr>`;
   }).join('');
@@ -4396,20 +4409,29 @@ function attachPoolScrollHandler(){
   buildClone();
   positionCloneBar();
 
+  // Cache threshold at attach time — position doesn't change during scrolling
+  const poolWrapEl = document.getElementById('pool-wrap');
+  const poolToolbarEl = poolWrapEl ? poolWrapEl.querySelector('.pool-toolbar') : null;
+  const cachedWrapTop = poolWrapEl ? poolWrapEl.getBoundingClientRect().top : 0;
+  const cachedToolbarH = poolToolbarEl ? poolToolbarEl.offsetHeight : 52;
+  const cachedThreshold = cachedWrapTop + cachedToolbarH;
+
+  let cloneVisible = false;
   poolScrollHandler = function(){
     const realThead = getActiveThead();
-    if(!realThead){ cloneBar.style.display = 'none'; return; }
+    if(!realThead){
+      if(cloneVisible){ cloneBar.style.display = 'none'; cloneVisible = false; }
+      return;
+    }
     const rect = realThead.getBoundingClientRect();
-    const poolWrap = document.getElementById('pool-wrap');
-    const poolToolbar = poolWrap ? poolWrap.querySelector('.pool-toolbar') : null;
-    const wrapTop = poolWrap ? poolWrap.getBoundingClientRect().top : 0;
-    const toolbarH = poolToolbar ? poolToolbar.offsetHeight : 52;
-    const threshold = wrapTop + toolbarH;
-    if(rect.bottom < threshold){
+    const shouldShow = rect.bottom < cachedThreshold;
+    if(shouldShow && !cloneVisible){
       positionCloneBar();
       cloneBar.style.display = 'block';
-    } else {
+      cloneVisible = true;
+    } else if(!shouldShow && cloneVisible){
       cloneBar.style.display = 'none';
+      cloneVisible = false;
     }
   };
 
