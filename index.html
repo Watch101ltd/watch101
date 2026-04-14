@@ -279,12 +279,12 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .pool-empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:14px}
 
 /* CONTEXT PANEL */
-.context-panel{background:var(--surface);border:1px solid var(--gold2);border-radius:8px;margin-bottom:1.25rem;margin:0 1.5rem 1.25rem}
-.context-header{padding:12px 16px;background:linear-gradient(135deg,#1a1200,#0d1117);border-bottom:2px solid var(--gold2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:20;}
+.context-panel{background:var(--surface);border:1px solid var(--gold2);border-radius:0;}
+.context-header{padding:12px 16px;background:linear-gradient(135deg,#1a1200,#0d1117);border-bottom:2px solid var(--gold2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 .context-player-name{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold);letter-spacing:0.05em}
 .context-player-meta{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);margin-left:10px}
 .context-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);padding:4px 10px;border-radius:4px}
-.context-body{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:19;background:var(--surface);}
+.context-body{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);}
 .compare-search-wrap{position:relative;flex:1;min-width:200px;max-width:320px}
 .compare-search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:7px 12px 7px 30px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none}
 .compare-search-wrap input:focus{border-color:var(--blue)}
@@ -292,8 +292,12 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .compare-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none}
 .compare-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;margin-top:4px;z-index:400;max-height:220px;overflow-y:auto;display:none;box-shadow:0 8px 24px #00000088}
 .compare-dropdown.open{display:block}
-.context-table-wrap{overflow-x:visible;padding:0 1.5rem 2rem}
-.context-table-wrap .pool-table thead th{background:var(--surface);position:sticky;top:var(--ctx-thead-top,0px);z-index:10;}
+.context-table-wrap{overflow-x:auto;padding:0 0 2rem}
+.context-table-wrap .pool-table thead th{background:var(--surface);}
+/* Pool clone fixed header - appears when pool thead scrolls off screen */
+#pool-clone-header{display:none;position:fixed;left:0;right:0;z-index:62;background:var(--bg);border-bottom:2px solid var(--gold2);overflow:hidden;pointer-events:auto;}
+#pool-clone-header table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
+#pool-clone-header th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);}
 #pros-table-wrap thead th{background:var(--surface)}
 .ctx-count-row td{background:var(--surface2);padding:5px 12px;font-family:'DM Mono',monospace;font-size:11px;border-bottom:1px solid var(--border)}
 tr.ctx-highlight td{background:#1a1200 !important}
@@ -763,14 +767,12 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 </div>
 
 <!-- PLAYER POOL -->
-<div id="pool-fixed-header" style="display:none!important"><table id="pool-fixed-table"></table></div>
-<div id="pool-roster-fixed-header" style="display:none!important"><table id="pool-roster-fixed-table"></table></div>
+<!-- Clone fixed header — appears when pool thead scrolls off screen -->
+<div id="pool-clone-header"><table id="pool-clone-table" style="width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;"></table></div>
 
 <div class="pool-wrap" id="pool-wrap">
-  <div id="ctx-fixed-header-mask" style="display:none!important"></div>
-  <div id="ctx-fixed-header" style="display:none!important"><table id="ctx-fixed-table"></table></div>
 
-  <!-- TOOLBAR -->
+  <!-- POOL TOOLBAR -->
   <div class="pool-toolbar">
     <button onclick="closePlayerPool()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em;white-space:nowrap" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
     <select id="daterange-select-pool" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
@@ -782,8 +784,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     </select>
     <div class="pool-search-wrap">
       <span class="pool-search-icon">⌕</span>
-      <input type="text" id="pool-search" placeholder="Search any MLB player to view context..." oninput="poolSearchInput(this.value)" autocomplete="off">
-      <div class="pool-dropdown" id="pool-dropdown"></div>
+      <input type="text" id="pool-search" placeholder="Filter players..." oninput="poolSearchInput(this.value)" autocomplete="off">
     </div>
     <div class="pool-filter-tabs">
       <button class="filter-tab active" id="pool-pos-all" onclick="setPoolPos('ALL',this)">All</button>
@@ -792,104 +793,83 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     </div>
     <div class="pool-status" id="pool-status">Loading players...</div>
   </div>
-  <!-- PERMANENT STAT HEADER - always visible, never scrolls -->
-  <div id="pool-static-header" style="background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;">
-    <table class="pool-table" style="margin:0;min-width:900px">
-      <thead id="ctx-thead-static">
-        <tr>
-          <th style="text-align:center;width:40px;color:var(--gold)">#</th>
-          <th style="width:180px;min-width:180px">Player</th>
-          <th>Pos</th><th>Team</th>
-          <th style="text-align:right">Age</th>
-          <th style="text-align:right;color:var(--gold)">OPS</th>
-          <th style="text-align:right">AVG</th>
-          <th style="text-align:right">HR</th>
-          <th style="text-align:right">RBI</th>
-          <th style="text-align:right">R</th>
-          <th style="text-align:right">SB</th>
-          <th style="text-align:center;font-size:9px;color:#94a3b8;text-transform:uppercase">BATS</th>
-          <th style="text-align:right;color:var(--blue)">CURR</th>
-          <th style="text-align:right;color:var(--text3)">PRE</th>
-          <th style="text-align:right;color:var(--blue)">RST%</th>
-          <th style="width:120px"></th>
-        </tr>
-      </thead>
-    </table>
-  </div>
 
-  <!-- SCROLLING ROWS ONLY - toolbar and stat header stay fixed above -->
+  <!-- SCROLLING AREA — everything below the toolbar scrolls here -->
   <div class="pool-rows-scroll" id="pool-rows-scroll">
 
-  <!-- CONTEXT PANEL (hidden until player clicked) -->
-  <div class="context-panel" id="context-panel" style="display:none">
-    <div class="context-header">
-      <div style="display:flex;align-items:baseline">
-        <span class="context-player-name" id="ctx-name"></span>
-        <span class="context-player-meta" id="ctx-meta"></span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span class="context-label" id="ctx-label"></span>
-        <!-- VIEW TOGGLE -->
-        <div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px">
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)">
-            <input type="radio" name="ctx-view" id="ctx-view-pos" value="positional" checked onchange="switchContextView(this.value)" style="accent-color:var(--gold)">
-            Positional Peers
-          </label>
-          <span style="color:var(--border2)">|</span>
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)" id="ctx-view-full-label">
-            <input type="radio" name="ctx-view" id="ctx-view-full" value="full" onchange="switchContextView(this.value)" style="accent-color:var(--gold)">
-            Full Roster
-          </label>
+    <!-- CONTEXT PANEL (hidden until a player is clicked from the list) -->
+    <div class="context-panel" id="context-panel" style="display:none">
+      <!-- Player name banner — scrolls away naturally -->
+      <div class="context-header">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button onclick="closeContext()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:4px 12px;font-size:11px;color:var(--text3);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">← All Players</button>
+          <span class="context-player-name" id="ctx-name"></span>
+          <span class="context-player-meta" id="ctx-meta"></span>
         </div>
-        <button class="btn-add-pool" id="ctx-add-btn">+ Add to Watch 101</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="context-label" id="ctx-label"></span>
+          <div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px">
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)">
+              <input type="radio" name="ctx-view" id="ctx-view-pos" value="positional" checked onchange="switchContextView(this.value)" style="accent-color:var(--gold)">
+              Positional Peers
+            </label>
+            <span style="color:var(--border2)">|</span>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)" id="ctx-view-full-label">
+              <input type="radio" name="ctx-view" id="ctx-view-full" value="full" onchange="switchContextView(this.value)" style="accent-color:var(--gold)">
+              Full Roster
+            </label>
+          </div>
+          <button class="btn-add-pool" id="ctx-add-btn">+ Add to Watch 101</button>
+        </div>
+      </div>
+      <!-- Compare search bar -->
+      <div class="context-body">
+        <div class="compare-search-wrap">
+          <span class="compare-search-icon">+</span>
+          <input type="text" id="compare-search" placeholder="Add comparison player..." oninput="compareSearchInput(this.value)" autocomplete="off">
+          <div class="compare-dropdown" id="compare-dropdown"></div>
+        </div>
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">Type any player name to add them to the comparison</span>
+      </div>
+      <!-- Context table — stat header is HERE, below the player name -->
+      <div class="context-table-wrap">
+        <table class="pool-table" style="min-width:900px">
+          <thead id="ctx-thead"></thead>
+          <tbody id="ctx-tbody"></tbody>
+        </table>
+        <div class="pool-loading" id="ctx-loading" style="display:none">Loading positional rankings...</div>
       </div>
     </div>
-    <div class="context-body">
-      <div class="compare-search-wrap">
-        <span class="compare-search-icon">+</span>
-        <input type="text" id="compare-search" placeholder="Add comparison player..." oninput="compareSearchInput(this.value)" autocomplete="off">
-        <div class="compare-dropdown" id="compare-dropdown"></div>
-      </div>
-      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">Type any player name to add them to the comparison</span>
-    </div>
-    <div class="context-table-wrap">
-      <table class="pool-table">
-        <thead id="ctx-thead"></thead>
-        <tbody id="ctx-tbody"></tbody>
-      </table>
-      <div class="pool-loading" id="ctx-loading" style="display:none">Loading positional rankings...</div>
-    </div>
-  </div>
 
-  <!-- FULL ROSTER TABLE - hidden, loads in background for API data -->
-  <div class="pool-table-wrap" style="display:none">
-    <table class="pool-table" id="pool-main-table">
-      <thead id="pool-main-thead">
-        <tr>
-          <th onclick="sortPool('name')" style="width:160px;min-width:160px;max-width:160px">Player <span class="sort-arrow" id="parr-name">↕</span></th>
-          <th onclick="sortPool('primaryPos')">Pos <span class="sort-arrow" id="parr-primaryPos">↕</span></th>
-          <th onclick="sortPool('team')">Team <span class="sort-arrow" id="parr-team">↕</span></th>
-          <th onclick="sortPool('age')" style="text-align:right">Age <span class="sort-arrow" id="parr-age">↕</span></th>
-          <th style="text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase">BATS</th>
-          <th onclick="sortPool('yahoo_rank')" title="Yahoo Rank" style="text-align:right;color:var(--blue)">CURR <span class="sort-arrow" id="parr-yahoo_rank">↕</span></th>
-          <th onclick="sortPool('preseason_rank')" title="Yahoo Preseason Rank" style="text-align:right;color:var(--text3)">PRE <span class="sort-arrow" id="parr-preseason_rank">↕</span></th>
-          <th onclick="sortPool('roster_pct')" title="Yahoo Roster %" style="text-align:right;color:var(--blue)">RST% <span class="sort-arrow" id="parr-roster_pct">↕</span></th>
-          <th onclick="sortPool('ab')" title="AB / IP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AB</span><span style="color:#86efac;font-size:8px">IP</span></div></th>
-          <th onclick="sortPool('r')" title="R / K" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">R</span><span style="color:#86efac;font-size:8px">K</span></div></th>
-          <th onclick="sortPool('hr')" title="HR / W" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">HR</span><span style="color:#86efac;font-size:8px">W</span></div></th>
-          <th onclick="sortPool('rbi')" title="RBI / SV" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">RBI</span><span style="color:#86efac;font-size:8px">SV</span></div></th>
-          <th onclick="sortPool('sb')" title="SB / HLD" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">SB</span><span style="color:#86efac;font-size:8px">HLD</span></div></th>
-          <th onclick="sortPool('avg')" title="AVG / ERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AVG</span><span style="color:#86efac;font-size:8px">ERA</span></div></th>
-          <th onclick="sortPool('obp')" title="OBP / WHIP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OBP</span><span style="color:#86efac;font-size:8px">WHIP</span></div></th>
-          <th onclick="sortPool('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS</span><span style="color:#86efac;font-size:8px">xERA</span></div></th>
-          <th class="no-sort" style="width:120px"></th>
-        </tr>
-      </thead>
-      <tbody id="pool-tbody"></tbody>
-    </table>
-    <div class="pool-loading" id="pool-loading">Loading MLB roster from API...</div>
-    <div class="pool-empty" id="pool-empty" style="display:none">No players match your filter.</div>
-  </div>
+    <!-- MAIN ROSTER TABLE — shows all MLB players, visible by default -->
+    <div id="pool-table-section" style="overflow-x:auto">
+      <table class="pool-table" id="pool-main-table" style="min-width:900px;margin-top:0">
+        <thead id="pool-main-thead">
+          <tr>
+            <th onclick="sortPool('name')" style="width:200px;min-width:200px;max-width:200px;text-align:left">Player <span class="sort-arrow" id="parr-name">↕</span></th>
+            <th onclick="sortPool('primaryPos')" style="text-align:left">Pos <span class="sort-arrow" id="parr-primaryPos">↕</span></th>
+            <th onclick="sortPool('team')" style="text-align:left">Team <span class="sort-arrow" id="parr-team">↕</span></th>
+            <th onclick="sortPool('age')" style="text-align:right">Age <span class="sort-arrow" id="parr-age">↕</span></th>
+            <th style="text-align:center;font-family:'DM Mono',monospace;font-size:9px;color:#94a3b8;text-transform:uppercase">BATS</th>
+            <th onclick="sortPool('yahoo_rank')" title="Yahoo Current Rank" style="text-align:right;color:var(--blue)">CURR <span class="sort-arrow" id="parr-yahoo_rank">↕</span></th>
+            <th onclick="sortPool('preseason_rank')" title="Yahoo Preseason Rank" style="text-align:right;color:var(--text3)">PRE <span class="sort-arrow" id="parr-preseason_rank">↕</span></th>
+            <th onclick="sortPool('roster_pct')" title="Yahoo Roster %" style="text-align:right;color:var(--blue)">RST% <span class="sort-arrow" id="parr-roster_pct">↕</span></th>
+            <th onclick="sortPool('ab')" title="AB / IP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AB</span><span style="color:#86efac;font-size:8px">IP</span></div></th>
+            <th onclick="sortPool('r')" title="R / K" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">R</span><span style="color:#86efac;font-size:8px">K</span></div></th>
+            <th onclick="sortPool('hr')" title="HR / W" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">HR</span><span style="color:#86efac;font-size:8px">W</span></div></th>
+            <th onclick="sortPool('rbi')" title="RBI / SV" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">RBI</span><span style="color:#86efac;font-size:8px">SV</span></div></th>
+            <th onclick="sortPool('sb')" title="SB / HLD" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">SB</span><span style="color:#86efac;font-size:8px">HLD</span></div></th>
+            <th onclick="sortPool('avg')" title="AVG / ERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AVG</span><span style="color:#86efac;font-size:8px">ERA</span></div></th>
+            <th onclick="sortPool('obp')" title="OBP / WHIP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OBP</span><span style="color:#86efac;font-size:8px">WHIP</span></div></th>
+            <th onclick="sortPool('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS</span><span style="color:#86efac;font-size:8px">xERA</span></div></th>
+            <th class="no-sort" style="width:130px;text-align:right">Action</th>
+          </tr>
+        </thead>
+        <tbody id="pool-tbody"></tbody>
+      </table>
+      <div class="pool-loading" id="pool-loading" style="padding:2.5rem;text-align:center;font-family:'DM Mono',monospace;font-size:13px;color:var(--text3)">Loading MLB roster from API...</div>
+      <div class="pool-empty" id="pool-empty" style="display:none;padding:2.5rem;text-align:center;color:var(--text3);font-size:14px">No players match your filter.</div>
+    </div>
 
   </div><!-- end pool-rows-scroll -->
 </div>
@@ -2702,6 +2682,7 @@ let poolPosFilter = 'ALL';
 let poolActive = false;
 let poolSortCol = 'name';
 let poolSortDir = 1;
+let poolSearchFilter = '';
 let poolSearchTimer = null;
 let poolDateRangeCache = {};       // keyed by `${mlb_id}_${range}`
 let poolDateRangeFetching = false;
@@ -2725,22 +2706,23 @@ function openPlayerPool(){
   document.getElementById('pool-wrap').classList.add('active');
   document.querySelectorAll('.filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('pool-tab').classList.add('active');
-  // Always reset context and search on open
-  closeContext();
-  destroyFixedHeader();
+  // Reset search text and filter
+  poolSearchFilter = '';
   const poolSearch = document.getElementById('pool-search');
   if(poolSearch) poolSearch.value = '';
-  const poolDropdown = document.getElementById('pool-dropdown');
-  if(poolDropdown){ poolDropdown.classList.remove('open'); poolDropdown.removeAttribute('style'); }
-  // Reset position filter to ALL on every open
+  // Hide context, show main roster table
+  document.getElementById('context-panel').style.display = 'none';
+  document.getElementById('pool-table-section').style.display = 'block';
+  // Reset position filter to ALL
   poolPosFilter = 'ALL';
   document.querySelectorAll('#pool-wrap .pool-filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
   const allTab = document.getElementById('pool-pos-all');
   if(allTab) allTab.classList.add('active');
   if(!poolLoaded) loadPoolPlayers();
   else renderPool();
-  buildContextHeaders(false);
   setTimeout(setPoolWrapTop, 0);
+  // Attach pool scroll handler for the clone fixed header
+  setTimeout(attachPoolScrollHandler, 100);
 }
 
 function closePlayerPool(){
@@ -2748,13 +2730,11 @@ function closePlayerPool(){
   document.getElementById('pool-wrap').classList.remove('active');
   document.querySelector('.toolbar').style.display = '';
   document.querySelector('.table-wrap').style.display = '';
-  // Reset context panel and search so next visit starts fresh
   closeContext();
   destroyFixedHeader();
+  poolSearchFilter = '';
   const poolSearch = document.getElementById('pool-search');
   if(poolSearch) poolSearch.value = '';
-  const poolDropdown = document.getElementById('pool-dropdown');
-  if(poolDropdown){ poolDropdown.classList.remove('open'); poolDropdown.removeAttribute('style'); }
 }
 
 // ---- LOAD FULL ROSTER ----
@@ -2863,6 +2843,11 @@ function renderPool(){
   let list = [...poolPlayers];
   if(poolPosFilter === 'PITCHER') list = list.filter(p => isPitcherPos(p.primaryPos));
   if(poolPosFilter === 'HITTER')  list = list.filter(p => !isPitcherPos(p.primaryPos));
+  // Apply search text filter
+  if(poolSearchFilter){
+    const q = normalize(poolSearchFilter);
+    list = list.filter(p => normalize(p.name).includes(q) || (p.team||'').toLowerCase().includes(poolSearchFilter.toLowerCase()));
+  }
   list.sort((a,b)=>{
     let av = a[poolSortCol], bv = b[poolSortCol];
     if(av===undefined||av===null) av = poolSortDir===1?'zzz':0;
@@ -2873,7 +2858,7 @@ function renderPool(){
     // Tie-break: Yahoo rank
     return (a.yahoo_rank||9999) - (b.yahoo_rank||9999);
   });
-  const display = list.slice(0,200);
+  const display = list.slice(0,300);
   document.getElementById('pool-empty').style.display = list.length===0?'block':'none';
   // Build Yahoo lookup from watch list players
   const yahooLookup = {};
@@ -2900,10 +2885,11 @@ function renderPool(){
     const svAvg = (val) => loading ? pending : (val===undefined||val===null||val==='' ? na : '.'+parseFloat(val).toFixed(3).split('.')[1]);
     const statColor = '#c084fc';
     const pitColor = '#86efac';
-    return `<tr class="${isAdded?'already-added':''}">
-      <td><div class="pool-player-name"><span class="pname">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
-      <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
-      <td class="stat">${p.team||'—'}</td>
+    const safeName = p.name.replace(/'/g,"\\'");
+    return `<tr class="${isAdded?'already-added':''}" style="cursor:pointer" onclick="openContext(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0})">
+      <td style="text-align:left"><div class="pool-player-name"><span class="pname" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
+      <td style="text-align:left"><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
+      <td class="stat" style="text-align:left">${p.team||'—'}</td>
       <td class="stat">${decimalAge(p)}</td>
       <td class="stat" style="text-align:center">${p.bats||na}</td>
       <td class="stat" style="color:var(--blue)">${p.yahoo_rank||na}</td>
@@ -2917,71 +2903,35 @@ function renderPool(){
       <td class="stat">${!pit?`<span style="color:${statColor}">${svAvg(sc&&sc.avg)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
       <td class="stat">${!pit?`<span style="color:${statColor}">${svAvg(sc&&sc.obp)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.whip,2)}</span>`}</td>
       <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ops,3)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
-      <td style="text-align:right">${isAdded
+      <td style="text-align:right" onclick="event.stopPropagation()">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
-        : `<button class="btn-add-pool" onclick="quickAddFromPool(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add to Watch 101</button>`
+        : `<button class="btn-add-pool" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add to Watch 101</button>`
       }</td>
     </tr>`;
   }).join('');
-  if(list.length > 200){
-    document.getElementById('pool-status').textContent = `Showing 200 of ${list.length} — use search to find specific players`;
+  if(list.length > 300){
+    document.getElementById('pool-status').textContent = `Showing 300 of ${list.length} — type to filter`;
   } else {
-    document.getElementById('pool-status').textContent = list.length + ' players shown';
+    document.getElementById('pool-status').textContent = list.length + ' players';
   }
 }
 
-// ---- POOL SEARCH DROPDOWN (for finding a player to open context) ----
+// ---- POOL SEARCH — filters the main player table in real time ----
 function poolSearchInput(val){
   clearTimeout(poolSearchTimer);
-  const dd = document.getElementById('pool-dropdown');
-  if(!val || val.length < 2){ dd.classList.remove('open'); return; }
   poolSearchTimer = setTimeout(()=>{
-    if(!poolLoaded){ dd.innerHTML='<div class="pool-sri"><div class="pool-sri-name">Still loading roster...</div></div>'; dd.classList.add('open'); return; }
-    const q = normalize(val);
-    let searchList = poolPlayers;
-    if(poolPosFilter === 'PITCHER') searchList = poolPlayers.filter(p => isPitcherPos(p.primaryPos));
-    if(poolPosFilter === 'HITTER')  searchList = poolPlayers.filter(p => !isPitcherPos(p.primaryPos));
-    const matches = searchList.filter(p => normalize(p.name).includes(q)).slice(0,12);
-    if(matches.length===0){
-      // Fallback to Yahoo data for IL players not in MLB pool yet
-      const yahooFallback = Object.values(yahooDataByName).filter(p =>
-        p.name && normalize(p.name).includes(q)
-      ).slice(0,12);
-      if(yahooFallback.length > 0){
-        dd.innerHTML = yahooFallback.map(p => {
-          const mlbId = p.mlb_id || 0;
-          const pName = p.name || '';
-          const pTeam = p.team || '';
-          const pPos = p.pitcher_type || (p.eligible_positions && p.eligible_positions[0]) || '';
-          const injB = p.injury_status ? injuryBadge(p.injury_status) : '';
-          return '<div class="pool-sri" onclick="openContext(' + mlbId + ',\'' + pName.replace(/\'/g,"\\'") + '\',\'' + pTeam + '\',\'' + pPos + '\',0)">'
-            + '<div class="pool-sri-name">' + pName + injB + '</div>'
-            + '<div class="pool-sri-meta">' + (pTeam||'—') + ' · ' + (pPos||'—') + ' · Yahoo #' + (p.yahoo_rank||'—') + '</div>'
-            + '</div>';
-        }).join('');
-        dd.classList.add('open'); return;
-      }
-      dd.innerHTML='<div class="pool-sri"><div class="pool-sri-name" style="color:var(--text3)">No players found</div></div>'; dd.classList.add('open'); return;
-    }
-    dd.innerHTML = matches.map(p=>`
-      <div class="pool-sri" onclick="openContext(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team}','${p.primaryPos}',${p.age||0})">
-        <div class="pool-sri-name">${p.name}${injuryBadge(p.injury_status)}</div>
-        <div class="pool-sri-meta">${p.team||'—'} · ${p.primaryPos||'—'} · Age ${decimalAge(p)}</div>
-      </div>`).join('');
-    dd.classList.add('open');
-  }, 300);
+    poolSearchFilter = val;
+    renderPool();
+  }, 200);
 }
 
-// Close dropdown when clicking outside
+// Close compare dropdown when clicking outside
 document.addEventListener('click', e=>{
-  if(!e.target.closest('.pool-search-wrap')) document.getElementById('pool-dropdown')?.classList.remove('open');
   if(!e.target.closest('.compare-search-wrap')) document.getElementById('compare-dropdown')?.classList.remove('open');
 });
 
 // ---- OPEN CONTEXT PANEL ----
 async function openContext(mlbId, name, team, primaryPos, age){
-  document.getElementById('pool-dropdown').classList.remove('open');
-  document.getElementById('pool-search').value = '';
   // Pull pitcher_type and injury_status from poolPlayers if available
   const poolPlayer = poolPlayers.find(p => p.mlb_id === mlbId);
   const pitcher_type = poolPlayer?.pitcher_type || null;
@@ -3004,14 +2954,18 @@ async function openContext(mlbId, name, team, primaryPos, age){
     toggleDiv.style.display = 'flex';
     document.getElementById('ctx-view-pos').checked = true;
   }
+  // Show context panel, hide the main roster table
   document.getElementById('context-panel').style.display = 'block';
+  document.getElementById('pool-table-section').style.display = 'none';
+  // Scroll to top so player name is visible first
+  const scroll = document.getElementById('pool-rows-scroll');
+  if(scroll) scroll.scrollTop = 0;
   document.getElementById('compare-search').value = '';
   buildContextHeaders(isPit);
   document.getElementById('ctx-loading').style.display = 'block';
-  setTimeout(syncFixedHeader, 150);
-  setTimeout(syncRosterFixedHeader, 150);
-  setTimeout(setCtxTheadTop, 200);
   document.getElementById('ctx-tbody').innerHTML = '';
+  // Reattach scroll handler to watch the context thead
+  setTimeout(attachPoolScrollHandler, 100);
   await loadContextStats(isPit, isPit ? 'full' : 'positional');
 }
 
@@ -3026,14 +2980,20 @@ async function switchContextView(mode){
 
 function closeContext(){
   document.getElementById('context-panel').style.display = 'none';
+  // Bring back the main roster table
+  document.getElementById('pool-table-section').style.display = 'block';
+  // Scroll back to top
+  const scroll = document.getElementById('pool-rows-scroll');
+  if(scroll) scroll.scrollTop = 0;
   destroyFixedHeader();
   contextAnchor = null;
   contextCompares = [];
+  // Reattach scroll handler to watch the roster thead
+  setTimeout(attachPoolScrollHandler, 100);
 }
 
 function buildContextHeaders(isPit){
   const thead = document.getElementById('ctx-thead');
-  const theadStatic = document.getElementById('ctx-thead-static');
   const pitRow = `<tr>
       <th style="text-align:center;width:40px;color:var(--gold)">#</th>
       <th onclick="sortCtx('name')" style="width:180px;min-width:180px"><span id="carr-name-count" style="color:var(--gold);font-weight:700"></span> <span id="carr-name">↕</span></th>
@@ -3071,7 +3031,6 @@ function buildContextHeaders(isPit){
     </tr>`;
   const row = isPit ? pitRow : hitRow;
   if(thead) thead.innerHTML = row;
-  if(theadStatic) theadStatic.innerHTML = row;
   if(isPit){ ctxSortCol = 'era'; ctxSortDir = 1; }
   else { ctxSortCol = 'ops'; ctxSortDir = -1; }
 }
@@ -4266,10 +4225,101 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
 
 
 
-// ---- ALL CLONE FIXED HEADERS REMOVED - static layout handles this ----
+// ---- POOL CLONE FIXED HEADER ----
+// Works like the main table's fixed header: clones the visible thead and pins
+// it to the top of the screen when the real thead scrolls out of view.
 var poolScrollHandler = null;
-function syncFixedHeader(){ }
-function destroyFixedHeader(){ poolScrollHandler = null; }
+
+function attachPoolScrollHandler(){
+  const scrollEl = document.getElementById('pool-rows-scroll');
+  const cloneBar = document.getElementById('pool-clone-header');
+  const cloneTable = document.getElementById('pool-clone-table');
+  if(!scrollEl || !cloneBar || !cloneTable) return;
+
+  // Remove any previous handler
+  if(poolScrollHandler) scrollEl.removeEventListener('scroll', poolScrollHandler);
+
+  // Figure out which thead is currently active
+  function getActiveThead(){
+    const ctxPanel = document.getElementById('context-panel');
+    if(ctxPanel && ctxPanel.style.display !== 'none'){
+      return document.getElementById('ctx-thead');
+    }
+    return document.getElementById('pool-main-thead');
+  }
+
+  // Build the clone from whatever thead is active
+  function buildClone(){
+    const realThead = getActiveThead();
+    if(!realThead) return;
+    const clone = realThead.cloneNode(true);
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    // Wire sort clicks through to the real buttons
+    clone.querySelectorAll('th[onclick]').forEach((th, i) => {
+      const realTh = realThead.querySelectorAll('th')[i];
+      if(realTh && realTh.getAttribute('onclick')){
+        th.setAttribute('onclick', realTh.getAttribute('onclick'));
+      }
+    });
+    cloneTable.innerHTML = '';
+    cloneTable.appendChild(clone);
+    // Match column widths
+    const realTable = realThead.closest('table');
+    if(realTable){
+      const realCols = realThead.querySelectorAll('th');
+      const fixedCols = cloneTable.querySelectorAll('th');
+      realCols.forEach((th, i) => {
+        if(fixedCols[i]){
+          fixedCols[i].style.width = th.offsetWidth + 'px';
+          fixedCols[i].style.minWidth = th.offsetWidth + 'px';
+        }
+      });
+      cloneTable.style.width = realTable.offsetWidth + 'px';
+    }
+  }
+
+  // Position the clone bar just below the pool toolbar
+  function positionCloneBar(){
+    const poolWrap = document.getElementById('pool-wrap');
+    const poolToolbar = poolWrap ? poolWrap.querySelector('.pool-toolbar') : null;
+    const wrapTop = poolWrap ? poolWrap.getBoundingClientRect().top : 0;
+    const toolbarH = poolToolbar ? poolToolbar.offsetHeight : 52;
+    cloneBar.style.top = (wrapTop + toolbarH) + 'px';
+    cloneBar.style.left = '0';
+    cloneBar.style.right = '0';
+  }
+
+  buildClone();
+  positionCloneBar();
+
+  poolScrollHandler = function(){
+    const realThead = getActiveThead();
+    if(!realThead){ cloneBar.style.display = 'none'; return; }
+    const rect = realThead.getBoundingClientRect();
+    const poolWrap = document.getElementById('pool-wrap');
+    const poolToolbar = poolWrap ? poolWrap.querySelector('.pool-toolbar') : null;
+    const wrapTop = poolWrap ? poolWrap.getBoundingClientRect().top : 0;
+    const toolbarH = poolToolbar ? poolToolbar.offsetHeight : 52;
+    const threshold = wrapTop + toolbarH;
+    if(rect.bottom < threshold){
+      positionCloneBar();
+      cloneBar.style.display = 'block';
+    } else {
+      cloneBar.style.display = 'none';
+    }
+  };
+
+  scrollEl.addEventListener('scroll', poolScrollHandler);
+}
+
+function syncFixedHeader(){ attachPoolScrollHandler(); }
+function destroyFixedHeader(){
+  const scrollEl = document.getElementById('pool-rows-scroll');
+  if(scrollEl && poolScrollHandler) scrollEl.removeEventListener('scroll', poolScrollHandler);
+  poolScrollHandler = null;
+  const cloneBar = document.getElementById('pool-clone-header');
+  if(cloneBar) cloneBar.style.display = 'none';
+}
 function syncRosterFixedHeader(){ }
 function syncLeadersFixedHeader(){ }
 function destroyLeadersFixedHeader(){ }
