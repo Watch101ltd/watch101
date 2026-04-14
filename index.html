@@ -4354,7 +4354,7 @@ function attachPoolScrollHandler(){
   // Remove any previous handler
   if(poolScrollHandler) scrollEl.removeEventListener('scroll', poolScrollHandler);
 
-  // Figure out which thead is currently active
+  // Figure out which thead is currently active (main pool list vs context panel)
   function getActiveThead(){
     const ctxPanel = document.getElementById('context-panel');
     if(ctxPanel && ctxPanel.style.display !== 'none'){
@@ -4363,13 +4363,12 @@ function attachPoolScrollHandler(){
     return document.getElementById('pool-main-thead');
   }
 
-  // Build the clone from whatever thead is active
+  // Build the clone from the currently visible thead, matching real column widths exactly
   function buildClone(){
     const realThead = getActiveThead();
     if(!realThead) return;
     const clone = realThead.cloneNode(true);
     clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-    // Wire sort clicks through to the real buttons
     clone.querySelectorAll('th[onclick]').forEach((th, i) => {
       const realTh = realThead.querySelectorAll('th')[i];
       if(realTh && realTh.getAttribute('onclick')){
@@ -4378,7 +4377,6 @@ function attachPoolScrollHandler(){
     });
     cloneTable.innerHTML = '';
     cloneTable.appendChild(clone);
-    // Match column widths
     const realTable = realThead.closest('table');
     if(realTable){
       const realCols = realThead.querySelectorAll('th');
@@ -4393,7 +4391,8 @@ function attachPoolScrollHandler(){
     }
   }
 
-  // Position the clone bar right at the top of pool-wrap (just below the main title header)
+  // Pin the clone bar to the top of pool-wrap (right below the main title header)
+  // Called once — pool-wrap top doesn't change while pool is open
   function positionCloneBar(){
     const poolWrap = document.getElementById('pool-wrap');
     const wrapTop = poolWrap ? poolWrap.getBoundingClientRect().top : 0;
@@ -4402,26 +4401,21 @@ function attachPoolScrollHandler(){
     cloneBar.style.right = '0';
   }
 
+  // Cache the pool toolbar height — this is the scroll threshold.
+  // The toolbar scrolls with the content; once scrollTop > toolbarH the toolbar
+  // has slid under the main header and the clone stat bar should appear.
+  // Using scrollTop (an integer) instead of getBoundingClientRect() eliminates
+  // all sub-pixel oscillation and flickering.
+  const poolToolbarEl = document.getElementById('pool-toolbar');
+  const cachedToolbarH = poolToolbarEl ? poolToolbarEl.offsetHeight : 56;
+
   buildClone();
   positionCloneBar();
 
-  // Cache threshold at attach time — toolbar now scrolls with content, so clone appears
-  // right at the top of pool-wrap (= bottom of main title header)
-  const poolWrapEl = document.getElementById('pool-wrap');
-  const cachedWrapTop = poolWrapEl ? poolWrapEl.getBoundingClientRect().top : 0;
-  const cachedThreshold = cachedWrapTop + 2; // +2px hysteresis to avoid flicker
-
   let cloneVisible = false;
   poolScrollHandler = function(){
-    const realThead = getActiveThead();
-    if(!realThead){
-      if(cloneVisible){ cloneBar.style.display = 'none'; cloneVisible = false; }
-      return;
-    }
-    const rect = realThead.getBoundingClientRect();
-    const shouldShow = rect.bottom < cachedThreshold;
+    const shouldShow = scrollEl.scrollTop > cachedToolbarH;
     if(shouldShow && !cloneVisible){
-      positionCloneBar();
       cloneBar.style.display = 'block';
       cloneVisible = true;
     } else if(!shouldShow && cloneVisible){
