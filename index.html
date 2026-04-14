@@ -862,6 +862,8 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
             <th onclick="sortPool('avg')" title="AVG / ERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AVG</span><span style="color:#86efac;font-size:8px">ERA</span></div></th>
             <th onclick="sortPool('obp')" title="OBP / WHIP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OBP</span><span style="color:#86efac;font-size:8px">WHIP</span></div></th>
             <th onclick="sortPool('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS</span><span style="color:#86efac;font-size:8px">xERA</span></div></th>
+            <th onclick="sortPool('sv_xba')" title="Expected Batting Average (Statcast)" class="savant-col">xBA <span class="sort-arrow" id="parr-sv_xba">↕</span></th>
+            <th onclick="sortPool('sv_xwoba')" title="Expected wOBA (Statcast)" class="savant-col">xwOBA <span class="sort-arrow" id="parr-sv_xwoba">↕</span></th>
             <th class="no-sort" style="width:130px;text-align:right">Action</th>
           </tr>
         </thead>
@@ -2678,6 +2680,7 @@ function personalDrop(e, id){
 // ============================================================
 let poolPlayers = [];
 let poolLoaded = false;
+let poolStatsLoaded = false;
 let poolPosFilter = 'ALL';
 let poolActive = false;
 let poolSortCol = 'name';
@@ -2811,10 +2814,104 @@ async function loadPoolPlayers(){
       });
     }
     document.getElementById('pool-loading').style.display = 'none';
-    document.getElementById('pool-status').textContent = poolPlayers.length + ' MLB players loaded';
+    document.getElementById('pool-status').textContent = poolPlayers.length + ' MLB players loaded — loading stats...';
     renderPool();
+    // Now bulk-load season stats for all players in the background
+    loadAllPoolStats();
   } catch(e) {
     document.getElementById('pool-loading').textContent = '⚠ Could not load roster. Check your connection.';
+  }
+}
+
+// ---- BULK STATS LOADER ----
+// Fetches season stats for ALL MLB players in just 2 API calls (hitting + pitching).
+// Maps results back into poolPlayers by mlb_id, then re-renders the pool.
+async function loadAllPoolStats(){
+  if(poolStatsLoaded) return;
+  try {
+    document.getElementById('pool-status').textContent = '⟳ Loading stats for all players...';
+    const timeout = ms => new Promise((_,r) => setTimeout(()=>r(new Error('timeout')), ms));
+    // Two calls: one for all hitters, one for all pitchers
+    const [hitRes, pitRes] = await Promise.all([
+      Promise.race([
+        fetch('https://statsapi.mlb.com/api/v1/stats?stats=season&season=2026&group=hitting&gameType=R&limit=5000&playerPool=All'),
+        timeout(12000)
+      ]),
+      Promise.race([
+        fetch('https://statsapi.mlb.com/api/v1/stats?stats=season&season=2026&group=pitching&gameType=R&limit=5000&playerPool=All'),
+        timeout(12000)
+      ])
+    ]);
+
+    // Build a lookup table: mlb_id → stat object
+    const statMap = {};
+
+    if(hitRes.ok){
+      const hitData = await hitRes.json();
+      const splits = (hitData.stats && hitData.stats[0] && hitData.stats[0].splits) || [];
+      splits.forEach(s => {
+        if(!s.player || !s.player.id) return;
+        const id = s.player.id;
+        const st = s.stat || {};
+        statMap[id] = statMap[id] || {};
+        Object.assign(statMap[id], {
+          ab:  st.atBats,
+          r:   st.runs,
+          hr:  st.homeRuns,
+          rbi: st.rbi,
+          sb:  st.stolenBases,
+          avg: st.avg,
+          obp: st.obp,
+          ops: st.ops,
+          slg: st.slg,
+          bats: s.player.batSide ? s.player.batSide.code : undefined
+        });
+      });
+    }
+
+    if(pitRes.ok){
+      const pitData = await pitRes.json();
+      const splits = (pitData.stats && pitData.stats[0] && pitData.stats[0].splits) || [];
+      splits.forEach(s => {
+        if(!s.player || !s.player.id) return;
+        const id = s.player.id;
+        const st = s.stat || {};
+        statMap[id] = statMap[id] || {};
+        Object.assign(statMap[id], {
+          ip:   st.inningsPitched,
+          k:    st.strikeOuts,
+          w:    st.wins,
+          sv:   st.saves,
+          hld:  st.holds,
+          era:  st.era,
+          whip: st.whip,
+          xera: st.xera
+        });
+      });
+    }
+
+    // Merge stats into poolPlayers
+    poolPlayers.forEach(p => {
+      const s = statMap[p.mlb_id];
+      if(!s) return;
+      Object.assign(p, s);
+      p.stats = true; // mark as having stats
+      // Also pull Savant data (already loaded on page start)
+      const sid = String(p.mlb_id);
+      const pit = isPitcherPos(p.primaryPos);
+      const savSrc = pit ? savantPitchers[sid] : savantHitters[sid];
+      if(savSrc){
+        if(savSrc['est_ba'])    p.sv_xba   = parseFloat(savSrc['est_ba']);
+        if(savSrc['est_woba'])  p.sv_xwoba = parseFloat(savSrc['est_woba']);
+      }
+    });
+
+    poolStatsLoaded = true;
+    const count = poolPlayers.filter(p => p.stats).length;
+    document.getElementById('pool-status').textContent = `${poolPlayers.length} players · stats loaded for ${count}`;
+    renderPool();
+  } catch(e) {
+    document.getElementById('pool-status').textContent = poolPlayers.length + ' players (stats unavailable)';
   }
 }
 
@@ -2875,7 +2972,8 @@ function renderPool(){
     // Merge Yahoo data from watch list if available
     const yw = yahooLookup[p.name.toLowerCase()];
     if(yw) { if(yw.yahoo_rank) p.yahoo_rank = yw.yahoo_rank; if(yw.roster_pct!==null) p.roster_pct = yw.roster_pct; }
-    // Date range stat overlay
+    // For season stats, use the player object directly (populated by loadAllPoolStats).
+    // For date range, overlay the cache. Show "…" while date range cache is loading.
     const usingDR = dateRange !== 'season';
     const sc = usingDR ? poolDateRangeCache[p.mlb_id + '_' + dateRange] : p;
     const loading = usingDR && !sc;
@@ -2883,9 +2981,10 @@ function renderPool(){
     const na = '<span style="color:var(--text3)">—</span>';
     const sv = (val, dec=0) => loading ? pending : (val===undefined||val===null||val==='' ? na : (dec>0?parseFloat(val).toFixed(dec):val));
     const svAvg = (val) => loading ? pending : (val===undefined||val===null||val==='' ? na : '.'+parseFloat(val).toFixed(3).split('.')[1]);
+    const svSav = (val) => (val===undefined||val===null) ? na : '.'+parseFloat(val).toFixed(3).split('.')[1];
     const statColor = '#c084fc';
-    const pitColor = '#86efac';
-    const safeName = p.name.replace(/'/g,"\\'");
+    const pitColor  = '#86efac';
+    const safeName  = p.name.replace(/'/g,"\\'");
     return `<tr class="${isAdded?'already-added':''}" style="cursor:pointer" onclick="openContext(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0})">
       <td style="text-align:left"><div class="pool-player-name"><span class="pname" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
       <td style="text-align:left"><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
@@ -2903,16 +3002,21 @@ function renderPool(){
       <td class="stat">${!pit?`<span style="color:${statColor}">${svAvg(sc&&sc.avg)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
       <td class="stat">${!pit?`<span style="color:${statColor}">${svAvg(sc&&sc.obp)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.whip,2)}</span>`}</td>
       <td class="stat">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ops,3)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
+      <td class="stat savant-col">${!pit?svSav(p.sv_xba):na}</td>
+      <td class="stat savant-col">${!pit?svSav(p.sv_xwoba):na}</td>
       <td style="text-align:right" onclick="event.stopPropagation()">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
         : `<button class="btn-add-pool" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add to Watch 101</button>`
       }</td>
     </tr>`;
   }).join('');
-  if(list.length > 300){
-    document.getElementById('pool-status').textContent = `Showing 300 of ${list.length} — type to filter`;
-  } else {
-    document.getElementById('pool-status').textContent = list.length + ' players';
+  // Don't overwrite the "stats loaded" status message if stats are loading
+  if(!poolStatsLoaded){
+    if(list.length > 300){
+      document.getElementById('pool-status').textContent = `Showing 300 of ${list.length} — type to filter`;
+    } else {
+      document.getElementById('pool-status').textContent = list.length + ' players';
+    }
   }
 }
 
