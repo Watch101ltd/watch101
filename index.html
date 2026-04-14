@@ -296,9 +296,9 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .context-table-wrap{overflow-x:auto;padding:0 0 2rem}
 .context-table-wrap .pool-table thead th{background:var(--surface);}
 /* Pool clone fixed header - appears when pool thead scrolls off screen */
-#pool-clone-header{display:none;position:fixed;left:0;right:0;z-index:62;background:var(--bg);border-bottom:2px solid var(--gold2);overflow:hidden;pointer-events:auto;}
-#pool-clone-header table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
-#pool-clone-header th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);}
+#pool-clone-header,#leaders-clone-header{display:none;position:fixed;left:0;right:0;z-index:62;background:var(--bg);border-bottom:2px solid var(--gold2);overflow:hidden;pointer-events:auto;}
+#pool-clone-header table,#leaders-clone-header table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
+#pool-clone-header th,#leaders-clone-header th{padding:5px 4px;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);}
 #pros-table-wrap thead th{background:var(--surface)}
 .ctx-count-row td{background:var(--surface2);padding:5px 12px;font-family:'DM Mono',monospace;font-size:11px;border-bottom:1px solid var(--border)}
 tr.ctx-highlight td{background:#1a1200 !important}
@@ -887,13 +887,17 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
   </div><!-- end pool-rows-scroll -->
 </div>
 
+<!-- LEAGUE LEADERS CLONE FIXED HEADER — appears when stat thead scrolls off screen -->
+<div id="leaders-clone-header"><table id="leaders-clone-table" style="width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;"></table></div>
+
 <!-- LEAGUE LEADERS -->
 <div class="pool-wrap" id="leaders-wrap">
-  <div id="leaders-fixed-header" style="display:none!important"><table id="leaders-fixed-table"></table></div>
-  <div class="pool-toolbar">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em">🏆 League Leaders — 2026</div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">Select a stat category</div>
+  <!-- Everything scrolls together: secondary header slides under main header, stat row sticks via clone -->
+  <div class="pool-rows-scroll" id="leaders-rows-scroll">
+
+    <!-- SECONDARY HEADER — scrolls away under the main title header -->
+    <div class="pool-toolbar" id="leaders-toolbar">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);letter-spacing:0.05em;white-space:nowrap">🏆 League Leaders — 2026</div>
       <select id="daterange-select-leaders" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
         <option value="live">🔴 Live</option>
         <option value="season" selected>Season Stats</option>
@@ -901,64 +905,74 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         <option value="14">Last 14 Days</option>
         <option value="30">Last 30 Days</option>
       </select>
-      <button onclick="closeLeagueLeaders()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:4px 12px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
+      <button onclick="closeLeagueLeaders()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em;white-space:nowrap" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
+      <div class="pool-status" id="leaders-status">Loading players...</div>
     </div>
-  </div>
-  <div style="display:flex;gap:24px;padding:0 1.5rem 1rem;flex-shrink:0;align-items:flex-start">
-    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;width:100%;padding-top:4px">Hitting</div>
-      <button class="filter-tab" onclick="loadLeaders('R','hitting','runs','Runs')">R</button>
-      <button class="filter-tab" onclick="loadLeaders('HR','hitting','homeRuns','Home Runs')">HR</button>
-      <button class="filter-tab" onclick="loadLeaders('RBI','hitting','rbi','RBI')">RBI</button>
-      <button class="filter-tab" onclick="loadLeaders('SB','hitting','stolenBases','Stolen Bases')">SB</button>
-      <button class="filter-tab" onclick="loadLeaders('AVG','hitting','avg','Batting Average')">AVG</button>
-      <button class="filter-tab" onclick="loadLeaders('OBP','hitting','obp','On-Base %')">OBP</button>
-      <button class="filter-tab" onclick="loadLeaders('OPS','hitting','ops','OPS')">OPS</button>
+
+    <!-- STAT CATEGORY BUTTONS — also scroll with secondary header -->
+    <div id="leaders-cats" style="display:flex;gap:24px;padding:0.5rem 1.5rem 0.75rem;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;width:100%;padding-top:4px">Hitting</div>
+        <button class="filter-tab" onclick="sortLeadersByStat('r',false,this)">R</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('hr',false,this)">HR</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('rbi',false,this)">RBI</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('sb',false,this)">SB</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('avg',false,this)">AVG</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('obp',false,this)">OBP</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('ops',false,this)">OPS</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;width:100%;padding-top:4px">Pitching</div>
+        <button class="filter-tab" onclick="sortLeadersByStat('era',true,this)">ERA</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('whip',true,this)">WHIP</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('k',false,this)">K</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('w',false,this)">W</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('sv',false,this)">SV</button>
+        <button class="filter-tab" onclick="sortLeadersByStat('ip',false,this)">IP</button>
+      </div>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;width:100%;padding-top:4px">Pitching</div>
-      <button class="filter-tab" onclick="loadLeaders('ERA','pitching','era','ERA')">ERA</button>
-      <button class="filter-tab" onclick="loadLeaders('WHIP','pitching','whip','WHIP')">WHIP</button>
-      <button class="filter-tab" onclick="loadLeaders('K','pitching','strikeOuts','Strikeouts')">K</button>
-      <button class="filter-tab" onclick="loadLeaders('W','pitching','wins','Wins')">W</button>
-      <button class="filter-tab" onclick="loadLeaders('SV','pitching','saves','Saves')">SV</button>
-      <button class="filter-tab" onclick="loadLeaders('IP','pitching','inningsPitched','Innings Pitched')">IP</button>
+
+    <!-- MAIN PLAYER TABLE — same structure/columns as Watch 101 and Player Pool -->
+    <div id="leaders-table-section">
+      <div class="table-wrap">
+        <table id="leaders-main-table">
+          <thead id="leaders-main-thead">
+            <tr>
+              <th style="cursor:default">🏆</th>
+              <th onclick="sortLeaders('primaryPos')" title="Position">Pos <span class="sort-arrow" id="larr-primaryPos">↕</span></th>
+              <th onclick="sortLeaders('name')" style="text-align:left">Player <span class="sort-arrow" id="larr-name">↕</span></th>
+              <th onclick="sortLeaders('team')">Team <span class="sort-arrow" id="larr-team">↕</span></th>
+              <th onclick="sortLeaders('age')" title="Age">Age <span class="sort-arrow" id="larr-age">↕</span></th>
+              <th onclick="sortLeaders('bats')" title="Bats (L/R/S)">Bats <span class="sort-arrow" id="larr-bats">↕</span></th>
+              <th style="cursor:default;width:24px"></th>
+              <th onclick="sortLeaders('preseason_rank')" title="Yahoo Preseason Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>PRE <span class="sort-arrow" id="larr-preseason_rank">↕</span></span></div></th>
+              <th onclick="sortLeaders('yahoo_rank')" title="Yahoo Current Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>CURR <span class="sort-arrow" id="larr-yahoo_rank">↕</span></span></div></th>
+              <th onclick="sortLeaders('roster_pct')" title="Roster %" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RST% <span class="sort-arrow" id="larr-roster_pct">↕</span></span></div></th>
+              <th onclick="sortLeaders('ab')" title="AB / IP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AB</span><span style="color:#86efac;font-size:8px">IP</span></div></th>
+              <th onclick="sortLeaders('r')" title="R / K" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">R</span><span style="color:#86efac;font-size:8px">K</span></div></th>
+              <th onclick="sortLeaders('hr')" title="HR / W" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">HR</span><span style="color:#86efac;font-size:8px">W</span></div></th>
+              <th onclick="sortLeaders('rbi')" title="RBI / SV" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">RBI</span><span style="color:#86efac;font-size:8px">SV</span></div></th>
+              <th onclick="sortLeaders('sb')" title="SB / HLD" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">SB</span><span style="color:#86efac;font-size:8px">HLD</span></div></th>
+              <th onclick="sortLeaders('avg')" title="AVG / ERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AVG</span><span style="color:#86efac;font-size:8px">ERA</span></div></th>
+              <th onclick="sortLeaders('obp')" title="OBP / WHIP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OBP</span><span style="color:#86efac;font-size:8px">WHIP</span></div></th>
+              <th onclick="sortLeaders('ops')" title="OPS / xERA" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">OPS <span class="sort-arrow" id="larr-ops">↕</span></span><span style="color:#86efac;font-size:8px">xERA</span></div></th>
+              <th class="savant-col" onclick="sortLeaders('sv_xba')" title="Expected Batting Average (Statcast)">xBA <span class="sort-arrow" id="larr-sv_xba">↕</span></th>
+              <th class="savant-col" onclick="sortLeaders('sv_xwoba')" title="Expected wOBA (Statcast)">xwOBA <span class="sort-arrow" id="larr-sv_xwoba">↕</span></th>
+              <th style="cursor:default;width:60px">Action</th>
+            </tr>
+          </thead>
+          <tbody id="leaders-tbody"></tbody>
+        </table>
+        <div class="empty-state" id="leaders-loading" style="display:none">
+          <h3>⟳ Loading Players</h3>
+          <p id="leaders-loading-msg">Fetching MLB roster...</p>
+        </div>
+        <div class="empty-state" id="leaders-empty" style="display:none">
+          <h3>No Players Found</h3>
+        </div>
+      </div>
     </div>
-  </div>
-  <div id="leaders-status" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);padding:0 1.5rem 0.75rem;display:none;flex-shrink:0"></div>
-  <!-- PERMANENT STAT HEADER - always visible, never scrolls -->
-  <div id="leaders-static-header" style="flex-shrink:0;background:var(--surface);border-top:2px solid var(--gold2);border-bottom:1px solid var(--border);overflow-x:auto;">
-    <table class="pool-table" style="margin:0">
-      <thead id="leaders-thead-static">
-        <tr>
-          <th style="width:40px;text-align:center">RK</th>
-          <th style="width:180px;min-width:180px">Player</th>
-          <th>Pos</th><th>Team</th>
-          <th style="text-align:right">Age</th>
-          <th style="text-align:center;font-size:9px;color:#94a3b8;text-transform:uppercase">BATS</th>
-          <th style="text-align:right">R</th>
-          <th style="text-align:right">HR</th>
-          <th style="text-align:right">RBI</th>
-          <th style="text-align:right">SB</th>
-          <th style="text-align:right">AVG</th>
-          <th style="text-align:right">OBP</th>
-          <th style="text-align:right;color:var(--gold)">OPS</th>
-          <th style="text-align:right;color:var(--blue)">CURR</th>
-          <th style="text-align:right;color:var(--blue)">RST%</th>
-          <th style="width:150px"></th>
-        </tr>
-      </thead>
-    </table>
-  </div>
-  <!-- SCROLLING ROWS ONLY -->
-  <div class="pool-rows-scroll" id="leaders-rows-scroll">
-  <div class="pool-table-wrap">
-    <table class="pool-table" id="leaders-table" style="display:none">
-      <thead id="leaders-thead"></thead>
-      <tbody id="leaders-tbody"></tbody>
-    </table>
-    <div class="pool-loading" id="leaders-loading" style="display:none">Loading league leaders...</div>
-  </div>
+
   </div><!-- end leaders-rows-scroll -->
 </div>
 
@@ -2830,6 +2844,8 @@ async function loadPoolPlayers(){
     document.getElementById('pool-loading').style.display = 'none';
     document.getElementById('pool-status').textContent = poolPlayers.length + ' MLB players loaded — loading stats...';
     renderPool();
+    // If League Leaders is open, show the roster while stats load in the background
+    if(leadersActive) renderLeaders();
     // Now bulk-load season stats for all players in the background
     loadAllPoolStats();
   } catch(e) {
@@ -2924,8 +2940,11 @@ async function loadAllPoolStats(){
     const count = poolPlayers.filter(p => p.stats).length;
     document.getElementById('pool-status').textContent = `${poolPlayers.length} players · stats loaded for ${count}`;
     renderPool();
+    // If League Leaders is open, re-render it with the freshly loaded stats
+    if(leadersActive) renderLeaders();
   } catch(e) {
     document.getElementById('pool-status').textContent = poolPlayers.length + ' players (stats unavailable)';
+    if(leadersActive) renderLeaders(); // still render whatever we have
   }
 }
 
@@ -3564,6 +3583,10 @@ async function quickAddPoolPlayer(mlbId, name, team, primaryPos, age, btnEl){
 // LEAGUE LEADERS
 // ============================================================
 let leadersActive = false;
+let leadersSortCol = 'hr';
+let leadersSortDir = -1;
+let leadersPosFilter = 'ALL'; // 'ALL' | 'HITTER' | 'PITCHER'
+var leadersScrollHandler = null;
 
 function openLeagueLeaders(){
   leadersActive = true;
@@ -3576,7 +3599,23 @@ function openLeagueLeaders(){
   document.getElementById('leaders-wrap').classList.add('active');
   document.querySelectorAll('.filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('leaders-tab').classList.add('active');
+  // Scroll to top so the secondary header (toolbar + category buttons) is visible first
+  const leadersScroll = document.getElementById('leaders-rows-scroll');
+  if(leadersScroll) leadersScroll.scrollTop = 0;
+  // Load or render based on what's available
+  if(!poolLoaded){
+    // Pool players not loaded yet — loadPoolPlayers will trigger renderLeaders() when done
+    document.getElementById('leaders-status').textContent = 'Loading players...';
+    loadPoolPlayers();
+  } else {
+    renderLeaders();
+    if(!poolStatsLoaded){
+      document.getElementById('leaders-status').textContent = 'Loading stats...';
+      loadAllPoolStats();
+    }
+  }
   setTimeout(setPoolWrapTop, 0);
+  setTimeout(attachLeadersScrollHandler, 100);
 }
 
 function closeLeagueLeaders(){
@@ -3587,6 +3626,200 @@ function closeLeagueLeaders(){
   document.querySelector('.table-wrap').style.display = '';
 }
 
+// ---- RENDER LEADERS TABLE ----
+// Uses the same poolPlayers data as the Player Pool.
+// leadersPosFilter, leadersSortCol, leadersSortDir control what/how is shown.
+function renderLeaders(){
+  const tbody = document.getElementById('leaders-tbody');
+  if(!tbody) return;
+  const addedNames = new Set(players.map(p => p.name.toLowerCase()));
+  let list = [...poolPlayers];
+
+  // Apply position filter (set by category buttons)
+  if(leadersPosFilter === 'PITCHER') list = list.filter(p => isPitcherPos(p.primaryPos));
+  if(leadersPosFilter === 'HITTER')  list = list.filter(p => !isPitcherPos(p.primaryPos));
+
+  // Once stats are loaded, only keep players who have a value for the active stat column
+  if(poolStatsLoaded && !['name','team','primaryPos','bats','age','preseason_rank','yahoo_rank','roster_pct'].includes(leadersSortCol)){
+    list = list.filter(p => p[leadersSortCol] !== undefined && p[leadersSortCol] !== null && p[leadersSortCol] !== '');
+  }
+
+  list.sort((a,b)=>{
+    let av = a[leadersSortCol], bv = b[leadersSortCol];
+    if(av===undefined||av===null) av = leadersSortDir>0 ? 'zzz' : -9999;
+    if(bv===undefined||bv===null) bv = leadersSortDir>0 ? 'zzz' : -9999;
+    if(typeof av==='string') return av.localeCompare(bv)*leadersSortDir;
+    const diff = (av-bv)*leadersSortDir;
+    if(diff !== 0) return diff;
+    return (a.yahoo_rank||9999) - (b.yahoo_rank||9999);
+  });
+
+  const display = list.slice(0, 200);
+
+  // Build Yahoo lookup from watch list
+  const yahooLookup = {};
+  players.forEach(wp => {
+    if(wp.yahoo_rank || wp.roster_pct !== null) yahooLookup[wp.name.toLowerCase()] = wp;
+  });
+
+  const na = '<span style="color:var(--text3)">—</span>';
+  const sv  = (val, dec=0) => (val===undefined||val===null||val==='' ? na : (dec>0 ? parseFloat(val).toFixed(dec) : val));
+  const svAvg = (val)       => (val===undefined||val===null||val==='' ? na : '.' + parseFloat(val).toFixed(3).split('.')[1]);
+
+  tbody.innerHTML = display.map((p, i) => {
+    const isAdded = addedNames.has(p.name.toLowerCase());
+    const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
+    const pit = isPitcherPos(p.primaryPos);
+    const yw = yahooLookup[p.name.toLowerCase()];
+    if(yw){ if(yw.yahoo_rank) p.yahoo_rank = yw.yahoo_rank; if(yw.roster_pct!=null) p.roster_pct = yw.roster_pct; }
+    const statColor = '#c084fc';
+    const pitColor  = '#86efac';
+    const safeName  = p.name.replace(/'/g,"\\'");
+    const rankColor = i===0?'var(--gold)':i<3?'#fbbf24':i<10?'var(--text)':'var(--text3)';
+    return `<tr class="${isAdded?'already-added':''}" style="cursor:pointer" onclick="openContext(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0})">
+      <td style="text-align:center;font-family:'Bebas Neue',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
+      <td style="text-align:center"><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
+      <td><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
+      <td>${p.team||na}</td>
+      <td class="stat-cell">${decimalAge(p)}</td>
+      <td class="stat-cell" style="text-align:center">${p.bats||na}</td>
+      <td></td>
+      <td class="yahoo-rank" style="color:var(--text3)">${p.preseason_rank||na}</td>
+      <td class="yahoo-rank">${p.yahoo_rank||na}</td>
+      <td class="stat-cell">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(p.ab)}</span>`:`<span style="color:${pitColor}">${sv(p.ip,1)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(p.r)}</span>`:`<span style="color:${pitColor}">${sv(p.k)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(p.hr)}</span>`:`<span style="color:${pitColor}">${sv(p.w)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(p.rbi)}</span>`:`<span style="color:${pitColor}">${sv(p.sv)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(p.sb)}</span>`:`<span style="color:${pitColor}">${sv(p.hld)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${svAvg(p.avg)}</span>`:`<span style="color:${pitColor}">${sv(p.era,2)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${svAvg(p.obp)}</span>`:`<span style="color:${pitColor}">${sv(p.whip,2)}</span>`}</td>
+      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(p.ops,3)}</span>`:`<span style="color:${pitColor}">${sv(p.era,2)}</span>`}</td>
+      <td class="stat-cell savant-col">${!pit?fmtSavant(p.sv_xba):na}</td>
+      <td class="stat-cell savant-col">${fmtSavant(p.sv_xwoba)}</td>
+      <td style="text-align:right;padding:4px 6px" onclick="event.stopPropagation()">${isAdded
+        ? '<span class="btn-add-pool added">✓ On List</span>'
+        : `<button class="btn-add-pool" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
+      }</td>
+    </tr>`;
+  }).join('');
+
+  const statusEl = document.getElementById('leaders-status');
+  if(statusEl){
+    if(!poolStatsLoaded){
+      statusEl.textContent = poolLoaded ? `${poolPlayers.length} players loaded — loading stats...` : 'Loading players...';
+    } else {
+      statusEl.textContent = list.length > 200
+        ? `Top 200 of ${list.length} — use category buttons or column headers to sort`
+        : `${list.length} players`;
+    }
+  }
+  document.getElementById('leaders-empty').style.display = list.length === 0 ? 'block' : 'none';
+}
+
+// ---- SORT LEADERS BY COLUMN HEADER ----
+function sortLeaders(col){
+  if(leadersSortCol === col){
+    leadersSortDir *= -1;
+  } else {
+    leadersSortCol = col;
+    // Text columns: ascending first. Stat columns: descending first (highest = best).
+    const textCols = ['name','team','primaryPos','bats'];
+    leadersSortDir = textCols.includes(col) ? 1 : -1;
+  }
+  document.querySelectorAll('[id^="larr-"]').forEach(a => { a.textContent='↕'; a.closest('th') && a.closest('th').classList.remove('sorted'); });
+  const arr = document.getElementById('larr-' + col);
+  if(arr){ arr.textContent = leadersSortDir===1?'↑':'↓'; arr.closest('th').classList.add('sorted'); }
+  renderLeaders();
+}
+
+// ---- SORT LEADERS BY CATEGORY BUTTON (R, HR, ERA, etc.) ----
+// Category buttons also set the position filter: hitting stats → show hitters, pitching → show pitchers
+function sortLeadersByStat(col, isLower, el){
+  const hitStats = ['r','hr','rbi','sb','avg','obp','ops','ab'];
+  const pitStats  = ['era','whip','k','w','sv','ip'];
+  leadersSortCol = col;
+  leadersSortDir = isLower ? 1 : -1; // ERA/WHIP: lower=better → sort ascending; everything else → descending
+  if(hitStats.includes(col)) leadersPosFilter = 'HITTER';
+  if(pitStats.includes(col)) leadersPosFilter = 'PITCHER';
+  // Highlight active category button
+  document.querySelectorAll('#leaders-cats .filter-tab').forEach(t => t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  // Sync sort arrow on the column header too
+  document.querySelectorAll('[id^="larr-"]').forEach(a => { a.textContent='↕'; a.closest('th') && a.closest('th').classList.remove('sorted'); });
+  const arr = document.getElementById('larr-' + col);
+  if(arr){ arr.textContent = leadersSortDir===1?'↑':'↓'; arr.closest('th').classList.add('sorted'); }
+  renderLeaders();
+}
+
+// ---- LEADERS SCROLL HANDLER — clone sticky header ----
+// Same approach as attachPoolScrollHandler: toolbar+cat-buttons scroll away,
+// then the clone stat bar appears fixed at the top of the leaders-wrap.
+function attachLeadersScrollHandler(){
+  const scrollEl  = document.getElementById('leaders-rows-scroll');
+  const cloneBar   = document.getElementById('leaders-clone-header');
+  const cloneTable = document.getElementById('leaders-clone-table');
+  if(!scrollEl || !cloneBar || !cloneTable) return;
+
+  if(leadersScrollHandler) scrollEl.removeEventListener('scroll', leadersScrollHandler);
+
+  function buildClone(){
+    const realThead = document.getElementById('leaders-main-thead');
+    if(!realThead) return;
+    const clone = realThead.cloneNode(true);
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    clone.querySelectorAll('th[onclick]').forEach((th, i) => {
+      const realTh = realThead.querySelectorAll('th')[i];
+      if(realTh && realTh.getAttribute('onclick')) th.setAttribute('onclick', realTh.getAttribute('onclick'));
+    });
+    cloneTable.innerHTML = '';
+    cloneTable.appendChild(clone);
+    const realTable = realThead.closest('table');
+    if(realTable){
+      const realCols = realThead.querySelectorAll('th');
+      const fixedCols = cloneTable.querySelectorAll('th');
+      realCols.forEach((th, i) => {
+        if(fixedCols[i]){
+          fixedCols[i].style.width = th.offsetWidth + 'px';
+          fixedCols[i].style.minWidth = th.offsetWidth + 'px';
+        }
+      });
+      cloneTable.style.width = realTable.offsetWidth + 'px';
+    }
+  }
+
+  function positionCloneBar(){
+    const leadersWrap = document.getElementById('leaders-wrap');
+    const wrapTop = leadersWrap ? leadersWrap.getBoundingClientRect().top : 0;
+    cloneBar.style.top = wrapTop + 'px';
+    cloneBar.style.left = '0';
+    cloneBar.style.right = '0';
+  }
+
+  // Threshold = height of the toolbar + category buttons combined
+  // Once scrollTop exceeds that, the secondary header has scrolled away → show clone
+  const toolbarEl = document.getElementById('leaders-toolbar');
+  const catsEl    = document.getElementById('leaders-cats');
+  const cachedThreshold = (toolbarEl ? toolbarEl.offsetHeight : 50) + (catsEl ? catsEl.offsetHeight : 50);
+
+  buildClone();
+  positionCloneBar();
+
+  let cloneVisible = false;
+  leadersScrollHandler = function(){
+    const shouldShow = scrollEl.scrollTop > cachedThreshold;
+    if(shouldShow && !cloneVisible){
+      cloneBar.style.display = 'block';
+      cloneVisible = true;
+    } else if(!shouldShow && cloneVisible){
+      cloneBar.style.display = 'none';
+      cloneVisible = false;
+    }
+  };
+  scrollEl.addEventListener('scroll', leadersScrollHandler);
+}
+
+// ---- LEGACY loadLeaders stub (kept so old references don't throw) ----
 async function loadLeaders(statLabel, group, statKey, statName){
   document.querySelectorAll('#leaders-wrap .filter-tab').forEach(t => t.classList.remove('active'));
   event.target.classList.add('active');
@@ -4436,11 +4669,17 @@ function destroyFixedHeader(){
   if(cloneBar) cloneBar.style.display = 'none';
 }
 function syncRosterFixedHeader(){ }
-function syncLeadersFixedHeader(){ }
-function destroyLeadersFixedHeader(){ }
+function syncLeadersFixedHeader(){ attachLeadersScrollHandler(); }
+function destroyLeadersFixedHeader(){
+  const scrollEl = document.getElementById('leaders-rows-scroll');
+  if(scrollEl && leadersScrollHandler) scrollEl.removeEventListener('scroll', leadersScrollHandler);
+  leadersScrollHandler = null;
+  const cloneBar = document.getElementById('leaders-clone-header');
+  if(cloneBar) cloneBar.style.display = 'none';
+}
 function syncProspectsFixedHeader(){ }
 function setCtxTheadTop(){ }
-function setLeadersTheadTop(){ }
+function setLeadersTheadTop(){ } // no-op — clone header approach handles this
 function setProsTheadTop(){ }
 // ---- MAIN TABLE FIXED HEADER ----
 function syncMainFixedHeader(){
