@@ -3101,9 +3101,9 @@ function renderPool(){
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell" style="text-align:center">${p.bats||na}</td>
       <td></td>
-      <td class="yahoo-rank" style="color:var(--text3)">${p.preseason_rank||na}</td>
-      <td class="yahoo-rank">${p.yahoo_rank||na}</td>
-      <td class="stat-cell">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="yahoo-rank no-zero" style="color:var(--text3)">${p.preseason_rank||na}</td>
+      <td class="yahoo-rank no-zero">${p.yahoo_rank||na}</td>
+      <td class="stat-cell no-zero">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ab)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.ip,1)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.r)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.k)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.hr)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.w)}</span>`}</td>
@@ -3834,9 +3834,9 @@ function renderLeaders(){
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell" style="text-align:center">${p.bats||na}</td>
       <td></td>
-      <td class="yahoo-rank" style="color:var(--text3)">${p.preseason_rank||na}</td>
-      <td class="yahoo-rank">${p.yahoo_rank||na}</td>
-      <td class="stat-cell">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="yahoo-rank no-zero" style="color:var(--text3)">${p.preseason_rank||na}</td>
+      <td class="yahoo-rank no-zero">${p.yahoo_rank||na}</td>
+      <td class="stat-cell no-zero">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(p.ab)}</span>`:`<span style="color:${pitColor}">${sv(p.ip,1)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(p.r)}</span>`:`<span style="color:${pitColor}">${sv(p.k)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(p.hr)}</span>`:`<span style="color:${pitColor}">${sv(p.w)}</span>`}</td>
@@ -5186,7 +5186,13 @@ function togglePresentMode(){
   function normalizeCell(cell){
     // Skip cells explicitly marked to not be touched (e.g., Team column —
     // we'd rather show a dash for free agents than the nonsense "0" for team).
-    if(cell.classList && cell.classList.contains('team-cell')) return;
+    // Also skip Yahoo ADP/RANK/OWNED cells — a missing Yahoo value needs to stay
+    // a dash ("no data") and NOT get lied about as 0.
+    if(cell.classList && (
+      cell.classList.contains('team-cell') ||
+      cell.classList.contains('no-zero') ||
+      cell.classList.contains('yahoo-rank')
+    )) return;
     var walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT, null, false);
     var node;
     while((node = walker.nextNode())){
