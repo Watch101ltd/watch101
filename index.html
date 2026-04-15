@@ -2789,23 +2789,31 @@ async function loadPoolPlayers(){
       primaryPos: (p.primaryPosition && p.primaryPosition.abbreviation) || '',
     }));
 
-    // Step 2: If many players are missing teams, fetch team rosters to fill in gaps
+    // Step 2: If ANY players are missing teams, fetch team rosters to fill in gaps.
+    // Pulls both 'active' (26-man) AND '40Man' rosters so IL / optioned / suspended
+    // players on the 40-man also get their team filled in.
     const missingTeam = poolPlayers.filter(p => !p.team).length;
-    if(missingTeam > 50){
-      document.getElementById('pool-status').textContent = 'Loading team data...';
+    if(missingTeam > 0){
+      document.getElementById('pool-status').textContent = 'Loading team data for ' + missingTeam + ' players...';
       try {
         // Build a map of mlb_id -> team abbreviation from all 30 team rosters
         const teamsRes = await fetch('https://statsapi.mlb.com/api/v1/teams?sportId=1&season=2026');
         const teamsData = await teamsRes.json();
         const teamMap = {};
-        const rosterPromises = (teamsData.teams||[]).map(async team => {
-          try {
-            const rRes = await fetch(`https://statsapi.mlb.com/api/v1/teams/${team.id}/roster?season=2026&rosterType=active`);
-            const rData = await rRes.json();
-            for(const player of (rData.roster||[])){
-              teamMap[player.person.id] = team.abbreviation;
-            }
-          } catch(e){}
+        const rosterPromises = [];
+        (teamsData.teams||[]).forEach(team => {
+          ['active','40Man'].forEach(rosterType => {
+            rosterPromises.push((async () => {
+              try {
+                const rRes = await fetch(`https://statsapi.mlb.com/api/v1/teams/${team.id}/roster?season=2026&rosterType=${rosterType}`);
+                const rData = await rRes.json();
+                for(const player of (rData.roster||[])){
+                  // Prefer first hit (active wins ties over 40Man, which is fine)
+                  if(!teamMap[player.person.id]) teamMap[player.person.id] = team.abbreviation;
+                }
+              } catch(e){}
+            })());
+          });
         });
         await Promise.all(rosterPromises);
         // Apply team abbreviations
