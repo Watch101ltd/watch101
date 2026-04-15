@@ -1857,9 +1857,9 @@ async function buildRosterCache(){
   rosterCacheLoading = true;
   try{
     const [mlbRes, aaaRes, aaRes] = await Promise.all([
-      fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam'),
-      fetch('https://statsapi.mlb.com/api/v1/sports/11/players?season=2026&hydrate=currentTeam'),
-      fetch('https://statsapi.mlb.com/api/v1/sports/12/players?season=2026&hydrate=currentTeam')
+      fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam&limit=5000'),
+      fetch('https://statsapi.mlb.com/api/v1/sports/11/players?season=2026&hydrate=currentTeam&limit=5000'),
+      fetch('https://statsapi.mlb.com/api/v1/sports/12/players?season=2026&hydrate=currentTeam&limit=5000')
     ]);
     const [mlbData, aaaData, aaData] = await Promise.all([
       mlbRes.ok ? mlbRes.json() : {people:[]},
@@ -2805,7 +2805,7 @@ async function loadPoolPlayers(){
   document.getElementById('pool-status').textContent = 'Loading MLB roster...';
   try {
     // Step 1: Load all rostered players (no gameType=R so IL players like Wheeler are included)
-    const res = await fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam');
+    const res = await fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam&limit=5000');
     const data = await res.json();
     poolPlayers = (data.people || []).map(p => ({
       mlb_id: p.id,
