@@ -850,7 +850,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         <table id="pool-main-table">
           <thead id="pool-main-thead">
             <tr>
-              <th onclick="document.getElementById('pool-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">⚾</th>
+              <th onclick="document.getElementById('pool-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
               <th onclick="sortPool('primaryPos')" title="Position">Pos <span class="sort-arrow" id="parr-primaryPos">↕</span></th>
               <th onclick="sortPool('name')" style="text-align:left">Player <span class="sort-arrow" id="parr-name">↕</span></th>
               <th onclick="sortPool('team')">Team <span class="sort-arrow" id="parr-team">↕</span></th>
@@ -5019,6 +5019,67 @@ function togglePresentMode(){
     btn.textContent = '🔍 Present';
   }
 }
+
+// ---- GLOBAL DISPLAY NORMALIZER ----
+// 1) Strips leading zero from decimals shown in stat cells (0.345 -> .345)
+// 2) Replaces em-dash / hyphen used as "no data" placeholder with 0
+// Runs on every DOM change inside stat tables. Guarded against self-triggering.
+(function(){
+  var NORMALIZING = false;
+  function normalizeTextNode(node){
+    var t = node.nodeValue;
+    if(!t) return;
+    var trimmed = t.trim();
+    // Replace standalone em-dash, en-dash, or hyphen with 0
+    if(trimmed === '\u2014' || trimmed === '\u2013' || trimmed === '-'){
+      node.nodeValue = t.replace(/[\u2014\u2013-]/, '0');
+      return;
+    }
+    // Strip leading zero from decimal numbers: 0.345 -> .345
+    // Only acts on \b0\.\d+ patterns, won't affect "10.5" or "1.23" or player names
+    var fixed = t.replace(/\b0(\.\d+)/g, '$1');
+    if(fixed !== t) node.nodeValue = fixed;
+  }
+  function normalizeCell(cell){
+    var walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT, null, false);
+    var node;
+    while((node = walker.nextNode())){
+      normalizeTextNode(node);
+    }
+  }
+  function sweep(root){
+    if(!root || !root.querySelectorAll) return;
+    var cells = root.querySelectorAll('td, th, .stat-cell, .stat, .rank-num, .dual-rank, .sri-meta');
+    for(var i=0;i<cells.length;i++){ normalizeCell(cells[i]); }
+  }
+  function runSweep(){
+    if(NORMALIZING) return;
+    NORMALIZING = true;
+    try { sweep(document.body); } catch(e){}
+    NORMALIZING = false;
+  }
+  // Observe all changes and re-sweep. Self-edits won't loop because
+  // normalization is idempotent (running twice produces same output).
+  var scheduled = false;
+  var obs = new MutationObserver(function(){
+    if(NORMALIZING) return;
+    if(scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(function(){
+      scheduled = false;
+      runSweep();
+    });
+  });
+  function startObserver(){
+    obs.observe(document.body, {childList:true, subtree:true, characterData:true});
+    runSweep();
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', startObserver);
+  } else {
+    startObserver();
+  }
+})();
 
 </script>
 
