@@ -61,7 +61,7 @@ th .sort-arrow{margin-left:2px;opacity:0.5;font-size:8px}
 th.sorted .sort-arrow{opacity:1;color:var(--gold)}
 th:first-child{width:18px;text-align:center;cursor:default;padding:5px 2px}
 th:nth-child(2){width:36px;text-align:center}   /* Rank */
-th:nth-child(3){width:260px;text-align:left}    /* Player */
+th:nth-child(3){width:180px;text-align:left}    /* Player */
 th:nth-child(4){width:44px}                     /* +/- */
 th:nth-child(5){width:34px}                     /* Pos (inline width:140px overrides) */
 th:nth-child(6){width:30px}                     /* Team */
@@ -102,7 +102,7 @@ td:nth-child(4){text-align:left}
 .move-down{background:#7f1d1d33;color:var(--red);border:1px solid #7f1d1d}
 .move-new{background:#78350f33;color:var(--gold);border:1px solid #78350f}
 
-.name-cell{display:flex;flex-direction:row;align-items:center;gap:4px;flex-wrap:wrap;min-width:220px;max-width:300px}
+.name-cell{display:flex;flex-direction:row;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0;max-width:100%;overflow:hidden}
 .player-name{font-weight:500;font-size:14px;color:#ffffff;white-space:nowrap}
 .badge-row{display:flex;flex-wrap:wrap;gap:2px;align-items:center}
 .player-team{font-size:11px;color:#94a3b8;font-family:'DM Mono',monospace}
@@ -1850,6 +1850,27 @@ function renderTable(){
   }).join('');
   // Re-sync fixed header after render so column widths stay accurate
   setTimeout(syncMainFixedHeader, 50);
+  // Auto-shrink long player names to fit the column instead of getting clipped
+  setTimeout(fitPlayerNames, 60);
+}
+
+// Auto-shrink long player names so they fit inside the Player column width.
+// Default font is 14px; we step down by 0.5px until the name fits or we hit 9px floor.
+function fitPlayerNames(){
+  var nameEls = document.querySelectorAll('#tbody .player-name');
+  for(var i=0;i<nameEls.length;i++){
+    var nameEl = nameEls[i];
+    var cell = nameEl.parentElement; // .name-cell
+    if(!cell) continue;
+    nameEl.style.fontSize = ''; // reset to default 14px each render
+    var size = 14;
+    // Use a generous overflow tolerance (1px) to avoid bouncing on subpixel rounding
+    var safety = 12; // max iterations to prevent runaway loops
+    while(cell.scrollWidth > cell.clientWidth + 1 && size > 9 && safety-- > 0){
+      size -= 0.5;
+      nameEl.style.fontSize = size + 'px';
+    }
+  }
 }
 
 // MLB API SEARCH
