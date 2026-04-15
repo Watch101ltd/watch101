@@ -4461,16 +4461,23 @@ async function loadProspects(){
     ]);
     const [aaaData, aaData, aData] = await Promise.all([aaaRes.json(), aaRes.json(), aRes.json()]);
 
-    const mapPlayer = (p, level) => ({
-      mlb_id: p.id,
-      name: p.fullName,
-      team: (p.currentTeam && p.currentTeam.abbreviation) || '—',
-      org: (p.currentTeam && p.currentTeam.parentOrgName) || '—',
-      age: p.currentAge || null,
-      primaryPos: (p.primaryPosition && p.primaryPosition.abbreviation) || '—',
-      level,
-      stats: null
-    });
+    const mapPlayer = (p, level) => {
+      // For prospects we want the MLB parent org (PHI, NYY, LAD), not the
+      // minor-league club (like IRN). Fall back to minor-league abbr if parent
+      // isn't resolvable.
+      const ct = p.currentTeam || {};
+      const parentAbbr = ct.parentOrgId ? (orgIdToAbbr(ct.parentOrgId) || '') : '';
+      return {
+        mlb_id: p.id,
+        name: p.fullName,
+        team: parentAbbr || ct.abbreviation || '—',
+        org: ct.parentOrgName || '—',
+        age: p.currentAge || null,
+        primaryPos: (p.primaryPosition && p.primaryPosition.abbreviation) || '—',
+        level,
+        stats: null
+      };
+    };
 
     prospectPlayers = [
       ...(aaaData.people||[]).map(p => mapPlayer(p, 'AAA')),
@@ -4493,8 +4500,13 @@ async function loadProspects(){
 async function fetchProspectStats(p){
   if(p.stats) return;
   try {
+    // Minor-league stats aren't returned by default — must specify sportId.
+    // AAA=11, AA=12, High-A=13. Fall back to querying all three if level is unknown.
+    const levelToSportId = { 'AAA':11, 'AA':12, 'A':13 };
+    const sportId = levelToSportId[p.level];
+    const sportParam = sportId ? `&sportId=${sportId}` : '&sportIds=11,12,13';
     const [statsRes, bioRes] = await Promise.all([
-      fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching`),
+      fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${sportParam}`),
       fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}`)
     ]);
     const [data, bioData] = await Promise.all([statsRes.json(), bioRes.json()]);
