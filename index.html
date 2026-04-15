@@ -623,6 +623,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
   </select>
   <select id="daterange-select" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
     <option value="live">🔴 Live</option>
+    <option value="yesterday">Yesterday</option>
     <option value="season" selected>Season Stats</option>
     <option value="7">Last 7 Days</option>
     <option value="14">Last 14 Days</option>
@@ -788,6 +789,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
       <button onclick="closePlayerPool()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em;white-space:nowrap" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
       <select id="daterange-select-pool" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
         <option value="live">🔴 Live</option>
+    <option value="yesterday">Yesterday</option>
         <option value="season" selected>Season Stats</option>
         <option value="7">Last 7 Days</option>
         <option value="14">Last 14 Days</option>
@@ -908,6 +910,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
       <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);letter-spacing:0.05em;white-space:nowrap">🏆 League Leaders — 2026</div>
       <select id="daterange-select-leaders" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;letter-spacing:0.04em">
         <option value="live">🔴 Live</option>
+    <option value="yesterday">Yesterday</option>
         <option value="season" selected>Season Stats</option>
         <option value="7">Last 7 Days</option>
         <option value="14">Last 14 Days</option>
@@ -4075,7 +4078,7 @@ async function loadLeaders(statLabel, group, statKey, statName){
     setTimeout(syncLeadersFixedHeader, 150);
     setTimeout(setLeadersTheadTop, 200);
 
-    const labelMap = {'live':'🔴 Live','7':'Last 7 Days','14':'Last 14 Days','30':'Last 30 Days'};
+    const labelMap = {'live':'🔴 Live','yesterday':'Yesterday','7':'Last 7 Days','14':'Last 14 Days','30':'Last 30 Days'};
     const rangeLabel = dateRange !== 'season' ? ` · ${labelMap[dateRange]||dateRange}` : ' · 2026 Season';
     table.style.display = '';
     status.textContent = `Top ${splits.length} MLB leaders in ${statName}${rangeLabel} · Click any column header to sort`;
@@ -4248,6 +4251,11 @@ function setDateRange(val){
       Object.keys(dateRangeCache).forEach(k => { if(k.endsWith('_live')) delete dateRangeCache[k]; });
       Object.keys(poolDateRangeCache).forEach(k => { if(k.endsWith('_live')) delete poolDateRangeCache[k]; });
     }
+    if(val === 'yesterday'){
+      // Always re-fetch — "yesterday" drifts forward each day, so stale cache would be wrong
+      Object.keys(dateRangeCache).forEach(k => { if(k.endsWith('_yesterday')) delete dateRangeCache[k]; });
+      Object.keys(poolDateRangeCache).forEach(k => { if(k.endsWith('_yesterday')) delete poolDateRangeCache[k]; });
+    }
     // Fire both simultaneously — pool runs silently in background
     fetchDateRangeStats(val);
     fetchPoolDateRangeStats(val);
@@ -4279,6 +4287,14 @@ function getDateRangeWindow(range){
     const todayStr = new Date().toLocaleDateString('en-CA', {timeZone:'America/New_York'});
     return { startDate: todayStr, endDate: todayStr };
   }
+  if(range === 'yesterday'){
+    // Yesterday in US Eastern time — single-day window
+    const todayET = new Date().toLocaleDateString('en-CA', {timeZone:'America/New_York'});
+    const y = new Date(todayET + 'T12:00:00'); // noon avoids DST edge cases
+    y.setDate(y.getDate() - 1);
+    const yStr = y.toISOString().slice(0,10);
+    return { startDate: yStr, endDate: yStr };
+  }
   const end = new Date();
   const start = new Date();
   start.setDate(end.getDate() - parseInt(range));
@@ -4307,7 +4323,7 @@ async function fetchDateRangeStats(days){
   const statusCount = document.getElementById('daterange-status-count');
   const progressFill = document.getElementById('daterange-progress-fill');
 
-  const labelMap = {'live':'🔴 Live','7':'Last 7 Days','14':'Last 14 Days','30':'Last 30 Days'};
+  const labelMap = {'live':'🔴 Live','yesterday':'Yesterday','7':'Last 7 Days','14':'Last 14 Days','30':'Last 30 Days'};
   const label = labelMap[days] || days + ' days';
 
   if(total === 0){
