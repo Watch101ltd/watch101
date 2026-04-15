@@ -3010,14 +3010,12 @@ async function loadAllPoolStats(){
       if(!s) return;
       Object.assign(p, s);
       p.stats = true; // mark as having stats
-      // Also pull Savant data (already loaded on page start)
-      const sid = String(p.mlb_id);
-      const pit = isPitcherPos(p.primaryPos);
-      const savSrc = pit ? savantPitchers[sid] : savantHitters[sid];
-      if(savSrc){
-        if(savSrc['est_ba'])    p.sv_xba   = parseFloat(savSrc['est_ba']);
-        if(savSrc['est_woba'])  p.sv_xwoba = parseFloat(savSrc['est_woba']);
-      }
+      // Pull the FULL Savant payload (xBA, xwOBA, EV, SS%, BBL%, EV95, MaxEV, xERA)
+      // via mergeSavant so the new advanced columns actually populate. Earlier this
+      // only set sv_xba/sv_xwoba which is why EV/SS%/BBL%/EV95/MaxEV showed dashes.
+      // mergeSavant uses isPitcher() which expects p.positions; fall back to primaryPos.
+      if(!p.positions || !p.positions.length) p.positions = p.primaryPos ? [p.primaryPos] : [];
+      mergeSavant(p);
     });
 
     poolStatsLoaded = true;
@@ -3150,7 +3148,7 @@ function renderPool(){
       <td class="pos-cell">${posBadgesColumn(poolPositions)}</td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
-      <td class="stat-cell" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
+      <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="stat-cell no-zero">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
       <td class="yahoo-rank no-zero">${p.yahoo_rank||na}</td>
       <td class="yahoo-rank no-zero" style="color:var(--text3)">${p.preseason_rank||na}</td>
@@ -3164,11 +3162,11 @@ function renderPool(){
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ops,3)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
       <td class="stat-cell savant-col">${!pit?fmtSavant(p.sv_xba):na}</td>
       <td class="stat-cell savant-col">${fmtSavant(p.sv_xwoba)}</td>
-      <td class="stat-cell savant-adv-col">${p.sv_ev!=null?`<span style="color:${!pit?'var(--gold)':'#94a3b8'}">${parseFloat(p.sv_ev).toFixed(1)}</span>`:na}</td>
-      <td class="stat-cell savant-adv-col">${p.sv_sweetspot!=null?`<span style="color:${!pit?'var(--gold)':'#94a3b8'}">${parseFloat(p.sv_sweetspot).toFixed(1)}%</span>`:na}</td>
-      <td class="stat-cell savant-adv-col">${p.sv_barrel!=null?`<span style="color:${!pit?'var(--gold)':'#94a3b8'}">${parseFloat(p.sv_barrel).toFixed(1)}%</span>`:na}</td>
-      <td class="stat-cell savant-adv-col">${p.sv_ev95!=null?`<span style="color:${!pit?'var(--gold)':'#94a3b8'}">${parseFloat(p.sv_ev95).toFixed(1)}</span>`:na}</td>
-      <td class="stat-cell savant-adv-col">${p.sv_maxev!=null?`<span style="color:${!pit?'var(--gold)':'#94a3b8'}">${parseFloat(p.sv_maxev).toFixed(1)}</span>`:na}</td>
+      <td class="stat-cell savant-adv-col no-zero">${p.sv_ev!=null?`<span style="color:${!pit?'var(--gold)':'#94a3b8'}">${parseFloat(p.sv_ev).toFixed(1)}</span>`:na}</td>
+      <td class="stat-cell savant-adv-col no-zero">${p.sv_sweetspot!=null?`<span style="color:${!pit?'var(--gold)':'#94a3b8'}">${parseFloat(p.sv_sweetspot).toFixed(1)}%</span>`:na}</td>
+      <td class="stat-cell savant-adv-col no-zero">${p.sv_barrel!=null?`<span style="color:${!pit?'var(--gold)':'#94a3b8'}">${parseFloat(p.sv_barrel).toFixed(1)}%</span>`:na}</td>
+      <td class="stat-cell savant-adv-col no-zero">${p.sv_ev95!=null?`<span style="color:${!pit?'var(--gold)':'#94a3b8'}">${parseFloat(p.sv_ev95).toFixed(1)}</span>`:na}</td>
+      <td class="stat-cell savant-adv-col no-zero">${p.sv_maxev!=null?`<span style="color:${!pit?'var(--gold)':'#94a3b8'}">${parseFloat(p.sv_maxev).toFixed(1)}</span>`:na}</td>
       <td style="text-align:right;padding:4px 6px">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
         : `<button class="btn-add-pool" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
