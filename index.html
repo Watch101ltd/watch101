@@ -3025,10 +3025,26 @@ function renderPool(){
   });
   const display = list.slice(0,300);
   document.getElementById('pool-empty').style.display = list.length===0?'block':'none';
-  // Build Yahoo lookup from watch list players
+  // Build Yahoo lookup from the FULL global Yahoo cache (not just watch list).
+  // The watch-list-only lookup meant pool players not on the watch list got blank
+  // ADP/RANK/OWNED. Reading from yahooDataByMlbId / yahooDataByName covers
+  // every Yahoo player the sync pulled down.
   const yahooLookup = {};
+  try {
+    if(typeof yahooDataByMlbId === 'object' && yahooDataByMlbId){
+      Object.values(yahooDataByMlbId).forEach(yp => {
+        if(yp && yp.name) yahooLookup[yp.name.toLowerCase()] = yp;
+      });
+    }
+    if(typeof yahooDataByName === 'object' && yahooDataByName){
+      Object.values(yahooDataByName).forEach(yp => {
+        if(yp && yp.name && !yahooLookup[yp.name.toLowerCase()]) yahooLookup[yp.name.toLowerCase()] = yp;
+      });
+    }
+  } catch(e){}
+  // Also fold in watch-list overrides (in case a watch-list player has fresher values)
   players.forEach(wp => {
-    if(wp.yahoo_rank || wp.roster_pct !== null) {
+    if(wp.yahoo_rank || wp.roster_pct !== null || wp.preseason_rank) {
       yahooLookup[wp.name.toLowerCase()] = wp;
     }
   });
@@ -3037,9 +3053,17 @@ function renderPool(){
     const isAdded = addedNames.has(p.name.toLowerCase());
     const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
     const pit = isPitcherPos(p.primaryPos);
-    // Merge Yahoo data from watch list if available
-    const yw = yahooLookup[p.name.toLowerCase()];
-    if(yw) { if(yw.yahoo_rank) p.yahoo_rank = yw.yahoo_rank; if(yw.roster_pct!==null) p.roster_pct = yw.roster_pct; }
+    // Merge Yahoo data — try mlb_id against global cache first, then name lookup.
+    let yw = null;
+    if(typeof yahooDataByMlbId === 'object' && yahooDataByMlbId && p.mlb_id){
+      yw = yahooDataByMlbId[String(p.mlb_id)] || null;
+    }
+    if(!yw) yw = yahooLookup[p.name.toLowerCase()] || null;
+    if(yw){
+      if(yw.yahoo_rank != null) p.yahoo_rank = yw.yahoo_rank;
+      if(yw.roster_pct != null) p.roster_pct = yw.roster_pct;
+      if(yw.preseason_rank != null) p.preseason_rank = yw.preseason_rank;
+    }
     // For season stats, use the player object directly (populated by loadAllPoolStats).
     // For date range, overlay the cache. Show "…" while date range cache is loading.
     const usingDR = dateRange !== 'season';
@@ -3748,10 +3772,24 @@ function renderLeaders(){
 
   const display = list.slice(0, 200);
 
-  // Build Yahoo lookup from watch list
+  // Build Yahoo lookup from the FULL global Yahoo cache (not just watch list),
+  // same fix as Player Pool. Without this, leaders who aren't on the watch list
+  // show blank ADP/RANK/OWNED.
   const yahooLookup = {};
+  try {
+    if(typeof yahooDataByMlbId === 'object' && yahooDataByMlbId){
+      Object.values(yahooDataByMlbId).forEach(yp => {
+        if(yp && yp.name) yahooLookup[yp.name.toLowerCase()] = yp;
+      });
+    }
+    if(typeof yahooDataByName === 'object' && yahooDataByName){
+      Object.values(yahooDataByName).forEach(yp => {
+        if(yp && yp.name && !yahooLookup[yp.name.toLowerCase()]) yahooLookup[yp.name.toLowerCase()] = yp;
+      });
+    }
+  } catch(e){}
   players.forEach(wp => {
-    if(wp.yahoo_rank || wp.roster_pct !== null) yahooLookup[wp.name.toLowerCase()] = wp;
+    if(wp.yahoo_rank || wp.roster_pct !== null || wp.preseason_rank) yahooLookup[wp.name.toLowerCase()] = wp;
   });
 
   const na = '<span style="color:var(--text3)">—</span>';
@@ -3762,8 +3800,16 @@ function renderLeaders(){
     const isAdded = addedNames.has(p.name.toLowerCase());
     const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
     const pit = isPitcherPos(p.primaryPos);
-    const yw = yahooLookup[p.name.toLowerCase()];
-    if(yw){ if(yw.yahoo_rank) p.yahoo_rank = yw.yahoo_rank; if(yw.roster_pct!=null) p.roster_pct = yw.roster_pct; }
+    let yw = null;
+    if(typeof yahooDataByMlbId === 'object' && yahooDataByMlbId && p.mlb_id){
+      yw = yahooDataByMlbId[String(p.mlb_id)] || null;
+    }
+    if(!yw) yw = yahooLookup[p.name.toLowerCase()] || null;
+    if(yw){
+      if(yw.yahoo_rank != null) p.yahoo_rank = yw.yahoo_rank;
+      if(yw.roster_pct != null) p.roster_pct = yw.roster_pct;
+      if(yw.preseason_rank != null) p.preseason_rank = yw.preseason_rank;
+    }
     const statColor = '#c084fc';
     const pitColor  = '#86efac';
     const safeName  = p.name.replace(/'/g,"\\'");
