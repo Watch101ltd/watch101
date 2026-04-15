@@ -673,14 +673,15 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         <th style="cursor:default">☰</th>
         <th onclick="sortBy('rank')">Rank <span class="sort-arrow" id="arr-rank">↕</span></th>
         <th onclick="sortBy('name')" style="width:180px;min-width:180px">Player <span class="sort-arrow" id="arr-name">↕</span></th>
+        <th onclick="sortBy('rank_delta')" title="Movement from previous save (+ up / - down)">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
         <th style="cursor:default;width:140px;min-width:140px" title="Eligible Positions">Pos</th>
         <th onclick="sortBy('team')">Team <span class="sort-arrow" id="arr-team">↕</span></th>
         <th onclick="sortBy('age')" title="Age">Age <span class="sort-arrow" id="arr-age">↕</span></th>
-        <th onclick="sortBy('bats')" title="Bats (L/R/S)">Bats <span class="sort-arrow" id="arr-bats">↕</span></th>
-        <th onclick="sortBy('rank_delta')" title="Movement from previous save (+ up / - down)">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
-        <th onclick="sortBy('preseason_rank')" title="Yahoo ADP — Average Draft Position" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>ADP <span class="sort-arrow" id="arr-preseason_rank">↕</span></span></div></th>
-        <th onclick="sortBy('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="arr-yahoo_rank">↕</span></span></div></th>
+        <th onclick="sortBy('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="arr-bats">↕</span></th>
+        <th class="col-note">Movement Note</th>
         <th onclick="sortBy('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="arr-roster_pct">↕</span></span></div></th>
+        <th onclick="sortBy('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="arr-yahoo_rank">↕</span></span></div></th>
+        <th onclick="sortBy('preseason_rank')" title="Yahoo ADP — Average Draft Position" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>ADP <span class="sort-arrow" id="arr-preseason_rank">↕</span></span></div></th>
         <th onclick="sortBy('ab')" title="AB / IP" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">AB</span><span style="color:#86efac;font-size:8px">IP</span></div></th>
         <th onclick="sortBy('r')" title="R / K" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">R</span><span style="color:#86efac;font-size:8px">K</span></div></th>
         <th onclick="sortBy('hr')" title="HR / W" style="text-align:right;cursor:pointer"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#c084fc">HR</span><span style="color:#86efac;font-size:8px">W</span></div></th>
@@ -696,7 +697,6 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         <th class="savant-adv-col" onclick="sortBy('sv_barrel')" title="Barrel % (Statcast)"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:var(--gold);font-size:8px">BBL%</span><span style="color:#94a3b8;font-size:8px">BBL%</span></div></th>
         <th class="savant-adv-col" onclick="sortBy('sv_ev95')" title="EV 95th Percentile (Statcast)"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:var(--gold);font-size:8px">EV95</span><span style="color:#94a3b8;font-size:8px">EV95</span></div></th>
         <th class="savant-adv-col" onclick="sortBy('sv_maxev')" title="Max Exit Velocity (Statcast)"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:var(--gold);font-size:8px">MaxEV</span><span style="color:#94a3b8;font-size:8px">MaxEV</span></div></th>
-        <th class="col-note">Movement Note</th>
         <th style="cursor:default;width:60px">Action</th>
       </tr>
     </thead>
@@ -858,7 +858,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         <table id="pool-main-table">
           <thead id="pool-main-thead">
             <tr>
-              <th onclick="document.getElementById('pool-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer;width:32px;min-width:32px;text-align:center" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
+              <th onclick="document.getElementById('pool-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
               <th onclick="sortPool('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="parr-name">↕</span></th>
               <th style="cursor:default;width:140px;min-width:140px" title="Eligible Positions">Pos</th>
               <th onclick="sortPool('team')">Team <span class="sort-arrow" id="parr-team">↕</span></th>
@@ -1817,14 +1817,15 @@ function renderTable(){
       <td><span class="drag-handle">⠿</span></td>
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
       <td class="player-col"><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}</div></td>
+      <td class="stat-cell">${renderDelta(p)}</td>
       <td class="pos-cell">${posBadgesColumn(p.positions)}</td>
       <td class="stat-cell team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
-      <td class="stat-cell">${p.bats||na}</td>
-      <td class="stat-cell">${renderDelta(p)}</td>
-      <td class="yahoo-rank" style="color:var(--text3)">${fmt(p.preseason_rank)}</td>
-      <td class="yahoo-rank">${fmt(p.yahoo_rank)}</td>
+      <td class="stat-cell">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
+      <td class="col-note"><div class="note-display ${!p.note?'empty':''}" onclick="editNote('${p.id}',this)" title="${(p.note||'').replace(/"/g,'&quot;')}">${p.note||'Add note...'}</div></td>
       <td class="stat-cell">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="yahoo-rank">${fmt(p.yahoo_rank)}</td>
+      <td class="yahoo-rank" style="color:var(--text3)">${fmt(p.preseason_rank)}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.ab)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.ip,1)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.r)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.k)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.hr)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.w)}</span>`}</td>
@@ -1840,7 +1841,6 @@ function renderTable(){
       <td class="stat-cell savant-adv-col pct-shade" title="Barrel %" style="${pctShadeStyle(getPercentile(p.sv_barrel,'sv_barrel',pit),true)}">${!pit?`<span style="color:var(--gold)">${p.sv_barrel!=null?p.sv_barrel.toFixed(1)+'%':'—'}</span>`:`<span style="color:#94a3b8">${p.sv_barrel!=null?p.sv_barrel.toFixed(1)+'%':'—'}</span>`}</td>
       <td class="stat-cell savant-adv-col pct-shade" title="EV 95th Percentile" style="${pctShadeStyle(getPercentile(p.sv_ev95,'sv_ev95',pit),true)}">${!pit?`<span style="color:var(--gold)">${p.sv_ev95!=null?p.sv_ev95.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_ev95!=null?p.sv_ev95.toFixed(1):'—'}</span>`}</td>
       <td class="stat-cell savant-adv-col pct-shade" title="Max Exit Velocity" style="${pctShadeStyle(getPercentile(p.sv_maxev,'sv_maxev',pit),true)}">${!pit?`<span style="color:var(--gold)">${p.sv_maxev!=null?p.sv_maxev.toFixed(1):'—'}</span>`:`<span style="color:#94a3b8">${p.sv_maxev!=null?p.sv_maxev.toFixed(1):'—'}</span>`}</td>
-      <td class="col-note"><div class="note-display ${!p.note?'empty':''}" onclick="editNote('${p.id}',this)" title="${(p.note||'').replace(/"/g,'&quot;')}">${p.note||'Add note...'}</div></td>
       <td style="white-space:nowrap">
         <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;margin-right:3px" onclick="editPlayer('${p.id}')">Edit</button>
         <button class="btn btn-red" style="padding:4px 8px;font-size:11px" onclick="deletePlayer('${p.id}')">✕</button>
@@ -1857,9 +1857,9 @@ async function buildRosterCache(){
   rosterCacheLoading = true;
   try{
     const [mlbRes, aaaRes, aaRes] = await Promise.all([
-      fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam&limit=5000'),
-      fetch('https://statsapi.mlb.com/api/v1/sports/11/players?season=2026&hydrate=currentTeam&limit=5000'),
-      fetch('https://statsapi.mlb.com/api/v1/sports/12/players?season=2026&hydrate=currentTeam&limit=5000')
+      fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam'),
+      fetch('https://statsapi.mlb.com/api/v1/sports/11/players?season=2026&hydrate=currentTeam'),
+      fetch('https://statsapi.mlb.com/api/v1/sports/12/players?season=2026&hydrate=currentTeam')
     ]);
     const [mlbData, aaaData, aaData] = await Promise.all([
       mlbRes.ok ? mlbRes.json() : {people:[]},
@@ -2805,7 +2805,7 @@ async function loadPoolPlayers(){
   document.getElementById('pool-status').textContent = 'Loading MLB roster...';
   try {
     // Step 1: Load all rostered players (no gameType=R so IL players like Wheeler are included)
-    const res = await fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam&limit=5000');
+    const res = await fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam');
     const data = await res.json();
     poolPlayers = (data.people || []).map(p => ({
       mlb_id: p.id,
@@ -3026,7 +3026,7 @@ function renderPool(){
     // Tie-break: Yahoo rank
     return (a.yahoo_rank||9999) - (b.yahoo_rank||9999);
   });
-  const display = list;
+  const display = list.slice(0,300);
   document.getElementById('pool-empty').style.display = list.length===0?'block':'none';
   // Build Yahoo lookup from the FULL global Yahoo cache (not just watch list).
   // The watch-list-only lookup meant pool players not on the watch list got blank
@@ -3773,7 +3773,7 @@ function renderLeaders(){
     return (a.yahoo_rank||9999) - (b.yahoo_rank||9999);
   });
 
-  const display = list;
+  const display = list.slice(0, 200);
 
   // Build Yahoo lookup from the FULL global Yahoo cache (not just watch list),
   // same fix as Player Pool. Without this, leaders who aren't on the watch list
@@ -4681,7 +4681,8 @@ function renderProspects(){
     return (av-bv)*prosSortDir;
   });
 
-  const display = list;
+  // Limit display to 200 unless searching
+  const display = q ? list : list.slice(0, 200);
 
   const s_fmt = (val, dec) => val!=null ? parseFloat(val).toFixed(dec) : '<span style="color:var(--text3)">—</span>';
   const i_fmt = val => val!=null ? val : '<span style="color:var(--text3)">—</span>';
