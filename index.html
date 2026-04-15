@@ -107,6 +107,10 @@ td:nth-child(4){text-align:left}
 .player-team{font-size:11px;color:#94a3b8;font-family:'DM Mono',monospace}
 
 .pos-badge{display:inline-block;padding:1px 3px;border-radius:2px;font-size:8px;font-family:'DM Mono',monospace;font-weight:600;margin:0;line-height:1.4;letter-spacing:0.02em}
+.pos-cell{padding:2px 4px;text-align:center;vertical-align:middle}
+.pos-stack{display:inline-flex;flex-wrap:wrap;gap:2px;justify-content:center;align-items:center;max-width:72px}
+.pos-stack.pos-one .pos-badge{font-size:11px;padding:3px 7px;line-height:1.2}
+.pos-stack.pos-many .pos-badge{font-size:7px;padding:1px 3px;letter-spacing:0;line-height:1.3}
 
 .pos-SP{background:#1e3a5f;color:#60a5fa;border:1px solid #1e40af}
 .pos-RP{background:#0f2a4f;color:#93c5fd;border:1px solid #1e3a8a}
@@ -667,6 +671,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         <th style="cursor:default">☰</th>
         <th onclick="sortBy('rank')">Rank <span class="sort-arrow" id="arr-rank">↕</span></th>
         <th onclick="sortBy('name')">Player <span class="sort-arrow" id="arr-name">↕</span></th>
+        <th style="cursor:default" title="Eligible Positions">Pos</th>
         <th onclick="sortBy('team')">Team <span class="sort-arrow" id="arr-team">↕</span></th>
         <th onclick="sortBy('age')" title="Age">Age <span class="sort-arrow" id="arr-age">↕</span></th>
         <th onclick="sortBy('bats')" title="Bats (L/R/S)">Bats <span class="sort-arrow" id="arr-bats">↕</span></th>
@@ -851,8 +856,8 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
           <thead id="pool-main-thead">
             <tr>
               <th onclick="document.getElementById('pool-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
-              <th onclick="sortPool('primaryPos')" title="Position">Pos <span class="sort-arrow" id="parr-primaryPos">↕</span></th>
               <th onclick="sortPool('name')" style="text-align:left">Player <span class="sort-arrow" id="parr-name">↕</span></th>
+              <th style="cursor:default" title="Eligible Positions">Pos</th>
               <th onclick="sortPool('team')">Team <span class="sort-arrow" id="parr-team">↕</span></th>
               <th onclick="sortPool('age')" title="Age">Age <span class="sort-arrow" id="parr-age">↕</span></th>
               <th onclick="sortPool('bats')" title="Bats (L/R/S)">Bats <span class="sort-arrow" id="parr-bats">↕</span></th>
@@ -941,8 +946,8 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
           <thead id="leaders-main-thead">
             <tr>
               <th style="cursor:default">🏆</th>
-              <th onclick="sortLeaders('primaryPos')" title="Position">Pos <span class="sort-arrow" id="larr-primaryPos">↕</span></th>
               <th onclick="sortLeaders('name')" style="text-align:left">Player <span class="sort-arrow" id="larr-name">↕</span></th>
+              <th style="cursor:default" title="Eligible Positions">Pos</th>
               <th onclick="sortLeaders('team')">Team <span class="sort-arrow" id="larr-team">↕</span></th>
               <th onclick="sortLeaders('age')" title="Age">Age <span class="sort-arrow" id="larr-age">↕</span></th>
               <th onclick="sortLeaders('bats')" title="Bats (L/R/S)">Bats <span class="sort-arrow" id="larr-bats">↕</span></th>
@@ -1743,6 +1748,19 @@ function posBadges(positions){
   return unique.map(p=>`<span class="pos-badge pos-${p}">${p}</span>`).join('');
 }
 
+// Render all eligible positions into a dedicated column cell.
+// One position = larger badge. Multiple = smaller packed badges.
+function posBadgesColumn(positions){
+  if(!positions||positions.length===0) return '<div class="pos-stack pos-one"><span class="stat-na">—</span></div>';
+  const display = positions
+    .filter(p => !['CI','MI','IL'].includes(p))
+    .map(p => (['LF','CF','RF'].includes(p) ? 'OF' : p));
+  const unique = [...new Set(display)];
+  if(unique.length===0) return '<div class="pos-stack pos-one"><span class="stat-na">—</span></div>';
+  const sizeClass = unique.length === 1 ? 'pos-one' : 'pos-many';
+  return `<div class="pos-stack ${sizeClass}">${unique.map(p=>`<span class="pos-badge pos-${p}">${p}</span>`).join('')}</div>`;
+}
+
 function decimalAge(p){
   if(p.birthDate){
     const birth = new Date(p.birthDate);
@@ -1791,7 +1809,8 @@ function renderTable(){
     return `<tr class="${rowClass(p.move)}" draggable="true" data-id="${p.id}" data-idx="${i}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
       <td><span class="drag-handle">⠿</span></td>
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
-      <td><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span><div class="badge-row">${p.injury_status ? injuryBadge(p.injury_status) : ''}${posBadges(p.positions)}</div></div></td>
+      <td><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}</div></td>
+      <td class="pos-cell">${posBadgesColumn(p.positions)}</td>
       <td class="stat-cell team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell">${p.bats||na}</td>
@@ -3030,10 +3049,11 @@ function renderPool(){
     const statColor = '#c084fc';
     const pitColor  = '#86efac';
     const safeName  = p.name.replace(/'/g,"\\'");
+    const poolPositions = (p.eligible_positions && p.eligible_positions.length) ? p.eligible_positions : (p.primaryPos ? [p.primaryPos] : []);
     return `<tr class="${isAdded?'already-added':''}" data-mlb-id="${p.mlb_id}">
       <td></td>
-      <td style="text-align:center"><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
       <td><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
+      <td class="pos-cell">${posBadgesColumn(poolPositions)}</td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell" style="text-align:center">${p.bats||na}</td>
@@ -3729,10 +3749,11 @@ function renderLeaders(){
     const pitColor  = '#86efac';
     const safeName  = p.name.replace(/'/g,"\\'");
     const rankColor = i===0?'var(--gold)':i<3?'#fbbf24':i<10?'var(--text)':'var(--text3)';
+    const leaderPositions = (p.eligible_positions && p.eligible_positions.length) ? p.eligible_positions : (p.primaryPos ? [p.primaryPos] : []);
     return `<tr class="${isAdded?'already-added':''}" style="cursor:pointer" onclick="openContext(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0})">
       <td style="text-align:center;font-family:'Bebas Neue',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
-      <td style="text-align:center"><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
       <td><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
+      <td class="pos-cell">${posBadgesColumn(leaderPositions)}</td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell" style="text-align:center">${p.bats||na}</td>
