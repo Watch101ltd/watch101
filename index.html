@@ -808,6 +808,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         <button class="filter-tab" id="pool-pos-hitter" onclick="setPoolPos('HITTER',this)">Hitters</button>
         <button class="filter-tab" id="pool-pos-pitcher" onclick="setPoolPos('PITCHER',this)">Pitchers</button>
       </div>
+      <button class="filter-tab" id="pool-adv-tab" onclick="togglePoolAdvancedMode(this)">⚡ Advanced</button>
       <div class="pool-status" id="pool-status">Loading players...</div>
     </div>
 
@@ -1638,6 +1639,23 @@ function toggleAdvancedMode(el){
     el.classList.remove('active');
   }
   renderTable();
+}
+
+// Pool has its own independent advanced toggle so the user can flip Statcast
+// columns on/off without leaving the Player Pool view.
+let poolAdvancedMode = false;
+function togglePoolAdvancedMode(el){
+  poolAdvancedMode = !poolAdvancedMode;
+  const table = document.getElementById('pool-main-table');
+  if(!table) return;
+  if(poolAdvancedMode){
+    table.classList.add('advanced-mode');
+    el.classList.add('active');
+  } else {
+    table.classList.remove('advanced-mode');
+    el.classList.remove('active');
+  }
+  if(typeof renderPool === 'function') renderPool();
 }
 
 function setFilter(f, el){
@@ -3054,7 +3072,9 @@ function renderPool(){
     // Tie-break: Yahoo rank
     return (a.yahoo_rank||9999) - (b.yahoo_rank||9999);
   });
-  const display = list.slice(0,300);
+  // Show the FULL filtered roster — earlier 300-row cap was hiding everyone after
+  // roughly the G's when sorted alphabetically. Modern browsers render ~1500 rows fine.
+  const display = list;
   document.getElementById('pool-empty').style.display = list.length===0?'block':'none';
   // Build Yahoo lookup from the FULL global Yahoo cache (not just watch list).
   // The watch-list-only lookup meant pool players not on the watch list got blank
@@ -3157,11 +3177,7 @@ function renderPool(){
   }).join('');
   // Don't overwrite the "stats loaded" status message if stats are loading
   if(!poolStatsLoaded){
-    if(list.length > 300){
-      document.getElementById('pool-status').textContent = `Showing 300 of ${list.length} — type to filter`;
-    } else {
-      document.getElementById('pool-status').textContent = list.length + ' players';
-    }
+    document.getElementById('pool-status').textContent = list.length + ' players';
   }
 }
 
