@@ -789,12 +789,13 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
       </select>
       <div class="pool-search-wrap">
         <span class="pool-search-icon">⌕</span>
-        <input type="text" id="pool-search" placeholder="Filter players..." oninput="poolSearchInput(this.value)" autocomplete="off">
+        <input type="text" id="pool-search" placeholder="Jump to player..." oninput="poolSearchInput(this.value)" autocomplete="off">
+        <div class="pool-dropdown" id="pool-dropdown"></div>
       </div>
       <div class="pool-filter-tabs">
         <button class="filter-tab active" id="pool-pos-all" onclick="setPoolPos('ALL',this)">All</button>
-        <button class="filter-tab" onclick="setPoolPos('HITTER',this)">Hitters</button>
-        <button class="filter-tab" onclick="setPoolPos('PITCHER',this)">Pitchers</button>
+        <button class="filter-tab" id="pool-pos-hitter" onclick="setPoolPos('HITTER',this)">Hitters</button>
+        <button class="filter-tab" id="pool-pos-pitcher" onclick="setPoolPos('PITCHER',this)">Pitchers</button>
       </div>
       <div class="pool-status" id="pool-status">Loading players...</div>
     </div>
@@ -3021,7 +3022,7 @@ function renderPool(){
     const statColor = '#c084fc';
     const pitColor  = '#86efac';
     const safeName  = p.name.replace(/'/g,"\\'");
-    return `<tr class="${isAdded?'already-added':''}" style="cursor:pointer" onclick="openContext(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0})">
+    return `<tr class="${isAdded?'already-added':''}" data-mlb-id="${p.mlb_id}">
       <td></td>
       <td style="text-align:center"><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
       <td><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
@@ -3042,9 +3043,9 @@ function renderPool(){
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ops,3)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.era,2)}</span>`}</td>
       <td class="stat-cell savant-col">${!pit?fmtSavant(p.sv_xba):na}</td>
       <td class="stat-cell savant-col">${fmtSavant(p.sv_xwoba)}</td>
-      <td style="text-align:right;padding:4px 6px" onclick="event.stopPropagation()">${isAdded
+      <td style="text-align:right;padding:4px 6px">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
-        : `<button class="btn-add-pool" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
+        : `<button class="btn-add-pool" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
       }</td>
     </tr>`;
   }).join('');
@@ -3058,18 +3059,59 @@ function renderPool(){
   }
 }
 
-// ---- POOL SEARCH — filters the main player table in real time ----
+// ---- POOL SEARCH — shows a name dropdown; selecting jumps to that player ----
 function poolSearchInput(val){
-  clearTimeout(poolSearchTimer);
-  poolSearchTimer = setTimeout(()=>{
-    poolSearchFilter = val;
-    renderPool();
-  }, 200);
+  const dd = document.getElementById('pool-dropdown');
+  if(!val || val.length < 2){
+    dd.classList.remove('open');
+    return;
+  }
+  const q = normalize(val);
+  const matches = poolPlayers.filter(p => normalize(p.name).includes(q)).slice(0, 12);
+  if(!matches.length){
+    dd.innerHTML = '<div class="pool-sri"><div class="pool-sri-name" style="color:var(--text3)">No players found</div></div>';
+    dd.classList.add('open');
+    return;
+  }
+  dd.innerHTML = matches.map(p => `
+    <div class="pool-sri" onclick="jumpToPoolPlayer(${p.mlb_id})">
+      <div class="pool-sri-name">${p.name}</div>
+      <div class="pool-sri-meta">${p.team||'—'} · ${p.primaryPos||'—'} · Age ${decimalAge(p)}</div>
+    </div>`).join('');
+  dd.classList.add('open');
 }
 
-// Close compare dropdown when clicking outside
+// ---- JUMP TO PLAYER — switches tab and scrolls the list to that row ----
+function jumpToPoolPlayer(mlbId){
+  const dd = document.getElementById('pool-dropdown');
+  dd.classList.remove('open');
+  document.getElementById('pool-search').value = '';
+
+  const player = poolPlayers.find(p => p.mlb_id === mlbId);
+  if(!player) return;
+
+  // Switch to the right position tab (Hitters or Pitchers)
+  const isPit = isPitcherPos(player.primaryPos);
+  const btnId = isPit ? 'pool-pos-pitcher' : 'pool-pos-hitter';
+  const btn = document.getElementById(btnId);
+  if(btn) setPoolPos(isPit ? 'PITCHER' : 'HITTER', btn);
+
+  // Wait one frame for the table to re-render, then scroll to the row
+  requestAnimationFrame(() => {
+    const row = document.querySelector(`#pool-tbody tr[data-mlb-id="${mlbId}"]`);
+    if(row){
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Brief highlight so the eye finds the row instantly
+      row.style.background = 'var(--surface3)';
+      setTimeout(() => { row.style.background = ''; }, 1500);
+    }
+  });
+}
+
+// Close dropdowns when clicking outside
 document.addEventListener('click', e=>{
   if(!e.target.closest('.compare-search-wrap')) document.getElementById('compare-dropdown')?.classList.remove('open');
+  if(!e.target.closest('.pool-search-wrap')) document.getElementById('pool-dropdown')?.classList.remove('open');
 });
 
 // ---- OPEN CONTEXT PANEL ----
