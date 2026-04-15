@@ -4507,11 +4507,17 @@ async function fetchProspectStats(p){
     const sportParam = sportId ? `&sportId=${sportId}` : '&sportIds=11,12,13';
     const [statsRes, bioRes] = await Promise.all([
       fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${sportParam}`),
-      fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}`)
+      fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}?hydrate=currentTeam`)
     ]);
     const [data, bioData] = await Promise.all([statsRes.json(), bioRes.json()]);
     const person = bioData.people && bioData.people[0];
     if(person && person.batSide && person.batSide.code) p.bats = person.batSide.code;
+    // Resolve MLB parent org here — the per-person /people/{id} endpoint reliably
+    // provides parentOrgId, unlike the bulk /sports/{id}/players endpoint.
+    if(person && person.currentTeam && person.currentTeam.parentOrgId){
+      const parentAbbr = orgIdToAbbr(person.currentTeam.parentOrgId);
+      if(parentAbbr) p.team = parentAbbr;
+    }
     const hitting = (data.stats||[]).find(s => s.group && s.group.displayName === 'hitting');
     const pitching = (data.stats||[]).find(s => s.group && s.group.displayName === 'pitching');
     const hs = hitting && hitting.splits && hitting.splits[0] && hitting.splits[0].stat;
@@ -4582,7 +4588,7 @@ function renderProspects(){
         <div style="font-size:11px;color:#94a3b8;font-family:'DM Mono',monospace">${p.org}</div>
       </td>
       <td style="padding:4px"><span class="pos-badge ${posClass}">${p.primaryPos}</span></td>
-      <td style="padding:4px;font-family:'DM Mono',monospace;font-size:12px;color:#94a3b8">${p.team}</td>
+      <td class="team-cell" style="padding:4px;font-family:'DM Mono',monospace;font-size:12px;color:#94a3b8">${p.team}</td>
       <td style="padding:4px;text-align:center"><span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${lvlColor};background:${lvlColor}22;border:1px solid ${lvlColor}55;border-radius:4px;padding:2px 6px">${p.level}</span></td>
       <td style="padding:4px;font-family:'DM Mono',monospace;font-size:12px;color:#94a3b8;text-align:right">${decimalAge(p)}</td>
       <td style="padding:4px;font-family:'DM Mono',monospace;font-size:12px;color:var(--turquoise);text-align:right">${p.stats ? s_fmt(s.avg,3) : '<span style="color:var(--text3)">—</span>'}</td>
