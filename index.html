@@ -2957,11 +2957,45 @@ async function loadPoolPlayers(){
     renderPool();
     // If League Leaders is open, show the roster while stats load in the background
     if(leadersActive) renderLeaders();
+    // Backfill bats/throws via the /people endpoint (which always returns batSide+pitchHand)
+    // since /sports/1/players sometimes omits them. Runs in the background.
+    loadPoolBatsThrows();
     // Now bulk-load season stats for all players in the background
     loadAllPoolStats();
   } catch(e) {
     document.getElementById('pool-loading').textContent = '⚠ Could not load roster. Check your connection.';
   }
+}
+
+// ---- BACKFILL BATS / THROWS ----
+// /sports/1/players doesn't reliably return batSide/pitchHand even with hydration.
+// /api/v1/people?personIds=ID1,ID2,... DOES return them. We chunk by ~100 IDs to stay
+// under URL length limits, then fill in p.bats / p.throws on each pool player and re-render.
+async function loadPoolBatsThrows(){
+  try {
+    const ids = poolPlayers.filter(p => p.mlb_id && (!p.bats || !p.throws)).map(p => p.mlb_id);
+    if(ids.length === 0) return;
+    const chunks = [];
+    for(let i=0;i<ids.length;i+=100) chunks.push(ids.slice(i, i+100));
+    const idMap = {};
+    poolPlayers.forEach(p => { if(p.mlb_id) idMap[p.mlb_id] = p; });
+    let updated = 0;
+    for(const chunk of chunks){
+      try {
+        const res = await fetch('https://statsapi.mlb.com/api/v1/people?personIds=' + chunk.join(','));
+        const data = await res.json();
+        (data.people || []).forEach(person => {
+          const p = idMap[person.id];
+          if(!p) return;
+          if(person.batSide   && person.batSide.code   && !p.bats)   { p.bats   = person.batSide.code;   updated++; }
+          if(person.pitchHand && person.pitchHand.code && !p.throws) { p.throws = person.pitchHand.code; }
+        });
+      } catch(e){ /* skip failed chunk */ }
+    }
+    // Re-render whatever's currently visible so the B/T column lights up
+    if(typeof renderPool    === 'function' && poolActive)    renderPool();
+    if(typeof renderLeaders === 'function' && leadersActive) renderLeaders();
+  } catch(e){}
 }
 
 // ---- BULK STATS LOADER ----
