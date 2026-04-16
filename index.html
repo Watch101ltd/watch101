@@ -2872,7 +2872,9 @@ async function loadPoolPlayers(){
   document.getElementById('pool-status').textContent = 'Loading MLB roster...';
   try {
     // Step 1: Load all rostered players (no gameType=R so IL players like Wheeler are included)
-    const res = await fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam');
+    // hydrate=person pulls in batSide + pitchHand so the B/T column populates without
+    // needing a second per-player fetch.
+    const res = await fetch('https://statsapi.mlb.com/api/v1/sports/1/players?season=2026&hydrate=currentTeam,person');
     const data = await res.json();
     poolPlayers = (data.people || []).map(p => ({
       mlb_id: p.id,
