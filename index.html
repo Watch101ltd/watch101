@@ -925,6 +925,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         <option value="30">Last 30 Days</option>
       </select>
       <button onclick="closeLeagueLeaders()" style="background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.15s;letter-spacing:0.05em;white-space:nowrap" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">← Watch 101</button>
+      <button class="filter-tab" id="leaders-adv-tab" onclick="toggleLeadersAdvancedMode(this)">⚡ Advanced</button>
       <div class="pool-status" id="leaders-status">Loading players...</div>
     </div>
 
@@ -957,7 +958,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         <table id="leaders-main-table">
           <thead id="leaders-main-thead">
             <tr>
-              <th style="cursor:default">🏆</th>
+              <th onclick="document.getElementById('leaders-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
               <th onclick="sortLeaders('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="larr-name">↕</span></th>
               <th style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
               <th onclick="sortLeaders('team')">Team <span class="sort-arrow" id="larr-team">↕</span></th>
@@ -1660,6 +1661,22 @@ function togglePoolAdvancedMode(el){
     el.classList.remove('active');
   }
   if(typeof renderPool === 'function') renderPool();
+}
+
+// Same independent toggle for League Leaders.
+let leadersAdvancedMode = false;
+function toggleLeadersAdvancedMode(el){
+  leadersAdvancedMode = !leadersAdvancedMode;
+  const table = document.getElementById('leaders-main-table');
+  if(!table) return;
+  if(leadersAdvancedMode){
+    table.classList.add('advanced-mode');
+    el.classList.add('active');
+  } else {
+    table.classList.remove('advanced-mode');
+    el.classList.remove('active');
+  }
+  if(typeof renderLeaders === 'function') renderLeaders();
 }
 
 function setFilter(f, el){
@@ -2863,6 +2880,10 @@ async function loadPoolPlayers(){
       team: (p.currentTeam && p.currentTeam.abbreviation) || '',
       age: p.currentAge || null,
       primaryPos: (p.primaryPosition && p.primaryPosition.abbreviation) || '',
+      // Capture bats and throws right from the roster endpoint so B/T column
+      // populates everywhere (Pool + Leaders) without waiting on stat splits.
+      bats:   (p.batSide   && p.batSide.code)   || '',
+      throws: (p.pitchHand && p.pitchHand.code) || '',
     }));
 
     // Step 2: If ANY players are missing teams, fetch team rosters to fill in gaps.
@@ -4026,8 +4047,20 @@ function attachLeadersScrollHandler(){
   scrollEl.addEventListener('scroll', leadersScrollHandler);
 }
 
-// ---- LEGACY loadLeaders stub (kept so old references don't throw) ----
-async function loadLeaders(statLabel, group, statKey, statName){
+// ---- LEGACY: removed. Stat buttons now call sortLeadersByStat → renderLeaders on new layout. ----
+function loadLeaders(){ /* no-op — replaced by sortLeadersByStat + renderLeaders */ }
+function renderLeadersTable(){ /* no-op — replaced by renderLeaders */ }
+function sortLeadersCol(th, apiKey, lowerIsBetter){
+  // Map old MLB-API field names back to our internal keys and route to the new sortLeaders
+  const map = { teamName:'team', currentAge:'age', runs:'r', homeRuns:'hr', rbi:'rbi',
+    stolenBases:'sb', avg:'avg', obp:'obp', ops:'ops', strikeOuts:'k', wins:'w',
+    saves:'sv', inningsPitched:'ip', era:'era', whip:'whip',
+    yahoo_rank:'yahoo_rank', roster_pct:'roster_pct' };
+  const k = map[apiKey] || apiKey;
+  if(typeof sortLeaders === 'function') sortLeaders(k);
+}
+/* === BEGIN DEAD CODE (preserved as comment for reference) ===
+async function _dead_loadLeaders(statLabel, group, statKey, statName){
   document.querySelectorAll('#leaders-wrap .filter-tab').forEach(t => t.classList.remove('active'));
   event.target.classList.add('active');
 
@@ -4260,8 +4293,9 @@ function sortLeadersCol(th, apiKey, lowerIsBetter){
     return lowerIsBetter ? (av - bv) * currentDir * -1 : (bv - av) * currentDir;
   });
   window._leadersData = sorted;
-  renderLeadersTable(sorted, window._leaderStatKey, window._leaderGroup === 'pitching');
+  // renderLeadersTable removed — would re-render here in the legacy layout
 }
+=== END DEAD CODE === */
 
 async function quickAddLeader(mlbId, name, team, primaryPos, btnEl){
   btnEl.textContent='⟳ Adding...'; btnEl.disabled=true;
