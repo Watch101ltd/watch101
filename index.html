@@ -22,7 +22,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif
 .header{background:linear-gradient(135deg,#080c10 0%,#0d1520 50%,#080c10 100%);border-bottom:1px solid var(--turquoise2);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;z-index:100}
 .logo-wrap{display:flex;align-items:baseline;gap:12px}
 .logo{font-family:'Bowlby One',sans-serif;font-size:64px;letter-spacing:0.08em;line-height:1;display:flex;align-items:center;gap:0.05em}
-.logo-img{height:2.78em;width:auto;display:block;flex-shrink:0}
+.logo-img{height:1.8em;width:auto;display:block;flex-shrink:0}
 .logo .logo-baseball{color:var(--title-blue)}
 .logo .logo-watch{color:var(--title-red)}
 .logo-sub{font-family:'Nunito Sans',sans-serif;font-size:10px;letter-spacing:0.2em;color:var(--turquoise);text-transform:uppercase}
@@ -2916,6 +2916,9 @@ function closePlayerPool(){
   document.getElementById('pool-wrap').classList.remove('active');
   document.querySelector('.toolbar').style.display = '';
   document.querySelector('.table-wrap').style.display = '';
+  // Reset header transform applied by the tab's scroll handler
+  const mh = document.querySelector('.header');
+  if(mh) mh.style.transform = '';
   closeContext();
   destroyFixedHeader();
   poolSearchFilter = '';
@@ -3950,6 +3953,9 @@ function closeLeagueLeaders(){
   document.getElementById('leaders-wrap').classList.remove('active');
   document.querySelector('.toolbar').style.display = '';
   document.querySelector('.table-wrap').style.display = '';
+  // Reset header transform applied by the tab's scroll handler
+  const mh = document.querySelector('.header');
+  if(mh) mh.style.transform = '';
 }
 
 // ---- RENDER LEADERS TABLE ----
@@ -4212,7 +4218,21 @@ function attachLeadersScrollHandler(){
 
   let cloneVisible = false;
   leadersScrollHandler = function(){
-    const shouldShow = scrollEl.scrollTop > cachedThreshold;
+    const scrollTop = scrollEl.scrollTop;
+
+    // Slide the main page header up as user scrolls inside the tab.
+    const mainHeader = document.querySelector('.header');
+    const wrap = document.getElementById('leaders-wrap');
+    if(mainHeader && wrap){
+      const headerH = mainHeader.offsetHeight;
+      const slideUp = Math.min(scrollTop, headerH);
+      mainHeader.style.transform = 'translateY(-' + slideUp + 'px)';
+      const currentTop = headerH - slideUp;
+      wrap.style.top = currentTop + 'px';
+      cloneBar.style.top = currentTop + 'px';
+    }
+
+    const shouldShow = scrollTop > cachedThreshold;
     if(shouldShow && !cloneVisible){
       cloneBar.style.display = 'block';
       cloneVisible = true;
@@ -4800,6 +4820,9 @@ function closeProspects(){
   document.getElementById('prospects-wrap').classList.remove('active');
   document.querySelector('.toolbar').style.display = '';
   document.querySelector('.table-wrap').style.display = '';
+  // Reset header transform applied by the tab's scroll handler
+  const mh = document.querySelector('.header');
+  if(mh) mh.style.transform = '';
 }
 
 function filterProspects(val, el){
@@ -5199,7 +5222,23 @@ function attachPoolScrollHandler(){
 
   let cloneVisible = false;
   poolScrollHandler = function(){
-    const shouldShow = scrollEl.scrollTop > cachedToolbarH;
+    const scrollTop = scrollEl.scrollTop;
+
+    // Slide the main page header up as user scrolls inside the tab so it
+    // scrolls away just like on the main Watch 101 view. Expand pool-wrap
+    // upward to fill the space, and move the clone bar with it.
+    const mainHeader = document.querySelector('.header');
+    const wrap = document.getElementById('pool-wrap');
+    if(mainHeader && wrap){
+      const headerH = mainHeader.offsetHeight;
+      const slideUp = Math.min(scrollTop, headerH);
+      mainHeader.style.transform = 'translateY(-' + slideUp + 'px)';
+      const currentTop = headerH - slideUp;
+      wrap.style.top = currentTop + 'px';
+      cloneBar.style.top = currentTop + 'px';
+    }
+
+    const shouldShow = scrollTop > cachedToolbarH;
     if(shouldShow && !cloneVisible){
       cloneBar.style.display = 'block';
       cloneVisible = true;
@@ -5289,7 +5328,21 @@ function attachProspectsScrollHandler(){
 
   let cloneVisible = false;
   prosScrollHandler = function(){
-    const shouldShow = scrollEl.scrollTop > cachedThreshold;
+    const scrollTop = scrollEl.scrollTop;
+
+    // Slide the main page header up as user scrolls inside the tab.
+    const mainHeader = document.querySelector('.header');
+    const wrap = document.getElementById('prospects-wrap');
+    if(mainHeader && wrap){
+      const headerH = mainHeader.offsetHeight;
+      const slideUp = Math.min(scrollTop, headerH);
+      mainHeader.style.transform = 'translateY(-' + slideUp + 'px)';
+      const currentTop = headerH - slideUp;
+      wrap.style.top = currentTop + 'px';
+      cloneBar.style.top = currentTop + 'px';
+    }
+
+    const shouldShow = scrollTop > cachedThreshold;
     if(shouldShow && !cloneVisible){
       cloneBar.style.display = 'block';
       cloneVisible = true;
