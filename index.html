@@ -4234,6 +4234,8 @@ function attachLeadersScrollHandler(){
 
     const shouldShow = scrollTop > cachedThreshold;
     if(shouldShow && !cloneVisible){
+      // Rebuild just before showing so column widths stay fresh.
+      buildClone();
       cloneBar.style.display = 'block';
       cloneVisible = true;
     } else if(!shouldShow && cloneVisible){
@@ -5240,6 +5242,9 @@ function attachPoolScrollHandler(){
 
     const shouldShow = scrollTop > cachedToolbarH;
     if(shouldShow && !cloneVisible){
+      // Rebuild just before showing so column widths stay fresh if the table
+      // changed (e.g. stats finished lazy-loading).
+      buildClone();
       cloneBar.style.display = 'block';
       cloneVisible = true;
     } else if(!shouldShow && cloneVisible){
@@ -5344,6 +5349,9 @@ function attachProspectsScrollHandler(){
 
     const shouldShow = scrollTop > cachedThreshold;
     if(shouldShow && !cloneVisible){
+      // Prospects uses table-layout:auto, so column widths can shift as stats
+      // lazy-load. Rebuild the clone right before showing so widths are fresh.
+      buildClone();
       cloneBar.style.display = 'block';
       cloneVisible = true;
     } else if(!shouldShow && cloneVisible){
