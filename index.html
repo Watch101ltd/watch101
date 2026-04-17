@@ -687,9 +687,9 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
     <div class="count-badge" id="count-badge">0 players</div>
     <span id="savant-indicator">⚡ Loading Statcast...</span>
     <button id="yahoo-btn" class="disconnected" onclick="yahooButtonClick()">⚾ Connect Yahoo</button>
-    <button class="btn btn-outline" onclick="saveData()">💾 Save</button>
+    <button class="btn btn-outline" id="undo-btn" onclick="undoLastMove()" title="Undo last drag-and-drop (Ctrl+Z)" disabled style="opacity:0.4;cursor:not-allowed">↶ Undo</button>
     <button class="btn btn-outline" onclick="exportCSV()" title="Export as CSV file">📤 CSV</button>
-    <button class="btn btn-outline" onclick="exportXLSX()" title="Export as Excel file">📊 Excel</button>
+    <button class="btn btn-outline" onclick="exportXLSX()" title="Save a copy as an Excel spreadsheet">💾 Save to Excel</button>
     <button class="btn btn-outline" onclick="triggerImport()" title="Import from CSV or Excel">📥 Import</button>
     <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImport(event)">
     <button id="present-btn" class="btn btn-outline" onclick="togglePresentMode()" title="Presentation Mode">🔍 Present</button>
@@ -2724,6 +2724,60 @@ function reorderRanks(){
   players.forEach((p,i)=>{ p.rank = i+1; });
 }
 
+/* ============ DRAG-AND-DROP UNDO STACK ============
+   Before every drop, we snapshot the current player order. Undo pops
+   the most recent snapshot and restores it. Covers up to 20 moves back. */
+let dragUndoStack = [];
+const DRAG_UNDO_LIMIT = 20;
+
+function snapshotForUndo(){
+  // We only need the ID order — player data itself doesn't change on a drag,
+  // just their positions. Keeps memory light even for long sessions.
+  dragUndoStack.push(players.map(p => p.id));
+  if(dragUndoStack.length > DRAG_UNDO_LIMIT) dragUndoStack.shift();
+  updateUndoButton();
+}
+
+function undoLastMove(){
+  if(dragUndoStack.length === 0) return;
+  const snap = dragUndoStack.pop();
+  // Rebuild players array in the snapshotted order
+  const byId = {};
+  players.forEach(p => byId[p.id] = p);
+  players = snap.map(id => byId[id]).filter(Boolean);
+  reorderRanks();
+  renderTable();
+  updateUndoButton();
+}
+
+function updateUndoButton(){
+  const btn = document.getElementById('undo-btn');
+  if(!btn) return;
+  if(dragUndoStack.length === 0){
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    btn.style.cursor = 'not-allowed';
+    btn.title = 'Nothing to undo';
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    btn.title = `Undo last drag (${dragUndoStack.length} move${dragUndoStack.length===1?'':'s'} available) — Ctrl+Z`;
+  }
+}
+
+/* Ctrl+Z anywhere on the page triggers undo, except when user is
+   typing in a text input or textarea (so it doesn't hijack Cmd/Ctrl+Z
+   when editing a note). */
+document.addEventListener('keydown', function(e){
+  const isUndo = (e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z');
+  if(!isUndo) return;
+  const active = document.activeElement;
+  if(active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+  e.preventDefault();
+  undoLastMove();
+});
+
 function dragStart(e,idx){dragSrcIdx=idx;e.currentTarget.classList.add('dragging');}
 function dragOver(e,idx){e.preventDefault();e.currentTarget.classList.add('drag-over');}
 function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
@@ -2733,6 +2787,8 @@ function drop(e,idx){
   const list=getFiltered();
   const srcId=list[dragSrcIdx].id,tgtId=list[idx].id;
   const si=players.findIndex(p=>p.id===srcId),ti=players.findIndex(p=>p.id===tgtId);
+  // Snapshot BEFORE the move so undo can restore it
+  snapshotForUndo();
   const[moved]=players.splice(si,1);players.splice(ti,0,moved);
   reorderRanks();
   dragSrcIdx=null;
