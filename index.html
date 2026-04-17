@@ -309,7 +309,7 @@ tr.drag-over{border-top:2px solid var(--gold)}
 #pool-clone-header th,#leaders-clone-header th,#pros-clone-header th{padding:5px 4px;font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:#94a3b8;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);}
 /* Prospects table: auto layout so global nth-child widths don't corrupt the different column set */
 #pros-main-table{table-layout:auto;}
-#pros-table-wrap thead th{background:var(--surface)}
+#pros-table-wrap thead th{background:var(--surface);position:sticky;top:0;z-index:10}
 .ctx-count-row td{background:var(--surface2);padding:5px 12px;font-family:'Nunito Sans',sans-serif;font-size:11px;border-bottom:1px solid var(--border)}
 tr.ctx-highlight td{background:#1a1200 !important}
 tr.ctx-highlight .pool-player-name{color:var(--gold)}
@@ -5347,14 +5347,10 @@ function attachProspectsScrollHandler(){
       cloneBar.style.top = currentTop + 'px';
     }
 
-    const shouldShow = scrollTop > cachedThreshold;
-    if(shouldShow && !cloneVisible){
-      // Prospects uses table-layout:auto, so column widths can shift as stats
-      // lazy-load. Rebuild the clone right before showing so widths are fresh.
-      buildClone();
-      cloneBar.style.display = 'block';
-      cloneVisible = true;
-    } else if(!shouldShow && cloneVisible){
+    // Prospects clone bar disabled — the real #pros-main-thead is now
+    // position:sticky, which handles the table-layout:auto column-width
+    // problem natively (no snapshot, so no stale widths).
+    if(cloneVisible){
       cloneBar.style.display = 'none';
       cloneVisible = false;
     }
