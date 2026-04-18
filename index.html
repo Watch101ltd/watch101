@@ -712,7 +712,7 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
         <th style="cursor:default">☰</th>
         <th onclick="sortBy('rank')">Rank <span class="sort-arrow" id="arr-rank">↕</span></th>
         <th onclick="sortBy('name')" style="width:180px;min-width:180px">Player <span class="sort-arrow" id="arr-name">↕</span></th>
-        <th onclick="sortBy('rank_delta')" title="Movement from previous save (+ up / - down)">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
+        <th onclick="sortBy('rank_delta')" title="Last move (+ up / – down) and the date it happened. Hover a cell for full date/time.">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
         <th style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
         <th onclick="sortBy('team')">Team <span class="sort-arrow" id="arr-team">↕</span></th>
         <th onclick="sortBy('age')" title="Age">Age <span class="sort-arrow" id="arr-age">↕</span></th>
@@ -1481,11 +1481,35 @@ function pctShadeStyle(pct, higherIsBetter){
 }
 
 function renderDelta(p){
-  if(p.prev_rank === undefined || p.prev_rank === null || p.rank === undefined) return '<span class="stat-na">—</span>';
-  const delta = p.prev_rank - p.rank; // positive = moved up
+  // +/- shows the player's LAST actual move and the date it happened, persisting
+  // until the next move. Added April 18 2026. Older version computed delta from
+  // prev_rank - rank, but that reset to 0 after every save (saveData sets
+  // prev_rank = rank). Now driven by persistent lastMoveDelta / lastMovedDate
+  // fields stamped in drop(). Hover tooltip gives the full date + time.
+  if(p.lastMoveDelta === undefined || p.lastMoveDelta === null || !p.lastMovedDate){
+    return '<span class="stat-na">—</span>';
+  }
+  const delta = p.lastMoveDelta;
   if(delta === 0) return '<span style="color:var(--text3)">—</span>';
-  if(delta > 0) return `<span style="color:var(--green);font-weight:600">+${delta}</span>`;
-  return `<span style="color:var(--red);font-weight:600">${delta}</span>`;
+  // Short inline date: M/D (no zero-pad, no year) — fits in the narrow column.
+  const parts = p.lastMovedDate.split('-'); // "2026-04-18" -> ["2026","04","18"]
+  const shortDate = parseInt(parts[1],10) + '/' + parseInt(parts[2],10);
+  // Full tooltip: include time if we have it, otherwise just the date.
+  let tooltip;
+  if(p.lastMovedAt){
+    const dt = new Date(p.lastMovedAt);
+    tooltip = 'Moved ' + (delta > 0 ? '+' : '') + delta + ' on ' +
+      dt.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'}) +
+      ' at ' + dt.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+  } else {
+    const dt = new Date(p.lastMovedDate + 'T00:00:00');
+    tooltip = 'Moved ' + (delta > 0 ? '+' : '') + delta + ' on ' +
+      dt.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'});
+  }
+  if(delta > 0){
+    return `<span style="color:var(--green);font-weight:600" title="${tooltip}">+${delta} · ${shortDate}</span>`;
+  }
+  return `<span style="color:var(--red);font-weight:600" title="${tooltip}">${delta} · ${shortDate}</span>`;
 }
 
 function fmtSavant(val, dec=3){
@@ -1800,6 +1824,12 @@ function getFiltered(){
       const pit = isPitcher(p);
       if((pushPitchers && pit) || (pushHitters && !pit)) return sentinel;
       if(key === 'rank') return p.rank || 999;
+      // +/- column sorts by lastMoveDelta (new April 18 2026 field). Players
+      // who never moved go to the end (sentinel) so the list stays clean.
+      if(key === 'rank_delta'){
+        const v = p.lastMoveDelta;
+        return (v === undefined || v === null) ? sentinel : v;
+      }
       let v = p[key];
       if(v === undefined || v === null || v === '') return sentinel;
       if(typeof v === 'number' && Number.isNaN(v)) return sentinel;
@@ -2731,9 +2761,19 @@ let dragUndoStack = [];
 const DRAG_UNDO_LIMIT = 20;
 
 function snapshotForUndo(){
-  // We only need the ID order — player data itself doesn't change on a drag,
-  // just their positions. Keeps memory light even for long sessions.
-  dragUndoStack.push(players.map(p => p.id));
+  // Snapshot the ID order AND each player's last-move stamp so undo can fully
+  // reverse both the position AND the stamp. Without the stamp snapshot, Ctrl+Z
+  // after a drag would restore the player's old position but leave the new
+  // stamp behind, making the +/- column lie about the current state.
+  dragUndoStack.push({
+    order: players.map(p => p.id),
+    stamps: players.map(p => ({
+      id: p.id,
+      lastMoveDelta: p.lastMoveDelta,
+      lastMovedDate: p.lastMovedDate,
+      lastMovedAt: p.lastMovedAt
+    }))
+  });
   if(dragUndoStack.length > DRAG_UNDO_LIMIT) dragUndoStack.shift();
   updateUndoButton();
 }
@@ -2744,7 +2784,18 @@ function undoLastMove(){
   // Rebuild players array in the snapshotted order
   const byId = {};
   players.forEach(p => byId[p.id] = p);
-  players = snap.map(id => byId[id]).filter(Boolean);
+  players = snap.order.map(id => byId[id]).filter(Boolean);
+  // Restore each player's last-move stamp to what it was before this drop
+  const stampById = {};
+  snap.stamps.forEach(s => { stampById[s.id] = s; });
+  players.forEach(p => {
+    const s = stampById[p.id];
+    if(s){
+      p.lastMoveDelta = s.lastMoveDelta;
+      p.lastMovedDate = s.lastMovedDate;
+      p.lastMovedAt = s.lastMovedAt;
+    }
+  });
   reorderRanks();
   renderTable();
   updateUndoButton();
@@ -2787,10 +2838,21 @@ function drop(e,idx){
   const list=getFiltered();
   const srcId=list[dragSrcIdx].id,tgtId=list[idx].id;
   const si=players.findIndex(p=>p.id===srcId),ti=players.findIndex(p=>p.id===tgtId);
-  // Snapshot BEFORE the move so undo can restore it
+  // Snapshot BEFORE the move so undo can restore BOTH order and stamps
   snapshotForUndo();
+  const oldRank = players[si].rank;
   const[moved]=players.splice(si,1);players.splice(ti,0,moved);
   reorderRanks();
+  // Stamp the moved player. Only the one being dragged gets a stamp — the
+  // shifted-by-one players below don't count as "moves" from the user's POV.
+  if(oldRank !== moved.rank){
+    moved.lastMoveDelta = oldRank - moved.rank; // positive = moved up
+    const now = new Date();
+    moved.lastMovedDate = now.getFullYear() + '-' +
+      String(now.getMonth()+1).padStart(2,'0') + '-' +
+      String(now.getDate()).padStart(2,'0');
+    moved.lastMovedAt = now.toISOString();
+  }
   dragSrcIdx=null;
   renderTable(); // Just re-render, don't save yet
 }
