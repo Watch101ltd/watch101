@@ -593,6 +593,8 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 body.pp-open{overflow:hidden}
 #player-page-overlay .ppo-close{position:fixed;top:14px;right:16px;z-index:1010;width:40px;height:40px;border-radius:50%;background:rgba(13,17,23,0.85);border:1px solid var(--border2);color:var(--text2);font-family:'Nunito Sans',sans-serif;font-size:22px;font-weight:300;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;transition:all 0.15s;backdrop-filter:blur(6px);}
 #player-page-overlay .ppo-close:hover{background:var(--red);border-color:var(--red);color:#fff;transform:scale(1.05);}
+body.day-mode #player-page-overlay .ppo-close{background:rgba(255,255,255,0.85);border:1px solid #b8b8b8;color:#000000;}
+body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red);border-color:var(--red);color:#fff;}
 #player-page-overlay .ppo-header{background:linear-gradient(135deg,#080c10 0%,#0d1520 50%,#080c10 100%);border-bottom:1px solid var(--turquoise2);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
 #player-page-overlay .ppo-header .pp-logo{font-family:'Bowlby One',sans-serif;font-size:28px;letter-spacing:0.06em;line-height:1;display:flex;gap:0.05em;}
 #player-page-overlay .ppo-header .pp-logo .a{color:var(--title-blue)}
@@ -637,6 +639,24 @@ body.pp-open{overflow:hidden}
 #player-page-overlay .ppo-news-meta .src-rotoballer{color:#06b6d4}
 #player-page-overlay .ppo-news-meta .src-other{color:var(--text3)}
 #player-page-overlay .ppo-empty{color:var(--text3);font-style:italic;font-size:13px;padding:20px 0;text-align:center;}
+/* Prior Watch 101 Ranks chart */
+#player-page-overlay .ppo-ranks-wrap{position:relative;width:100%;padding:8px 0 0;}
+#player-page-overlay .ppo-ranks-wrap svg{width:100%;height:240px;display:block;font-family:'Nunito Sans',sans-serif;}
+#player-page-overlay .ppo-ranks-wrap .grid{stroke:var(--border);stroke-width:1;stroke-dasharray:2 3;}
+#player-page-overlay .ppo-ranks-wrap .axis-label{fill:var(--text3);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;}
+#player-page-overlay .ppo-ranks-wrap .tick-label{fill:var(--text3);font-size:10px;}
+#player-page-overlay .ppo-ranks-wrap .rank-line{stroke:var(--gold);stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round;}
+#player-page-overlay .ppo-ranks-wrap .rank-dot{fill:var(--gold);stroke:#080c10;stroke-width:2;cursor:pointer;}
+#player-page-overlay .ppo-ranks-wrap .rank-dot:hover{fill:#fff;}
+#player-page-overlay .ppo-ranks-wrap .rank-dot-latest{fill:var(--red);}
+#player-page-overlay .ppo-ranks-tip{position:absolute;display:none;padding:6px 10px;background:rgba(13,17,23,0.96);border:1px solid var(--turquoise2);border-radius:6px;font-size:11px;color:var(--text);white-space:nowrap;pointer-events:none;transform:translate(-50%,-120%);z-index:2;letter-spacing:0.04em;}
+#player-page-overlay .ppo-ranks-tip .t-date{color:var(--text3);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:2px;}
+#player-page-overlay .ppo-ranks-tip .t-rank{color:var(--gold);font-weight:700;}
+#player-page-overlay .ppo-ranks-empty{color:var(--text3);font-style:italic;font-size:13px;padding:24px 0;text-align:center;}
+#player-page-overlay .ppo-ranks-empty .sub{display:block;margin-top:6px;font-size:11px;color:var(--text3);letter-spacing:0.04em;font-style:normal;}
+body.day-mode #player-page-overlay .ppo-ranks-wrap .rank-dot{stroke:#ffffff;}
+body.day-mode #player-page-overlay .ppo-ranks-tip{background:rgba(255,255,255,0.97);color:#111;border-color:#b8b8b8;}
+body.day-mode #player-page-overlay .ppo-ranks-tip .t-date{color:#555;}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
@@ -5669,300 +5689,7 @@ function goToAdvanced(){
 // ---- FULL-SCREEN PLAYER PAGE OVERLAY (replaces the small popup) ----
 // Brandt populates PLAYER_NEWS via news_scraper.py and
 // PLAYER_NOTES_HISTORY via note_historian.py
+// PLAYER_RANK_HISTORY via rank_history.py  (per-player rank timeline from weekly xlsx snapshots)
+var PLAYER_RANK_HISTORY = {"666160":[{"date":"2026-04-19","rank":1,"total":101}],"687221":[{"date":"2026-04-19","rank":2,"total":101}],"691023":[{"date":"2026-04-19","rank":3,"total":101}],"683357":[{"date":"2026-04-19","rank":4,"total":101}],"669016":[{"date":"2026-04-19","rank":5,"total":101}],"666139":[{"date":"2026-04-19","rank":6,"total":101}],"694388":[{"date":"2026-04-19","rank":7,"total":101}],"676083":[{"date":"2026-04-19","rank":8,"total":101}],"666808":[{"date":"2026-04-19","rank":9,"total":101}],"676879":[{"date":"2026-04-19","rank":10,"total":101}],"677952":[{"date":"2026-04-19","rank":11,"total":101}],"696285":[{"date":"2026-04-19","rank":12,"total":101}],"669003":[{"date":"2026-04-19","rank":13,"total":101}],"571970":[{"date":"2026-04-19","rank":14,"total":101}],"701358":[{"date":"2026-04-19","rank":15,"total":101}],"694497":[{"date":"2026-04-19","rank":16,"total":101}],"691781":[{"date":"2026-04-19","rank":17,"total":101}],"676391":[{"date":"2026-04-19","rank":18,"total":101}],"664761":[{"date":"2026-04-19","rank":19,"total":101}],"664983":[{"date":"2026-04-19","rank":20,"total":101}],"702332":[{"date":"2026-04-19","rank":21,"total":101}],"596142":[{"date":"2026-04-19","rank":22,"total":101}],"808975":[{"date":"2026-04-19","rank":23,"total":101}],"681198":[{"date":"2026-04-19","rank":24,"total":101}],"668901":[{"date":"2026-04-19","rank":25,"total":101}],"682626":[{"date":"2026-04-19","rank":26,"total":101}],"676724":[{"date":"2026-04-19","rank":27,"total":101}],"605137":[{"date":"2026-04-19","rank":28,"total":101}],"687859":[{"date":"2026-04-19","rank":29,"total":101}],"690993":[{"date":"2026-04-19","rank":30,"total":101}],"660821":[{"date":"2026-04-19","rank":31,"total":101}],"663743":[{"date":"2026-04-19","rank":32,"total":101}],"671289":[{"date":"2026-04-19","rank":33,"total":101}],"666152":[{"date":"2026-04-19","rank":34,"total":101}],"686894":[{"date":"2026-04-19","rank":35,"total":101}],"807713":[{"date":"2026-04-19","rank":36,"total":101}],"687637":[{"date":"2026-04-19","rank":37,"total":101}],"690976":[{"date":"2026-04-19","rank":38,"total":101}],"678009":[{"date":"2026-04-19","rank":39,"total":101}],"679529":[{"date":"2026-04-19","rank":40,"total":101}],"691785":[{"date":"2026-04-19","rank":41,"total":101}],"682657":[{"date":"2026-04-19","rank":42,"total":101}],"699134":[{"date":"2026-04-19","rank":43,"total":101}],"605280":[{"date":"2026-04-19","rank":44,"total":101}],"676106":[{"date":"2026-04-19","rank":45,"total":101}],"669387":[{"date":"2026-04-19","rank":46,"total":101}],"663554":[{"date":"2026-04-19","rank":47,"total":101}],"642397":[{"date":"2026-04-19","rank":48,"total":101}],"671212":[{"date":"2026-04-19","rank":49,"total":101}],"672282":[{"date":"2026-04-19","rank":50,"total":101}],"676917":[{"date":"2026-04-19","rank":51,"total":101}],"656492":[{"date":"2026-04-19","rank":52,"total":101}],"668933":[{"date":"2026-04-19","rank":53,"total":101}],"676282":[{"date":"2026-04-19","rank":54,"total":101}],"676974":[{"date":"2026-04-19","rank":55,"total":101}],"681190":[{"date":"2026-04-19","rank":56,"total":101}],"677944":[{"date":"2026-04-19","rank":57,"total":101}],"686799":[{"date":"2026-04-19","rank":58,"total":101}],"669461":[{"date":"2026-04-19","rank":59,"total":101}],"676962":[{"date":"2026-04-19","rank":60,"total":101}],"687911":[{"date":"2026-04-19","rank":61,"total":101}],"687330":[{"date":"2026-04-19","rank":62,"total":101}],"641302":[{"date":"2026-04-19","rank":63,"total":101}],"663485":[{"date":"2026-04-19","rank":64,"total":101}],"690925":[{"date":"2026-04-19","rank":65,"total":101}],"671096":[{"date":"2026-04-19","rank":66,"total":101}],"680767":[{"date":"2026-04-19","rank":67,"total":101}],"642528":[{"date":"2026-04-19","rank":68,"total":101}],"671737":[{"date":"2026-04-19","rank":69,"total":101}],"680573":[{"date":"2026-04-19","rank":70,"total":101}],"663436":[{"date":"2026-04-19","rank":71,"total":101}],"621121":[{"date":"2026-04-19","rank":72,"total":101}],"800048":[{"date":"2026-04-19","rank":73,"total":101}],"694738":[{"date":"2026-04-19","rank":74,"total":101}],"701542":[{"date":"2026-04-19","rank":75,"total":101}],"694477":[{"date":"2026-04-19","rank":76,"total":101}],"670990":[{"date":"2026-04-19","rank":77,"total":101}],"690953":[{"date":"2026-04-19","rank":78,"total":101}],"663558":[{"date":"2026-04-19","rank":79,"total":101}],"669093":[{"date":"2026-04-19","rank":80,"total":101}],"518585":[{"date":"2026-04-19","rank":81,"total":101}],"689147":[{"date":"2026-04-19","rank":82,"total":101}],"643410":[{"date":"2026-04-19","rank":83,"total":101}],"683083":[{"date":"2026-04-19","rank":84,"total":101}],"677649":[{"date":"2026-04-19","rank":85,"total":101}],"643446":[{"date":"2026-04-19","rank":86,"total":101}],"682668":[{"date":"2026-04-19","rank":87,"total":101}],"691026":[{"date":"2026-04-19","rank":88,"total":101}],"694728":[{"date":"2026-04-19","rank":89,"total":101}],"808982":[{"date":"2026-04-19","rank":90,"total":101}],"630105":[{"date":"2026-04-19","rank":91,"total":101}],"670770":[{"date":"2026-04-19","rank":92,"total":101}],"701675":[{"date":"2026-04-19","rank":93,"total":101}],"641857":[{"date":"2026-04-19","rank":94,"total":101}],"682622":[{"date":"2026-04-19","rank":95,"total":101}],"696486":[{"date":"2026-04-19","rank":96,"total":101}],"702273":[{"date":"2026-04-19","rank":97,"total":101}],"701785":[{"date":"2026-04-19","rank":98,"total":101}],"554430":[{"date":"2026-04-19","rank":99,"total":101}],"669720":[{"date":"2026-04-19","rank":100,"total":101}],"682877":[{"date":"2026-04-19","rank":101,"total":101}]};
 var PLAYER_NEWS = {"691023":[{"title":"Effectively Wild Episode 2467: Stay Pricey, San Diego","url":"https://blogs.fangraphs.com/effectively-wild-episode-2467-stay-pricey-san-diego/","src":"fangraphs","src_display":"FanGraphs","published":"2026-04-18T05:43:57+00:00","blurb":"This is a free preview of a paid episode. To hear more, please visit our Patreon. Ben Lindbergh and Meg Rowley banter about another accidental challenge and listener-suggested alternatives to the head/helmet tap, the implications of the Padres&#8217; reported sale for a record price, Mike Trout&#8217;s resurgence and Jordan Walker&#8217;s surge, a Stat Blast about [&#8230;]"}]};
-var PLAYER_NOTES_HISTORY = {"666160":[{"date":"2026-04-19","rank":1,"movement":"up","note":"Phillies blue at letting this guy go. He's the real deal."}],"687221":[{"date":"2026-04-19","rank":2,"movement":"down","note":"Stuck on the bench behind Will Smith. But tons of potential."}],"691023":[{"date":"2026-04-19","rank":3,"movement":"up","note":"Info here"}],"683357":[{"date":"2026-04-19","rank":4,"movement":"down","note":""}],"669016":[{"date":"2026-04-19","rank":5,"movement":"up","note":""}],"666139":[{"date":"2026-04-19","rank":6,"movement":"down","note":""}],"694388":[{"date":"2026-04-19","rank":7,"movement":"up","note":"Dropping like a stone until injuries are resolved."}],"676083":[{"date":"2026-04-19","rank":8,"movement":"up","note":"Lots of potential under the hood, but not list worthy yet."}],"666808":[{"date":"2026-04-19","rank":9,"movement":"up","note":"Middle reliever with little chance for saves. Not really list worthy."}],"676879":[{"date":"2026-04-19","rank":10,"movement":"up","note":"Possible save potential? But don't see him moving up far."}],"677952":[{"date":"2026-04-19","rank":11,"movement":"up","note":"Recently rocketing upwards."}],"696285":[{"date":"2026-04-19","rank":12,"movement":"up","note":""}],"669003":[{"date":"2026-04-19","rank":13,"movement":"up","note":""}],"571970":[{"date":"2026-04-19","rank":14,"movement":"up","note":"Yes, it's the old Max Muncie, but he's still killing it."}],"701358":[{"date":"2026-04-19","rank":15,"movement":"down","note":""}],"694497":[{"date":"2026-04-19","rank":16,"movement":"up","note":""}],"691781":[{"date":"2026-04-19","rank":17,"movement":"up","note":""}],"676391":[{"date":"2026-04-19","rank":18,"movement":"up","note":""}],"664761":[{"date":"2026-04-19","rank":19,"movement":"up","note":""}],"664983":[{"date":"2026-04-19","rank":20,"movement":"down","note":""}],"702332":[{"date":"2026-04-19","rank":21,"movement":"up","note":""}],"596142":[{"date":"2026-04-19","rank":22,"movement":"up","note":""}],"808975":[{"date":"2026-04-19","rank":23,"movement":"up","note":""}],"681198":[{"date":"2026-04-19","rank":24,"movement":"up","note":""}],"668901":[{"date":"2026-04-19","rank":25,"movement":"up","note":""}],"682626":[{"date":"2026-04-19","rank":26,"movement":"up","note":""}],"676724":[{"date":"2026-04-19","rank":27,"movement":"up","note":""}],"605137":[{"date":"2026-04-19","rank":28,"movement":"up","note":""}],"687859":[{"date":"2026-04-19","rank":29,"movement":"up","note":""}],"690993":[{"date":"2026-04-19","rank":30,"movement":"up","note":""}],"660821":[{"date":"2026-04-19","rank":31,"movement":"up","note":""}],"663743":[{"date":"2026-04-19","rank":32,"movement":"up","note":""}],"671289":[{"date":"2026-04-19","rank":33,"movement":"up","note":""}],"666152":[{"date":"2026-04-19","rank":34,"movement":"up","note":""}],"686894":[{"date":"2026-04-19","rank":35,"movement":"down","note":""}],"807713":[{"date":"2026-04-19","rank":36,"movement":"up","note":""}],"687637":[{"date":"2026-04-19","rank":37,"movement":"up","note":""}],"690976":[{"date":"2026-04-19","rank":38,"movement":"up","note":""}],"678009":[{"date":"2026-04-19","rank":39,"movement":"up","note":""}],"679529":[{"date":"2026-04-19","rank":40,"movement":"up","note":""}],"691785":[{"date":"2026-04-19","rank":41,"movement":"up","note":""}],"682657":[{"date":"2026-04-19","rank":42,"movement":"up","note":""}],"699134":[{"date":"2026-04-19","rank":43,"movement":"up","note":""}],"605280":[{"date":"2026-04-19","rank":44,"movement":"up","note":""}],"676106":[{"date":"2026-04-19","rank":45,"movement":"up","note":""}],"669387":[{"date":"2026-04-19","rank":46,"movement":"up","note":""}],"663554":[{"date":"2026-04-19","rank":47,"movement":"up","note":""}],"642397":[{"date":"2026-04-19","rank":48,"movement":"up","note":""}],"671212":[{"date":"2026-04-19","rank":49,"movement":"up","note":""}],"672282":[{"date":"2026-04-19","rank":50,"movement":"up","note":""}],"676917":[{"date":"2026-04-19","rank":51,"movement":"up","note":""}],"656492":[{"date":"2026-04-19","rank":52,"movement":"up","note":""}],"668933":[{"date":"2026-04-19","rank":53,"movement":"up","note":""}],"676282":[{"date":"2026-04-19","rank":54,"movement":"up","note":""}],"676974":[{"date":"2026-04-19","rank":55,"movement":"up","note":""}],"681190":[{"date":"2026-04-19","rank":56,"movement":"up","note":""}],"677944":[{"date":"2026-04-19","rank":57,"movement":"up","note":""}],"686799":[{"date":"2026-04-19","rank":58,"movement":"up","note":""}],"669461":[{"date":"2026-04-19","rank":59,"movement":"up","note":""}],"676962":[{"date":"2026-04-19","rank":60,"movement":"up","note":""}],"687911":[{"date":"2026-04-19","rank":61,"movement":"up","note":""}],"687330":[{"date":"2026-04-19","rank":62,"movement":"up","note":""}],"641302":[{"date":"2026-04-19","rank":63,"movement":"up","note":""}],"663485":[{"date":"2026-04-19","rank":64,"movement":"up","note":""}],"690925":[{"date":"2026-04-19","rank":65,"movement":"up","note":""}],"671096":[{"date":"2026-04-19","rank":66,"movement":"up","note":""}],"680767":[{"date":"2026-04-19","rank":67,"movement":"up","note":""}],"642528":[{"date":"2026-04-19","rank":68,"movement":"up","note":""}],"671737":[{"date":"2026-04-19","rank":69,"movement":"up","note":""}],"680573":[{"date":"2026-04-19","rank":70,"movement":"up","note":""}],"663436":[{"date":"2026-04-19","rank":71,"movement":"up","note":""}],"621121":[{"date":"2026-04-19","rank":72,"movement":"up","note":""}],"800048":[{"date":"2026-04-19","rank":73,"movement":"up","note":""}],"694738":[{"date":"2026-04-19","rank":74,"movement":"up","note":""}],"701542":[{"date":"2026-04-19","rank":75,"movement":"up","note":""}],"694477":[{"date":"2026-04-19","rank":76,"movement":"up","note":""}],"670990":[{"date":"2026-04-19","rank":77,"movement":"up","note":""}],"690953":[{"date":"2026-04-19","rank":78,"movement":"up","note":""}],"663558":[{"date":"2026-04-19","rank":79,"movement":"up","note":""}],"669093":[{"date":"2026-04-19","rank":80,"movement":"up","note":""}],"518585":[{"date":"2026-04-19","rank":81,"movement":"up","note":""}],"689147":[{"date":"2026-04-19","rank":82,"movement":"up","note":""}],"643410":[{"date":"2026-04-19","rank":83,"movement":"up","note":""}],"683083":[{"date":"2026-04-19","rank":84,"movement":"up","note":""}],"677649":[{"date":"2026-04-19","rank":85,"movement":"up","note":""}],"643446":[{"date":"2026-04-19","rank":86,"movement":"up","note":""}],"682668":[{"date":"2026-04-19","rank":87,"movement":"up","note":""}],"691026":[{"date":"2026-04-19","rank":88,"movement":"up","note":""}],"694728":[{"date":"2026-04-19","rank":89,"movement":"up","note":""}],"808982":[{"date":"2026-04-19","rank":90,"movement":"up","note":""}],"630105":[{"date":"2026-04-19","rank":91,"movement":"up","note":""}],"670770":[{"date":"2026-04-19","rank":92,"movement":"up","note":""}],"701675":[{"date":"2026-04-19","rank":93,"movement":"up","note":""}],"641857":[{"date":"2026-04-19","rank":94,"movement":"up","note":""}],"682622":[{"date":"2026-04-19","rank":95,"movement":"up","note":""}],"696486":[{"date":"2026-04-19","rank":96,"movement":"up","note":""}],"702273":[{"date":"2026-04-19","rank":97,"movement":"up","note":""}],"701785":[{"date":"2026-04-19","rank":98,"movement":"up","note":""}],"554430":[{"date":"2026-04-19","rank":99,"movement":"up","note":""}],"669720":[{"date":"2026-04-19","rank":100,"movement":"new","note":""}],"682877":[{"date":"2026-04-19","rank":101,"movement":"new","note":""}]};
-
-function openPlayerPage(p){
-  if(!p) return;
-  var mlbId = p.mlb_id;
-  var overlay = document.getElementById('player-page-overlay');
-  if(!overlay) return;
-
-  var photoEl = document.getElementById('ppo-photo');
-  photoEl.src = mlbId
-    ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_426,q_auto:best/v1/people/'+mlbId+'/headshot/67/current'
-    : 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_426,q_auto:best/v1/people/0/headshot/67/current';
-  photoEl.alt = p.name || '';
-
-  document.getElementById('ppo-name').textContent = p.name || '';
-  var pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
-  var sub = [p.team||'—', pos, 'Age ' + (p.age||'—')].join('<span class="sep">|</span>');
-  document.getElementById('ppo-sub').innerHTML = sub;
-
-  var rankEl = document.getElementById('ppo-rank');
-  if(p.yahoo_rank){
-    document.getElementById('ppo-rank-num').textContent = '#' + p.yahoo_rank;
-    rankEl.style.display = 'inline-flex';
-  } else {
-    rankEl.style.display = 'none';
-  }
-
-  var pit = isPitcher(p);
-  var stats = PCT_CHART_STATS.filter(function(s){
-    if(s.hitterOnly && pit) return false;
-    if(s.pitcherOnly && !pit) return false;
-    return true;
-  });
-  var barsHtml = stats.map(function(s){
-    var val = p[s.field];
-    var pct = getPercentile(val, s.field, pit);
-    var effective = pct === null ? null : (s.higher ? pct : 1 - pct);
-    var pctLabel = pct === null ? '—' : Math.round(effective * 100) + 'th';
-    var fillColor, width;
-    if(effective === null){
-      fillColor = 'var(--border)'; width = 0;
-    } else {
-      width = Math.round(effective * 100);
-      if(effective > 0.65){
-        var intensity = (effective - 0.65) / 0.35;
-        fillColor = 'rgba(220,'+Math.round(60-intensity*40)+','+Math.round(60-intensity*40)+',0.85)';
-      } else if(effective < 0.35){
-        var intensity2 = (0.35 - effective) / 0.35;
-        fillColor = 'rgba('+Math.round(40-intensity2*20)+','+Math.round(80-intensity2*40)+',220,0.85)';
-      } else {
-        fillColor = 'rgba(100,120,140,0.5)';
-      }
-    }
-    var pctColor = effective===null?'var(--text3)':effective>0.65?'#fca5a5':effective<0.35?'#93c5fd':'var(--text3)';
-    return '<div class="pct-bar-row">'
-      + '<div class="pct-bar-label">'+s.label+'</div>'
-      + '<div class="pct-bar-track"><div class="pct-bar-fill" style="width:'+width+'%;background:'+fillColor+'"></div></div>'
-      + '<div class="pct-bar-val">'+s.fmt(val)+'</div>'
-      + '<div class="pct-bar-pct" style="color:'+pctColor+'">'+pctLabel+'</div>'
-      + '</div>';
-  }).join('');
-  document.getElementById('ppo-bars').innerHTML = barsHtml || '<div class="ppo-empty">No advanced stats available yet.</div>';
-
-  var currentNote = (p.note && String(p.note).trim().length > 0) ? String(p.note).trim() : '';
-  var history = (PLAYER_NOTES_HISTORY && PLAYER_NOTES_HISTORY[mlbId]) ? PLAYER_NOTES_HISTORY[mlbId] : [];
-  var oldHistory = history.filter(function(h){ return String(h.body||'').trim() !== currentNote; });
-  var notesHtml = '';
-  if(currentNote){
-    notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date current">Current note &middot; latest</div>'
-               + '<div class="ppo-note-body">' + escapeHtml(currentNote) + '</div></div>';
-  }
-  if(oldHistory.length > 0){
-    notesHtml += '<div class="ppo-notes-scroll">';
-    for(var i=0;i<oldHistory.length;i++){
-      var h = oldHistory[i];
-      notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date">' + escapeHtml(h.date || '') + '</div>'
-                 + '<div class="ppo-note-body">' + escapeHtml(h.body || '') + '</div></div>';
-    }
-    notesHtml += '</div>';
-    notesHtml += '<div class="ppo-notes-count">' + oldHistory.length + ' prior ' + (oldHistory.length===1?'note':'notes') + ' &middot; loaded by Brandt</div>';
-  }
-  if(!currentNote && oldHistory.length===0){
-    notesHtml = '<div class="ppo-empty">No notes from Matt yet.</div>';
-  }
-  document.getElementById('ppo-note-body').innerHTML = notesHtml;
-
-  var news = (PLAYER_NEWS && PLAYER_NEWS[mlbId]) ? PLAYER_NEWS[mlbId] : [];
-  if(news.length === 0){
-    document.getElementById('ppo-news').innerHTML = '<div class="ppo-empty">Brandt has not pulled fresh news for this player yet.</div>';
-  } else {
-    document.getElementById('ppo-news').innerHTML = news.map(function(n){
-      var srcKey = (n.src||'other').toLowerCase().replace(/[^a-z]/g,'');
-      var srcClass = 'src-' + (['rotoworld','rotowire','fangraphs','razzball','pitcherlist','cbsfantasy','fantasypros','nbcsports','rotoballer'].indexOf(srcKey)>=0 ? srcKey : 'other');
-      return '<div class="ppo-news-item">'
-        + '<a href="' + encodeURI(n.url||'#') + '" target="_blank" rel="noopener">' + escapeHtml(n.title||'Untitled') + '</a>'
-        + '<div class="ppo-news-meta"><span class="src ' + srcClass + '">' + escapeHtml(n.src||'') + '</span>'
-        + (n.published ? ' &middot; ' + escapeHtml(n.published) : '')
-        + '</div></div>';
-    }).join('');
-  }
-
-  overlay.classList.add('visible');
-  document.body.classList.add('pp-open');
-}
-
-function closePlayerPage(){
-  var overlay = document.getElementById('player-page-overlay');
-  if(overlay) overlay.classList.remove('visible');
-  document.body.classList.remove('pp-open');
-}
-
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-  });
-}
-
-document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape' || e.keyCode === 27){
-    var ov = document.getElementById('player-page-overlay');
-    if(ov && ov.classList.contains('visible')){
-      e.preventDefault();
-      closePlayerPage();
-    }
-  }
-});
-
-
-// ---- CLICK HANDLER ----
-document.addEventListener('click', function(e){
-  if(e.target.closest('#player-page-overlay')) return;
-  if(e.target.closest('#player-card')) return;
-  // Don't steal clicks from action buttons (e.g. "+ Add" on pool rows)
-  if(e.target.closest('button')) { closePlayerCard(); return; }
-  var nameCell = e.target.closest('.name-cell');
-  if(nameCell){
-    var row = nameCell.closest('tr');
-    if(!row){ closePlayerCard(); return; }
-    // Main watchlist — look up by index in the filtered array
-    if(nameCell.closest('#tbody')){
-      var idx = parseInt(row.dataset.idx);
-      if(isNaN(idx)){ closePlayerCard(); return; }
-      var filtered = getFiltered();
-      var p = filtered[idx];
-      if(p) openPlayerCard(e, p);
-      return;
-    }
-    // Player Pool or League Leaders — look up by mlb_id
-    if(nameCell.closest('#pool-tbody') || nameCell.closest('#leaders-tbody')){
-      var mlbId = parseInt(row.dataset.mlbId);
-      if(isNaN(mlbId)){ closePlayerCard(); return; }
-      // Prefer poolPlayers (has full stat/Statcast data), fall back to watchlist
-      var p2 = null;
-      if(typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers)){
-        p2 = poolPlayers.find(function(pp){ return pp.mlb_id === mlbId; });
-      }
-      if(!p2 && typeof players !== 'undefined' && Array.isArray(players)){
-        p2 = players.find(function(pp){ return pp.mlb_id === mlbId; });
-      }
-      if(p2) openPlayerCard(e, p2);
-      return;
-    }
-  }
-  closePlayerCard();
-});
-</script>
-
-<script>
-// ---- PRESENTATION MODE ----
-var presentMode = false;
-function togglePresentMode(){
-  presentMode = !presentMode;
-  var btn = document.getElementById('present-btn');
-  if(presentMode){
-    document.body.classList.add('present-mode');
-    btn.classList.add('active');
-    btn.textContent = '🔍 Presenting';
-  } else {
-    document.body.classList.remove('present-mode');
-    btn.classList.remove('active');
-    btn.textContent = '🔍 Present';
-  }
-}
-
-// ---- GLOBAL DISPLAY NORMALIZER ----
-// 1) Strips leading zero from decimals shown in stat cells (0.345 -> .345)
-// 2) Replaces em-dash / hyphen used as "no data" placeholder with 0
-// Runs on every DOM change inside stat tables. Guarded against self-triggering.
-(function(){
-  var NORMALIZING = false;
-  function normalizeTextNode(node){
-    var t = node.nodeValue;
-    if(!t) return;
-    var trimmed = t.trim();
-    // Replace standalone em-dash, en-dash, or hyphen with 0
-    if(trimmed === '\u2014' || trimmed === '\u2013' || trimmed === '-'){
-      node.nodeValue = t.replace(/[\u2014\u2013-]/, '0');
-      return;
-    }
-    // Strip leading zero from decimal numbers: 0.345 -> .345
-    // Only acts on \b0\.\d+ patterns, won't affect "10.5" or "1.23" or player names
-    var fixed = t.replace(/\b0(\.\d+)/g, '$1');
-    if(fixed !== t) node.nodeValue = fixed;
-  }
-  function normalizeCell(cell){
-    // Skip cells explicitly marked to not be touched (e.g., Team column —
-    // we'd rather show a dash for free agents than the nonsense "0" for team).
-    // Also skip Yahoo ADP/RANK/OWNED cells — a missing Yahoo value needs to stay
-    // a dash ("no data") and NOT get lied about as 0.
-    if(cell.classList && (
-      cell.classList.contains('team-cell') ||
-      cell.classList.contains('no-zero') ||
-      cell.classList.contains('yahoo-rank')
-    )) return;
-    var walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT, null, false);
-    var node;
-    while((node = walker.nextNode())){
-      normalizeTextNode(node);
-    }
-  }
-  function sweep(root){
-    if(!root || !root.querySelectorAll) return;
-    var cells = root.querySelectorAll('td, th, .stat-cell, .stat, .rank-num, .dual-rank, .sri-meta');
-    for(var i=0;i<cells.length;i++){ normalizeCell(cells[i]); }
-  }
-  function runSweep(){
-    if(NORMALIZING) return;
-    NORMALIZING = true;
-    try { sweep(document.body); } catch(e){}
-    NORMALIZING = false;
-  }
-  // Observe all changes and re-sweep. Self-edits won't loop because
-  // normalization is idempotent (running twice produces same output).
-  var scheduled = false;
-  var obs = new MutationObserver(function(){
-    if(NORMALIZING) return;
-    if(scheduled) return;
-    scheduled = true;
-    requestAnimationFrame(function(){
-      scheduled = false;
-      runSweep();
-    });
-  });
-  function startObserver(){
-    obs.observe(document.body, {childList:true, subtree:true, characterData:true});
-    runSweep();
-  }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', startObserver);
-  } else {
-    startObserver();
-  }
-})();
-
-</script>
-
-
-<!-- FULL-SCREEN PLAYER PAGE OVERLAY (replaces the small player-card popup on click) -->
-<div id="player-page-overlay" role="dialog" aria-modal="true" aria-label="Player page">
-  <button class="ppo-close" onclick="closePlayerPage()" aria-label="Close">&times;</button>
-  <div class="ppo-header">
-    <div>
-      <div class="pp-logo"><span class="a">PLAYER</span><span class="b">PAGE</span></div>
-      <div class="pp-logo-sub">The deeper cut</div>
-    </div>
-    <div class="ppo-header-right">Watch 101 Player Card</div>
-  </div>
-  <section class="ppo-hero">
-    <img class="ppo-hero-photo" id="ppo-photo" src="" alt="" onerror="this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_426,q_auto:best/v1/people/0/headshot/67/current'">
-    <div class="ppo-hero-meta">
-      <div class="ppo-hero-name" id="ppo-name"></div>
-      <div class="ppo-hero-sub" id="ppo-sub"></div>
-      <div class="ppo-hero-rank" id="ppo-rank" style="display:none">Watch 101 Rank <span class="num" id="ppo-rank-num"></span></div>
-    </div>
-  </section>
-  <div class="ppo-grid">
-    <section class="ppo-block">
-      <h2>Advanced Stats</h2>
-      <div class="ppo-note">Live Statcast percentile bars &middot; vs. all qualified MLB players &middot; 2026</div>
-      <div id="ppo-bars"></div>
-    </section>
-    <section class="ppo-block">
-      <h2>Matt's Take</h2>
-      <div class="ppo-note">Current note + full history &middot; Loaded by Brandt from Matt Comments exports</div>
-      <div id="ppo-note-body"></div>
-    </section>
-    <section class="ppo-block" style="grid-column:1 / -1">
-      <h2>The Buzz</h2>
-      <div class="ppo-note">Fantasy news scraped by Brandt &middot; Rotoworld, RotoWire, FanGraphs, Razzball, PitcherList, and more</div>
-      <div id="ppo-news"></div>
-    </section>
-  </div>
-</div>
-
-</body>
-</html>
+var PLAYER_NOTES_HISTORY = {"666160":[{"date":"2026-04-19","rank":1,"movement":"up","note":"Phillies blue at letting this guy go. He's the real deal."}],"687221":[{"date":"2026-04-19","rank":2,"movement":"down","note":"Stuck on the bench behind Will Smith. But tons of potential."}],"691023":[{"date":"2026-04-19","rank":3,"movement":"up","note":"Info here"}],"683357":[{"date":"2026-04-19","rank":4,"movement":"down","note":""}],"669016":[{"date":"2026-04-19","rank":5,"movement":"up","note":""}],"666139":[{"date":"2026-04-19","rank":6,"movement":"down","note":""}],"694388":[{"date":"2026-04-19","rank":7,"movement":"up","note":"Dropping like a stone until injuries are resolved."}],"676083":[{"date":"2026-04-19","rank":8,"movement":"up","note":"Lots of potential under the hood, but not list worthy yet."}],"666808":[{"date":"2026-04-19","rank":9,"movement":"up","note":"Middle reliever with little chance for saves. Not really list worthy."}],"676879":[{"date":"2026-04-19","rank":10,"movement":"up","note":"Possible save potential? But don't see him moving up far."}],"677952":[{"date":"2026-04-19","rank":11,"movement":"up","note":"Recently rocketing upwards."}],"696285":[{"date":"2026-04-19","rank":12,"movement":"up","note":""}],"669003":[{"date":"2026-04-19","rank":13,"movement":"up","note":""}],"571970":[{"date":"2026-04-19","rank":14,"movement":"up","note":"Yes, it's the old Max Muncie, but he's still killing it."}],"701358":[{"date":"2026-04-19","rank":15,"movement":"down","note":""}],"694497":[{"date":"2026-04-19","rank":16,"movement":"up","note":""}],"691781":[{"date":"2026-04-19","rank":17,"movement":"up","note":""}],"676391":[{"date":"2026-04-19","rank":18,"movement":"up","note":""}],"664761":[{"date":"2026-04-19","rank":19,"movement":"up","note":""}],"664983":[{"date":"2026-04-19","rank":20,"movement":"down","note":""}],"702332":[{"date":"2026-04-19","rank":21,"movement":"up","note":""}],"596142":[{"date":"2026-04-19","rank":22,"movement":"up","note":""}],"808975":[{"date":"2026-04-19","rank":23,"movement":"up","note":""}],"681198":[{"date":"2026-04-19","rank":24,"movement":"up","note":""}],"668901":[{"date":"2026-04-19","rank":25,"movement":"up","note":""}],"682626":[{"date":"2026-04-19","rank":26,"movement":"up","note":""}],"676724":[{"date":"2026-04-19","rank":27,"movement":"up","note":""}],"605137":[{"date":"2026-04-19","rank":28,"movement":"up","note":""}],"687859":[{"date":"2026-04-19","rank":29,"movement":"up","note":""}],"690993":[{"date":"2026-04-19","rank":30,"movement":"up","note":""}],"660821":[{"date":"2026-04-19","rank":31,"movement":"up","note":""}],"663743":[{"date":"2026-04-19","rank":32,"movement":"up","note":""}],"671289":[{"date":"2026-04-19","rank":33,"movement":"up","note":""}],"666152":[{"date":"2026-04-19","rank":34,"movement":"up","note":""}],"686894":[{"date":"2026-04-19","rank":35,"movement":"down","note":""}],"807713":[{"date":"2026-04-19","rank":36,"movement":"up","note":""}],"687637":[{"date":"2026-04-19","rank":37,"movement":"up","note":""}],"690976":[{"date":"2026-04-19","rank":38,"movement":"up","note":""}],"678009":[{"date":"2026-04-19","rank":39,"movement":"up","note":""}],"679529":[{"date":"2026-04-19","rank":40,"movement":"up","note":""}],"691785":[{"date":"2026-04-19","rank":41,"movement":"up","note":""}],"682657":[{"date":"2026-04-19","rank":42,"movement":"up","note":""}],"699134":[{"date":"2026-04-19","rank":43,"movement":"up","note":""}],"605280":[{"date":"2026-04-19","rank":44,"movement":"up","note":""}],"676106":[{"date":"2026-04-19","rank":45,"movement":"up","note":""}],"669387":[{"date":"2026-04-19","rank":46,"movement":"up","note":""}],"663554":[{"date":"2026-04-19","rank":47,"movement":"up","note":""}],"642397":[{"date":"2026-04-19","rank":48,"movement":"up","note":""}],"671212":[{"date":"2026-04-19","rank":49,"movement":"up","note":""}],"672282":[{"date":"2026-04-19","rank":50,"movement":"up","note":""}],"676917":[{"date":"2026-04-19","rank":51,"movement":"up","note":""}],"656492":[{"date":"2026-04-19","rank":52,"movement":"up","note":""}],"668933":[{"date":"2026-04-19","rank":53,"movement":"up","note":""}],"676282":[{"date":"2026-04-19","rank":54,"movement":"up","note":""}],"676974":[{"date":"2026-04-19","rank":55,"movement":"up","note":""}],"681190":[{"date":"2026-04-19","rank":56,"movement":"up","note":""}],"677944":[{"date":"2026-04-19","rank":57,"movement":"up","note":""}],"686799":[{"date":"2026-04-19","rank":58,"movement":"up","note":""}],"669461":[{"date":"2026-04-19","rank":59,"movement":"up","note":""}],"676962":[{"date":"2026-04-19","rank":60,"movement":"up","note":""}],"687911":[{"date":"2026-04-19","rank":61,"movement":"up","note":""}],"687330":[{"date":"2026-04-19","rank":62,"movement":"up","note":""}],"641302":[{"date":"2026-04-19","rank":63,"movement":"up","note":""}],"663485":[{"date":"2026-04-19","rank":64,"movement":"up","note":""}],"690925":[{"date":"2026-04-19","rank":65,"movement":"up","note":""}],"671096":[{"date":"2026-04-19","rank":66,"movement":"up","note":""}],"680767":[{"date":"2026-04-19","rank":67,"movement":"up","note":""}],"642528":[{"date":"2026-04-19","rank":68,"movement":"up","note":""}],"671737":[{"date":"2026-04-19","rank":69,"movement":"up","note":""}],"680573":[{"date":"2026-04-19","rank":70,"movement":"up","note":""}],"663436":[{"date":"2026-04-19","rank":71,"movement":"up","note":""}],"621121":[{"date":"2026-04-19","rank":72,"movement":"up","note":""}],"800048":[{"date":"2026-04-19","rank":73,"movement":"up","note":""}],"694738":[{"date":"2026-04-19","rank":74,"movement":"up","note":""}],"701542":[{"date":"2026-04-19","rank":75,"movement":"up","note":""}],"694477":[{"date":"2026-04-19","rank":76,"movement":"up","note":""}],"670990":[{"date":"2026-04-19","rank":77,"movement":"up","note":""}],"690953":[{"date":"2026-04-19","rank":78,"movement":"up","note":""}],"663558":[{"date":"2026-04-19","rank":79,"movement":"up","note":""}],"669093":[{"date":"2026-04-19","rank":80,"movement":"up","note":""}],"518585":[{"date":"2026-04-19","rank":81,"movement":"up","note":""}],"689147":[{"date":"2026-04-19","rank"
