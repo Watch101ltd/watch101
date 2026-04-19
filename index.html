@@ -691,12 +691,12 @@ body.day-mode #player-page-overlay .ppo-sched-row.yellow{background:rgba(255,184
 #player-page-overlay .ppo-statbar-val.hit{color:var(--stat-hitter);}
 #player-page-overlay .ppo-statbar-val.pit{color:var(--stat-pitcher);}
 #player-page-overlay .ppo-statbar-val.na{color:var(--text3);font-weight:500;}
-#player-page-overlay .ppo-adv-toggle{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:8px 18px;background:rgba(99,102,241,0.10);border:1px solid var(--indigo);border-radius:8px;color:#a5b4fc;font-family:'Bowlby One',sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
-#player-page-overlay .ppo-adv-toggle:hover{background:rgba(99,102,241,0.18);border-color:#818cf8;color:#c7d2fe;}
-#player-page-overlay .ppo-adv-toggle .caret{font-size:10px;transition:transform 0.2s;}
-#player-page-overlay .ppo-adv-toggle.open .caret{transform:rotate(180deg);}
-#player-page-overlay .ppo-adv-row{display:none;margin-top:10px;border:1px solid var(--indigo2);border-radius:8px;overflow:hidden;background:rgba(67,56,202,0.06);}
-#player-page-overlay .ppo-adv-row.open{display:flex;flex-wrap:wrap;}
+#player-page-overlay .ppo-adv-row{display:flex;flex-wrap:wrap;margin-top:10px;border:1px solid var(--indigo2);border-radius:8px;overflow:hidden;background:rgba(67,56,202,0.06);}
+#player-page-overlay .ppo-daterange-wrap{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap;}
+#player-page-overlay .ppo-daterange-label{font-family:'Bowlby One',sans-serif;font-size:10px;letter-spacing:0.12em;color:var(--text3);text-transform:uppercase;}
+#player-page-overlay .ppo-daterange-select{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em;}
+#player-page-overlay .ppo-daterange-select.daterange-active{border-color:var(--gold);color:var(--gold);}
+#player-page-overlay .ppo-statbar-loading{color:var(--text3);font-size:11px;font-style:italic;letter-spacing:0.04em;}
 #player-page-overlay .ppo-adv-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;min-width:72px;flex:1;border-right:1px solid rgba(99,102,241,0.25);text-align:center;}
 #player-page-overlay .ppo-adv-cell:last-child{border-right:none;}
 #player-page-overlay .ppo-adv-label{font-family:'Bowlby One',sans-serif;font-size:9px;letter-spacing:0.1em;color:#a5b4fc;text-transform:uppercase;margin-bottom:4px;}
@@ -4747,7 +4747,7 @@ function setPoolWrapTop(){
 
 function syncDateRangeDropdowns(val){
   // Keep all three dropdowns in sync visually
-  ['daterange-select','daterange-select-pool','daterange-select-leaders'].forEach(id => {
+  ['daterange-select','daterange-select-pool','daterange-select-leaders','ppo-daterange-select'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.value = val;
     if(el) el.classList.toggle('daterange-active', val !== 'season');
@@ -6027,26 +6027,51 @@ function renderSchedule7D(mlbId){
   container.innerHTML = html;
 }
 
+// Tracks the player currently shown on the overlay so the stat bar can
+// re-render when Matt/Dude flips the date-range dropdown or the async
+// MLB Stats API fetch finally delivers the cache.
+window._ppoCurrentPlayer = null;
+window._ppoPollTimer = null;
+
 function renderPlayerStatBar(p){
+  // Update tracker so the polling loop + dropdown handler can find the player
+  window._ppoCurrentPlayer = p;
+
   var container = document.getElementById('ppo-statbar');
   var advRow = document.getElementById('ppo-adv-row');
-  var advToggle = document.getElementById('ppo-adv-toggle');
+  var loadingLabel = document.getElementById('ppo-statbar-loading');
   if(!container) return;
   var pit = (typeof isPitcher === 'function') ? isPitcher(p) : false;
   var na = '<span class="ppo-statbar-val na">&mdash;</span>';
-  var sc = p;
+
+  // Get the stat source based on current dateRange.
+  // - dateRange === 'season' -> use p directly (season-long numbers on the player object)
+  // - otherwise use getDisplayStats(p) which returns cached byDateRange stats or null (loading)
+  var usingDateRange = (typeof dateRange !== 'undefined') && dateRange !== 'season';
+  var sc;
+  if(usingDateRange && typeof getDisplayStats === 'function'){
+    sc = getDisplayStats(p);
+  } else {
+    sc = p;
+  }
+  var loading = usingDateRange && sc === null;
+
+  if(loadingLabel){ loadingLabel.style.display = loading ? 'inline' : 'none'; }
+
   function num(v, dec){
+    if(loading) return '<span class="ppo-statbar-val na">&hellip;</span>';
     if(v === null || v === undefined || v === '') return na;
     var n = Number(v);
     if(isNaN(n)) return na;
     return '<span class="ppo-statbar-val '+(pit?'pit':'hit')+'">'+(dec!=null?n.toFixed(dec):n)+'</span>';
   }
   function avg3(v){
+    if(loading) return '<span class="ppo-statbar-val na">&hellip;</span>';
     if(v === null || v === undefined || v === '') return na;
     var n = Number(v);
     if(isNaN(n)) return na;
     var t = n.toFixed(3);
-    if(t.charAt(0) === '0') t = t.substring(1);  // .325 style
+    if(t.charAt(0) === '0') t = t.substring(1);
     return '<span class="ppo-statbar-val '+(pit?'pit':'hit')+'">'+t+'</span>';
   }
   function txt(v){
@@ -6054,11 +6079,10 @@ function renderPlayerStatBar(p){
     return '<span class="ppo-statbar-val">'+String(v)+'</span>';
   }
 
-  // Identity cells (team, pos, age, hand, roster %)
+  // Identity cells — these never change with date range
   var posStr = (p.positions && p.positions.length > 0) ? p.positions.join('/') : (p.primaryPos || '');
   var hand = pit ? (p.throws || p.bats || '') : (p.bats || '');
   var age = (typeof decimalAge === 'function') ? decimalAge(p) : (p.age || '');
-  if(age && age.indexOf && age.indexOf('<') === 0) age = age; // already formatted HTML — use as-is
   var rosterPct = (p.roster_pct !== null && p.roster_pct !== undefined && p.roster_pct !== '') ? (parseFloat(p.roster_pct).toFixed(1)+'%') : '';
 
   var cells = [];
@@ -6069,32 +6093,32 @@ function renderPlayerStatBar(p){
   cells.push({label:'Ros%', val: txt(rosterPct)});
   cells.push({label:'Y!Rk', val: txt(p.yahoo_rank)});
 
-  // Game stats — mirror main-page row
+  // Game stats — these reflect current dateRange
   if(pit){
-    cells.push({label:'IP',   val: num(sc.ip, 1)});
-    cells.push({label:'K',    val: num(sc.k)});
-    cells.push({label:'W',    val: num(sc.w)});
-    cells.push({label:'SV',   val: num(sc.sv)});
-    cells.push({label:'HLD',  val: num(sc.hld)});
-    cells.push({label:'ERA',  val: num(sc.era, 2)});
-    cells.push({label:'WHIP', val: num(sc.whip, 2)});
+    cells.push({label:'IP',   val: num(sc && sc.ip, 1)});
+    cells.push({label:'K',    val: num(sc && sc.k)});
+    cells.push({label:'W',    val: num(sc && sc.w)});
+    cells.push({label:'SV',   val: num(sc && sc.sv)});
+    cells.push({label:'HLD',  val: num(sc && sc.hld)});
+    cells.push({label:'ERA',  val: num(sc && sc.era, 2)});
+    cells.push({label:'WHIP', val: num(sc && sc.whip, 2)});
     cells.push({label:'xERA', val: num(p.sv_xera, 2)});
   } else {
-    cells.push({label:'AB',  val: num(sc.ab)});
-    cells.push({label:'R',   val: num(sc.r)});
-    cells.push({label:'HR',  val: num(sc.hr)});
-    cells.push({label:'RBI', val: num(sc.rbi)});
-    cells.push({label:'SB',  val: num(sc.sb)});
-    cells.push({label:'AVG', val: avg3(sc.avg)});
-    cells.push({label:'OBP', val: avg3(sc.obp)});
-    cells.push({label:'OPS', val: num(sc.ops, 3)});
+    cells.push({label:'AB',  val: num(sc && sc.ab)});
+    cells.push({label:'R',   val: num(sc && sc.r)});
+    cells.push({label:'HR',  val: num(sc && sc.hr)});
+    cells.push({label:'RBI', val: num(sc && sc.rbi)});
+    cells.push({label:'SB',  val: num(sc && sc.sb)});
+    cells.push({label:'AVG', val: avg3(sc && sc.avg)});
+    cells.push({label:'OBP', val: avg3(sc && sc.obp)});
+    cells.push({label:'OPS', val: num(sc && sc.ops, 3)});
   }
 
   container.innerHTML = cells.map(function(c){
     return '<div class="ppo-statbar-cell"><div class="ppo-statbar-label">'+c.label+'</div>'+c.val+'</div>';
   }).join('');
 
-  // Advanced row — Statcast numeric values (mirrors main-page adv columns)
+  // Advanced row — Statcast numbers. These are season-only on the player object (no date-range variant exists upstream).
   var advCells = [];
   function advNum(v, dec, suffix){
     if(v === null || v === undefined || v === '') return '<span class="ppo-adv-val na">&mdash;</span>';
@@ -6127,33 +6151,57 @@ function renderPlayerStatBar(p){
     advCells.push({label:'EV95',  val: advNum(p.sv_ev95, 1)});
     advCells.push({label:'MaxEV', val: advNum(p.sv_maxev, 1)});
   }
-
   if(advRow){
     advRow.innerHTML = advCells.map(function(c){
       return '<div class="ppo-adv-cell"><div class="ppo-adv-label">'+c.label+'</div>'+c.val+'</div>';
     }).join('');
-    // Reset collapsed state each time a new player opens
-    advRow.classList.remove('open');
   }
-  if(advToggle){
-    advToggle.classList.remove('open');
+
+  // Keep the overlay dropdown visually in sync with global dateRange
+  var dd = document.getElementById('ppo-daterange-select');
+  if(dd && typeof dateRange !== 'undefined' && dd.value !== dateRange){
+    dd.value = dateRange;
+  }
+  if(dd){
+    dd.classList.toggle('daterange-active', typeof dateRange !== 'undefined' && dateRange !== 'season');
+  }
+
+  // If we're in a loading state, poll until the cache fills so the bar refreshes without user action
+  clearPlayerStatBarPoll();
+  if(loading){
+    window._ppoPollTimer = setInterval(function(){
+      var cp = window._ppoCurrentPlayer;
+      if(!cp){ clearPlayerStatBarPoll(); return; }
+      // Stop if range was reset to season
+      if(typeof dateRange === 'undefined' || dateRange === 'season'){ clearPlayerStatBarPoll(); renderPlayerStatBar(cp); return; }
+      if(typeof getDisplayStats === 'function' && getDisplayStats(cp) !== null){
+        clearPlayerStatBarPoll();
+        renderPlayerStatBar(cp);
+      }
+    }, 500);
   }
 }
 
-function togglePlayerAdvRow(){
-  var advRow = document.getElementById('ppo-adv-row');
-  var advToggle = document.getElementById('ppo-adv-toggle');
-  if(!advRow || !advToggle) return;
-  if(advRow.classList.contains('open')){
-    advRow.classList.remove('open');
-    advToggle.classList.remove('open');
-  } else {
-    advRow.classList.add('open');
-    advToggle.classList.add('open');
+function clearPlayerStatBarPoll(){
+  if(window._ppoPollTimer){
+    clearInterval(window._ppoPollTimer);
+    window._ppoPollTimer = null;
+  }
+}
+
+function onOverlayDateRangeChange(val){
+  // Reuse the main-page infrastructure so data fetching + syncing across all dropdowns happens the same way
+  if(typeof setDateRange === 'function') setDateRange(val);
+  if(typeof syncDateRangeDropdowns === 'function') syncDateRangeDropdowns(val);
+  // Immediately re-render the overlay stat bar (this will kick off polling if the cache is still warming up)
+  if(window._ppoCurrentPlayer){
+    renderPlayerStatBar(window._ppoCurrentPlayer);
   }
 }
 
 function closePlayerPage(){
+  clearPlayerStatBarPoll();
+  window._ppoCurrentPlayer = null;
   var overlay = document.getElementById('player-page-overlay');
   if(overlay) overlay.classList.remove('visible');
   document.body.classList.remove('pp-open');
@@ -6321,8 +6369,19 @@ function togglePresentMode(){
       <div class="ppo-hero-name" id="ppo-name"></div>
       <div class="ppo-hero-sub" id="ppo-sub"></div>
       <div class="ppo-hero-rank" id="ppo-rank" style="display:none">Watch 101 Rank <span class="num" id="ppo-rank-num"></span></div>
+      <div class="ppo-daterange-wrap">
+        <span class="ppo-daterange-label">Stats for:</span>
+        <select id="ppo-daterange-select" class="ppo-daterange-select" onchange="onOverlayDateRangeChange(this.value)">
+          <option value="live">&#128308; Live</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="season" selected>Season Stats</option>
+          <option value="7">Last 7 Days</option>
+          <option value="14">Last 14 Days</option>
+          <option value="30">Last 30 Days</option>
+        </select>
+        <span class="ppo-statbar-loading" id="ppo-statbar-loading" style="display:none">&#8635; loading&#8230;</span>
+      </div>
       <div class="ppo-statbar" id="ppo-statbar"></div>
-      <button class="ppo-adv-toggle" id="ppo-adv-toggle" onclick="togglePlayerAdvRow()" type="button"><span>Advanced Stats</span><span class="caret">&#9662;</span></button>
       <div class="ppo-adv-row" id="ppo-adv-row"></div>
     </div>
   </section>
