@@ -601,7 +601,8 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 #player-page-overlay .ppo-header .pp-logo .b{color:var(--title-red)}
 #player-page-overlay .ppo-header .pp-logo-sub{font-size:10px;letter-spacing:0.25em;color:var(--turquoise);text-transform:uppercase;margin-top:4px}
 #player-page-overlay .ppo-header-right{font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase}
-#player-page-overlay .ppo-hero{padding:2rem 1.5rem;display:flex;gap:28px;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;}
+#player-page-overlay .ppo-hero{padding:2rem 1.5rem;display:flex;gap:28px;align-items:flex-start;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;}
+#player-page-overlay .ppo-hero-stats{flex:2;min-width:320px;display:flex;flex-direction:column;gap:10px;}
 #player-page-overlay .ppo-hero-photo{width:180px;height:180px;border-radius:50%;border:3px solid var(--gold);object-fit:contain;object-position:center center;background:var(--surface2);flex-shrink:0;padding:4px;}
 #player-page-overlay .ppo-hero-meta{flex:1;min-width:260px}
 #player-page-overlay .ppo-hero-name{font-family:'Bowlby One',sans-serif;font-size:48px;letter-spacing:0.04em;color:var(--text);line-height:1;}
@@ -5814,12 +5815,15 @@ function openPlayerPage(p){
 
   document.getElementById('ppo-name').textContent = p.name || '';
   var pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
-  var sub = [p.team||'—', pos, 'Age ' + (p.age||'—')].join('<span class="sep">|</span>');
+  var hand = isPitcher(p) ? (p.throws || p.bats || '') : (p.bats || '');
+  var subParts = [p.team||'—', pos, 'Age ' + (p.age||'—')];
+  if(hand) subParts.push(hand);
+  var sub = subParts.join('<span class="sep">|</span>');
   document.getElementById('ppo-sub').innerHTML = sub;
 
   var rankEl = document.getElementById('ppo-rank');
-  if(p.yahoo_rank){
-    document.getElementById('ppo-rank-num').textContent = '#' + p.yahoo_rank;
+  if(p.rank){
+    document.getElementById('ppo-rank-num').textContent = '#' + p.rank;
     rankEl.style.display = 'inline-flex';
   } else {
     rankEl.style.display = 'none';
@@ -6142,14 +6146,7 @@ function renderPlayerStatBar(p){
   var rosterPct = (p.roster_pct !== null && p.roster_pct !== undefined && p.roster_pct !== '') ? (parseFloat(p.roster_pct).toFixed(1)+'%') : '';
 
   var cells = [];
-  cells.push({label:'Team', val: txt(p.team)});
-  cells.push({label:'Pos',  val: txt(posStr)});
-  cells.push({label:'Age',  val: (typeof age === 'string' && age.indexOf('<span') === 0) ? age : txt(age)});
-  cells.push({label:'Hand', val: txt(hand)});
-  cells.push({label:'Ros%', val: txt(rosterPct)});
-  cells.push({label:'Y!Rk', val: txt(p.yahoo_rank)});
-
-  // Game stats — these reflect current dateRange
+  // Game stats first — these reflect current dateRange
   if(pit){
     cells.push({label:'IP',   val: num(sc && sc.ip, 1)});
     cells.push({label:'K',    val: num(sc && sc.k)});
@@ -6169,6 +6166,9 @@ function renderPlayerStatBar(p){
     cells.push({label:'OBP', val: avg3(sc && sc.obp)});
     cells.push({label:'OPS', val: num(sc && sc.ops, 3)});
   }
+  // Roster context at the end — these are identity, not date-range dependent
+  cells.push({label:'Ros%', val: txt(rosterPct)});
+  cells.push({label:'Y!Rk', val: txt(p.yahoo_rank)});
 
   container.innerHTML = cells.map(function(c){
     return '<div class="ppo-statbar-cell"><div class="ppo-statbar-label">'+c.label+'</div>'+c.val+'</div>';
@@ -6437,22 +6437,29 @@ function togglePresentMode(){
         </select>
         <span class="ppo-statbar-loading" id="ppo-statbar-loading" style="display:none">&#8635; loading&#8230;</span>
       </div>
+    </div>
+    <div class="ppo-hero-stats">
       <div class="ppo-statbar" id="ppo-statbar"></div>
       <div class="ppo-adv-row" id="ppo-adv-row"></div>
     </div>
   </section>
   <div class="ppo-grid">
     <section class="ppo-block">
+      <h2>Matt's Take</h2>
+      <div class="ppo-note">Current note + full history &middot; Loaded by Brandt from Matt Comments exports</div>
+      <div id="ppo-note-body"></div>
+    </section>
+    <section class="ppo-block">
       <h2>Advanced Stats</h2>
       <div class="ppo-note">Live Statcast percentile bars &middot; vs. all qualified MLB players &middot; 2026</div>
       <div id="ppo-bars"></div>
     </section>
     <section class="ppo-block">
-      <h2>Matt's Take</h2>
-      <div class="ppo-note">Current note + full history &middot; Loaded by Brandt from Matt Comments exports</div>
-      <div id="ppo-note-body"></div>
+      <h2>Podcast Mentions</h2>
+      <div class="ppo-note">Watch 101, Pitcher List, Rotoworld, FanGraphs Audio, Razzball, CBS Fantasy Baseball Today &middot; Episode links open in Apple Podcasts</div>
+      <div id="ppo-podcasts"></div>
     </section>
-    <section class="ppo-block" style="grid-column:1 / -1">
+    <section class="ppo-block">
       <h2>Rank History</h2>
       <div class="ppo-note">Watch 101 rank over time &middot; Adds a new point every time Matt hits Save to Excel</div>
       <div class="ppo-chart-wrap">
@@ -6461,22 +6468,11 @@ function togglePresentMode(){
       <div class="ppo-chart-legend"><span id="ppo-chart-oldest">&mdash;</span><span id="ppo-chart-latest">&mdash;</span></div>
     </section>
     <section class="ppo-block" style="grid-column:1 / -1">
-      <h2>Next 7 Days</h2>
-      <div class="ppo-note">Upcoming schedule &middot; Hitters show opposing probable pitcher (hand, ERA) &middot; Pitchers show their probable starts only &middot; Green = favorable matchup, Red = tough</div>
-      <div id="ppo-schedule"></div>
-    </section>
-    <section class="ppo-block" style="grid-column:1 / -1">
-      <h2>Podcast Mentions</h2>
-      <div class="ppo-note">Watch 101, Pitcher List, Rotoworld, FanGraphs Audio, Razzball, CBS Fantasy Baseball Today &middot; Episode links open in Apple Podcasts</div>
-      <div id="ppo-podcasts"></div>
-    </section>
-    <section class="ppo-block" style="grid-column:1 / -1">
       <h2>The Buzz</h2>
       <div class="ppo-note">Fantasy news scraped by Brandt &middot; Rotoworld, RotoWire, FanGraphs, Razzball, PitcherList, and more</div>
       <div id="ppo-news"></div>
     </section>
-  </div>
-</div>
-
-</body>
-</html>
+    <section class="ppo-block" style="grid-column:1 / -1">
+      <h2>Next 7 Days</h2>
+      <div class="ppo-note">Upcoming schedule &middot; Hitters show opposing probable pitcher (hand, ERA) &middot; Pitchers show their probable starts only &middot; Green = favorable matchup, Red = tough</div>
+      <div id="ppo-schedule"><
