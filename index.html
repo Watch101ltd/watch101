@@ -682,6 +682,29 @@ body.day-mode #player-page-overlay .ppo-sched-row{background:rgba(0,0,0,0.015);}
 body.day-mode #player-page-overlay .ppo-sched-row.green{background:rgba(68,189,50,0.13);}
 body.day-mode #player-page-overlay .ppo-sched-row.red{background:rgba(232,44,44,0.10);}
 body.day-mode #player-page-overlay .ppo-sched-row.yellow{background:rgba(255,184,0,0.09);}
+/* ---- Player overlay: main-page-style stat bar + Advanced Stats toggle ---- */
+#player-page-overlay .ppo-statbar{display:flex;flex-wrap:wrap;gap:0;margin-top:14px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
+#player-page-overlay .ppo-statbar-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;min-width:72px;flex:1;border-right:1px solid var(--border);text-align:center;}
+#player-page-overlay .ppo-statbar-cell:last-child{border-right:none;}
+#player-page-overlay .ppo-statbar-label{font-family:'Bowlby One',sans-serif;font-size:9px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
+#player-page-overlay .ppo-statbar-val{font-size:18px;font-weight:700;color:var(--text);line-height:1;}
+#player-page-overlay .ppo-statbar-val.hit{color:var(--stat-hitter);}
+#player-page-overlay .ppo-statbar-val.pit{color:var(--stat-pitcher);}
+#player-page-overlay .ppo-statbar-val.na{color:var(--text3);font-weight:500;}
+#player-page-overlay .ppo-adv-toggle{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:8px 18px;background:rgba(99,102,241,0.10);border:1px solid var(--indigo);border-radius:8px;color:#a5b4fc;font-family:'Bowlby One',sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+#player-page-overlay .ppo-adv-toggle:hover{background:rgba(99,102,241,0.18);border-color:#818cf8;color:#c7d2fe;}
+#player-page-overlay .ppo-adv-toggle .caret{font-size:10px;transition:transform 0.2s;}
+#player-page-overlay .ppo-adv-toggle.open .caret{transform:rotate(180deg);}
+#player-page-overlay .ppo-adv-row{display:none;margin-top:10px;border:1px solid var(--indigo2);border-radius:8px;overflow:hidden;background:rgba(67,56,202,0.06);}
+#player-page-overlay .ppo-adv-row.open{display:flex;flex-wrap:wrap;}
+#player-page-overlay .ppo-adv-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;min-width:72px;flex:1;border-right:1px solid rgba(99,102,241,0.25);text-align:center;}
+#player-page-overlay .ppo-adv-cell:last-child{border-right:none;}
+#player-page-overlay .ppo-adv-label{font-family:'Bowlby One',sans-serif;font-size:9px;letter-spacing:0.1em;color:#a5b4fc;text-transform:uppercase;margin-bottom:4px;}
+#player-page-overlay .ppo-adv-val{font-size:16px;font-weight:700;color:var(--text);line-height:1;}
+#player-page-overlay .ppo-adv-val.na{color:var(--text3);font-weight:500;}
+body.day-mode #player-page-overlay .ppo-statbar{background:rgba(0,0,0,0.015);}
+body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,0.08);}
+
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
@@ -5820,6 +5843,7 @@ function openPlayerPage(p){
     }).join('');
   }
 
+  renderPlayerStatBar(p);
   renderRankHistory(mlbId);
   renderSchedule7D(mlbId);
   renderPodcastMentions(mlbId);
@@ -6003,6 +6027,132 @@ function renderSchedule7D(mlbId){
   container.innerHTML = html;
 }
 
+function renderPlayerStatBar(p){
+  var container = document.getElementById('ppo-statbar');
+  var advRow = document.getElementById('ppo-adv-row');
+  var advToggle = document.getElementById('ppo-adv-toggle');
+  if(!container) return;
+  var pit = (typeof isPitcher === 'function') ? isPitcher(p) : false;
+  var na = '<span class="ppo-statbar-val na">&mdash;</span>';
+  var sc = p;
+  function num(v, dec){
+    if(v === null || v === undefined || v === '') return na;
+    var n = Number(v);
+    if(isNaN(n)) return na;
+    return '<span class="ppo-statbar-val '+(pit?'pit':'hit')+'">'+(dec!=null?n.toFixed(dec):n)+'</span>';
+  }
+  function avg3(v){
+    if(v === null || v === undefined || v === '') return na;
+    var n = Number(v);
+    if(isNaN(n)) return na;
+    var t = n.toFixed(3);
+    if(t.charAt(0) === '0') t = t.substring(1);  // .325 style
+    return '<span class="ppo-statbar-val '+(pit?'pit':'hit')+'">'+t+'</span>';
+  }
+  function txt(v){
+    if(v === null || v === undefined || v === '') return na;
+    return '<span class="ppo-statbar-val">'+String(v)+'</span>';
+  }
+
+  // Identity cells (team, pos, age, hand, roster %)
+  var posStr = (p.positions && p.positions.length > 0) ? p.positions.join('/') : (p.primaryPos || '');
+  var hand = pit ? (p.throws || p.bats || '') : (p.bats || '');
+  var age = (typeof decimalAge === 'function') ? decimalAge(p) : (p.age || '');
+  if(age && age.indexOf && age.indexOf('<') === 0) age = age; // already formatted HTML — use as-is
+  var rosterPct = (p.roster_pct !== null && p.roster_pct !== undefined && p.roster_pct !== '') ? (parseFloat(p.roster_pct).toFixed(1)+'%') : '';
+
+  var cells = [];
+  cells.push({label:'Team', val: txt(p.team)});
+  cells.push({label:'Pos',  val: txt(posStr)});
+  cells.push({label:'Age',  val: (typeof age === 'string' && age.indexOf('<span') === 0) ? age : txt(age)});
+  cells.push({label:'Hand', val: txt(hand)});
+  cells.push({label:'Ros%', val: txt(rosterPct)});
+  cells.push({label:'Y!Rk', val: txt(p.yahoo_rank)});
+
+  // Game stats — mirror main-page row
+  if(pit){
+    cells.push({label:'IP',   val: num(sc.ip, 1)});
+    cells.push({label:'K',    val: num(sc.k)});
+    cells.push({label:'W',    val: num(sc.w)});
+    cells.push({label:'SV',   val: num(sc.sv)});
+    cells.push({label:'HLD',  val: num(sc.hld)});
+    cells.push({label:'ERA',  val: num(sc.era, 2)});
+    cells.push({label:'WHIP', val: num(sc.whip, 2)});
+    cells.push({label:'xERA', val: num(p.sv_xera, 2)});
+  } else {
+    cells.push({label:'AB',  val: num(sc.ab)});
+    cells.push({label:'R',   val: num(sc.r)});
+    cells.push({label:'HR',  val: num(sc.hr)});
+    cells.push({label:'RBI', val: num(sc.rbi)});
+    cells.push({label:'SB',  val: num(sc.sb)});
+    cells.push({label:'AVG', val: avg3(sc.avg)});
+    cells.push({label:'OBP', val: avg3(sc.obp)});
+    cells.push({label:'OPS', val: num(sc.ops, 3)});
+  }
+
+  container.innerHTML = cells.map(function(c){
+    return '<div class="ppo-statbar-cell"><div class="ppo-statbar-label">'+c.label+'</div>'+c.val+'</div>';
+  }).join('');
+
+  // Advanced row — Statcast numeric values (mirrors main-page adv columns)
+  var advCells = [];
+  function advNum(v, dec, suffix){
+    if(v === null || v === undefined || v === '') return '<span class="ppo-adv-val na">&mdash;</span>';
+    var n = Number(v);
+    if(isNaN(n)) return '<span class="ppo-adv-val na">&mdash;</span>';
+    return '<span class="ppo-adv-val">'+(dec!=null?n.toFixed(dec):n)+(suffix||'')+'</span>';
+  }
+  function advAvg(v){
+    if(v === null || v === undefined || v === '') return '<span class="ppo-adv-val na">&mdash;</span>';
+    var n = Number(v);
+    if(isNaN(n)) return '<span class="ppo-adv-val na">&mdash;</span>';
+    var t = n.toFixed(3);
+    if(t.charAt(0) === '0') t = t.substring(1);
+    return '<span class="ppo-adv-val">'+t+'</span>';
+  }
+  if(pit){
+    advCells.push({label:'xwOBA', val: advAvg(p.sv_xwoba)});
+    advCells.push({label:'xERA',  val: advNum(p.sv_xera, 2)});
+    advCells.push({label:'Avg EV',val: advNum(p.sv_ev, 1)});
+    advCells.push({label:'EV95',  val: advNum(p.sv_ev95, 1)});
+    advCells.push({label:'MaxEV', val: advNum(p.sv_maxev, 1)});
+    advCells.push({label:'Brl%',  val: advNum(p.sv_barrel, 1, '%')});
+    advCells.push({label:'SS%',   val: advNum(p.sv_sweetspot, 1, '%')});
+  } else {
+    advCells.push({label:'xBA',   val: advAvg(p.sv_xba)});
+    advCells.push({label:'xwOBA', val: advAvg(p.sv_xwoba)});
+    advCells.push({label:'Avg EV',val: advNum(p.sv_ev, 1)});
+    advCells.push({label:'SS%',   val: advNum(p.sv_sweetspot, 1, '%')});
+    advCells.push({label:'Brl%',  val: advNum(p.sv_barrel, 1, '%')});
+    advCells.push({label:'EV95',  val: advNum(p.sv_ev95, 1)});
+    advCells.push({label:'MaxEV', val: advNum(p.sv_maxev, 1)});
+  }
+
+  if(advRow){
+    advRow.innerHTML = advCells.map(function(c){
+      return '<div class="ppo-adv-cell"><div class="ppo-adv-label">'+c.label+'</div>'+c.val+'</div>';
+    }).join('');
+    // Reset collapsed state each time a new player opens
+    advRow.classList.remove('open');
+  }
+  if(advToggle){
+    advToggle.classList.remove('open');
+  }
+}
+
+function togglePlayerAdvRow(){
+  var advRow = document.getElementById('ppo-adv-row');
+  var advToggle = document.getElementById('ppo-adv-toggle');
+  if(!advRow || !advToggle) return;
+  if(advRow.classList.contains('open')){
+    advRow.classList.remove('open');
+    advToggle.classList.remove('open');
+  } else {
+    advRow.classList.add('open');
+    advToggle.classList.add('open');
+  }
+}
+
 function closePlayerPage(){
   var overlay = document.getElementById('player-page-overlay');
   if(overlay) overlay.classList.remove('visible');
@@ -6171,6 +6321,9 @@ function togglePresentMode(){
       <div class="ppo-hero-name" id="ppo-name"></div>
       <div class="ppo-hero-sub" id="ppo-sub"></div>
       <div class="ppo-hero-rank" id="ppo-rank" style="display:none">Watch 101 Rank <span class="num" id="ppo-rank-num"></span></div>
+      <div class="ppo-statbar" id="ppo-statbar"></div>
+      <button class="ppo-adv-toggle" id="ppo-adv-toggle" onclick="togglePlayerAdvRow()" type="button"><span>Advanced Stats</span><span class="caret">&#9662;</span></button>
+      <div class="ppo-adv-row" id="ppo-adv-row"></div>
     </div>
   </section>
   <div class="ppo-grid">
