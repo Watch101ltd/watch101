@@ -702,6 +702,11 @@ body.day-mode #player-page-overlay .ppo-sched-row.yellow{background:rgba(255,184
 #player-page-overlay .ppo-adv-cell:last-child{border-right:none;}
 #player-page-overlay .ppo-adv-label{font-family:'Bowlby One',sans-serif;font-size:9px;letter-spacing:0.1em;color:#a5b4fc;text-transform:uppercase;margin-bottom:4px;}
 #player-page-overlay .ppo-adv-val{font-size:16px;font-weight:700;color:var(--text);line-height:1;}
+/* Compact variant — tiles sit just above the percentile bars inside the Advanced Stats card */
+#player-page-overlay .ppo-adv-row-compact{margin-top:8px;margin-bottom:14px;}
+#player-page-overlay .ppo-adv-row-compact .ppo-adv-cell{padding:6px 8px;min-width:56px;}
+#player-page-overlay .ppo-adv-row-compact .ppo-adv-label{font-size:8px;margin-bottom:2px;}
+#player-page-overlay .ppo-adv-row-compact .ppo-adv-val{font-size:13px;}
 #player-page-overlay .ppo-adv-val.na{color:var(--text3);font-weight:500;}
 body.day-mode #player-page-overlay .ppo-statbar{background:rgba(0,0,0,0.015);}
 body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,0.08);}
@@ -6190,22 +6195,23 @@ function renderPlayerStatBar(p){
     if(t.charAt(0) === '0') t = t.substring(1);
     return '<span class="ppo-adv-val">'+t+'</span>';
   }
+  // Order matches PCT_CHART_STATS below so tiles and bars line up visually
   if(pit){
     advCells.push({label:'xwOBA', val: advAvg(p.sv_xwoba)});
+    advCells.push({label:'Avg EV',val: advNum(p.sv_ev, 1)});
+    advCells.push({label:'EV95',  val: advNum(p.sv_ev95, 1)});
+    advCells.push({label:'MaxEV', val: advNum(p.sv_maxev, 1)});
+    advCells.push({label:'Brl%',  val: advNum(p.sv_barrel, 1, '%')});
+    advCells.push({label:'SS%',   val: advNum(p.sv_sweetspot, 1, '%')});
     advCells.push({label:'xERA',  val: advNum(p.sv_xera, 2)});
-    advCells.push({label:'Avg EV',val: advNum(p.sv_ev, 1)});
-    advCells.push({label:'EV95',  val: advNum(p.sv_ev95, 1)});
-    advCells.push({label:'MaxEV', val: advNum(p.sv_maxev, 1)});
-    advCells.push({label:'Brl%',  val: advNum(p.sv_barrel, 1, '%')});
-    advCells.push({label:'SS%',   val: advNum(p.sv_sweetspot, 1, '%')});
   } else {
-    advCells.push({label:'xBA',   val: advAvg(p.sv_xba)});
     advCells.push({label:'xwOBA', val: advAvg(p.sv_xwoba)});
+    advCells.push({label:'xBA',   val: advAvg(p.sv_xba)});
     advCells.push({label:'Avg EV',val: advNum(p.sv_ev, 1)});
-    advCells.push({label:'SS%',   val: advNum(p.sv_sweetspot, 1, '%')});
-    advCells.push({label:'Brl%',  val: advNum(p.sv_barrel, 1, '%')});
     advCells.push({label:'EV95',  val: advNum(p.sv_ev95, 1)});
     advCells.push({label:'MaxEV', val: advNum(p.sv_maxev, 1)});
+    advCells.push({label:'Brl%',  val: advNum(p.sv_barrel, 1, '%')});
+    advCells.push({label:'SS%',   val: advNum(p.sv_sweetspot, 1, '%')});
   }
   if(advRow){
     advRow.innerHTML = advCells.map(function(c){
@@ -6440,7 +6446,6 @@ function togglePresentMode(){
     </div>
     <div class="ppo-hero-stats">
       <div class="ppo-statbar" id="ppo-statbar"></div>
-      <div class="ppo-adv-row" id="ppo-adv-row"></div>
     </div>
   </section>
   <div class="ppo-grid">
@@ -6452,6 +6457,7 @@ function togglePresentMode(){
     <section class="ppo-block">
       <h2>Advanced Stats</h2>
       <div class="ppo-note">Live Statcast percentile bars &middot; vs. all qualified MLB players &middot; 2026</div>
+      <div class="ppo-adv-row ppo-adv-row-compact" id="ppo-adv-row"></div>
       <div id="ppo-bars"></div>
     </section>
     <section class="ppo-block">
@@ -6468,11 +6474,4 @@ function togglePresentMode(){
       <div class="ppo-chart-legend"><span id="ppo-chart-oldest">&mdash;</span><span id="ppo-chart-latest">&mdash;</span></div>
     </section>
     <section class="ppo-block" style="grid-column:1 / -1">
-      <h2>The Buzz</h2>
-      <div class="ppo-note">Fantasy news scraped by Brandt &middot; Rotoworld, RotoWire, FanGraphs, Razzball, PitcherList, and more</div>
-      <div id="ppo-news"></div>
-    </section>
-    <section class="ppo-block" style="grid-column:1 / -1">
-      <h2>Next 7 Days</h2>
-      <div class="ppo-note">Upcoming schedule &middot; Hitters show opposing probable pitcher (hand, ERA) &middot; Pitchers show their probable starts only &middot; Green = favorable matchup, Red = tough</div>
-      <div id="ppo-schedule"><
+      <h2>T
