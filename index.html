@@ -3672,8 +3672,15 @@ function renderPool(){
     }
     // For season stats, use the player object directly (populated by loadAllPoolStats).
     // For date range, overlay the cache. Show "…" while date range cache is loading.
+    // POOL_PREBAKE_OVERLAY_V1: pre-baked cache takes priority over runtime cache.
     const usingDR = dateRange !== 'season';
-    const sc = usingDR ? poolDateRangeCache[p.mlb_id + '_' + dateRange] : p;
+    let sc;
+    if(usingDR){
+      const _pre = typeof PLAYER_DATERANGE_CACHE !== 'undefined' && p.mlb_id ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
+      sc = (_pre && _pre[dateRange]) || poolDateRangeCache[p.mlb_id + '_' + dateRange];
+    } else {
+      sc = p;
+    }
     const loading = usingDR && !sc;
     const pending = `<span style="color:var(--border2);font-size:10px">…</span>`;
     const na = '<span style="color:var(--text3)">—</span>';
@@ -4361,6 +4368,15 @@ function renderLeaders(){
   const addedNames = new Set(players.map(p => p.name.toLowerCase()));
   let list = [...poolPlayers];
 
+  // LEADERS_DATERANGE_OVERLAY_V1
+  if(typeof dateRange !== 'undefined' && dateRange !== 'season'){
+    list = list.map(p => {
+      const _pre = typeof PLAYER_DATERANGE_CACHE !== 'undefined' && p.mlb_id ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
+      const _dr = (_pre && _pre[dateRange]) || (typeof poolDateRangeCache !== 'undefined' ? poolDateRangeCache[p.mlb_id + '_' + dateRange] : null);
+      return _dr ? Object.assign({}, p, _dr) : p;
+    });
+  }
+
   // Apply position filter (set by category buttons)
   if(leadersPosFilter === 'PITCHER') list = list.filter(p => isPitcherPos(p.primaryPos));
   if(leadersPosFilter === 'HITTER')  list = list.filter(p => !isPitcherPos(p.primaryPos));
@@ -4982,12 +4998,14 @@ let dateRangeCache = {};           // keyed by `${playerId}_${range}`
 let dateRangeFetching = false;
 
 function setDateRange(val){
+  // SETDATERANGE_RERENDER_V1
   dateRange = val;
   const sel = document.getElementById('daterange-select');
   if(val === 'season'){
     sel.classList.remove('daterange-active');
     renderTable();
     if(poolActive) renderPool();
+    if(typeof leadersActive !== 'undefined' && leadersActive && typeof renderLeaders === 'function') renderLeaders();
   } else {
     sel.classList.add('daterange-active');
     if(val === 'live'){
@@ -5002,6 +5020,8 @@ function setDateRange(val){
     // Fire both simultaneously — pool runs silently in background
     fetchDateRangeStats(val);
     fetchPoolDateRangeStats(val);
+    if(poolActive) renderPool();
+    if(typeof leadersActive !== 'undefined' && leadersActive && typeof renderLeaders === 'function') renderLeaders();
   }
 }
 
