@@ -133,6 +133,10 @@ td:nth-child(4){text-align:left}
 .pos-stack{display:grid;grid-template-columns:repeat(2, auto);gap:1px;justify-content:flex-start;align-items:center;width:auto}
 /* Uniform badge size — packed into a 2-wide grid (4 positions = 2x2 square). Sized to fit inside a ~56px column. */
 .pos-stack .pos-badge{font-size:9px;padding:1px 3px;min-width:18px;text-align:center;line-height:1.15;box-sizing:border-box}
+.pos-badge.pos-clickable{cursor:pointer;transition:transform 0.08s ease, box-shadow 0.08s ease}
+.pos-badge.pos-clickable:hover{transform:scale(1.12);box-shadow:0 0 0 1px rgba(0,0,0,0.35)}
+#cluster-chip{display:none;align-items:center;gap:2px;padding:3px 10px;margin-left:8px;border-radius:12px;background:#fff3b0;color:#5b4300;border:1px solid #d9b84a;font-size:11px;font-weight:600;cursor:pointer;user-select:none;white-space:nowrap}
+#cluster-chip:hover{background:#ffe97a}
 .player-col .name-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 
 .pos-SP{background:#1e3a5f;color:#60a5fa;border:1px solid #1e40af}
@@ -802,6 +806,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       <button class="filter-tab" onclick="setFilter('TOP25',this)">Top 25</button>
       <button class="filter-tab" onclick="setFilter('MOVERS',this)">Movers</button>
       <button class="filter-tab" id="adv-tab" onclick="toggleAdvancedMode(this)">⚡ Advanced</button>
+      <span id="cluster-chip" onclick="sortByPos(clusterByPos, event)" title="Click to exit position-cluster sort"></span>
     </div>
     <div class="filter-tabs">
       <button class="filter-tab" id="pool-tab" onclick="openPlayerPool()">⚾ Player Pool</button>
@@ -1361,6 +1366,7 @@ let savantPitchers = {};  // keyed by mlb_id
 let savantLoaded = false;
 let sortCol = 'rank';
 let sortDir = 1;
+let clusterByPos = null;   // When set to 'C'|'1B'|'2B'|... main list clusters by that position. null = normal sort.
 let filter = 'ALL';
 let teamFilter = 'ALL';
 let editingId = null;
@@ -1846,6 +1852,11 @@ function setFilter(f, el){
 }
 
 function sortBy(col){
+  // Column-header clicks always exit position-cluster mode so sorts stay predictable.
+  if(clusterByPos){
+    clusterByPos = null;
+    updateClusterChip();
+  }
   if(sortCol === col) sortDir *= -1;
   else {
     sortCol = col;
@@ -1865,6 +1876,33 @@ function sortBy(col){
   const arr = document.getElementById('arr-'+col);
   if(arr){ arr.textContent = sortDir===1?'↑':'↓'; arr.closest('th').classList.add('sorted'); }
   renderTable();
+}
+
+// Position-cluster sort (Matt's ask): click a position badge to group all eligible
+// players at that position together, sorted by Watch 101 rank within the cluster.
+// Click the same badge again (or any column header, or the status chip) to exit.
+function sortByPos(pos, event){
+  if(event) event.stopPropagation();
+  if(!pos) return;
+  if(clusterByPos === pos){
+    clusterByPos = null;   // toggle off
+  } else {
+    clusterByPos = pos;
+  }
+  updateClusterChip();
+  renderTable();
+}
+
+function updateClusterChip(){
+  const chip = document.getElementById('cluster-chip');
+  if(!chip) return;
+  if(clusterByPos){
+    chip.style.display = 'inline-flex';
+    chip.innerHTML = 'Clustered by <strong style="margin:0 4px">' + clusterByPos + '</strong> — click to clear';
+  } else {
+    chip.style.display = 'none';
+    chip.innerHTML = '';
+  }
 }
 
 const MLB_ORG_ABBR = {
@@ -1904,6 +1942,42 @@ function getFiltered(){
   if(filter==='TOP25') list = list.filter(p => p.rank && p.rank<=25);
   if(filter==='MOVERS') list = list.filter(p => p.move && p.move!=='');
   if(teamFilter !== 'ALL') list = list.filter(p => (p.team||'').toUpperCase() === teamFilter);
+
+  // --- Position-cluster mode (Matt's position-sort feature) ---
+  // When clusterByPos is set, we IGNORE the usual column sort and instead:
+  //   1. Put each player in a "cluster" = clicked pos if eligible there, else their primary position.
+  //   2. Order clusters by the best (lowest) W101 rank inside each cluster.
+  //   3. Within each cluster, sort by W101 rank ascending (#1 player of that pos first).
+  if(clusterByPos){
+    const clickPos = clusterByPos;
+    const getClusterKey = (p) => {
+      const elig = normalizePositions(p.positions || []);
+      if(elig.includes(clickPos)) return clickPos;                 // player IS eligible at clicked pos
+      return p.primaryPos || elig[0] || 'UTIL';                    // otherwise their own primary
+    };
+    // Compute the best W101 rank in each cluster so cluster order is stable.
+    const bestRankInCluster = {};
+    list.forEach(p => {
+      const k = getClusterKey(p);
+      const r = p.rank || 9999;
+      if(!(k in bestRankInCluster) || r < bestRankInCluster[k]) bestRankInCluster[k] = r;
+    });
+    list.sort((a,b) => {
+      const ka = getClusterKey(a), kb = getClusterKey(b);
+      if(ka !== kb){
+        // The clicked-pos cluster always floats to the top, regardless of best rank.
+        if(ka === clickPos) return -1;
+        if(kb === clickPos) return 1;
+        return (bestRankInCluster[ka] - bestRankInCluster[kb]);
+      }
+      // Within cluster: W101 rank ascending (tie-break: Yahoo rank)
+      const ra = a.rank || 9999, rb = b.rank || 9999;
+      if(ra !== rb) return ra - rb;
+      return (a.yahoo_rank || 9999) - (b.yahoo_rank || 9999);
+    });
+    return list;
+  }
+
   list.sort((a,b)=>{
     // Resolve virtual sort keys (e.g., 'sv_ev_h' = sort sv_ev, hitters only;
     // 'sv_ev_p' = sort sv_ev, pitchers only). Used by dual-click advanced columns.
@@ -2008,7 +2082,9 @@ function posBadgesColumn(positions){
   const unique = normalizePositions(positions);
   if(unique.length===0) return '<div class="pos-stack pos-one"><span class="stat-na">—</span></div>';
   const sizeClass = unique.length === 1 ? 'pos-one' : 'pos-many';
-  return `<div class="pos-stack ${sizeClass}">${unique.map(p=>`<span class="pos-badge pos-${p}">${p}</span>`).join('')}</div>`;
+  // Each badge is clickable → triggers sortByPos to cluster the list by that position.
+  // event.stopPropagation inside sortByPos prevents the row-click from firing.
+  return `<div class="pos-stack ${sizeClass}">${unique.map(p=>`<span class="pos-badge pos-clickable pos-${p}" onclick="sortByPos('${p}', event)" title="Cluster list by ${p}">${p}</span>`).join('')}</div>`;
 }
 
 function decimalAge(p){
