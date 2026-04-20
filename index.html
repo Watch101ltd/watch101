@@ -3013,6 +3013,47 @@ function drop(e,idx){
 }
 document.addEventListener('dragend',()=>{document.querySelectorAll('tr').forEach(r=>r.classList.remove('dragging','drag-over'));});
 
+// Edge auto-scroll during drag — scrolls page when cursor nears top/bottom of viewport.
+// Works for any HTML5 drag (Main List rows, personal-list rows, etc).
+// Uses setInterval rather than rAF because some browsers throttle rAF during drag ops.
+(function(){
+  const EDGE_ZONE = 100;    // px from edge where scroll kicks in
+  const MAX_STEP = 20;      // max px per tick at the very edge
+  const MIN_STEP = 4;       // floor so it doesn't crawl just inside the zone
+  const TICK_MS = 16;       // ~60fps
+  let intervalId = null;
+  let scrollDir = 0;        // -1 up, 0 none, +1 down
+  let scrollStep = 0;
+
+  function stopEdgeScroll(){
+    if(intervalId){ clearInterval(intervalId); intervalId = null; }
+    scrollDir = 0; scrollStep = 0;
+  }
+  function tick(){
+    if(!scrollDir){ stopEdgeScroll(); return; }
+    window.scrollBy(0, scrollDir * scrollStep);
+    if(document.documentElement){ document.documentElement.scrollTop += scrollDir * scrollStep; }
+    if(document.body){ document.body.scrollTop += scrollDir * scrollStep; }
+  }
+  document.addEventListener('dragover', function(e){
+    const y = e.clientY;
+    const h = window.innerHeight;
+    let dir = 0, step = 0;
+    if(y < EDGE_ZONE){
+      dir = -1;
+      step = Math.max(MIN_STEP, MAX_STEP * (1 - y/EDGE_ZONE));
+    } else if(y > h - EDGE_ZONE){
+      dir = 1;
+      step = Math.max(MIN_STEP, MAX_STEP * (1 - (h - y)/EDGE_ZONE));
+    }
+    scrollDir = dir; scrollStep = step;
+    if(dir !== 0 && !intervalId){ intervalId = setInterval(tick, TICK_MS); }
+    if(dir === 0 && intervalId){ stopEdgeScroll(); }
+  }, true); // capture phase so we always get it before inner handlers
+  document.addEventListener('dragend', stopEdgeScroll, true);
+  document.addEventListener('drop', stopEdgeScroll, true);
+})();
+
 // DUAL LIST VIEW
 let dualViewActive = false;
 let personalPlayers = [];
@@ -5620,11 +5661,16 @@ function renderProspects(){
 
   // Lazy-load stats for visible players in batches
   const unloaded = display.filter(p => !p.stats);
-  if(unloaded.length > 0){
+  if(unloaded.length > 0 && !window._prospectsLazyLoading){
+    window._prospectsLazyLoading = true;
     (async () => {
-      for(let i = 0; i < Math.min(unloaded.length, 50); i += 8){
-        await Promise.all(unloaded.slice(i, i+8).map(p => fetchProspectStats(p)));
-        renderProspects();
+      try {
+        for(let i = 0; i < Math.min(unloaded.length, 200); i += 8){
+          await Promise.all(unloaded.slice(i, i+8).map(p => fetchProspectStats(p)));
+          renderProspects();
+        }
+      } finally {
+        window._prospectsLazyLoading = false;
       }
     })();
   }
