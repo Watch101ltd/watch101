@@ -135,8 +135,8 @@ td:nth-child(4){text-align:left}
 .pos-stack .pos-badge{font-size:9px;padding:1px 3px;min-width:18px;text-align:center;line-height:1.15;box-sizing:border-box}
 .pos-badge.pos-clickable{cursor:pointer;transition:transform 0.08s ease, box-shadow 0.08s ease}
 .pos-badge.pos-clickable:hover{transform:scale(1.12);box-shadow:0 0 0 1px rgba(0,0,0,0.35)}
-#cluster-chip, #pool-cluster-chip{display:none;align-items:center;gap:2px;padding:3px 10px;margin-left:8px;border-radius:12px;background:#fff3b0;color:#5b4300;border:1px solid #d9b84a;font-size:11px;font-weight:600;cursor:pointer;user-select:none;white-space:nowrap}
-#cluster-chip:hover, #pool-cluster-chip:hover{background:#ffe97a}
+#cluster-chip, #pool-cluster-chip, #leaders-cluster-chip, #pros-cluster-chip{display:none;align-items:center;gap:2px;padding:3px 10px;margin-left:8px;border-radius:12px;background:#fff3b0;color:#5b4300;border:1px solid #d9b84a;font-size:11px;font-weight:600;cursor:pointer;user-select:none;white-space:nowrap}
+#cluster-chip:hover, #pool-cluster-chip:hover, #leaders-cluster-chip:hover, #pros-cluster-chip:hover{background:#ffe97a}
 .player-col .name-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 
 .pos-SP{background:#1e3a5f;color:#60a5fa;border:1px solid #1e40af}
@@ -1104,6 +1104,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <option value="30">Last 30 Days</option>
       </select>
       <button class="filter-tab" id="leaders-adv-tab" onclick="toggleLeadersAdvancedMode(this)">⚡ Advanced</button>
+      <span id="leaders-cluster-chip" onclick="sortLeadersByPos(leadersClusterByPos, event)" title="Click to exit position-cluster sort"></span>
       <div class="pool-status" id="leaders-status">Loading players...</div>
     </div>
 
@@ -1312,6 +1313,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
           style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:13px;color:var(--text);font-family:'Nunito Sans',sans-serif;outline:none;width:200px">
       </div>
       <button class="filter-tab" id="pros-adv-tab" onclick="toggleProspectsAdvancedMode(this)">⚡ Advanced</button>
+      <span id="pros-cluster-chip" onclick="sortProspectsByPos(prosClusterByPos, event)" title="Click to exit position-cluster sort"></span>
       <div class="pool-status" id="pros-status">Loading prospects...</div>
     </div>
 
@@ -2090,7 +2092,8 @@ function posBadgesColumn(positions, context){
   if(ctx === 'none'){
     return `<div class="pos-stack ${sizeClass}">${unique.map(p=>`<span class="pos-badge pos-${p}">${p}</span>`).join('')}</div>`;
   }
-  const handler = (ctx === 'pool') ? 'sortPoolByPos' : 'sortByPos';
+  const HANDLERS = { pool: 'sortPoolByPos', leaders: 'sortLeadersByPos', main: 'sortByPos' };
+  const handler = HANDLERS[ctx] || 'sortByPos';
   // Each badge is clickable → triggers the context-appropriate cluster sort.
   // event.stopPropagation inside the handler prevents the row-click from firing.
   return `<div class="pos-stack ${sizeClass}">${unique.map(p=>`<span class="pos-badge pos-clickable pos-${p}" onclick="${handler}('${p}', event)" title="Cluster list by ${p}">${p}</span>`).join('')}</div>`;
@@ -4264,6 +4267,7 @@ let leadersActive = false;
 let leadersSortCol = 'hr';
 let leadersSortDir = -1;
 let leadersPosFilter = 'ALL'; // 'ALL' | 'HITTER' | 'PITCHER'
+let leadersClusterByPos = null;   // League Leaders cluster state (independent of main/pool)
 var leadersScrollHandler = null;
 
 function openLeagueLeaders(){
@@ -4322,7 +4326,8 @@ function renderLeaders(){
 
   // Once stats are loaded, only keep players who have a value for the active stat column.
   // Resolve virtual sort keys (sv_ev_h / sv_ev_p) back to the real field before checking.
-  {
+  // Skip this filter when in cluster mode (we want ALL players in the cluster, not just ones with the active-stat value).
+  if(!leadersClusterByPos){
     let _filterKey = leadersSortCol;
     if(leadersSortCol.endsWith('_h') || leadersSortCol.endsWith('_p')) _filterKey = leadersSortCol.slice(0,-2);
     const _nonStatCols = ['name','team','primaryPos','bats','age','preseason_rank','yahoo_rank','roster_pct'];
@@ -4331,7 +4336,37 @@ function renderLeaders(){
     }
   }
 
+  // --- Leaders cluster-sort mode (click any position badge to group by it) ---
+  // Within-cluster sort = Yahoo rank (consistent with pool tab).
+  if(leadersClusterByPos){
+    const clickPos = leadersClusterByPos;
+    const getClusterKey = (p) => {
+      const elig = normalizePositions(p.positions || []);
+      if(elig.includes(clickPos)) return clickPos;
+      return p.primaryPos || elig[0] || 'UTIL';
+    };
+    const bestRankInCluster = {};
+    list.forEach(p => {
+      const k = getClusterKey(p);
+      const r = p.yahoo_rank || 9999;
+      if(!(k in bestRankInCluster) || r < bestRankInCluster[k]) bestRankInCluster[k] = r;
+    });
+    list.sort((a,b) => {
+      const ka = getClusterKey(a), kb = getClusterKey(b);
+      if(ka !== kb){
+        if(ka === clickPos) return -1;
+        if(kb === clickPos) return 1;
+        return (bestRankInCluster[ka] - bestRankInCluster[kb]);
+      }
+      const ra = a.yahoo_rank || 9999, rb = b.yahoo_rank || 9999;
+      if(ra !== rb) return ra - rb;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }
+
   list.sort((a,b)=>{
+    // Cluster mode already pre-sorted; leave the list alone.
+    if(leadersClusterByPos) return 0;
     // Resolve virtual sort keys (e.g., 'sv_ev_h' = sort sv_ev, hitters only;
     // 'sv_ev_p' = sort sv_ev, pitchers only). Used by dual-click advanced columns.
     let key = leadersSortCol;
@@ -4432,7 +4467,7 @@ function renderLeaders(){
     return `<tr class="${isAdded?'already-added':''}" data-mlb-id="${p.mlb_id}" style="cursor:pointer">
       <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
       <td class="player-col"><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}</div></td>
-      <td class="pos-cell">${posBadgesColumn(leaderPositions, 'none')}</td>
+      <td class="pos-cell">${posBadgesColumn(leaderPositions, 'leaders')}</td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
@@ -4476,6 +4511,11 @@ function renderLeaders(){
 
 // ---- SORT LEADERS BY COLUMN HEADER ----
 function sortLeaders(col){
+  // Column-header clicks exit leaders cluster mode so sorts stay predictable.
+  if(leadersClusterByPos){
+    leadersClusterByPos = null;
+    updateLeadersClusterChip();
+  }
   if(leadersSortCol === col){
     leadersSortDir *= -1;
   } else {
@@ -4491,6 +4531,32 @@ function sortLeaders(col){
   const arr = document.getElementById('larr-' + col);
   if(arr){ arr.textContent = leadersSortDir===1?'↑':'↓'; arr.closest('th').classList.add('sorted'); }
   renderLeaders();
+}
+
+// ---- LEADERS POSITION-CLUSTER SORT ----
+// Mirrors sortByPos() for the League Leaders tab. Within-cluster sort = Yahoo rank.
+function sortLeadersByPos(pos, event){
+  if(event) event.stopPropagation();
+  if(!pos) return;
+  if(leadersClusterByPos === pos){
+    leadersClusterByPos = null;   // toggle off
+  } else {
+    leadersClusterByPos = pos;
+  }
+  updateLeadersClusterChip();
+  renderLeaders();
+}
+
+function updateLeadersClusterChip(){
+  const chip = document.getElementById('leaders-cluster-chip');
+  if(!chip) return;
+  if(leadersClusterByPos){
+    chip.style.display = 'inline-flex';
+    chip.innerHTML = 'Clustered by <strong style="margin:0 4px">' + leadersClusterByPos + '</strong> — click to clear';
+  } else {
+    chip.style.display = 'none';
+    chip.innerHTML = '';
+  }
 }
 
 // ---- SORT LEADERS BY CATEGORY BUTTON (R, HR, ERA, etc.) ----
@@ -5196,6 +5262,7 @@ let prosSortCol = 'ops';
 let prosSortDir = -1;
 let prosFilterLevel = 'all';
 let prosFilterGroup = 'all';
+let prosClusterByPos = null;   // Prospects cluster state (independent of other tabs)
 
 function openProspects(){
   prospectsActive = true;
@@ -5241,6 +5308,11 @@ function filterProspects(val, el){
 }
 
 function sortProspects(col){
+  // Column-header clicks exit prospects cluster mode.
+  if(prosClusterByPos){
+    prosClusterByPos = null;
+    updateProspectsClusterChip();
+  }
   if(prosSortCol === col) prosSortDir *= -1;
   else {
     prosSortCol = col;
@@ -5252,6 +5324,34 @@ function sortProspects(col){
   const arr = document.getElementById('sparr-' + col);
   if(arr){ arr.textContent = prosSortDir === 1 ? '↑' : '↓'; arr.closest('th').classList.add('sorted'); }
   renderProspects();
+}
+
+// ---- PROSPECTS POSITION-CLUSTER SORT ----
+// Prospects have a single primaryPos each, so this is a simple two-bucket stable
+// sort: clicked-position prospects float to the top, within-bucket order preserves
+// whatever prosSortCol is active (stable sort keeps relative order for equal keys).
+function sortProspectsByPos(pos, event){
+  if(event) event.stopPropagation();
+  if(!pos) return;
+  if(prosClusterByPos === pos){
+    prosClusterByPos = null;   // toggle off
+  } else {
+    prosClusterByPos = pos;
+  }
+  updateProspectsClusterChip();
+  renderProspects();
+}
+
+function updateProspectsClusterChip(){
+  const chip = document.getElementById('pros-cluster-chip');
+  if(!chip) return;
+  if(prosClusterByPos){
+    chip.style.display = 'inline-flex';
+    chip.innerHTML = 'Clustered by <strong style="margin:0 4px">' + prosClusterByPos + '</strong> — click to clear';
+  } else {
+    chip.style.display = 'none';
+    chip.innerHTML = '';
+  }
 }
 
 async function loadProspects(){
@@ -5458,6 +5558,18 @@ function renderProspects(){
     return (av-bv)*prosSortDir;
   });
 
+  // --- Prospects cluster-sort (two-bucket stable re-sort) ---
+  // Click a prospect's position badge → all same-position prospects float to the top.
+  // The within-bucket order preserves whatever prosSortCol is active (stable sort).
+  if(prosClusterByPos){
+    const clickPos = prosClusterByPos;
+    list.sort((a,b) => {
+      const inA = (a.primaryPos === clickPos) ? 0 : 1;
+      const inB = (b.primaryPos === clickPos) ? 0 : 1;
+      return inA - inB;
+    });
+  }
+
   // Limit display to 200 unless searching
   const display = q ? list : list.slice(0, 200);
 
@@ -5481,7 +5593,7 @@ function renderProspects(){
     return `<tr class="${isAdded?'already-added':''}" data-mlb-id="${p.mlb_id}" style="cursor:pointer">
       <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
       <td class="player-col"><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span></div></td>
-      <td class="pos-cell"><span class="pos-badge ${posClass}">${p.primaryPos}</span></td>
+      <td class="pos-cell"><span class="pos-badge pos-clickable ${posClass}" onclick="sortProspectsByPos('${p.primaryPos}', event)" title="Cluster list by ${p.primaryPos}">${p.primaryPos}</span></td>
       <td class="team-cell">${p.team||na}</td>
       <td style="text-align:center"><span style="font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:600;color:${lvlColor};background:${lvlColor}22;border:1px solid ${lvlColor}55;border-radius:4px;padding:2px 6px">${p.level}</span></td>
       <td class="stat-cell">${decimalAge(p)}</td>
