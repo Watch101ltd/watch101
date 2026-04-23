@@ -3077,17 +3077,18 @@ async function exportXLSX(){
   if(window.showDirectoryPicker){
     const listId = (typeof currentListId !== 'undefined' && currentListId) ? currentListId : 'default';
     const listSlug = (typeof _activeListFileSlug === 'function') ? _activeListFileSlug() : 'MLB';
+    // Friendly readable list name from WATCH_LISTS — declared at try-block scope
+    // so both the folder-picker hint AND the JSON sidecar payload can see it.
+    let listName = listSlug;
+    try {
+      if(typeof WATCH_LISTS !== 'undefined'){
+        const def = WATCH_LISTS.find(l => l.id === listId);
+        if(def) listName = def.name;
+      }
+    } catch(e){}
     try {
       if(!_xlsxDirHandles[listId]){
         // Tell Matt/Dude WHICH subfolder to pick before the OS dialog opens.
-        // Friendly readable list name comes from WATCH_LISTS if available.
-        let listName = listSlug;
-        try {
-          if(typeof WATCH_LISTS !== 'undefined'){
-            const def = WATCH_LISTS.find(l => l.id === listId);
-            if(def) listName = def.name;
-          }
-        } catch(e){}
         const hint = `📂 Pick the FOLDER where the "${listName}" Excel files should save.\n\n` +
                      `For Watch 101 production:\n` +
                      `   W:\\Watch 101\\Fantasy Baseball\\List Data\\_Staging\\${listSlug}\n\n` +
