@@ -1460,11 +1460,26 @@ function switchActiveList(newId){
   if(titleEl) titleEl.textContent = list.name;
   const subEl = document.getElementById('active-list-subtitle');
   if(subEl) subEl.textContent = list.subtitle;
-  // Re-render all tabs that currently exist
-  try { renderTable && renderTable(); } catch(e){}
-  try { renderPool && renderPool(); } catch(e){}
-  try { renderLeaders && renderLeaders(); } catch(e){}
-  try { renderProspects && renderProspects(); } catch(e){}
+  // MULTILIST_SWITCH_RELOAD_V1 — fetch the newly-active list's data from the
+  // new /list/:listId endpoint (Apr 22, 2026). Previously the dropdown only
+  // changed the title cosmetically; now it actually re-fetches the data.
+  // loadData() handles the renders itself, so we don't need to call render*
+  // explicitly when it's available.
+  if(typeof loadData === 'function'){
+    try { loadData(); } catch(e){
+      console.warn('[MULTILIST_SWITCH_RELOAD_V1] loadData failed, falling back to local re-render:', e);
+      try { renderTable && renderTable(); } catch(e2){}
+      try { renderPool && renderPool(); } catch(e2){}
+      try { renderLeaders && renderLeaders(); } catch(e2){}
+      try { renderProspects && renderProspects(); } catch(e2){}
+    }
+  } else {
+    // loadData not defined yet — re-render whatever's in memory
+    try { renderTable && renderTable(); } catch(e){}
+    try { renderPool && renderPool(); } catch(e){}
+    try { renderLeaders && renderLeaders(); } catch(e){}
+    try { renderProspects && renderProspects(); } catch(e){}
+  }
 }
 function openListInfoOverlay(){
   const overlay = document.getElementById('list-info-overlay');
@@ -1501,30 +1516,73 @@ function uid(){ return Date.now().toString(36) + Math.random().toString(36).slic
 // Watch 101 NAS Server
 const SERVER_URL = 'https://phonic-nonreceptively-elida.ngrok-free.dev';
 
+// MULTILIST_LOAD_V1 — list-aware loader (Apr 22, 2026).
+// Fetches the active list's JSON from the new /list/:listId endpoint.
+// Falls back to the legacy /watchlist endpoint if currentListId is somehow missing.
+// Per-list localStorage cache keys so each list's offline copy is independent.
 async function loadData(){
-  document.getElementById('last-updated').textContent = 'Loading...';
+  const listId = (typeof currentListId !== 'undefined' && currentListId) ? currentListId : null;
+  const listName = (typeof getCurrentList === 'function') ? getCurrentList().name : 'list';
+  const lsKey   = listId ? ('fw101_v2_' + listId)    : 'fw101_v2';
+  const lsTime  = listId ? ('fw101_saved_' + listId) : 'fw101_saved';
+  const url     = listId ? `${SERVER_URL}/list/${listId}` : `${SERVER_URL}/watchlist`;
+
+  document.getElementById('last-updated').textContent = 'Loading ' + listName + '...';
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(`${SERVER_URL}/watchlist`, { signal: controller.signal, headers: {'ngrok-skip-browser-warning': 'true'} });
+    const res = await fetch(url, { signal: controller.signal, headers: {'ngrok-skip-browser-warning': 'true'} });
     clearTimeout(timeout);
+
     if(res.ok){
       const data = await res.json();
-      if(data.players && data.players.length > 0){
-        players = data.players;
-        document.getElementById('last-updated').textContent = data.saved ? 'Saved: ' + data.saved : 'Not yet saved';
+      // New /list/:listId responses include list_id + list_name + saved_at + filename + players.
+      // Legacy /watchlist responses are { players, saved }.
+      const playerArr = data.players || [];
+      const savedStr  = data.saved_at_local || data.saved_at || data.saved || null;
+
+      if(playerArr.length > 0){
+        players = playerArr;
+        const stamp = savedStr ? ('Approved: ' + savedStr) : 'Loaded';
+        document.getElementById('last-updated').textContent = listName + ' — ' + stamp;
+        try {
+          localStorage.setItem(lsKey, JSON.stringify(players));
+          if(savedStr) localStorage.setItem(lsTime, savedStr);
+        } catch(e){}
       } else {
-        document.getElementById('last-updated').textContent = 'No list yet — add players to get started';
+        // Empty list response (legacy /watchlist with no players)
+        document.getElementById('last-updated').textContent = listName + ' — empty';
       }
-    } else { throw new Error('Server error'); }
+    } else if(res.status === 404){
+      // /list/:listId returns 404 when no JSON has been approved into Production yet.
+      // This is the expected empty-state, NOT an error. Try localStorage fallback for
+      // whatever Matt was last working on in this list.
+      try { const d = localStorage.getItem(lsKey); if(d) players = JSON.parse(d); }catch(e2){}
+      const ts = localStorage.getItem(lsTime);
+      document.getElementById('last-updated').textContent = ts
+        ? (listName + ' — ⚠ no approved version yet (showing local: ' + ts + ')')
+        : (listName + ' — no approved version yet. Save to Excel to get started.');
+    } else {
+      throw new Error('Server returned HTTP ' + res.status);
+    }
   } catch(e) {
-    try { const d = localStorage.getItem('fw101_v2'); if(d) players = JSON.parse(d); }catch(e2){}
-    const ts = localStorage.getItem('fw101_saved');
-    document.getElementById('last-updated').textContent = ts ? '⚠ Offline — Saved: ' + ts : '⚠ Server offline';
+    // Server/network error — fall back to per-list localStorage cache
+    try { const d = localStorage.getItem(lsKey); if(d) players = JSON.parse(d); }catch(e2){}
+    const ts = localStorage.getItem(lsTime);
+    document.getElementById('last-updated').textContent = ts
+      ? (listName + ' — ⚠ Offline (local: ' + ts + ')')
+      : (listName + ' — ⚠ Server offline');
   }
   renderTable();
 }
+// /MULTILIST_LOAD_V1
 
+// MULTILIST_SAVE_V1 — Option B: localStorage-only auto-save (Apr 22, 2026).
+// In the multi-list world, the only path that promotes data to the server is the
+// Save to Excel button (which writes both .xlsx + .json to _Staging\<List>\ for
+// approval). saveData() is the in-browser autosave that runs after every edit,
+// and it now ONLY persists to localStorage so Matt's edits survive a browser
+// crash but DON'T bypass the staging/approval gate.
 async function saveData(){
   players.forEach(p => {
     if(p.prev_rank && p.rank && p.prev_rank !== p.rank){
@@ -1533,31 +1591,23 @@ async function saveData(){
     }
     p.prev_rank = p.rank;
   });
-  document.getElementById('last-updated').textContent = 'Saving...';
+
+  const listId   = (typeof currentListId !== 'undefined' && currentListId) ? currentListId : null;
+  const listName = (typeof getCurrentList === 'function') ? getCurrentList().name : 'list';
+  const lsKey    = listId ? ('fw101_v2_' + listId)    : 'fw101_v2';
+  const lsTime   = listId ? ('fw101_saved_' + listId) : 'fw101_saved';
+
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(`${SERVER_URL}/watchlist`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-      body: JSON.stringify({ players }),
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    if(res.ok){
-      const data = await res.json();
-      document.getElementById('last-updated').textContent = 'Saved: ' + data.saved;
-      localStorage.setItem('fw101_v2', JSON.stringify(players));
-      localStorage.setItem('fw101_saved', data.saved);
-    } else { throw new Error('Server error'); }
-  } catch(e) {
-    localStorage.setItem('fw101_v2', JSON.stringify(players));
+    localStorage.setItem(lsKey, JSON.stringify(players));
     const now = new Date().toLocaleString();
-    localStorage.setItem('fw101_saved', now);
-    document.getElementById('last-updated').textContent = '⚠ Saved locally (server offline): ' + now;
+    localStorage.setItem(lsTime, now);
+    document.getElementById('last-updated').textContent = listName + ' — local draft saved: ' + now + ' (use "Save to Excel" to publish)';
+  } catch(e) {
+    document.getElementById('last-updated').textContent = listName + ' — ⚠ could not save locally: ' + e.message;
   }
   renderTable();
 }
+// /MULTILIST_SAVE_V1
 
 // ── BASEBALL SAVANT INTEGRATION ──────────────────────────────────────────────
 // Fetches the expected stats & Statcast leaderboards once per session,
