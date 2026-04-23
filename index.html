@@ -1516,8 +1516,19 @@ function uid(){ return Date.now().toString(36) + Math.random().toString(36).slic
 // Watch 101 NAS Server
 const SERVER_URL = 'https://phonic-nonreceptively-elida.ngrok-free.dev';
 
+// STAGING_VS_PROD_V1 — pick the right endpoint based on what domain we're on (Apr 22, 2026).
+// GitHub = staging environment (reads from _Staging\<List>\ — sees works-in-progress)
+// Anything else (Cloudflare prod, custom domain, file://) = production
+//   (reads from Production\<List>\ — only approved stuff goes live)
+function _isStagingEnvironment(){
+  try {
+    const host = (window.location && window.location.hostname) || '';
+    return host.toLowerCase().includes('github');
+  } catch(e){ return false; }
+}
+
 // MULTILIST_LOAD_V1 — list-aware loader (Apr 22, 2026).
-// Fetches the active list's JSON from the new /list/:listId endpoint.
+// Fetches the active list's JSON from the new /list/:listId or /list-staging/:listId endpoint.
 // Falls back to the legacy /watchlist endpoint if currentListId is somehow missing.
 // Per-list localStorage cache keys so each list's offline copy is independent.
 async function loadData(){
@@ -1525,7 +1536,12 @@ async function loadData(){
   const listName = (typeof getCurrentList === 'function') ? getCurrentList().name : 'list';
   const lsKey   = listId ? ('fw101_v2_' + listId)    : 'fw101_v2';
   const lsTime  = listId ? ('fw101_saved_' + listId) : 'fw101_saved';
-  const url     = listId ? `${SERVER_URL}/list/${listId}` : `${SERVER_URL}/watchlist`;
+  // STAGING_VS_PROD_V1 — route to staging endpoint when on GitHub, production otherwise
+  const isStaging = _isStagingEnvironment();
+  const endpoint  = isStaging ? 'list-staging' : 'list';
+  const url       = listId ? `${SERVER_URL}/${endpoint}/${listId}` : `${SERVER_URL}/watchlist`;
+  const envLabel  = isStaging ? 'STAGING' : 'PROD';
+  console.log('[STAGING_VS_PROD_V1] loading', listId, 'from', envLabel, '→', url);
 
   document.getElementById('last-updated').textContent = 'Loading ' + listName + '...';
   try {
@@ -1543,8 +1559,11 @@ async function loadData(){
 
       if(playerArr.length > 0){
         players = playerArr;
-        const stamp = savedStr ? ('Approved: ' + savedStr) : 'Loaded';
-        document.getElementById('last-updated').textContent = listName + ' — ' + stamp;
+        // STAGING_VS_PROD_V1 — different label depending on where the data came from
+        const stampWord = isStaging ? 'Staged:' : 'Approved:';
+        const stamp = savedStr ? (stampWord + ' ' + savedStr) : 'Loaded';
+        const envBadge = isStaging ? ' [STAGING]' : '';
+        document.getElementById('last-updated').textContent = listName + envBadge + ' — ' + stamp;
         try {
           localStorage.setItem(lsKey, JSON.stringify(players));
           if(savedStr) localStorage.setItem(lsTime, savedStr);
@@ -1555,13 +1574,15 @@ async function loadData(){
       }
     } else if(res.status === 404){
       // /list/:listId returns 404 when no JSON has been approved into Production yet.
-      // This is the expected empty-state, NOT an error. Try localStorage fallback for
-      // whatever Matt was last working on in this list.
+      // /list-staging/:listId returns 404 when nothing has been saved to staging yet.
+      // Either way, fall back to localStorage for whatever was last in memory.
       try { const d = localStorage.getItem(lsKey); if(d) players = JSON.parse(d); }catch(e2){}
       const ts = localStorage.getItem(lsTime);
+      const envBadge = isStaging ? ' [STAGING]' : '';
+      const noun = isStaging ? 'staged' : 'approved';
       document.getElementById('last-updated').textContent = ts
-        ? (listName + ' — ⚠ no approved version yet (showing local: ' + ts + ')')
-        : (listName + ' — no approved version yet. Save to Excel to get started.');
+        ? (listName + envBadge + ' — ⚠ no ' + noun + ' version yet (showing local: ' + ts + ')')
+        : (listName + envBadge + ' — no ' + noun + ' version yet. Save to Excel to get started.');
     } else {
       throw new Error('Server returned HTTP ' + res.status);
     }
