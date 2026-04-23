@@ -3312,13 +3312,35 @@ async function exportXLSX(){
           _xlsxDirHandles[listId] = null;
         }
       }
+      // PERLIST_FOLDERS_V3 (2026-04-23) — PROACTIVE stale-handle check.
+      // Before we even try to write, test the handle by attempting to resolve
+      // a trivial operation. If it throws InvalidStateError / NotFoundError /
+      // NotReadableError, the handle is dead — wipe it NOW so the code below
+      // shows the picker inside the same user gesture (the original button click).
+      // This avoids Chrome's "must be handling a user gesture" SecurityError
+      // that hits if we try to open the picker after an alert() breaks the gesture.
+      if(_xlsxDirHandles[listId]){
+        try {
+          // queryPermission is a no-op that doesn't require a user gesture but
+          // DOES throw InvalidStateError if the underlying handle is stale.
+          await _xlsxDirHandles[listId].queryPermission({mode: 'readwrite'});
+          // Also try to resolve it as a directory — cheap sanity check.
+          if(_xlsxDirHandles[listId].values){
+            const iter = _xlsxDirHandles[listId].values();
+            await iter.next(); // Just peek at one entry. If stale, throws here.
+          }
+        } catch(staleErr){
+          console.warn('[PERLIST_FOLDERS_V2] proactive stale-handle check FAILED:', staleErr && staleErr.name, staleErr && staleErr.message);
+          _xlsxDirHandles[listId] = null;
+          try { await _idbDelHandle(listId); console.log('[PERLIST_FOLDERS_V2] wiped stale handle proactively for', listId); }
+          catch(delErr){ console.warn('[PERLIST_FOLDERS_V2] could not wipe stale handle from IDB:', delErr); }
+        }
+      }
       if(!_xlsxDirHandles[listId]){
-        // Tell Matt/Dude WHICH subfolder to pick before the OS dialog opens.
-        const hint = `📂 Pick the FOLDER where the "${listName}" files should save.\n\n` +
-                     `For Watch 101 production:\n` +
-                     `   W:\\Watch 101\\Fantasy Baseball\\List Data\\_Staging\\${listSlug}\n\n` +
-                     `(You should only have to do this ONCE per list — it'll remember across reloads.)`;
-        alert(hint);
+        // No alert() here — alerts break Chrome's user-gesture window and the
+        // picker won't open. Just open the picker. Users figure out what folder
+        // to pick from the title bar and the tooltip on the "Forget Folder" button.
+        console.log('[PERLIST_FOLDERS_V2] opening folder picker for', listId, '— pick', listSlug, 'staging folder');
         _xlsxDirHandles[listId] = await window.showDirectoryPicker({
           id: 'watch101-save-' + listId,
           mode: 'readwrite',
@@ -3379,105 +3401,20 @@ async function exportXLSX(){
       return;
     } catch(err){
       if(err.name === 'AbortError') return; // user cancelled — do nothing
-
-      // PERLIST_FOLDERS_V3 AUTO-RECOVERY (2026-04-23) — when the saved folder
-      // handle goes stale (Synology moved/renamed the folder, browser restart
-      // re-serialized the handle wrong, OS cached state got out of sync), the
-      // File System Access API throws InvalidStateError or NotFoundError.
-      // Instead of silently dumping to Downloads, we: (1) nuke the dead handle,
-      // (2) tell the user what happened, (3) reopen the folder picker so they
-      // can re-pick the same folder, (4) retry the full save with the fresh
-      // handle. Only if the RETRY also fails do we fall through to Downloads.
-      const STALE_HANDLE_ERRORS = ['InvalidStateError', 'NotFoundError', 'NotReadableError'];
-      const isStaleHandle = err && STALE_HANDLE_ERRORS.indexOf(err.name) !== -1;
-
+      // Something went wrong during the save. Log everything; the proactive
+      // stale-handle check above should already have prevented the common case.
+      // Wipe the handle defensively so the NEXT Save to Excel click re-picks cleanly.
       console.error('[PERLIST_FOLDERS_V2] save failed:', err);
       console.error('[PERLIST_FOLDERS_V2] err.name:', err && err.name);
       console.error('[PERLIST_FOLDERS_V2] err.message:', err && err.message);
-      console.error('[PERLIST_FOLDERS_V2] err.stack:', err && err.stack);
       console.error('[PERLIST_FOLDERS_V2] listId was:', listId, 'listSlug was:', listSlug);
-      console.error('[PERLIST_FOLDERS_V2] stale-handle?', isStaleHandle);
-
-      // Wipe the dead handle from memory AND IDB no matter what — it's dead either way.
       _xlsxDirHandles[listId] = null;
-      try { await _idbDelHandle(listId); console.log('[PERLIST_FOLDERS_V2] wiped dead handle for', listId, 'from IDB'); }
-      catch(delErr){ console.warn('[PERLIST_FOLDERS_V2] could not wipe dead handle from IDB:', delErr); }
-
-      if(isStaleHandle){
-        // Tell the user what's happening, then re-prompt the picker and retry ONCE.
-        alert('📂 Your saved "' + listName + '" folder got out of sync\n' +
-              '(error: ' + err.name + ').\n\n' +
-              'Next click: pick the folder again — same one as before.\n\n' +
-              'For Watch 101 staging:\n' +
-              '   W:\\Watch 101\\Fantasy Baseball\\List Data\\_Staging\\' + listSlug + '\n\n' +
-              'After this re-pick, future saves will work normally.');
-        try {
-          // Re-prompt the picker, persist the fresh handle, retry the full write.
-          _xlsxDirHandles[listId] = await window.showDirectoryPicker({
-            id: 'watch101-save-' + listId,
-            mode: 'readwrite',
-            startIn: 'documents'
-          });
-          try {
-            await _idbSetHandle(listId, _xlsxDirHandles[listId]);
-            console.log('[PERLIST_FOLDERS_V2] persisted fresh handle after recovery for', listId);
-          } catch(e){ console.warn('[PERLIST_FOLDERS_V2] could not persist recovered handle:', e); }
-
-          // Retry the XLSX + JSON write with the fresh handle.
-          const fileHandle2 = await _xlsxDirHandles[listId].getFileHandle(fileName, {create:true});
-          const writable2 = await fileHandle2.createWritable();
-          const wbArray2 = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-          await writable2.write(new Blob([wbArray2], {type:'application/octet-stream'}));
-          await writable2.close();
-
-          // JSON sidecar on retry.
-          try {
-            const jsonName2 = fileName.replace(/\.xlsx$/i, '.json');
-            const jsonPayload2 = {
-              list_id: (typeof currentListId !== 'undefined' && currentListId) ? currentListId : null,
-              list_name: listName,
-              saved_at: new Date().toISOString(),
-              saved_at_local: new Date().toLocaleString(),
-              source: 'tracker exportXLSX RECOVERY (paired with ' + fileName + ')',
-              player_count: players.length,
-              players: players,
-            };
-            const jsonHandle2 = await _xlsxDirHandles[listId].getFileHandle(jsonName2, {create:true});
-            const jsonWritable2 = await jsonHandle2.createWritable();
-            await jsonWritable2.write(new Blob([JSON.stringify(jsonPayload2, null, 2)], {type:'application/json'}));
-            await jsonWritable2.close();
-            console.log('[PERLIST_FOLDERS_V2] RECOVERY wrote ' + jsonName2 + ' next to ' + fileName);
-          } catch(jsonErr2){
-            console.error('[PERLIST_FOLDERS_V2] RECOVERY JSON sidecar failed:', jsonErr2);
-            alert('⚠ Excel saved after recovery, but the JSON sidecar failed.\n\n' +
-                  'The list will not appear on the live site until both files are approved.\n' +
-                  'Error: ' + jsonErr2.message);
-          }
-
-          const btn2 = document.querySelector('button[onclick="exportXLSX()"]');
-          if(btn2){ const orig=btn2.textContent; btn2.textContent='✅ Saved to ' + listSlug + ' (recovered)!'; setTimeout(()=>btn2.textContent=orig, 2500); }
-          console.log('[PERLIST_FOLDERS_V2] auto-recovery succeeded for', listId);
-          return; // DONE — do NOT fall through to Downloads.
-        } catch(recoveryErr){
-          if(recoveryErr.name === 'AbortError'){
-            console.warn('[PERLIST_FOLDERS_V2] user cancelled the recovery folder-pick');
-            alert('Recovery cancelled. Nothing was saved.\n\n' +
-                  'Click Save to Excel again when you\'re ready to re-pick the folder.');
-            return; // Don't dump to Downloads just because they cancelled.
-          }
-          console.error('[PERLIST_FOLDERS_V2] auto-recovery FAILED:', recoveryErr);
-          alert('⚠ Auto-recovery failed.\n\n' +
-                'Error: ' + recoveryErr.name + ' — ' + recoveryErr.message + '\n\n' +
-                'Falling back to browser Downloads. File will land in your Downloads folder.');
-          // fall through to Downloads below
-        }
-      } else {
-        // Not a stale-handle error — something else broke. Tell the user plainly.
-        alert('⚠ Save to Excel: folder-picker path FAILED.\n\n' +
-              'Error: ' + ((err && err.name) || 'Unknown') + ' — ' + ((err && err.message) || '') + '\n\n' +
-              'Falling back to browser Downloads (no JSON sidecar will be written).\n' +
-              'Open DevTools (F12) → Console tab for the full error so Walter can diagnose.');
-      }
+      try { await _idbDelHandle(listId); console.log('[PERLIST_FOLDERS_V2] wiped handle for', listId, 'after save failure'); }
+      catch(delErr){ console.warn('[PERLIST_FOLDERS_V2] could not wipe handle from IDB:', delErr); }
+      alert('⚠ Save to Excel hit an error and fell back to your Downloads folder.\n\n' +
+            'Error: ' + ((err && err.name) || 'Unknown') + ' — ' + ((err && err.message) || '') + '\n\n' +
+            'Click Save to Excel again — it will re-prompt for the folder and should work this time.');
+      // fall through to Downloads fallback below so the data is at least NOT lost
     }
   }
   // Fallback: standard browser download (no JSON sidecar in this branch — File System
