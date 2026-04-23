@@ -3061,10 +3061,97 @@ async function enrichImportedPlayers(){
   }
 }
 
-// File System Access API — remembers the chosen save folder across saves this session
+// File System Access API — remembers the chosen save folder across saves
 // PERLIST_FOLDERS_V1 — per-list folder handles (one remembered folder per Watch List)
 let _xlsxDirHandles = {}; // keyed by currentListId, value is FileSystemDirectoryHandle
 let _xlsxDirHandle = null; // legacy single-folder fallback (kept for non-multilist code paths)
+
+// PERLIST_FOLDERS_V2 — IndexedDB persistence for folder handles (Apr 22, 2026).
+// Pre-V2: handles lived only in JS memory and died on every page reload, so the
+// folder picker reappeared every save. Now: handles are saved to IndexedDB
+// (which CAN store FileSystemDirectoryHandle objects) and restored on page load.
+// User picks the folder ONCE per list, ever — survives reloads, browser restarts,
+// and computer reboots.
+//
+// Browser permission caveat: even with the handle restored, the browser may have
+// silently expired its permission to actually USE the folder. We re-verify with
+// queryPermission() and only re-prompt if the permission is gone.
+
+const _IDB_DB_NAME = 'watch101-folders';
+const _IDB_STORE   = 'dirHandles';
+const _IDB_VERSION = 1;
+
+function _openIdb(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(_IDB_DB_NAME, _IDB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(_IDB_STORE)){
+        db.createObjectStore(_IDB_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function _idbGetHandle(listId){
+  try {
+    const db = await _openIdb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(_IDB_STORE, 'readonly');
+      const store = tx.objectStore(_IDB_STORE);
+      const req = store.get(listId);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch(e){ console.warn('[PERLIST_FOLDERS_V2] _idbGetHandle failed:', e); return null; }
+}
+
+async function _idbSetHandle(listId, handle){
+  try {
+    const db = await _openIdb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(_IDB_STORE, 'readwrite');
+      const store = tx.objectStore(_IDB_STORE);
+      const req = store.put(handle, listId);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  } catch(e){ console.warn('[PERLIST_FOLDERS_V2] _idbSetHandle failed:', e); }
+}
+
+// Verify the handle still has read+write permission, re-prompt politely if not.
+// Returns true if usable, false if user denied.
+async function _ensureHandlePermission(handle){
+  if(!handle || !handle.queryPermission) return true; // older browsers — assume OK
+  const opts = { mode: 'readwrite' };
+  try {
+    let perm = await handle.queryPermission(opts);
+    if(perm === 'granted') return true;
+    perm = await handle.requestPermission(opts);
+    return perm === 'granted';
+  } catch(e){
+    console.warn('[PERLIST_FOLDERS_V2] permission check failed:', e);
+    return false;
+  }
+}
+
+// On script load, restore handles for all six lists from IndexedDB into the
+// in-memory map. Runs in background — exportXLSX still falls through to the
+// picker if the restore hasn't finished yet (rare race condition).
+(async function _restoreFolderHandlesFromIdb(){
+  if(!('indexedDB' in window)) return;
+  if(typeof WATCH_LISTS === 'undefined') return;
+  for(const list of WATCH_LISTS){
+    const handle = await _idbGetHandle(list.id);
+    if(handle){
+      _xlsxDirHandles[list.id] = handle;
+      console.log('[PERLIST_FOLDERS_V2] restored folder handle for', list.id);
+    }
+  }
+})();
+// /PERLIST_FOLDERS_V2
 
 function _buildXLSXWorkbook(){
   const headers = ['Rank','Player','Positions','Team','Age','Bats','Yahoo Rank','Roster %',
@@ -3137,18 +3224,38 @@ async function exportXLSX(){
       }
     } catch(e){}
     try {
+      // PERLIST_FOLDERS_V2 — try the persisted handle from IndexedDB before showing the picker.
+      // If we have a remembered handle but its permission has expired, ask for permission
+      // (a small confirmation prompt, NOT the full folder picker). Only show the full picker
+      // if we have no handle at all OR the user denied the permission re-grant.
+      if(_xlsxDirHandles[listId]){
+        const stillOk = await _ensureHandlePermission(_xlsxDirHandles[listId]);
+        if(!stillOk){
+          console.warn('[PERLIST_FOLDERS_V2] permission denied for', listId, '— forcing re-pick');
+          _xlsxDirHandles[listId] = null;
+        }
+      }
       if(!_xlsxDirHandles[listId]){
         // Tell Matt/Dude WHICH subfolder to pick before the OS dialog opens.
-        const hint = `📂 Pick the FOLDER where the "${listName}" Excel files should save.\n\n` +
+        const hint = `📂 Pick the FOLDER where the "${listName}" files should save.\n\n` +
                      `For Watch 101 production:\n` +
                      `   W:\\Watch 101\\Fantasy Baseball\\List Data\\_Staging\\${listSlug}\n\n` +
-                     `(You only have to do this once per list — it'll remember.)`;
+                     `(You should only have to do this ONCE per list — it'll remember across reloads.)`;
         alert(hint);
         _xlsxDirHandles[listId] = await window.showDirectoryPicker({
           id: 'watch101-save-' + listId,
           mode: 'readwrite',
           startIn: 'documents'
         });
+        // PERLIST_FOLDERS_V2 — persist the freshly-picked handle to IndexedDB so it
+        // survives page reloads, browser restarts, computer reboots. From now on this
+        // user should never see the picker for this list again.
+        try {
+          await _idbSetHandle(listId, _xlsxDirHandles[listId]);
+          console.log('[PERLIST_FOLDERS_V2] persisted folder handle for', listId);
+        } catch(e){
+          console.warn('[PERLIST_FOLDERS_V2] could not persist handle:', e);
+        }
       }
       const fileHandle = await _xlsxDirHandles[listId].getFileHandle(fileName, {create:true});
       const writable = await fileHandle.createWritable();
