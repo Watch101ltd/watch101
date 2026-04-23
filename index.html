@@ -1601,6 +1601,15 @@ async function loadData(){
       : (listName + ' — ⚠ Server offline');
   }
   renderTable();
+
+  // YAHOO_AUTOSYNC_V1 (April 24, 2026) — fire Yahoo sync automatically after any
+  // successful list load. Routes through the Cloudflare Cache Worker so the hit
+  // is instant (cached) and Yahoo never sees per-user traffic. No OAuth status
+  // check needed — the Worker + NAS handle auth server-to-server. Fires even on
+  // the localStorage fallback path since every path in loadData() ends here.
+  if(players && players.length > 0){
+    syncYahooData(false).catch(e => console.error('[YAHOO_AUTOSYNC_V1] auto-sync failed:', e));
+  }
 }
 // /MULTILIST_LOAD_V1
 
@@ -1901,7 +1910,13 @@ function yahooButtonClick(){
 
 let yahooSyncing = false;
 async function syncYahooData(manual = false){
-  if(!yahooConnected || players.length === 0) return;
+  // YAHOO_AUTOSYNC_V1 (April 24, 2026) — removed `!yahooConnected` gate.
+  // The Cloudflare Worker + NAS handle Yahoo OAuth server-to-server now,
+  // so the browser doesn't need a Yahoo login session. The `yahooConnected`
+  // flag was a leftover from the old architecture where the browser talked
+  // to Yahoo directly. Keeping the players-length check (can't apply Yahoo
+  // data if there are no players).
+  if(players.length === 0) return;
   if(yahooSyncing && !manual) return;
   yahooSyncing = true;
   const btn = document.getElementById('yahoo-btn');
