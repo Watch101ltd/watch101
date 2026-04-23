@@ -3363,12 +3363,26 @@ async function exportXLSX(){
       return;
     } catch(err){
       if(err.name === 'AbortError') return; // user cancelled — do nothing
+      // PERLIST_FOLDERS_V2 DIAGNOSTIC (2026-04-23) — make the silent fallback LOUD
+      // so Dude + Walter can see exactly why the folder-picker save is failing instead
+      // of quietly dumping the file into Downloads. Log everything we know about the
+      // error, then warn the user before the Downloads fallback fires.
+      console.error('[PERLIST_FOLDERS_V2] save failed:', err);
+      console.error('[PERLIST_FOLDERS_V2] err.name:', err && err.name);
+      console.error('[PERLIST_FOLDERS_V2] err.message:', err && err.message);
+      console.error('[PERLIST_FOLDERS_V2] err.stack:', err && err.stack);
+      console.error('[PERLIST_FOLDERS_V2] listId was:', listId, 'listSlug was:', listSlug);
+      alert('⚠ Save to Excel: folder-picker path FAILED.\n\n' +
+            'Error: ' + ((err && err.name) || 'Unknown') + ' — ' + ((err && err.message) || '') + '\n\n' +
+            'Falling back to browser Downloads (no JSON sidecar will be written).\n' +
+            'Open DevTools (F12) → Console tab for the full error so Walter can diagnose.');
       _xlsxDirHandles[listId] = null; // permission expired or error — fall through to download
     }
   }
   // Fallback: standard browser download (no JSON sidecar in this branch — File System
   // Access API is required to write the JSON to the same folder. Browsers without it
   // get the .xlsx download only; user has to manually export JSON some other way.)
+  console.warn('[PERLIST_FOLDERS_V2] using Downloads fallback. showDirectoryPicker available?', !!window.showDirectoryPicker);
   XLSX.writeFile(wb, fileName);
 }
 
