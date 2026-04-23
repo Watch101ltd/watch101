@@ -3104,15 +3104,52 @@ async function exportXLSX(){
       const wbArray = XLSX.write(wb, {bookType:'xlsx', type:'array'});
       await writable.write(new Blob([wbArray], {type:'application/octet-stream'}));
       await writable.close();
+
+      // JSON_SIDECAR_V1 — write a paired .json file next to the .xlsx (Apr 22, 2026).
+      // The .xlsx is for Matt to eyeball; the .json is what the NAS server will serve
+      // once you approve and move both files from _Staging\<List>\ to Production\<List>\.
+      // Same base filename, same folder, same timestamp — they're siblings.
+      try {
+        const jsonName = fileName.replace(/\.xlsx$/i, '.json');
+        const jsonPayload = {
+          list_id: (typeof currentListId !== 'undefined' && currentListId) ? currentListId : null,
+          list_name: listName,
+          saved_at: new Date().toISOString(),
+          saved_at_local: new Date().toLocaleString(),
+          source: 'tracker exportXLSX (paired with ' + fileName + ')',
+          player_count: players.length,
+          players: players,
+        };
+        const jsonHandle = await _xlsxDirHandles[listId].getFileHandle(jsonName, {create:true});
+        const jsonWritable = await jsonHandle.createWritable();
+        await jsonWritable.write(new Blob(
+          [JSON.stringify(jsonPayload, null, 2)],
+          {type:'application/json'}
+        ));
+        await jsonWritable.close();
+        console.log('[JSON_SIDECAR_V1] wrote ' + jsonName + ' next to ' + fileName);
+      } catch(jsonErr){
+        // Don't kill the whole save if the JSON sidecar fails — Excel already saved.
+        // Just log and tell the user.
+        console.error('[JSON_SIDECAR_V1] failed to write JSON sidecar:', jsonErr);
+        alert('⚠ Excel saved, but the JSON sidecar failed to write.\n\n' +
+              'The list will not appear on the live site until both files are approved.\n' +
+              'Try saving again, or check the browser console for details.\n\n' +
+              'Error: ' + jsonErr.message);
+      }
+      // /JSON_SIDECAR_V1
+
       const btn = document.querySelector('button[onclick="exportXLSX()"]');
-      if(btn){ const orig=btn.textContent; btn.textContent='✅ Saved to ' + listSlug + '!'; setTimeout(()=>btn.textContent=orig, 2000); }
+      if(btn){ const orig=btn.textContent; btn.textContent='✅ Saved to ' + listSlug + ' (xlsx + json)!'; setTimeout(()=>btn.textContent=orig, 2500); }
       return;
     } catch(err){
       if(err.name === 'AbortError') return; // user cancelled — do nothing
       _xlsxDirHandles[listId] = null; // permission expired or error — fall through to download
     }
   }
-  // Fallback: standard browser download
+  // Fallback: standard browser download (no JSON sidecar in this branch — File System
+  // Access API is required to write the JSON to the same folder. Browsers without it
+  // get the .xlsx download only; user has to manually export JSON some other way.)
   XLSX.writeFile(wb, fileName);
 }
 
