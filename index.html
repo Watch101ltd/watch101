@@ -891,6 +891,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     <button class="btn btn-outline" id="undo-btn" onclick="undoLastMove()" title="Undo last drag-and-drop (Ctrl+Z)" disabled style="opacity:0.4;cursor:not-allowed">↶ Undo</button>
     <button class="btn btn-outline" onclick="exportCSV()" title="Export as CSV file">📤 CSV</button>
     <button class="btn btn-outline" onclick="exportXLSX()" title="Save a copy as an Excel spreadsheet">💾 Save to Excel</button>
+    <button class="btn btn-outline" onclick="forgetSavedFolder()" title="Forget the saved folder for this list — the next Save to Excel will ask you to pick a folder again. Use if the folder got moved or renamed.">🗑️ Forget Folder</button>
     <button class="btn btn-outline" onclick="triggerImport()" title="Import from CSV or Excel">📥 Import</button>
     <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImport(event)">
     <button id="present-btn" class="btn btn-outline" onclick="togglePresentMode()" title="Presentation Mode">🔍 Present</button>
@@ -3145,6 +3146,21 @@ async function _idbSetHandle(listId, handle){
   } catch(e){ console.warn('[PERLIST_FOLDERS_V2] _idbSetHandle failed:', e); }
 }
 
+// Delete a stored folder handle for a list. Used when a handle goes stale
+// (InvalidStateError / NotFoundError) and when the user clicks "Forget saved folder."
+async function _idbDelHandle(listId){
+  try {
+    const db = await _openIdb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(_IDB_STORE, 'readwrite');
+      const store = tx.objectStore(_IDB_STORE);
+      const req = store.delete(listId);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  } catch(e){ console.warn('[PERLIST_FOLDERS_V2] _idbDelHandle failed:', e); }
+}
+
 // Verify the handle still has read+write permission, re-prompt politely if not.
 // Returns true if usable, false if user denied.
 async function _ensureHandlePermission(handle){
@@ -3363,20 +3379,105 @@ async function exportXLSX(){
       return;
     } catch(err){
       if(err.name === 'AbortError') return; // user cancelled — do nothing
-      // PERLIST_FOLDERS_V2 DIAGNOSTIC (2026-04-23) — make the silent fallback LOUD
-      // so Dude + Walter can see exactly why the folder-picker save is failing instead
-      // of quietly dumping the file into Downloads. Log everything we know about the
-      // error, then warn the user before the Downloads fallback fires.
+
+      // PERLIST_FOLDERS_V3 AUTO-RECOVERY (2026-04-23) — when the saved folder
+      // handle goes stale (Synology moved/renamed the folder, browser restart
+      // re-serialized the handle wrong, OS cached state got out of sync), the
+      // File System Access API throws InvalidStateError or NotFoundError.
+      // Instead of silently dumping to Downloads, we: (1) nuke the dead handle,
+      // (2) tell the user what happened, (3) reopen the folder picker so they
+      // can re-pick the same folder, (4) retry the full save with the fresh
+      // handle. Only if the RETRY also fails do we fall through to Downloads.
+      const STALE_HANDLE_ERRORS = ['InvalidStateError', 'NotFoundError', 'NotReadableError'];
+      const isStaleHandle = err && STALE_HANDLE_ERRORS.indexOf(err.name) !== -1;
+
       console.error('[PERLIST_FOLDERS_V2] save failed:', err);
       console.error('[PERLIST_FOLDERS_V2] err.name:', err && err.name);
       console.error('[PERLIST_FOLDERS_V2] err.message:', err && err.message);
       console.error('[PERLIST_FOLDERS_V2] err.stack:', err && err.stack);
       console.error('[PERLIST_FOLDERS_V2] listId was:', listId, 'listSlug was:', listSlug);
-      alert('⚠ Save to Excel: folder-picker path FAILED.\n\n' +
-            'Error: ' + ((err && err.name) || 'Unknown') + ' — ' + ((err && err.message) || '') + '\n\n' +
-            'Falling back to browser Downloads (no JSON sidecar will be written).\n' +
-            'Open DevTools (F12) → Console tab for the full error so Walter can diagnose.');
-      _xlsxDirHandles[listId] = null; // permission expired or error — fall through to download
+      console.error('[PERLIST_FOLDERS_V2] stale-handle?', isStaleHandle);
+
+      // Wipe the dead handle from memory AND IDB no matter what — it's dead either way.
+      _xlsxDirHandles[listId] = null;
+      try { await _idbDelHandle(listId); console.log('[PERLIST_FOLDERS_V2] wiped dead handle for', listId, 'from IDB'); }
+      catch(delErr){ console.warn('[PERLIST_FOLDERS_V2] could not wipe dead handle from IDB:', delErr); }
+
+      if(isStaleHandle){
+        // Tell the user what's happening, then re-prompt the picker and retry ONCE.
+        alert('📂 Your saved "' + listName + '" folder got out of sync\n' +
+              '(error: ' + err.name + ').\n\n' +
+              'Next click: pick the folder again — same one as before.\n\n' +
+              'For Watch 101 staging:\n' +
+              '   W:\\Watch 101\\Fantasy Baseball\\List Data\\_Staging\\' + listSlug + '\n\n' +
+              'After this re-pick, future saves will work normally.');
+        try {
+          // Re-prompt the picker, persist the fresh handle, retry the full write.
+          _xlsxDirHandles[listId] = await window.showDirectoryPicker({
+            id: 'watch101-save-' + listId,
+            mode: 'readwrite',
+            startIn: 'documents'
+          });
+          try {
+            await _idbSetHandle(listId, _xlsxDirHandles[listId]);
+            console.log('[PERLIST_FOLDERS_V2] persisted fresh handle after recovery for', listId);
+          } catch(e){ console.warn('[PERLIST_FOLDERS_V2] could not persist recovered handle:', e); }
+
+          // Retry the XLSX + JSON write with the fresh handle.
+          const fileHandle2 = await _xlsxDirHandles[listId].getFileHandle(fileName, {create:true});
+          const writable2 = await fileHandle2.createWritable();
+          const wbArray2 = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+          await writable2.write(new Blob([wbArray2], {type:'application/octet-stream'}));
+          await writable2.close();
+
+          // JSON sidecar on retry.
+          try {
+            const jsonName2 = fileName.replace(/\.xlsx$/i, '.json');
+            const jsonPayload2 = {
+              list_id: (typeof currentListId !== 'undefined' && currentListId) ? currentListId : null,
+              list_name: listName,
+              saved_at: new Date().toISOString(),
+              saved_at_local: new Date().toLocaleString(),
+              source: 'tracker exportXLSX RECOVERY (paired with ' + fileName + ')',
+              player_count: players.length,
+              players: players,
+            };
+            const jsonHandle2 = await _xlsxDirHandles[listId].getFileHandle(jsonName2, {create:true});
+            const jsonWritable2 = await jsonHandle2.createWritable();
+            await jsonWritable2.write(new Blob([JSON.stringify(jsonPayload2, null, 2)], {type:'application/json'}));
+            await jsonWritable2.close();
+            console.log('[PERLIST_FOLDERS_V2] RECOVERY wrote ' + jsonName2 + ' next to ' + fileName);
+          } catch(jsonErr2){
+            console.error('[PERLIST_FOLDERS_V2] RECOVERY JSON sidecar failed:', jsonErr2);
+            alert('⚠ Excel saved after recovery, but the JSON sidecar failed.\n\n' +
+                  'The list will not appear on the live site until both files are approved.\n' +
+                  'Error: ' + jsonErr2.message);
+          }
+
+          const btn2 = document.querySelector('button[onclick="exportXLSX()"]');
+          if(btn2){ const orig=btn2.textContent; btn2.textContent='✅ Saved to ' + listSlug + ' (recovered)!'; setTimeout(()=>btn2.textContent=orig, 2500); }
+          console.log('[PERLIST_FOLDERS_V2] auto-recovery succeeded for', listId);
+          return; // DONE — do NOT fall through to Downloads.
+        } catch(recoveryErr){
+          if(recoveryErr.name === 'AbortError'){
+            console.warn('[PERLIST_FOLDERS_V2] user cancelled the recovery folder-pick');
+            alert('Recovery cancelled. Nothing was saved.\n\n' +
+                  'Click Save to Excel again when you\'re ready to re-pick the folder.');
+            return; // Don't dump to Downloads just because they cancelled.
+          }
+          console.error('[PERLIST_FOLDERS_V2] auto-recovery FAILED:', recoveryErr);
+          alert('⚠ Auto-recovery failed.\n\n' +
+                'Error: ' + recoveryErr.name + ' — ' + recoveryErr.message + '\n\n' +
+                'Falling back to browser Downloads. File will land in your Downloads folder.');
+          // fall through to Downloads below
+        }
+      } else {
+        // Not a stale-handle error — something else broke. Tell the user plainly.
+        alert('⚠ Save to Excel: folder-picker path FAILED.\n\n' +
+              'Error: ' + ((err && err.name) || 'Unknown') + ' — ' + ((err && err.message) || '') + '\n\n' +
+              'Falling back to browser Downloads (no JSON sidecar will be written).\n' +
+              'Open DevTools (F12) → Console tab for the full error so Walter can diagnose.');
+      }
     }
   }
   // Fallback: standard browser download (no JSON sidecar in this branch — File System
@@ -3384,6 +3485,43 @@ async function exportXLSX(){
   // get the .xlsx download only; user has to manually export JSON some other way.)
   console.warn('[PERLIST_FOLDERS_V2] using Downloads fallback. showDirectoryPicker available?', !!window.showDirectoryPicker);
   XLSX.writeFile(wb, fileName);
+}
+
+// PERLIST_FOLDERS_V3 (2026-04-23) — proactive reset. Lets Dude or Matt wipe the
+// saved folder for the CURRENT list so the next Save to Excel re-prompts the picker.
+// Use case: you know the folder got moved/renamed and you want to fix it before
+// the next save breaks.
+async function forgetSavedFolder(){
+  const listId = (typeof currentListId !== 'undefined' && currentListId) ? currentListId : 'default';
+  let listName = listId;
+  try {
+    if(typeof WATCH_LISTS !== 'undefined'){
+      const def = WATCH_LISTS.find(l => l.id === listId);
+      if(def) listName = def.name;
+    }
+  } catch(e){}
+  const hasHandle = !!_xlsxDirHandles[listId];
+  const msg = hasHandle
+    ? 'Forget the saved folder for "' + listName + '"?\n\n' +
+      'The NEXT time you click Save to Excel for this list, you\'ll be asked to pick a folder again.\n\n' +
+      'Other lists\' saved folders are NOT affected.'
+    : 'No saved folder is currently remembered for "' + listName + '".\n\n' +
+      'Click OK to clear anyway (safe — will just confirm there\'s nothing to clear).';
+  if(!confirm(msg)) return;
+  _xlsxDirHandles[listId] = null;
+  try {
+    await _idbDelHandle(listId);
+    console.log('[PERLIST_FOLDERS_V2] manually forgot folder handle for', listId);
+    alert('✅ Forgot the saved folder for "' + listName + '".\n\n' +
+          'Your next Save to Excel for this list will ask you to pick a folder.');
+  } catch(e){
+    console.error('[PERLIST_FOLDERS_V2] forgetSavedFolder: could not delete from IDB:', e);
+    alert('⚠ Could not fully clear the saved folder (in-memory handle was cleared, ' +
+          'but writing to the browser\'s IndexedDB failed).\n\n' +
+          'Error: ' + (e.message || e) + '\n\n' +
+          'The handle may come back on the next page reload. Close and reopen the tab ' +
+          'to force a fresh state.');
+  }
 }
 
 function exportCSV(){
