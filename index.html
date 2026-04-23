@@ -3137,20 +3137,44 @@ async function _ensureHandlePermission(handle){
   }
 }
 
-// On script load, restore handles for all six lists from IndexedDB into the
-// in-memory map. Runs in background — exportXLSX still falls through to the
-// picker if the restore hasn't finished yet (rare race condition).
-(async function _restoreFolderHandlesFromIdb(){
-  if(!('indexedDB' in window)) return;
-  if(typeof WATCH_LISTS === 'undefined') return;
+// Restore folder handles for all six lists from IndexedDB into the in-memory map.
+// Two safety nets:
+//   1. Wait for DOMContentLoaded so WATCH_LISTS is guaranteed to be defined
+//   2. Also retry on-demand from inside exportXLSX if the restore hasn't run yet
+async function _restoreFolderHandlesFromIdb(){
+  console.log('[PERLIST_FOLDERS_V2] restore starting…');
+  if(!('indexedDB' in window)){
+    console.warn('[PERLIST_FOLDERS_V2] indexedDB not available in this browser');
+    return;
+  }
+  if(typeof WATCH_LISTS === 'undefined'){
+    console.warn('[PERLIST_FOLDERS_V2] WATCH_LISTS not defined yet — skipping');
+    return;
+  }
+  let restoredCount = 0;
   for(const list of WATCH_LISTS){
-    const handle = await _idbGetHandle(list.id);
-    if(handle){
-      _xlsxDirHandles[list.id] = handle;
-      console.log('[PERLIST_FOLDERS_V2] restored folder handle for', list.id);
+    try {
+      const handle = await _idbGetHandle(list.id);
+      if(handle){
+        _xlsxDirHandles[list.id] = handle;
+        restoredCount++;
+        console.log('[PERLIST_FOLDERS_V2] restored folder handle for', list.id);
+      }
+    } catch(e){
+      console.warn('[PERLIST_FOLDERS_V2] restore failed for', list.id, e);
     }
   }
-})();
+  console.log('[PERLIST_FOLDERS_V2] restore complete —', restoredCount, 'handle(s) restored');
+}
+
+// Fire the restore after the DOM is ready, so WATCH_LISTS and other globals
+// are guaranteed to be defined by then.
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', _restoreFolderHandlesFromIdb);
+} else {
+  // DOM already loaded — call directly (likely a script-after-body case)
+  _restoreFolderHandlesFromIdb();
+}
 // /PERLIST_FOLDERS_V2
 
 function _buildXLSXWorkbook(){
@@ -3228,6 +3252,19 @@ async function exportXLSX(){
       // If we have a remembered handle but its permission has expired, ask for permission
       // (a small confirmation prompt, NOT the full folder picker). Only show the full picker
       // if we have no handle at all OR the user denied the permission re-grant.
+      //
+      // SAFETY NET: if the in-memory map is empty for this list, try fetching from IndexedDB
+      // directly RIGHT NOW. This catches the race condition where the user clicked Save before
+      // the page-load restore IIFE finished.
+      if(!_xlsxDirHandles[listId]){
+        try {
+          const restoredHandle = await _idbGetHandle(listId);
+          if(restoredHandle){
+            _xlsxDirHandles[listId] = restoredHandle;
+            console.log('[PERLIST_FOLDERS_V2] on-demand restore from IDB for', listId);
+          }
+        } catch(e){ console.warn('[PERLIST_FOLDERS_V2] on-demand restore failed:', e); }
+      }
       if(_xlsxDirHandles[listId]){
         const stillOk = await _ensureHandlePermission(_xlsxDirHandles[listId]);
         if(!stillOk){
