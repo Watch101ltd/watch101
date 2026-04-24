@@ -1738,13 +1738,33 @@ async function loadData(){
 // undoLastMove for the call sites. The Save to Excel button is still the canonical
 // "publish this snapshot to _Staging" trigger, but auto-save keeps it in sync
 // on every user action so Matt never loses work to a tab close.
+// DELTA_PERSIST_V1 (2026-04-24) — call this to declare the CURRENT ranks as the
+// new baseline. Every player's prev_rank becomes their current rank, which zeros
+// out all deltas (+/- column goes back to dashes). We don't call this anywhere by
+// default anymore — the deltas are meant to ACCUMULATE across the session so Matt
+// and the Dude can see true movement history while they build their lists.
+// If a future feature wants a "Lock in current ranks as the new baseline" button,
+// wire it to call snapshotBaseline() — nothing else needs to change.
+function snapshotBaseline(){
+  players.forEach(p => { p.prev_rank = p.rank; });
+}
+
 async function saveData(){
+  // DELTA_PERSIST_V1 — compute p.move from prev_rank vs rank (drives the ▲/▼ arrows
+  // next to each player's row), but DO NOT reset prev_rank. Previously this function
+  // zeroed out prev_rank on every save, which wiped the +/- delta column because
+  // renderDelta() reads (prev_rank - rank). With auto-save firing on every drag/click,
+  // that reset ran constantly and the delta column always showed dashes. Now prev_rank
+  // stays put until snapshotBaseline() is explicitly called (currently never).
   players.forEach(p => {
     if(p.prev_rank && p.rank && p.prev_rank !== p.rank){
       if(p.rank < p.prev_rank) p.move = 'up';
       else if(p.rank > p.prev_rank) p.move = 'down';
+    } else if(p.prev_rank === p.rank){
+      // Explicitly clear stale 'up'/'down' state when a player is back where they started.
+      // (e.g. user drags up then back down to original position — arrow should clear.)
+      if(p.move !== 'new') p.move = null;
     }
-    p.prev_rank = p.rank;
   });
 
   const listId   = (typeof currentListId !== 'undefined' && currentListId) ? currentListId : null;
