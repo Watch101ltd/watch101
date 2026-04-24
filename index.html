@@ -68,6 +68,33 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif
 .toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
 .count-badge{font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:5px}
 
+/* HEADER_REDESIGN_V1 (April 24, 2026) — dropdown menus + quiet status strip.
+   Groups Player Pool/Leaders/Prospects into "Add Player", Save+Forget into "Save",
+   Import/Present/CSV into "More". Info chips (count, Statcast, Yahoo) moved
+   to a quieter status strip below. Theme toggle (banana) pinned far right. */
+.hdr-dd{position:relative;display:inline-block;font-family:'Nunito Sans',sans-serif}
+.hdr-dd-btn{background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:5px;padding:6px 12px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;letter-spacing:0.05em;transition:all 0.15s}
+.hdr-dd-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--text3)}
+.hdr-dd-btn.open{background:var(--surface2);color:var(--text);border-color:var(--gold)}
+.hdr-dd-btn .hdr-dd-caret{margin-left:6px;font-size:9px;opacity:0.7}
+.hdr-dd-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;min-width:180px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,0.35);z-index:100;padding:4px;overflow:hidden}
+.hdr-dd.open .hdr-dd-menu{display:block}
+.hdr-dd-item{display:block;width:100%;text-align:left;background:transparent;color:var(--text2);border:none;padding:8px 12px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;border-radius:4px;letter-spacing:0.04em;transition:background 0.1s}
+.hdr-dd-item:hover{background:var(--surface2);color:var(--text)}
+.hdr-dd-item.danger{color:var(--red)}
+.hdr-dd-item.danger:hover{background:#7f1d1d22}
+.hdr-status-strip{padding:0.4rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--turquoise2);display:flex;align-items:center;gap:14px;font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text3);letter-spacing:0.04em}
+.hdr-status-strip .status-sep{opacity:0.5}
+.hdr-status-strip #count-badge{background:transparent;border:none;padding:0;color:var(--text3)}
+.hdr-status-strip #savant-indicator{padding:0;color:var(--text3)}
+.hdr-yahoo-dot{display:inline-flex;align-items:center;gap:6px;background:transparent;border:none;padding:0;font-size:11px;font-family:'Nunito Sans',sans-serif;color:var(--text3);cursor:pointer;letter-spacing:0.04em}
+.hdr-yahoo-dot::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444}
+.hdr-yahoo-dot.connected::before{background:#22c55e}
+.hdr-yahoo-dot.disconnected::before{background:#ef4444}
+.hdr-yahoo-dot.loading::before{background:var(--gold)}
+.hdr-yahoo-dot:hover{color:var(--text2)}
+/* /HEADER_REDESIGN_V1 */
+
 .table-wrap{overflow-x:auto;padding:0 0.5rem 2rem}
 .table-wrap thead{position:sticky;top:0;z-index:10}
 table{width:100%;border-collapse:separate;border-spacing:0;min-width:1120px;margin-top:1rem;table-layout:fixed}
@@ -877,27 +904,53 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       <button class="filter-tab" id="adv-tab" onclick="toggleAdvancedMode(this)">⚡ Advanced</button>
       <span id="cluster-chip" onclick="sortByPos(clusterByPos, event)" title="Click to exit position-cluster sort"></span>
     </div>
-    <div class="filter-tabs">
-      <button class="filter-tab" id="pool-tab" onclick="openPlayerPool()">⚾ Player Pool</button>
-      <button class="filter-tab" id="leaders-tab" onclick="openLeagueLeaders()">🏆 League Leaders</button>
-      <button class="filter-tab" id="prospects-tab" onclick="openProspects()">🌱 Prospects</button>
-    </div>
   </div>
+  <!-- HEADER_REDESIGN_V1 (April 24, 2026) — toolbar-right consolidated into three dropdowns.
+       Add Player = Player Pool / League Leaders / Prospects.
+       Save = Save to Excel / Forget Folder.
+       More = Import / Present / CSV (CSV hidden here for now per the Dude's request).
+       Clear All stays visible (red). Night-mode banana pinned far right. -->
   <div class="toolbar-right">
-    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
-    <div class="count-badge" id="count-badge">0 players</div>
-    <span id="savant-indicator">⚡ Loading Statcast...</span>
-    <button id="yahoo-btn" class="disconnected" onclick="yahooButtonClick()">⚾ Connect Yahoo</button>
+    <div class="hdr-dd" id="dd-add">
+      <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-add', event)" title="Add a player to this watch list">➕ Add Player <span class="hdr-dd-caret">▾</span></button>
+      <div class="hdr-dd-menu">
+        <button class="hdr-dd-item" onclick="hdrRun(openPlayerPool)">⚾ Player Pool</button>
+        <button class="hdr-dd-item" onclick="hdrRun(openLeagueLeaders)">🏆 League Leaders</button>
+        <button class="hdr-dd-item" onclick="hdrRun(openProspects)">🌱 Prospects</button>
+      </div>
+    </div>
+    <div class="hdr-dd" id="dd-save">
+      <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-save', event)" title="Save the current list to Excel, or forget the saved folder">💾 Save <span class="hdr-dd-caret">▾</span></button>
+      <div class="hdr-dd-menu">
+        <button class="hdr-dd-item" onclick="hdrRun(exportXLSX)" title="Save a copy as an Excel spreadsheet">💾 Save to Excel</button>
+        <button class="hdr-dd-item" onclick="hdrRun(forgetSavedFolder)" title="Forget the saved folder — the next Save will ask you to pick a folder again">🗑️ Forget Folder</button>
+      </div>
+    </div>
     <button class="btn btn-outline" id="undo-btn" onclick="undoLastMove()" title="Undo last drag-and-drop (Ctrl+Z)" disabled style="opacity:0.4;cursor:not-allowed">↶ Undo</button>
-    <button class="btn btn-outline" onclick="exportCSV()" title="Export as CSV file">📤 CSV</button>
-    <button class="btn btn-outline" onclick="exportXLSX()" title="Save a copy as an Excel spreadsheet">💾 Save to Excel</button>
-    <button class="btn btn-outline" onclick="forgetSavedFolder()" title="Forget the saved folder for this list — the next Save to Excel will ask you to pick a folder again. Use if the folder got moved or renamed.">🗑️ Forget Folder</button>
-    <button class="btn btn-outline" onclick="triggerImport()" title="Import from CSV or Excel">📥 Import</button>
+    <div class="hdr-dd" id="dd-more">
+      <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-more', event)" title="More actions">⋯ More <span class="hdr-dd-caret">▾</span></button>
+      <div class="hdr-dd-menu">
+        <button class="hdr-dd-item" onclick="hdrRun(triggerImport)" title="Import from CSV or Excel">📥 Import</button>
+        <button class="hdr-dd-item" onclick="hdrRun(togglePresentMode)" title="Presentation mode — full-screen view for screen-share">🔍 Present</button>
+        <button class="hdr-dd-item" onclick="hdrRun(exportCSV)" title="Export the current list as a CSV file">📤 CSV</button>
+      </div>
+    </div>
     <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImport(event)">
-    <button id="present-btn" class="btn btn-outline" onclick="togglePresentMode()" title="Presentation Mode">🔍 Present</button>
     <button class="btn btn-red" onclick="confirmClear()">Clear All</button>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
   </div>
 </div>
+
+<!-- HEADER_REDESIGN_V1 — quiet status strip. Info chips (player count, Statcast, Yahoo)
+     moved out of the action toolbar so the header reads quieter. -->
+<div class="hdr-status-strip" id="hdr-status-strip">
+  <div class="count-badge" id="count-badge">0 players</div>
+  <span class="status-sep">·</span>
+  <span id="savant-indicator">⚡ Loading Statcast...</span>
+  <span class="status-sep">·</span>
+  <button id="yahoo-btn" class="hdr-yahoo-dot disconnected" onclick="yahooButtonClick()" title="Yahoo connection status — click to refresh or reconnect">Yahoo</button>
+</div>
+<!-- /HEADER_REDESIGN_V1 -->
 
 <div id="main-fixed-header"><table id="main-fixed-table"></table></div>
 
@@ -1891,13 +1944,15 @@ async function checkYahooStatus(){
 function updateYahooBtn(){
   const btn = document.getElementById('yahoo-btn');
   if(!btn) return;
+  // HEADER_REDESIGN_V1 — Yahoo button is now a small status dot in the status strip.
+  // Keep the hdr-yahoo-dot base class; only swap the state class (connected/disconnected/loading).
   if(yahooConnected){
-    btn.className = 'connected';
-    btn.textContent = '⚾ Yahoo ✓';
+    btn.className = 'hdr-yahoo-dot connected';
+    btn.textContent = 'Yahoo';
     btn.title = 'Yahoo Fantasy connected — click to refresh data';
   } else {
-    btn.className = 'disconnected';
-    btn.textContent = '⚾ Connect Yahoo';
+    btn.className = 'hdr-yahoo-dot disconnected';
+    btn.textContent = 'Yahoo';
     btn.title = 'Click to connect Yahoo Fantasy account';
   }
 }
@@ -1914,6 +1969,68 @@ function toggleTheme(){
     btn.title = isDay ? 'Switch to night mode' : 'Switch to day mode';
   }
 }
+
+// HEADER_REDESIGN_V1 (April 24, 2026) — dropdown plumbing for Add Player / Save / More.
+// hdrToggleDropdown: toggles the .open class on a dropdown; closes others.
+// hdrRun: runs an action then closes the currently-open dropdown so the menu
+// disappears after the user picks something.
+function hdrToggleDropdown(id, event){
+  if(event){ event.stopPropagation(); }
+  var target = document.getElementById(id);
+  if(!target) return;
+  var wasOpen = target.classList.contains('open');
+  // Close all dropdowns first
+  document.querySelectorAll('.hdr-dd.open').forEach(function(el){ el.classList.remove('open'); });
+  document.querySelectorAll('.hdr-dd-btn.open').forEach(function(el){ el.classList.remove('open'); });
+  // Toggle the clicked one
+  if(!wasOpen){
+    target.classList.add('open');
+    var btn = target.querySelector('.hdr-dd-btn');
+    if(btn) btn.classList.add('open');
+  }
+}
+function hdrRun(fn){
+  try { if(typeof fn === 'function') fn(); }
+  catch(e){ console.error('[HEADER_REDESIGN_V1] action threw:', e); }
+  // Close any open dropdown after the action runs
+  document.querySelectorAll('.hdr-dd.open').forEach(function(el){ el.classList.remove('open'); });
+  document.querySelectorAll('.hdr-dd-btn.open').forEach(function(el){ el.classList.remove('open'); });
+}
+// Click-outside closes any open dropdown.
+document.addEventListener('click', function(ev){
+  if(ev.target.closest && ev.target.closest('.hdr-dd')) return;
+  document.querySelectorAll('.hdr-dd.open').forEach(function(el){ el.classList.remove('open'); });
+  document.querySelectorAll('.hdr-dd-btn.open').forEach(function(el){ el.classList.remove('open'); });
+});
+// Escape key closes any open dropdown.
+document.addEventListener('keydown', function(ev){
+  if(ev.key === 'Escape'){
+    document.querySelectorAll('.hdr-dd.open').forEach(function(el){ el.classList.remove('open'); });
+    document.querySelectorAll('.hdr-dd-btn.open').forEach(function(el){ el.classList.remove('open'); });
+  }
+});
+// /HEADER_REDESIGN_V1
+
+// HEADER_REDESIGN_V1 — restored from _archive/index_2026-04-19_2342_pre-type-column.html.
+// togglePresentMode() was accidentally dropped in a prior refactor. The Dude uses
+// Present mode and confirmed it still works, so we restore the function exactly as
+// it existed in the archive. Defensive null-check on the btn since the old dedicated
+// present-btn is gone (the action now lives inside the "⋯ More" dropdown).
+var presentMode = false;
+function togglePresentMode(){
+  presentMode = !presentMode;
+  if(presentMode){
+    document.body.classList.add('present-mode');
+  } else {
+    document.body.classList.remove('present-mode');
+  }
+  var btn = document.getElementById('present-btn');
+  if(btn){
+    if(presentMode){ btn.classList.add('active'); btn.textContent = '🔍 Presenting'; }
+    else { btn.classList.remove('active'); btn.textContent = '🔍 Present'; }
+  }
+}
+
 /* Sync the icon with whatever mode the early-init script chose. */
 document.addEventListener('DOMContentLoaded', function(){
   var btn = document.getElementById('theme-toggle');
@@ -1952,7 +2069,7 @@ async function syncYahooData(manual = false){
   if(yahooSyncing && !manual) return;
   yahooSyncing = true;
   const btn = document.getElementById('yahoo-btn');
-  if(btn){ btn.className = 'loading'; btn.textContent = '⚾ Syncing...'; }
+  if(btn){ btn.className = 'hdr-yahoo-dot loading'; btn.textContent = 'Syncing'; }  // HEADER_REDESIGN_V1 — preserve base class
 
   try {
     // Single call — league-ranks returns Yahoo rank + roster % for top 300
@@ -1990,12 +2107,12 @@ async function syncYahooData(manual = false){
     if(typeof renderPool === 'function' && typeof poolLoaded !== 'undefined' && poolLoaded) renderPool();
     if(typeof renderDualView === 'function') renderDualView();
 
-    if(btn){ btn.className = 'connected'; btn.textContent = `⚾ Yahoo ✓`; }
+    if(btn){ btn.className = 'hdr-yahoo-dot connected'; btn.textContent = 'Yahoo'; }  // HEADER_REDESIGN_V1
     if(manual) document.getElementById('last-updated').textContent = `Yahoo synced: ${new Date().toLocaleTimeString()}`;
 
   } catch(e) {
     console.error('Yahoo sync error:', e);
-    if(btn){ btn.className = 'disconnected'; btn.textContent = '⚾ Yahoo Error'; }
+    if(btn){ btn.className = 'hdr-yahoo-dot disconnected'; btn.textContent = 'Yahoo'; btn.title = 'Yahoo sync error — click to retry'; }  // HEADER_REDESIGN_V1
     setTimeout(checkYahooStatus, 2000);
   }
   yahooSyncing = false;
