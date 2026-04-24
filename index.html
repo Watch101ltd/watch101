@@ -6423,10 +6423,29 @@ async function loadProspects(){
       };
     };
 
+    // PROSPECT_DEDUPE_V1 (2026-04-24) — dedupe by mlb_id, highest level wins.
+    // Before this fix, a player who had appeared at multiple minor league levels
+    // (e.g. promoted from AA to AAA mid-season) showed up as TWO rows in the
+    // prospects list — same name, same stats, different level tags. Matt caught
+    // this in the April 24 onboarding meeting. Now we walk AAA -> AA -> A in
+    // priority order; if we've seen an mlb_id at a higher level, we skip the
+    // lower-level duplicate. Companion change in fetchProspectStatsBulk() merges
+    // stat fields ADDITIVELY across all levels so the combined sample size shows
+    // (per the Dude's call: bigger sample beats single-level purity).
+    const _seenProspectIds = new Set();
+    const _addProspect = (peopleArr, level) => {
+      const out = [];
+      (peopleArr || []).forEach(p => {
+        if(!p.id || _seenProspectIds.has(p.id)) return;
+        _seenProspectIds.add(p.id);
+        out.push(mapPlayer(p, level));
+      });
+      return out;
+    };
     prospectPlayers = [
-      ...(aaaData.people||[]).map(p => mapPlayer(p, 'AAA')),
-      ...(aaData.people||[]).map(p => mapPlayer(p, 'AA')),
-      ...(aData.people||[]).map(p => mapPlayer(p, 'A'))
+      ..._addProspect(aaaData.people, 'AAA'),
+      ..._addProspect(aaData.people,  'AA'),
+      ..._addProspect(aData.people,   'A')
     ];
 
     prospectsLoaded = true;
@@ -6475,10 +6494,25 @@ async function fetchProspectStatsBulk(){
     responses = await Promise.all(urls.map(u => fetch(u).then(r => r.json()).catch(() => null)));
   } catch(e){ return; }
 
-  // statsMap[mlb_id] = merged stat object (hitting + pitching fields coexist on one object;
-  // same shape that fetchProspectStats() writes per-player, so downstream renderProspects
-  // reads the same p.stats[key] regardless of how it got populated.)
+  // PROSPECT_DEDUPE_V1 (2026-04-24) — combine stats ACROSS LEVELS for any prospect
+  // who played at more than one minor-league level this season. Counting stats (HR,
+  // RBI, R, SB, AB, K, W, SV, HLD, IP) sum together across levels. Rate stats (AVG,
+  // OBP, OPS, ERA, WHIP) get RE-COMPUTED from the running totals so the combined
+  // rate is correct and not just the last level's number. Decision per the Dude
+  // (April 24): bigger sample size beats single-level purity, even though it mixes
+  // contexts (AA + AAA in the same line).
+  //
+  // The previous implementation OVERWROTE rate stats and counting stats with
+  // whichever level processed last (which was always A — Low-A — because the
+  // urls array was AAA->AA->A, hitting then pitching). That meant Matt was seeing
+  // Low-A stats for guys who'd played at AAA. Bad.
   const statsMap = {};
+  // Running totals for re-computing rate stats correctly.
+  // _hitTotals[pid] = { ab, h, bb, hbp, sf, tb, pa } — needed to reconstruct avg/obp/ops
+  // _pitTotals[pid] = { ip, er, h, bb }            — needed to reconstruct era/whip
+  const _hitTotals = {};
+  const _pitTotals = {};
+
   responses.forEach((resp, idx) => {
     if(!resp || !resp.stats) return;
     const isPit = (idx % 2) === 1;   // GROUPS order above: [hitting, pitching]
@@ -6489,22 +6523,48 @@ async function fetchProspectStatsBulk(){
       if(!statsMap[pid]) statsMap[pid] = {};
       const target = statsMap[pid];
       if(!isPit){
-        if(s.atBats       != null) target.ab  = s.atBats;
-        if(s.avg          != null) target.avg = parseFloat(s.avg) || null;
-        if(s.obp          != null) target.obp = parseFloat(s.obp) || null;
-        if(s.ops          != null) target.ops = parseFloat(s.ops) || null;
-        if(s.homeRuns     != null) target.hr  = s.homeRuns;
-        if(s.rbi          != null) target.rbi = s.rbi;
-        if(s.runs         != null) target.r   = s.runs;
-        if(s.stolenBases  != null) target.sb  = s.stolenBases;
+        if(!_hitTotals[pid]) _hitTotals[pid] = { ab:0, h:0, bb:0, hbp:0, sf:0, tb:0, pa:0 };
+        const ht = _hitTotals[pid];
+        // Sum the raw counting components from each level
+        if(s.atBats              != null) ht.ab  += Number(s.atBats)              || 0;
+        if(s.hits                != null) ht.h   += Number(s.hits)                || 0;
+        if(s.baseOnBalls         != null) ht.bb  += Number(s.baseOnBalls)         || 0;
+        if(s.hitByPitch          != null) ht.hbp += Number(s.hitByPitch)          || 0;
+        if(s.sacFlies            != null) ht.sf  += Number(s.sacFlies)            || 0;
+        if(s.totalBases          != null) ht.tb  += Number(s.totalBases)          || 0;
+        if(s.plateAppearances    != null) ht.pa  += Number(s.plateAppearances)    || 0;
+        // Counting fantasy stats — sum across levels
+        target.ab  = ht.ab;
+        if(s.homeRuns    != null) target.hr  = (Number(target.hr)  || 0) + Number(s.homeRuns);
+        if(s.rbi         != null) target.rbi = (Number(target.rbi) || 0) + Number(s.rbi);
+        if(s.runs        != null) target.r   = (Number(target.r)   || 0) + Number(s.runs);
+        if(s.stolenBases != null) target.sb  = (Number(target.sb)  || 0) + Number(s.stolenBases);
+        // Rate stats — recompute from running totals so the combined rate is correct
+        if(ht.ab > 0)                  target.avg = +(ht.h / ht.ab).toFixed(3);
+        const obpDen = ht.ab + ht.bb + ht.hbp + ht.sf;
+        if(obpDen > 0)                 target.obp = +((ht.h + ht.bb + ht.hbp) / obpDen).toFixed(3);
+        if(target.avg != null && target.obp != null && ht.ab > 0){
+          const slg = ht.tb / ht.ab;
+          target.ops = +(target.obp + slg).toFixed(3);
+        }
       } else {
-        if(s.era            != null) target.era  = parseFloat(s.era)  || null;
-        if(s.whip           != null) target.whip = parseFloat(s.whip) || null;
-        if(s.strikeOuts     != null) target.k    = s.strikeOuts;
-        if(s.inningsPitched != null) target.ip   = parseFloat(s.inningsPitched) || null;
-        if(s.wins           != null) target.w    = s.wins;
-        if(s.saves          != null) target.sv   = s.saves;
-        if(s.holds          != null) target.hld  = s.holds;
+        if(!_pitTotals[pid]) _pitTotals[pid] = { ip:0, er:0, h:0, bb:0 };
+        const pt = _pitTotals[pid];
+        if(s.inningsPitched != null) pt.ip += parseFloat(s.inningsPitched) || 0;
+        if(s.earnedRuns     != null) pt.er += Number(s.earnedRuns)         || 0;
+        if(s.hits           != null) pt.h  += Number(s.hits)               || 0;
+        if(s.baseOnBalls    != null) pt.bb += Number(s.baseOnBalls)        || 0;
+        // Counting fantasy stats — sum across levels
+        if(s.strikeOuts != null) target.k   = (Number(target.k)   || 0) + Number(s.strikeOuts);
+        if(s.wins       != null) target.w   = (Number(target.w)   || 0) + Number(s.wins);
+        if(s.saves      != null) target.sv  = (Number(target.sv)  || 0) + Number(s.saves);
+        if(s.holds      != null) target.hld = (Number(target.hld) || 0) + Number(s.holds);
+        target.ip = +pt.ip.toFixed(1);
+        // Rate stats — recompute from running totals
+        if(pt.ip > 0){
+          target.era  = +((pt.er * 9) / pt.ip).toFixed(2);
+          target.whip = +((pt.h + pt.bb) / pt.ip).toFixed(2);
+        }
       }
     });
   });
