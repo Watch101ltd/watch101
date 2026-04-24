@@ -1600,6 +1600,14 @@ async function loadData(){
       ? (listName + ' — ⚠ Offline (local: ' + ts + ')')
       : (listName + ' — ⚠ Server offline');
   }
+
+  // YAHOO_APPLY_GLOBAL_V1 (April 24, 2026) — merge any previously-fetched Yahoo
+  // data into the freshly-loaded player list BEFORE the first render. Without
+  // this, OWNED and ADP stay blank until the NEXT Yahoo sync, because the sync
+  // fired after the last list load saw an older (or empty) players array.
+  // No-op if yahoo cache is empty (first page load before sync completes).
+  applyYahoo(players);
+
   renderTable();
 
   // YAHOO_AUTOSYNC_V1 (April 24, 2026) — fire Yahoo sync automatically after any
@@ -1842,6 +1850,30 @@ let yahooSyncTimer = null;
 let yahooDataByMlbId = {};  // global cache mlb_id -> {yahoo_rank, roster_pct}
 let yahooDataByName = {};   // global cache normalized name -> {yahoo_rank, roster_pct}
 
+// YAHOO_APPLY_GLOBAL_V1 (April 24, 2026) — extracted from inside syncYahooData()
+// so it can be called from anywhere (loadData, renderTable, list switches, etc.)
+// without having to re-fetch from the Worker. Merges the current Yahoo cache into
+// any players[] array. Safe to call anytime — no-op if cache is empty.
+function applyYahoo(arr) {
+  if(!arr || !Array.isArray(arr)) return;
+  arr.forEach(p => {
+    const n = p.name || '';
+    const yp = yahooDataByName[normalize(n)]
+           || yahooDataByName[normalizeName(n)]
+           || (p.mlb_id && yahooDataByMlbId[String(p.mlb_id)]);
+    if(!yp) return;
+    if(yp.yahoo_rank != null) p.yahoo_rank = yp.yahoo_rank;
+    if(yp.roster_pct != null) p.roster_pct = yp.roster_pct;
+    if(yp.preseason_rank != null) p.preseason_rank = yp.preseason_rank;
+    // New fields from updated server
+    if(yp.eligible_positions && yp.eligible_positions.length > 0){
+      p.positions = yp.eligible_positions;
+    }
+    if(yp.pitcher_type) p.pitcher_type = yp.pitcher_type;
+    if(yp.injury_status !== undefined) p.injury_status = yp.injury_status;
+  });
+}
+
 async function checkYahooStatus(){
   try {
     const res = await fetch(`${SERVER_URL}/auth/status`, {headers:{'ngrok-skip-browser-warning':'true'}});
@@ -1946,27 +1978,7 @@ async function syncYahooData(manual = false){
       });
     }
 
-    // Merge Yahoo data into any array of player objects
-    function applyYahoo(arr) {
-      arr.forEach(p => {
-        const n = p.name || '';
-        const yp = yahooDataByName[normalize(n)]
-               || yahooDataByName[normalizeName(n)]
-               || (p.mlb_id && yahooDataByMlbId[String(p.mlb_id)]);
-        if(!yp) return;
-        if(yp.yahoo_rank != null) p.yahoo_rank = yp.yahoo_rank;
-        if(yp.roster_pct != null) p.roster_pct = yp.roster_pct;
-        if(yp.preseason_rank != null) p.preseason_rank = yp.preseason_rank;
-        // New fields from updated server
-        if(yp.eligible_positions && yp.eligible_positions.length > 0){
-          p.positions = yp.eligible_positions;
-        }
-        if(yp.pitcher_type) p.pitcher_type = yp.pitcher_type;
-        if(yp.injury_status !== undefined) p.injury_status = yp.injury_status;
-      });
-    }
-
-    // Merge into all arrays
+    // Merge into all arrays — applyYahoo is defined globally below (YAHOO_APPLY_GLOBAL_V1)
     applyYahoo(players);
     if(typeof personalPlayers !== 'undefined') applyYahoo(personalPlayers);
     if(typeof poolPlayers !== 'undefined' && poolPlayers.length > 0) applyYahoo(poolPlayers);
