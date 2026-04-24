@@ -1925,10 +1925,15 @@ async function syncYahooData(manual = false){
   try {
     // Single call — league-ranks returns Yahoo rank + roster % for top 300
     // Uses Delta Sig & Friends 2K25 league as context for universal data
-    // ROUTED THROUGH CLOUDFLARE CACHE WORKER (Apr 23, 2026) — refreshes twice a day,
-    // avoids hammering Yahoo and triggering 999 bans. No ngrok header needed —
-    // Worker adds it server-to-server when calling the NAS.
-    const res = await fetch(`${YAHOO_CACHE_URL}/yahoo/league-ranks/469.l.70258`);
+    // TEMPORARY BYPASS (Apr 24, 2026 midday) — pointing direct at NAS instead of Worker.
+    // Cloudflare Worker → ngrok free-tier path keeps 524-timing-out (likely ngrok's
+    // anti-abuse throttling of datacenter IPs). Worker still deployed, ?force=1 works
+    // from the browser, but the tracker's auto-sync path bypasses it until we migrate
+    // from ngrok → Cloudflare Tunnel tonight. Post-migration, change this back to
+    // ${YAHOO_CACHE_URL}/yahoo/league-ranks/469.l.70258 and drop the ngrok header.
+    const res = await fetch(`${SERVER_URL}/yahoo/league-ranks/469.l.70258`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
     if(!res.ok) throw new Error('League ranks fetch failed');
     const data = await res.json();
 
