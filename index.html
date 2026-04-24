@@ -954,7 +954,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
        Add Player = Player Pool / League Leaders / Prospects.
        Save = Save to Excel / Forget Folder.
        More = Import / Present / CSV (CSV hidden here for now per the Dude's request).
-       Clear All stays visible (red). Night-mode banana pinned far right. -->
+       Clear All hidden (HIDE_CLEAR_ALL_V1, April 24 2026). Night-mode banana pinned far right. -->
   <div class="toolbar-right">
     <div class="hdr-dd" id="dd-add">
       <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-add', event)" title="Add a player to this watch list">➕ Add Player <span class="hdr-dd-caret">▾</span></button>
@@ -981,7 +981,11 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       </div>
     </div>
     <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImport(event)">
-    <button class="btn btn-red" onclick="confirmClear()">Clear All</button>
+    <!-- HIDE_CLEAR_ALL_V1 (2026-04-24) — Clear All button hidden per the Dude's request.
+         Lists are now built progressively, not rebuilt from scratch. If we ever need to
+         restore the button, just remove the style="display:none" attribute below.
+         The confirmClear() function in JS is left intact so nothing else breaks. -->
+    <button class="btn btn-red" onclick="confirmClear()" style="display:none">Clear All</button>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
   </div>
 </div>
@@ -1725,6 +1729,15 @@ async function loadData(){
 // approval). saveData() is the in-browser autosave that runs after every edit,
 // and it now ONLY persists to localStorage so Matt's edits survive a browser
 // crash but DON'T bypass the staging/approval gate.
+//
+// UPDATE 2026-04-24 (MUTATION_AUTOSAVE_V1): user-initiated mutations (add, remove,
+// clear, reorder, note-edit, undo) now ALSO call autoSaveToNAS() alongside saveData()
+// to write the change to _Staging\<List>\ immediately. This is intentional — the
+// _Staging folder IS the staging/approval gate; the gate is Staging → Production,
+// not localStorage → Staging. See deletePlayer, confirmClear, editNote, drop, and
+// undoLastMove for the call sites. The Save to Excel button is still the canonical
+// "publish this snapshot to _Staging" trigger, but auto-save keeps it in sync
+// on every user action so Matt never loses work to a tab close.
 async function saveData(){
   players.forEach(p => {
     if(p.prev_rank && p.rank && p.prev_rank !== p.rank){
@@ -2993,16 +3006,23 @@ function editPlayer(id){
   document.getElementById('modal').classList.add('open');
 }
 
-function deletePlayer(id){
+async function deletePlayer(id){
   if(!confirm('Remove this player from the Watch List?')) return;
   players=players.filter(x=>x.id!==id);
   saveData();renderTable();
+  // MUTATION_AUTOSAVE_V1 (2026-04-24) — persist removal to NAS too, not just localStorage.
+  // Without this, a close-and-reopen would bring the removed player back from the server copy.
+  try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] deletePlayer autosave failed:', e); }
 }
-function confirmClear(){
+async function confirmClear(){
   if(!confirm('Clear ALL players? This cannot be undone.')) return;
   players=[];saveData();renderTable();
   if(poolLoaded) renderPool();
   if(contextAnchor) renderContext();
+  // MUTATION_AUTOSAVE_V1 — persist the cleared list to NAS so hard-refresh shows the empty list.
+  // NOTE: this writes an empty-players JSON to _Staging\<List>\. If Clear was a mistake, the user
+  // can restore from an earlier xlsx/json snapshot in that folder (file names are date-stamped).
+  try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] confirmClear autosave failed:', e); }
 }
 
 function editNote(id,el){
@@ -3012,7 +3032,12 @@ function editNote(id,el){
   input.type='text';input.className='note-input';
   input.value=p.note||'';input.placeholder='Why did this player move?';
   el.replaceWith(input);input.focus();
-  input.addEventListener('blur',()=>{p.note=input.value;saveData();renderTable();});
+  input.addEventListener('blur', async ()=>{
+    p.note=input.value;
+    saveData();renderTable();
+    // MUTATION_AUTOSAVE_V1 — note edits should persist to NAS, not just localStorage
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] editNote autosave failed:', e); }
+  });
   input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();});
 }
 
@@ -3509,7 +3534,9 @@ async function autoSaveToNAS(){
 
 async function exportXLSX(opts){
   const silent = !!(opts && opts.silent);
-  if(!players.length){ if(!silent) alert('No players to export.'); return; }
+  // MUTATION_AUTOSAVE_V1 — in silent mode we allow an empty players list to be written
+  // so Clear All can persist to NAS. In manual mode keep the "No players" alert.
+  if(!silent && !players.length){ alert('No players to export.'); return; }
   const d = new Date();
   const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const fileName = `Watch101_${_activeListFileSlug()}_${dateStr}.xlsx`;
@@ -3782,7 +3809,7 @@ function snapshotForUndo(){
   updateUndoButton();
 }
 
-function undoLastMove(){
+async function undoLastMove(){
   if(dragUndoStack.length === 0) return;
   const snap = dragUndoStack.pop();
   // Rebuild players array in the snapshotted order
@@ -3792,6 +3819,9 @@ function undoLastMove(){
   reorderRanks();
   renderTable();
   updateUndoButton();
+  // MUTATION_AUTOSAVE_V1 — undo is a list mutation; persist it too.
+  saveData();
+  try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] undoLastMove autosave failed:', e); }
 }
 
 function updateUndoButton(){
@@ -3825,7 +3855,7 @@ document.addEventListener('keydown', function(e){
 function dragStart(e,idx){dragSrcIdx=idx;e.currentTarget.classList.add('dragging');}
 function dragOver(e,idx){e.preventDefault();e.currentTarget.classList.add('drag-over');}
 function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
-function drop(e,idx){
+async function drop(e,idx){
   e.preventDefault();e.currentTarget.classList.remove('drag-over');
   if(dragSrcIdx===null||dragSrcIdx===idx) return;
   const list=getFiltered();
@@ -3836,7 +3866,12 @@ function drop(e,idx){
   const[moved]=players.splice(si,1);players.splice(ti,0,moved);
   reorderRanks();
   dragSrcIdx=null;
-  renderTable(); // Just re-render, don't save yet
+  renderTable();
+  // MUTATION_AUTOSAVE_V1 (2026-04-24) — old comment said "don't save yet" but nothing ever
+  // actually did save after. Drag reorders were lost on page reload. Now saveData() persists
+  // to localStorage and autoSaveToNAS() pushes to the server's _Staging\<List>\ folder.
+  saveData();
+  try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] drop autosave failed:', e); }
 }
 document.addEventListener('dragend',()=>{document.querySelectorAll('tr').forEach(r=>r.classList.remove('dragging','drag-over'));});
 
