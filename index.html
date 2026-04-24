@@ -5129,6 +5129,11 @@ async function quickAddFromPool(mlbId, name, team, primaryPos, age, btnEl){
     if(yp.preseason_rank != null) newPlayer.preseason_rank = yp.preseason_rank;
   }
   players.push(newPlayer); reorderRanks(); saveData();
+  // ADD_STALE_TABLE_FIX_V1 (2026-04-24) — merge Savant advanced stats + re-render the main
+  // list so the new player's row shows up with all columns populated when you return from
+  // Pool/Leaders/Prospects. Previously the main table was stale until a full page reload.
+  try { mergeSavant(newPlayer); } catch(e){ console.warn('[ADD_STALE_TABLE_FIX_V1] mergeSavant failed:', e); }
+  try { renderTable(); } catch(e){ console.warn('[ADD_STALE_TABLE_FIX_V1] renderTable failed:', e); }
   btnEl.textContent='✓ On List'; btnEl.className='btn-add-pool added';
   // AUTOSAVE_ADD_V1 — push the new player to the NAS immediately, not just localStorage.
   try { await autoSaveToNAS(); } catch(e){ console.warn('[AUTOSAVE_ADD_V1] quickAddFromPool autosave failed:', e); }
@@ -5825,6 +5830,9 @@ async function quickAddLeader(mlbId, name, team, primaryPos, btnEl){
     sv:s.sv??null, hld:s.hld??null, ip:s.ip||null,
   };
   players.push(newPlayer); reorderRanks(); saveData();
+  // ADD_STALE_TABLE_FIX_V1 — merge Savant + re-render main list (see quickAddFromPool for rationale)
+  try { mergeSavant(newPlayer); } catch(e){ console.warn('[ADD_STALE_TABLE_FIX_V1] mergeSavant failed:', e); }
+  try { renderTable(); } catch(e){ console.warn('[ADD_STALE_TABLE_FIX_V1] renderTable failed:', e); }
   btnEl.textContent='✓ On List'; btnEl.className='btn-add-pool added';
   // AUTOSAVE_ADD_V1 — push the new player to the NAS immediately, not just localStorage.
   try { await autoSaveToNAS(); } catch(e){ console.warn('[AUTOSAVE_ADD_V1] quickAddLeader autosave failed:', e); }
@@ -6646,6 +6654,8 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
     level: level  // tag as MiLB
   };
   players.push(newPlayer); reorderRanks(); saveData();
+  // ADD_STALE_TABLE_FIX_V1 — merge Savant before renderTable so advanced columns populate on first paint
+  try { mergeSavant(newPlayer); } catch(e){ console.warn('[ADD_STALE_TABLE_FIX_V1] mergeSavant failed:', e); }
   btnEl.textContent = '✓ On List'; btnEl.className = 'btn-add-pool added';
   // AUTOSAVE_ADD_V1 — push the new player to the NAS immediately, not just localStorage.
   try { await autoSaveToNAS(); } catch(e){ console.warn('[AUTOSAVE_ADD_V1] addProspectToList autosave failed:', e); }
