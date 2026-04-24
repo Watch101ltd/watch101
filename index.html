@@ -4843,8 +4843,37 @@ async function loadContextStats(isPit, mode){
 }
 
 // ---- FETCH STATS FOR A SINGLE POOL PLAYER ----
+// ADD_STAT_FIX_V1 (2026-04-24) — two data-shape issues discovered today, fixed here:
+//
+// 1. loadAllPoolStats (line ~4220) sets p.stats = true and stores the actual stat fields
+//    directly on p (p.avg, p.hr, etc.). fetchPoolStats stores them nested as p.stats = {...}.
+//    The Add functions (quickAddFromPool, quickAddLeader, addProspectToList) were written
+//    assuming the nested pattern, so when a player was loaded via the bulk loader, they
+//    read from `p.stats` which was just the boolean `true`. Result: every stat came back null.
+//    Fix: _readStat() helper reads from p.stats first, then direct on p as a fallback.
+//
+// 2. fetchPoolStats catch clause set p.stats = {} on any failure, which then poisoned the
+//    early-exit at its own top (if(p.stats) return) — a failed fetch never got retried.
+//    Fix: change the early-exit to require p.stats to actually have keys, not just be truthy.
+function _readStat(p, field){
+  // Try nested (p.stats.avg) first, then direct (p.avg). Null-safe on both sides.
+  if(p && p.stats && typeof p.stats === 'object' && p.stats[field] != null) return p.stats[field];
+  if(p && p[field] != null) return p[field];
+  return null;
+}
+function _readStatFloat(p, field){
+  const v = _readStat(p, field);
+  if(v == null) return null;
+  const f = parseFloat(v);
+  return isNaN(f) ? null : f;
+}
+
 async function fetchPoolStats(p){
-  if(p.stats) return;
+  // ADD_STAT_FIX_V1 — only skip if we already have real stat data, not just a `true` flag
+  // or a poisoned {}. The bulk loader (loadAllPoolStats) sets p.stats = true AND stores
+  // stats directly on p (p.avg etc.), so check for direct fields too.
+  if(p.stats && typeof p.stats === 'object' && Object.keys(p.stats).length > 0) return;
+  if(p.avg != null || p.hr != null || p.era != null || p.ip != null) return; // bulk loader populated direct-on-p
   try {
     const timeout = (ms) => new Promise((_,reject) => setTimeout(()=>reject(new Error('timeout')), ms));
     // Fetch stats and player bio in parallel with 5s timeout
@@ -4874,7 +4903,12 @@ async function fetchPoolStats(p){
         p.stats.sv=s.saves??null; p.stats.ip=parseFloat(s.inningsPitched)||null;
       }
     }
-  } catch(e){ p.stats = {}; }
+  } catch(e){
+    // ADD_STAT_FIX_V1 — DO NOT set p.stats = {} on failure. That used to poison the early-exit
+    // at the top of this function so a failed fetch was never retried. Just log and leave
+    // p.stats alone (null/undefined) so the next caller can retry.
+    console.warn('[ADD_STAT_FIX_V1] fetchPoolStats failed for mlb_id', p && p.mlb_id, e && e.message);
+  }
 }
 
 // ---- RENDER CONTEXT TABLE ----
@@ -5107,15 +5141,19 @@ async function quickAddFromPool(mlbId, name, team, primaryPos, age, btnEl){
       if(ct && ct.parentOrgId) finalTeam = orgIdToAbbr(ct.parentOrgId) || finalTeam;
     }catch(e){}
   }
+  // ADD_STAT_FIX_V1 — use _readStat/_readStatFloat so we pick up stats from EITHER the nested
+  // p.stats object (from fetchPoolStats) OR direct-on-p fields (from loadAllPoolStats bulk loader).
+  // Before this, if loadAllPoolStats had populated the player, p.stats === true and we got null
+  // everywhere. Now we check both places.
   const newPlayer = {
     id:uid(), mlb_id:mlbId, name, team:finalTeam,
     positions: p.eligible_positions && p.eligible_positions.length > 0 ? p.eligible_positions : (primaryPos?[primaryPos]:[]),
     age:finalAge, birthDate: p.birthDate || null,
     rank:players.length+1, move:'new', prev_rank:null, note:'',
-    avg:s.avg||null, obp:s.obp||null, ops:s.ops||null, hr:s.hr??null,
-    rbi:s.rbi??null, r:s.r??null, sb:s.sb??null,
-    era:s.era||null, whip:s.whip||null, k:s.k??null, w:s.w??null,
-    sv:s.sv??null, hld:s.hld??null, ip:s.ip||null,
+    avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'),
+    rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'),
+    era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'),
+    sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip'),
     yahoo_rank:null, roster_pct:null,
     bats: p.bats || null,
     pitcher_type: p.pitcher_type || null,
@@ -5820,14 +5858,15 @@ async function quickAddLeader(mlbId, name, team, primaryPos, btnEl){
   const s = p.stats || {};
   const finalAge = p.age || null;
   const finalTeam = p.team || team || '';
+  // ADD_STAT_FIX_V1 — _readStat handles both stat shapes (nested p.stats vs direct on p)
   const newPlayer = {
     id: uid(), mlb_id: mlbId, name, team: finalTeam,
     positions: primaryPos ? [primaryPos] : [],
     age: finalAge, rank: players.length+1, move:'new', prev_rank: null, note:'',
-    avg:s.avg||null, obp:s.obp||null, ops:s.ops||null, hr:s.hr??null,
-    rbi:s.rbi??null, r:s.r??null, sb:s.sb??null,
-    era:s.era||null, whip:s.whip||null, k:s.k??null, w:s.w??null,
-    sv:s.sv??null, hld:s.hld??null, ip:s.ip||null,
+    avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'),
+    rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'),
+    era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'),
+    sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip'),
   };
   players.push(newPlayer); reorderRanks(); saveData();
   // ADD_STALE_TABLE_FIX_V1 — merge Savant + re-render main list (see quickAddFromPool for rationale)
@@ -6641,14 +6680,15 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
     const ct = pd.people && pd.people[0] && pd.people[0].currentTeam;
     if(ct && ct.parentOrgId) finalTeam = orgIdToAbbr(ct.parentOrgId) || finalTeam;
   }catch(e){}
+  // ADD_STAT_FIX_V1 — _readStat handles both stat shapes (nested p.stats vs direct on p)
   const newPlayer = {
     id: uid(), mlb_id: mlbId, name, team: finalTeam,
     positions: primaryPos ? [primaryPos] : [], age: p.age || parseInt(age) || null,
     rank: players.length + 1, move: 'new', prev_rank: null, note: '',
-    avg: s.avg||null, obp: s.obp||null, ops: s.ops||null, hr: s.hr??null,
-    rbi: s.rbi??null, r: s.r??null, sb: s.sb??null,
-    era: s.era||null, whip: s.whip||null, k: s.k??null, w: s.w??null,
-    sv: null, hld: null, ip: s.ip||null,
+    avg: _readStatFloat(p,'avg'), obp: _readStatFloat(p,'obp'), ops: _readStatFloat(p,'ops'), hr: _readStat(p,'hr'),
+    rbi: _readStat(p,'rbi'), r: _readStat(p,'r'), sb: _readStat(p,'sb'),
+    era: _readStatFloat(p,'era'), whip: _readStatFloat(p,'whip'), k: _readStat(p,'k'), w: _readStat(p,'w'),
+    sv: null, hld: null, ip: _readStatFloat(p,'ip'),
     yahoo_rank: null, roster_pct: null,
     bats: p.bats || null,
     level: level  // tag as MiLB
