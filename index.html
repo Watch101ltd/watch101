@@ -3833,6 +3833,11 @@ async function exportXLSX(opts){
       // publish_count_since_new but tracks note changes rather than player adds.
       _p.note_publish_count_since_change = 0;
     }
+    // NOTE_ARCHIVE_V1 / NOTE_EMOJI_V1 — refresh the main table so the new
+    // 📋 emoji appears immediately on the row whose note just got archived.
+    // Without this, the player object has the field set but the rendered HTML
+    // is stale until something else triggers a renderTable().
+    try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
   } catch(e){
     console.warn('[NOTE_ARCHIVE_V1] archive step failed (non-fatal):', e);
   }
