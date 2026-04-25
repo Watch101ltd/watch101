@@ -715,6 +715,34 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 #player-page-overlay .ppo-hero-rank .num{font-family:'Bowlby One',sans-serif;font-size:16px;letter-spacing:0.04em}
 #player-page-overlay .ppo-grid{padding:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:20px;}
 @media(max-width:880px){#player-page-overlay .ppo-grid{grid-template-columns:1fr}}
+
+/* MOBILE_TIGHTEN_V1 (April 25, 2026) — On phone-sized screens, hide the
+   deep-dive columns from the main list table so the initial load shows
+   useful stats (HR/RBI/SB/AVG) alongside identity columns without forcing
+   a side-scroll. The hidden columns are still accessible via side-scroll
+   for users who want them. Targets:
+     .type-cell      — placeholder TYPE column (no data yet anyway)
+     .col-obp        — OBP / WHIP
+     .col-ops        — OPS / xERA
+     .savant-col     — xBA, xwOBA
+     .savant-adv-col — already display:none by default unless advanced mode
+   Threshold 768px = covers all common phone widths in portrait. */
+@media(max-width:768px){
+  /* Main list table (real header + body) */
+  #main-table th.type-cell, #main-table td.type-cell,
+  #main-table th.col-obp, #main-table td.col-obp,
+  #main-table th.col-ops, #main-table td.col-ops,
+  #main-table th.savant-col, #main-table td.savant-col {
+    display: none !important;
+  }
+  /* Sticky-clone header that floats over the top of the table */
+  #main-fixed-table th.type-cell,
+  #main-fixed-table th.col-obp,
+  #main-fixed-table th.col-ops,
+  #main-fixed-table th.savant-col {
+    display: none !important;
+  }
+}
 #player-page-overlay .ppo-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;}
 #player-page-overlay .ppo-block h2{font-family:'Bowlby One',sans-serif;font-size:18px;letter-spacing:0.06em;color:var(--gold);margin:0 0 4px;}
 #player-page-overlay .ppo-note{font-size:10px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:14px;}
@@ -1039,7 +1067,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <th onclick="sortBy('rank')">Rank <span class="sort-arrow" id="arr-rank">↕</span></th>
         <th onclick="sortBy('name')" style="width:180px;min-width:180px">Player <span class="sort-arrow" id="arr-name">↕</span></th>
         <th onclick="sortBy('rank_delta')" title="Movement from previous save (+ up / - down)">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
-        <th onclick="sortBy('type')" title="Player type tags — placeholder column, Matt is providing emoji categories" style="width:60px;min-width:60px;text-align:center">Type <span class="sort-arrow" id="arr-type">↕</span></th>
+        <th class="type-cell" onclick="sortBy('type')" title="Player type tags — placeholder column, Matt is providing emoji categories" style="width:60px;min-width:60px;text-align:center">Type <span class="sort-arrow" id="arr-type">↕</span></th>
         <th style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
         <th onclick="sortBy('team')">Team <span class="sort-arrow" id="arr-team">↕</span></th>
         <th onclick="sortBy('age')" title="Age">Age <span class="sort-arrow" id="arr-age">↕</span></th>
@@ -1054,8 +1082,8 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <th title="RBI / SV" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span class="dual-sort-top" onclick="sortBy('rbi')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">RBI <span class="sort-arrow" id="arr-rbi">↕</span></span><span class="dual-sort-bot" onclick="sortBy('sv')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">SV <span class="sort-arrow" id="arr-sv">↕</span></span></div></th>
         <th title="SB / HLD" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span class="dual-sort-top" onclick="sortBy('sb')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">SB <span class="sort-arrow" id="arr-sb">↕</span></span><span class="dual-sort-bot" onclick="sortBy('hld')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">HLD <span class="sort-arrow" id="arr-hld">↕</span></span></div></th>
         <th title="AVG / ERA" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span class="dual-sort-top" onclick="sortBy('avg')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">AVG <span class="sort-arrow" id="arr-avg">↕</span></span><span class="dual-sort-bot" onclick="sortBy('era')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">ERA <span class="sort-arrow" id="arr-era">↕</span></span></div></th>
-        <th title="OBP / WHIP" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span class="dual-sort-top" onclick="sortBy('obp')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">OBP <span class="sort-arrow" id="arr-obp">↕</span></span><span class="dual-sort-bot" onclick="sortBy('whip')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">WHIP <span class="sort-arrow" id="arr-whip">↕</span></span></div></th>
-        <th title="OPS / xERA" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span class="dual-sort-top" onclick="sortBy('ops')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">OPS <span class="sort-arrow" id="arr-ops">↕</span></span><span class="dual-sort-bot" onclick="sortBy('sv_xera')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">xERA <span class="sort-arrow" id="arr-sv_xera">↕</span></span></div></th>
+        <th class="col-obp" title="OBP / WHIP" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span class="dual-sort-top" onclick="sortBy('obp')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">OBP <span class="sort-arrow" id="arr-obp">↕</span></span><span class="dual-sort-bot" onclick="sortBy('whip')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">WHIP <span class="sort-arrow" id="arr-whip">↕</span></span></div></th>
+        <th class="col-ops" title="OPS / xERA" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span class="dual-sort-top" onclick="sortBy('ops')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">OPS <span class="sort-arrow" id="arr-ops">↕</span></span><span class="dual-sort-bot" onclick="sortBy('sv_xera')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">xERA <span class="sort-arrow" id="arr-sv_xera">↕</span></span></div></th>
         <th class="savant-col" onclick="sortBy('sv_xba')" title="Expected Batting Average (Statcast)">xBA <span class="sort-arrow" id="arr-sv_xba">↕</span></th>
         <th class="savant-col" onclick="sortBy('sv_xwoba')" title="Expected wOBA (Statcast)">xwOBA <span class="sort-arrow" id="arr-sv_xwoba">↕</span></th>
         <th class="savant-adv-col" title="Avg Exit Velocity (Statcast) — top: hitters (higher=better), bottom: pitchers (lower=better)" style="padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortBy('sv_ev_h')" style="display:block;color:var(--gold);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">EV <span class="sort-arrow" id="arr-sv_ev_h">↕</span></span><span onclick="sortBy('sv_ev_p')" style="display:block;color:var(--text);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">EV <span class="sort-arrow" id="arr-sv_ev_p">↕</span></span></div></th>
@@ -2918,8 +2946,8 @@ function renderTable(){
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.rbi)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.sv)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.sb)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.hld)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statAvg(sc&&sc.avg)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.era,2)}</span>`}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statAvg(sc&&sc.obp)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.whip,2)}</span>`}</td>
-      <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.ops,3)}</span>`:`<span style="color:${pitStatColor}">${p.sv_xera!=null?p.sv_xera.toFixed(2):'—'}</span>`}</td>
+      <td class="stat-cell col-obp" style="text-align:right">${!pit?`<span style="color:${statColor}">${statAvg(sc&&sc.obp)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.whip,2)}</span>`}</td>
+      <td class="stat-cell col-ops" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.ops,3)}</span>`:`<span style="color:${pitStatColor}">${p.sv_xera!=null?p.sv_xera.toFixed(2):'—'}</span>`}</td>
       <td class="stat-cell savant-col" title="xBA (Statcast)">${!pit?fmtSavant(p.sv_xba):na}</td>
       <td class="stat-cell savant-col" title="xwOBA (Statcast)">${fmtSavant(p.sv_xwoba)}</td>
       <td class="stat-cell savant-adv-col" title="Avg Exit Velocity">${!pit?`<span style="color:var(--gold)">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`:`<span style="color:var(--text)">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`}</td>
@@ -7431,6 +7459,26 @@ function syncMainFixedHeader(){
       fixedBar.style.display = 'none';
     }
   });
+
+  // MOBILE_TIGHTEN_V1 / HEADER_HSCROLL_SYNC_V1 (April 25, 2026) — when the
+  // table's horizontal scroll container scrolls left/right, the position:fixed
+  // header was getting left behind because its `left` was set once at sync
+  // time using getBoundingClientRect(). On mobile (where the table is wider
+  // than the viewport and side-scrolls), this caused the header to desync from
+  // the body. Fix: subscribe to horizontal scroll on the .table-wrap container
+  // that wraps #main-table and offset the fixed header's left to match.
+  const tableWrap = document.querySelector('#main-table') ? document.querySelector('#main-table').closest('.table-wrap') : null;
+  if(tableWrap){
+    let _initialLeft = null;
+    tableWrap.addEventListener('scroll', function(){
+      if(_initialLeft === null){
+        // Capture the table's offset relative to viewport BEFORE any horizontal
+        // scroll has happened. Subsequent calls subtract scrollLeft from this.
+        _initialLeft = realTable.getBoundingClientRect().left + tableWrap.scrollLeft;
+      }
+      fixedBar.style.left = (_initialLeft - tableWrap.scrollLeft) + 'px';
+    });
+  }
 }
 
 // Initialize after page loads
