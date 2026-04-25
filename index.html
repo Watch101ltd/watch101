@@ -199,6 +199,13 @@ tr.row-minor-stats:hover td{background:rgba(234,179,8,0.14)}
 .news-badge:hover{opacity:1;transform:scale(1.15)}
 .news-badge:focus{outline:1px solid var(--turquoise,#5fd3c5);outline-offset:1px}
 
+/* NOTE_EMOJI_V1 (April 25, 2026) — clickable clipboard icon next to player
+   name when Matt has recently added or changed a note. Visually consistent
+   with .news-badge so the two adjacent badges feel like one family. */
+.note-badge{display:inline-block;font-size:11px;line-height:1;padding:1px 2px;margin-left:2px;cursor:pointer;border-radius:2px;flex-shrink:0;vertical-align:middle;transition:transform 120ms ease,opacity 120ms ease;opacity:0.85}
+.note-badge:hover{opacity:1;transform:scale(1.15)}
+.note-badge:focus{outline:1px solid var(--turquoise,#5fd3c5);outline-offset:1px}
+
 /* DAYMODE_BADGES_V1 (April 24, 2026) — day-mode overrides for position + injury badges.
    Night-mode badges use dark fill + bright text (perfect on black background).
    On the light gray day-mode background they read as heavy dark blobs. This block
@@ -2687,6 +2694,48 @@ function newsBadge(p){
   }
 }
 
+// NOTE_EMOJI_V1 (April 25, 2026) — clickable 📋 next to the player name when
+// Matt has recently added or changed a note (within the last publish cycle).
+// Visible only when p.note_publish_count_since_change exists on the player
+// object — that field is set to 0 by the NOTE_ARCHIVE_V1 path in exportXLSX,
+// then ticked to 1 by _tick_publish_counter.ps1 on Approve, then removed on
+// the following Approve. So the emoji appears for one publish cycle and then
+// quietly disappears. Click opens the same Deep Cut overlay as clicking the
+// player's name. stopPropagation prevents bubbling to row-level handlers.
+function noteBadge(p){
+  try {
+    if(!p) return '';
+    if(!Object.prototype.hasOwnProperty.call(p, 'note_publish_count_since_change')) return '';
+    var pid = (p.id != null) ? String(p.id).replace(/'/g, '') : '';
+    if(!pid) return '';
+    return '<span class="note-badge" '
+         + 'onclick="event.stopPropagation(); noteBadgeOpen(\'' + pid + '\');" '
+         + 'title="Matt added or changed a note recently — click to read" '
+         + 'role="button" tabindex="0">📋</span>';
+  } catch(e){
+    return '';
+  }
+}
+
+// NOTE_EMOJI_V1 — click handler for noteBadge. Looks up the player by id and
+// delegates to openPlayerCard, which bridges to openPlayerPage (the Deep Cut
+// full-screen overlay). Same destination as clicking the player's name.
+function noteBadgeOpen(playerId){
+  try {
+    var p = players.find(function(x){ return String(x.id) === String(playerId); });
+    if(!p){
+      // Fall back: try to match by mlb_id in case the row is from Pool/Leaders
+      // where id is the mlb_id string.
+      p = players.find(function(x){ return String(x.mlb_id) === String(playerId); });
+    }
+    if(!p) return;
+    var fakeE = { target: document.body };
+    openPlayerCard(fakeE, p);
+  } catch(e){
+    console.warn('[NOTE_EMOJI_V1] noteBadgeOpen failed:', e);
+  }
+}
+
 // NEWS_BADGE_V1 click handler — finds the player by mlb_id and opens
 // the Deep Cut overlay (openPlayerPage). Falls back gracefully if the
 // player isn't in the active list (shouldn't happen — the badge is
@@ -2777,7 +2826,7 @@ function renderTable(){
     return `<tr class="${rowClass(p.move)}${_minorStatsClass}" draggable="true" data-id="${p.id}" data-idx="${i}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
       <td><span class="drag-handle">⠿</span></td>
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
-      <td class="player-col"><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${newsBadge(p)}</div></td>
+      <td class="player-col"><div class="name-cell"><span class="player-name">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${newsBadge(p)}${noteBadge(p)}</div></td>
       <td class="stat-cell">${renderDelta(p)}</td>
       <td class="stat-cell type-cell" style="text-align:center" title="Player type tags (placeholder)"></td>
       <td class="pos-cell">${posBadgesColumn(p.positions)}</td>
@@ -3777,6 +3826,12 @@ async function exportXLSX(opts){
         : '';
       if(_curr === _last) continue; // unchanged → don't double-archive
       _p.note_history.unshift({ date_time: _archiveStamp, body: _curr });
+      // NOTE_EMOJI_V1 (April 25, 2026) — flag the player as "freshly noted"
+      // by setting the counter to 0. The Approve cycle's tick script will
+      // bump this to 1 (emoji visible to fans) on first publish, then graduate
+      // it on the next publish (emoji disappears). Same lifecycle as
+      // publish_count_since_new but tracks note changes rather than player adds.
+      _p.note_publish_count_since_change = 0;
     }
   } catch(e){
     console.warn('[NOTE_ARCHIVE_V1] archive step failed (non-fatal):', e);
@@ -4832,7 +4887,7 @@ function renderPool(){
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
       <td></td>
-      <td class="player-col"><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}</div></td>
+      <td class="player-col"><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
       <td class="pos-cell">${posBadgesColumn(poolPositions, 'pool')}</td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
@@ -5301,7 +5356,7 @@ function renderContext(){
     if(isPit){
       return `<tr class="${rowClass}">
         <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:12px;${rankStyle}">${rank}</td>
-        <td><div class="pool-player-name"><span class="pname">${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}</div></td>
+        <td><div class="pool-player-name"><span class="pname">${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
@@ -5319,7 +5374,7 @@ function renderContext(){
     } else {
       return `<tr class="${rowClass}">
         <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:12px;${rankStyle}">${rank}</td>
-        <td><div class="pool-player-name"><span class="pname">${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}</div></td>
+        <td><div class="pool-player-name"><span class="pname">${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
@@ -5365,7 +5420,7 @@ function compareSearchInput(val){
     if(!matches.length){ dd.innerHTML='<div class="pool-sri"><div class="pool-sri-name" style="color:var(--text3)">No players found</div></div>'; dd.classList.add('open'); return; }
     dd.innerHTML = matches.map(p=>`
       <div class="pool-sri" onclick="addComparePlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team}','${p.primaryPos}',${p.age||0})">
-        <div class="pool-sri-name">${p.name}${injuryBadge(p.injury_status)}${newsBadge(p)}</div>
+        <div class="pool-sri-name">${p.name}${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div>
         <div class="pool-sri-meta">${p.team||'—'} · ${p.primaryPos||'—'} · Age ${decimalAge(p)}</div>
       </div>`).join('');
     dd.classList.add('open');
@@ -5697,7 +5752,7 @@ function renderLeaders(){
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}" style="cursor:pointer">
       <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
-      <td class="player-col"><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}</div></td>
+      <td class="player-col"><div class="name-cell"><span class="player-name" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
       <td class="pos-cell">${posBadgesColumn(leaderPositions, 'leaders')}</td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
