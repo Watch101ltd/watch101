@@ -747,24 +747,37 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
     padding: 4px 3px !important;
     font-size: 11px !important;
   }
-  /* MOBILE_TIGHTEN_V3 - cap the Player name column on mobile so long names
+  /* MOBILE_TIGHTEN_V3.3 - cap the Player name column on mobile so long names
      ("Simeon Woods Richardson") don't push stats off-screen. Player is column 3.
-     The full name is still visible by tapping the name to open Deep Cut. */
+     CRITICAL: the inner badges (injury, news 📰, note 📋) must NEVER get clipped
+     by the ellipsis. Layout: cell is a flex container, .player-name shrinks
+     with ellipsis, badges keep their natural size. The full name is visible
+     by tapping the name to open Deep Cut. */
   #main-table tr > td:nth-child(3),
   #main-table tr > th:nth-child(3) {
-    max-width: 110px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
+    max-width: 130px !important;
   }
-  /* Allow the inner spans (player-name, badges, etc.) to honor the truncation */
-  #main-table tr > td:nth-child(3) .name-cell,
-  #main-table tr > td:nth-child(3) .player-name {
+  #main-table tr > td:nth-child(3) .name-cell {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    overflow: hidden !important;
     max-width: 100% !important;
+  }
+  #main-table tr > td:nth-child(3) .name-cell .player-name {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
     display: inline-block !important;
+  }
+  /* Badges keep their natural size - never shrink, never clip */
+  #main-table tr > td:nth-child(3) .name-cell .injury-badge,
+  #main-table tr > td:nth-child(3) .name-cell .news-badge,
+  #main-table tr > td:nth-child(3) .name-cell .note-badge,
+  #main-table tr > td:nth-child(3) .name-cell .level-badge {
+    flex: 0 0 auto !important;
   }
   /* Hide non-critical columns. Order in HTML:
      1=☰ 2=Rank 3=Player 4=+/- 5=Type 6=Pos 7=Team 8=Age 9=B/T 10=Note
