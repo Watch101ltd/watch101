@@ -1769,6 +1769,51 @@ function snapshotBaseline(){
   players.forEach(p => { p.prev_rank = p.rank; });
 }
 
+// HA_NOTIFY_ON_SAVE_V1 (April 25, 2026)
+// When Matt (or anyone) clicks "Save to Excel" and the save succeeds,
+// fire a fire-and-forget POST to Home Assistant so the Dude gets a push
+// notification on his phone. Silent autosaves (after every + Add, edit,
+// drag-reorder, etc.) do NOT trigger this — only manual "Save to Excel"
+// clicks do. Gating happens at the call site inside exportXLSX() via
+// the !silent check.
+//
+// The webhook URL hits a Nabu Casa public endpoint that routes to the
+// Dude's HA instance, which fires a per-list automation that fires a
+// per-list notification script. See Memory\HA_MattSavedList_Phase1_YAML.md
+// for the HA-side YAML.
+//
+// Failure mode: if the network is down or HA is unreachable, the catch()
+// silently swallows the error so Save still succeeds. We never block the
+// user's save flow on a notification problem.
+const _HA_WEBHOOK_BASE = 'https://m83l7x3jyktd45rufvqex1j2rtns2db0.ui.nabu.casa/api/webhook';
+const _HA_WEBHOOK_BY_LIST = {
+  integrity: 'matt_saved_integrity',
+  amateur:   'matt_saved_amateur',
+  deeper15:  'matt_saved_deeper15',
+  h2h12:     'matt_saved_h2h12',
+  prospects: 'matt_saved_prospects',
+  weekly12:  'matt_saved_weekly12',
+};
+function _notifyHomeAssistantOnSave(listId){
+  try {
+    const slug = (listId || '').toString().toLowerCase();
+    const hookId = _HA_WEBHOOK_BY_LIST[slug];
+    if(!hookId){
+      console.warn('[HA_NOTIFY_ON_SAVE_V1] no webhook mapped for listId:', listId);
+      return;
+    }
+    fetch(_HA_WEBHOOK_BASE + '/' + hookId, {
+      method: 'POST',
+      mode: 'no-cors',     // we don't read the response, fire-and-forget
+      keepalive: true,     // survive page navigation if user clicks away
+    }).catch(() => {});    // silently swallow network errors — never block Save
+  } catch(e){
+    // Defensive: never let a notification problem break the Save flow
+    console.warn('[HA_NOTIFY_ON_SAVE_V1] notify call threw:', e);
+  }
+}
+// /HA_NOTIFY_ON_SAVE_V1
+
 async function saveData(){
   // DELTA_PERSIST_V1 — compute p.move from prev_rank vs rank (drives the ▲/▼ arrows
   // next to each player's row), but DO NOT reset prev_rank. Previously this function
@@ -3713,6 +3758,12 @@ async function exportXLSX(opts){
 
       const btn = document.querySelector('button[onclick="exportXLSX()"]');
       if(btn){ const orig=btn.textContent; btn.textContent='✅ Saved to ' + listSlug + ' (xlsx + json)!'; setTimeout(()=>btn.textContent=orig, 2500); }
+
+      // HA_NOTIFY_ON_SAVE_V1 — manual saves only, never silent autosaves.
+      // The !silent gate ensures + Add, drag-reorder, edit-note, etc. don't
+      // ping the Dude's phone — only intentional "Save to Excel" clicks do.
+      if(!silent){ _notifyHomeAssistantOnSave(listId); }
+
       return;
     } catch(err){
       if(err.name === 'AbortError') return; // user cancelled — do nothing
