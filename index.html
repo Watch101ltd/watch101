@@ -728,41 +728,59 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
      .savant-adv-col — already display:none by default unless advanced mode
    Threshold 768px = covers all common phone widths in portrait. */
 @media(max-width:768px){
-  /* MOBILE_TIGHTEN_V2 (April 25, 2026) — Hide more columns on mobile so the
-     core stats (HR/RBI/SB/AVG) actually appear in the visible viewport at
-     initial load. V1 only hid the deep-dive stuff at the right edge, which
-     was already off-screen behind side-scroll, so it didn't help.
-     V2 also hides identity columns that aren't critical: +/- delta, Age,
-     B/T, Note column, OWNED, Yahoo Rank, ADP. Those are still accessible by
-     side-scrolling or by tapping the player name to open the Deep Cut page. */
-  /* Main list table (real header + body) */
-  #main-table th.type-cell, #main-table td.type-cell,
-  #main-table th.col-obp, #main-table td.col-obp,
-  #main-table th.col-ops, #main-table td.col-ops,
-  #main-table th.savant-col, #main-table td.savant-col,
-  /* Hide the +/- delta column (4th column, no class — target by nth-child) */
-  #main-table tr > th:nth-child(4), #main-table tr > td:nth-child(4),
-  /* Hide Age (8th), B/T (9th), Note (10th), OWNED (11th), RANK (12th), ADP (13th) */
-  #main-table tr > th:nth-child(8), #main-table tr > td:nth-child(8),
-  #main-table tr > th:nth-child(9), #main-table tr > td:nth-child(9),
-  #main-table tr > th:nth-child(10), #main-table tr > td:nth-child(10),
-  #main-table tr > th:nth-child(11), #main-table tr > td:nth-child(11),
-  #main-table tr > th:nth-child(12), #main-table tr > td:nth-child(12),
-  #main-table tr > th:nth-child(13), #main-table tr > td:nth-child(13) {
+  /* MOBILE_TIGHTEN_V3 (April 25, 2026) — Hide non-critical columns AND let
+     the table shrink-to-fit so the remaining columns actually fit on screen.
+     The previous attempts hid columns but the kept columns just stretched
+     to fill the freed-up width, leaving stats still off-screen behind a side-scroll.
+     V3 forces table-layout:auto and removes fixed widths on mobile so the
+     core columns Rank|Player|Pos|Team and the dual-stat columns (HR/RBI/SB/AVG)
+     can actually fit in the viewport without scrolling. Side-scroll still
+     reveals the few remaining stats columns we keep. */
+  #main-table {
+    table-layout: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  #main-table th, #main-table td {
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 4px 3px !important;
+    font-size: 11px !important;
+  }
+  /* Hide non-critical columns. Order in HTML:
+     1=☰ 2=Rank 3=Player 4=+/- 5=Type 6=Pos 7=Team 8=Age 9=B/T 10=Note
+     11=OWNED 12=Y!Rank 13=ADP 14=AB/IP 15=R/K 16=HR/W 17=RBI/SV 18=SB/HLD
+     19=AVG/ERA 20=OBP/WHIP 21=OPS/xERA 22=xBA 23=xwOBA 24+=action/savant-adv
+     Keep visible: 1☰ 2Rank 3Player 6Pos 7Team 14AB 15R 16HR 17RBI 18SB 19AVG */
+  #main-table tr > th:nth-child(4), #main-table tr > td:nth-child(4),     /* +/- */
+  #main-table tr > th:nth-child(5), #main-table tr > td:nth-child(5),     /* Type */
+  #main-table tr > th:nth-child(8), #main-table tr > td:nth-child(8),     /* Age */
+  #main-table tr > th:nth-child(9), #main-table tr > td:nth-child(9),     /* B/T */
+  #main-table tr > th:nth-child(10), #main-table tr > td:nth-child(10),   /* Note */
+  #main-table tr > th:nth-child(11), #main-table tr > td:nth-child(11),   /* OWNED */
+  #main-table tr > th:nth-child(12), #main-table tr > td:nth-child(12),   /* Y!Rank */
+  #main-table tr > th:nth-child(13), #main-table tr > td:nth-child(13),   /* ADP */
+  #main-table tr > th:nth-child(20), #main-table tr > td:nth-child(20),   /* OBP */
+  #main-table tr > th:nth-child(21), #main-table tr > td:nth-child(21),   /* OPS */
+  #main-table tr > th:nth-child(22), #main-table tr > td:nth-child(22),   /* xBA */
+  #main-table tr > th:nth-child(23), #main-table tr > td:nth-child(23) {  /* xwOBA */
     display: none !important;
   }
   /* Sticky-clone header that floats over the top of the table */
-  #main-fixed-table th.type-cell,
-  #main-fixed-table th.col-obp,
-  #main-fixed-table th.col-ops,
-  #main-fixed-table th.savant-col,
+  #main-fixed-table { table-layout: auto !important; width: 100% !important; min-width: 0 !important; }
+  #main-fixed-table th { width: auto !important; min-width: 0 !important; padding: 4px 3px !important; font-size: 9px !important; }
   #main-fixed-table tr > th:nth-child(4),
+  #main-fixed-table tr > th:nth-child(5),
   #main-fixed-table tr > th:nth-child(8),
   #main-fixed-table tr > th:nth-child(9),
   #main-fixed-table tr > th:nth-child(10),
   #main-fixed-table tr > th:nth-child(11),
   #main-fixed-table tr > th:nth-child(12),
-  #main-fixed-table tr > th:nth-child(13) {
+  #main-fixed-table tr > th:nth-child(13),
+  #main-fixed-table tr > th:nth-child(20),
+  #main-fixed-table tr > th:nth-child(21),
+  #main-fixed-table tr > th:nth-child(22),
+  #main-fixed-table tr > th:nth-child(23) {
     display: none !important;
   }
 }
