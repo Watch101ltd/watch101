@@ -206,6 +206,14 @@ tr.row-minor-stats:hover td{background:rgba(234,179,8,0.14)}
 .note-badge:hover{opacity:1;transform:scale(1.15)}
 .note-badge:focus{outline:1px solid var(--turquoise,#5fd3c5);outline-offset:1px}
 
+/* NOTE_HYPERLINK_V1 (April 25, 2026) — chain link icon shown to the right of
+   a note's text when the note contains an http(s) URL. Sits inside the Notes
+   column and inside each archived note entry on the player page. Click opens
+   in a new tab; hover shows the full URL via title attribute. */
+.note-link-badge{display:inline-block;font-size:11px;line-height:1;padding:1px 2px;margin-left:4px;cursor:pointer;border-radius:2px;flex-shrink:0;vertical-align:middle;text-decoration:none;transition:transform 120ms ease,opacity 120ms ease;opacity:0.85}
+.note-link-badge:hover{opacity:1;transform:scale(1.15);text-decoration:none}
+.note-link-badge:focus{outline:1px solid var(--turquoise,#5fd3c5);outline-offset:1px}
+
 /* DAYMODE_BADGES_V1 (April 24, 2026) — day-mode overrides for position + injury badges.
    Night-mode badges use dark fill + bright text (perfect on black background).
    On the light gray day-mode background they read as heavy dark blobs. This block
@@ -2717,7 +2725,48 @@ function noteBadge(p){
   }
 }
 
-// NOTE_EMOJI_V1 — click handler for noteBadge. Looks up the player by id and
+// NOTE_HYPERLINK_V1 (April 25, 2026) - extracts the first http(s) URL from a
+// note string and returns {text, url}. The URL is stripped from text so the
+// renderer can show clean note content with a separate chain icon. If no URL
+// is found, returns {text: original, url: null}. Helper is used everywhere a
+// note renders (main list Notes column, Matt's Take section on player page).
+//
+// Per the Dude's spec (April 25 2026): only http:// or https:// counts. Bare
+// domains like "espn.com" are intentionally NOT detected to avoid false
+// positives. Matt knows to include the protocol.
+function _splitNoteAndUrl(noteText){
+  if(noteText == null) return { text: '', url: null };
+  var s = String(noteText);
+  // Match the first http or https URL. Stops at whitespace OR these chars:
+  // < > " ' ` so we don't grab trailing punctuation that the user typed.
+  var m = s.match(/https?:\/\/[^\s<>"'`]+/);
+  if(!m) return { text: s, url: null };
+  var url = m[0];
+  // Strip trailing punctuation that's commonly typed AFTER a URL but isn't
+  // part of it: . , ; : ! ? ) ] }
+  url = url.replace(/[.,;:!?)\]}]+$/, '');
+  // Remove the URL from the displayed text. Use the trimmed URL so we don't
+  // accidentally leave punctuation orphaned.
+  var stripped = s.replace(url, '').replace(/\s+/g, ' ').trim();
+  return { text: stripped, url: url };
+}
+
+// NOTE_HYPERLINK_V1 - render the chain icon if a URL was extracted. Returns
+// empty string when url is null. The icon opens the URL in a new tab.
+// stopPropagation on click prevents the parent row click from firing too.
+function _renderNoteLinkBadge(url){
+  if(!url) return '';
+  // Escape double quotes in the URL so it's safe to drop into an attribute.
+  var safeUrl = String(url).replace(/"/g, '&quot;');
+  return ' <a class="note-link-badge" '
+       + 'href="' + safeUrl + '" '
+       + 'target="_blank" rel="noopener noreferrer" '
+       + 'onclick="event.stopPropagation();" '
+       + 'title="' + safeUrl + '" '
+       + 'role="button">🔗</a>';
+}
+
+// NOTE_EMOJI_V1 - click handler for noteBadge. Looks up the player by id and
 // delegates to openPlayerCard, which bridges to openPlayerPage (the Deep Cut
 // full-screen overlay). Same destination as clicking the player's name.
 function noteBadgeOpen(playerId){
@@ -2839,6 +2888,12 @@ function renderTable(){
           // has archived entries, show the most recent archived note instead so
           // the column never goes blank just because today's session hasn't
           // overwritten it. Click still edits p.note (the live field).
+          //
+          // NOTE_HYPERLINK_V1 (April 25, 2026) — if the displayed note contains
+          // an http(s) URL, strip it from the visible text and render a 🔗
+          // chain icon to the right that opens the URL in a new tab. Hover
+          // shows the full URL. Editing still operates on the FULL original
+          // note (URL intact) — only display strips it.
           const _live = (p.note != null) ? String(p.note) : '';
           const _arch = (Array.isArray(p.note_history) && p.note_history.length > 0 && p.note_history[0])
             ? String(p.note_history[0].body || '') : '';
@@ -2846,9 +2901,13 @@ function renderTable(){
           const _isLive = !!_live;
           const _emptyClass = _shown ? '' : 'empty';
           const _archivedClass = (!_isLive && _arch) ? ' archived-only' : '';
+          // Split the displayed note (NOT the editable source) into text + url
+          const _split = _splitNoteAndUrl(_shown);
+          const _displayText = _split.text || (_shown ? '' : 'Add note...');
+          const _linkBadge = _renderNoteLinkBadge(_split.url);
+          // Title tooltip uses the full original note so Matt can see the URL
           const _titleAttr = (_shown || '').replace(/"/g,'&quot;');
-          const _bodyText = _shown || 'Add note...';
-          return `<div class="note-display ${_emptyClass}${_archivedClass}" onclick="editNote('${p.id}',this)" title="${_titleAttr}">${_bodyText}</div>`;
+          return `<div class="note-display ${_emptyClass}${_archivedClass}" onclick="editNote('${p.id}',this)" title="${_titleAttr}">${_displayText}${_linkBadge}</div>`;
         })()}</td>
       <td class="stat-cell">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
       <td class="yahoo-rank">${fmt(p.yahoo_rank)}</td>
@@ -54368,8 +54427,10 @@ function openPlayerPage(p){
   if(liveIsUnsaved){
     // Show the live unsaved note at the top with a special label so the Dude
     // knows it isn't archived yet (will be on next Save-to-Excel).
+    // NOTE_HYPERLINK_V1 — strip URL from displayed text, render chain icon.
+    var _liveSplit = _splitNoteAndUrl(currentNote);
     notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date current">Live edit &middot; unsaved</div>'
-               + '<div class="ppo-note-body">' + escapeHtml(currentNote) + '</div></div>';
+               + '<div class="ppo-note-body">' + escapeHtml(_liveSplit.text) + _renderNoteLinkBadge(_liveSplit.url) + '</div></div>';
   }
   if(fullHistory.length > 0){
     notesHtml += '<div class="ppo-notes-scroll">';
@@ -54377,8 +54438,11 @@ function openPlayerPage(p){
       var h = fullHistory[i];
       var stamp = h.date_time || h.date || '';
       var labelExtra = (i === 0 && !liveIsUnsaved) ? '<span class="latest-badge"> &middot; latest</span>' : '';
+      // NOTE_HYPERLINK_V1 — each archived note carries its own link icon if it
+      // had a URL when it was saved.
+      var _hSplit = _splitNoteAndUrl(h.body || '');
       notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date">' + escapeHtml(stamp) + labelExtra + '</div>'
-                 + '<div class="ppo-note-body">' + escapeHtml(h.body || '') + '</div></div>';
+                 + '<div class="ppo-note-body">' + escapeHtml(_hSplit.text) + _renderNoteLinkBadge(_hSplit.url) + '</div></div>';
     }
     notesHtml += '</div>';
     notesHtml += '<div class="ppo-notes-count">' + fullHistory.length + ' archived ' + (fullHistory.length===1?'note':'notes') + '</div>';
