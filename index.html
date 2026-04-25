@@ -732,7 +732,7 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 #player-page-overlay .ppo-lineup-blurb.good .ppo-lineup-label{color:#10b981;}
 #player-page-overlay .ppo-lineup-blurb.neutral{border-left-color:var(--text3);}
 #player-page-overlay .ppo-lineup-blurb.neutral .ppo-lineup-label{color:var(--text3);}
-/* GAME_LOG_CSS_V1 — Last 10 Games card */
+/* GAME_LOG_CSS_V1 — Last 7 Games card (LAST7_LABELS_V1 — was Last 10 Games) */
 #player-page-overlay #ppo-gamelog-wrap{margin-top:4px;}
 #player-page-overlay .ppo-gamelog-summary{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 14px;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;font-size:12px;color:var(--text2);}
 #player-page-overlay .ppo-gamelog-summary .gl-sum-label{font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:700;}
@@ -792,7 +792,7 @@ body.day-mode #player-page-overlay .ppo-chart-label{fill:#475569;}
 body.day-mode #player-page-overlay .ppo-pod-entry{background:rgba(0,0,0,0.015);}
 body.day-mode #player-page-overlay .ppo-pod-entry:hover{background:rgba(255,184,0,0.06);}
 
-/* ---- Next 7 Days Schedule ---- */
+/* ---- Next 7 Games Schedule (LAST7_LABELS_V1 — was Next 7 Days) ---- */
 #player-page-overlay .ppo-sched-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
 #player-page-overlay .ppo-sched-row{display:grid;grid-template-columns:84px 46px 56px 1fr 48px;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px;}
 #player-page-overlay .ppo-sched-row.off{opacity:0.55;}
@@ -18887,19 +18887,19 @@ function renderLineupBlurb(mlbId){
     else if(/on il|back from il|missed|scratched [2-9]|scratched 1[0-9]/i.test(text)){ tone = 'warn'; }
   }
   el.innerHTML = '<div class="ppo-lineup-blurb ' + tone + '">'
-               + '<span class="ppo-lineup-label">Lineup &middot; Last 7 Days</span>'
+               + '<span class="ppo-lineup-label">Lineup &middot; Last 7 Games</span>'
                + '<span class="ppo-lineup-text">' + escapeHtml(text) + '</span>'
                + '</div>';
 }
 
-// GAME_LOG_RENDER_V1 — renders the Last 10 Games box-score table on the overlay.
+// GAME_LOG_RENDER_V1 — renders the Last 7 Games box-score table on the overlay. (LAST7_LABELS_V1)
 // Reads PLAYER_GAME_LOG which is populated by lineup_history.py --inject.
 function renderGameLog(mlbId){
   var wrap = document.getElementById('ppo-gamelog-wrap');
   if(!wrap) return;
   var entry = (window.PLAYER_GAME_LOG && PLAYER_GAME_LOG[mlbId]) ? PLAYER_GAME_LOG[mlbId] : null;
   if(!entry || !entry.games || !entry.games.length){
-    wrap.innerHTML = '<div class="ppo-gamelog-empty">Brandt has not tallied the last 10 games for this player yet.</div>';
+    wrap.innerHTML = '<div class="ppo-gamelog-empty">Brandt has not tallied the last 7 games for this player yet.</div>';
     return;
   }
   var s = entry.summary || {};
@@ -18910,7 +18910,7 @@ function renderGameLog(mlbId){
   }
   var scratchExtra = (s.scratches && s.scratches > 0) ? 'warn' : '';
   var summaryHtml = '<div class="ppo-gamelog-summary">'
-    + '<span class="gl-sum-label">L' + (s.window || 10) + '</span>'
+    + '<span class="gl-sum-label">L' + (s.window || 7) + '</span>'
     + '<span class="gl-sum-avg">' + escapeHtml(String(s.avg || '.000')) + '</span>'
     + sc('HR', s.hr || 0)
     + sc('RBI', s.rbi || 0)
@@ -19539,14 +19539,14 @@ function togglePresentMode(){
       <div class="ppo-note">Live Statcast percentile rankings &middot; vs. all qualified MLB players &middot; 2026</div>
       <div id="ppo-bars"></div>
     </section>
-    <!-- GAME_LOG_CARD_V1 — last-10-games table replaces the old blurb card. -->
+    <!-- GAME_LOG_CARD_V1 — last-7-games table replaces the old blurb card. (LAST7_LABELS_V1) -->
     <section class="ppo-block" style="grid-column:1 / -1">
-      <h2>Last 10 Games</h2>
+      <h2>Last 7 Games</h2>
       <div class="ppo-note">Per-game box scores &middot; Newest first &middot; Source: MLB Stats API</div>
       <div id="ppo-gamelog-wrap"></div>
     </section>
     <section class="ppo-block" style="grid-column:1 / -1">
-      <h2>Next 7 Days</h2>
+      <h2>Next 7 Games</h2>
       <div class="ppo-note">Upcoming schedule &middot; Hitters show opposing probable pitcher (hand, ERA) &middot; Pitchers show their probable starts only &middot; Green = favorable matchup, Red = tough</div>
       <div id="ppo-schedule"></div>
     </section>
