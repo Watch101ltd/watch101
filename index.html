@@ -6590,53 +6590,36 @@ async function fetchDateRangeStats(days){
   const { startDate, endDate } = getDateRangeWindow(days);
   let done = already;
 
-  for(const p of needsFetch){
-    // If user switched away from this range mid-fetch, abort
-    if(dateRange !== days){ break; }
-    try{
-      const lp = (p.level==='AAA'||p.level==='AA'||p.level==='A') ? '&leagueListId=milb_all' : '';
-      const url = `https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=byDateRange&startDate=${startDate}&endDate=${endDate}&season=2026&group=hitting,pitching${lp}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const stats = data.stats || [];
-      const entry = { id: p.id };
-      // MAJORS_VS_MINORS_V1 — pick MLB split if any exists, otherwise fall back to MiLB
-      for(const group of stats){
-        const picked = pickStatSource(group);
-        if(!picked) continue;
-        const s = picked.stat;
-        entry.statsSource = picked.source;
-        if(group.group && group.group.displayName === 'hitting'){
-          entry.avg  = s.avg  ? parseFloat(s.avg)  : null;
-          entry.obp  = s.obp  ? parseFloat(s.obp)  : null;
-          entry.ops  = s.ops  ? parseFloat(s.ops)  : null;
-          entry.ab   = s.atBats   !== undefined ? s.atBats   : null;
-          entry.hr   = s.homeRuns !== undefined ? s.homeRuns : null;
-          entry.rbi  = s.rbi      !== undefined ? s.rbi      : null;
-          entry.r    = s.runs     !== undefined ? s.runs     : null;
-          entry.sb   = s.stolenBases !== undefined ? s.stolenBases : null;
-        }
-        if(group.group && group.group.displayName === 'pitching'){
-          entry.era  = s.era  ? parseFloat(s.era)  : null;
-          entry.whip = s.whip ? parseFloat(s.whip) : null;
-          entry.k    = s.strikeOuts !== undefined ? s.strikeOuts : null;
-          entry.w    = s.wins       !== undefined ? s.wins       : null;
-          entry.sv   = s.saves      !== undefined ? s.saves      : null;
-          entry.hld  = s.holds      !== undefined ? s.holds      : null;
-          entry.ip   = s.inningsPitched !== undefined ? parseFloat(s.inningsPitched) : null;
-        }
-      }
-      dateRangeCache[p.id + '_' + days] = entry;
-    } catch(e){
-      // On error, cache an empty object so we don't retry endlessly
-      dateRangeCache[p.id + '_' + days] = { id: p.id };
+  // BUNDLE_FETCH_V1 (April 25, 2026) — replaces the per-player loop with one
+  // Worker bundle call. KV-cached players return instantly; only cache misses
+  // hit MLB upstream (parallelized server-side at concurrency 8). Loading bar
+  // jumps from 0% to 100% in one step instead of crawling.
+  try {
+    const idsForBundle = needsFetch.map(p => p.mlb_id).filter(Boolean);
+    const bundleUrl = `https://watch101-cache.wild-fog-21df.workers.dev/mlb/player-stats-bundle?ids=${idsForBundle.join(',')}&range=${days}`;
+    const bRes = await fetch(bundleUrl);
+    const bundle = await bRes.json();
+    // If user switched away mid-fetch, drop the result and bail
+    if(dateRange !== days){
+      dateRangeFetching = false;
+      return;
     }
-    done++;
-    const pct = Math.round((done / players.length) * 100);
-    progressFill.style.width = pct + '%';
+    needsFetch.forEach(p => {
+      const stats = bundle[p.mlb_id] || {};
+      dateRangeCache[p.id + '_' + days] = Object.assign({ id: p.id }, stats);
+    });
+    done = players.length;
+    progressFill.style.width = '100%';
     statusCount.textContent = `${done}/${players.length}`;
     renderTable();
-    await new Promise(r => setTimeout(r, 100));
+  } catch(e) {
+    // On total failure, cache empty objects so we don't retry endlessly,
+    // and fall through so the UI still updates.
+    needsFetch.forEach(p => { dateRangeCache[p.id + '_' + days] = { id: p.id }; });
+    done = players.length;
+    progressFill.style.width = '100%';
+    statusCount.textContent = `${done}/${players.length}`;
+    renderTable();
   }
 
   dateRangeFetching = false;
@@ -6685,43 +6668,27 @@ async function fetchPoolDateRangeStats(range){
   });
   const { startDate, endDate } = getDateRangeWindow(range);
 
-  for(const p of needsFetch){
-    if(dateRange !== range){ break; } // user switched away, abort
-    try{
-      const url = `https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=byDateRange&startDate=${startDate}&endDate=${endDate}&season=2026&group=hitting,pitching`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const entry = { mlb_id: p.mlb_id };
-      for(const group of (data.stats||[])){
-        if(!group.splits || group.splits.length === 0) continue;
-        const s = group.splits[0].stat;
-        if(group.group && group.group.displayName === 'hitting'){
-          entry.avg  = s.avg  ? parseFloat(s.avg)  : null;
-          entry.obp  = s.obp  ? parseFloat(s.obp)  : null;
-          entry.ops  = s.ops  ? parseFloat(s.ops)  : null;
-          entry.ab   = s.atBats      !== undefined ? s.atBats      : null;
-          entry.hr   = s.homeRuns    !== undefined ? s.homeRuns    : null;
-          entry.rbi  = s.rbi         !== undefined ? s.rbi         : null;
-          entry.r    = s.runs        !== undefined ? s.runs        : null;
-          entry.sb   = s.stolenBases !== undefined ? s.stolenBases : null;
-        }
-        if(group.group && group.group.displayName === 'pitching'){
-          entry.era  = s.era  ? parseFloat(s.era)  : null;
-          entry.whip = s.whip ? parseFloat(s.whip) : null;
-          entry.k    = s.strikeOuts     !== undefined ? s.strikeOuts     : null;
-          entry.w    = s.wins           !== undefined ? s.wins           : null;
-          entry.sv   = s.saves          !== undefined ? s.saves          : null;
-          entry.hld  = s.holds          !== undefined ? s.holds          : null;
-          entry.ip   = s.inningsPitched !== undefined ? parseFloat(s.inningsPitched) : null;
-        }
-      }
-      poolDateRangeCache[p.mlb_id + '_' + range] = entry;
-    } catch(e){
-      poolDateRangeCache[p.mlb_id + '_' + range] = { mlb_id: p.mlb_id };
+  // BUNDLE_FETCH_V1 (April 25, 2026) — Pool path. Replaces the per-player loop
+  // with one Worker bundle call. Same caching/concurrency benefits as the main
+  // list version. The Pool can be 200-1700 players, so we chunk to 200 ids per
+  // request to stay under the Worker's BUNDLE_MAX_IDS cap.
+  try {
+    const allIds = needsFetch.map(p => p.mlb_id).filter(Boolean);
+    const CHUNK = 200;
+    for(let i = 0; i < allIds.length; i += CHUNK){
+      if(dateRange !== range){ break; } // user switched away, abort
+      const chunk = allIds.slice(i, i + CHUNK);
+      const bundleUrl = `https://watch101-cache.wild-fog-21df.workers.dev/mlb/player-stats-bundle?ids=${chunk.join(',')}&range=${range}`;
+      const bRes = await fetch(bundleUrl);
+      const bundle = await bRes.json();
+      chunk.forEach(mlbId => {
+        const stats = bundle[mlbId] || {};
+        poolDateRangeCache[mlbId + '_' + range] = Object.assign({ mlb_id: mlbId }, stats);
+      });
+      if(poolActive && poolLoaded) renderPool();
     }
-    // Re-render pool live as data comes in (only if pool is currently open)
-    if(poolActive && poolLoaded) renderPool();
-    await new Promise(r => setTimeout(r, 80));
+  } catch(e) {
+    needsFetch.forEach(p => { poolDateRangeCache[p.mlb_id + '_' + range] = { mlb_id: p.mlb_id }; });
   }
   poolDateRangeFetching = false;
   if(poolActive && poolLoaded) renderPool();
