@@ -1666,6 +1666,56 @@ function _isStagingEnvironment(){
 // Fetches the active list's JSON from the new /list/:listId or /list-staging/:listId endpoint.
 // Falls back to the legacy /watchlist endpoint if currentListId is somehow missing.
 // Per-list localStorage cache keys so each list's offline copy is independent.
+// NOTE_ARCHIVE_V1 (April 25, 2026) — one-time per-load migration that copies
+// Brandt's PLAYER_NOTES_HISTORY entries onto each player's note_history array
+// when the player doesn't already have a populated note_history. This bridges
+// the legacy "Brandt parses Matt Comments folder" flow with the new "tracker
+// archives on Save-to-Excel" flow. Once Brandt's note_historian is retired
+// and PLAYER_NOTES_HISTORY stops being populated, this migration becomes a
+// no-op naturally. Safe to run repeatedly because we only seed when the
+// player's note_history is empty AND we dedupe by body text.
+function _seedNoteHistoryFromBrandt(){
+  try {
+    if(typeof PLAYER_NOTES_HISTORY === 'undefined' || !PLAYER_NOTES_HISTORY) return;
+    if(!Array.isArray(players) || players.length === 0) return;
+    let _seededCount = 0;
+    for(let i = 0; i < players.length; i++){
+      const _p = players[i];
+      if(!_p || !_p.mlb_id) continue;
+      const _key = String(_p.mlb_id);
+      const _brandtList = PLAYER_NOTES_HISTORY[_key];
+      if(!Array.isArray(_brandtList) || _brandtList.length === 0) continue;
+      // Initialize note_history if missing
+      if(!Array.isArray(_p.note_history)) _p.note_history = [];
+      // Dedupe by body — don't add a Brandt entry if its body already exists
+      // in the player's note_history.
+      const _existingBodies = {};
+      _p.note_history.forEach(function(h){
+        if(h && h.body) _existingBodies[String(h.body).trim()] = true;
+      });
+      let _addedHere = 0;
+      for(let j = 0; j < _brandtList.length; j++){
+        const _h = _brandtList[j];
+        const _body = _h && _h.body ? String(_h.body).trim() : '';
+        if(!_body) continue;
+        if(_existingBodies[_body]) continue;
+        _p.note_history.push({
+          date_time: _h.date_time || _h.date || '',
+          body: _body
+        });
+        _existingBodies[_body] = true;
+        _addedHere++;
+      }
+      if(_addedHere > 0) _seededCount++;
+    }
+    if(_seededCount > 0){
+      console.log('[NOTE_ARCHIVE_V1] seeded note_history for ' + _seededCount + ' players from Brandt PLAYER_NOTES_HISTORY');
+    }
+  } catch(e){
+    console.warn('[NOTE_ARCHIVE_V1] migration step failed (non-fatal):', e);
+  }
+}
+
 async function loadData(){
   const listId = (typeof currentListId !== 'undefined' && currentListId) ? currentListId : null;
   const listName = (typeof getCurrentList === 'function') ? getCurrentList().name : 'list';
@@ -1694,6 +1744,7 @@ async function loadData(){
 
       if(playerArr.length > 0){
         players = playerArr;
+        _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
         // STAGING_VS_PROD_V1 — different label depending on where the data came from
         const stampWord = isStaging ? 'Staged:' : 'Approved:';
         const stamp = savedStr ? (stampWord + ' ' + savedStr) : 'Loaded';
@@ -1712,6 +1763,7 @@ async function loadData(){
       // /list-staging/:listId returns 404 when nothing has been saved to staging yet.
       // Either way, fall back to localStorage for whatever was last in memory.
       try { const d = localStorage.getItem(lsKey); if(d) players = JSON.parse(d); }catch(e2){}
+      _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
       const ts = localStorage.getItem(lsTime);
       const envBadge = isStaging ? ' [STAGING]' : '';
       const noun = isStaging ? 'staged' : 'approved';
@@ -1724,6 +1776,7 @@ async function loadData(){
   } catch(e) {
     // Server/network error — fall back to per-list localStorage cache
     try { const d = localStorage.getItem(lsKey); if(d) players = JSON.parse(d); }catch(e2){}
+    _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
     const ts = localStorage.getItem(lsTime);
     document.getElementById('last-updated').textContent = ts
       ? (listName + ' — ⚠ Offline (local: ' + ts + ')')
@@ -2731,7 +2784,23 @@ function renderTable(){
       <td class="stat-cell team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
-      <td class="col-note"><div class="note-display ${!p.note?'empty':''}" onclick="editNote('${p.id}',this)" title="${(p.note||'').replace(/"/g,'&quot;')}">${p.note||'Add note...'}</div></td>
+      <td class="col-note">${(()=>{
+          // NOTE_ARCHIVE_V1 (April 25, 2026) — Notes column shows p.note if it
+          // has content (the live edit). If p.note is empty but p.note_history
+          // has archived entries, show the most recent archived note instead so
+          // the column never goes blank just because today's session hasn't
+          // overwritten it. Click still edits p.note (the live field).
+          const _live = (p.note != null) ? String(p.note) : '';
+          const _arch = (Array.isArray(p.note_history) && p.note_history.length > 0 && p.note_history[0])
+            ? String(p.note_history[0].body || '') : '';
+          const _shown = _live || _arch;
+          const _isLive = !!_live;
+          const _emptyClass = _shown ? '' : 'empty';
+          const _archivedClass = (!_isLive && _arch) ? ' archived-only' : '';
+          const _titleAttr = (_shown || '').replace(/"/g,'&quot;');
+          const _bodyText = _shown || 'Add note...';
+          return `<div class="note-display ${_emptyClass}${_archivedClass}" onclick="editNote('${p.id}',this)" title="${_titleAttr}">${_bodyText}</div>`;
+        })()}</td>
       <td class="stat-cell">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
       <td class="yahoo-rank">${fmt(p.yahoo_rank)}</td>
       <td class="yahoo-rank">${fmt(p.preseason_rank)}</td>
@@ -3170,7 +3239,15 @@ function editNote(id,el){
   if(!p) return;
   const input=document.createElement('input');
   input.type='text';input.className='note-input';
-  input.value=p.note||'';input.placeholder='Why did this player move?';
+  // NOTE_ARCHIVE_V1 (April 25, 2026) — if p.note is empty, seed the input with
+  // the most recent archived note so Matt can decide whether to edit it or
+  // wipe and replace. If p.note has content, use that (live in-progress edit).
+  let _seed = (p.note != null && String(p.note).length > 0) ? String(p.note) : '';
+  if(!_seed && Array.isArray(p.note_history) && p.note_history.length > 0 && p.note_history[0]){
+    _seed = String(p.note_history[0].body || '');
+  }
+  input.value = _seed;
+  input.placeholder='Why did this player move?';
   el.replaceWith(input);input.focus();
   input.addEventListener('blur', async ()=>{
     p.note=input.value;
@@ -3677,6 +3754,34 @@ async function exportXLSX(opts){
   // MUTATION_AUTOSAVE_V1 — in silent mode we allow an empty players list to be written
   // so Clear All can persist to NAS. In manual mode keep the "No players" alert.
   if(!silent && !players.length){ alert('No players to export.'); return; }
+
+  // NOTE_ARCHIVE_V1 (April 25, 2026) — archive the current note for each player
+  // BEFORE writing the file. If p.note has content AND it differs from the most
+  // recent archived entry, push a new {date_time, body} to the front of
+  // p.note_history. This runs on every Save-to-Excel (silent or manual) so
+  // the archived state always matches what's published. Brandt's note_historian
+  // is being retired since this replaces it. See Watch101 To-Do List entry
+  // "Note archiving with timestamps" for the full design.
+  try {
+    const _now = new Date();
+    const _archiveStamp = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')} ${String(_now.getHours()).padStart(2,'0')}:${String(_now.getMinutes()).padStart(2,'0')}`;
+    for(let i = 0; i < players.length; i++){
+      const _p = players[i];
+      if(!_p) continue;
+      // Initialize note_history if missing.
+      if(!Array.isArray(_p.note_history)) _p.note_history = [];
+      const _curr = (_p.note != null) ? String(_p.note).trim() : '';
+      if(!_curr) continue; // empty note → nothing to archive (per Dude's spec)
+      const _last = (_p.note_history.length > 0 && _p.note_history[0])
+        ? String(_p.note_history[0].body || '').trim()
+        : '';
+      if(_curr === _last) continue; // unchanged → don't double-archive
+      _p.note_history.unshift({ date_time: _archiveStamp, body: _curr });
+    }
+  } catch(e){
+    console.warn('[NOTE_ARCHIVE_V1] archive step failed (non-fatal):', e);
+  }
+
   // TIMESTAMPED_SAVES_V1 (April 25, 2026) — filename now includes _HHMM so each
   // Save-to-Excel produces a unique file. Required because the approve helper
   // now COPIES (not moves) Staging → Production, leaving Staging populated as
@@ -54163,25 +54268,62 @@ function openPlayerPage(p){
   }).join('');
   document.getElementById('ppo-bars').innerHTML = barsHtml || '<div class="ppo-empty">No advanced stats available yet.</div>';
 
+  // NOTE_ARCHIVE_V1 (April 25, 2026) — render Matt's Take from p.note_history
+  // (the new in-tracker archive source) merged with PLAYER_NOTES_HISTORY (the
+  // legacy Brandt-loaded source — kept for migration compatibility, will fade
+  // as Brandt's note_historian is retired). The merged stream is shown
+  // newest-first with each note's timestamp. p.note (the live edit field) is
+  // shown at the top with the LATEST badge if it has unsaved content not yet
+  // in note_history.
   var currentNote = (p.note && String(p.note).trim().length > 0) ? String(p.note).trim() : '';
-  var history = (PLAYER_NOTES_HISTORY && PLAYER_NOTES_HISTORY[mlbId]) ? PLAYER_NOTES_HISTORY[mlbId] : [];
-  var oldHistory = history.filter(function(h){ return String(h.body||'').trim() !== currentNote; });
+
+  // Build a unified history stream: in-tracker archive first, then any
+  // Brandt-loaded entries that aren't already represented by date+body.
+  var trackerHistory = Array.isArray(p.note_history) ? p.note_history.slice() : [];
+  var brandtHistory = (typeof PLAYER_NOTES_HISTORY !== 'undefined' && PLAYER_NOTES_HISTORY && PLAYER_NOTES_HISTORY[mlbId])
+    ? PLAYER_NOTES_HISTORY[mlbId] : [];
+  // Normalize Brandt entries to {date_time, body} so the renderer is uniform.
+  var brandtNormalized = brandtHistory.map(function(h){
+    return { date_time: h.date_time || h.date || '', body: h.body || '' };
+  });
+  // Skip Brandt entries that duplicate something already in trackerHistory
+  // (same body text, ignoring whitespace) — prevents the "double notes" the
+  // Dude warned about during scoping.
+  var trackerBodies = {};
+  trackerHistory.forEach(function(h){
+    if(h && h.body) trackerBodies[String(h.body).trim()] = true;
+  });
+  var brandtFiltered = brandtNormalized.filter(function(h){
+    return h.body && !trackerBodies[String(h.body).trim()];
+  });
+  var fullHistory = trackerHistory.concat(brandtFiltered);
+
+  // Latest archived body — used to decide whether the live p.note text is
+  // unsaved-new content vs. just the same as what's already archived.
+  var latestArchivedBody = (fullHistory.length > 0 && fullHistory[0])
+    ? String(fullHistory[0].body || '').trim() : '';
+  var liveIsUnsaved = currentNote && currentNote !== latestArchivedBody;
+
   var notesHtml = '';
-  if(currentNote){
-    notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date current">Current note &middot; latest</div>'
+  if(liveIsUnsaved){
+    // Show the live unsaved note at the top with a special label so the Dude
+    // knows it isn't archived yet (will be on next Save-to-Excel).
+    notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date current">Live edit &middot; unsaved</div>'
                + '<div class="ppo-note-body">' + escapeHtml(currentNote) + '</div></div>';
   }
-  if(oldHistory.length > 0){
+  if(fullHistory.length > 0){
     notesHtml += '<div class="ppo-notes-scroll">';
-    for(var i=0;i<oldHistory.length;i++){
-      var h = oldHistory[i];
-      notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date">' + escapeHtml(h.date || '') + '</div>'
+    for(var i=0;i<fullHistory.length;i++){
+      var h = fullHistory[i];
+      var stamp = h.date_time || h.date || '';
+      var labelExtra = (i === 0 && !liveIsUnsaved) ? '<span class="latest-badge"> &middot; latest</span>' : '';
+      notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date">' + escapeHtml(stamp) + labelExtra + '</div>'
                  + '<div class="ppo-note-body">' + escapeHtml(h.body || '') + '</div></div>';
     }
     notesHtml += '</div>';
-    notesHtml += '<div class="ppo-notes-count">' + oldHistory.length + ' prior ' + (oldHistory.length===1?'note':'notes') + ' &middot; loaded by Brandt</div>';
+    notesHtml += '<div class="ppo-notes-count">' + fullHistory.length + ' archived ' + (fullHistory.length===1?'note':'notes') + '</div>';
   }
-  if(!currentNote && oldHistory.length===0){
+  if(!liveIsUnsaved && fullHistory.length===0){
     notesHtml = '<div class="ppo-empty">No notes from Matt yet.</div>';
   }
   document.getElementById('ppo-note-body').innerHTML = notesHtml;
