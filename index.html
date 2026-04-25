@@ -3677,9 +3677,16 @@ async function exportXLSX(opts){
   // MUTATION_AUTOSAVE_V1 — in silent mode we allow an empty players list to be written
   // so Clear All can persist to NAS. In manual mode keep the "No players" alert.
   if(!silent && !players.length){ alert('No players to export.'); return; }
+  // TIMESTAMPED_SAVES_V1 (April 25, 2026) — filename now includes _HHMM so each
+  // Save-to-Excel produces a unique file. Required because the approve helper
+  // now COPIES (not moves) Staging → Production, leaving Staging populated as
+  // the "current truth" baseline. Without unique filenames, two saves on the
+  // same day would collide. See walter_memory.md and the Watch101 To-Do List
+  // entry for "Publish Counter graduation rebuild" for the full design.
   const d = new Date();
   const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const fileName = `Watch101_${_activeListFileSlug()}_${dateStr}.xlsx`;
+  const timeStr = `${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+  const fileName = `Watch101_${_activeListFileSlug()}_${dateStr}_${timeStr}.xlsx`;
   const wb = _buildXLSXWorkbook();
 
   // PERLIST_FOLDERS_V1 — per-list folder picker.
