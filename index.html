@@ -6460,17 +6460,21 @@ function setDateRange(val){
     if(val === 'live'){
       Object.keys(dateRangeCache).forEach(k => { if(k.endsWith('_live')) delete dateRangeCache[k]; });
       Object.keys(poolDateRangeCache).forEach(k => { if(k.endsWith('_live')) delete poolDateRangeCache[k]; });
+      if(typeof prospectsDateRangeCache !== 'undefined') Object.keys(prospectsDateRangeCache).forEach(k => { if(k.endsWith('_live')) delete prospectsDateRangeCache[k]; });
     }
     if(val === 'yesterday'){
       // Always re-fetch — "yesterday" drifts forward each day, so stale cache would be wrong
       Object.keys(dateRangeCache).forEach(k => { if(k.endsWith('_yesterday')) delete dateRangeCache[k]; });
       Object.keys(poolDateRangeCache).forEach(k => { if(k.endsWith('_yesterday')) delete poolDateRangeCache[k]; });
+      if(typeof prospectsDateRangeCache !== 'undefined') Object.keys(prospectsDateRangeCache).forEach(k => { if(k.endsWith('_yesterday')) delete prospectsDateRangeCache[k]; });
     }
-    // Fire both simultaneously — pool runs silently in background
+    // Fire all three simultaneously — pool and prospects run silently in background
     fetchDateRangeStats(val);
     fetchPoolDateRangeStats(val);
+    if(typeof fetchProspectsDateRangeStats === 'function') fetchProspectsDateRangeStats(val);
     if(poolActive) renderPool();
     if(typeof leadersActive !== 'undefined' && leadersActive && typeof renderLeaders === 'function') renderLeaders();
+    if(typeof prospectsActive !== 'undefined' && prospectsActive && typeof renderProspects === 'function') renderProspects();
   }
 }
 
@@ -7038,6 +7042,58 @@ async function fetchProspectStatsBulk(){
   });
 }
 
+// PROSPECTS_DATERANGE_V1 (April 26, 2026) — bundle-fetch minor league date-range
+// stats for the Prospects tab. Mirrors fetchPoolDateRangeStats but passes level=milb
+// to the Worker so MLB's API returns minor league results.
+let prospectsDateRangeCache = {};       // keyed by `${mlb_id}_${range}`
+let prospectsDateRangeFetching = false;
+
+async function fetchProspectsDateRangeStats(range){
+  if(prospectsDateRangeFetching) return;
+  if(!prospectsActive) return;          // only fetch when the tab is open
+  if(!prospectPlayers || prospectPlayers.length === 0) return;
+  prospectsDateRangeFetching = true;
+  try {
+    const allIds = prospectPlayers
+      .filter(p => p.mlb_id && !prospectsDateRangeCache[p.mlb_id + '_' + range])
+      .map(p => p.mlb_id);
+    if(allIds.length === 0){
+      prospectsDateRangeFetching = false;
+      if(prospectsActive) renderProspects();
+      return;
+    }
+    const CHUNK = 200;
+    for(let i = 0; i < allIds.length; i += CHUNK){
+      if(dateRange !== range){ break; } // user switched away, abort
+      const chunk = allIds.slice(i, i + CHUNK);
+      const bundleUrl = `https://watch101-cache.wild-fog-21df.workers.dev/mlb/player-stats-bundle?ids=${chunk.join(',')}&range=${range}&level=milb`;
+      const bRes = await fetch(bundleUrl);
+      const bundle = await bRes.json();
+      chunk.forEach(mlbId => {
+        const stats = bundle[mlbId] || {};
+        prospectsDateRangeCache[mlbId + '_' + range] = stats;
+      });
+      if(prospectsActive) renderProspects();
+    }
+  } catch(e) {
+    // On failure, leave cache as-is so a later switch can retry
+  }
+  prospectsDateRangeFetching = false;
+  if(prospectsActive) renderProspects();
+}
+
+// Returns the stats object renderProspects should display for player p,
+// honoring the active dateRange. 'season' returns p.stats (the bulk-loaded
+// season totals). Other ranges look up the prospect date-range cache; if
+// nothing's cached yet, returns p.stats so the row doesn't go blank.
+function getProspectDisplayStats(p){
+  if(dateRange === 'season') return p.stats || {};
+  if(!p || !p.mlb_id) return p.stats || {};
+  const cached = prospectsDateRangeCache[p.mlb_id + '_' + dateRange];
+  if(cached && Object.keys(cached).length > 0) return cached;
+  return p.stats || {};
+}
+
 async function fetchProspectStats(p){
   if(p.stats) return;
   try {
@@ -7177,8 +7233,11 @@ function renderProspects(){
     if(aOff && bOff) return 0;
     if(aOff) return 1;
     if(bOff) return -1;
-    const av = a.stats&&a.stats[key]!=null ? a.stats[key] : null;
-    const bv = b.stats&&b.stats[key]!=null ? b.stats[key] : null;
+    // PROSPECTS_DATERANGE_V1 — use getProspectDisplayStats so sort respects dropdown range
+    const aStatsForSort = (typeof getProspectDisplayStats === 'function') ? getProspectDisplayStats(a) : (a.stats || {});
+    const bStatsForSort = (typeof getProspectDisplayStats === 'function') ? getProspectDisplayStats(b) : (b.stats || {});
+    const av = aStatsForSort[key]!=null ? aStatsForSort[key] : null;
+    const bv = bStatsForSort[key]!=null ? bStatsForSort[key] : null;
     if(av===null&&bv===null) return a.name.localeCompare(b.name);
     if(av===null) return 1; if(bv===null) return -1;
     return (av-bv)*prosSortDir;
@@ -7206,7 +7265,8 @@ function renderProspects(){
   const pitColor  = 'var(--stat-pitcher)';
 
   tbody.innerHTML = display.map((p, i) => {
-    const s = p.stats || {};
+    // PROSPECTS_DATERANGE_V1 — swap stats source based on active dateRange
+    const s = (typeof getProspectDisplayStats === 'function') ? getProspectDisplayStats(p) : (p.stats || {});
     const isAdded = addedNames.has(p.name.toLowerCase());
     const pit = isPit(p.primaryPos);
     const posClass = pit ? 'pos-SP' : p.primaryPos === 'C' ? 'pos-C' : p.primaryPos === 'OF' ? 'pos-OF' : ['1B','2B','3B','SS'].includes(p.primaryPos) ? 'pos-'+p.primaryPos : 'pos-DH';
