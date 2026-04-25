@@ -728,23 +728,41 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
      .savant-adv-col — already display:none by default unless advanced mode
    Threshold 768px = covers all common phone widths in portrait. */
 @media(max-width:768px){
-  /* TEMP DIAGNOSTIC — bright red background on body to prove media query
-     fires on iOS Safari. Remove after confirming. */
-  body {
-    background: #ff0000 !important;
-  }
+  /* MOBILE_TIGHTEN_V2 (April 25, 2026) — Hide more columns on mobile so the
+     core stats (HR/RBI/SB/AVG) actually appear in the visible viewport at
+     initial load. V1 only hid the deep-dive stuff at the right edge, which
+     was already off-screen behind side-scroll, so it didn't help.
+     V2 also hides identity columns that aren't critical: +/- delta, Age,
+     B/T, Note column, OWNED, Yahoo Rank, ADP. Those are still accessible by
+     side-scrolling or by tapping the player name to open the Deep Cut page. */
   /* Main list table (real header + body) */
   #main-table th.type-cell, #main-table td.type-cell,
   #main-table th.col-obp, #main-table td.col-obp,
   #main-table th.col-ops, #main-table td.col-ops,
-  #main-table th.savant-col, #main-table td.savant-col {
+  #main-table th.savant-col, #main-table td.savant-col,
+  /* Hide the +/- delta column (4th column, no class — target by nth-child) */
+  #main-table tr > th:nth-child(4), #main-table tr > td:nth-child(4),
+  /* Hide Age (8th), B/T (9th), Note (10th), OWNED (11th), RANK (12th), ADP (13th) */
+  #main-table tr > th:nth-child(8), #main-table tr > td:nth-child(8),
+  #main-table tr > th:nth-child(9), #main-table tr > td:nth-child(9),
+  #main-table tr > th:nth-child(10), #main-table tr > td:nth-child(10),
+  #main-table tr > th:nth-child(11), #main-table tr > td:nth-child(11),
+  #main-table tr > th:nth-child(12), #main-table tr > td:nth-child(12),
+  #main-table tr > th:nth-child(13), #main-table tr > td:nth-child(13) {
     display: none !important;
   }
   /* Sticky-clone header that floats over the top of the table */
   #main-fixed-table th.type-cell,
   #main-fixed-table th.col-obp,
   #main-fixed-table th.col-ops,
-  #main-fixed-table th.savant-col {
+  #main-fixed-table th.savant-col,
+  #main-fixed-table tr > th:nth-child(4),
+  #main-fixed-table tr > th:nth-child(8),
+  #main-fixed-table tr > th:nth-child(9),
+  #main-fixed-table tr > th:nth-child(10),
+  #main-fixed-table tr > th:nth-child(11),
+  #main-fixed-table tr > th:nth-child(12),
+  #main-fixed-table tr > th:nth-child(13) {
     display: none !important;
   }
 }
