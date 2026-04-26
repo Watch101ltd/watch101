@@ -2762,11 +2762,13 @@ let yahooSyncing = false;
 async function syncYahooData(manual = false){
   // YAHOO_AUTOSYNC_V1 (April 24, 2026) — removed `!yahooConnected` gate.
   // The Cloudflare Worker + NAS handle Yahoo OAuth server-to-server now,
-  // so the browser doesn't need a Yahoo login session. The `yahooConnected`
-  // flag was a leftover from the old architecture where the browser talked
-  // to Yahoo directly. Keeping the players-length check (can't apply Yahoo
-  // data if there are no players).
-  if(players.length === 0) return;
+  // so the browser doesn't need a Yahoo login session.
+  // YAHOO_SYNC_UNGATE_V1 (April 26, 2026) — removed the `players.length === 0` early
+  // return. Yahoo data populates `yahooDataByMlbId` which the Pool and Leaders tabs
+  // read independently of the Watch list. On GitHub Pages where the staging Watch
+  // list is often empty (until Matt completes his Save-to-Excel), this gate was
+  // killing the Yahoo cache for Pool/Leaders. The applyYahoo(players) call later
+  // is already a safe no-op when players is empty (it loops over an empty array).
   if(yahooSyncing && !manual) return;
   yahooSyncing = true;
   const btn = document.getElementById('yahoo-btn');
