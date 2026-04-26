@@ -2349,10 +2349,20 @@ function applyYahoo(arr) {
   if(!arr || !Array.isArray(arr)) return;
   arr.forEach(p => {
     const n = p.name || '';
-    const yp = yahooDataByName[normalize(n)]
-           || yahooDataByName[normalizeName(n)]
-           || (p.mlb_id && yahooDataByMlbId[String(p.mlb_id)]);
+    // DUPLICATE_NAME_FIX_V2 (April 25, 2026) — mlb_id PRIORITY (was name first).
+    // Two players sharing a name (e.g. the two Max Muncys) both matched the same
+    // name-keyed entry, so whichever Yahoo player was indexed under that name
+    // got applied to BOTH MLB players. mlb_id is unique per player. Flipping
+    // priority order: try mlb_id first; name match is now ONLY a fallback for
+    // the rare Yahoo player who synced without an mlb_id.
+    const yp = (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
+           || yahooDataByName[normalize(n)]
+           || yahooDataByName[normalizeName(n)];
     if(!yp) return;
+    // Also guard the name-fallback case: if we matched by NAME but the
+    // matched Yahoo player has a DIFFERENT mlb_id than the MLB player, refuse
+    // the merge — that's the duplicate-name collision we're trying to prevent.
+    if(yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) return;
     if(yp.yahoo_rank != null) p.yahoo_rank = yp.yahoo_rank;
     if(yp.roster_pct != null) p.roster_pct = yp.roster_pct;
     if(yp.preseason_rank != null) p.preseason_rank = yp.preseason_rank;
@@ -4897,10 +4907,16 @@ async function loadPoolPlayers(){
     }
 
     // Apply any already-fetched Yahoo data to pool players
+    // DUPLICATE_NAME_FIX_V2 (April 25, 2026) — mlb_id PRIORITY here too.
+    // Same flaw as applyYahoo() — name lookup ran first and won for duplicate
+    // names. Flipped order plus the cross-id-mismatch guard.
     if(Object.keys(yahooDataByMlbId).length > 0 || Object.keys(yahooDataByName).length > 0){
       poolPlayers.forEach(p => {
-        const yp = yahooDataByName[normalize(p.name||'')] || yahooDataByName[normalizeName(p.name||'')] || (p.mlb_id && yahooDataByMlbId[String(p.mlb_id)]);
+        const yp = (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
+               || yahooDataByName[normalize(p.name||'')]
+               || yahooDataByName[normalizeName(p.name||'')];
         if(!yp) return;
+        if(yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) return;
         if(yp.yahoo_rank != null) p.yahoo_rank = yp.yahoo_rank;
         if(yp.roster_pct != null) p.roster_pct = yp.roster_pct;
         if(yp.preseason_rank != null) p.preseason_rank = yp.preseason_rank;
