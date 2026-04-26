@@ -5677,6 +5677,15 @@ function renderPool(){
       if(yw.yahoo_rank != null) p.yahoo_rank = yw.yahoo_rank;
       if(yw.roster_pct != null) p.roster_pct = yw.roster_pct;
       if(yw.preseason_rank != null) p.preseason_rank = yw.preseason_rank;
+      // POOL_YAHOO_FIELDS_V1 (April 26, 2026) — also copy pitcher_type and injury_status
+      // so the Filters dropdown (Injured / NA / SP / RP / CL) can match against them.
+      // The earlier load-time merge fails for most pool players because of the
+      // duplicate-name guard (Yahoo's mlb_id is actually a Yahoo internal ID, not the
+      // real MLB ID, so it ALWAYS mismatches the real MLB ID on Pool players). The
+      // render-time merge above already worked around this for rank/roster_pct;
+      // adding the two missing fields here keeps it consistent.
+      if(yw.pitcher_type) p.pitcher_type = yw.pitcher_type;
+      if(yw.injury_status !== undefined) p.injury_status = yw.injury_status;
     }
     // For season stats, use the player object directly (populated by loadAllPoolStats).
     // For date range, overlay the cache. Show "…" while date range cache is loading.
@@ -6606,6 +6615,10 @@ function renderLeaders(){
       if(yw.yahoo_rank != null) p.yahoo_rank = yw.yahoo_rank;
       if(yw.roster_pct != null) p.roster_pct = yw.roster_pct;
       if(yw.preseason_rank != null) p.preseason_rank = yw.preseason_rank;
+      // POOL_YAHOO_FIELDS_V1 (April 26, 2026) — also copy pitcher_type and injury_status
+      // for the Filters dropdown. Same fix as renderPool() — see comment there.
+      if(yw.pitcher_type) p.pitcher_type = yw.pitcher_type;
+      if(yw.injury_status !== undefined) p.injury_status = yw.injury_status;
     }
     const statColor = 'var(--stat-hitter)';
     const pitColor  = 'var(--stat-pitcher)';
