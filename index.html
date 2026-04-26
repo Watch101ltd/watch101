@@ -286,7 +286,12 @@ th.savant-col{color:var(--gold);font-size:8px;letter-spacing:0.03em;padding:3px 
 #yahoo-btn.loading{background:rgba(201,168,76,0.15);color:var(--gold);border-color:var(--gold);}
 .yahoo-rank{font-family:'Nunito Sans',sans-serif;font-size:12px;color:var(--text);text-align:right}
 
-.note-display{font-size:12px;color:var(--text);font-style:italic;cursor:pointer;width:100%;max-width:100%;box-sizing:border-box;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 6px;border-radius:4px;border:1px solid transparent;transition:all 0.15s}
+/* NOTE_HYPERLINK_V1 (April 25, 2026) — switched to flex so the chain icon
+   never gets clipped by the text-overflow:ellipsis on long notes. The text
+   span truncates with ellipsis; the icon stays visible on the right. */
+.note-display{font-size:12px;color:var(--text);font-style:italic;cursor:pointer;width:100%;max-width:100%;box-sizing:border-box;display:flex;align-items:center;gap:4px;padding:3px 6px;border-radius:4px;border:1px solid transparent;transition:all 0.15s;white-space:nowrap;overflow:hidden}
+.note-display .note-text{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-display .note-link-badge{flex:0 0 auto}
 .note-display:hover{border-color:var(--gold);background:var(--surface2);color:var(--gold)}
 .note-display.empty{color:#475569}
 .note-input{width:100%;background:var(--surface3);border:1px solid var(--gold2);border-radius:4px;padding:4px 8px;font-size:12px;color:var(--text);font-family:'Nunito Sans',sans-serif;outline:none;min-width:180px}
@@ -3057,7 +3062,7 @@ function renderTable(){
           const _linkBadge = _renderNoteLinkBadge(_split.url);
           // Title tooltip uses the full original note so Matt can see the URL
           const _titleAttr = (_shown || '').replace(/"/g,'&quot;');
-          return `<div class="note-display ${_emptyClass}${_archivedClass}" onclick="editNote('${p.id}',this)" title="${_titleAttr}">${_displayText}${_linkBadge}</div>`;
+          return `<div class="note-display ${_emptyClass}${_archivedClass}" onclick="editNote('${p.id}',this)" title="${_titleAttr}"><span class="note-text">${_displayText}</span>${_linkBadge}</div>`;
         })()}</td>
       <td class="stat-cell">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
       <td class="yahoo-rank">${fmt(p.yahoo_rank)}</td>
@@ -54590,15 +54595,21 @@ function openPlayerPage(p){
   var oldHistory = history.filter(function(h){ return String(h.body||'').trim() !== currentNote; });
   var notesHtml = '';
   if(currentNote){
+    // NOTE_HYPERLINK_V1 (April 25, 2026) — wire the chain link icon into Matt's Take.
+    var _curSplit = _splitNoteAndUrl(currentNote);
+    var _curBadge = _renderNoteLinkBadge(_curSplit.url);
     notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date current">Current note &middot; latest</div>'
-               + '<div class="ppo-note-body">' + escapeHtml(currentNote) + '</div></div>';
+               + '<div class="ppo-note-body">' + escapeHtml(_curSplit.text || currentNote) + _curBadge + '</div></div>';
   }
   if(oldHistory.length > 0){
     notesHtml += '<div class="ppo-notes-scroll">';
     for(var i=0;i<oldHistory.length;i++){
       var h = oldHistory[i];
+      // NOTE_HYPERLINK_V1 — same chain-icon treatment for archived notes.
+      var _hSplit = _splitNoteAndUrl(h.body || '');
+      var _hBadge = _renderNoteLinkBadge(_hSplit.url);
       notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date">' + escapeHtml(h.date || '') + '</div>'
-                 + '<div class="ppo-note-body">' + escapeHtml(h.body || '') + '</div></div>';
+                 + '<div class="ppo-note-body">' + escapeHtml(_hSplit.text || (h.body || '')) + _hBadge + '</div></div>';
     }
     notesHtml += '</div>';
     notesHtml += '<div class="ppo-notes-count">' + oldHistory.length + ' prior ' + (oldHistory.length===1?'note':'notes') + ' &middot; loaded by Brandt</div>';
