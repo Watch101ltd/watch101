@@ -1209,6 +1209,11 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     <div class="hdr-dd" id="dd-more">
       <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-more', event)" title="More actions">⋯ More <span class="hdr-dd-caret">▾</span></button>
       <div class="hdr-dd-menu">
+        <!-- ADD_CUSTOM_PLAYER_V1 (April 25, 2026) — BACKEND_ONLY admin action.
+             Opens a modal to manually add a player who isn't yet in the MLB or
+             Yahoo data feeds (rookies, just-called-up, etc.). Hide when
+             Read-Only Mode ships — fans on Cloudflare should not see this. -->
+        <button class="hdr-dd-item" onclick="hdrRun(openAddCustomPlayerModal)" title="Manually add a player who isn't yet in the MLB or Yahoo data">➕ Add Custom Player</button>
         <button class="hdr-dd-item" onclick="hdrRun(triggerImport)" title="Import from CSV or Excel">📥 Import</button>
         <button class="hdr-dd-item" onclick="hdrRun(togglePresentMode)" title="Presentation mode — full-screen view for screen-share">🔍 Present</button>
         <button class="hdr-dd-item" onclick="hdrRun(exportCSV)" title="Export the current list as a CSV file">📤 CSV</button>
@@ -1587,6 +1592,75 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     </div>
 
   </div><!-- end leaders-rows-scroll -->
+</div>
+
+<!-- ADD_CUSTOM_PLAYER_V1 (April 25, 2026) — BACKEND_ONLY admin modal for
+     manually adding a player who isn't yet in the MLB or Yahoo data.
+     Hide when Read-Only Mode ships. Reuses existing .modal-overlay /
+     .modal / .form-grid / .form-group / .modal-actions styles. -->
+<div class="modal-overlay" id="add-custom-player-modal">
+  <div class="modal">
+    <h2>➕ Add Custom Player</h2>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px;font-family:'Nunito Sans',sans-serif;line-height:1.5">
+      For players who aren't in the MLB or Yahoo data feeds yet (just-called-up rookies, etc.).
+      Stats columns will show — until the APIs start tracking the player.
+      The player will be added to the bottom of the active list.
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Player Name *</label>
+        <input type="text" id="acp-name" placeholder="e.g. Jane Phillipsbottom" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Primary Position *</label>
+        <select id="acp-position">
+          <option value="">Select…</option>
+          <option value="C">C</option>
+          <option value="1B">1B</option>
+          <option value="2B">2B</option>
+          <option value="3B">3B</option>
+          <option value="SS">SS</option>
+          <option value="OF">OF</option>
+          <option value="DH">DH</option>
+          <option value="P">P (Pitcher)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Team (optional)</label>
+        <input type="text" id="acp-team" placeholder="e.g. PHI" maxlength="4">
+      </div>
+      <div class="form-group">
+        <label>Age (optional)</label>
+        <input type="number" id="acp-age" placeholder="e.g. 24" min="15" max="60">
+      </div>
+      <div class="form-group">
+        <label>Bats (optional)</label>
+        <select id="acp-bats">
+          <option value="">—</option>
+          <option value="L">L</option>
+          <option value="R">R</option>
+          <option value="S">S (Switch)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Throws (optional)</label>
+        <select id="acp-throws">
+          <option value="">—</option>
+          <option value="L">L</option>
+          <option value="R">R</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Note (optional)</label>
+        <textarea id="acp-note" placeholder="Why Matt added him (optional — paste a URL and the chain icon shows up automatically)"></textarea>
+      </div>
+    </div>
+    <div id="acp-error" style="display:none;color:var(--red);font-size:12px;font-family:'Nunito Sans',sans-serif;margin-bottom:8px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAddCustomPlayerModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="submitAddCustomPlayer()">Add to Bottom of List</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="modal">
@@ -3121,6 +3195,113 @@ async function markNameAsFlaming(mlbId){
     } catch(_re){}
   } catch(e){
     console.warn('[MARK_FLAMING_V1] markNameAsFlaming failed:', e);
+  }
+}
+
+// ADD_CUSTOM_PLAYER_V1 (April 25, 2026) — BACKEND_ONLY admin handlers.
+// Opens the modal, validates the form on submit, builds a new player object,
+// pushes it to the bottom of the active list, and persists via autoSaveToNAS.
+//
+// **Hide these from the UI when Read-Only Mode ships.** Fans on Cloudflare
+// should never see the menu item — but the handlers themselves are harmless
+// to leave in place, since they require the modal to be open.
+function openAddCustomPlayerModal(){
+  try {
+    // Reset form fields each open so we don't bleed yesterday's input.
+    var ids = ['acp-name','acp-position','acp-team','acp-age','acp-bats','acp-throws','acp-note'];
+    ids.forEach(function(id){
+      var el = document.getElementById(id);
+      if(el){ if(el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; }
+    });
+    var err = document.getElementById('acp-error');
+    if(err){ err.style.display = 'none'; err.textContent = ''; }
+    var modal = document.getElementById('add-custom-player-modal');
+    if(modal) modal.classList.add('open');
+    // Focus the name field so Matt can just start typing.
+    setTimeout(function(){ var n = document.getElementById('acp-name'); if(n) n.focus(); }, 50);
+  } catch(e){
+    console.warn('[ADD_CUSTOM_PLAYER_V1] openAddCustomPlayerModal failed:', e);
+  }
+}
+
+function closeAddCustomPlayerModal(){
+  try {
+    var modal = document.getElementById('add-custom-player-modal');
+    if(modal) modal.classList.remove('open');
+  } catch(e){
+    console.warn('[ADD_CUSTOM_PLAYER_V1] closeAddCustomPlayerModal failed:', e);
+  }
+}
+
+async function submitAddCustomPlayer(){
+  try {
+    var name = (document.getElementById('acp-name').value || '').trim();
+    var pos  = (document.getElementById('acp-position').value || '').trim();
+    var team = (document.getElementById('acp-team').value || '').trim().toUpperCase();
+    var ageRaw = (document.getElementById('acp-age').value || '').trim();
+    var bats = (document.getElementById('acp-bats').value || '').trim();
+    var throws_ = (document.getElementById('acp-throws').value || '').trim();
+    var note = (document.getElementById('acp-note').value || '').trim();
+    var err  = document.getElementById('acp-error');
+    function showErr(msg){ if(err){ err.textContent = msg; err.style.display = 'block'; } }
+    function clearErr(){ if(err){ err.textContent = ''; err.style.display = 'none'; } }
+    clearErr();
+    if(!name){ showErr('Name is required.'); return; }
+    if(!pos){ showErr('Primary position is required.'); return; }
+    var age = ageRaw ? parseInt(ageRaw, 10) : null;
+    if(ageRaw && (isNaN(age) || age < 15 || age > 60)){ showErr('Age must be a number between 15 and 60.'); return; }
+    // Generate a unique synthetic ID. Prefix `manual_` so it can't collide with
+    // any real MLB ID (which are pure integers). Used as both `id` and `mlb_id`
+    // for now so the rest of the rendering doesn't crash on a missing field.
+    var stamp = Date.now() + '_' + Math.floor(Math.random() * 1000);
+    var manualId = 'manual_' + stamp;
+    // Build the player object using the same shape as quickAddFromPool's newPlayer.
+    var newPlayer = {
+      id: manualId,
+      mlb_id: manualId,           // synthetic — matches `id` so Yahoo merges skip it
+      name: name,
+      team: team || null,
+      positions: [pos],
+      primaryPos: pos,
+      age: age,
+      birthDate: null,
+      rank: (typeof players !== 'undefined' && Array.isArray(players)) ? (players.length + 1) : 1,
+      move: 'new',
+      prev_rank: null,
+      publish_count_since_new: 0,  // FLAME_TEXT_V1 — kicks off the hot flame lifecycle
+      note: note,
+      bats: bats || null,
+      throws: throws_ || null,
+      injury_status: null,
+      pitcher_type: (pos === 'P') ? 'SP' : null,
+      // Stat fields stay null so the columns render as — until APIs catch up.
+      avg:null, obp:null, ops:null, hr:null, rbi:null, r:null, sb:null,
+      era:null, whip:null, k:null, w:null, sv:null, hld:null, ip:null,
+      // Mark this row so future code (and future-Walter) can find / treat differently.
+      manually_added: true,
+      // TODO (future-Walter): when a real MLB ID becomes available for this name,
+      // build a "merge manual entry into real player" flow so Matt's note + custom
+      // metadata don't get lost when the data feed catches up.
+    };
+    if(typeof players !== 'undefined' && Array.isArray(players)){
+      players.push(newPlayer);
+    } else {
+      showErr('Active list is not loaded yet — try again in a moment.');
+      return;
+    }
+    // Renumber ranks so the new bottom-of-list player gets the right rank.
+    if(typeof reorderRanks === 'function') reorderRanks();
+    // Persist to localStorage AND NAS so the new player survives a refresh.
+    try { if(typeof saveData === 'function') saveData(); } catch(e){ console.warn('[ADD_CUSTOM_PLAYER_V1] saveData failed:', e); }
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[ADD_CUSTOM_PLAYER_V1] autoSaveToNAS failed:', e); }
+    // Refresh the table so the new player appears immediately at the bottom.
+    try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
+    closeAddCustomPlayerModal();
+    console.log('[ADD_CUSTOM_PLAYER_V1] added:', newPlayer.name, 'as', newPlayer.id);
+  } catch(e){
+    console.warn('[ADD_CUSTOM_PLAYER_V1] submitAddCustomPlayer failed:', e);
+    var err2 = document.getElementById('acp-error');
+    if(err2){ err2.textContent = 'Something went wrong — check the browser console.'; err2.style.display = 'block'; }
   }
 }
 
