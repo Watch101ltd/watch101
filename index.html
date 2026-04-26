@@ -55860,5 +55860,48 @@ document.addEventListener('click', function(e){
 </div>
 <!-- build: 2026-04-19 redesign + tile-compact + buzz-recovery -->
 
+<!-- LIST_INFO_OVERLAY_RESTORE_V1 (April 26, 2026 overnight) — restored from
+     index_pre-pool-backfill_Sat004-25-2026_00-14-43-27.html backup. The overlay
+     markup got dropped during the W:/C: drive recovery on April 25. The button
+     at the top of the page (line ~1215) calls openListInfoOverlay() which looks
+     for #list-info-overlay — without this markup the click silently does nothing.
+     Pulls list descriptions from WATCH_LISTS at line ~1910. -->
+<div id="list-info-overlay" onclick="if(event.target===this)closeListInfoOverlay()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9998;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
+  <div style="background:var(--surface);border:1px solid var(--gold);border-radius:12px;max-width:720px;width:100%;padding:28px;color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:14px">
+      <div>
+        <div style="font-size:18px;font-weight:700;color:var(--gold);letter-spacing:0.04em">📋 The Six Watch 101 Lists</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Each list serves a different fantasy format. Switch between them with the gold dropdown in the toolbar.</div>
+      </div>
+      <button onclick="closeListInfoOverlay()" title="Close" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;width:32px;height:32px;font-size:16px;font-weight:700;cursor:pointer">×</button>
+    </div>
+    <div id="list-info-body" style="display:flex;flex-direction:column;gap:14px">
+      <!-- populated by JS at open time -->
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-style:italic">All six lists currently show the same 101 players. Independent player rosters per list will be wired up in a future build.</div>
+  </div>
+</div>
+<script>
+// MULTILIST_V1 — populate info overlay body when opened
+(function(){
+  const _origOpen = window.openListInfoOverlay;
+  window.openListInfoOverlay = function(){
+    const body = document.getElementById('list-info-body');
+    if(body && WATCH_LISTS){
+      body.innerHTML = WATCH_LISTS.map(l => `
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:14px;font-weight:700;color:var(--gold)">${l.name}</div>
+            <div style="font-size:10px;color:var(--text2);background:var(--surface);padding:2px 8px;border-radius:4px;letter-spacing:0.05em">${l.subtitle}</div>
+          </div>
+          <div style="font-size:12px;color:var(--text);line-height:1.5">${l.desc}</div>
+        </div>
+      `).join('');
+    }
+    _origOpen();
+  };
+})();
+</script>
+
 </body>
 </html>
