@@ -5179,17 +5179,23 @@ async function loadPoolPlayers(){
       if(filled > 0){ saveData(); renderTable(); }
     }
 
+    // MANUAL_YAHOO_ID_STAMP_V3 — stamp manual Yahoo IDs FIRST so the lookup below
+    // finds the right Yahoo record for same-name players (Max Muncy LAD vs ATH, etc.)
+    stampManualYahooIds(poolPlayers);
     // Apply any already-fetched Yahoo data to pool players
     // DUPLICATE_NAME_FIX_V2 (April 25, 2026) — mlb_id PRIORITY here too.
     // Same flaw as applyYahoo() — name lookup ran first and won for duplicate
     // names. Flipped order plus the cross-id-mismatch guard.
     if(Object.keys(yahooDataByMlbId).length > 0 || Object.keys(yahooDataByName).length > 0){
       poolPlayers.forEach(p => {
-        const yp = (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
+        // Manual Yahoo ID stamp (V3) — check first so same-name players resolve correctly
+        const yp = (p._manual_yahoo_id && yahooDataByMlbId[p._manual_yahoo_id])
+               || (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
                || yahooDataByName[normalize(p.name||'')]
                || yahooDataByName[normalizeName(p.name||'')];
         if(!yp) return;
-        if(yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) return;
+        // Skip the cross-id-mismatch guard when a manual stamp is in play (intentional mismatch)
+        if(!p._manual_yahoo_id && yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) return;
         if(yp.yahoo_rank != null) p.yahoo_rank = yp.yahoo_rank;
         if(yp.roster_pct != null) p.roster_pct = yp.roster_pct;
         if(yp.preseason_rank != null) p.preseason_rank = yp.preseason_rank;
