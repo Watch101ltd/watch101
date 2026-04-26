@@ -265,31 +265,46 @@ tr.row-minor-stats:hover td{background:rgba(234,179,8,0.14)}
    Night mode rules above stay untouched — they only fire when body has no .day-mode. */
 body.day-mode .flame-hot{
   color:#1a1a1a;
+  /* DAYMODE_FLAME_V1.1 (April 26, 2026) — defeat the .player-name container's
+     overflow:hidden + text-overflow:ellipsis !important rules so the glow halo
+     can render past the box edges instead of getting sliced off at 2-3px wide.
+     Without these overrides the demo's full halo collapsed into a thin smudge.
+     Safe because flamed players are rare/short by definition — losing ellipsis
+     for a handful of new players is a non-issue. */
+  overflow:visible !important;
+  text-overflow:clip !important;
   animation:flame-hot-day-anim 0.8s ease-in-out infinite alternate;
 }
 @keyframes flame-hot-day-anim{
+  /* DAYMODE_FLAME_V1.1 — blur values bumped ~25% (8/12/16/20 -> 10/16/20/26) to
+     compensate for the live row background being lighter than the demo card,
+     and added a brighter inner highlight (#fff at 2px) for crisper contrast. */
   0%{
     text-shadow:
-      0 0 4px #f39c12,
-      0 0 8px #e67e22,
-      0 -3px 12px #d35400,
-      0 -6px 16px #c0392b;
+      0 0 2px #fff,
+      0 0 6px #f39c12,
+      0 0 10px #e67e22,
+      0 -3px 16px #d35400,
+      0 -6px 20px #c0392b;
   }
   100%{
     text-shadow:
-      0 0 6px #f1c40f,
-      0 0 12px #e67e22,
-      0 -4px 16px #c0392b,
-      0 -8px 20px #a51c30;
+      0 0 2px #fff,
+      0 0 8px #f1c40f,
+      0 0 14px #e67e22,
+      0 -4px 20px #c0392b,
+      0 -8px 26px #a51c30;
   }
 }
 body.day-mode .flame-warm{
   color:#1a1a1a;
+  overflow:visible !important;
+  text-overflow:clip !important;
   animation:flame-warm-day-anim 1.5s ease-in-out infinite alternate;
 }
 @keyframes flame-warm-day-anim{
-  from{text-shadow:0 0 4px #d97706,0 0 8px #b45309}
-  to  {text-shadow:0 0 8px #f59e0b,0 0 14px #d97706}
+  from{text-shadow:0 0 2px #fff,0 0 6px #d97706,0 0 10px #b45309}
+  to  {text-shadow:0 0 2px #fff,0 0 10px #f59e0b,0 0 18px #d97706}
 }
 /* /DAYMODE_FLAME_V1 */
 
