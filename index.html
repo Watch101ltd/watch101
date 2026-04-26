@@ -1210,7 +1210,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     <option value="NA">NA Players</option>
     <option value="SP">Starting Pitcher</option>
     <option value="RP">Relief Pitcher</option>
-    <option value="CL">Closer</option>
+    <option value="SAVE_THREAT">Save Threats</option>
     <option value="SLEEPER">Sleepers (under 25%)</option>
     <option value="UNDER25">Under 25</option>
   </select>
@@ -1462,7 +1462,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <option value="NA">NA Players</option>
         <option value="SP">Starting Pitcher</option>
         <option value="RP">Relief Pitcher</option>
-        <option value="CL">Closer</option>
+        <option value="SAVE_THREAT">Save Threats</option>
         <option value="SLEEPER">Sleepers (under 25%)</option>
         <option value="UNDER25">Under 25</option>
       </select>
@@ -1596,7 +1596,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <option value="NA">NA Players</option>
         <option value="SP">Starting Pitcher</option>
         <option value="RP">Relief Pitcher</option>
-        <option value="CL">Closer</option>
+        <option value="SAVE_THREAT">Save Threats</option>
         <option value="SLEEPER">Sleepers (under 25%)</option>
         <option value="UNDER25">Under 25</option>
       </select>
@@ -3009,8 +3009,13 @@ function getFiltered(){
       list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
     } else if(playerFilter === 'RP'){
       list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'RP');
-    } else if(playerFilter === 'CL'){
-      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'CL');
+    } else if(playerFilter === 'SAVE_THREAT'){
+      // SAVE_THREATS_V1 (April 26, 2026) — replaces the old "Closer" filter, which
+      // never matched anything because Yahoo only classifies pitchers as SP or RP
+      // (no CL). "Save Threats" = anyone with at least 1 save this year. Captures
+      // true closers AND setup men who've vultured saves. Threshold may bump
+      // mid-season once roles settle and one-off saves stop polluting results.
+      list = list.filter(p => p.sv != null && p.sv >= 1);
     } else if(playerFilter === 'SLEEPER'){
       list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
     } else if(playerFilter === 'UNDER25'){
@@ -5546,8 +5551,9 @@ function renderPool(){
       list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
     } else if(poolPlayerFilter === 'RP'){
       list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'RP');
-    } else if(poolPlayerFilter === 'CL'){
-      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'CL');
+    } else if(poolPlayerFilter === 'SAVE_THREAT'){
+      // SAVE_THREATS_V1 — see comment in the Watch list filter (renderTable).
+      list = list.filter(p => p.sv != null && p.sv >= 1);
     } else if(poolPlayerFilter === 'SLEEPER'){
       list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
     } else if(poolPlayerFilter === 'UNDER25'){
@@ -6495,8 +6501,9 @@ function renderLeaders(){
       list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
     } else if(leadersPlayerFilter === 'RP'){
       list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'RP');
-    } else if(leadersPlayerFilter === 'CL'){
-      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'CL');
+    } else if(leadersPlayerFilter === 'SAVE_THREAT'){
+      // SAVE_THREATS_V1 — see comment in the Watch list filter (renderTable).
+      list = list.filter(p => p.sv != null && p.sv >= 1);
     } else if(leadersPlayerFilter === 'SLEEPER'){
       list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
     } else if(leadersPlayerFilter === 'UNDER25'){
