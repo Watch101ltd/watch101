@@ -2145,6 +2145,7 @@ async function loadData(){
   // this, OWNED and ADP stay blank until the NEXT Yahoo sync, because the sync
   // fired after the last list load saw an older (or empty) players array.
   // No-op if yahoo cache is empty (first page load before sync completes).
+  stampManualYahooIds(players);
   applyYahoo(players);
 
   renderTable();
@@ -2467,66 +2468,63 @@ let yahooDataByName = {};   // global cache normalized name -> {yahoo_rank, rost
 // so it can be called from anywhere (loadData, renderTable, list switches, etc.)
 // without having to re-fetch from the Worker. Merges the current Yahoo cache into
 // any players[] array. Safe to call anytime — no-op if cache is empty.
-// MANUAL_NAME_TEAM_OVERRIDE_V1 (April 26, 2026) — manual disambiguation table for
-// the rare players who share a name with someone else in MLB. Used by applyYahoo()
-// below to pick the correct Yahoo data when name+team identifies the player but
-// Yahoo's data doesn't carry team or a real mlb_id we can match on. Currently
-// only handles the two Max Muncys — the only same-name pair likely to appear on
-// Matt's lists at the same time. To add a future pair: add a name key with the
-// player's team -> Yahoo internal mlb_id mapping. Yahoo internal IDs come from
-// the Yahoo player_key (e.g. "469.p.9606" -> "9606"). Look them up by checking
-// the broken player's overlay in the browser before adding.
-const MANUAL_NAME_TEAM_OVERRIDE = {
+// MANUAL_YAHOO_ID_STAMP_V3 (April 26, 2026) — the RIGHT version, finally.
+// For players who share a name with someone else in MLB, stamp the correct
+// Yahoo internal player ID onto the player record by name+team BEFORE
+// applyYahoo runs. Then applyYahoo's normal lookup finds the right Yahoo
+// record by ID and applies the LIVE Yahoo data. No frozen values. Yahoo
+// numbers stay live. To add a future same-name pair: add an entry keyed by
+// lowercased name, then by team abbreviation, with the player's Yahoo
+// internal ID. Find the IDs via browser console:
+//   Object.entries(yahooDataByMlbId).filter(([k,v])=>v.name==='Player Name')
+const MANUAL_YAHOO_ID_BY_NAME_TEAM = {
   "max muncy": {
-    "LAD": "9606",   // Max Muncy, LAD veteran 3B/CI/IF, Yahoo rank 45 (real MLB id 571970)
-    "ATH": "12501"   // Max Muncy, ATH rookie 2B/3B/CI/IF/MI/SS, Yahoo rank 310 (real MLB id 691777)
-    // ^ Verified against the live Yahoo dataset on April 26, 2026 via console:
-    //   Object.entries(yahooDataByMlbId).filter(([k,v])=>v.name==='Max Muncy')
+    "LAD": "9606",   // Max Muncy, LAD veteran 3B/CI/IF
+    "ATH": "12501"   // Max Muncy, ATH rookie 2B/3B/CI/IF/MI/SS
   }
 };
+
+function stampManualYahooIds(arr){
+  if(!arr || !Array.isArray(arr)) return;
+  arr.forEach(p => {
+    const n = (p.name || '').toLowerCase().trim();
+    const t = (p.team || '').toUpperCase().trim();
+    const entry = MANUAL_YAHOO_ID_BY_NAME_TEAM[n];
+    if(!entry) return;
+    const yahooId = entry[t];
+    if(!yahooId) return;
+    // Stamp the Yahoo ID onto the player record. applyYahoo (called next)
+    // will find the right Yahoo record via this ID and apply the live data.
+    p._manual_yahoo_id = yahooId;
+  });
+}
 
 function applyYahoo(arr) {
   if(!arr || !Array.isArray(arr)) return;
   arr.forEach(p => {
     const n = p.name || '';
 
-    // MANUAL_NAME_TEAM_OVERRIDE_V1 — check the manual table FIRST. If the
-    // player's name is in the override table AND their team matches one of the
-    // listed teams, use the listed Yahoo mlb_id directly. This solves the
-    // duplicate-name collision for the explicitly-listed pairs (Max Muncys,
-    // future additions) without needing any server-side fix.
-    const nameKey = n.toLowerCase().trim();
-    const playerTeam = (p.team || '').toUpperCase().trim();
-    if(MANUAL_NAME_TEAM_OVERRIDE[nameKey] && playerTeam && MANUAL_NAME_TEAM_OVERRIDE[nameKey][playerTeam]){
-      const overrideId = MANUAL_NAME_TEAM_OVERRIDE[nameKey][playerTeam];
-      const ypOverride = yahooDataByMlbId[overrideId];
-      if(ypOverride){
-        if(ypOverride.yahoo_rank != null) p.yahoo_rank = ypOverride.yahoo_rank;
-        if(ypOverride.roster_pct != null) p.roster_pct = ypOverride.roster_pct;
-        if(ypOverride.preseason_rank != null) p.preseason_rank = ypOverride.preseason_rank;
-        if(ypOverride.eligible_positions && ypOverride.eligible_positions.length > 0){
-          p.positions = ypOverride.eligible_positions;
-        }
-        if(ypOverride.pitcher_type) p.pitcher_type = ypOverride.pitcher_type;
-        if(ypOverride.injury_status !== undefined) p.injury_status = ypOverride.injury_status;
-        return; // override handled — skip the rest
-      }
-    }
-
+    // MANUAL_YAHOO_ID_STAMP_V3 (April 26, 2026) — if the player has a manually
+    // stamped Yahoo ID (from stampManualYahooIds()), use THAT ID first to look
+    // up the correct Yahoo record. This is how the two Max Muncys get the right
+    // live Yahoo data without needing any server-side fix.
     // DUPLICATE_NAME_FIX_V2 (April 25, 2026) — mlb_id PRIORITY (was name first).
     // Two players sharing a name (e.g. the two Max Muncys) both matched the same
     // name-keyed entry, so whichever Yahoo player was indexed under that name
     // got applied to BOTH MLB players. mlb_id is unique per player. Flipping
     // priority order: try mlb_id first; name match is now ONLY a fallback for
     // the rare Yahoo player who synced without an mlb_id.
-    const yp = (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
+    const yp = (p._manual_yahoo_id && yahooDataByMlbId[p._manual_yahoo_id])
+           || (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
            || yahooDataByName[normalize(n)]
            || yahooDataByName[normalizeName(n)];
     if(!yp) return;
     // Also guard the name-fallback case: if we matched by NAME but the
     // matched Yahoo player has a DIFFERENT mlb_id than the MLB player, refuse
     // the merge — that's the duplicate-name collision we're trying to prevent.
-    if(yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) return;
+    // EXCEPTION: if the player has a _manual_yahoo_id, the mismatch is expected
+    // and intentional (manual stamp pairs a real MLB ID with a Yahoo internal ID).
+    if(!p._manual_yahoo_id && yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) return;
     if(yp.yahoo_rank != null) p.yahoo_rank = yp.yahoo_rank;
     if(yp.roster_pct != null) p.roster_pct = yp.roster_pct;
     if(yp.preseason_rank != null) p.preseason_rank = yp.preseason_rank;
@@ -2707,6 +2705,10 @@ async function syncYahooData(manual = false){
       });
     }
 
+    // MANUAL_YAHOO_ID_STAMP_V3 — stamp Yahoo IDs FIRST, then applyYahoo finds the right Yahoo data
+    stampManualYahooIds(players);
+    if(typeof personalPlayers !== 'undefined') stampManualYahooIds(personalPlayers);
+    if(typeof poolPlayers !== 'undefined' && poolPlayers.length > 0) stampManualYahooIds(poolPlayers);
     // Merge into all arrays — applyYahoo is defined globally below (YAHOO_APPLY_GLOBAL_V1)
     applyYahoo(players);
     if(typeof personalPlayers !== 'undefined') applyYahoo(personalPlayers);
