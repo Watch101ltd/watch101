@@ -2836,7 +2836,10 @@ function moveBadge(move){
 function rowClass(move){
   if(move==='up') return 'highlight-up';
   if(move==='down') return 'highlight-down';
-  if(move==='new') return 'highlight-new';
+  // FLAME_TEXT_V1 (April 25, 2026) — gold left-border for "new" players RETIRED.
+  // The flame text on the player's name is the sole "freshly added" signal now.
+  // Keeping the branch in case we ever want to restore a row-level marker.
+  if(move==='new') return '';
   return '';
 }
 // Whitelist of real fantasy positions we display as badges.
@@ -5267,8 +5270,12 @@ function renderPool(){
     if(p.positions && p.positions.length) poolPositions = p.positions;
     else if(p.eligible_positions && p.eligible_positions.length) poolPositions = p.eligible_positions;
     else {
+      // DUPLICATE_NAME_FIX_V1 (April 25, 2026) — mlb_id ONLY, no name fallback.
+      // The old `OR by name lowercase` branch leaked positions across players who
+      // shared a name (e.g. the two Max Muncys), giving the wrong guy multi-position
+      // eligibility. mlb_id is unique per player so collisions are impossible.
       const wp = (typeof players !== 'undefined' && Array.isArray(players))
-        ? players.find(w => (w.mlb_id && p.mlb_id && w.mlb_id === p.mlb_id) || (w.name && p.name && w.name.toLowerCase() === p.name.toLowerCase()))
+        ? players.find(w => (w.mlb_id && p.mlb_id && w.mlb_id === p.mlb_id))
         : null;
       if(wp && wp.positions && wp.positions.length) poolPositions = wp.positions;
       else poolPositions = p.primaryPos ? [p.primaryPos] : [];
@@ -5716,18 +5723,31 @@ function renderContext(){
   const countEl = document.getElementById('carr-name-count');
   if(countEl) countEl.textContent = `${total} ${modeLabel}`;
 
-  // Yahoo lookup — global cache first, watch list overrides
-  const ctxYahooLookup = {};
+  // DUPLICATE_NAME_FIX_V1 (April 25, 2026) — keyed by mlb_id, NOT by name.
+  // Two players with the same name (e.g. the two Max Muncys) used to collide
+  // when this lookup was name-keyed, and the second write would overwrite the
+  // first — leaking ranks, roster%, and positions across players. mlb_id is
+  // unique per player so collisions are impossible. If a Pool/Leaders player
+  // doesn't have an mlb_id (rare), we fall back to a separate name-keyed
+  // lookup at read time, but only as a last resort.
+  const ctxYahooLookup = {};         // primary: keyed by mlb_id (string)
+  const ctxYahooLookupByName = {};   // fallback only — name-keyed for players missing mlb_id
   Object.values(yahooDataByName).forEach(yp => {
-    if(yp.name) {
-      ctxYahooLookup[normalize(yp.name)] = yp;
-      ctxYahooLookup[normalizeName(yp.name)] = yp;
+    if(yp.mlb_id != null && yp.mlb_id !== '') {
+      ctxYahooLookup[String(yp.mlb_id)] = yp;
+    } else if(yp.name) {
+      ctxYahooLookupByName[normalize(yp.name)] = yp;
+      ctxYahooLookupByName[normalizeName(yp.name)] = yp;
     }
   });
-  // Watch list overrides (has user-specific data)
+  // Watch list overrides (has user-specific data) — also mlb_id keyed.
   players.forEach(wp => {
-    ctxYahooLookup[normalize(wp.name)] = wp;
-    ctxYahooLookup[normalizeName(wp.name)] = wp;
+    if(wp.mlb_id != null && wp.mlb_id !== '') {
+      ctxYahooLookup[String(wp.mlb_id)] = wp;
+    } else if(wp.name) {
+      ctxYahooLookupByName[normalize(wp.name)] = wp;
+      ctxYahooLookupByName[normalizeName(wp.name)] = wp;
+    }
   });
 
   const tbody = document.getElementById('ctx-tbody');
@@ -5756,9 +5776,9 @@ function renderContext(){
         <td class="stat">${s.w??'—'}</td>
         <td class="stat">${s.sv??'—'}</td>
         <td class="stat">${s.ip!=null?parseFloat(s.ip).toFixed(1):'—'}</td>
-        <td class="stat" style="color:var(--text)">${(()=>{const yw=(ctxYahooLookup[normalize(p.name||"")] || ctxYahooLookup[normalizeName(p.name||"")]);const yr=yw&&yw.yahoo_rank?yw.yahoo_rank:p.yahoo_rank;return yr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
-        <td class="stat" style="color:var(--text)">${(()=>{const yw=(ctxYahooLookup[normalize(p.name||"")] || ctxYahooLookup[normalizeName(p.name||"")]);const pr=yw&&yw.preseason_rank?yw.preseason_rank:p.preseason_rank;return pr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
-        <td class="stat" style="color:var(--text)">${(()=>{const yw=(ctxYahooLookup[normalize(p.name||"")] || ctxYahooLookup[normalizeName(p.name||"")]);const rp=yw&&yw.roster_pct!=null?yw.roster_pct:p.roster_pct;return rp!=null?parseFloat(rp).toFixed(1)+'%':'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
+        <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const yr=yw&&yw.yahoo_rank?yw.yahoo_rank:p.yahoo_rank;return yr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
+        <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const pr=yw&&yw.preseason_rank?yw.preseason_rank:p.preseason_rank;return pr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
+        <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const rp=yw&&yw.roster_pct!=null?yw.roster_pct:p.roster_pct;return rp!=null?parseFloat(rp).toFixed(1)+'%':'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
         <td style="text-align:right">${addBtn}</td>
       </tr>`;
     } else {
@@ -5775,9 +5795,9 @@ function renderContext(){
         <td class="stat">${s.r??'—'}</td>
         <td class="stat">${s.sb??'—'}</td>
         <td class="stat" style="text-align:center">${p.bats||'<span style="color:var(--text3)">—</span>'}</td>
-        <td class="stat" style="color:var(--text)">${(()=>{const yw=(ctxYahooLookup[normalize(p.name||"")] || ctxYahooLookup[normalizeName(p.name||"")]);const yr=yw&&yw.yahoo_rank?yw.yahoo_rank:p.yahoo_rank;return yr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
-        <td class="stat" style="color:var(--text)">${(()=>{const yw=(ctxYahooLookup[normalize(p.name||"")] || ctxYahooLookup[normalizeName(p.name||"")]);const pr=yw&&yw.preseason_rank?yw.preseason_rank:p.preseason_rank;return pr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
-        <td class="stat" style="color:var(--text)">${(()=>{const yw=(ctxYahooLookup[normalize(p.name||"")] || ctxYahooLookup[normalizeName(p.name||"")]);const rp=yw&&yw.roster_pct!=null?yw.roster_pct:p.roster_pct;return rp!=null?parseFloat(rp).toFixed(1)+'%':'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
+        <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const yr=yw&&yw.yahoo_rank?yw.yahoo_rank:p.yahoo_rank;return yr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
+        <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const pr=yw&&yw.preseason_rank?yw.preseason_rank:p.preseason_rank;return pr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
+        <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const rp=yw&&yw.roster_pct!=null?yw.roster_pct:p.roster_pct;return rp!=null?parseFloat(rp).toFixed(1)+'%':'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
         <td style="text-align:right">${addBtn}</td>
       </tr>`;
     }
@@ -6132,8 +6152,12 @@ function renderLeaders(){
     if(p.positions && p.positions.length) leaderPositions = p.positions;
     else if(p.eligible_positions && p.eligible_positions.length) leaderPositions = p.eligible_positions;
     else {
+      // DUPLICATE_NAME_FIX_V1 (April 25, 2026) — mlb_id ONLY, no name fallback.
+      // The old `OR by name lowercase` branch leaked positions across players who
+      // shared a name (e.g. the two Max Muncys), giving the wrong guy multi-position
+      // eligibility. mlb_id is unique per player so collisions are impossible.
       const wp = (typeof players !== 'undefined' && Array.isArray(players))
-        ? players.find(w => (w.mlb_id && p.mlb_id && w.mlb_id === p.mlb_id) || (w.name && p.name && w.name.toLowerCase() === p.name.toLowerCase()))
+        ? players.find(w => (w.mlb_id && p.mlb_id && w.mlb_id === p.mlb_id))
         : null;
       if(wp && wp.positions && wp.positions.length) leaderPositions = wp.positions;
       else leaderPositions = p.primaryPos ? [p.primaryPos] : [];
