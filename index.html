@@ -2264,7 +2264,11 @@ function _notifyHomeAssistantOnSave(listId){
 }
 // /HA_NOTIFY_ON_SAVE_V1
 
-async function saveData(){
+async function saveData(opts){
+  // SILENT_SAVE_V1 (April 26, 2026) — opts.silent=true suppresses the "local
+  // draft saved" message in the header. Use it from background processes
+  // (e.g. team backfill from Pool data) so a silent housekeeping save doesn't
+  // overwrite the user-facing "Published:" / "Staged:" timestamp.
   // DELTA_PERSIST_V1 — compute p.move from prev_rank vs rank (drives the ▲/▼ arrows
   // next to each player's row), but DO NOT reset prev_rank. Previously this function
   // zeroed out prev_rank on every save, which wiped the +/- delta column because
@@ -2295,13 +2299,16 @@ async function saveData(){
     // use Save to Excel to publish" prompt on the staging environment (GitHub
     // Pages — Matt's editing surface). On production (Cloudflare), keep showing
     // the existing published timestamp so fans never see editor-prompt language.
-    if(_isStagingEnvironment()){
+    // SILENT_SAVE_V1 (April 26, 2026 — same session) — also suppress the message
+    // when saveData() is being called from a silent background process (Pool team
+    // backfill, etc.) — those callers pass {silent: true}.
+    if(_isStagingEnvironment() && !(opts && opts.silent)){
       document.getElementById('last-updated').textContent = listName + ' — local draft saved: ' + now + ' (use "Save to Excel" to publish)';
     }
-    // On production: leave the existing "Published: <timestamp>" message in place.
+    // On production OR silent saves: leave the existing message in place.
   } catch(e) {
-    // Same split for the error case — only nag the editor on staging
-    if(_isStagingEnvironment()){
+    // Same split for the error case
+    if(_isStagingEnvironment() && !(opts && opts.silent)){
       document.getElementById('last-updated').textContent = listName + ' — ⚠ could not save locally: ' + e.message;
     }
   }
@@ -5218,7 +5225,8 @@ async function loadPoolPlayers(){
           if(t){ p.team = t; filled++; }
         }
       });
-      if(filled > 0){ saveData(); renderTable(); }
+      // SILENT_SAVE_V1 (April 26, 2026) — background team backfill, don't overwrite the user-facing header message
+      if(filled > 0){ saveData({silent: true}); renderTable(); }
     }
 
     // MANUAL_YAHOO_ID_STAMP_V3 — stamp manual Yahoo IDs FIRST so the lookup below
@@ -7280,7 +7288,8 @@ setTimeout(async () => {
     }catch(e){}
     await new Promise(r=>setTimeout(r,80));
   }
-  if(filled > 0){ saveData(); renderTable(); }
+  // SILENT_SAVE_V1 (April 26, 2026) — background AB-stat backfill, don't overwrite the user-facing header message
+  if(filled > 0){ saveData({silent: true}); renderTable(); }
 }, 2000);
 checkYahooStatus();
 startYahooAutoSync();
