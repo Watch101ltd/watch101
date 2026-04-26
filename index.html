@@ -1211,6 +1211,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     <option value="SP">Starting Pitcher</option>
     <option value="RP">Relief Pitcher</option>
     <option value="SAVE_THREAT">Save Threats</option>
+    <option value="SPEEDSTER">Speedsters</option>
     <option value="SLEEPER">Sleepers (under 25%)</option>
     <option value="UNDER25">Under 25</option>
   </select>
@@ -1497,6 +1498,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <option value="SP">Starting Pitcher</option>
         <option value="RP">Relief Pitcher</option>
         <option value="SAVE_THREAT">Save Threats</option>
+        <option value="SPEEDSTER">Speedsters</option>
         <option value="SLEEPER">Sleepers (under 25%)</option>
         <option value="UNDER25">Under 25</option>
       </select>
@@ -1665,6 +1667,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <option value="SP">Starting Pitcher</option>
         <option value="RP">Relief Pitcher</option>
         <option value="SAVE_THREAT">Save Threats</option>
+        <option value="SPEEDSTER">Speedsters</option>
         <option value="SLEEPER">Sleepers (under 25%)</option>
         <option value="UNDER25">Under 25</option>
       </select>
@@ -3084,6 +3087,12 @@ function getFiltered(){
       // true closers AND setup men who've vultured saves. Threshold may bump
       // mid-season once roles settle and one-off saves stop polluting results.
       list = list.filter(p => p.sv != null && p.sv >= 1);
+    } else if(playerFilter === 'SPEEDSTER'){
+      // SPEEDSTERS_V1 (April 26, 2026) — anyone with 3+ stolen bases. Captures
+      // the real category-runners (Trea Turner, Elly De La Cruz, Chandler Simpson,
+      // Jose Caballero, etc.) without too much noise. Threshold will bump as the
+      // season progresses — 3 is right for late April.
+      list = list.filter(p => p.sb != null && p.sb >= 3);
     } else if(playerFilter === 'SLEEPER'){
       list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
     } else if(playerFilter === 'UNDER25'){
@@ -5626,6 +5635,9 @@ function renderPool(){
     } else if(poolPlayerFilter === 'SAVE_THREAT'){
       // SAVE_THREATS_V1 — see comment in the Watch list filter (renderTable).
       list = list.filter(p => p.sv != null && p.sv >= 1);
+    } else if(poolPlayerFilter === 'SPEEDSTER'){
+      // SPEEDSTERS_V1 — see comment in the Watch list filter (renderTable).
+      list = list.filter(p => p.sb != null && p.sb >= 3);
     } else if(poolPlayerFilter === 'SLEEPER'){
       list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
     } else if(poolPlayerFilter === 'UNDER25'){
@@ -6580,6 +6592,9 @@ function renderLeaders(){
     } else if(leadersPlayerFilter === 'SAVE_THREAT'){
       // SAVE_THREATS_V1 — see comment in the Watch list filter (renderTable).
       list = list.filter(p => p.sv != null && p.sv >= 1);
+    } else if(leadersPlayerFilter === 'SPEEDSTER'){
+      // SPEEDSTERS_V1 — see comment in the Watch list filter (renderTable).
+      list = list.filter(p => p.sb != null && p.sb >= 3);
     } else if(leadersPlayerFilter === 'SLEEPER'){
       list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
     } else if(leadersPlayerFilter === 'UNDER25'){
