@@ -2008,6 +2008,36 @@ const SERVER_URL = 'https://phonic-nonreceptively-elida.ngrok-free.dev';
 // Added April 23, 2026.
 const YAHOO_CACHE_URL = 'https://watch101-cache.wild-fog-21df.workers.dev';
 
+// HISTORY_NOTES_LIVE_FETCH_V1 (April 26, 2026) — pull PLAYER_NOTES_HISTORY from
+// the NAS endpoint /history/notes on every page load. This makes the rank-history
+// chart update INSTANTLY after each Approve, with no Cloudflare code push needed.
+// Falls back silently to whatever's baked into the HTML (the legacy var) if the
+// fetch fails. Runs once at startup, fire-and-forget, doesn't block the rest of
+// the page from rendering. Re-renders any open player overlay if the new data
+// arrives after it's already on screen.
+async function loadHistoryNotesFromNAS(){
+  try {
+    const res = await fetch(`${SERVER_URL}/history/notes`, {
+      headers: {'ngrok-skip-browser-warning': 'true'},
+      cache: 'no-store'
+    });
+    if(!res.ok) return; // silent fail — legacy baked-in var stays in place as fallback
+    const data = await res.json();
+    if(data && typeof data === 'object'){
+      window.PLAYER_NOTES_HISTORY = data;
+      console.log('[HISTORY_NOTES_LIVE_FETCH_V1] loaded', Object.keys(data).length, 'players from NAS');
+      // Note: if a player overlay is already open during this ~200ms fetch window,
+      // the user would need to close + reopen to see the freshly loaded dots. That's
+      // acceptable for the rare case of overlapping with initial page load; not worth
+      // the extra plumbing to re-render mid-overlay.
+    }
+  } catch(e){
+    console.warn('[HISTORY_NOTES_LIVE_FETCH_V1] fetch failed:', e && e.message);
+  }
+}
+// Kick it off immediately at parse time — doesn't block anything else.
+loadHistoryNotesFromNAS();
+
 // STAGING_VS_PROD_V1 — pick the right endpoint based on what domain we're on (Apr 22, 2026).
 // GitHub = staging environment (reads from _Staging\<List>\ — sees works-in-progress)
 // Anything else (Cloudflare prod, custom domain, file://) = production
@@ -55199,15 +55229,29 @@ function renderRankHistory(mlbId){
   var latestLbl = document.getElementById('ppo-chart-latest');
   if(!svg) return;
   var history = (window.PLAYER_NOTES_HISTORY && PLAYER_NOTES_HISTORY[mlbId]) ? PLAYER_NOTES_HISTORY[mlbId] : [];
-  // Every Matt-save writes a row with date + rank. Pull those out, sort oldest -> newest.
+  // RANK_HISTORY_PER_LIST_V1 (2026-04-26) — each entry now carries list_id so we
+  // can filter to ONLY the timeline for the list the user is currently viewing.
+  // Entries without list_id are legacy (pre-multilist) and shown on every list.
+  var activeListId = (typeof currentListId !== 'undefined' && currentListId) ? String(currentListId).toLowerCase() : null;
+  // Every approved publish writes a row with date + time + rank + list_id. Pull
+  // out the ones for the active list, sort oldest -> newest by (date, time).
   var points = [];
   for(var i=0;i<history.length;i++){
     var h = history[i];
-    if(h && h.date && h.rank != null){
-      points.push({date: String(h.date), rank: Number(h.rank)});
-    }
+    if(!h || !h.date || h.rank == null) continue;
+    var entryListId = h.list_id ? String(h.list_id).toLowerCase() : null;
+    // Show this point if: no active list filter, no entry list_id (legacy), or list_ids match
+    if(activeListId && entryListId && entryListId !== activeListId) continue;
+    points.push({
+      date: String(h.date),
+      time: h.time ? String(h.time) : '0000',
+      rank: Number(h.rank)
+    });
   }
-  points.sort(function(a,b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  points.sort(function(a,b){
+    if(a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return a.time < b.time ? -1 : a.time > b.time ? 1 : 0;
+  });
 
   if(!points.length){
     svg.innerHTML = '<text x="400" y="110" text-anchor="middle" class="ppo-chart-label">No rank history yet.</text>';
@@ -55250,7 +55294,13 @@ function renderRankHistory(mlbId){
     parts.push('<path class="ppo-chart-line" d="'+d+'"/>');
   }
   for(var k=0; k<n; k++){
-    parts.push('<circle class="ppo-chart-dot" cx="'+xAt(k)+'" cy="'+rankY(points[k].rank)+'" r="4"><title>'+points[k].date+' \u2022 Rank '+points[k].rank+'</title></circle>');
+    // Tooltip shows date + HH:MM (when available) + rank, so multiple same-day publishes are distinguishable on hover
+    var tt = points[k].date;
+    if(points[k].time && points[k].time !== '0000'){
+      tt += ' ' + points[k].time.substring(0,2) + ':' + points[k].time.substring(2,4);
+    }
+    tt += ' \u2022 Rank ' + points[k].rank;
+    parts.push('<circle class="ppo-chart-dot" cx="'+xAt(k)+'" cy="'+rankY(points[k].rank)+'" r="4"><title>'+tt+'</title></circle>');
   }
 
   // x-axis date labels at the endpoints (and middle if we have more than 2)
