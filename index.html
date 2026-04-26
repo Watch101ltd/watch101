@@ -1455,6 +1455,40 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="filter-tab" id="pool-pos-hitter" onclick="setPoolPos('HITTER',this)">Hitters</button>
         <button class="filter-tab" id="pool-pos-pitcher" onclick="setPoolPos('PITCHER',this)">Pitchers</button>
       </div>
+      <!-- TEAM_FILTER_POOL_V1 (April 26, 2026) — same MLB team picker as the Watch list -->
+      <select id="pool-team-filter" onchange="poolTeamFilter=this.value;renderPool()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
+        <option value="ALL">All Teams</option>
+        <option value="ARI">ARI — D-backs</option>
+        <option value="ATL">ATL — Braves</option>
+        <option value="BAL">BAL — Orioles</option>
+        <option value="BOS">BOS — Red Sox</option>
+        <option value="CHC">CHC — Cubs</option>
+        <option value="CWS">CWS — White Sox</option>
+        <option value="CIN">CIN — Reds</option>
+        <option value="CLE">CLE — Guardians</option>
+        <option value="COL">COL — Rockies</option>
+        <option value="DET">DET — Tigers</option>
+        <option value="HOU">HOU — Astros</option>
+        <option value="KC">KC — Royals</option>
+        <option value="LAA">LAA — Angels</option>
+        <option value="LAD">LAD — Dodgers</option>
+        <option value="MIA">MIA — Marlins</option>
+        <option value="MIL">MIL — Brewers</option>
+        <option value="MIN">MIN — Twins</option>
+        <option value="NYM">NYM — Mets</option>
+        <option value="NYY">NYY — Yankees</option>
+        <option value="ATH">ATH — Athletics</option>
+        <option value="PHI">PHI — Phillies</option>
+        <option value="PIT">PIT — Pirates</option>
+        <option value="SD">SD — Padres</option>
+        <option value="SF">SF — Giants</option>
+        <option value="SEA">SEA — Mariners</option>
+        <option value="STL">STL — Cardinals</option>
+        <option value="TB">TB — Rays</option>
+        <option value="TEX">TEX — Rangers</option>
+        <option value="TOR">TOR — Blue Jays</option>
+        <option value="WSH">WSH — Nationals</option>
+      </select>
       <!-- PLAYER_FILTER_V1 — Pool — same seven options as the Watch list filter -->
       <select id="pool-player-filter" onchange="poolPlayerFilter=this.value;renderPool()" title="Filters" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
         <option value="ALL">Filters: All Players</option>
@@ -1589,6 +1623,40 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <option value="30">Last 30 Days</option>
       </select>
       <button class="filter-tab" id="leaders-adv-tab" onclick="toggleLeadersAdvancedMode(this)">⚡ Advanced</button>
+      <!-- TEAM_FILTER_LEADERS_V1 (April 26, 2026) — same MLB team picker as the Watch list -->
+      <select id="leaders-team-filter" onchange="leadersTeamFilter=this.value;renderLeaders()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
+        <option value="ALL">All Teams</option>
+        <option value="ARI">ARI — D-backs</option>
+        <option value="ATL">ATL — Braves</option>
+        <option value="BAL">BAL — Orioles</option>
+        <option value="BOS">BOS — Red Sox</option>
+        <option value="CHC">CHC — Cubs</option>
+        <option value="CWS">CWS — White Sox</option>
+        <option value="CIN">CIN — Reds</option>
+        <option value="CLE">CLE — Guardians</option>
+        <option value="COL">COL — Rockies</option>
+        <option value="DET">DET — Tigers</option>
+        <option value="HOU">HOU — Astros</option>
+        <option value="KC">KC — Royals</option>
+        <option value="LAA">LAA — Angels</option>
+        <option value="LAD">LAD — Dodgers</option>
+        <option value="MIA">MIA — Marlins</option>
+        <option value="MIL">MIL — Brewers</option>
+        <option value="MIN">MIN — Twins</option>
+        <option value="NYM">NYM — Mets</option>
+        <option value="NYY">NYY — Yankees</option>
+        <option value="ATH">ATH — Athletics</option>
+        <option value="PHI">PHI — Phillies</option>
+        <option value="PIT">PIT — Pirates</option>
+        <option value="SD">SD — Padres</option>
+        <option value="SF">SF — Giants</option>
+        <option value="SEA">SEA — Mariners</option>
+        <option value="STL">STL — Cardinals</option>
+        <option value="TB">TB — Rays</option>
+        <option value="TEX">TEX — Rangers</option>
+        <option value="TOR">TOR — Blue Jays</option>
+        <option value="WSH">WSH — Nationals</option>
+      </select>
       <!-- PLAYER_FILTER_V1 — Leaders — same seven options as the Watch list filter -->
       <select id="leaders-player-filter" onchange="leadersPlayerFilter=this.value;renderLeaders()" title="Filters" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
         <option value="ALL">Filters: All Players</option>
@@ -5164,6 +5232,7 @@ let poolLoaded = false;
 let poolStatsLoaded = false;
 let poolPosFilter = 'ALL';
 let poolPlayerFilter = 'ALL';   // PLAYER_FILTER_V1 — Pool — Matt's filter dropdown (Injured / NA / SP / RP / CL / Sleepers / Under 25)
+let poolTeamFilter = 'ALL';     // TEAM_FILTER_POOL_V1 — Pool — MLB team picker (mirrors the Watch list team filter)
 let poolActive = false;
 let poolSortCol = 'name';
 let poolSortDir = 1;
@@ -5535,6 +5604,9 @@ function renderPool(){
   let list = [...poolPlayers];
   if(poolPosFilter === 'PITCHER') list = list.filter(p => isPitcherPos(p.primaryPos));
   if(poolPosFilter === 'HITTER')  list = list.filter(p => !isPitcherPos(p.primaryPos));
+
+  // TEAM_FILTER_POOL_V1 — MLB team picker (mirrors Watch list)
+  if(poolTeamFilter !== 'ALL') list = list.filter(p => (p.team||'').toUpperCase() === poolTeamFilter);
 
   // PLAYER_FILTER_V1 — Pool — Matt's curated filter dropdown (single-select, AND logic with poolPosFilter)
   if(poolPlayerFilter !== 'ALL'){
@@ -6418,6 +6490,7 @@ let leadersSortCol = 'hr';
 let leadersSortDir = -1;
 let leadersPosFilter = 'ALL'; // 'ALL' | 'HITTER' | 'PITCHER'
 let leadersPlayerFilter = 'ALL';   // PLAYER_FILTER_V1 — Leaders — Matt's filter dropdown (Injured / NA / SP / RP / CL / Sleepers / Under 25)
+let leadersTeamFilter = 'ALL';     // TEAM_FILTER_LEADERS_V1 — Leaders — MLB team picker (mirrors the Watch list team filter)
 let leadersClusterByPos = null;   // League Leaders cluster state (independent of main/pool)
 var leadersScrollHandler = null;
 
@@ -6485,6 +6558,9 @@ function renderLeaders(){
   // Apply position filter (set by category buttons)
   if(leadersPosFilter === 'PITCHER') list = list.filter(p => isPitcherPos(p.primaryPos));
   if(leadersPosFilter === 'HITTER')  list = list.filter(p => !isPitcherPos(p.primaryPos));
+
+  // TEAM_FILTER_LEADERS_V1 — MLB team picker (mirrors Watch list)
+  if(leadersTeamFilter !== 'ALL') list = list.filter(p => (p.team||'').toUpperCase() === leadersTeamFilter);
 
   // PLAYER_FILTER_V1 — Leaders — Matt's curated filter dropdown (single-select, AND logic with leadersPosFilter)
   if(leadersPlayerFilter !== 'ALL'){
