@@ -870,6 +870,18 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 #player-page-overlay .ppo-note-entry:last-child{border-bottom:none}
 #player-page-overlay .ppo-comment-date{font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px;}
 #player-page-overlay .ppo-comment-date.current{color:var(--gold)}
+/* MARK_NOTE_FRESH_V1 (April 25, 2026) — BACKEND_ONLY admin button.
+   Lets Walter/the Dude manually re-flag a note as fresh on heavy-publish
+   days when the auto-counter would otherwise expire too early. Lives on
+   the player Deep Cut overlay, inside Matt's Take section, next to the
+   current note. **Hide this when Read-Only Mode ships** — fans on
+   Cloudflare should not see admin controls. */
+#player-page-overlay .ppo-mark-fresh-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
+#player-page-overlay .ppo-mark-fresh-btn{font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--gold);background:transparent;border:1px solid var(--gold2);border-radius:4px;padding:4px 10px;cursor:pointer;transition:all 0.15s;}
+#player-page-overlay .ppo-mark-fresh-btn:hover{background:var(--gold);color:var(--bg);}
+#player-page-overlay .ppo-mark-fresh-btn.flagged{color:var(--text3);border-color:var(--border);cursor:default;}
+#player-page-overlay .ppo-mark-fresh-btn.flagged:hover{background:transparent;color:var(--text3);}
+#player-page-overlay .ppo-mark-fresh-tag{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
 #player-page-overlay .ppo-notes-scroll{max-height:380px;overflow-y:auto;padding-right:6px;}
 #player-page-overlay .ppo-quadrant-scroll{max-height:380px;overflow-y:auto;padding-right:6px;}
 #player-page-overlay .ppo-notes-count{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);}
@@ -2937,6 +2949,47 @@ function noteBadgeOpen(playerId){
     openPlayerCard(fakeE, p);
   } catch(e){
     console.warn('[NOTE_EMOJI_V1] noteBadgeOpen failed:', e);
+  }
+}
+
+// MARK_NOTE_FRESH_V1 (April 25, 2026) — BACKEND_ONLY admin handler.
+// Manually re-flags a player's note as "fresh" by setting the publish
+// counter back to 0. Useful on heavy-publish days when the standard
+// 2-publish auto-expire would clear the 📋 icon before fans get a chance
+// to see the note. Persists via autoSaveToNAS so the next Approve cycle
+// picks up the reset counter.
+//
+// **Hide this control when Read-Only Mode ships.** Fans on Cloudflare
+// should never see this button — only Walter / the Dude / Matt running
+// the admin view should. Until Read-Only Mode lands, the button is
+// always visible (acceptable while we're still pre-public).
+async function markNoteAsFresh(mlbId){
+  try {
+    var p = null;
+    if(typeof players !== 'undefined' && Array.isArray(players)){
+      p = players.find(function(x){ return String(x.mlb_id) === String(mlbId); });
+    }
+    if(!p){
+      console.warn('[MARK_NOTE_FRESH_V1] player not found in active list for mlb_id:', mlbId);
+      return;
+    }
+    p.note_publish_count_since_change = 0;
+    // Persist so the next Approve cycle ticks this counter, not the stale
+    // value sitting in Staging. Same pattern other admin mutations use.
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[MARK_NOTE_FRESH_V1] autosave failed:', e); }
+    // Refresh the main table so the 📋 icon pops back on the row.
+    try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
+    // Visually flip the button on the overlay so we know the click landed.
+    try {
+      var btn = document.getElementById('ppo-mark-fresh-btn-' + mlbId);
+      if(btn){
+        btn.classList.add('flagged');
+        btn.textContent = '✓ Flagged as fresh';
+        btn.disabled = true;
+      }
+    } catch(_re){}
+  } catch(e){
+    console.warn('[MARK_NOTE_FRESH_V1] markNoteAsFresh failed:', e);
   }
 }
 
@@ -54598,8 +54651,26 @@ function openPlayerPage(p){
     // NOTE_HYPERLINK_V1 (April 25, 2026) — wire the chain link icon into Matt's Take.
     var _curSplit = _splitNoteAndUrl(currentNote);
     var _curBadge = _renderNoteLinkBadge(_curSplit.url);
+    // MARK_NOTE_FRESH_V1 (April 25, 2026) — BACKEND_ONLY admin button below the
+    // current note. Lets the Dude/Matt manually re-flag a note as fresh so the
+    // 📋 icon appears for an extra publish cycle on heavy-publish days.
+    // **Hide when Read-Only Mode ships.** Until then, always visible.
+    var _isFlagged = Object.prototype.hasOwnProperty.call(p, 'note_publish_count_since_change');
+    var _markFreshHtml = '<div class="ppo-mark-fresh-row">'
+        + (_isFlagged
+            ? '<button class="ppo-mark-fresh-btn flagged" disabled>✓ Flagged as fresh</button>'
+              + '<span class="ppo-mark-fresh-tag">📋 icon will show until cleared on the second Approve</span>'
+            : '<button id="ppo-mark-fresh-btn-' + mlbId + '" class="ppo-mark-fresh-btn" '
+              + 'onclick="markNoteAsFresh(\'' + mlbId + '\')" '
+              + 'title="Manually re-flag this note as fresh — adds the 📋 icon back for one publish cycle">'
+              + '📌 Mark note as fresh</button>'
+              + '<span class="ppo-mark-fresh-tag">Backend only — heavy-publish-day override</span>'
+          )
+      + '</div>';
     notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date current">Current note &middot; latest</div>'
-               + '<div class="ppo-note-body">' + escapeHtml(_curSplit.text || currentNote) + _curBadge + '</div></div>';
+               + '<div class="ppo-note-body">' + escapeHtml(_curSplit.text || currentNote) + _curBadge + '</div>'
+               + _markFreshHtml
+               + '</div>';
   }
   if(oldHistory.length > 0){
     notesHtml += '<div class="ppo-notes-scroll">';
