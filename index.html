@@ -2627,7 +2627,15 @@ async function checkYahooStatus(){
     const data = await res.json();
     yahooConnected = data.connected;
     updateYahooBtn();
-    if(yahooConnected && players.length > 0) syncYahooData();
+    // YAHOO_SYNC_UNGATE_V1 (April 26, 2026) — removed `&& players.length > 0`.
+    // The old gate prevented Yahoo from syncing on GitHub Pages whenever the
+    // staging list was empty (which is most of the time, until Matt finishes
+    // his Save-to-Excel work). With Yahoo never syncing, the Pool / Leaders
+    // tabs got no Yahoo data — meaning the Filters dropdown (Injured / NA /
+    // SP / RP / CL / Sleepers) returned "No Players Found." Yahoo data is
+    // global app state, not list state — if we're connected, we should sync.
+    // Worker has 24h KV cache + 10-call hard ceiling, so we can't hammer Yahoo.
+    if(yahooConnected) syncYahooData();
   } catch(e) {
     yahooConnected = false;
     updateYahooBtn();
@@ -2819,7 +2827,9 @@ async function syncYahooData(manual = false){
 function startYahooAutoSync(){
   if(yahooSyncTimer) clearInterval(yahooSyncTimer);
   yahooSyncTimer = setInterval(() => {
-    if(yahooConnected && players.length > 0) syncYahooData();
+    // YAHOO_SYNC_UNGATE_V1 (April 26, 2026) — removed `&& players.length > 0`.
+    // See comment in checkYahooStatus() for rationale.
+    if(yahooConnected) syncYahooData();
   }, 10 * 60 * 1000);
 }
 
