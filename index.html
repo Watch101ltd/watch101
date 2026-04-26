@@ -5524,9 +5524,17 @@ function renderPool(){
     const isAdded = addedNames.has(p.name.toLowerCase());
     const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
     const pit = isPitcherPos(p.primaryPos);
-    // Merge Yahoo data — try mlb_id against global cache first, then name lookup.
+    // MANUAL_YAHOO_ID_STAMP_V3 — make sure the manual ID is stamped on this player
+    // (the stamp may not have run yet on this poolPlayers slot if Yahoo data only just arrived)
+    if(typeof stampManualYahooIds === 'function' && !p._manual_yahoo_id){
+      stampManualYahooIds([p]);
+    }
+    // Merge Yahoo data — manual stamp wins, then mlb_id, then name fallback.
     let yw = null;
-    if(typeof yahooDataByMlbId === 'object' && yahooDataByMlbId && p.mlb_id){
+    if(p._manual_yahoo_id && yahooDataByMlbId && yahooDataByMlbId[p._manual_yahoo_id]){
+      yw = yahooDataByMlbId[p._manual_yahoo_id];
+    }
+    if(!yw && typeof yahooDataByMlbId === 'object' && yahooDataByMlbId && p.mlb_id){
       yw = yahooDataByMlbId[String(p.mlb_id)] || null;
     }
     if(!yw) yw = yahooLookup[p.name.toLowerCase()] || null;
