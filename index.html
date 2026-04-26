@@ -1203,6 +1203,17 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     <option value="TOR">TOR — Blue Jays</option>
     <option value="WSH">WSH — Nationals</option>
   </select>
+  <!-- PLAYER_FILTER_V1 (April 26, 2026) — Matt's request: single-select dropdown with curated filter buckets. Combines with team filter (AND logic). Defaults to ALL. -->
+  <select id="player-filter" onchange="playerFilter=this.value;renderTable()" title="Filters" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
+    <option value="ALL">Filters: All Players</option>
+    <option value="INJURED">Injured</option>
+    <option value="NA">NA Players</option>
+    <option value="SP">Starting Pitcher</option>
+    <option value="RP">Relief Pitcher</option>
+    <option value="CL">Closer</option>
+    <option value="SLEEPER">Sleepers (under 25%)</option>
+    <option value="UNDER25">Under 25</option>
+  </select>
   <!-- MULTILIST_V1 — list switcher + info button -->
   <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--gold) 0%,#c9a227 100%);color:#1a1a1a;border:1px solid var(--gold);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:200px">
     <option value="integrity">⭐ Watch 101 — Integrity</option>
@@ -1988,6 +1999,7 @@ let sortDir = 1;
 let clusterByPos = null;   // When set to 'C'|'1B'|'2B'|... main list clusters by that position. null = normal sort.
 let filter = 'ALL';
 let teamFilter = 'ALL';
+let playerFilter = 'ALL';   // PLAYER_FILTER_V1 — Matt's filter dropdown (Injured / NA / SP / RP / CL / Sleepers / Under 25)
 let editingId = null;
 let dragSrcIdx = null;
 let searchTimeout = null;
@@ -2946,6 +2958,31 @@ function getFiltered(){
   if(filter==='TOP25') list = list.filter(p => p.rank && p.rank<=25);
   if(filter==='MOVERS') list = list.filter(p => p.move && p.move!=='');
   if(teamFilter !== 'ALL') list = list.filter(p => (p.team||'').toUpperCase() === teamFilter);
+
+  // PLAYER_FILTER_V1 — Matt's curated filter dropdown (single-select, AND logic with teamFilter)
+  if(playerFilter !== 'ALL'){
+    if(playerFilter === 'INJURED'){
+      // Anyone with an injury status EXCEPT NA (NA gets its own bucket — those are minor-leaguers, not injuries)
+      list = list.filter(p => {
+        const s = (p.injury_status || '').toUpperCase();
+        if(!s) return false;
+        if(s === 'NA') return false;
+        return true;
+      });
+    } else if(playerFilter === 'NA'){
+      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA');
+    } else if(playerFilter === 'SP'){
+      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
+    } else if(playerFilter === 'RP'){
+      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'RP');
+    } else if(playerFilter === 'CL'){
+      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'CL');
+    } else if(playerFilter === 'SLEEPER'){
+      list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
+    } else if(playerFilter === 'UNDER25'){
+      list = list.filter(p => p.age != null && p.age < 25);
+    }
+  }
 
   // --- Position-cluster mode (Matt's position-sort feature) ---
   // When clusterByPos is set, we IGNORE the usual column sort and instead:
