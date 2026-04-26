@@ -2132,8 +2132,10 @@ async function loadData(){
       if(playerArr.length > 0){
         players = playerArr;
         _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
-        // STAGING_VS_PROD_V1 — different label depending on where the data came from
-        const stampWord = isStaging ? 'Staged:' : 'Approved:';
+        // STAGING_VS_PROD_V1 — different label depending on where the data came from.
+        // PUBLISHED_LABEL_V1 (April 26, 2026) — production says "Published:" instead of
+        // "Approved:" because that's the user-facing word for the public Cloudflare site.
+        const stampWord = isStaging ? 'Staged:' : 'Published:';
         const stamp = savedStr ? (stampWord + ' ' + savedStr) : 'Loaded';
         const envBadge = isStaging ? ' [STAGING]' : '';
         document.getElementById('last-updated').textContent = listName + envBadge + ' — ' + stamp;
@@ -2289,9 +2291,19 @@ async function saveData(){
     localStorage.setItem(lsKey, JSON.stringify(players));
     const now = new Date().toLocaleString();
     localStorage.setItem(lsTime, now);
-    document.getElementById('last-updated').textContent = listName + ' — local draft saved: ' + now + ' (use "Save to Excel" to publish)';
+    // PUBLISHED_LABEL_V1 (April 26, 2026) — only show the "local draft saved /
+    // use Save to Excel to publish" prompt on the staging environment (GitHub
+    // Pages — Matt's editing surface). On production (Cloudflare), keep showing
+    // the existing published timestamp so fans never see editor-prompt language.
+    if(_isStagingEnvironment()){
+      document.getElementById('last-updated').textContent = listName + ' — local draft saved: ' + now + ' (use "Save to Excel" to publish)';
+    }
+    // On production: leave the existing "Published: <timestamp>" message in place.
   } catch(e) {
-    document.getElementById('last-updated').textContent = listName + ' — ⚠ could not save locally: ' + e.message;
+    // Same split for the error case — only nag the editor on staging
+    if(_isStagingEnvironment()){
+      document.getElementById('last-updated').textContent = listName + ' — ⚠ could not save locally: ' + e.message;
+    }
   }
   renderTable();
 }
