@@ -1455,6 +1455,17 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="filter-tab" id="pool-pos-hitter" onclick="setPoolPos('HITTER',this)">Hitters</button>
         <button class="filter-tab" id="pool-pos-pitcher" onclick="setPoolPos('PITCHER',this)">Pitchers</button>
       </div>
+      <!-- PLAYER_FILTER_V1 — Pool — same seven options as the Watch list filter -->
+      <select id="pool-player-filter" onchange="poolPlayerFilter=this.value;renderPool()" title="Filters" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
+        <option value="ALL">Filters: All Players</option>
+        <option value="INJURED">Injured</option>
+        <option value="NA">NA Players</option>
+        <option value="SP">Starting Pitcher</option>
+        <option value="RP">Relief Pitcher</option>
+        <option value="CL">Closer</option>
+        <option value="SLEEPER">Sleepers (under 25%)</option>
+        <option value="UNDER25">Under 25</option>
+      </select>
       <button class="filter-tab" id="pool-adv-tab" onclick="togglePoolAdvancedMode(this)">⚡ Advanced</button>
       <span id="pool-cluster-chip" onclick="sortPoolByPos(poolClusterByPos, event)" title="Click to exit position-cluster sort"></span>
       <div class="pool-status" id="pool-status">Loading players...</div>
@@ -1578,6 +1589,17 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <option value="30">Last 30 Days</option>
       </select>
       <button class="filter-tab" id="leaders-adv-tab" onclick="toggleLeadersAdvancedMode(this)">⚡ Advanced</button>
+      <!-- PLAYER_FILTER_V1 — Leaders — same seven options as the Watch list filter -->
+      <select id="leaders-player-filter" onchange="leadersPlayerFilter=this.value;renderLeaders()" title="Filters" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
+        <option value="ALL">Filters: All Players</option>
+        <option value="INJURED">Injured</option>
+        <option value="NA">NA Players</option>
+        <option value="SP">Starting Pitcher</option>
+        <option value="RP">Relief Pitcher</option>
+        <option value="CL">Closer</option>
+        <option value="SLEEPER">Sleepers (under 25%)</option>
+        <option value="UNDER25">Under 25</option>
+      </select>
       <span id="leaders-cluster-chip" onclick="sortLeadersByPos(leadersClusterByPos, event)" title="Click to exit position-cluster sort"></span>
       <div class="pool-status" id="leaders-status">Loading players...</div>
     </div>
@@ -5124,6 +5146,7 @@ let poolPlayers = [];
 let poolLoaded = false;
 let poolStatsLoaded = false;
 let poolPosFilter = 'ALL';
+let poolPlayerFilter = 'ALL';   // PLAYER_FILTER_V1 — Pool — Matt's filter dropdown (Injured / NA / SP / RP / CL / Sleepers / Under 25)
 let poolActive = false;
 let poolSortCol = 'name';
 let poolSortDir = 1;
@@ -5495,6 +5518,31 @@ function renderPool(){
   let list = [...poolPlayers];
   if(poolPosFilter === 'PITCHER') list = list.filter(p => isPitcherPos(p.primaryPos));
   if(poolPosFilter === 'HITTER')  list = list.filter(p => !isPitcherPos(p.primaryPos));
+
+  // PLAYER_FILTER_V1 — Pool — Matt's curated filter dropdown (single-select, AND logic with poolPosFilter)
+  if(poolPlayerFilter !== 'ALL'){
+    if(poolPlayerFilter === 'INJURED'){
+      list = list.filter(p => {
+        const s = (p.injury_status || '').toUpperCase();
+        if(!s) return false;
+        if(s === 'NA') return false;
+        return true;
+      });
+    } else if(poolPlayerFilter === 'NA'){
+      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA');
+    } else if(poolPlayerFilter === 'SP'){
+      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
+    } else if(poolPlayerFilter === 'RP'){
+      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'RP');
+    } else if(poolPlayerFilter === 'CL'){
+      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'CL');
+    } else if(poolPlayerFilter === 'SLEEPER'){
+      list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
+    } else if(poolPlayerFilter === 'UNDER25'){
+      list = list.filter(p => p.age != null && p.age < 25);
+    }
+  }
+
   // Apply search text filter
   if(poolSearchFilter){
     const q = normalize(poolSearchFilter);
@@ -6342,6 +6390,7 @@ let leadersActive = false;
 let leadersSortCol = 'hr';
 let leadersSortDir = -1;
 let leadersPosFilter = 'ALL'; // 'ALL' | 'HITTER' | 'PITCHER'
+let leadersPlayerFilter = 'ALL';   // PLAYER_FILTER_V1 — Leaders — Matt's filter dropdown (Injured / NA / SP / RP / CL / Sleepers / Under 25)
 let leadersClusterByPos = null;   // League Leaders cluster state (independent of main/pool)
 var leadersScrollHandler = null;
 
@@ -6409,6 +6458,30 @@ function renderLeaders(){
   // Apply position filter (set by category buttons)
   if(leadersPosFilter === 'PITCHER') list = list.filter(p => isPitcherPos(p.primaryPos));
   if(leadersPosFilter === 'HITTER')  list = list.filter(p => !isPitcherPos(p.primaryPos));
+
+  // PLAYER_FILTER_V1 — Leaders — Matt's curated filter dropdown (single-select, AND logic with leadersPosFilter)
+  if(leadersPlayerFilter !== 'ALL'){
+    if(leadersPlayerFilter === 'INJURED'){
+      list = list.filter(p => {
+        const s = (p.injury_status || '').toUpperCase();
+        if(!s) return false;
+        if(s === 'NA') return false;
+        return true;
+      });
+    } else if(leadersPlayerFilter === 'NA'){
+      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA');
+    } else if(leadersPlayerFilter === 'SP'){
+      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
+    } else if(leadersPlayerFilter === 'RP'){
+      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'RP');
+    } else if(leadersPlayerFilter === 'CL'){
+      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'CL');
+    } else if(leadersPlayerFilter === 'SLEEPER'){
+      list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
+    } else if(leadersPlayerFilter === 'UNDER25'){
+      list = list.filter(p => p.age != null && p.age < 25);
+    }
+  }
 
   // Once stats are loaded, only keep players who have a value for the active stat column.
   // Resolve virtual sort keys (sv_ev_h / sv_ev_p) back to the real field before checking.
