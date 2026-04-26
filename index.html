@@ -5723,24 +5723,26 @@ function renderContext(){
   const countEl = document.getElementById('carr-name-count');
   if(countEl) countEl.textContent = `${total} ${modeLabel}`;
 
-  // DUPLICATE_NAME_FIX_V1 (April 25, 2026) — keyed by mlb_id, NOT by name.
-  // Two players with the same name (e.g. the two Max Muncys) used to collide
-  // when this lookup was name-keyed, and the second write would overwrite the
-  // first — leaking ranks, roster%, and positions across players. mlb_id is
-  // unique per player so collisions are impossible. If a Pool/Leaders player
-  // doesn't have an mlb_id (rare), we fall back to a separate name-keyed
-  // lookup at read time, but only as a last resort.
-  const ctxYahooLookup = {};         // primary: keyed by mlb_id (string)
-  const ctxYahooLookupByName = {};   // fallback only — name-keyed for players missing mlb_id
-  Object.values(yahooDataByName).forEach(yp => {
-    if(yp.mlb_id != null && yp.mlb_id !== '') {
-      ctxYahooLookup[String(yp.mlb_id)] = yp;
-    } else if(yp.name) {
-      ctxYahooLookupByName[normalize(yp.name)] = yp;
-      ctxYahooLookupByName[normalizeName(yp.name)] = yp;
-    }
-  });
-  // Watch list overrides (has user-specific data) — also mlb_id keyed.
+  // DUPLICATE_NAME_FIX_V1.1 (April 25, 2026) — keyed by mlb_id.
+  // Read from the AUTHORITATIVE yahooDataByMlbId cache (populated at sync time
+  // with `if(yp.mlb_id) yahooDataByMlbId[String(yp.mlb_id)] = yp` — see line ~2527).
+  // The earlier V1 attempt rebuilt from yahooDataByName which has 2x entries
+  // per player and lossy ordering — that was wrong. Going straight to the
+  // mlb_id-keyed source is the right move and was the bug all along.
+  // ctxYahooLookupByName is the last-resort fallback for the rare Yahoo player
+  // who synced without an mlb_id.
+  const ctxYahooLookup = (typeof yahooDataByMlbId === 'object' && yahooDataByMlbId)
+    ? Object.assign({}, yahooDataByMlbId)
+    : {};
+  const ctxYahooLookupByName = {};
+  if(typeof yahooDataByName === 'object' && yahooDataByName){
+    Object.keys(yahooDataByName).forEach(k => {
+      var yp = yahooDataByName[k];
+      // Only used if a player has no mlb_id at all — see read-side fallback.
+      if(yp && (yp.mlb_id == null || yp.mlb_id === '')) ctxYahooLookupByName[k] = yp;
+    });
+  }
+  // Watch list overrides (user-specific data — overrides Yahoo cache by mlb_id).
   players.forEach(wp => {
     if(wp.mlb_id != null && wp.mlb_id !== '') {
       ctxYahooLookup[String(wp.mlb_id)] = wp;
