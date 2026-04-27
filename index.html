@@ -783,11 +783,18 @@ body.present-mode tbody tr td:hover span{color:var(--red)!important;}
 }
 #player-card-adv-btn:hover{background:rgba(99,102,241,0.15);color:#a5b4fc;}
 
-/* ---- FULL-SCREEN PLAYER PAGE OVERLAY ---- */
-#player-page-overlay{position:fixed;inset:0;z-index:1000;background:var(--bg);overflow-y:auto;display:none;font-family:'Nunito Sans',sans-serif;font-weight:500;line-height:1.4;}
+/* ---- WINDOWED PLAYER PAGE OVERLAY (April 26, 2026 — converted from full-screen to 80% centered modal) ---- */
+/* Backdrop layer — semi-transparent dim behind the panel; clicking it closes the panel via JS handler */
+#player-page-backdrop{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.55);backdrop-filter:blur(2px);display:none;}
+#player-page-backdrop.visible{display:block}
+body.day-mode #player-page-backdrop{background:rgba(20,20,30,0.45);}
+/* The panel itself — 80% of viewport, centered, with shadow + rounded corners */
+#player-page-overlay{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:80vw;height:80vh;z-index:1000;background:var(--bg);overflow-y:auto;display:none;font-family:'Nunito Sans',sans-serif;font-weight:500;line-height:1.4;border-radius:12px;border:1px solid var(--border2);box-shadow:0 24px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.04);}
 #player-page-overlay.visible{display:block}
+body.day-mode #player-page-overlay{box-shadow:0 24px 80px rgba(0,0,0,0.25),0 0 0 1px rgba(0,0,0,0.06);}
 body.pp-open{overflow:hidden}
-#player-page-overlay .ppo-close{position:fixed;top:14px;right:16px;z-index:1010;width:40px;height:40px;border-radius:50%;background:rgba(13,17,23,0.85);border:1px solid var(--border2);color:var(--text2);font-family:'Nunito Sans',sans-serif;font-size:22px;font-weight:300;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;transition:all 0.15s;backdrop-filter:blur(6px);}
+/* Close button — now positioned relative to the panel, not the viewport */
+#player-page-overlay .ppo-close{position:absolute;top:14px;right:16px;z-index:1010;width:40px;height:40px;border-radius:50%;background:rgba(13,17,23,0.85);border:1px solid var(--border2);color:var(--text2);font-family:'Nunito Sans',sans-serif;font-size:22px;font-weight:300;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;transition:all 0.15s;backdrop-filter:blur(6px);}
 #player-page-overlay .ppo-close:hover{background:var(--red);border-color:var(--red);color:#fff;transform:scale(1.05);}
 body.day-mode #player-page-overlay .ppo-close{background:rgba(255,255,255,0.95);border-color:var(--border2);color:#000;}
 body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c);border-color:var(--red,#b91c1c);color:#fff;}
@@ -808,6 +815,11 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 #player-page-overlay .ppo-hero-rank .num{font-family:'Bowlby One',sans-serif;font-size:16px;letter-spacing:0.04em}
 #player-page-overlay .ppo-grid{padding:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:20px;}
 @media(max-width:880px){#player-page-overlay .ppo-grid{grid-template-columns:1fr}}
+/* On phones, revert the windowed panel to full-screen so the content has room to breathe */
+@media(max-width:768px){
+  #player-page-overlay{top:0;left:0;transform:none;width:100vw;height:100vh;border-radius:0;border:none;box-shadow:none;}
+  #player-page-backdrop{display:none !important;}
+}
 
 /* MOBILE_TIGHTEN_V1 (April 25, 2026) — On phone-sized screens, hide the
    deep-dive columns from the main list table so the initial load shows
@@ -59484,6 +59496,9 @@ function openPlayerPage(p){
   renderGameLog(mlbId);
 
   overlay.classList.add('visible');
+  // Show the dim backdrop behind the windowed panel
+  var backdrop = document.getElementById('player-page-backdrop');
+  if(backdrop) backdrop.classList.add('visible');
   document.body.classList.add('pp-open');
 }
 
@@ -60034,6 +60049,9 @@ function closePlayerPage(){
   window._ppoCurrentPlayer = null;
   var overlay = document.getElementById('player-page-overlay');
   if(overlay) overlay.classList.remove('visible');
+  // Hide the backdrop alongside the panel
+  var backdrop = document.getElementById('player-page-backdrop');
+  if(backdrop) backdrop.classList.remove('visible');
   document.body.classList.remove('pp-open');
 }
 
@@ -60093,7 +60111,8 @@ document.addEventListener('click', function(e){
 });
 </script>
 
-<!-- FULL-SCREEN PLAYER PAGE OVERLAY (replaces the small player-card popup on click) -->
+<!-- WINDOWED PLAYER PAGE OVERLAY (April 26, 2026 — 80% centered modal with backdrop). Backdrop click closes the panel. -->
+<div id="player-page-backdrop" onclick="closePlayerPage()"></div>
 <div id="player-page-overlay" role="dialog" aria-modal="true" aria-label="Player page">
   <button class="ppo-close" onclick="closePlayerPage()" aria-label="Close">&times;</button>
   <div class="ppo-header">
