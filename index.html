@@ -1040,11 +1040,24 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 #player-page-overlay .ppo-gamelog-table td .gl-dec-l{background:rgba(236,72,153,0.15);color:#ec4899;border:1px solid rgba(236,72,153,0.4);}
 #player-page-overlay .ppo-gamelog-table td .gl-dec-sv{background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.4);}
 #player-page-overlay .ppo-gamelog-table td .gl-dec-hld{background:rgba(59,130,246,0.15);color:#3b82f6;border:1px solid rgba(59,130,246,0.4);}
-/* Pitcher-only tightening — make all 9 columns fit without horizontal scroll. */
-#player-page-overlay .ppo-gamelog-table.pitcher-card{font-size:11.5px;}
-#player-page-overlay .ppo-gamelog-table.pitcher-card th{padding:7px 6px;font-size:9px;}
-#player-page-overlay .ppo-gamelog-table.pitcher-card td{padding:7px 6px;}
-#player-page-overlay .ppo-gamelog-table.pitcher-card td .gl-dec{font-size:9px;padding:1px 5px;}
+/* PITCHER_GAMELOG_FRONTEND_V1 — pitcher table sized for the shrunken popup.
+   Hitter card lives in a wider area; pitcher card has 8 numeric-heavy columns
+   that need explicit widths to fit without horizontal scroll. */
+#player-page-overlay .ppo-gamelog-table.pitcher-card{table-layout:fixed;font-size:11px;width:100%;}
+#player-page-overlay .ppo-gamelog-table.pitcher-card th{padding:6px 4px;font-size:9px;}
+#player-page-overlay .ppo-gamelog-table.pitcher-card td{padding:6px 4px;}
+#player-page-overlay .ppo-gamelog-table.pitcher-card td .gl-dec{font-size:9px;padding:0 4px;}
+/* Column widths — tuned to fit the popup; numeric columns stay narrow. */
+#player-page-overlay .ppo-gamelog-table.pitcher-card th:nth-child(1),
+#player-page-overlay .ppo-gamelog-table.pitcher-card td:nth-child(1){width:14%;}  /* Date */
+#player-page-overlay .ppo-gamelog-table.pitcher-card th:nth-child(2),
+#player-page-overlay .ppo-gamelog-table.pitcher-card td:nth-child(2){width:13%;}  /* Opp */
+#player-page-overlay .ppo-gamelog-table.pitcher-card th:nth-child(3),
+#player-page-overlay .ppo-gamelog-table.pitcher-card td:nth-child(3){width:11%;}  /* Dec */
+#player-page-overlay .ppo-gamelog-table.pitcher-card th:nth-child(4),
+#player-page-overlay .ppo-gamelog-table.pitcher-card td:nth-child(4){width:11%;}  /* IP */
+#player-page-overlay .ppo-gamelog-table.pitcher-card th:nth-child(n+5),
+#player-page-overlay .ppo-gamelog-table.pitcher-card td:nth-child(n+5){width:auto;}  /* H, ER, BB, K share remaining */
 #player-page-overlay .ppo-gamelog-table tfoot tr{background:var(--surface1,#0c0c0c);}
 #player-page-overlay .ppo-gamelog-table tfoot td{border-top:2px solid var(--gold);border-bottom:none;padding:9px 8px;color:var(--text1);font-size:12px;}
 #player-page-overlay .ppo-gamelog-table tfoot td strong{color:var(--text1);font-weight:700;}
@@ -109080,10 +109093,12 @@ function _renderPitcherGameLog(mlbId, wrap){
     + sc('starts', (s.starts || 0) + '/' + (s.appearances || s.window || 7))
     + '</div>';
 
-  // 9 columns: Date, Opp, Result, Dec, IP, H, ER, BB, K
-  // (R intentionally dropped — almost always same as ER for pitchers, doesn't move ERA)
-  var headers = ['Date','Opp','Result','Dec','IP','H','ER','BB','K'];
-  var leftCols = {0:1, 1:1, 2:1, 3:1};
+  // 8 columns: Date, Opp, Dec, IP, H, ER, BB, K
+  // (R dropped — duplicate of ER for pitchers; Result dropped — empty for pitchers
+  //  because the MLB pitching gameLog doesn't expose team/opp scores cleanly,
+  //  and Decision already tells you W/L which is the fantasy-useful piece)
+  var headers = ['Date','Opp','Dec','IP','H','ER','BB','K'];
+  var leftCols = {0:1, 1:1, 2:1};
   var thHtml = '';
   for(var i=0; i<headers.length; i++){
     thHtml += '<th' + (leftCols[i] ? ' class="gl-left"' : '') + '>'
@@ -109111,15 +109126,6 @@ function _renderPitcherGameLog(mlbId, wrap){
   var rowsHtml = '';
   for(var g=0; g<entry.games.length; g++){
     var r = entry.games[g] || {};
-    // Result cell — W/L coloring like the hitter table
-    var resultCell;
-    if(hasResult(r.result)){
-      var l = String(r.result).charAt(0);
-      var winCls = l === 'W' ? 'win' : (l === 'L' ? 'loss' : '');
-      resultCell = '<td class="gl-left gl-result ' + winCls + '">' + escapeHtml(r.result) + '</td>';
-    } else {
-      resultCell = '<td class="gl-left gl-dash">—</td>';
-    }
     totOuts += _ip2outs(r.ip);
     totH  += (r.h  || 0);
     totER += (r.er || 0);
@@ -109128,7 +109134,6 @@ function _renderPitcherGameLog(mlbId, wrap){
     rowsHtml += '<tr>'
       + '<td class="gl-left gl-date">' + escapeHtml(r.date_short || r.date || '') + '</td>'
       + '<td class="gl-left ' + (r.home ? 'gl-opp-home' : 'gl-opp-away') + '">' + escapeHtml(String(r.opp || '—')) + '</td>'
-      + resultCell
       + '<td class="gl-left">' + decisionChip(r.decision) + '</td>'
       + '<td>' + escapeHtml(String(r.ip || '0.0')) + '</td>'
       + '<td>' + (r.h  || 0) + '</td>'
@@ -109139,7 +109144,7 @@ function _renderPitcherGameLog(mlbId, wrap){
   }
 
   var footHtml = '<tr class="gl-tot-row">'
-    + '<td class="gl-left" colspan="4">Totals</td>'
+    + '<td class="gl-left" colspan="3">Totals</td>'
     + '<td>' + _outs2ip(totOuts) + '</td>'
     + '<td>' + totH + '</td>'
     + '<td>' + totER + '</td>'
