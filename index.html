@@ -224,22 +224,47 @@ tr.row-minor-stats:hover td{background:rgba(234,179,8,0.14)}
    Tick lifecycle managed by _tick_publish_counter.ps1 on every Approve.
    Day-mode acceptable as-is — Dude reviewed flame-demo-daymode.html and confirmed
    it draws attention even when the dark-background drama is reduced. */
-/* FLAME_TEXT_V3 (April 26, 2026) — Per the Dude's diagnosis: previous gradient/shadow
-   versions washed out the letters. Stripping back to font color ONLY. No animations,
-   no text shadows, no gradients. Just two clean colors: flame red for Phase 1,
-   bright orange for Phase 2. Day-mode versions are darker/more saturated so they
-   pop on the light gray background instead of getting washed out. */
+/* FLAME_TEXT_V4 (April 26, 2026) — Final shape after the Dude diagnosed that
+   night mode and day mode need fundamentally different treatments:
+     - NIGHT MODE: restore the original FLAME_TEXT_V1 animated multi-color
+       text-shadow effect ("the baseline" the Dude approved). The dark background
+       lets the glow halos work without washing out the letters.
+     - DAY MODE: solid font colors only — no shadows, no gradients, no animations.
+       Phase 1 also gets a thin black outline so it visually pops away from
+       Phase 2's bright orange (which on its own was too close to the red on
+       a light gray background). */
 
-/* PHASE 1 NIGHT — flame red, bold. */
+/* PHASE 1 NIGHT — animated multi-color upward-rising flame shadow (FLAME_TEXT_V1 baseline). */
 .flame-hot{
-  color:#ff3838 !important;
-  font-weight:800;
+  color:#fff5b8;
+  animation:flame-hot-anim 0.6s ease-in-out infinite alternate;
+}
+@keyframes flame-hot-anim{
+  0%{
+    text-shadow:
+      0 -2px 4px #fff,
+      0 -3px 6px #ffeb3b,
+      0 -5px 12px #ff9800,
+      0 -8px 20px #ff5722,
+      0 -12px 28px #ff3d00;
+  }
+  100%{
+    text-shadow:
+      0 -1px 3px #fff,
+      0 -4px 8px #ffeb3b,
+      0 -7px 14px #ff9800,
+      0 -10px 24px #ff5722,
+      0 -14px 32px #d50000;
+  }
 }
 
-/* PHASE 2 NIGHT — bright orange, bold. */
+/* PHASE 2 NIGHT — subtle pulsing gold glow (FLAME_TEXT_V1 baseline). */
 .flame-warm{
-  color:#ff8c1a !important;
-  font-weight:700;
+  animation:flame-warm-anim 1.5s ease-in-out infinite alternate;
+}
+@keyframes flame-warm-anim{
+  from{text-shadow:0 0 3px #d4af37,0 0 6px #b8860b}
+  to  {text-shadow:0 0 6px #ffd700,0 0 10px #d4af37}
 }
 
 /* DAYMODE_FLAME_V2 (April 26, 2026) — Option 1 "True Flame" picked from
@@ -258,16 +283,27 @@ body.day-mode .player-col tr td .name-cell:has(.flame-warm){
   overflow:visible !important;
   text-overflow:clip !important;
 }
-/* PHASE 1 DAY — darker, more saturated flame red so it pops on light gray background. */
+/* PHASE 1 DAY — flame red with thin black outline. The outline is what makes it
+   visually distinct from Phase 2's orange — without it the red and orange were
+   too close together on the light gray background to differentiate. The outline
+   also makes the red letters punch harder against the cool-gray base. No animation. */
 body.day-mode .flame-hot{
   color:#dc2626 !important;
   font-weight:800;
+  -webkit-text-stroke:1px #000;
+  text-stroke:1px #000;
+  /* Animation override — kill the night-mode flicker so day-mode is purely color-driven. */
+  animation:none !important;
+  text-shadow:none !important;
 }
 
-/* PHASE 2 DAY — darker, more saturated orange so it doesn't blend into the day-mode background. */
+/* PHASE 2 DAY — bright orange, bold, no outline. Stands cleanly apart from Phase 1
+   thanks to the latter's black outline. No animation. */
 body.day-mode .flame-warm{
   color:#ea580c !important;
   font-weight:700;
+  animation:none !important;
+  text-shadow:none !important;
 }
 /* /DAYMODE_FLAME_V2 */
 
