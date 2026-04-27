@@ -5712,11 +5712,13 @@ function renderPool(){
     const STRING_KEYS  = ['name','team','primaryPos','pos','bats'];
     // POOL_DATERANGE_SORT_V1 (April 26, 2026) — date-range capable stat fields.
     // When the user picks a non-season date range, sort by the date-range value
-    // (from getDisplayStats(p)) instead of the season value baked on p. Statcast
-    // fields (sv_xba, sv_xwoba, sv_xera, sv_ev) are NOT date-range capable so they
-    // stay reading from p[key].
+    // (matching the same lookup the Pool render uses on line 5827: pre-baked cache
+    // first, then runtime poolDateRangeCache). Pool players are keyed by mlb_id,
+    // NOT by the watchlist's Yahoo p.id — so getDisplayStats(p) is the WRONG helper
+    // here (it returns null for Pool-only players). Statcast fields are not date-
+    // range capable; they stay reading from p[key].
     const DATE_RANGE_KEYS = ['ab','r','hr','rbi','sb','avg','obp','ops','ip','k','w','sv','hld','era','whip'];
-    const useDateRange = (typeof dateRange !== 'undefined' && dateRange !== 'season' && DATE_RANGE_KEYS.includes(key) && typeof getDisplayStats === 'function');
+    const useDateRange = (typeof dateRange !== 'undefined' && dateRange !== 'season' && DATE_RANGE_KEYS.includes(key));
     const pushPitchers = forceHitter || HITTER_KEYS.includes(key);
     const pushHitters  = forcePitcher || PITCHER_KEYS.includes(key);
 
@@ -5725,13 +5727,14 @@ function renderPool(){
     const getVal = (p) => {
       const pit = isPitcherPos(p.primaryPos);
       if((pushPitchers && pit) || (pushHitters && !pit)) return sentinel;
-      // For date-range stat columns, read from getDisplayStats(p). If still loading
-      // (returns null) or value missing, fall through to sentinel so loading rows
-      // sink to the bottom and don't pollute the sort.
+      // For date-range stat columns, read from the pool's date-range cache the
+      // same way the renderer does. Pre-bake hit first, runtime fetch fallback,
+      // sentinel if neither has data yet.
       let v;
-      if(useDateRange){
-        const dr = getDisplayStats(p);
-        v = dr ? dr[key] : undefined;
+      if(useDateRange && p.mlb_id){
+        const _pre = (typeof PLAYER_DATERANGE_CACHE !== 'undefined') ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
+        const _dr = (_pre && _pre[dateRange]) || (typeof poolDateRangeCache !== 'undefined' ? poolDateRangeCache[p.mlb_id + '_' + dateRange] : null);
+        v = _dr ? _dr[key] : undefined;
       } else {
         v = p[key];
       }
@@ -6683,11 +6686,11 @@ function renderLeaders(){
     const HITTER_KEYS  = ['ab','r','hr','rbi','sb','avg','obp','ops','sv_xba','sv_xwoba'];
     const PITCHER_KEYS = ['ip','k','w','sv','hld','era','whip','sv_xera'];
     const STRING_KEYS  = ['name','team','primaryPos','pos','bats'];
-    // LEADERS_DATERANGE_SORT_V1 (April 26, 2026) — same fix as Player Pool.
-    // When a non-season date range is active, route the sort value through
-    // getDisplayStats(p) so the sort matches the displayed numbers.
+    // LEADERS_DATERANGE_SORT_V1 (April 26, 2026) — Leaders shares poolDateRangeCache
+    // with the Player Pool (see line 6593 in renderLeaders). Same fix pattern as
+    // Pool: read from pre-baked cache first, fall back to runtime poolDateRangeCache.
     const DATE_RANGE_KEYS = ['ab','r','hr','rbi','sb','avg','obp','ops','ip','k','w','sv','hld','era','whip'];
-    const useDateRange = (typeof dateRange !== 'undefined' && dateRange !== 'season' && DATE_RANGE_KEYS.includes(key) && typeof getDisplayStats === 'function');
+    const useDateRange = (typeof dateRange !== 'undefined' && dateRange !== 'season' && DATE_RANGE_KEYS.includes(key));
     const pushPitchers = forceHitter || HITTER_KEYS.includes(key);
     const pushHitters  = forcePitcher || PITCHER_KEYS.includes(key);
 
@@ -6697,9 +6700,10 @@ function renderLeaders(){
       const pit = isPitcherPos(p.primaryPos);
       if((pushPitchers && pit) || (pushHitters && !pit)) return sentinel;
       let v;
-      if(useDateRange){
-        const dr = getDisplayStats(p);
-        v = dr ? dr[key] : undefined;
+      if(useDateRange && p.mlb_id){
+        const _pre = (typeof PLAYER_DATERANGE_CACHE !== 'undefined') ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
+        const _dr = (_pre && _pre[dateRange]) || (typeof poolDateRangeCache !== 'undefined' ? poolDateRangeCache[p.mlb_id + '_' + dateRange] : null);
+        v = _dr ? _dr[key] : undefined;
       } else {
         v = p[key];
       }
