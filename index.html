@@ -971,6 +971,20 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 #player-page-overlay .ppo-mark-flaming-btn.flagged{color:var(--text3);border-color:var(--border);cursor:default;}
 #player-page-overlay .ppo-mark-flaming-btn.flagged:hover{background:transparent;color:var(--text3);}
 #player-page-overlay .ppo-mark-flaming-tag{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
+/* TYPE_TAGS_V1 (April 27, 2026) — BACKEND_ONLY type tag picker block in the
+   Deep Cut overlay. Sits below the Mark-flaming row. Multi-select checkbox
+   group, one row per TYPE_TAGS_V1 entry. */
+#player-page-overlay .ppo-type-tags-block{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);}
+#player-page-overlay .ppo-type-tags-title{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+#player-page-overlay .ppo-type-tags-tag{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;font-weight:400;}
+#player-page-overlay .ppo-type-tags-list{display:flex;flex-wrap:wrap;gap:6px 14px;}
+#player-page-overlay .ppo-type-tag-row{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none;padding:3px 6px;border-radius:4px;transition:background 0.15s;}
+#player-page-overlay .ppo-type-tag-row:hover{background:var(--surface2);}
+#player-page-overlay .ppo-type-tag-row input[type=checkbox]{margin:0;cursor:pointer;}
+#player-page-overlay .ppo-type-tag-emoji{font-size:14px;line-height:1;}
+#player-page-overlay .ppo-type-tag-label{font-size:11px;color:var(--text2);}
+/* Type column chip in the main row — small, single emoji per tag, hover for label. */
+.type-chip{display:inline-block;font-size:14px;line-height:1;margin:0 1px;cursor:default;}
 #player-page-overlay .ppo-notes-scroll{max-height:380px;overflow-y:auto;padding-right:6px;}
 #player-page-overlay .ppo-quadrant-scroll{max-height:380px;overflow-y:auto;padding-right:6px;}
 #player-page-overlay .ppo-notes-count{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);}
@@ -3488,6 +3502,71 @@ async function markNameAsFlaming(mlbId){
   }
 }
 
+// TYPE_TAGS_V1 (April 27, 2026) — Type Column emoji vocabulary + render helper.
+// BACKEND-DRIVEN, FRONT-END VISIBLE: the picker UI in the Deep Cut overlay is
+// admin-only (BACKEND_ONLY). The resulting emoji chips ARE visible to fans in
+// the Type column. Source of truth is `07 Reference/Type Column Emoji Vocabulary v1.md`.
+// Add entries here as Matt + Dude finalize each category.
+var TYPE_TAGS_V1 = [
+  { id: 'speed_specialist', label: 'Speed Specialist', emoji: '🏃' }
+  // Future entries (already locked in vocab doc but not yet enabled here):
+  //   { id: 'injury_promotion', label: 'Injury Promotion', emoji: '🚑' },
+  //   { id: 'il_return',        label: 'IL Return',        emoji: '🏥' },
+  //   { id: 'power_bat',        label: 'Power Bat',        emoji: '💣' },
+  //   { id: 'hot_streak',       label: 'Hot Streak',       emoji: '🔥' },
+  //   { id: 'sleeper_pick',     label: 'Sleeper Pick',     emoji: '😴' },
+  //   { id: 'future_stash',     label: 'Future Stash',     emoji: '💎' }
+];
+
+function _typeTagById(id){
+  for(var i=0; i<TYPE_TAGS_V1.length; i++){
+    if(TYPE_TAGS_V1[i].id === id) return TYPE_TAGS_V1[i];
+  }
+  return null;
+}
+
+// Render the Type-column chip(s) for one player. Reads p.type_tags (array of
+// tag IDs). Returns empty string if the player has no tags. Each chip carries
+// a hover tooltip with the human label.
+function typeBadge(p){
+  if(!p || !Array.isArray(p.type_tags) || p.type_tags.length === 0) return '';
+  var out = '';
+  for(var i=0; i<p.type_tags.length; i++){
+    var def = _typeTagById(p.type_tags[i]);
+    if(!def) continue;
+    out += '<span class="type-chip" title="' + def.label + '">' + def.emoji + '</span>';
+  }
+  return out;
+}
+
+// TYPE_TAGS_V1 — BACKEND_ONLY toggle handler.
+// Mirrors markNameAsFlaming's pattern. Adds or removes a tag id on the
+// player's type_tags array based on the checkbox state. Persists to NAS,
+// re-renders the main table so the chip flips immediately.
+async function toggleTypeTag(mlbId, tagId, checked){
+  try {
+    var p = null;
+    if(typeof players !== 'undefined' && Array.isArray(players)){
+      p = players.find(function(x){ return String(x.mlb_id) === String(mlbId); });
+    }
+    if(!p){
+      console.warn('[TYPE_TAGS_V1] player not found in active list for mlb_id:', mlbId);
+      return;
+    }
+    if(!Array.isArray(p.type_tags)) p.type_tags = [];
+    var idx = p.type_tags.indexOf(tagId);
+    if(checked && idx < 0){
+      p.type_tags.push(tagId);
+    } else if(!checked && idx >= 0){
+      p.type_tags.splice(idx, 1);
+    }
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[TYPE_TAGS_V1] autosave failed:', e); }
+    try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
+  } catch(e){
+    console.warn('[TYPE_TAGS_V1] toggleTypeTag failed:', e);
+  }
+}
+
 // ADD_CUSTOM_PLAYER_V1 (April 25, 2026) — BACKEND_ONLY admin handlers.
 // Opens the modal, validates the form on submit, builds a new player object,
 // pushes it to the bottom of the active list, and persists via autoSaveToNAS.
@@ -3667,7 +3746,7 @@ function renderTable(){
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
       <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
       <td class="stat-cell">${renderDelta(p)}</td>
-      <td class="stat-cell type-cell" style="text-align:center" title="Player type tags (placeholder)"></td>
+      <td class="stat-cell type-cell" style="text-align:center" title="Player type tags">${typeBadge(p)}</td>
       <td class="pos-cell">${posBadgesColumn(p.positions)}</td>
       <td class="stat-cell team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
@@ -62116,6 +62195,28 @@ function openPlayerPage(p){
       )
     + '<span class="ppo-mark-flaming-tag">' + _flameTagText + '</span>'
     + '</div>';
+
+  // TYPE_TAGS_V1 (April 27, 2026) — BACKEND_ONLY type-tag picker.
+  // Sibling to MARK_FLAMING_V1 / MARK_NOTE_FRESH_V1. Multi-select: a player
+  // can have any combination of type tags. Each checkbox toggles one tag.
+  // **Hide when Read-Only Mode ships.** Until then, always visible.
+  var _existingTags = Array.isArray(p.type_tags) ? p.type_tags : [];
+  var _typeRowsHtml = '';
+  for(var _ti=0; _ti<TYPE_TAGS_V1.length; _ti++){
+    var _t = TYPE_TAGS_V1[_ti];
+    var _checked = _existingTags.indexOf(_t.id) >= 0 ? ' checked' : '';
+    _typeRowsHtml += '<label class="ppo-type-tag-row">'
+      + '<input type="checkbox" data-tag-id="' + _t.id + '"' + _checked
+      + ' onchange="toggleTypeTag(\'' + mlbId + '\', \'' + _t.id + '\', this.checked)">'
+      + '<span class="ppo-type-tag-emoji">' + _t.emoji + '</span>'
+      + '<span class="ppo-type-tag-label">' + _t.label + '</span>'
+      + '</label>';
+  }
+  notesHtml += '<div class="ppo-type-tags-block">'
+    + '<div class="ppo-type-tags-title">Type tags <span class="ppo-type-tags-tag">Backend only — check all that apply</span></div>'
+    + '<div class="ppo-type-tags-list">' + _typeRowsHtml + '</div>'
+    + '</div>';
+
   document.getElementById('ppo-note-body').innerHTML = notesHtml;
 
   // News rendering retired April 27, 2026 along with The Buzz section.
