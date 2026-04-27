@@ -234,19 +234,16 @@ tr.row-minor-stats:hover td{background:rgba(234,179,8,0.14)}
        Phase 2's bright orange (which on its own was too close to the red on
        a light gray background). */
 
-/* SPARKLE_EMOJI_V1 (April 26, 2026) — Replaces the FLAME_TEXT family entirely.
+/* NEW_EMOJI_V1 (April 26, 2026) — Replaces the FLAME_TEXT family entirely.
    The Dude killed all the flame text effects after multiple rounds of iteration
-   couldn't satisfy day mode. New plan: emoji prefix beside the name.
-     - Phase 1 (just added)  -> ✨✨ before the name
-     - Phase 2 (cycle 1)     -> ✨ before the name
-   Names render in their normal color (white night, black day). No font effects.
-   The CSS classes below are kept as no-ops so the existing flameClass() helper
-   and HTML markup don't need to change — only the visual is gone. */
+   couldn't satisfy day mode. New plan: 🆕 emoji prefix beside the name for
+   newly-added players, disappears after 2 publish cycles. Single indicator,
+   no Phase 1/Phase 2 differentiation. Same on day mode and night mode. */
 .flame-hot{
-  /* intentionally empty — sparkle emoji handles the indicator now */
+  /* intentionally empty — 🆕 emoji handles the indicator now */
 }
 .flame-warm{
-  /* intentionally empty — sparkle emoji handles the indicator now */
+  /* intentionally empty — 🆕 emoji handles the indicator now */
 }
 
 /* DAYMODE_FLAME_V2 (April 26, 2026) — Option 1 "True Flame" picked from
@@ -265,8 +262,8 @@ body.day-mode .player-col tr td .name-cell:has(.flame-warm){
   overflow:visible !important;
   text-overflow:clip !important;
 }
-/* SPARKLE_EMOJI_V1 day-mode no-op — names render in default day-mode color (black).
-   Sparkle emoji prefix handles the indicator. */
+/* NEW_EMOJI_V1 day-mode no-op — names render in default day-mode color (black).
+   🆕 emoji prefix handles the indicator. */
 body.day-mode .flame-hot{
   /* intentionally empty */
 }
@@ -3324,23 +3321,23 @@ function flameClass(p){
   }
 }
 
-// SPARKLE_EMOJI_V1 (April 26, 2026) — returns the sparkle prefix string to render
-// before the player's name based on the same publish_count_since_new lifecycle.
-//   counter doesn't exist  -> ''       (graduated, no prefix)
-//   counter === 0          -> '✨✨ '  (just added — double sparkle)
-//   counter === 1          -> '✨ '    (recently added — single sparkle)
-//   counter >= 2           -> ''       (cooled down, no prefix)
-// Pairs with flameClass() — both helpers read the same field and stay in sync.
-// Used by every player-row render site so day mode and night mode look identical
-// without fighting backgrounds.
+// NEW_EMOJI_V1 (April 26, 2026) — final shape after the Dude killed the
+// two-tier sparkle plan. One indicator, one stage, two publish cycles, gone.
+//   counter doesn't exist  -> ''      (graduated, no prefix)
+//   counter === 0          -> '🆕 '   (just added)
+//   counter === 1          -> '🆕 '   (still new — second publish hasn't fired yet)
+//   counter >= 2           -> ''      (graduated)
+// The 🆕 emoji is the universal "NEW" badge — colored blue square with NEW in
+// white. Reads instantly on any background, looks identical day vs night mode.
+// Pairs with flameClass() — both helpers read the same publish_count_since_new
+// lifecycle counter so a single Approve tick advances both in sync.
 function flameEmoji(p){
   try {
     if(!p) return '';
     if(!Object.prototype.hasOwnProperty.call(p, 'publish_count_since_new')) return '';
     var c = parseInt(p.publish_count_since_new, 10);
     if(isNaN(c)) return '';
-    if(c <= 0) return '✨✨ ';
-    if(c === 1) return '✨ ';
+    if(c <= 1) return '🆕 ';
     return '';
   } catch(e){
     return '';
