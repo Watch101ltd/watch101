@@ -234,40 +234,19 @@ tr.row-minor-stats:hover td{background:rgba(234,179,8,0.14)}
        Phase 2's bright orange (which on its own was too close to the red on
        a light gray background). */
 
-/* PHASE 1 NIGHT — animated multi-color upward-rising flame shadow.
-   FLAME_TEXT_V4.1 (April 26, 2026) — plume intensified ~1.7x to match demo:
-   each shadow layer pushed higher (rising further above the letters) and given
-   wider blur (taller, more visible plume). Letter color/size unchanged. */
+/* SPARKLE_EMOJI_V1 (April 26, 2026) — Replaces the FLAME_TEXT family entirely.
+   The Dude killed all the flame text effects after multiple rounds of iteration
+   couldn't satisfy day mode. New plan: emoji prefix beside the name.
+     - Phase 1 (just added)  -> ✨✨ before the name
+     - Phase 2 (cycle 1)     -> ✨ before the name
+   Names render in their normal color (white night, black day). No font effects.
+   The CSS classes below are kept as no-ops so the existing flameClass() helper
+   and HTML markup don't need to change — only the visual is gone. */
 .flame-hot{
-  color:#fff5b8;
-  animation:flame-hot-anim 0.6s ease-in-out infinite alternate;
+  /* intentionally empty — sparkle emoji handles the indicator now */
 }
-@keyframes flame-hot-anim{
-  0%{
-    text-shadow:
-      0 -3px 6px #fff,
-      0 -5px 10px #ffeb3b,
-      0 -9px 20px #ff9800,
-      0 -14px 34px #ff5722,
-      0 -20px 48px #ff3d00;
-  }
-  100%{
-    text-shadow:
-      0 -2px 5px #fff,
-      0 -7px 14px #ffeb3b,
-      0 -12px 24px #ff9800,
-      0 -17px 40px #ff5722,
-      0 -24px 56px #d50000;
-  }
-}
-
-/* PHASE 2 NIGHT — subtle pulsing gold glow, plume scaled up to match Phase 1's beefier feel. */
 .flame-warm{
-  animation:flame-warm-anim 1.5s ease-in-out infinite alternate;
-}
-@keyframes flame-warm-anim{
-  from{text-shadow:0 -2px 5px #d4af37, 0 -4px 10px #b8860b}
-  to  {text-shadow:0 -3px 8px #ffd700, 0 -6px 14px #d4af37}
+  /* intentionally empty — sparkle emoji handles the indicator now */
 }
 
 /* DAYMODE_FLAME_V2 (April 26, 2026) — Option 1 "True Flame" picked from
@@ -286,27 +265,13 @@ body.day-mode .player-col tr td .name-cell:has(.flame-warm){
   overflow:visible !important;
   text-overflow:clip !important;
 }
-/* PHASE 1 DAY — flame red with thin black outline. The outline is what makes it
-   visually distinct from Phase 2's orange — without it the red and orange were
-   too close together on the light gray background to differentiate. The outline
-   also makes the red letters punch harder against the cool-gray base. No animation. */
+/* SPARKLE_EMOJI_V1 day-mode no-op — names render in default day-mode color (black).
+   Sparkle emoji prefix handles the indicator. */
 body.day-mode .flame-hot{
-  color:#dc2626 !important;
-  font-weight:800;
-  -webkit-text-stroke:1px #000;
-  text-stroke:1px #000;
-  /* Animation override — kill the night-mode flicker so day-mode is purely color-driven. */
-  animation:none !important;
-  text-shadow:none !important;
+  /* intentionally empty */
 }
-
-/* PHASE 2 DAY — bright orange, bold, no outline. Stands cleanly apart from Phase 1
-   thanks to the latter's black outline. No animation. */
 body.day-mode .flame-warm{
-  color:#ea580c !important;
-  font-weight:700;
-  animation:none !important;
-  text-shadow:none !important;
+  /* intentionally empty */
 }
 /* /DAYMODE_FLAME_V2 */
 
@@ -3359,6 +3324,29 @@ function flameClass(p){
   }
 }
 
+// SPARKLE_EMOJI_V1 (April 26, 2026) — returns the sparkle prefix string to render
+// before the player's name based on the same publish_count_since_new lifecycle.
+//   counter doesn't exist  -> ''       (graduated, no prefix)
+//   counter === 0          -> '✨✨ '  (just added — double sparkle)
+//   counter === 1          -> '✨ '    (recently added — single sparkle)
+//   counter >= 2           -> ''       (cooled down, no prefix)
+// Pairs with flameClass() — both helpers read the same field and stay in sync.
+// Used by every player-row render site so day mode and night mode look identical
+// without fighting backgrounds.
+function flameEmoji(p){
+  try {
+    if(!p) return '';
+    if(!Object.prototype.hasOwnProperty.call(p, 'publish_count_since_new')) return '';
+    var c = parseInt(p.publish_count_since_new, 10);
+    if(isNaN(c)) return '';
+    if(c <= 0) return '✨✨ ';
+    if(c === 1) return '✨ ';
+    return '';
+  } catch(e){
+    return '';
+  }
+}
+
 // NOTE_EMOJI_V1 (April 25, 2026) — clickable 📋 next to the player name when
 // Matt has recently added or changed a note (within the last publish cycle).
 // Visible only when p.note_publish_count_since_change exists on the player
@@ -3717,7 +3705,7 @@ function renderTable(){
     return `<tr class="${rowClass(p.move)}${_minorStatsClass}" draggable="true" data-id="${p.id}" data-idx="${i}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
       <td><span class="drag-handle">⠿</span></td>
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
-      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${newsBadge(p)}${noteBadge(p)}</div></td>
+      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${newsBadge(p)}${noteBadge(p)}</div></td>
       <td class="stat-cell">${renderDelta(p)}</td>
       <td class="stat-cell type-cell" style="text-align:center" title="Player type tags (placeholder)"></td>
       <td class="pos-cell">${posBadgesColumn(p.positions)}</td>
@@ -5881,7 +5869,7 @@ function renderPool(){
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
       <td></td>
-      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
+      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
       <td class="pos-cell">${posBadgesColumn(poolPositions, 'pool')}</td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
@@ -6365,7 +6353,7 @@ function renderContext(){
     if(isPit){
       return `<tr class="${rowClass}">
         <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:12px;${rankStyle}">${rank}</td>
-        <td><div class="pool-player-name"><span class="pname ${flameClass(p)}">${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
+        <td><div class="pool-player-name"><span class="pname ${flameClass(p)}">${flameEmoji(p)}${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
@@ -6383,7 +6371,7 @@ function renderContext(){
     } else {
       return `<tr class="${rowClass}">
         <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:12px;${rankStyle}">${rank}</td>
-        <td><div class="pool-player-name"><span class="pname ${flameClass(p)}">${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
+        <td><div class="pool-player-name"><span class="pname ${flameClass(p)}">${flameEmoji(p)}${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
@@ -6815,7 +6803,7 @@ function renderLeaders(){
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}" style="cursor:pointer">
       <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
-      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${p.name}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
+      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${newsBadge(p)}${noteBadge(p)}</div></td>
       <td class="pos-cell">${posBadgesColumn(leaderPositions, 'leaders')}</td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
@@ -8128,7 +8116,7 @@ function renderProspects(){
       : `<button class="btn-add-pool" onclick="addProspectToList(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">${activeListAddLabel('+ Add to ')}</button>`;
     return `<tr class="${isAdded?'already-added':''}" data-mlb-id="${p.mlb_id}" style="cursor:pointer">
       <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
-      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${p.name}</span></div></td>
+      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${flameEmoji(p)}${p.name}</span></div></td>
       <td class="pos-cell"><div class="pos-stack pos-one"><span class="pos-badge pos-clickable ${posClass}" onclick="sortProspectsByPos('${p.primaryPos}', event)" title="Cluster list by ${p.primaryPos}">${p.primaryPos}</span></div></td>
       <td class="team-cell">${p.team||na}</td>
       <td style="text-align:center"><span style="font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:600;color:${lvlColor};background:${lvlColor}22;border:1px solid ${lvlColor}55;border-radius:4px;padding:2px 6px">${p.level}</span></td>
