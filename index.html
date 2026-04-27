@@ -2615,7 +2615,8 @@ function renderDelta(p){
 
 function fmtSavant(val, dec=3){
   if(val===undefined||val===null||isNaN(val)) return '<span class="stat-na">—</span>';
-  return val.toFixed(dec);
+  // STRIP_LEADING_ZERO_V1 — drop "0." to "." for Statcast rate stats (xBA, xWOBA, etc.)
+  return (typeof stripLeadZero === 'function') ? stripLeadZero(val.toFixed(dec)) : val.toFixed(dec);
 }
 
 function fmtPct(val){
@@ -3201,9 +3202,16 @@ function getFiltered(){
   return list;
 }
 
+// STRIP_LEADING_ZERO_V1 (April 26, 2026) — Per Matt + Dude's preference, drop a
+// lone "0" to the left of the decimal point. Affects: OPS, xERA, ERA, WHIP, etc.
+// Does NOT affect values >= 1 (e.g. "1.103" stays "1.103") or whole numbers
+// (e.g. "27" stays "27"). Only the literal leading "0." gets shortened to ".".
+function stripLeadZero(s){
+  return (typeof s === 'string' && s.length > 1 && s.charAt(0) === '0' && s.charAt(1) === '.') ? s.slice(1) : s;
+}
 function fmt(val, dec=0){
   if(val===undefined||val===null||val==='') return '<span class="stat-na">—</span>';
-  if(dec>0) return parseFloat(val).toFixed(dec);
+  if(dec>0) return stripLeadZero(parseFloat(val).toFixed(dec));
   return val;
 }
 function fmtAvg(val){
@@ -3745,7 +3753,7 @@ function renderTable(){
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.sb)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.hld)}</span>`}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statAvg(sc&&sc.avg)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.era,2)}</span>`}</td>
       <td class="stat-cell col-obp" style="text-align:right">${!pit?`<span style="color:${statColor}">${statAvg(sc&&sc.obp)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.whip,2)}</span>`}</td>
-      <td class="stat-cell col-ops" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.ops,3)}</span>`:`<span style="color:${pitStatColor}">${p.sv_xera!=null?p.sv_xera.toFixed(2):'—'}</span>`}</td>
+      <td class="stat-cell col-ops" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.ops,3)}</span>`:`<span style="color:${pitStatColor}">${p.sv_xera!=null?stripLeadZero(p.sv_xera.toFixed(2)):'—'}</span>`}</td>
       <td class="stat-cell savant-col" title="xBA (Statcast)">${!pit?fmtSavant(p.sv_xba):na}</td>
       <td class="stat-cell savant-col" title="xwOBA (Statcast)">${fmtSavant(p.sv_xwoba)}</td>
       <td class="stat-cell savant-adv-col" title="Avg Exit Velocity">${!pit?`<span style="color:var(--gold)">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`:`<span style="color:var(--text)">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`}</td>
@@ -5187,7 +5195,7 @@ function renderDualView(){
         <td class="team-cell" style="font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text3)">${p.team||'—'}</td>
         <td style="font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text2)">${!pit&&p.avg?'.'+parseFloat(p.avg).toFixed(3).split('.')[1]:'—'}</td>
         <td style="font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text2)">${!pit&&p.hr!=null?p.hr:'—'}</td>
-        <td style="font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text2)">${pit&&p.era!=null?parseFloat(p.era).toFixed(2):'—'}</td>
+        <td style="font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text2)">${pit&&p.era!=null?stripLeadZero(parseFloat(p.era).toFixed(2)):'—'}</td>
       </tr>`;
     }).join('');
   }
@@ -5224,7 +5232,7 @@ function renderDualView(){
         <td style="font-family:'Nunito Sans',sans-serif;font-size:11px">${mattRank?'#'+mattRank:'—'}</td>
         <td style="font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text2)">${!pit&&p.avg?'.'+parseFloat(p.avg).toFixed(3).split('.')[1]:'—'}</td>
         <td style="font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text2)">${!pit&&p.hr!=null?p.hr:'—'}</td>
-        <td style="font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text2)">${pit&&p.era!=null?parseFloat(p.era).toFixed(2):'—'}</td>
+        <td style="font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text2)">${pit&&p.era!=null?stripLeadZero(parseFloat(p.era).toFixed(2)):'—'}</td>
       </tr>`;
     }).join('');
   }
@@ -5834,7 +5842,8 @@ function renderPool(){
     const loading = usingDR && !sc;
     const pending = `<span style="color:var(--border2);font-size:10px">…</span>`;
     const na = '<span style="color:var(--text3)">—</span>';
-    const sv = (val, dec=0) => loading ? pending : (val===undefined||val===null||val==='' ? na : (dec>0?parseFloat(val).toFixed(dec):val));
+    // STRIP_LEADING_ZERO_V1 — Pool helper: route all decimal stats through stripLeadZero
+    const sv = (val, dec=0) => loading ? pending : (val===undefined||val===null||val==='' ? na : (dec>0?stripLeadZero(parseFloat(val).toFixed(dec)):val));
     const svAvg = (val) => loading ? pending : (val===undefined||val===null||val==='' ? na : '.'+parseFloat(val).toFixed(3).split('.')[1]);
     const svSav = (val) => (val===undefined||val===null) ? na : '.'+parseFloat(val).toFixed(3).split('.')[1];
     const statColor = 'var(--stat-hitter)';
@@ -6352,8 +6361,8 @@ function renderContext(){
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
-        <td class="stat">${s.era!=null?parseFloat(s.era).toFixed(2):'—'}</td>
-        <td class="stat">${s.whip!=null?parseFloat(s.whip).toFixed(2):'—'}</td>
+        <td class="stat">${s.era!=null?stripLeadZero(parseFloat(s.era).toFixed(2)):'—'}</td>
+        <td class="stat">${s.whip!=null?stripLeadZero(parseFloat(s.whip).toFixed(2)):'—'}</td>
         <td class="stat">${s.k??'—'}</td>
         <td class="stat">${s.w??'—'}</td>
         <td class="stat">${s.sv??'—'}</td>
@@ -6370,7 +6379,7 @@ function renderContext(){
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
-        <td class="stat">${s.ops!=null?parseFloat(s.ops).toFixed(3):'—'}</td>
+        <td class="stat">${s.ops!=null?stripLeadZero(parseFloat(s.ops).toFixed(3)):'—'}</td>
         <td class="stat">${s.avg!=null?'.'+parseFloat(s.avg).toFixed(3).split('.')[1]:'—'}</td>
         <td class="stat">${s.hr??'—'}</td>
         <td class="stat">${s.rbi??'—'}</td>
@@ -6752,7 +6761,8 @@ function renderLeaders(){
   });
 
   const na = '<span style="color:var(--text3)">—</span>';
-  const sv  = (val, dec=0) => (val===undefined||val===null||val==='' ? na : (dec>0 ? parseFloat(val).toFixed(dec) : val));
+  // STRIP_LEADING_ZERO_V1 — Leaders helper: route all decimal stats through stripLeadZero
+  const sv  = (val, dec=0) => (val===undefined||val===null||val==='' ? na : (dec>0 ? stripLeadZero(parseFloat(val).toFixed(dec)) : val));
   const svAvg = (val)       => (val===undefined||val===null||val==='' ? na : '.' + parseFloat(val).toFixed(3).split('.')[1]);
 
   tbody.innerHTML = display.map((p, i) => {
@@ -7166,8 +7176,8 @@ function renderLeadersTable(splits, highlightStat, isPit){
         <td class="stat">${team}</td>
         <td class="stat">${age}</td>
         ${batsCell}
-        <td ${hl('era')}>${s.era!=null?parseFloat(s.era).toFixed(2):'—'}</td>
-        <td ${hl('whip')}>${s.whip!=null?parseFloat(s.whip).toFixed(2):'—'}</td>
+        <td ${hl('era')}>${s.era!=null?stripLeadZero(parseFloat(s.era).toFixed(2)):'—'}</td>
+        <td ${hl('whip')}>${s.whip!=null?stripLeadZero(parseFloat(s.whip).toFixed(2)):'—'}</td>
         <td ${hl('k')}>${s.strikeOuts??'—'}</td>
         <td ${hl('w')}>${s.wins??'—'}</td>
         <td ${hl('sv')}>${s.saves??'—'}</td>
@@ -7190,7 +7200,7 @@ function renderLeadersTable(splits, highlightStat, isPit){
         <td ${hl('sb')}>${s.stolenBases??'—'}</td>
         <td ${hl('avg')}>${s.avg!=null?'.'+parseFloat(s.avg).toFixed(3).split('.')[1]:'—'}</td>
         <td ${hl('obp')}>${s.obp!=null?'.'+parseFloat(s.obp).toFixed(3).split('.')[1]:'—'}</td>
-        <td ${hl('ops')}>${s.ops!=null?parseFloat(s.ops).toFixed(3):'—'}</td>
+        <td ${hl('ops')}>${s.ops!=null?stripLeadZero(parseFloat(s.ops).toFixed(3)):'—'}</td>
         ${yhooRankCell}
         ${yhooRstCell}
         <td style="text-align:right">${addBtn}</td>
