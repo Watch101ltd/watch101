@@ -946,6 +946,13 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 #player-page-overlay .ppo-note-entry:last-child{border-bottom:none}
 #player-page-overlay .ppo-comment-date{font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px;}
 #player-page-overlay .ppo-comment-date.current{color:var(--gold)}
+/* READONLY_V1 (April 27, 2026) — frontend/backend split master switch.
+   Single CSS rule: when body has the readonly-mode class (Cloudflare prod
+   and any non-github host), hide every element tagged .backend-only.
+   The body class is applied by _applyReadOnlyBodyClass() in JS. !important
+   wins against any inline display the elements might have. */
+body.readonly-mode .backend-only{display:none !important;}
+
 /* MARK_NOTE_FRESH_V1 (April 25, 2026) — BACKEND_ONLY admin button.
    Lets Walter/the Dude manually re-flag a note as fresh on heavy-publish
    days when the auto-counter would otherwise expire too early. Lives on
@@ -1259,7 +1266,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
        More = Import / Present / CSV (CSV hidden here for now per the Dude's request).
        Clear All hidden (HIDE_CLEAR_ALL_V1, April 24 2026). Night-mode banana pinned far right. -->
   <div class="toolbar-right">
-    <div class="hdr-dd" id="dd-add">
+    <div class="hdr-dd backend-only" id="dd-add">
       <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-add', event)" title="Add a player to this watch list">➕ Add Player <span class="hdr-dd-caret">▾</span></button>
       <div class="hdr-dd-menu">
         <button class="hdr-dd-item" onclick="hdrRun(openPlayerPool)">⚾ Player Pool</button>
@@ -1267,14 +1274,14 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="hdr-dd-item" onclick="hdrRun(openProspects)">🌱 Prospects</button>
       </div>
     </div>
-    <div class="hdr-dd" id="dd-save">
+    <div class="hdr-dd backend-only" id="dd-save">
       <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-save', event)" title="Save the current list to Excel, or forget the saved folder">💾 Save <span class="hdr-dd-caret">▾</span></button>
       <div class="hdr-dd-menu">
         <button class="hdr-dd-item" onclick="hdrRun(exportXLSX)" title="Save a copy as an Excel spreadsheet">💾 Save to Excel</button>
         <button class="hdr-dd-item" onclick="hdrRun(forgetSavedFolder)" title="Forget the saved folder — the next Save will ask you to pick a folder again">🗑️ Forget Folder</button>
       </div>
     </div>
-    <button class="btn btn-outline" id="undo-btn" onclick="undoLastMove()" title="Undo last drag-and-drop (Ctrl+Z)" disabled style="opacity:0.4;cursor:not-allowed">↶ Undo</button>
+    <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" title="Undo last drag-and-drop (Ctrl+Z)" disabled style="opacity:0.4;cursor:not-allowed">↶ Undo</button>
     <div class="hdr-dd" id="dd-more">
       <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-more', event)" title="More actions">⋯ More <span class="hdr-dd-caret">▾</span></button>
       <div class="hdr-dd-menu">
@@ -1282,8 +1289,8 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
              Opens a modal to manually add a player who isn't yet in the MLB or
              Yahoo data feeds (rookies, just-called-up, etc.). Hide when
              Read-Only Mode ships — fans on Cloudflare should not see this. -->
-        <button class="hdr-dd-item" onclick="hdrRun(openAddCustomPlayerModal)" title="Manually add a player who isn't yet in the MLB or Yahoo data">➕ Add Custom Player</button>
-        <button class="hdr-dd-item" onclick="hdrRun(triggerImport)" title="Import from CSV or Excel">📥 Import</button>
+        <button class="hdr-dd-item backend-only" onclick="hdrRun(openAddCustomPlayerModal)" title="Manually add a player who isn't yet in the MLB or Yahoo data">➕ Add Custom Player</button>
+        <button class="hdr-dd-item backend-only" onclick="hdrRun(triggerImport)" title="Import from CSV or Excel">📥 Import</button>
         <button class="hdr-dd-item" onclick="hdrRun(togglePresentMode)" title="Presentation mode — full-screen view for screen-share">🔍 Present</button>
         <button class="hdr-dd-item" onclick="hdrRun(exportCSV)" title="Export the current list as a CSV file">📤 CSV</button>
       </div>
@@ -1361,7 +1368,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
          in the April 24 onboarding meeting ("I think you should get rid of this"). The big-form
          openModal() flow is now redundant with the streamlined Add Player dropdown in the header.
          To restore: remove the style="display:none" attribute below. -->
-    <button class="btn btn-gold" onclick="openModal()" style="display:none">+ Add First Player</button>
+    <button class="btn btn-gold backend-only" onclick="openModal()" style="display:none">+ Add First Player</button>
   </div>
 </div>
 
@@ -2161,6 +2168,38 @@ function _isStagingEnvironment(){
     const host = (window.location && window.location.hostname) || '';
     return host.toLowerCase().includes('github');
   } catch(e){ return false; }
+}
+
+// READONLY_V1 (April 27, 2026) — frontend/backend split for the public site.
+// On GitHub Pages (the Dude+Matt staging environment) → full editing UI.
+// Anywhere else (Cloudflare prod, custom domain) → read-only, admin controls hidden.
+// Sibling pattern to _isStagingEnvironment(). Drives the body.readonly-mode
+// class which the CSS uses to hide every .backend-only element via one rule.
+function _isReadOnlyMode(){
+  try {
+    const host = (window.location && window.location.hostname) || '';
+    // Same trigger as staging detector but inverted: github=editing, anything else=readonly.
+    return !host.toLowerCase().includes('github');
+  } catch(e){ return false; }
+}
+
+// Apply the readonly-mode body class as early as possible so admin controls
+// never flash visible during page load. Runs immediately if body exists,
+// otherwise on DOMContentLoaded.
+function _applyReadOnlyBodyClass(){
+  try {
+    if(_isReadOnlyMode() && document.body){
+      document.body.classList.add('readonly-mode');
+      console.log('[READONLY_V1] read-only mode active — admin controls hidden');
+    } else if(document.body){
+      console.log('[READONLY_V1] full editing mode (staging)');
+    }
+  } catch(e){ console.warn('[READONLY_V1] could not apply body class:', e); }
+}
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', _applyReadOnlyBodyClass);
+} else {
+  _applyReadOnlyBodyClass();
 }
 
 // MULTILIST_LOAD_V1 — list-aware loader (Apr 22, 2026).
@@ -3754,7 +3793,7 @@ function renderTable(){
     // MAJORS_VS_MINORS_V1 — flag rows whose stats came from MiLB only
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${rowClass(p.move)}${_minorStatsClass}" draggable="true" data-id="${p.id}" data-idx="${i}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
-      <td><span class="drag-handle">⠿</span></td>
+      <td class="backend-only"><span class="drag-handle">⠿</span></td>
       <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
       <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
       <td class="stat-cell">${renderDelta(p)}</td>
@@ -108639,7 +108678,7 @@ function openPlayerPage(p){
     // 📋 icon appears for an extra publish cycle on heavy-publish days.
     // **Hide when Read-Only Mode ships.** Until then, always visible.
     var _isFlagged = Object.prototype.hasOwnProperty.call(p, 'note_publish_count_since_change');
-    var _markFreshHtml = '<div class="ppo-mark-fresh-row">'
+    var _markFreshHtml = '<div class="ppo-mark-fresh-row backend-only">'
         + (_isFlagged
             ? '<button class="ppo-mark-fresh-btn flagged" disabled>✓ Flagged as fresh</button>'
               + '<span class="ppo-mark-fresh-tag">📋 icon will show until cleared on the second Approve</span>'
@@ -108713,7 +108752,7 @@ function openPlayerPage(p){
     : (_flameStage === 'warm'
         ? 'Currently warm — click to bump back to hot flame'
         : 'Backend only — manually flag as freshly added');
-  notesHtml += '<div class="ppo-mark-flaming-row">'
+  notesHtml += '<div class="ppo-mark-flaming-row backend-only">'
     + (_flameDisabled
         ? '<button class="ppo-mark-flaming-btn flagged" disabled>' + _flameBtnLabel + '</button>'
         : '<button id="ppo-mark-flaming-btn-' + mlbId + '" class="ppo-mark-flaming-btn" '
@@ -108740,7 +108779,7 @@ function openPlayerPage(p){
       + '<span class="ppo-type-tag-label">' + _t.label + '</span>'
       + '</label>';
   }
-  notesHtml += '<div class="ppo-type-tags-block">'
+  notesHtml += '<div class="ppo-type-tags-block backend-only">'
     + '<div class="ppo-type-tags-title">Type tags <span class="ppo-type-tags-tag">Backend only — check all that apply</span></div>'
     + '<div class="ppo-type-tags-list">' + _typeRowsHtml + '</div>'
     + '</div>';
