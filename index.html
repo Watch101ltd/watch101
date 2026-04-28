@@ -2090,7 +2090,25 @@ function switchActiveList(newId){
 }
 function openListInfoOverlay(){
   const overlay = document.getElementById('list-info-overlay');
-  if(overlay) overlay.style.display = 'flex';
+  if(!overlay) return;
+  // LIST_INFO_BODY_V1 (April 27, 2026) — build the list-info-body content
+  // from WATCH_LISTS at open time. The body markup is empty by default
+  // (see HTML comment "populated by JS at open time" at line ~109624).
+  // The original populator was lost during the W:/C: drive recovery on
+  // April 25; this restores it.
+  try {
+    const body = document.getElementById('list-info-body');
+    if(body && Array.isArray(WATCH_LISTS)){
+      body.innerHTML = WATCH_LISTS.map(function(l){
+        return '<div style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px">'
+          +    '<div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:2px">' + (l.name || l.id) + '</div>'
+          +    (l.subtitle ? '<div style="font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">' + l.subtitle + '</div>' : '')
+          +    '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + (l.desc || '') + '</div>'
+          +  '</div>';
+      }).join('');
+    }
+  } catch(e){ console.warn('[LIST_INFO_BODY_V1] populate failed:', e); }
+  overlay.style.display = 'flex';
 }
 function closeListInfoOverlay(){
   const overlay = document.getElementById('list-info-overlay');
