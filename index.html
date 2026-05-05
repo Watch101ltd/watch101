@@ -133,6 +133,20 @@ th.sorted .sort-arrow{opacity:1;color:var(--gold)}
 #main-table th.col-rdelta{width:44px}                      /* +/- */
 #main-table th.col-type{width:60px}                        /* Type (Matt's emoji categories - PLACEHOLDER) */
 #main-table th.col-priority{width:56px;text-align:center}  /* Priority (1-10, set on Deep Cut page) */
+/* PRIORITY_COLOR_V1 (May 5, 2026) — color-grade Priority cells from red (1, hot) → blue (10, cold).
+   Apple-iOS-derived palette picked for legibility against both night-mode (#0c0c12) and day-mode
+   (light gray) backgrounds. Empty cells (em dash) stay muted via the .stat-na class. */
+#main-table td.col-priority{font-weight:800;font-variant-numeric:tabular-nums;}
+#main-table td.col-priority.pr-1{color:#ff3b30}    /* Bright red — highest priority */
+#main-table td.col-priority.pr-2{color:#ff6b35}    /* Red-orange */
+#main-table td.col-priority.pr-3{color:#ff9500}    /* Orange */
+#main-table td.col-priority.pr-4{color:#ffcc00}    /* Amber */
+#main-table td.col-priority.pr-5{color:#a3d955}    /* Lime */
+#main-table td.col-priority.pr-6{color:#34c759}    /* Green */
+#main-table td.col-priority.pr-7{color:#5ac8c8}    /* Teal */
+#main-table td.col-priority.pr-8{color:#5ac8fa}    /* Light blue */
+#main-table td.col-priority.pr-9{color:#3da5ff}    /* Sky blue */
+#main-table td.col-priority.pr-10{color:#007aff}   /* Deep blue — lowest priority */
 #main-table th.col-pos{width:56px}                         /* Pos (inline width:56px overrides) */
 #main-table th.col-team{width:30px}                        /* Team */
 #main-table th.col-age{width:26px}                         /* Age */
@@ -3887,7 +3901,7 @@ function renderTable(){
       <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
       <td class="stat-cell col-rdelta">${renderDelta(p)}</td>
       <td class="stat-cell type-cell col-type" style="text-align:center" title="Player type tags">${typeBadge(p)}</td>
-      <td class="stat-cell col-priority" style="text-align:center">${(p.priority!=null&&p.priority!=='')?p.priority:'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell col-priority${(p.priority!=null&&p.priority!=='')?(' pr-'+p.priority):''}" style="text-align:center">${(p.priority!=null&&p.priority!=='')?p.priority:'<span class="stat-na">—</span>'}</td>
       <td class="pos-cell col-pos">${posBadgesColumn(p.positions)}</td>
       <td class="stat-cell team-cell col-team">${p.team||na}</td>
       <td class="stat-cell col-age">${decimalAge(p)}</td>
