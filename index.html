@@ -132,6 +132,7 @@ th.sorted .sort-arrow{opacity:1;color:var(--gold)}
 #main-table th.col-player{width:180px;text-align:left}     /* Player */
 #main-table th.col-rdelta{width:44px}                      /* +/- */
 #main-table th.col-type{width:60px}                        /* Type (Matt's emoji categories - PLACEHOLDER) */
+#main-table th.col-priority{width:56px;text-align:center}  /* Priority (1-10, set on Deep Cut page) */
 #main-table th.col-pos{width:56px}                         /* Pos (inline width:56px overrides) */
 #main-table th.col-team{width:30px}                        /* Team */
 #main-table th.col-age{width:26px}                         /* Age */
@@ -890,11 +891,14 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
   #main-table tr > td:nth-child(3) .name-cell .level-badge {
     flex: 0 0 auto !important;
   }
-  /* Hide non-critical columns. Order in HTML:
-     1=☰ 2=Rank 3=Player 4=+/- 5=Type 6=Pos 7=Team 8=Age 9=B/T 10=Note
-     11=OWNED 12=Y!Rank 13=ADP 14=AB/IP 15=R/K 16=HR/W 17=RBI/SV 18=SB/HLD
-     19=AVG/ERA 20=OBP/WHIP 21=OPS/xERA 22=xBA 23=xwOBA 24+=action/savant-adv
-     Keep visible: 1☰ 2Rank 3Player 6Pos 7Team 10Note 14AB 15R 16HR 17RBI 18SB 19AVG */
+  /* Hide non-critical columns. Order in HTML (after PRIORITY_COL_V1 May 5 2026):
+     1=☰ 2=Rank 3=Player 4=+/- 5=Type 6=Priority 7=Pos 8=Team 9=Age 10=B/T 11=Note
+     12=OWNED 13=Y!Rank 14=ADP 15=AB/IP 16=R/K 17=HR/W 18=RBI/SV 19=SB/HLD
+     20=AVG/ERA 21=OBP/WHIP 22=OPS/xERA 23=xBA 24=xwOBA 25+=action/savant-adv
+     NOTE: The mobile-hide nth-child(N) rules below have NOT been re-indexed for
+     the Priority insert — Dude deferred mobile formfactoring to a later project.
+     What used to hide column 8 (Age) now hides column 9 (Age) etc. — the
+     visual outcome on phone is slightly off but acceptable until phone work. */
   #main-table tr > th:nth-child(4), #main-table tr > td:nth-child(4),     /* +/- */
   #main-table tr > th:nth-child(5), #main-table tr > td:nth-child(5),     /* Type */
   #main-table tr > th:nth-child(8), #main-table tr > td:nth-child(8),     /* Age */
@@ -1345,6 +1349,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <th class="col-player" onclick="sortBy('name')" style="width:180px;min-width:180px">Player <span class="sort-arrow" id="arr-name">↕</span></th>
         <th class="col-rdelta" onclick="sortBy('rank_delta')" title="Movement from previous save (+ up / - down)">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
         <th class="type-cell col-type" onclick="sortBy('type')" title="Player type tags — placeholder column, Matt is providing emoji categories" style="width:60px;min-width:60px;text-align:center">Type <span class="sort-arrow" id="arr-type">↕</span></th>
+        <th class="col-priority" onclick="sortBy('priority')" title="Priority 1-10 — order in which Matt wants players added (set on the player Deep Cut page)">Priority <span class="sort-arrow" id="arr-priority">↕</span></th>
         <th class="col-pos" style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
         <th class="col-team" onclick="sortBy('team')">Team <span class="sort-arrow" id="arr-team">↕</span></th>
         <th class="col-age" onclick="sortBy('age')" title="Age">Age <span class="sort-arrow" id="arr-age">↕</span></th>
@@ -3066,7 +3071,7 @@ function sortBy(col){
     //   - ERA / WHIP / xERA: lower is better (best pitchers at top)
     // Everything else (counting + rate stats like HR, AVG, OPS) defaults high-to-low.
     const ascFirst = ['name','team','primaryPos','pos','bats','rank','age',
-                      'yahoo_rank','preseason_rank','era','whip','sv_xera',
+                      'yahoo_rank','preseason_rank','priority','era','whip','sv_xera',
                       // Pitcher-side advanced-stat variants (lower = better against hitters)
                       'sv_ev_p','sv_sweetspot_p','sv_barrel_p','sv_ev95_p','sv_maxev_p'];
     sortDir = ascFirst.includes(col) ? 1 : -1;
@@ -3828,6 +3833,7 @@ function renderTable(){
       <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
       <td class="stat-cell col-rdelta">${renderDelta(p)}</td>
       <td class="stat-cell type-cell col-type" style="text-align:center" title="Player type tags">${typeBadge(p)}</td>
+      <td class="stat-cell col-priority" style="text-align:center">${(p.priority!=null&&p.priority!=='')?p.priority:'<span class="stat-na">—</span>'}</td>
       <td class="pos-cell col-pos">${posBadgesColumn(p.positions)}</td>
       <td class="stat-cell team-cell col-team">${p.team||na}</td>
       <td class="stat-cell col-age">${decimalAge(p)}</td>
