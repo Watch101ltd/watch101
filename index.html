@@ -123,17 +123,21 @@ th .sort-arrow{margin-left:2px;opacity:0.5;font-size:8px}
 th.sorted .sort-arrow{opacity:1;color:var(--gold)}
 /* Width rules SCOPED to the main Watch 101 table only.
    Pool, Leaders, Prospects each have their own inline widths and shouldn't be affected. */
-#main-table th:first-child{width:18px;text-align:center;cursor:default;padding:5px 2px}
-#main-table th:nth-child(2){width:36px;text-align:center}   /* Rank */
-#main-table th:nth-child(3){width:180px;text-align:left}    /* Player */
-#main-table th:nth-child(4){width:44px}                     /* +/- */
-#main-table th:nth-child(5){width:60px}                     /* Type (Matt's emoji categories - PLACEHOLDER) */
-#main-table th:nth-child(6){width:56px}                     /* Pos (inline width:56px overrides) */
-#main-table th:nth-child(7){width:30px}                     /* Team */
-#main-table th:nth-child(8){width:26px}                     /* Age */
-#main-table th:nth-child(9){width:24px}                     /* B/T */
-#main-table th:nth-child(10){width:144px}                   /* Note (col-note class enforces 144) */
-#main-table th:nth-child(11){width:50px}                    /* Y!OWNED */
+/* COL_CLASSES_V1 (May 5, 2026) — class-based column selectors for the 11
+   leftmost columns. Replaces nth-child(N) so future column inserts don't
+   require re-indexing every CSS rule. Stat columns 12+ still use nth-child
+   for now (they sit beyond the column-insert zone). */
+#main-table th.col-drag{width:18px;text-align:center;cursor:default;padding:5px 2px}
+#main-table th.col-rank{width:36px;text-align:center}      /* Rank */
+#main-table th.col-player{width:180px;text-align:left}     /* Player */
+#main-table th.col-rdelta{width:44px}                      /* +/- */
+#main-table th.col-type{width:60px}                        /* Type (Matt's emoji categories - PLACEHOLDER) */
+#main-table th.col-pos{width:56px}                         /* Pos (inline width:56px overrides) */
+#main-table th.col-team{width:30px}                        /* Team */
+#main-table th.col-age{width:26px}                         /* Age */
+#main-table th.col-bt{width:24px}                          /* B/T */
+#main-table th.col-note{width:144px}                       /* Note (col-note class also enforces 144 below) */
+#main-table th.col-owned{width:50px}                       /* Y!OWNED */
 #main-table th:nth-child(12){width:44px}                    /* Y!RANK */
 #main-table th:nth-child(13){width:44px}                    /* Y!ADP */
 #main-table th:nth-child(14){width:40px}                    /* AB/IP */
@@ -1336,17 +1340,17 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
   <table id="main-table">
     <thead>
       <tr>
-        <th style="cursor:default">☰</th>
-        <th onclick="sortBy('rank')">Rank <span class="sort-arrow" id="arr-rank">↕</span></th>
-        <th onclick="sortBy('name')" style="width:180px;min-width:180px">Player <span class="sort-arrow" id="arr-name">↕</span></th>
-        <th onclick="sortBy('rank_delta')" title="Movement from previous save (+ up / - down)">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
-        <th class="type-cell" onclick="sortBy('type')" title="Player type tags — placeholder column, Matt is providing emoji categories" style="width:60px;min-width:60px;text-align:center">Type <span class="sort-arrow" id="arr-type">↕</span></th>
-        <th style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
-        <th onclick="sortBy('team')">Team <span class="sort-arrow" id="arr-team">↕</span></th>
-        <th onclick="sortBy('age')" title="Age">Age <span class="sort-arrow" id="arr-age">↕</span></th>
-        <th onclick="sortBy('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="arr-bats">↕</span></th>
+        <th class="col-drag" style="cursor:default">☰</th>
+        <th class="col-rank" onclick="sortBy('rank')">Rank <span class="sort-arrow" id="arr-rank">↕</span></th>
+        <th class="col-player" onclick="sortBy('name')" style="width:180px;min-width:180px">Player <span class="sort-arrow" id="arr-name">↕</span></th>
+        <th class="col-rdelta" onclick="sortBy('rank_delta')" title="Movement from previous save (+ up / - down)">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
+        <th class="type-cell col-type" onclick="sortBy('type')" title="Player type tags — placeholder column, Matt is providing emoji categories" style="width:60px;min-width:60px;text-align:center">Type <span class="sort-arrow" id="arr-type">↕</span></th>
+        <th class="col-pos" style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
+        <th class="col-team" onclick="sortBy('team')">Team <span class="sort-arrow" id="arr-team">↕</span></th>
+        <th class="col-age" onclick="sortBy('age')" title="Age">Age <span class="sort-arrow" id="arr-age">↕</span></th>
+        <th class="col-bt" onclick="sortBy('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="arr-bats">↕</span></th>
         <th class="col-note">Note</th>
-        <th onclick="sortBy('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="arr-roster_pct">↕</span></span></div></th>
+        <th class="col-owned" onclick="sortBy('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="arr-roster_pct">↕</span></span></div></th>
         <th onclick="sortBy('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="arr-yahoo_rank">↕</span></span></div></th>
         <th onclick="sortBy('preseason_rank')" title="Yahoo ADP — Average Draft Position" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>ADP <span class="sort-arrow" id="arr-preseason_rank">↕</span></span></div></th>
         <th title="AB / IP" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span class="dual-sort-top" onclick="sortBy('ab')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">AB <span class="sort-arrow" id="arr-ab">↕</span></span><span class="dual-sort-bot" onclick="sortBy('ip')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">IP <span class="sort-arrow" id="arr-ip">↕</span></span></div></th>
@@ -3819,15 +3823,15 @@ function renderTable(){
     // MAJORS_VS_MINORS_V1 — flag rows whose stats came from MiLB only
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${rowClass(p.move)}${_minorStatsClass}" draggable="true" data-id="${p.id}" data-idx="${i}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
-      <td><span class="drag-handle backend-only">⠿</span></td>
-      <td><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
-      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
-      <td class="stat-cell">${renderDelta(p)}</td>
-      <td class="stat-cell type-cell" style="text-align:center" title="Player type tags">${typeBadge(p)}</td>
-      <td class="pos-cell">${posBadgesColumn(p.positions)}</td>
-      <td class="stat-cell team-cell">${p.team||na}</td>
-      <td class="stat-cell">${decimalAge(p)}</td>
-      <td class="stat-cell">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
+      <td class="col-drag"><span class="drag-handle backend-only">⠿</span></td>
+      <td class="col-rank"><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
+      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
+      <td class="stat-cell col-rdelta">${renderDelta(p)}</td>
+      <td class="stat-cell type-cell col-type" style="text-align:center" title="Player type tags">${typeBadge(p)}</td>
+      <td class="pos-cell col-pos">${posBadgesColumn(p.positions)}</td>
+      <td class="stat-cell team-cell col-team">${p.team||na}</td>
+      <td class="stat-cell col-age">${decimalAge(p)}</td>
+      <td class="stat-cell col-bt">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="col-note">${(()=>{
           // NOTE_ARCHIVE_V1 (April 25, 2026) — Notes column shows p.note if it
           // has content (the live edit). If p.note is empty but p.note_history
@@ -3855,7 +3859,7 @@ function renderTable(){
           const _titleAttr = (_shown || '').replace(/"/g,'&quot;');
           return `<div class="note-display ${_emptyClass}${_archivedClass}" onclick="editNote('${p.id}',this)" title="${_titleAttr}"><span class="note-text">${_displayText}</span>${_linkBadge}</div>`;
         })()}</td>
-      <td class="stat-cell">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="stat-cell col-owned">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
       <td class="yahoo-rank">${fmt(p.yahoo_rank)}</td>
       <td class="yahoo-rank">${fmt(p.preseason_rank)}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.ab)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.ip,1)}</span>`}</td>
