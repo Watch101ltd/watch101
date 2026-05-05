@@ -4502,7 +4502,7 @@ function handleImport(e){
       }
 
       const addRow = (name, positions, team, rank, age, bats, yahoo_rank, roster_pct,
-                      ab, avg, obp, ops, hr, rbi, r, sb, era, whip, k, w, sv, hld, ip, kbb, move, note, mlb_id_csv) => {
+                      ab, avg, obp, ops, hr, rbi, r, sb, era, whip, k, w, sv, hld, ip, kbb, move, note, mlb_id_csv, priority) => {
         if(!name) return;
         if(existingNames.has(name.toLowerCase().trim())){ skippedDupe++; return; }
         if(players.length >= MAX_PLAYERS){ skippedCap++; return; }
@@ -4511,6 +4511,12 @@ function handleImport(e){
           rosterNameMap[name.toLowerCase().trim()] ||
           rosterNameMap[normalizeName(name).toLowerCase().trim()] ||
           null;
+        // PRIORITY_COL_V1 (May 5, 2026) — parse priority 1-10 or null. Empty/invalid → null.
+        let _parsedPriority = null;
+        if(priority != null && priority !== ''){
+          const _pn = parseInt(priority, 10);
+          if(!isNaN(_pn) && _pn >= 1 && _pn <= 10) _parsedPriority = _pn;
+        }
         players.push({ id:uid(), name, positions, team,
           mlb_id: resolvedId,
           rank: parseInt(rank)||players.length+1,
@@ -4526,7 +4532,8 @@ function handleImport(e){
           w: parseInt(w)||null, sv: parseInt(sv)||null,
           hld: parseInt(hld)||null, ip: parseFloat(ip)||null,
           kbb: parseFloat(kbb)||null, move: move||'',
-          note: note||'', prev_rank: parseInt(rank)||null
+          note: note||'', prev_rank: parseInt(rank)||null,
+          priority: _parsedPriority
         });
         existingNames.add(name.toLowerCase().trim());
         imported++;
@@ -4557,7 +4564,8 @@ function handleImport(e){
             get(row,'rbi'), get(row,'r'), get(row,'sb'), get(row,'era'),
             get(row,'whip'), get(row,'k'), get(row,'w'), get(row,'sv'),
             get(row,'hld'), get(row,'ip'), get(row,'k/bb'),
-            get(row,'movement'), get(row,'note'), get(row,'mlb_id')||get(row,'mlb id')
+            get(row,'movement'), get(row,'note'), get(row,'mlb_id')||get(row,'mlb id'),
+            get(row,'priority')
           );
         }
       } else {
@@ -4577,7 +4585,8 @@ function handleImport(e){
             get(vals,'rbi'), get(vals,'r'), get(vals,'sb'), get(vals,'era'),
             get(vals,'whip'), get(vals,'k'), get(vals,'w'), get(vals,'sv'),
             get(vals,'hld'), get(vals,'ip'), get(vals,'k/bb'),
-            get(vals,'movement'), get(vals,'note'), get(vals,'mlb_id')||get(vals,'mlb id')
+            get(vals,'movement'), get(vals,'note'), get(vals,'mlb_id')||get(vals,'mlb id'),
+            get(vals,'priority')
           );
         }
       }
@@ -4789,10 +4798,13 @@ if(document.readyState === 'loading'){
 // /PERLIST_FOLDERS_V2
 
 function _buildXLSXWorkbook(){
+  // PRIORITY_COL_V1 (May 5, 2026) — 'Priority' (1-10 or blank) added at the end.
+  // Appended rather than slotted between existing columns so legacy XLSX files
+  // without this column still import cleanly (older files just skip it).
   const headers = ['Rank','Player','Positions','Team','Age','Bats','Yahoo Rank','Roster %',
     'AB','R','HR','RBI','SB','AVG','OBP','OPS',
     'W','SV','HLD','IP','ERA','WHIP','K','K/BB',
-    'Movement','Note'];
+    'Movement','Note','Priority'];
   const rows = players.map(p => [
     p.rank||'', p.name||'', (p.positions||[]).join('/'), p.team||'',
     p.age||'', p.bats||'', p.yahoo_rank||'', p.roster_pct||'',
@@ -4800,7 +4812,7 @@ function _buildXLSXWorkbook(){
     p.avg||'', p.obp||'', p.ops||'',
     p.w??'', p.sv??'', p.hld??'', p.ip||'',
     p.era||'', p.whip||'', p.k??'', p.kbb||'',
-    p.move||'', p.note||''
+    p.move||'', p.note||'', (p.priority!=null&&p.priority!=='')?p.priority:''
   ]);
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   const range = XLSX.utils.decode_range(ws['!ref']);
@@ -4812,7 +4824,7 @@ function _buildXLSXWorkbook(){
     {wch:6},{wch:22},{wch:8},{wch:6},{wch:4},{wch:5},{wch:8},{wch:8},
     {wch:5},{wch:5},{wch:5},{wch:5},{wch:5},{wch:7},{wch:7},{wch:7},
     {wch:5},{wch:5},{wch:5},{wch:6},{wch:7},{wch:7},{wch:5},{wch:6},
-    {wch:8},{wch:25}
+    {wch:8},{wch:25},{wch:8}
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Watch 101 MLB');
@@ -5144,10 +5156,13 @@ async function forgetSavedFolder(){
 
 function exportCSV(){
   if(!players.length){ alert('No players to export.'); return; }
+  // PRIORITY_COL_V1 (May 5, 2026) — Priority appended at the end. Legacy CSVs
+  // without the column still import cleanly because the import function reads
+  // by column name, not position.
   const headers = ['Rank','Player','Position','Team','Age','Yahoo Rank','Roster %',
     'AB','R','HR','RBI','SB','AVG','OBP','OPS',
     'W','SV','HLD','IP','ERA','WHIP','K','K/BB',
-    'Movement','Note'];
+    'Movement','Note','Priority'];
   const rows = players.map(p => [
     p.rank || '',
     p.name || '',
@@ -5161,7 +5176,8 @@ function exportCSV(){
     p.w || '', p.sv || '', p.hld || '', p.ip || '',
     p.era || '', p.whip || '', p.k || '', p.kbb || '',
     p.move || '',
-    (p.note || '').replace(/,/g, ';')
+    (p.note || '').replace(/,/g, ';'),
+    (p.priority!=null&&p.priority!=='')?p.priority:''
   ]);
   const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
