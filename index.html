@@ -986,6 +986,15 @@ body.readonly-mode .backend-only{display:none !important;}
 #player-page-overlay .ppo-mark-flaming-btn.flagged{color:var(--text3);border-color:var(--border);cursor:default;}
 #player-page-overlay .ppo-mark-flaming-btn.flagged:hover{background:transparent;color:var(--text3);}
 #player-page-overlay .ppo-mark-flaming-tag{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
+/* PRIORITY_V1 (May 5, 2026) — BACKEND_ONLY priority picker. Sits between
+   Mark-flaming and Type Tags inside Matt's Take. Drives the Priority column
+   on the main list (1-10 scale, blank = no priority set). */
+#player-page-overlay .ppo-priority-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);}
+#player-page-overlay .ppo-priority-label{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);flex-shrink:0;}
+#player-page-overlay .ppo-priority-select{font-family:'Nunito Sans',sans-serif;font-size:13px;font-weight:600;color:var(--text);background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:4px 8px;cursor:pointer;min-width:60px;}
+#player-page-overlay .ppo-priority-select:hover{border-color:var(--gold);}
+#player-page-overlay .ppo-priority-select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,193,7,0.2);}
+#player-page-overlay .ppo-priority-tag{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
 /* TYPE_TAGS_V1 (April 27, 2026) — BACKEND_ONLY type tag picker block in the
    Deep Cut overlay. Sits below the Mark-flaming row. Multi-select checkbox
    group, one row per TYPE_TAGS_V1 entry. */
@@ -3585,6 +3594,51 @@ async function markNameAsFlaming(mlbId){
     } catch(_re){}
   } catch(e){
     console.warn('[MARK_FLAMING_V1] markNameAsFlaming failed:', e);
+  }
+}
+
+// PRIORITY_V1 (May 5, 2026) — set or clear a player's add-priority (1-10 or null).
+// Wired from the Deep Cut overlay's <select id="ppo-priority-select-...">.
+// Persists via autoSaveToNAS() and re-renders the main list so the Priority
+// column shows the new value (and re-sorts if Priority is the active sort).
+async function setPriority(mlbId, rawValue){
+  try {
+    var p = null;
+    if(typeof players !== 'undefined' && Array.isArray(players)){
+      p = players.find(function(x){ return String(x.mlb_id) === String(mlbId); });
+    }
+    if(!p){
+      console.warn('[PRIORITY_V1] player not found in active list for mlb_id:', mlbId);
+      return;
+    }
+    // Empty string from <option value=""> means clear the priority.
+    if(rawValue === '' || rawValue == null){
+      p.priority = null;
+    } else {
+      var n = parseInt(rawValue, 10);
+      if(isNaN(n) || n < 1 || n > 10){
+        console.warn('[PRIORITY_V1] invalid priority value:', rawValue);
+        return;
+      }
+      p.priority = n;
+    }
+    // Persist so the next Save-to-Excel and any reload keeps the value.
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[PRIORITY_V1] autosave failed:', e); }
+    // Refresh the main table so the Priority column updates immediately.
+    // If currentSort is 'priority', the row will jump to its new sorted spot.
+    try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
+    // Update the live "Currently priority N" tag text on the overlay so the
+    // user gets immediate feedback without having to close + reopen the panel.
+    try {
+      var tagEl = document.querySelector('#ppo-priority-select-' + mlbId + ' ~ .ppo-priority-tag');
+      if(tagEl){
+        tagEl.textContent = (p.priority == null)
+          ? 'Backend only — set the order Matt wants this player added (1 = highest)'
+          : 'Currently priority ' + p.priority + ' — change anytime';
+      }
+    } catch(_re){}
+  } catch(e){
+    console.warn('[PRIORITY_V1] setPriority failed:', e);
   }
 }
 
@@ -116682,6 +116736,28 @@ function openPlayerPage(p){
           + _flameBtnLabel + '</button>'
       )
     + '<span class="ppo-mark-flaming-tag">' + _flameTagText + '</span>'
+    + '</div>';
+
+  // PRIORITY_V1 (May 5, 2026) — BACKEND_ONLY priority picker.
+  // Sets p.priority (1-10 or null). Drives the Priority column on the main
+  // list. Sibling to MARK_FLAMING_V1 / MARK_NOTE_FRESH_V1.
+  // **Hide when Read-Only Mode ships.** Already tagged backend-only.
+  var _currentPriority = (p.priority != null && p.priority !== '') ? String(p.priority) : '';
+  var _priorityOptions = '<option value=""' + (_currentPriority === '' ? ' selected' : '') + '>—</option>';
+  for(var _pi = 1; _pi <= 10; _pi++){
+    _priorityOptions += '<option value="' + _pi + '"' + (_currentPriority === String(_pi) ? ' selected' : '') + '>' + _pi + '</option>';
+  }
+  var _priorityTagText = _currentPriority === ''
+    ? 'Backend only — set the order Matt wants this player added (1 = highest)'
+    : 'Currently priority ' + _currentPriority + ' — change anytime';
+  notesHtml += '<div class="ppo-priority-row backend-only">'
+    + '<label class="ppo-priority-label" for="ppo-priority-select-' + mlbId + '">Priority</label>'
+    + '<select id="ppo-priority-select-' + mlbId + '" class="ppo-priority-select" '
+    +   'onchange="setPriority(\'' + mlbId + '\', this.value)" '
+    +   'title="Set add-priority 1-10. — = no priority set.">'
+    +   _priorityOptions
+    + '</select>'
+    + '<span class="ppo-priority-tag">' + _priorityTagText + '</span>'
     + '</div>';
 
   // TYPE_TAGS_V1 (April 27, 2026) — BACKEND_ONLY type-tag picker.
