@@ -153,6 +153,7 @@ th.sorted .sort-arrow{opacity:1;color:var(--gold)}
 #main-table th.col-bt{width:24px}                          /* B/T */
 #main-table th.col-note{width:144px}                       /* Note (col-note class also enforces 144 below) */
 #main-table th.col-owned{width:50px}                       /* Y!OWNED */
+#main-table th.col-cbs-owned{width:50px}                   /* CBS OWNED (CBS_COLUMN_V1 2026-05-06) */
 #main-table th:nth-child(12){width:44px}                    /* Y!RANK */
 #main-table th:nth-child(13){width:44px}                    /* Y!ADP */
 #main-table th:nth-child(14){width:40px}                    /* AB/IP */
@@ -1379,6 +1380,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <th class="col-bt" onclick="sortBy('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="arr-bats">↕</span></th>
         <th class="col-note">Note</th>
         <th class="col-owned" onclick="sortBy('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="arr-roster_pct">↕</span></span></div></th>
+        <th class="col-cbs-owned" onclick="sortBy('cbs_roster_pct')" title="% Rostered on CBS Sports Fantasy. Updates weekly (vs Yahoo daily) — different signal." style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#003C7C;font-size:7px;font-weight:700;letter-spacing:0.1em">CBS</span><span>OWNED <span class="sort-arrow" id="arr-cbs_roster_pct">↕</span></span></div></th>
         <th onclick="sortBy('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="arr-yahoo_rank">↕</span></span></div></th>
         <th onclick="sortBy('preseason_rank')" title="Yahoo ADP — Average Draft Position" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>ADP <span class="sort-arrow" id="arr-preseason_rank">↕</span></span></div></th>
         <th title="AB / IP" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span class="dual-sort-top" onclick="sortBy('ab')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">AB <span class="sort-arrow" id="arr-ab">↕</span></span><span class="dual-sort-bot" onclick="sortBy('ip')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">IP <span class="sort-arrow" id="arr-ip">↕</span></span></div></th>
@@ -1620,6 +1622,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
               <th onclick="sortPool('age')" title="Age">Age <span class="sort-arrow" id="parr-age">↕</span></th>
               <th onclick="sortPool('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="parr-bats">↕</span></th>
               <th onclick="sortPool('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="parr-roster_pct">↕</span></span></div></th>
+              <th onclick="sortPool('cbs_roster_pct')" title="% Rostered on CBS Sports Fantasy. Updates weekly (vs Yahoo daily) — different signal." style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#003C7C;font-size:7px;font-weight:700;letter-spacing:0.1em">CBS</span><span>OWNED <span class="sort-arrow" id="parr-cbs_roster_pct">↕</span></span></div></th>
               <th onclick="sortPool('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="parr-yahoo_rank">↕</span></span></div></th>
               <th onclick="sortPool('preseason_rank')" title="Yahoo ADP — Average Draft Position" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>ADP <span class="sort-arrow" id="parr-preseason_rank">↕</span></span></div></th>
               <th title="AB / IP" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortPool('ab')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">AB <span class="sort-arrow" id="parr-ab">↕</span></span><span onclick="sortPool('ip')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">IP <span class="sort-arrow" id="parr-ip">↕</span></span></div></th>
@@ -1767,6 +1770,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
               <th onclick="sortLeaders('age')" title="Age">Age <span class="sort-arrow" id="larr-age">↕</span></th>
               <th onclick="sortLeaders('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="larr-bats">↕</span></th>
               <th onclick="sortLeaders('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="larr-roster_pct">↕</span></span></div></th>
+              <th onclick="sortLeaders('cbs_roster_pct')" title="% Rostered on CBS Sports Fantasy. Updates weekly (vs Yahoo daily) — different signal." style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#003C7C;font-size:7px;font-weight:700;letter-spacing:0.1em">CBS</span><span>OWNED <span class="sort-arrow" id="larr-cbs_roster_pct">↕</span></span></div></th>
               <th onclick="sortLeaders('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="larr-yahoo_rank">↕</span></span></div></th>
               <th onclick="sortLeaders('preseason_rank')" title="Yahoo ADP — Average Draft Position" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>ADP <span class="sort-arrow" id="larr-preseason_rank">↕</span></span></div></th>
               <th title="AB / IP" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortLeaders('ab')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">AB <span class="sort-arrow" id="larr-ab">↕</span></span><span onclick="sortLeaders('ip')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">IP <span class="sort-arrow" id="larr-ip">↕</span></span></div></th>
@@ -2390,6 +2394,7 @@ async function loadData(){
   // No-op if yahoo cache is empty (first page load before sync completes).
   stampManualYahooIds(players);
   applyYahoo(players);
+  applyCBS(players);  // CBS_COLUMN_V1 — merge CBS roster % onto players just like Yahoo does
 
   renderTable();
 
@@ -2798,6 +2803,71 @@ function applyYahoo(arr) {
   });
 }
 
+// ── CBS INTEGRATION ───────────────────────────────────────────────────────────────────────
+// CBS_COLUMN_V1 (May 6, 2026) — Pulls roster_pct + start_pct from a JSON file
+// scraped weekly by W:\Watch 101\Fantasy Baseball\Brandt Assistant\scripts\
+// cbs_scraper\main.py. Joins to the player list by normalized name+team.
+// CBS doesn't have a public API; this is screen-scraped HTML auth'd with a
+// browser session cookie. Refresh cadence: weekly, Monday 4 AM ET (planned NAS
+// schedule). Until that's set up, the file is refreshed by manually running the
+// scraper on the PC.
+//
+// Background: W:\Watch 101\05 Research\CBS API Recon — 2026-05-06.md
+//             W:\Watch 101\05 Research\CBS Scraper Architecture — 2026-05-06.md
+
+let cbsDataByName = {};        // normalized name -> {cbs_roster_pct, cbs_start_pct, team}
+let cbsDataAsOf = null;        // ISO timestamp of last CBS scrape
+let cbsDataPlayerCount = 0;    // how many players were in the latest snapshot
+
+// Where the CBS JSON file lives, relative to index.html. The Cloudflare Deploy
+// folder sits next to "CBS Data" inside Fantasy Baseball, so this relative
+// path resolves correctly both on file:// and on the deployed site.
+const CBS_DATA_URL = '../CBS%20Data/cbs_rostered_latest.json';
+
+async function loadCBSData(){
+  try {
+    const res = await fetch(CBS_DATA_URL, {cache: 'no-cache'});
+    if(!res.ok){
+      console.warn('[CBS_COLUMN_V1] CBS data file not found (status ' + res.status + ') - column will show "—"');
+      return;
+    }
+    const data = await res.json();
+    cbsDataAsOf = data.as_of || null;
+    cbsDataPlayerCount = data.player_count || 0;
+    cbsDataByName = {};
+    (data.players || []).forEach(p => {
+      const key = normalize(p.name || '');
+      if(!key) return;
+      cbsDataByName[key] = {
+        cbs_roster_pct: p.rostered_pct,
+        cbs_start_pct: p.start_pct,
+        team: p.team,
+        cbs_id: p.cbs_id
+      };
+    });
+    console.log('[CBS_COLUMN_V1] loaded', Object.keys(cbsDataByName).length, 'CBS players, as_of', cbsDataAsOf);
+    if(typeof players !== 'undefined' && Array.isArray(players)){
+      applyCBS(players);
+    }
+  } catch(e){
+    console.warn('[CBS_COLUMN_V1] failed to load CBS data:', e);
+  }
+}
+
+function applyCBS(arr){
+  if(!arr || !Array.isArray(arr)) return;
+  if(!cbsDataByName || Object.keys(cbsDataByName).length === 0) return;
+  arr.forEach(p => {
+    const n = p.name || '';
+    const key = normalize(n);
+    const cbs = cbsDataByName[key];
+    if(!cbs) return;
+    if(p.team && cbs.team && String(p.team).toUpperCase() !== String(cbs.team).toUpperCase()) return;
+    if(cbs.cbs_roster_pct != null) p.cbs_roster_pct = cbs.cbs_roster_pct;
+    if(cbs.cbs_start_pct != null) p.cbs_start_pct = cbs.cbs_start_pct;
+  });
+}
+
 async function checkYahooStatus(){
   try {
     const res = await fetch(`${SERVER_URL}/auth/status`, {headers:{'ngrok-skip-browser-warning':'true'}});
@@ -2984,6 +3054,10 @@ async function syncYahooData(manual = false){
     applyYahoo(players);
     if(typeof personalPlayers !== 'undefined') applyYahoo(personalPlayers);
     if(typeof poolPlayers !== 'undefined' && poolPlayers.length > 0) applyYahoo(poolPlayers);
+    // CBS_COLUMN_V1 — mirror Yahoo merge for CBS roster %
+    applyCBS(players);
+    if(typeof personalPlayers !== 'undefined') applyCBS(personalPlayers);
+    if(typeof poolPlayers !== 'undefined' && poolPlayers.length > 0) applyCBS(poolPlayers);
 
     saveData();
     renderTable();
@@ -3934,6 +4008,7 @@ function renderTable(){
           return `<div class="note-display ${_emptyClass}${_archivedClass}" onclick="editNote('${p.id}',this)" title="${_titleAttr}"><span class="note-text">${_displayText}</span>${_linkBadge}</div>`;
         })()}</td>
       <td class="stat-cell col-owned">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="stat-cell col-cbs-owned">${p.cbs_roster_pct!==null&&p.cbs_roster_pct!==undefined&&p.cbs_roster_pct!==''?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':na}</td>
       <td class="yahoo-rank">${fmt(p.yahoo_rank)}</td>
       <td class="yahoo-rank">${fmt(p.preseason_rank)}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.ab)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.ip,1)}</span>`}</td>
@@ -6085,6 +6160,7 @@ function renderPool(){
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="stat-cell no-zero">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="stat-cell no-zero">${p.cbs_roster_pct!==undefined&&p.cbs_roster_pct!==null&&p.cbs_roster_pct!==''?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':na}</td>
       <td class="yahoo-rank no-zero">${p.yahoo_rank||na}</td>
       <td class="yahoo-rank no-zero">${p.preseason_rank||na}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(sc&&sc.ab)}</span>`:`<span style="color:${pitColor}">${sv(sc&&sc.ip,1)}</span>`}</td>
@@ -6576,6 +6652,7 @@ function renderContext(){
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const yr=yw&&yw.yahoo_rank?yw.yahoo_rank:p.yahoo_rank;return yr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const pr=yw&&yw.preseason_rank?yw.preseason_rank:p.preseason_rank;return pr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const rp=yw&&yw.roster_pct!=null?yw.roster_pct:p.roster_pct;return rp!=null?parseFloat(rp).toFixed(1)+'%':'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
+        <td class="stat" style="color:var(--text)">${(()=>{/* CBS_COLUMN_V1 — read cbs_roster_pct from player object (applyCBS merged it from cbsDataByName) */ return p.cbs_roster_pct!=null?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
         <td style="text-align:right">${addBtn}</td>
       </tr>`;
     } else {
@@ -6595,6 +6672,7 @@ function renderContext(){
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const yr=yw&&yw.yahoo_rank?yw.yahoo_rank:p.yahoo_rank;return yr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const pr=yw&&yw.preseason_rank?yw.preseason_rank:p.preseason_rank;return pr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const rp=yw&&yw.roster_pct!=null?yw.roster_pct:p.roster_pct;return rp!=null?parseFloat(rp).toFixed(1)+'%':'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
+        <td class="stat" style="color:var(--text)">${(()=>{/* CBS_COLUMN_V1 — read cbs_roster_pct from player object (applyCBS merged it from cbsDataByName) */ return p.cbs_roster_pct!=null?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
         <td style="text-align:right">${addBtn}</td>
       </tr>`;
     }
@@ -7019,6 +7097,7 @@ function renderLeaders(){
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="stat-cell no-zero">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(1)+'%':na}</td>
+      <td class="stat-cell no-zero">${p.cbs_roster_pct!==undefined&&p.cbs_roster_pct!==null&&p.cbs_roster_pct!==''?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':na}</td>
       <td class="yahoo-rank no-zero">${p.yahoo_rank||na}</td>
       <td class="yahoo-rank no-zero">${p.preseason_rank||na}</td>
       <td class="stat-cell" style="text-align:right">${!pit?`<span style="color:${statColor}">${sv(p.ab)}</span>`:`<span style="color:${pitColor}">${sv(p.ip,1)}</span>`}</td>
@@ -7746,6 +7825,10 @@ async function fetchPoolDateRangeStats(range){
 }
 
 loadData();
+
+// CBS_COLUMN_V1 (May 6, 2026) — Load CBS roster % data on page open. Runs in
+// parallel with loadData(); applyCBS re-merges into players[] when both finish.
+loadCBSData();
 
 // Silently refresh missing AB stats in background after page loads
 setTimeout(async () => {
