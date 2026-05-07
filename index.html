@@ -2833,6 +2833,41 @@ let cbsDataPlayerCount = 0;    // how many players were in the latest snapshot
 // path resolves correctly both on file:// and on the deployed site.
 const CBS_DATA_URL = 'cbs/cbs_rostered_latest.json';
 
+// CBS_NAME_NORMALIZE_V1 (May 7, 2026 — Laptop Walter) — fix two diagnosed name
+// join bugs that left specific players at 0% on CBS even though CBS had them:
+//
+//   (1) Jazz Chisholm Jr. — tracker has "Jazz Chisholm Jr." (with Jr.), CBS has
+//       "Jazz Chisholm" (no Jr.). The plain normalize() doesn't strip name
+//       suffixes, so the join keys diverge ("jazz chisholm jr." vs "jazz
+//       chisholm"). Will hit every Jr./Sr./II/III/IV in the league: Vlad Jr.,
+//       Bobby Witt Jr., Ronald Acuña Jr., Fernando Tatis Jr., Cal Ripken Jr.
+//       types. CBS had Chisholm at 100% rostered, 96% start.
+//
+//   (2) Cam Schlittler — tracker uses nickname "Cam", CBS uses full first name
+//       "Cameron". Suffix stripping doesn't help; different first names. Solved
+//       with a hand-curated nickname alias table. CBS had him at 98%/90%.
+//
+// normalizeForCBS:
+//   a. Run the existing normalize() (lowercase + accent strip).
+//   b. Strip a trailing Jr/Sr/II/III/IV suffix anchored at end of string with a
+//      leading whitespace boundary, so it doesn't accidentally strip the "iv"
+//      inside an unrelated last name like "Civale".
+//   c. Apply a known nickname alias if defined.
+//
+// Both sides of the join (loadCBSData and applyCBS) call this so the keys land
+// identically. Add new entries to CBS_NAME_ALIASES as new mismatches surface.
+const CBS_NAME_ALIASES = {
+  'cam schlittler': 'cameron schlittler'
+  // future entries: 'jake fraley': 'jacob fraley', 'matt mclain': 'matthew mclain', etc.
+};
+function normalizeForCBS(name){
+  if(!name) return '';
+  let s = normalize(name);
+  s = s.replace(/\s+(jr|sr|ii|iii|iv)\.?\s*$/, '').trim();
+  if(CBS_NAME_ALIASES[s]) s = CBS_NAME_ALIASES[s];
+  return s;
+}
+
 async function loadCBSData(){
   try {
     const res = await fetch(CBS_DATA_URL, {cache: 'no-cache'});
@@ -2845,7 +2880,7 @@ async function loadCBSData(){
     cbsDataPlayerCount = data.player_count || 0;
     cbsDataByName = {};
     (data.players || []).forEach(p => {
-      const key = normalize(p.name || '');
+      const key = normalizeForCBS(p.name || '');
       if(!key) return;
       cbsDataByName[key] = {
         cbs_roster_pct: p.rostered_pct,
@@ -2863,12 +2898,48 @@ async function loadCBSData(){
   }
 }
 
+// CBS_TEAM_ALIAS_V1 (May 7, 2026 — Laptop Walter) — CBS Sports uses some
+// different team abbreviations than MLB StatsAPI / Yahoo / your tracker:
+//   CBS WAS  ↔  tracker WSH    Washington Nationals    [32 players blocked]
+//   CBS ARI  ↔  tracker AZ     Arizona Diamondbacks    [29 players blocked]
+//   CBS CHW  ↔  tracker CWS    Chicago White Sox       [36 players blocked]
+//
+// Without aliasing, the team-mismatch guard in applyCBS rejected 97 valid
+// merges on these three teams alone, leaving every Nationals/D-Backs/White
+// Sox player at 0% on the CBS column even though CBS had real data for them.
+// Diagnostic on May 7: James Wood (Nats OF) is 100% rostered on CBS, was
+// showing 0% on tracker because of WAS-vs-WSH.
+//
+// A live measurement before this fix counted 110 total team-mismatched
+// merges across the 1,044-player pool: 97 from these three aliases, plus
+// 13 from legitimate name collisions across teams (e.g., a Cleveland player
+// and a Yankees player share a name). Those 13 stay blocked — they SHOULD
+// be — because the team check still applies for any pair not in this map.
+//
+// If a future CBS scrape uses additional old-school abbreviations (e.g.
+// SD vs SDP, KC vs KCR, SF vs SFG, TB vs TBR), add them as additional
+// pairs below. Pairs are bidirectional — the helper checks both directions.
+const CBS_TEAM_ALIAS_PAIRS = {
+  'WAS': 'WSH', 'WSH': 'WAS',
+  'ARI': 'AZ',  'AZ':  'ARI',
+  'CHW': 'CWS', 'CWS': 'CHW'
+};
+function _cbsTeamsEquivalent(trackerTeam, cbsTeam){
+  if(!trackerTeam || !cbsTeam) return true;       // missing on either side — let through
+  const A = String(trackerTeam).toUpperCase();
+  const B = String(cbsTeam).toUpperCase();
+  if(A === B) return true;                        // exact match
+  return CBS_TEAM_ALIAS_PAIRS[A] === B;           // known alias pair
+}
+
 function applyCBS(arr){
   if(!arr || !Array.isArray(arr)) return;
   if(!cbsDataByName || Object.keys(cbsDataByName).length === 0) return;
   arr.forEach(p => {
     const n = p.name || '';
-    const key = normalize(n);
+    // CBS_NAME_NORMALIZE_V1 (May 7, 2026) — use normalizeForCBS so suffix
+    // stripping + nickname aliases match the keys built in loadCBSData.
+    const key = normalizeForCBS(n);
     const cbs = cbsDataByName[key];
     if(!cbs) return;
     // PROSPECTS_TEAM_PLACEHOLDER_FIX_V1 (May 7, 2026) — exclude the em-dash
@@ -2877,8 +2948,12 @@ function applyCBS(arr){
     // Without this exclusion the guard rejected EVERY such prospect's CBS
     // merge, so all 8,373 prospects showed 0%. Now: skip the safety check
     // when either side lacks a real team code; trust the name match alone.
+    //
+    // CBS_TEAM_ALIAS_V1 (May 7, 2026) — replaced the strict-equality check
+    // with _cbsTeamsEquivalent() so the WAS↔WSH / ARI↔AZ / CHW↔CWS aliases
+    // pass through. See block of comments above the helper for the why.
     if(p.team && cbs.team && p.team !== '—' && cbs.team !== '—'
-       && String(p.team).toUpperCase() !== String(cbs.team).toUpperCase()) return;
+       && !_cbsTeamsEquivalent(p.team, cbs.team)) return;
     if(cbs.cbs_roster_pct != null) p.cbs_roster_pct = cbs.cbs_roster_pct;
     if(cbs.cbs_start_pct != null) p.cbs_start_pct = cbs.cbs_start_pct;
   });
