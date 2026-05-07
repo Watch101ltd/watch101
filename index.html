@@ -154,16 +154,36 @@ th.sorted .sort-arrow{opacity:1;color:var(--gold)}
 #main-table th.col-note{width:144px}                       /* Note (col-note class also enforces 144 below) */
 #main-table th.col-owned{width:50px}                       /* Y!OWNED */
 #main-table th.col-cbs-owned{width:50px}                   /* CBS OWNED (CBS_COLUMN_V1 2026-05-06) */
+/* COL_REINDEX_V1 (May 7, 2026 — Laptop Walter) — these nth-child width rules
+   got off-by-N when CBSOWNED was inserted at col 14 today (May 7) without the
+   stat-column rules below being shifted. Symptom: at desktop widths, cols 22
+   (OBP/WHIP) and 23 (OPS/xERA) had NO width rule pointing at them anymore.
+   With table-layout:fixed, undefined columns absorb all leftover horizontal
+   space — so OBP and OPS swelled into giant cells, leaving big visual gaps,
+   and at narrower viewports the layout collapsed/overlapped the cells.
+
+   Indices below verified against the live console output on May 7:
+     12=Y!RANK 13=Y!OWNED 14=CBSOWNED 15=Y!ADP 16=AB/IP 17=R/K 18=HR/W
+     19=RBI/SV 20=SB/HLD 21=AVG/ERA 22=OBP/WHIP 23=OPS/xERA 24=xBA 25=xwOBA
+
+   Cols 13 and 14 are styled by the .col-owned / .col-cbs-owned classes a
+   few lines above, which override anything nth-child says — the rules below
+   skip over them by index.
+
+   ⚠️ NEXT TIME you insert a column anywhere left of col 23, EITHER (a) shift
+   every nth-child index here by +1 again, OR (b) finally convert all stat
+   columns to class-based selectors like the leftmost 11 — that May 5 commit
+   was supposed to be a model, but only got applied to cols 1-11. */
 #main-table th:nth-child(12){width:44px}                    /* Y!RANK */
-#main-table th:nth-child(13){width:44px}                    /* Y!ADP */
-#main-table th:nth-child(14){width:40px}                    /* AB/IP */
-#main-table th:nth-child(15){width:38px}                    /* R/K */
-#main-table th:nth-child(16){width:38px}                    /* HR/W */
-#main-table th:nth-child(17){width:44px}                    /* RBI/SV */
-#main-table th:nth-child(18){width:44px}                    /* SB/HLD */
-#main-table th:nth-child(19){width:44px}                    /* AVG/ERA */
-#main-table th:nth-child(20){width:44px}                    /* OBP/WHIP */
-#main-table th:nth-child(21){width:50px}                    /* OPS/xERA */
+#main-table th:nth-child(15){width:44px}                    /* Y!ADP */
+#main-table th:nth-child(16){width:40px}                    /* AB/IP */
+#main-table th:nth-child(17){width:38px}                    /* R/K */
+#main-table th:nth-child(18){width:38px}                    /* HR/W */
+#main-table th:nth-child(19){width:44px}                    /* RBI/SV */
+#main-table th:nth-child(20){width:44px}                    /* SB/HLD */
+#main-table th:nth-child(21){width:44px}                    /* AVG/ERA */
+#main-table th:nth-child(22){width:44px}                    /* OBP/WHIP */
+#main-table th:nth-child(23){width:50px}                    /* OPS/xERA */
 th.col-note{width:144px;max-width:144px;text-align:left;cursor:default;overflow:hidden;padding-left:6px}
 td.col-note{width:144px;max-width:144px;overflow:hidden}
 
