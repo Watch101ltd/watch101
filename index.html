@@ -8519,6 +8519,23 @@ function renderProspects(){
       const av = a.age||999, bv = b.age||999;
       return (av-bv)*prosSortDir;
     }
+    // CBS_PROSPECTS_SORT_FIX_V1 (May 7, 2026 — Laptop Walter) — cbs_roster_pct
+    // is set on the player object directly by applyCBS() (p.cbs_roster_pct),
+    // NOT inside p.stats like the rest of the prospect stats. Without this
+    // special case, the stat-column block below reads p.stats.cbs_roster_pct,
+    // gets undefined for every player, both av and bv come out null, and the
+    // comparator falls through to name-sort. JP's symptom: clicking the CBS
+    // header would re-order by name alphabetically every time, looking like
+    // "sorts once and then can't sort again." Handle cbs_roster_pct ahead of
+    // the p.stats lookup so sort actually keys on the CBS percentage.
+    if(key === 'cbs_roster_pct'){
+      const av = a.cbs_roster_pct!=null && a.cbs_roster_pct!=='' ? parseFloat(a.cbs_roster_pct) : null;
+      const bv = b.cbs_roster_pct!=null && b.cbs_roster_pct!=='' ? parseFloat(b.cbs_roster_pct) : null;
+      if(av===null && bv===null) return a.name.localeCompare(b.name);
+      if(av===null) return 1;
+      if(bv===null) return -1;
+      return (av-bv)*prosSortDir;
+    }
     // Stat columns — stored under p.stats[key] (Prospects data model differs from other tabs)
     if(aOff && bOff) return 0;
     if(aOff) return 1;
