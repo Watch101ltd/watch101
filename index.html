@@ -2037,6 +2037,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
               <th onclick="sortProspects('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="sparr-bats">↕</span></th>
               <th style="width:44px;cursor:default"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK</span></div></th>
               <th style="width:50px;cursor:default"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED</span></div></th>
+              <th onclick="sortProspects('cbs_roster_pct')" title="% Rostered on CBS Sports Fantasy. Updates weekly. CBS tracks ~8,373 players including AAAA-bubble prospects." style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#003C7C;font-size:7px;font-weight:700;letter-spacing:0.1em">CBS</span><span>OWNED <span class="sort-arrow" id="sparr-cbs_roster_pct">↕</span></span></div></th>
               <th class="col-adp-hidden" style="width:44px;cursor:default;display:none"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>ADP</span></div></th>
               <th title="AB / IP" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortProspects('ab')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">AB <span class="sort-arrow" id="sparr-ab">↕</span></span><span onclick="sortProspects('ip')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">IP <span class="sort-arrow" id="sparr-ip">↕</span></span></div></th>
               <th title="R / K" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortProspects('r')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">R <span class="sort-arrow" id="sparr-r">↕</span></span><span onclick="sortProspects('k')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">K <span class="sort-arrow" id="sparr-k">↕</span></span></div></th>
@@ -8043,6 +8044,13 @@ async function loadProspects(){
       ..._addProspect(aData.people,   'A')
     ];
 
+    // CBS_PROSPECTS_MERGE_V1 (May 7, 2026) — merge CBS roster % onto prospects
+    // the same way Pool gets it. CBS tracks ~8,373 players including
+    // AAAA-bubble guys, so many prospects will have real percentages where
+    // Yahoo only shows em-dashes. Mirrors the applyCBS(poolPlayers) call in
+    // loadPoolPlayers().
+    if(typeof applyCBS === 'function') applyCBS(prospectPlayers);
+
     prospectsLoaded = true;
     loading.style.display = 'none';
     if(status) status.textContent = prospectPlayers.length + ' prospects loaded (AAA + AA + A) — fetching stats...';
@@ -8423,6 +8431,7 @@ function renderProspects(){
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="yahoo-rank no-zero">${na}</td>
       <td class="stat-cell no-zero">${na}</td>
+      <td class="stat-cell no-zero">${p.cbs_roster_pct!==undefined&&p.cbs_roster_pct!==null&&p.cbs_roster_pct!==''?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':'0%'}</td>
       <td class="yahoo-rank no-zero col-adp-hidden" style="color:var(--text3);display:none">${na}</td>
       <td class="stat-cell" style="text-align:right">${p.stats ? (!pit?`<span style="color:${statColor}">${sv(s.ab)}</span>`:`<span style="color:${pitColor}">${sv(s.ip,1)}</span>`) : na}</td>
       <td class="stat-cell" style="text-align:right">${p.stats ? (!pit?`<span style="color:${statColor}">${sv(s.r)}</span>`:`<span style="color:${pitColor}">${sv(s.k)}</span>`) : na}</td>
