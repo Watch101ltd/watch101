@@ -2863,7 +2863,14 @@ function applyCBS(arr){
     const key = normalize(n);
     const cbs = cbsDataByName[key];
     if(!cbs) return;
-    if(p.team && cbs.team && String(p.team).toUpperCase() !== String(cbs.team).toUpperCase()) return;
+    // PROSPECTS_TEAM_PLACEHOLDER_FIX_V1 (May 7, 2026) — exclude the em-dash
+    // placeholder from the team-mismatch guard. Many prospects come from MLB
+    // StatsAPI without a resolvable parent org and end up with team='—'.
+    // Without this exclusion the guard rejected EVERY such prospect's CBS
+    // merge, so all 8,373 prospects showed 0%. Now: skip the safety check
+    // when either side lacks a real team code; trust the name match alone.
+    if(p.team && cbs.team && p.team !== '—' && cbs.team !== '—'
+       && String(p.team).toUpperCase() !== String(cbs.team).toUpperCase()) return;
     if(cbs.cbs_roster_pct != null) p.cbs_roster_pct = cbs.cbs_roster_pct;
     if(cbs.cbs_start_pct != null) p.cbs_start_pct = cbs.cbs_start_pct;
   });
