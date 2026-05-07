@@ -5710,6 +5710,12 @@ async function loadPoolPlayers(){
         if(yp.injury_status !== undefined) p.injury_status = yp.injury_status;
       });
     }
+    // CBS_POOL_MERGE_V1 (May 7, 2026) — merge CBS roster % onto pool players the
+    // same way Yahoo data is merged above. Without this, Pool table renders
+    // em-dashes for CBS column even when CBS data is loaded for 8,373 players.
+    // Bug was that line 3060's applyCBS(poolPlayers) only fires when CBS data
+    // arrives AFTER pool is loaded; on first page load the order is reversed.
+    if(typeof applyCBS === 'function') applyCBS(poolPlayers);
     document.getElementById('pool-loading').style.display = 'none';
     document.getElementById('pool-status').textContent = poolPlayers.length + ' MLB players loaded — loading stats...';
     renderPool();
