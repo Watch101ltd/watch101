@@ -118739,6 +118739,10 @@ function renderPlayerStatBar(p){
   var hand = pit ? (p.throws || p.bats || '') : (p.bats || '');
   var age = (typeof decimalAge === 'function') ? decimalAge(p) : (p.age || '');
   var rosterPct = (p.roster_pct !== null && p.roster_pct !== undefined && p.roster_pct !== '') ? (parseFloat(p.roster_pct).toFixed(0)+'%') : '0%';
+  // CBS_PROFILE_HEADER_V1 (May 7, 2026) — CBS roster % on the player profile
+  // overlay header, sitting next to Y!Ros%. Matches the column order across
+  // the rest of the site: RK -> Y!Ros% -> CBS%. No em-dashes (Matt's rule).
+  var cbsPct = (p.cbs_roster_pct !== null && p.cbs_roster_pct !== undefined && p.cbs_roster_pct !== '') ? (parseFloat(p.cbs_roster_pct).toFixed(0)+'%') : '0%';
 
   var cells = [];
   // Game stats first — these reflect current dateRange
@@ -118759,11 +118763,13 @@ function renderPlayerStatBar(p){
     cells.push({label:'SB',  val: num(sc && sc.sb)});
     cells.push({label:'AVG', val: avg3(sc && sc.avg)});
     cells.push({label:'OBP', val: avg3(sc && sc.obp)});
-    cells.push({label:'OPS', val: num(sc && sc.ops, 3)});
+    cells.push({label:'OPS', val: avg3(sc && sc.ops)});
   }
   // Roster context at the end — these are identity, not date-range dependent
+  // ORDER (May 7, 2026): Y!Rk -> Y!Ros% -> CBS% to match column order across the site
+  cells.push({label:'Y!Rk',   val: txt(p.yahoo_rank)});
   cells.push({label:'Y!Ros%', val: txt(rosterPct)});
-  cells.push({label:'Y!Rk', val: txt(p.yahoo_rank)});
+  cells.push({label:'CBS%',   val: txt(cbsPct)});
 
   container.innerHTML = cells.map(function(c){
     return '<div class="ppo-statbar-cell"><div class="ppo-statbar-label">'+c.label+'</div>'+c.val+'</div>';
