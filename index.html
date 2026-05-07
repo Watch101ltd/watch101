@@ -828,8 +828,16 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
      .col-ops        — OPS / xERA
      .savant-col     — xBA, xwOBA
      .savant-adv-col — already display:none by default unless advanced mode
-   Threshold 768px = covers all common phone widths in portrait. */
-@media(max-width:768px){
+   Threshold 768px = covers all common phone widths in portrait.
+   POINTER_COARSE_GUARD_V1 (May 7, 2026 — Laptop Walter) — added `(pointer:coarse)`
+   to the media query so this mobile-only block ONLY fires on touch devices.
+   Without it, JP's laptop at 100% browser zoom + high Windows display scaling
+   was reporting CSS viewport ≤768px, which fired this whole block on the
+   laptop, collapsed many stat columns to 0px width, and visually bled cell
+   contents sideways into neighboring columns. `pointer:coarse` is true only
+   on phones/tablets and false on every laptop/desktop, so the rule now stays
+   in its lane. Safe across any future Windows scaling change. */
+@media(max-width:768px) and (pointer:coarse){
   /* MOBILE_TIGHTEN_V3 (April 25, 2026) — Hide non-critical columns AND let
      the table shrink-to-fit so the remaining columns actually fit on screen.
      The previous attempts hid columns but the kept columns just stretched
