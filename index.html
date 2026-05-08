@@ -1381,6 +1381,16 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
        Save = Save to Excel / Forget Folder.
        More = Import / Present / CSV (CSV hidden here for now per the Dude's request).
        Clear All hidden (HIDE_CLEAR_ALL_V1, April 24 2026). Night-mode banana pinned far right. -->
+  <!-- STAT_FRESHNESS_V1 (May 8, 2026) — Stat-staleness chip. Shows green/orange/red
+       based on Worker /health pre-warm freshness AND localStorage last-stat-refresh.
+       Click for details. Polls /health every 5 minutes. -->
+  <span id="freshness-chip"
+        onclick="showFreshnessDetails()"
+        title="Click for stat freshness details"
+        style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:10px;font-size:11px;font-family:'Nunito Sans',sans-serif;font-weight:600;letter-spacing:0.04em;cursor:pointer;background:#3a3a45;color:#aaa;margin-right:6px;user-select:none">
+    <span id="freshness-dot" style="width:6px;height:6px;border-radius:50%;background:#888"></span>
+    <span id="freshness-label">stats: …</span>
+  </span>
   <div class="toolbar-right">
     <div class="hdr-dd backend-only" id="dd-add">
       <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-add', event)" title="Add a player to this watch list">➕ Add Player <span class="hdr-dd-caret">▾</span></button>
@@ -1409,6 +1419,10 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="hdr-dd-item backend-only" onclick="hdrRun(triggerImport)" title="Import from CSV or Excel">📥 Import</button>
         <button class="hdr-dd-item" onclick="hdrRun(togglePresentMode)" title="Presentation mode — full-screen view for screen-share">🔍 Present</button>
         <button class="hdr-dd-item" onclick="hdrRun(exportCSV)" title="Export the current list as a CSV file">📤 CSV</button>
+        <!-- STAT_FRESHNESS_V1 (May 8, 2026) — Manual nuke-and-refetch. Wipes saved
+             season stats on every player and re-fires the refresh. Use only when
+             auto-refresh isn't catching up. -->
+        <button class="hdr-dd-item backend-only" onclick="hdrRun(refreshAllStatsManual)" title="Wipe saved season stats and re-fetch fresh numbers from MLB Stats API">🔄 Refresh Stats</button>
       </div>
     </div>
     <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImport(event)">
@@ -8005,16 +8019,23 @@ loadData();
 // parallel with loadData(); applyCBS re-merges into players[] when both finish.
 loadCBSData();
 
-// Silently refresh missing AB stats in background after page loads
+// STAT_FRESHNESS_V1 (May 8, 2026) — Refresh ALL players' season stats on every
+// page load, not just players with missing AB. Previously this block filtered
+// for `p.ab === undefined || null`, which meant once a player had any AB number
+// on file, the row was frozen forever. That caused weeks-stale R/HR/RBI/AVG/SB
+// values on saved players (Clement, Fernandez, etc.). Now every page load
+// re-fetches every player from MLB Stats API, so the saved list always shows
+// current numbers. Throttled at ~80ms between requests so we never hammer MLB.
 setTimeout(async () => {
-  const missing = players.filter(p => p.mlb_id && (p.ab === undefined || p.ab === null));
-  if(missing.length === 0) return;
-  let filled = 0;
-  for(const p of missing){
+  const targets = players.filter(p => p.mlb_id);
+  if(targets.length === 0) return;
+  let updated = 0;
+  for(const p of targets){
     try{
       const lp = (p.level==='AAA'||p.level==='AA'||p.level==='A') ? '&leagueListId=milb_all' : '';
       const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${lp}`);
       const data = await res.json();
+      let touched = false;
       // MAJORS_VS_MINORS_V1 — pick MLB split if any exists, otherwise fall back to MiLB
       for(const group of (data.stats||[])){
         const picked = pickStatSource(group);
@@ -8022,7 +8043,7 @@ setTimeout(async () => {
         const s = picked.stat;
         p.statsSource = picked.source;
         if(group.group&&group.group.displayName==='hitting'){
-          if(s.atBats!==undefined){ p.ab=s.atBats; filled++; }
+          if(s.atBats!==undefined){ p.ab=s.atBats; touched = true; }
           if(s.avg) p.avg=parseFloat(s.avg);
           if(s.obp) p.obp=parseFloat(s.obp);
           if(s.ops) p.ops=parseFloat(s.ops);
@@ -8032,18 +8053,191 @@ setTimeout(async () => {
           if(s.stolenBases!==undefined) p.sb=s.stolenBases;
         }
         if(group.group&&group.group.displayName==='pitching'){
-          if(s.inningsPitched!==undefined){ p.ip=parseFloat(s.inningsPitched); filled++; }
+          if(s.inningsPitched!==undefined){ p.ip=parseFloat(s.inningsPitched); touched = true; }
         }
       }
+      if(touched){ updated++; }
     }catch(e){}
     await new Promise(r=>setTimeout(r,80));
   }
-  // SILENT_SAVE_V1 (April 26, 2026) — background AB-stat backfill, don't overwrite the user-facing header message
-  if(filled > 0){ saveData({silent: true}); renderTable(); }
+  // SILENT_SAVE_V1 (April 26, 2026) — background stat refresh, don't overwrite the user-facing header message
+  if(updated > 0){
+    saveData({silent: true});
+    renderTable();
+    // STAT_FRESHNESS_V1 — also stamp localStorage so the watchdog can see when the last refresh ran
+    try { localStorage.setItem('w101_last_stat_refresh', new Date().toISOString()); } catch(e){}
+    console.log('[STAT_FRESHNESS_V1] Refreshed season stats for ' + updated + ' / ' + targets.length + ' players');
+  }
 }, 2000);
 checkYahooStatus();
 startYahooAutoSync();
 setTimeout(() => loadSavantData(), 500);
+
+// STAT_FRESHNESS_V1 (May 8, 2026) — Stat freshness chip + manual refresh button.
+// =============================================================================
+// The chip in the header polls the Worker /health endpoint every 5 minutes and
+// shades itself green/orange/red. It also reads localStorage to know when the
+// LAST page-load auto-refresh ran successfully (set in the background block
+// above). Users can click the chip for details. The "🔄 Refresh Stats" item in
+// the More dropdown wipes saved season stats and re-fires the same refresh
+// path — escape hatch when the auto-refresh isn't catching up.
+const FRESH_HEALTH_URL = 'https://watch101-cache.wild-fog-21df.workers.dev/health';
+let _freshLastHealth = null;
+
+async function updateFreshnessChip(){
+  const dot = document.getElementById('freshness-dot');
+  const label = document.getElementById('freshness-label');
+  const chip = document.getElementById('freshness-chip');
+  if(!dot || !label || !chip) return;
+  let prewarmAgeMin = null;
+  let yahooCooldown = false;
+  let yahooCalls24h = 0;
+  let healthOk = false;
+  try {
+    const res = await fetch(FRESH_HEALTH_URL, { cache: 'no-store' });
+    if(res.ok){
+      const h = await res.json();
+      _freshLastHealth = h;
+      healthOk = true;
+      const lastRunISO = h.prewarm_player_stats && h.prewarm_player_stats.last_run && h.prewarm_player_stats.last_run.timestamp;
+      if(lastRunISO){
+        prewarmAgeMin = (Date.now() - new Date(lastRunISO).getTime()) / 60000;
+      }
+      yahooCooldown = !!(h.yahoo_guardrails && h.yahoo_guardrails.cooldown_active);
+      yahooCalls24h = (h.yahoo_guardrails && h.yahoo_guardrails.yahoo_calls_last_24h) || 0;
+    }
+  } catch(e) {}
+
+  // Local stat refresh age (when did THIS browser last refresh from MLB API?)
+  let localAgeMin = null;
+  try {
+    const localISO = localStorage.getItem('w101_last_stat_refresh');
+    if(localISO){ localAgeMin = (Date.now() - new Date(localISO).getTime()) / 60000; }
+  } catch(e){}
+
+  // Decide color
+  let color = '#3aa84a'; // green
+  let bg = '#1f3a25';
+  let textColor = '#7ed18a';
+  let labelText = 'stats: fresh';
+
+  if(!healthOk){
+    color = '#cc7a00'; bg = '#3a2a15'; textColor = '#ffa54a';
+    labelText = 'stats: worker?';
+  } else if(yahooCooldown){
+    color = '#cc3a3a'; bg = '#3a1a1a'; textColor = '#ff7a7a';
+    labelText = 'stats: yahoo banned';
+  } else if(prewarmAgeMin !== null && prewarmAgeMin > 180){
+    color = '#cc3a3a'; bg = '#3a1a1a'; textColor = '#ff7a7a';
+    labelText = 'stats: cache stale';
+  } else if(prewarmAgeMin !== null && prewarmAgeMin > 60){
+    color = '#cc7a00'; bg = '#3a2a15'; textColor = '#ffa54a';
+    labelText = 'stats: cache slow';
+  } else if(localAgeMin !== null && localAgeMin > 24*60){
+    color = '#cc7a00'; bg = '#3a2a15'; textColor = '#ffa54a';
+    labelText = 'stats: ' + Math.round(localAgeMin/60) + 'h old';
+  } else if(localAgeMin === null){
+    color = '#888'; bg = '#3a3a45'; textColor = '#aaa';
+    labelText = 'stats: …';
+  } else {
+    const localText = localAgeMin < 60 ? Math.round(localAgeMin) + 'm' : Math.round(localAgeMin/60) + 'h';
+    labelText = 'stats: ' + localText + ' ago';
+  }
+
+  dot.style.background = color;
+  chip.style.background = bg;
+  chip.style.color = textColor;
+  document.getElementById('freshness-label').textContent = labelText;
+}
+
+function showFreshnessDetails(){
+  const h = _freshLastHealth;
+  let msg = 'STAT FRESHNESS DIAGNOSTICS\n\n';
+  try {
+    const localISO = localStorage.getItem('w101_last_stat_refresh');
+    msg += 'This browser last refreshed MLB stats: ' + (localISO || 'never (open page or click 🔄 Refresh Stats)') + '\n\n';
+  } catch(e){}
+  if(!h){
+    msg += 'Worker /health: NOT REACHABLE\n';
+    msg += '(check internet or watch101-cache.wild-fog-21df.workers.dev)';
+  } else {
+    msg += 'Worker /health (' + h.timestamp + '):\n';
+    if(h.prewarm_player_stats && h.prewarm_player_stats.last_run){
+      const lr = h.prewarm_player_stats.last_run;
+      msg += '  • MLB pre-warm last run: ' + lr.timestamp + ' (bucket ' + lr.bucket + '/' + lr.total_buckets + ', ' + lr.fetches_succeeded + ' ok / ' + lr.fetches_failed + ' fail)\n';
+    } else {
+      msg += '  • MLB pre-warm: never run\n';
+    }
+    if(h.yahoo_guardrails){
+      msg += '  • Yahoo cooldown active: ' + h.yahoo_guardrails.cooldown_active + '\n';
+      msg += '  • Yahoo calls last 24h: ' + h.yahoo_guardrails.yahoo_calls_last_24h + '\n';
+      if(h.yahoo_guardrails.yahoo_call_log_recent && h.yahoo_guardrails.yahoo_call_log_recent.length){
+        msg += '  • Most recent Yahoo call: ' + h.yahoo_guardrails.yahoo_call_log_recent.slice(-1)[0] + '\n';
+      }
+    }
+  }
+  alert(msg);
+}
+
+// Manual nuke-and-refetch escape hatch. Wipes saved season counting stats on
+// every player so the auto-refresh path treats them all as "needs update," then
+// re-fires the same refresh code that runs on page load. Saves silently when done.
+async function refreshAllStatsManual(){
+  if(!confirm('Wipe saved season stats (AB / R / HR / RBI / SB / AVG / OPS / OBP) on every player and re-fetch fresh from MLB Stats API?\n\nYour list, ranks, OWN%, notes, ratings, and Savant numbers stay untouched.')){
+    return;
+  }
+  // Wipe season counting stats so every player is "missing" again
+  for(const p of players){
+    if(!p.mlb_id) continue;
+    delete p.ab; delete p.avg; delete p.obp; delete p.ops;
+    delete p.hr; delete p.rbi; delete p.r; delete p.sb;
+    delete p.ip;
+  }
+  saveData({silent: true});
+  renderTable();
+  // Fire the refresh by re-running the same per-player loop
+  let updated = 0;
+  for(const p of players.filter(x => x.mlb_id)){
+    try{
+      const lp = (p.level==='AAA'||p.level==='AA'||p.level==='A') ? '&leagueListId=milb_all' : '';
+      const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${lp}`);
+      const data = await res.json();
+      let touched = false;
+      for(const group of (data.stats||[])){
+        const picked = pickStatSource(group);
+        if(!picked) continue;
+        const s = picked.stat;
+        p.statsSource = picked.source;
+        if(group.group&&group.group.displayName==='hitting'){
+          if(s.atBats!==undefined){ p.ab=s.atBats; touched = true; }
+          if(s.avg) p.avg=parseFloat(s.avg);
+          if(s.obp) p.obp=parseFloat(s.obp);
+          if(s.ops) p.ops=parseFloat(s.ops);
+          if(s.homeRuns!==undefined) p.hr=s.homeRuns;
+          if(s.rbi!==undefined) p.rbi=s.rbi;
+          if(s.runs!==undefined) p.r=s.runs;
+          if(s.stolenBases!==undefined) p.sb=s.stolenBases;
+        }
+        if(group.group&&group.group.displayName==='pitching'){
+          if(s.inningsPitched!==undefined){ p.ip=parseFloat(s.inningsPitched); touched = true; }
+        }
+      }
+      if(touched){ updated++; }
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,80));
+  }
+  saveData({silent: true});
+  renderTable();
+  try { localStorage.setItem('w101_last_stat_refresh', new Date().toISOString()); } catch(e){}
+  updateFreshnessChip();
+  alert('Refresh complete. ' + updated + ' / ' + players.filter(p=>p.mlb_id).length + ' players updated.');
+}
+
+// Kick off the chip — first update after a moment so /health is hit AFTER the
+// page-load refresh stamps localStorage; then poll every 5 minutes.
+setTimeout(updateFreshnessChip, 4000);
+setInterval(updateFreshnessChip, 5*60*1000);
+// =============================================================================
 
 // ============================================================
 // PROSPECTS (MiLB AAA + AA)
