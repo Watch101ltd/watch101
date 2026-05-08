@@ -237,27 +237,54 @@ td:nth-child(4){text-align:left}
    version where MiLB stat NUMBERS were tinted light blue for at-a-glance
    distinction. That treatment got dropped in some past color-scheme calm-down.
    Restoring it here:
-     (a) row cell background tint shifted from amber to soft sky-blue, matching
-         the new text color so the row visually unifies as "minor league"
-     (b) --stat-hitter and --stat-pitcher are overridden to a light blue inside
-         row-minor-stats. Inline span styles in every render template use
-         var(--stat-hitter) / var(--stat-pitcher), so this CSS-only override
-         cascades through all four tables (Watch 101, Pool, Leaders, Prospects)
-         without changing any JS. The hitter/pitcher color distinction is
-         intentionally dropped within MiLB rows because the more important
-         visual signal is "these are minor-league stats, not majors." */
-tr.row-minor-stats td { background: rgba(125, 211, 252, 0.08); }
-tr.row-minor-stats:hover td { background: rgba(125, 211, 252, 0.14); }
-tr.row-minor-stats {
-  --stat-hitter: #7dd3fc;   /* sky-300 — light blue, readable on dark bg */
-  --stat-pitcher: #7dd3fc;  /* same — MiLB signal trumps position role */
+     MILB_ITALIC_V1 (May 8, 2026) — Replaced the sky-blue color override with
+     italic + 85% opacity on stat cells. Per Matt + Dude conversation: "less
+     color, more typography." The original hitter-red / pitcher-blue palette
+     stays put; the italic + slight dim signals "this is a minor-league sample"
+     without adding hues to a deliberately spare color budget. Italic is the
+     box-score / sportswriting convention for split or partial-season data, so
+     it reads naturally to anyone familiar with baseball stats.
+     The faint background tint is kept (and left blue) so the whole row still
+     reads as "minors at a glance" from across the room when a single row is
+     surrounded by majors rows. Stat cells get the italic; non-stat columns
+     (name, team, pos, age, bats) stay upright so the row's identity isn't
+     italicized — only the numbers from minor-league play are. */
+tr.row-minor-stats td { background: rgba(125, 211, 252, 0.06); }
+tr.row-minor-stats:hover td { background: rgba(125, 211, 252, 0.12); }
+/* Italic + dim on the stat cells. Three class names cover all four tables:
+   .stat-cell (main watch list, pool, leaders), .stat (context table),
+   .yahoo-rank (Y!RANK column). Inline numeric spans inside those cells inherit
+   the italic via the `*` rule. Non-stat cells (name, pos, team, age, bats,
+   inj badge) stay upright so the row's identity isn't italicized — only
+   minor-league numbers are. */
+tr.row-minor-stats td.stat-cell,
+tr.row-minor-stats td.stat,
+tr.row-minor-stats td.yahoo-rank,
+tr.row-minor-stats td.stat-cell *,
+tr.row-minor-stats td.stat *,
+tr.row-minor-stats td.yahoo-rank * {
+  font-style: italic;
+  opacity: 0.88;
 }
-/* Day mode: the dark page bg becomes light, so the same #7dd3fc is too pale.
-   Use a darker sky-blue so MiLB stat text stays readable on the light bg. */
-body.day-mode tr.row-minor-stats {
-  --stat-hitter: #0284c7;   /* sky-700 — readable on light bg */
-  --stat-pitcher: #0284c7;
+/* MILB_ITALIC_V1 — Tiny legend chip pinned to the top-right of the toolbar.
+   Only renders if at least one row in the visible table has row-minor-stats.
+   Wired up by JS in renderTable(); see #milb-legend-chip element. */
+.milb-legend-chip {
+  display: none;  /* JS toggles this to inline-flex when MiLB rows are present */
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: rgba(125, 211, 252, 0.10);
+  color: var(--text2);
+  font-size: 10px;
+  font-family: 'Nunito Sans', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  user-select: none;
+  white-space: nowrap;
 }
+.milb-legend-chip em { color: var(--text); opacity: 0.88; font-weight: 600; }
 
 .name-cell{display:flex;flex-direction:row;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0;max-width:100%;overflow:hidden}
 .player-name{font-weight:500;font-size:14px;color:var(--text);white-space:nowrap}
@@ -1390,6 +1417,12 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:10px;font-size:11px;font-family:'Nunito Sans',sans-serif;font-weight:600;letter-spacing:0.04em;cursor:pointer;background:#3a3a45;color:#aaa;margin-right:6px;user-select:none">
     <span id="freshness-dot" style="width:6px;height:6px;border-radius:50%;background:#888"></span>
     <span id="freshness-label">stats: …</span>
+  </span>
+  <!-- MILB_ITALIC_V1 (May 8, 2026) — Tiny legend pinned next to the freshness
+       chip. Only visible when the visible table has at least one MiLB row.
+       Toggled by updateMilbLegendVisibility() called from each render path. -->
+  <span id="milb-legend-chip" class="milb-legend-chip" title="Italic, dimmed numbers in the table mean the player's stats came from a minor-league sample (Triple-A, Double-A, etc.)">
+    <em>italic</em> = minors
   </span>
   <div class="toolbar-right">
     <div class="hdr-dd backend-only" id="dd-add">
@@ -6824,8 +6857,12 @@ function renderContext(){
     const addBtn = isAdded
       ? '<span class="btn-add-pool added">✓ On List</span>'
       : `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button>`;
+    // MILB_ITALIC_V1 (May 8, 2026) — flag MiLB-sourced rows so the italic+dim
+    // stat treatment fires in the context table the same way it does in the
+    // main list, pool, and leaders.
+    const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     if(isPit){
-      return `<tr class="${rowClass}">
+      return `<tr class="${rowClass}${_minorStatsClass}">
         <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:12px;${rankStyle}">${rank}</td>
         <td><div class="pool-player-name"><span class="pname ${flameClass(p)}">${flameEmoji(p)}${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
@@ -6844,7 +6881,7 @@ function renderContext(){
         <td style="text-align:right">${addBtn}</td>
       </tr>`;
     } else {
-      return `<tr class="${rowClass}">
+      return `<tr class="${rowClass}${_minorStatsClass}">
         <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:12px;${rankStyle}">${rank}</td>
         <td><div class="pool-player-name"><span class="pname ${flameClass(p)}">${flameEmoji(p)}${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
@@ -8237,6 +8274,34 @@ async function refreshAllStatsManual(){
 // page-load refresh stamps localStorage; then poll every 5 minutes.
 setTimeout(updateFreshnessChip, 4000);
 setInterval(updateFreshnessChip, 5*60*1000);
+
+// MILB_ITALIC_V1 (May 8, 2026) — Show/hide the "italic = minors" legend chip
+// based on whether the currently visible table has any MiLB rows. Called from
+// renderTable, renderProspects, renderPool, renderLeaders, renderContext via
+// a shared MutationObserver below — no per-render calls required. Polls the
+// DOM cheaply on a small debounce.
+function updateMilbLegendVisibility(){
+  const chip = document.getElementById('milb-legend-chip');
+  if(!chip) return;
+  const hasMinorsRow = !!document.querySelector('tbody tr.row-minor-stats');
+  chip.style.display = hasMinorsRow ? 'inline-flex' : 'none';
+}
+// Watch every tbody for changes and re-evaluate. One observer per page is
+// cheap and we don't have to thread updateMilbLegendVisibility() through five
+// different render functions.
+(function setupMilbLegendObserver(){
+  let pending = null;
+  const debounced = () => {
+    if(pending) clearTimeout(pending);
+    pending = setTimeout(updateMilbLegendVisibility, 80);
+  };
+  // Initial pass after the page has settled
+  setTimeout(updateMilbLegendVisibility, 1000);
+  const obs = new MutationObserver(debounced);
+  // Observe the whole body subtree but only for tbody changes (cheap because
+  // the callback just queries one selector).
+  obs.observe(document.body, { childList: true, subtree: true });
+})();
 // =============================================================================
 
 // ============================================================
