@@ -8504,54 +8504,64 @@ async function loadProspects(){
 // prospectPlayers. Non-destructive: a player who already has stats from an earlier
 // fetch (e.g. from the "Add to Watch 101" flow) keeps them.
 async function fetchProspectStatsBulk(){
-  const LEVELS = [
+  // PROSPECT_MLB_PROMOTION_V1 (May 8, 2026) — In addition to the existing
+  // MiLB-by-level fetch, also pull MLB stats (sportId=1). For prospects who
+  // got a cup of coffee this year, we PREFER the MLB numbers — they're the
+  // more meaningful sample. The render path stamps p.statsSource so the
+  // MILB_ITALIC_V2 row treatment can italicize MiLB-only rows and leave
+  // MLB-promoted rows upright. That way the Dude can tell at a glance
+  // which prospects have been up vs. which haven't.
+  const MILB_LEVELS = [
     { sportId: 11, label: 'AAA' },
     { sportId: 12, label: 'AA'  },
     { sportId: 13, label: 'A'   }
   ];
   const GROUPS = ['hitting','pitching'];
-  const urls = [];
-  LEVELS.forEach(lv => {
+  const milbUrls = [];
+  MILB_LEVELS.forEach(lv => {
     GROUPS.forEach(g => {
       // playerPool=all is the key param — without it, unqualified players drop out.
-      // Same trick we learned from the April 19 daterange_fetch.py rewrite.
-      urls.push(`https://statsapi.mlb.com/api/v1/stats?stats=season&group=${g}&sportId=${lv.sportId}&season=2026&playerPool=all&limit=5000`);
+      milbUrls.push(`https://statsapi.mlb.com/api/v1/stats?stats=season&group=${g}&sportId=${lv.sportId}&season=2026&playerPool=all&limit=5000`);
     });
   });
+  // MLB feed: same shape, sportId=1. One URL per group (hitting + pitching).
+  const mlbUrls = GROUPS.map(g =>
+    `https://statsapi.mlb.com/api/v1/stats?stats=season&group=${g}&sportId=1&season=2026&playerPool=all&limit=5000`
+  );
 
-  let responses;
+  let milbResponses, mlbResponses;
   try {
-    responses = await Promise.all(urls.map(u => fetch(u).then(r => r.json()).catch(() => null)));
+    [milbResponses, mlbResponses] = await Promise.all([
+      Promise.all(milbUrls.map(u => fetch(u).then(r => r.json()).catch(() => null))),
+      Promise.all(mlbUrls.map(u => fetch(u).then(r => r.json()).catch(() => null))),
+    ]);
   } catch(e){ return; }
 
   // PROSPECT_DEDUPE_V1 (2026-04-24) — combine stats ACROSS LEVELS for any prospect
   // who played at more than one minor-league level this season. Counting stats (HR,
   // RBI, R, SB, AB, K, W, SV, HLD, IP) sum together across levels. Rate stats (AVG,
   // OBP, OPS, ERA, WHIP) get RE-COMPUTED from the running totals so the combined
-  // rate is correct and not just the last level's number. Decision per the Dude
-  // (April 24): bigger sample size beats single-level purity, even though it mixes
-  // contexts (AA + AAA in the same line).
+  // rate is correct and not just the last level's number.
   //
-  // The previous implementation OVERWROTE rate stats and counting stats with
-  // whichever level processed last (which was always A — Low-A — because the
-  // urls array was AAA->AA->A, hitting then pitching). That meant Matt was seeing
-  // Low-A stats for guys who'd played at AAA. Bad.
-  const statsMap = {};
-  // Running totals for re-computing rate stats correctly.
-  // _hitTotals[pid] = { ab, h, bb, hbp, sf, tb, pa } — needed to reconstruct avg/obp/ops
-  // _pitTotals[pid] = { ip, er, h, bb }            — needed to reconstruct era/whip
+  // PROSPECT_MLB_PROMOTION_V1 — keeping MiLB and MLB results in SEPARATE maps
+  // (milbStatsMap, mlbStatsMap) so we can decide per-player whether to show the
+  // MLB sample (preferred when it has meaningful playing time) or the combined
+  // MiLB sample.
+  const milbStatsMap = {};
+  const mlbStatsMap = {};
+  // Running totals for re-computing MiLB rate stats correctly across levels.
   const _hitTotals = {};
   const _pitTotals = {};
 
-  responses.forEach((resp, idx) => {
+  milbResponses.forEach((resp, idx) => {
     if(!resp || !resp.stats) return;
-    const isPit = (idx % 2) === 1;   // GROUPS order above: [hitting, pitching]
+    const isPit = (idx % 2) === 1;   // GROUPS order: [hitting, pitching]
     (resp.stats[0] && resp.stats[0].splits || []).forEach(sp => {
       const pid = sp.player && sp.player.id;
       if(!pid) return;
       const s = sp.stat || {};
-      if(!statsMap[pid]) statsMap[pid] = {};
-      const target = statsMap[pid];
+      if(!milbStatsMap[pid]) milbStatsMap[pid] = {};
+      const target = milbStatsMap[pid];
       if(!isPit){
         if(!_hitTotals[pid]) _hitTotals[pid] = { ab:0, h:0, bb:0, hbp:0, sf:0, tb:0, pa:0 };
         const ht = _hitTotals[pid];
@@ -8599,18 +8609,64 @@ async function fetchProspectStatsBulk(){
     });
   });
 
-  // Write back onto prospectPlayers. If a player already has p.stats (from a prior
-  // per-player fetch), merge — don't overwrite.
+  // PROSPECT_MLB_PROMOTION_V1 — process MLB feed straight (single source, no
+  // level-combining math). Counting stats and rate stats come directly from
+  // the API split rather than recomputed.
+  mlbResponses.forEach((resp, idx) => {
+    if(!resp || !resp.stats) return;
+    const isPit = (idx % 2) === 1;
+    (resp.stats[0] && resp.stats[0].splits || []).forEach(sp => {
+      const pid = sp.player && sp.player.id;
+      if(!pid) return;
+      const s = sp.stat || {};
+      if(!mlbStatsMap[pid]) mlbStatsMap[pid] = {};
+      const target = mlbStatsMap[pid];
+      if(!isPit){
+        if(s.atBats       != null) target.ab  = Number(s.atBats);
+        if(s.homeRuns     != null) target.hr  = Number(s.homeRuns);
+        if(s.rbi          != null) target.rbi = Number(s.rbi);
+        if(s.runs         != null) target.r   = Number(s.runs);
+        if(s.stolenBases  != null) target.sb  = Number(s.stolenBases);
+        if(s.avg)                  target.avg = parseFloat(s.avg);
+        if(s.obp)                  target.obp = parseFloat(s.obp);
+        if(s.ops)                  target.ops = parseFloat(s.ops);
+      } else {
+        if(s.inningsPitched != null) target.ip   = parseFloat(s.inningsPitched);
+        if(s.strikeOuts     != null) target.k    = Number(s.strikeOuts);
+        if(s.wins           != null) target.w    = Number(s.wins);
+        if(s.saves          != null) target.sv   = Number(s.saves);
+        if(s.holds          != null) target.hld  = Number(s.holds);
+        if(s.era)                    target.era  = parseFloat(s.era);
+        if(s.whip)                   target.whip = parseFloat(s.whip);
+      }
+    });
+  });
+
+  // Decide per-prospect: MLB sample if any meaningful playing time, else MiLB.
+  // "Meaningful playing time" = AB > 0 for hitters, IP > 0 for pitchers. This
+  // keeps a guy who has only struck out in 1 PA from getting MLB-stamped while
+  // his real production lives in his AAA line.
   prospectPlayers.forEach(p => {
-    const fetched = statsMap[p.mlb_id];
-    if(!fetched) return;
+    const milb = milbStatsMap[p.mlb_id];
+    const mlb = mlbStatsMap[p.mlb_id];
+    let chosen = null;
+    let source = null;
+    if(mlb && ((mlb.ab && mlb.ab > 0) || (mlb.ip && mlb.ip > 0))){
+      chosen = mlb;
+      source = 'MLB';
+    } else if(milb){
+      chosen = milb;
+      source = 'MiLB';
+    }
+    if(!chosen) return;
     if(p.stats){
-      Object.keys(fetched).forEach(k => {
-        if(p.stats[k] == null) p.stats[k] = fetched[k];
+      Object.keys(chosen).forEach(k => {
+        if(p.stats[k] == null) p.stats[k] = chosen[k];
       });
     } else {
-      p.stats = fetched;
+      p.stats = chosen;
     }
+    p.statsSource = source;
   });
 }
 
@@ -8865,7 +8921,16 @@ function renderProspects(){
     const addBtn = isAdded
       ? '<span class="btn-add-pool added">✓ On List</span>'
       : `<button class="btn-add-pool" onclick="addProspectToList(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">${activeListAddLabel('+ Add to ')}</button>`;
-    return `<tr class="${isAdded?'already-added':''}" data-mlb-id="${p.mlb_id}" style="cursor:pointer">
+    // MILB_ITALIC_V2 (May 8, 2026) — Smarter italic gate for Prospects. Some
+    // prospects have an MLB sample this year (got called up; maybe back down).
+    // We want their MLB numbers to render upright so we can tell at a glance
+    // which prospects have been up vs. which haven't. The fetch path now pulls
+    // MLB stats too and stamps p.statsSource = 'MLB' when MLB numbers were
+    // chosen; 'MiLB' when MiLB numbers were chosen. This row class respects
+    // that flag exactly the same way the watch list, pool, leaders, and
+    // context tables do.
+    const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
+    return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}" style="cursor:pointer">
       <!-- STATIC_ZONE_REORDER_V1 — Pos before Player; col-zone-divider on Y!RANK. -->
       <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
       <td class="pos-cell"><div class="pos-stack pos-one"><span class="pos-badge pos-clickable ${posClass}" onclick="sortProspectsByPos('${p.primaryPos}', event)" title="Cluster list by ${p.primaryPos}">${p.primaryPos}</span></div></td>
