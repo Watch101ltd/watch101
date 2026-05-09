@@ -8662,21 +8662,31 @@ async function fetchProspectStatsBulk(){
     });
   });
 
-  // Decide per-prospect: MLB sample if any meaningful playing time, else MiLB.
-  // "Meaningful playing time" = AB > 0 for hitters, IP > 0 for pitchers. This
-  // keeps a guy who has only struck out in 1 PA from getting MLB-stamped while
-  // his real production lives in his AAA line.
+  // MAJORS_VS_MINORS_TOGGLE_V1 (May 9, 2026) — Preserve BOTH samples on each
+  // prospect so the per-row toggle in renderProspects() can swap between them.
+  // Default active sample = MiLB (was MLB-when-meaningful previously). Click
+  // the level chip in the LVL column to flip a single row to MLB.
+  //
+  // Original PROSPECT_MLB_PROMOTION_V1 logic preserved as a fallback — if a
+  // prospect has ONLY MLB stats (no MiLB sample at all this year), we still
+  // need to render something, so MLB is used as the active sample for those
+  // edge cases. Otherwise MiLB wins by default.
   prospectPlayers.forEach(p => {
     const milb = milbStatsMap[p.mlb_id];
     const mlb = mlbStatsMap[p.mlb_id];
+    // Stash both regardless of which becomes active. Empty-string fallback
+    // makes the absence-of-sample state easy to detect downstream.
+    p.statsMilb = milb || null;
+    p.statsMlb  = mlb  || null;
     let chosen = null;
     let source = null;
-    if(mlb && ((mlb.ab && mlb.ab > 0) || (mlb.ip && mlb.ip > 0))){
-      chosen = mlb;
-      source = 'MLB';
-    } else if(milb){
+    // Default-MiLB rule: prefer MiLB if it exists, else fall back to MLB.
+    if(milb){
       chosen = milb;
       source = 'MiLB';
+    } else if(mlb){
+      chosen = mlb;
+      source = 'MLB';
     }
     if(!chosen) return;
     if(p.stats){
@@ -8825,6 +8835,35 @@ function toggleProspectsAdvancedMode(el){
   renderProspects();
 }
 
+// MAJORS_VS_MINORS_TOGGLE_V1 (May 9, 2026) — Per-session memory of which
+// prospects have been flipped from default (MiLB) to MLB. Cleared on page
+// reload by design — this is a render-time gesture, not editorial state.
+// Keyed by mlb_id. A truthy value means "this row is currently showing MLB
+// stats." Default (no entry, or falsy) means MiLB.
+var _prospectSampleToggle = {};
+
+// Click handler wired to the LVL chip on prospect rows that have BOTH
+// samples. Flips the active sample for THIS row only and re-renders.
+function swapProspectStatsSample(mlbId, evt){
+  if(evt){ evt.stopPropagation(); evt.preventDefault(); }
+  _prospectSampleToggle[mlbId] = !_prospectSampleToggle[mlbId];
+  // Repoint p.stats + p.statsSource on the prospect record so the existing
+  // render code (which reads p.stats and p.statsSource) renders the right
+  // sample. Touching the canonical record is OK because the original
+  // milb/mlb maps are still preserved on p.statsMilb / p.statsMlb.
+  const p = prospectPlayers.find(x => x.mlb_id === mlbId);
+  if(p){
+    if(_prospectSampleToggle[mlbId]){
+      p.stats = p.statsMlb || p.stats;
+      p.statsSource = 'MLB';
+    } else {
+      p.stats = p.statsMilb || p.stats;
+      p.statsSource = 'MiLB';
+    }
+  }
+  renderProspects();
+}
+
 function renderProspects(){
   const tbody = document.getElementById('pros-tbody');
   if(!tbody) return;
@@ -8956,7 +8995,23 @@ function renderProspects(){
       <td class="pos-cell"><div class="pos-stack pos-one"><span class="pos-badge pos-clickable ${posClass}" onclick="sortProspectsByPos('${p.primaryPos}', event)" title="Cluster list by ${p.primaryPos}">${p.primaryPos}</span></div></td>
       <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${flameEmoji(p)}${p.name}</span></div></td>
       <td class="team-cell">${p.team||na}</td>
-      <td style="text-align:center"><span style="font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:600;color:${lvlColor};background:${lvlColor}22;border:1px solid ${lvlColor}55;border-radius:4px;padding:2px 6px">${p.level}</span></td>
+      <td style="text-align:center">${(()=>{
+        // MAJORS_VS_MINORS_TOGGLE_V1 (May 9, 2026) — LVL chip becomes clickable
+        // when this prospect has BOTH samples this year. Click flips active
+        // sample between MiLB (default) and MLB. Chip text changes to reflect
+        // which sample is showing. ↔ icon + tooltip + cursor:pointer signal
+        // interactivity. Non-clickable when only one sample exists (no point
+        // teasing a flip that has nothing to flip to).
+        const _hasBoth = !!(p.statsMilb && p.statsMlb);
+        const _showingMlb = !!_prospectSampleToggle[p.mlb_id];
+        const _chipColor = _showingMlb ? '#fbbf24' /* gold for MLB */ : lvlColor;
+        const _chipLabel = _showingMlb ? 'MLB' : p.level;
+        const _swapIcon = _hasBoth ? `<span style="margin-left:3px;font-size:9px;opacity:0.75">↔</span>` : '';
+        const _tooltip = _hasBoth ? (_showingMlb ? `Showing MLB stats — click to view ${p.level}` : `Showing ${p.level} stats — click to view MLB`) : '';
+        const _cursor = _hasBoth ? 'cursor:pointer;' : '';
+        const _onclick = _hasBoth ? `onclick="swapProspectStatsSample(${p.mlb_id}, event)"` : '';
+        return `<span ${_onclick} title="${_tooltip}" style="${_cursor}font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:600;color:${_chipColor};background:${_chipColor}22;border:1px solid ${_chipColor}55;border-radius:4px;padding:2px 6px;display:inline-flex;align-items:center;transition:background 0.15s">${_chipLabel}${_swapIcon}</span>`;
+      })()}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="yahoo-rank no-zero col-zone-divider">${na}</td>
