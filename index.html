@@ -8842,8 +8842,17 @@ function toggleProspectsAdvancedMode(el){
 // stats." Default (no entry, or falsy) means MiLB.
 var _prospectSampleToggle = {};
 
+// Frozen-order flag — when populated with an array of mlb_ids in their
+// current rendered order, renderProspects() skips its sort step and uses
+// this order instead. Set by swapProspectStatsSample to keep the toggled
+// row from jumping. Cleared by renderProspects() at the end so the next
+// natural action (sort header click, filter change) re-sorts normally.
+var _prospectFrozenOrder = null;
+
 // Click handler wired to the LVL chip on prospect rows that have BOTH
-// samples. Flips the active sample for THIS row only and re-renders.
+// samples. Flips the active sample for THIS row only. Re-renders WITHOUT
+// re-sorting so the toggled player stays put on screen — otherwise his
+// new stats would re-sort him out of view, looking like he disappeared.
 function swapProspectStatsSample(mlbId, evt){
   if(evt){ evt.stopPropagation(); evt.preventDefault(); }
   _prospectSampleToggle[mlbId] = !_prospectSampleToggle[mlbId];
@@ -8860,6 +8869,17 @@ function swapProspectStatsSample(mlbId, evt){
       p.stats = p.statsMilb || p.stats;
       p.statsSource = 'MiLB';
     }
+  }
+  // Capture the CURRENT visible row order from the DOM, so the re-render
+  // can keep every player exactly where the user already sees them.
+  // Reading the DOM is the safest way — it reflects whatever combination
+  // of sort + cluster + filters is currently in play.
+  const tbody = document.getElementById('pros-tbody');
+  if(tbody){
+    const ids = Array.from(tbody.querySelectorAll('tr[data-mlb-id]'))
+      .map(tr => parseInt(tr.getAttribute('data-mlb-id'), 10))
+      .filter(id => !isNaN(id));
+    _prospectFrozenOrder = ids.length ? ids : null;
   }
   renderProspects();
 }
@@ -8957,6 +8977,28 @@ function renderProspects(){
       const inB = (b.primaryPos === clickPos) ? 0 : 1;
       return inA - inB;
     });
+  }
+
+  // MAJORS_VS_MINORS_TOGGLE_V1 (May 9, 2026) — If a frozen order was set
+  // by swapProspectStatsSample, re-arrange `list` to match it so the
+  // toggled row stays in its current screen slot. Players in the frozen
+  // order get reseated; any not in it (shouldn't happen during a swap,
+  // but defense-in-depth) keep their post-sort position at the end.
+  if(_prospectFrozenOrder && _prospectFrozenOrder.length){
+    const indexById = {};
+    _prospectFrozenOrder.forEach((id, idx) => { indexById[id] = idx; });
+    list.sort((a, b) => {
+      const ai = indexById[a.mlb_id];
+      const bi = indexById[b.mlb_id];
+      const aHas = ai !== undefined;
+      const bHas = bi !== undefined;
+      if(aHas && bHas) return ai - bi;
+      if(aHas) return -1;
+      if(bHas) return 1;
+      return 0;
+    });
+    // Clear the flag so the next sort/filter action re-sorts naturally.
+    _prospectFrozenOrder = null;
   }
 
   // Limit display to 200 unless searching
