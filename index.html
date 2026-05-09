@@ -9044,15 +9044,26 @@ function renderProspects(){
         // which sample is showing. ↔ icon + tooltip + cursor:pointer signal
         // interactivity. Non-clickable when only one sample exists (no point
         // teasing a flip that has nothing to flip to).
+        //
+        // DUAL_SAMPLE_ASTERISK (May 9, 2026) — Add a small superscript asterisk
+        // to the chip whenever this player has BOTH samples available, regardless
+        // of which sample is currently active. The asterisk persists in both
+        // directions: AAA* when showing minor stats, MLB* when showing major
+        // stats. It's the at-a-glance "this guy has been up this year" beacon
+        // for the whole prospect list — baseball-stat-page convention going back
+        // a century, doesn't bloat the chip, doesn't compete with the flame icon.
         const _hasBoth = !!(p.statsMilb && p.statsMlb);
         const _showingMlb = !!_prospectSampleToggle[p.mlb_id];
         const _chipColor = _showingMlb ? '#fbbf24' /* gold for MLB */ : lvlColor;
         const _chipLabel = _showingMlb ? 'MLB' : p.level;
+        // Asterisk is rendered as a tiny superscript in a contrasting gold tone
+        // so it pops on every chip color (green AAA, blue AA, orange A, gold MLB).
+        const _asterisk = _hasBoth ? `<span style="font-size:11px;font-weight:700;color:#fbbf24;margin-left:1px;line-height:1;vertical-align:super">*</span>` : '';
         const _swapIcon = _hasBoth ? `<span style="margin-left:3px;font-size:9px;opacity:0.75">↔</span>` : '';
         const _tooltip = _hasBoth ? (_showingMlb ? `Showing MLB stats — click to view ${p.level}` : `Showing ${p.level} stats — click to view MLB`) : '';
         const _cursor = _hasBoth ? 'cursor:pointer;' : '';
         const _onclick = _hasBoth ? `onclick="swapProspectStatsSample(${p.mlb_id}, event)"` : '';
-        return `<span ${_onclick} title="${_tooltip}" style="${_cursor}font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:600;color:${_chipColor};background:${_chipColor}22;border:1px solid ${_chipColor}55;border-radius:4px;padding:2px 6px;display:inline-flex;align-items:center;transition:background 0.15s">${_chipLabel}${_swapIcon}</span>`;
+        return `<span ${_onclick} title="${_tooltip}" style="${_cursor}font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:600;color:${_chipColor};background:${_chipColor}22;border:1px solid ${_chipColor}55;border-radius:4px;padding:2px 6px;display:inline-flex;align-items:center;transition:background 0.15s">${_chipLabel}${_asterisk}${_swapIcon}</span>`;
       })()}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
