@@ -5247,22 +5247,23 @@ async function exportXLSX(opts){
   // so Clear All can persist to NAS. In manual mode keep the "No players" alert.
   if(!silent && !players.length){ alert('No players to export.'); return; }
 
-  // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — Save canonical (MiLB-default)
-  // values, never the on-screen toggled state. If any rows are currently
-  // showing MLB stats due to a per-session toggle, force them back to MiLB
-  // BEFORE the save serializes flat fields. The toggle store gets cleared
-  // so the on-screen state matches the save. Re-renders happen below as
-  // the existing flow already triggers them.
+  // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — Save canonical values, never
+  // the on-screen toggled state. The watch-list canonical default is MLB
+  // (per Matt's feedback May 9), so force every toggled row back to its
+  // table-default sample BEFORE the save serializes flat fields. Toggle
+  // store gets cleared for on-list players so the on-screen state matches
+  // the save.
   if(typeof _sampleToggle === 'object' && Object.keys(_sampleToggle).length){
     Object.keys(_sampleToggle).forEach(idStr => {
-      if(!_sampleToggle[idStr]) return;
       const id = parseInt(idStr, 10);
       const wp = players.find(x => x.mlb_id === id);
-      if(wp && wp.statsMilb){
-        // Reset toggle for this id, then re-apply active sample (now MiLB).
-        _sampleToggle[idStr] = false;
+      if(wp){
+        // Clear explicit toggle, then re-apply active sample. The
+        // resolver will fall through to the watch-list default = MLB
+        // (or MiLB if that's the only sample available).
+        delete _sampleToggle[idStr];
         if(typeof _applyActiveSampleToFlatFields === 'function'){
-          _applyActiveSampleToFlatFields(wp);
+          _applyActiveSampleToFlatFields(wp, 'watch');
         }
       }
     });
@@ -8760,24 +8761,25 @@ async function fetchSampleBackfillForListPlayers(){
     });
   });
 
-  // Stash both samples on each player record. MiLB is the default active
-  // sample (matches the new "always show MiLB first" rule), so the flat
-  // fields keep the values they already have when MiLB exists.
+  // Stash both samples on each player record, then apply the watch-list
+  // default (MLB when both exist; MiLB if only MiLB exists). The flat
+  // fields get overwritten with the default-active sample's values so
+  // the first render shows the right numbers.
+  //
+  // Per Matt's feedback (May 9): main lists default to MLB stats first
+  // because cup-of-coffee guys are interesting precisely BECAUSE they're
+  // up. Prospects tab keeps its own MiLB-default (handled separately by
+  // its own bulk fetch).
   let _hitCount = 0;
   targets.forEach(p => {
     p.statsMilb = milbStatsMap[p.mlb_id] || null;
     p.statsMlb  = mlbStatsMap[p.mlb_id]  || null;
     if(p.statsMilb || p.statsMlb) _hitCount++;
-    // If MLB-only somehow (no MiLB sample), or MiLB-only, ensure flat
-    // fields reflect the active sample. Default = MiLB if present.
+    // Only re-apply if the user hasn't explicitly toggled this player
+    // already (would happen if backfill races a click — unlikely but safe).
     if(!_sampleToggle[p.mlb_id]){
-      // Active sample = MiLB by default. Source label updated only.
-      if(p.statsMilb) p.statsSource = 'MiLB';
-      else if(p.statsMlb){
-        p.statsSource = 'MLB';
-        // No MiLB sample available — the flat fields already hold MLB-ish
-        // values from add-time; just stamp source so italic doesn't fire.
-      }
+      // _applyActiveSampleToFlatFields uses the watch-list default (MLB).
+      _applyActiveSampleToFlatFields(p, 'watch');
     }
   });
   console.log('[SAMPLE_BACKFILL] resolved samples for', _hitCount, '/', targets.length, 'on-list prospects.');
@@ -9108,16 +9110,57 @@ function toggleProspectsAdvancedMode(el){
 // =====================================================================
 // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — SHARED INFRASTRUCTURE
 // =====================================================================
-// Per-session memory of which players have been flipped from MiLB → MLB
-// stats. Used by every table that can show a prospect: main watch list,
-// Player Pool, League Leaders, Prospects tab, and the Context table.
-// Cleared on page reload — this is a render-time gesture, not editorial
-// state. Keyed by mlb_id (numeric). Truthy = MLB active. Falsy = MiLB.
+// Per-session memory of which players have been flipped between MiLB
+// and MLB stats. Used by every table: main watch list, Player Pool,
+// League Leaders, Prospects tab, and the Context table. Cleared on page
+// reload — this is a render-time gesture, not editorial state.
+//
+// V2 STORAGE FORMAT (May 9, 2026 — refined to support per-table defaults):
+//   Keyed by mlb_id (numeric, stringified by JS object semantics).
+//   Value:
+//     'MLB'      → user has explicitly toggled to MLB
+//     'MiLB'     → user has explicitly toggled to MiLB
+//     undefined  → no user choice yet, fall through to per-table default
+//
+// Per-table defaults (per Matt's feedback May 9):
+//   Watch list / Pool / Leaders / Context → MLB (these are fantasy-roster views)
+//   Prospects tab                         → MiLB (this is a scouting view)
+//
+// Once the user clicks a chip, their explicit choice persists across
+// tabs for the rest of the session. Page refresh resets to defaults.
 var _sampleToggle = {};
 // Backward-compat alias — older code inside renderProspects still reads
 // _prospectSampleToggle. Point both at the same object so flipping one
 // flips the other.
 var _prospectSampleToggle = _sampleToggle;
+
+// Per-table default sample. Looked up by every render path before
+// consulting the toggle store. If the user hasn't explicitly toggled
+// this player yet, the default determines first-render behavior.
+function _defaultSampleForTable(tableName){
+  if(tableName === 'prospects') return 'MiLB';
+  return 'MLB';  // watch / pool / leaders / context
+}
+
+// Resolves the currently-active sample LABEL ('MLB' or 'MiLB') for
+// a player in a given table context. Honors explicit user toggles
+// first, then falls back to the table's default.
+function _resolveActiveSample(p, tableName){
+  if(!p) return null;
+  const explicit = _sampleToggle[p.mlb_id];
+  if(explicit === 'MLB' || explicit === 'MiLB') return explicit;
+  // Legacy boolean format from earlier session toggles — true means MLB.
+  if(explicit === true) return 'MLB';
+  // No explicit choice yet — use table default, but only if the
+  // corresponding sample actually exists on the player record. Falls
+  // back to whichever sample DOES exist if the default isn't available.
+  const def = _defaultSampleForTable(tableName);
+  if(def === 'MLB' && p.statsMlb) return 'MLB';
+  if(def === 'MLB' && p.statsMilb) return 'MiLB';
+  if(def === 'MiLB' && p.statsMilb) return 'MiLB';
+  if(def === 'MiLB' && p.statsMlb) return 'MLB';
+  return null;
+}
 
 // Frozen-order maps — when set, the matching render function skips its
 // sort step and uses the captured order instead. Keyed by table name so
@@ -9135,25 +9178,23 @@ var _frozenOrder = {
 var _prospectFrozenOrder = null;  // legacy, not used by V2 code path
 
 // Helper — resolves which sample is currently active for a player and
-// returns the corresponding stat object. Falls back to whatever the
-// player has if both samples are missing (defensive — should not happen
-// after the backfill runs).
-function _activeSampleFor(p){
+// returns the corresponding stat object. Honors explicit user toggle,
+// then table default. tableName is optional and only matters when no
+// explicit toggle has been set; defaults to 'watch' so non-table-aware
+// callers (e.g. save flow) get the watch-list semantics.
+function _activeSampleFor(p, tableName){
   if(!p) return null;
-  if(_sampleToggle[p.mlb_id]){
-    return p.statsMlb || p.statsMilb || (p.stats || p);
-  }
-  return p.statsMilb || p.statsMlb || (p.stats || p);
+  const label = _resolveActiveSample(p, tableName || 'watch');
+  if(label === 'MLB')  return p.statsMlb  || p.statsMilb || (p.stats || p);
+  if(label === 'MiLB') return p.statsMilb || p.statsMlb  || (p.stats || p);
+  return p.stats || p;
 }
 
 // Helper — resolves which source label is currently active. The italic
 // CSS keys off this, so it has to stay in sync with _activeSampleFor.
-function _activeSourceFor(p){
+function _activeSourceFor(p, tableName){
   if(!p) return null;
-  if(_sampleToggle[p.mlb_id]){
-    return p.statsMlb ? 'MLB' : (p.statsSource || null);
-  }
-  return p.statsMilb ? 'MiLB' : (p.statsSource || null);
+  return _resolveActiveSample(p, tableName || 'watch');
 }
 
 // Helper — true when this player has BOTH samples available (and the
@@ -9168,9 +9209,12 @@ function _hasBothSamples(p){
 // Calling this before render means we don't have to touch every
 // `${p.avg}` reference in the codebase. Also updates p.statsSource so
 // the italic CSS class fires correctly. Pure side-effect on p.
-function _applyActiveSampleToFlatFields(p){
+// tableName lets the function resolve the active sample using that
+// table's default; defaults to 'watch' which matches all four flat-
+// field-reading tables (watch/pool/leaders/context).
+function _applyActiveSampleToFlatFields(p, tableName){
   if(!p) return;
-  const sample = _activeSampleFor(p);
+  const sample = _activeSampleFor(p, tableName || 'watch');
   if(!sample || sample === p) return;
   // Stat fields that show up on the rendered tables. Same list as the
   // counting + rate stats the prospect bulk-fetch builds.
@@ -9186,21 +9230,24 @@ function _applyActiveSampleToFlatFields(p){
       p[k] = null;
     }
   });
-  p.statsSource = _activeSourceFor(p);
+  p.statsSource = _activeSourceFor(p, tableName || 'watch');
 }
 
 // Helper — builds the LVL chip HTML for any table. Returns the chip
 // markup as a string. Pass the player record + which renderer is calling
-// (so the click handler knows which table to re-render). When the player
-// is MLB-only with no level, returns empty string (no chip).
+// (so the click handler knows which table to re-render AND so the chip
+// label/color reflects this table's default). When the player is
+// MLB-only with no level, returns empty string (no chip).
 function _renderLevelChip(p, tableName){
   if(!p) return '';
   // No chip if no level info AND no MiLB sample — pure MLB players.
-  // BUT keep the chip for players who have a level on file even if a
-  // sample is missing, so we don't make rows look inconsistent.
   if(!p.level || p.level === 'MLB') return '';
   const _hasBoth = _hasBothSamples(p);
-  const _showingMlb = !!_sampleToggle[p.mlb_id];
+  // Resolve which sample is showing for this row in this table. Honors
+  // explicit user toggle first, then table default (MLB for watch/pool/
+  // leaders/context, MiLB for prospects).
+  const _activeLabel = _resolveActiveSample(p, tableName);
+  const _showingMlb = (_activeLabel === 'MLB');
   // Color: green AAA, blue AA, orange A, gold MLB.
   const lvlColor = p.level === 'AAA' ? '#22c55e'
                  : p.level === 'AA'  ? '#3b82f6'
@@ -9220,20 +9267,38 @@ function _renderLevelChip(p, tableName){
 // Universal click handler wired to every chip across the four tables.
 // Flips the active sample for THIS row only. Captures current row order
 // from the DOM so the row stays put on the post-flip re-render.
+//
+// V2 storage format: stores 'MLB' or 'MiLB' string explicitly. The
+// "what's currently showing" is computed by _resolveActiveSample which
+// honors explicit toggle first, table default second. Clicking flips
+// to whichever sample is NOT currently showing in this table.
 function swapSampleForRow(mlbId, tableName, evt){
   if(evt){ evt.stopPropagation(); evt.preventDefault(); }
-  _sampleToggle[mlbId] = !_sampleToggle[mlbId];
+  // Resolve "what's the player record" so we can ask the resolver
+  // what's currently showing — needs the player to know which samples
+  // exist. Look it up in whichever array this table uses.
+  let p = null;
+  if(tableName === 'prospects' && typeof prospectPlayers !== 'undefined'){
+    p = prospectPlayers.find(x => x.mlb_id === mlbId);
+  }
+  if(!p && typeof players     !== 'undefined') p = players.find(x => x.mlb_id === mlbId);
+  if(!p && typeof poolPlayers !== 'undefined') p = poolPlayers.find(x => x.mlb_id === mlbId);
+  // Determine current active sample for this table (default + explicit),
+  // then flip to the other one.
+  const currentLabel = p ? _resolveActiveSample(p, tableName) : null;
+  const nextLabel = (currentLabel === 'MLB') ? 'MiLB' : 'MLB';
+  _sampleToggle[mlbId] = nextLabel;
 
   // Update flat fields + statsSource on the watch-list / pool / leaders
   // / context player records so the existing render code reads the
   // toggled values without per-row code changes. The lookup is per
   // table because each draws from a different array.
   if(tableName === 'prospects'){
-    const p = prospectPlayers.find(x => x.mlb_id === mlbId);
-    if(p){
+    const pp = prospectPlayers.find(x => x.mlb_id === mlbId);
+    if(pp){
       // Prospects tab uses p.stats internally — keep that pointer fresh.
-      p.stats = _sampleToggle[mlbId] ? (p.statsMlb || p.stats) : (p.statsMilb || p.stats);
-      p.statsSource = _activeSourceFor(p);
+      pp.stats = (nextLabel === 'MLB') ? (pp.statsMlb || pp.stats) : (pp.statsMilb || pp.stats);
+      pp.statsSource = _activeSourceFor(pp, 'prospects');
     }
   } else {
     // Watch list / pool / leaders / context use flat fields. Reapply.
@@ -9243,15 +9308,15 @@ function swapSampleForRow(mlbId, tableName, evt){
     if(tableName === 'leaders') arr = (typeof poolPlayers   !== 'undefined') ? poolPlayers   : null;
     if(tableName === 'context') arr = (typeof poolPlayers   !== 'undefined') ? poolPlayers   : null;
     if(arr){
-      const p = arr.find(x => x.mlb_id === mlbId);
-      if(p) _applyActiveSampleToFlatFields(p);
+      const pp = arr.find(x => x.mlb_id === mlbId);
+      if(pp) _applyActiveSampleToFlatFields(pp, tableName);
     }
     // Watch list also lives on the saved players[] regardless of which
     // tab is active — keep it in sync so a flip on Pool reflects on
     // the watch list immediately when the user switches tabs.
     if(tableName !== 'watch' && typeof players !== 'undefined'){
       const wp = players.find(x => x.mlb_id === mlbId);
-      if(wp) _applyActiveSampleToFlatFields(wp);
+      if(wp) _applyActiveSampleToFlatFields(wp, 'watch');
     }
   }
 
