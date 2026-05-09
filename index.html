@@ -2518,6 +2518,26 @@ async function loadData(){
       : (listName + ' — ⚠ Server offline');
   }
 
+  // MILB_ITALIC_V3_BACKFILL (May 9, 2026) — One-time backfill for prospects added
+  // to a list BEFORE statsSource was being stamped on save. If a player has a
+  // MiLB level (AAA/AA/A) but no statsSource flag, stamp it as 'MiLB' so the
+  // italic+dim treatment fires on the main list. Cheap (a single .forEach over
+  // the loaded players array). Idempotent — re-running it does nothing once
+  // every prospect is tagged.
+  try {
+    let _backfillCount = 0;
+    (players || []).forEach(p => {
+      if(p && !p.statsSource && (p.level === 'AAA' || p.level === 'AA' || p.level === 'A')){
+        p.statsSource = 'MiLB';
+        _backfillCount++;
+      }
+    });
+    if(_backfillCount > 0){
+      console.log('[MILB_ITALIC_V3_BACKFILL] stamped statsSource=MiLB on ' + _backfillCount + ' existing prospects');
+      try { saveData(); } catch(e){}
+    }
+  } catch(e){ console.warn('[MILB_ITALIC_V3_BACKFILL] failed:', e); }
+
   // YAHOO_APPLY_GLOBAL_V1 (April 24, 2026) — merge any previously-fetched Yahoo
   // data into the freshly-loaded player list BEFORE the first render. Without
   // this, OWNED and ADP stay blank until the NEXT Yahoo sync, because the sync
@@ -8996,7 +9016,8 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
     sv: null, hld: null, ip: _readStatFloat(p,'ip'),
     yahoo_rank: null, roster_pct: null,
     bats: p.bats || null,
-    level: level  // tag as MiLB
+    level: level,  // tag as MiLB
+    statsSource: 'MiLB'  // MILB_ITALIC_V3 (May 9, 2026) — prospects added via this flow always come from the MiLB feed, so stamp the flag here so the italic+dim treatment fires on the main list
   };
   players.push(newPlayer); reorderRanks(); saveData();
   // ADD_STALE_TABLE_FIX_V1 — merge Savant before renderTable so advanced columns populate on first paint
