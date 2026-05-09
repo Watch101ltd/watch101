@@ -2547,6 +2547,13 @@ async function loadData(){
   applyYahoo(players);
   applyCBS(players);  // CBS_COLUMN_V1 — merge CBS roster % onto players just like Yahoo does
 
+  // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — Backfill MLB + MiLB samples for
+  // any prospect on this list. Runs on every page load by design — the saved
+  // list data only stores flat fields, not the alternate sample, so we have
+  // to re-pull both samples to enable the toggle. Fires non-blocking so the
+  // first render isn't delayed; toggle becomes available once it resolves.
+  fetchSampleBackfillForListPlayers().catch(e => console.warn('[SAMPLE_BACKFILL] failed:', e));
+
   renderTable();
 
   // YAHOO_AUTOSYNC_V1 (April 24, 2026) — fire Yahoo sync automatically after any
@@ -4180,11 +4187,43 @@ function pickStatSource(group){
 }
 
 function renderTable(){
-  const list = getFiltered();
+  let list = getFiltered();
   const tbody = document.getElementById('tbody');
   document.getElementById('count-badge').textContent = list.length+' player'+(list.length!==1?'s':'');
   document.getElementById('empty-state').style.display = players.length===0?'block':'none';
   if(players.length===0){tbody.innerHTML='';return;}
+  // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — Honor frozen order on the
+  // watch list. Watch list rows use data-id (uid), not data-mlb-id, so
+  // we read whichever id key was captured by swapSampleForRow.
+  if(_frozenOrder.watch && _frozenOrder.watch.length){
+    const indexById = {};
+    _frozenOrder.watch.forEach((id, idx) => { indexById[id] = idx; });
+    list = list.slice().sort((a, b) => {
+      const ai = indexById[a.mlb_id];
+      const bi = indexById[b.mlb_id];
+      const aHas = ai !== undefined;
+      const bHas = bi !== undefined;
+      if(aHas && bHas) return ai - bi;
+      if(aHas) return -1;
+      if(bHas) return 1;
+      return 0;
+    });
+    _frozenOrder.watch = null;
+  } else if(_frozenOrder.watch_byid && _frozenOrder.watch_byid.length){
+    const indexById = {};
+    _frozenOrder.watch_byid.forEach((id, idx) => { indexById[id] = idx; });
+    list = list.slice().sort((a, b) => {
+      const ai = indexById[a.id];
+      const bi = indexById[b.id];
+      const aHas = ai !== undefined;
+      const bHas = bi !== undefined;
+      if(aHas && bHas) return ai - bi;
+      if(aHas) return -1;
+      if(bHas) return 1;
+      return 0;
+    });
+    _frozenOrder.watch_byid = null;
+  }
   const usingDateRange = dateRange !== 'season';
   tbody.innerHTML = list.map((p,i)=>{
     const pit = isPitcher(p);
@@ -4207,7 +4246,7 @@ function renderTable(){
       <td class="col-drag"><span class="drag-handle backend-only">⠿</span></td>
       <td class="col-rank"><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
       <td class="pos-cell col-pos">${posBadgesColumn(p.positions)}</td>
-      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}">${p.level && p.level !== 'MLB' ? `<span class="level-badge ${p.level==='AAA'?'level-aaa':p.level==='AA'?'level-aa':'level-a'}">${p.level}</span>` : ''}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
+      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}">${_renderLevelChip(p, 'watch')}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
       <td class="stat-cell team-cell col-team">${p.team||na}</td>
       <td class="stat-cell col-age">${decimalAge(p)}</td>
       <td class="stat-cell col-bt">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
@@ -5207,6 +5246,27 @@ async function exportXLSX(opts){
   // MUTATION_AUTOSAVE_V1 — in silent mode we allow an empty players list to be written
   // so Clear All can persist to NAS. In manual mode keep the "No players" alert.
   if(!silent && !players.length){ alert('No players to export.'); return; }
+
+  // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — Save canonical (MiLB-default)
+  // values, never the on-screen toggled state. If any rows are currently
+  // showing MLB stats due to a per-session toggle, force them back to MiLB
+  // BEFORE the save serializes flat fields. The toggle store gets cleared
+  // so the on-screen state matches the save. Re-renders happen below as
+  // the existing flow already triggers them.
+  if(typeof _sampleToggle === 'object' && Object.keys(_sampleToggle).length){
+    Object.keys(_sampleToggle).forEach(idStr => {
+      if(!_sampleToggle[idStr]) return;
+      const id = parseInt(idStr, 10);
+      const wp = players.find(x => x.mlb_id === id);
+      if(wp && wp.statsMilb){
+        // Reset toggle for this id, then re-apply active sample (now MiLB).
+        _sampleToggle[idStr] = false;
+        if(typeof _applyActiveSampleToFlatFields === 'function'){
+          _applyActiveSampleToFlatFields(wp);
+        }
+      }
+    });
+  }
 
   // NOTE_ARCHIVE_V1 (April 25, 2026) — archive the current note for each player
   // BEFORE writing the file. If p.note has content AND it differs from the most
@@ -6289,6 +6349,22 @@ function renderPool(){
     // Tie-break: Yahoo rank
     return (a.yahoo_rank||9999) - (b.yahoo_rank||9999);
   });
+  // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — honor frozen order on Pool.
+  if(_frozenOrder.pool && _frozenOrder.pool.length){
+    const indexById = {};
+    _frozenOrder.pool.forEach((id, idx) => { indexById[id] = idx; });
+    list = list.slice().sort((a, b) => {
+      const ai = indexById[a.mlb_id];
+      const bi = indexById[b.mlb_id];
+      const aHas = ai !== undefined;
+      const bHas = bi !== undefined;
+      if(aHas && bHas) return ai - bi;
+      if(aHas) return -1;
+      if(bHas) return 1;
+      return 0;
+    });
+    _frozenOrder.pool = null;
+  }
   // Show the FULL filtered roster — earlier 300-row cap was hiding everyone after
   // roughly the G's when sorted alphabetically. Modern browsers render ~1500 rows fine.
   const display = list;
@@ -6396,7 +6472,7 @@ function renderPool(){
       <td></td>
       <!-- STATIC_ZONE_REORDER_V1 — Pos cell now before Player; col-zone-divider on Y!RANK. -->
       <td class="pos-cell">${posBadgesColumn(poolPositions, 'pool')}</td>
-      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
+      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'pool')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
@@ -6826,6 +6902,23 @@ function renderContext(){
   }
   all.splice(insertIdx,0,contextAnchor);
 
+  // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — honor frozen order on Context.
+  if(_frozenOrder.context && _frozenOrder.context.length){
+    const indexById = {};
+    _frozenOrder.context.forEach((id, idx) => { indexById[id] = idx; });
+    all.sort((a, b) => {
+      const ai = indexById[a.mlb_id];
+      const bi = indexById[b.mlb_id];
+      const aHas = ai !== undefined;
+      const bHas = bi !== undefined;
+      if(aHas && bHas) return ai - bi;
+      if(aHas) return -1;
+      if(bHas) return 1;
+      return 0;
+    });
+    _frozenOrder.context = null;
+  }
+
   // Update player column header with count
   const total = all.length;
   const mode = contextAnchor._mode || 'positional';
@@ -6882,9 +6975,9 @@ function renderContext(){
     // main list, pool, and leaders.
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     if(isPit){
-      return `<tr class="${rowClass}${_minorStatsClass}">
+      return `<tr class="${rowClass}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
         <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:12px;${rankStyle}">${rank}</td>
-        <td><div class="pool-player-name"><span class="pname ${flameClass(p)}">${flameEmoji(p)}${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
+        <td><div class="pool-player-name"><span class="pname ${flameClass(p)}">${_renderLevelChip(p, 'context')}${flameEmoji(p)}${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
@@ -6901,9 +6994,9 @@ function renderContext(){
         <td style="text-align:right">${addBtn}</td>
       </tr>`;
     } else {
-      return `<tr class="${rowClass}${_minorStatsClass}">
+      return `<tr class="${rowClass}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
         <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:12px;${rankStyle}">${rank}</td>
-        <td><div class="pool-player-name"><span class="pname ${flameClass(p)}">${flameEmoji(p)}${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
+        <td><div class="pool-player-name"><span class="pname ${flameClass(p)}">${_renderLevelChip(p, 'context')}${flameEmoji(p)}${p.name}${isAnchor?' ★':isCompare?' ⟡':''}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
@@ -7267,6 +7360,23 @@ function renderLeaders(){
     return (a.yahoo_rank||9999) - (b.yahoo_rank||9999);
   });
 
+  // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — honor frozen order on Leaders.
+  if(_frozenOrder.leaders && _frozenOrder.leaders.length){
+    const indexById = {};
+    _frozenOrder.leaders.forEach((id, idx) => { indexById[id] = idx; });
+    list = list.slice().sort((a, b) => {
+      const ai = indexById[a.mlb_id];
+      const bi = indexById[b.mlb_id];
+      const aHas = ai !== undefined;
+      const bHas = bi !== undefined;
+      if(aHas && bHas) return ai - bi;
+      if(aHas) return -1;
+      if(bHas) return 1;
+      return 0;
+    });
+    _frozenOrder.leaders = null;
+  }
+
   const display = list.slice(0, 200);
 
   // Build Yahoo lookup from the FULL global Yahoo cache (not just watch list),
@@ -7338,7 +7448,7 @@ function renderLeaders(){
       <!-- STATIC_ZONE_REORDER_V1 — Pos before Player; col-zone-divider on Y!RANK. -->
       <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
       <td class="pos-cell">${posBadgesColumn(leaderPositions, 'leaders')}</td>
-      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
+      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'leaders')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
@@ -8519,6 +8629,166 @@ async function loadProspects(){
   }
 }
 
+// MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — Backfill MLB + MiLB samples for
+// every MiLB-flagged player on the currently-loaded watch list. Fires on
+// every page load (no caching) so the toggle on the watch list / Pool /
+// Leaders / Context can flip rows freely. Cost: 8 MLB API calls (4 levels
+// × 2 groups), parallelized. Numbers stay fresh because MLB's stats API is
+// our cheapest, fastest upstream — no Yahoo rate limit, no NAS roundtrip.
+async function fetchSampleBackfillForListPlayers(){
+  if(!Array.isArray(players) || !players.length) return;
+  // Identify MiLB-flagged players on the list (they have a level set to AAA/AA/A).
+  const targets = players.filter(p =>
+    p && p.mlb_id && (p.level === 'AAA' || p.level === 'AA' || p.level === 'A')
+  );
+  if(!targets.length) return;
+  console.log('[SAMPLE_BACKFILL] backfilling', targets.length, 'on-list prospects with both samples...');
+
+  // Same shape as fetchProspectStatsBulk — 4 MiLB level/group combos
+  // (AAA/AA/A × hitting/pitching) plus the MLB feed (sportId=1, both groups).
+  const MILB_LEVELS = [
+    { sportId: 11, label: 'AAA' },
+    { sportId: 12, label: 'AA'  },
+    { sportId: 13, label: 'A'   }
+  ];
+  const GROUPS = ['hitting','pitching'];
+  const milbUrls = [];
+  MILB_LEVELS.forEach(lv => {
+    GROUPS.forEach(g => {
+      milbUrls.push(`https://statsapi.mlb.com/api/v1/stats?stats=season&group=${g}&sportId=${lv.sportId}&season=2026&playerPool=all&limit=5000`);
+    });
+  });
+  const mlbUrls = GROUPS.map(g =>
+    `https://statsapi.mlb.com/api/v1/stats?stats=season&group=${g}&sportId=1&season=2026&playerPool=all&limit=5000`
+  );
+
+  let milbResponses, mlbResponses;
+  try {
+    [milbResponses, mlbResponses] = await Promise.all([
+      Promise.all(milbUrls.map(u => fetch(u).then(r => r.json()).catch(() => null))),
+      Promise.all(mlbUrls.map(u => fetch(u).then(r => r.json()).catch(() => null))),
+    ]);
+  } catch(e){
+    console.warn('[SAMPLE_BACKFILL] fetch failed:', e);
+    return;
+  }
+
+  // Build target id set so we only process players we care about.
+  const wantedIds = new Set(targets.map(p => p.mlb_id));
+  const milbStatsMap = {};
+  const mlbStatsMap = {};
+  const _hitTotals = {};
+  const _pitTotals = {};
+
+  milbResponses.forEach((resp, idx) => {
+    if(!resp || !resp.stats) return;
+    const isPit = (idx % 2) === 1;
+    (resp.stats[0] && resp.stats[0].splits || []).forEach(sp => {
+      const pid = sp.player && sp.player.id;
+      if(!pid || !wantedIds.has(pid)) return;
+      const s = sp.stat || {};
+      if(!milbStatsMap[pid]) milbStatsMap[pid] = {};
+      const target = milbStatsMap[pid];
+      if(!isPit){
+        if(!_hitTotals[pid]) _hitTotals[pid] = { ab:0, h:0, bb:0, hbp:0, sf:0, tb:0, pa:0 };
+        const ht = _hitTotals[pid];
+        if(s.atBats           != null) ht.ab  += Number(s.atBats)           || 0;
+        if(s.hits             != null) ht.h   += Number(s.hits)             || 0;
+        if(s.baseOnBalls      != null) ht.bb  += Number(s.baseOnBalls)      || 0;
+        if(s.hitByPitch       != null) ht.hbp += Number(s.hitByPitch)       || 0;
+        if(s.sacFlies         != null) ht.sf  += Number(s.sacFlies)         || 0;
+        if(s.totalBases       != null) ht.tb  += Number(s.totalBases)       || 0;
+        if(s.plateAppearances != null) ht.pa  += Number(s.plateAppearances) || 0;
+        target.ab = ht.ab;
+        if(s.homeRuns    != null) target.hr  = (Number(target.hr)  || 0) + Number(s.homeRuns);
+        if(s.rbi         != null) target.rbi = (Number(target.rbi) || 0) + Number(s.rbi);
+        if(s.runs        != null) target.r   = (Number(target.r)   || 0) + Number(s.runs);
+        if(s.stolenBases != null) target.sb  = (Number(target.sb)  || 0) + Number(s.stolenBases);
+        if(ht.ab > 0) target.avg = +(ht.h / ht.ab).toFixed(3);
+        const obpDen = ht.ab + ht.bb + ht.hbp + ht.sf;
+        if(obpDen > 0) target.obp = +((ht.h + ht.bb + ht.hbp) / obpDen).toFixed(3);
+        if(target.avg != null && target.obp != null && ht.ab > 0){
+          target.ops = +(target.obp + (ht.tb / ht.ab)).toFixed(3);
+        }
+      } else {
+        if(!_pitTotals[pid]) _pitTotals[pid] = { ip:0, er:0, h:0, bb:0 };
+        const pt = _pitTotals[pid];
+        if(s.inningsPitched != null) pt.ip += parseFloat(s.inningsPitched) || 0;
+        if(s.earnedRuns     != null) pt.er += Number(s.earnedRuns)         || 0;
+        if(s.hits           != null) pt.h  += Number(s.hits)               || 0;
+        if(s.baseOnBalls    != null) pt.bb += Number(s.baseOnBalls)        || 0;
+        if(s.strikeOuts != null) target.k   = (Number(target.k)   || 0) + Number(s.strikeOuts);
+        if(s.wins       != null) target.w   = (Number(target.w)   || 0) + Number(s.wins);
+        if(s.saves      != null) target.sv  = (Number(target.sv)  || 0) + Number(s.saves);
+        if(s.holds      != null) target.hld = (Number(target.hld) || 0) + Number(s.holds);
+        target.ip = +pt.ip.toFixed(1);
+        if(pt.ip > 0){
+          target.era  = +((pt.er * 9) / pt.ip).toFixed(2);
+          target.whip = +((pt.h + pt.bb) / pt.ip).toFixed(2);
+        }
+      }
+    });
+  });
+
+  mlbResponses.forEach((resp, idx) => {
+    if(!resp || !resp.stats) return;
+    const isPit = (idx % 2) === 1;
+    (resp.stats[0] && resp.stats[0].splits || []).forEach(sp => {
+      const pid = sp.player && sp.player.id;
+      if(!pid || !wantedIds.has(pid)) return;
+      const s = sp.stat || {};
+      if(!mlbStatsMap[pid]) mlbStatsMap[pid] = {};
+      const target = mlbStatsMap[pid];
+      if(!isPit){
+        if(s.atBats      != null) target.ab  = Number(s.atBats);
+        if(s.homeRuns    != null) target.hr  = Number(s.homeRuns);
+        if(s.rbi         != null) target.rbi = Number(s.rbi);
+        if(s.runs        != null) target.r   = Number(s.runs);
+        if(s.stolenBases != null) target.sb  = Number(s.stolenBases);
+        if(s.avg)                 target.avg = parseFloat(s.avg);
+        if(s.obp)                 target.obp = parseFloat(s.obp);
+        if(s.ops)                 target.ops = parseFloat(s.ops);
+      } else {
+        if(s.inningsPitched != null) target.ip   = parseFloat(s.inningsPitched);
+        if(s.strikeOuts     != null) target.k    = Number(s.strikeOuts);
+        if(s.wins           != null) target.w    = Number(s.wins);
+        if(s.saves          != null) target.sv   = Number(s.saves);
+        if(s.holds          != null) target.hld  = Number(s.holds);
+        if(s.era)                    target.era  = parseFloat(s.era);
+        if(s.whip)                   target.whip = parseFloat(s.whip);
+      }
+    });
+  });
+
+  // Stash both samples on each player record. MiLB is the default active
+  // sample (matches the new "always show MiLB first" rule), so the flat
+  // fields keep the values they already have when MiLB exists.
+  let _hitCount = 0;
+  targets.forEach(p => {
+    p.statsMilb = milbStatsMap[p.mlb_id] || null;
+    p.statsMlb  = mlbStatsMap[p.mlb_id]  || null;
+    if(p.statsMilb || p.statsMlb) _hitCount++;
+    // If MLB-only somehow (no MiLB sample), or MiLB-only, ensure flat
+    // fields reflect the active sample. Default = MiLB if present.
+    if(!_sampleToggle[p.mlb_id]){
+      // Active sample = MiLB by default. Source label updated only.
+      if(p.statsMilb) p.statsSource = 'MiLB';
+      else if(p.statsMlb){
+        p.statsSource = 'MLB';
+        // No MiLB sample available — the flat fields already hold MLB-ish
+        // values from add-time; just stamp source so italic doesn't fire.
+      }
+    }
+  });
+  console.log('[SAMPLE_BACKFILL] resolved samples for', _hitCount, '/', targets.length, 'on-list prospects.');
+
+  // Re-render every visible table so the chips appear with asterisks.
+  if(typeof renderTable      === 'function') try { renderTable(); }      catch(e){}
+  if(typeof renderPool       === 'function') try { renderPool(); }       catch(e){}
+  if(typeof renderLeaders    === 'function') try { renderLeaders(); }    catch(e){}
+  if(typeof renderContext    === 'function') try { renderContext(); }    catch(e){}
+}
+
 // PROSPECTS_BULK_STATS_V1 — one /stats call per level per group (6 total, parallel).
 // Builds a {mlb_id → stats} map and writes stats back onto each prospect in
 // prospectPlayers. Non-destructive: a player who already has stats from an earlier
@@ -8835,53 +9105,199 @@ function toggleProspectsAdvancedMode(el){
   renderProspects();
 }
 
-// MAJORS_VS_MINORS_TOGGLE_V1 (May 9, 2026) — Per-session memory of which
-// prospects have been flipped from default (MiLB) to MLB. Cleared on page
-// reload by design — this is a render-time gesture, not editorial state.
-// Keyed by mlb_id. A truthy value means "this row is currently showing MLB
-// stats." Default (no entry, or falsy) means MiLB.
-var _prospectSampleToggle = {};
+// =====================================================================
+// MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — SHARED INFRASTRUCTURE
+// =====================================================================
+// Per-session memory of which players have been flipped from MiLB → MLB
+// stats. Used by every table that can show a prospect: main watch list,
+// Player Pool, League Leaders, Prospects tab, and the Context table.
+// Cleared on page reload — this is a render-time gesture, not editorial
+// state. Keyed by mlb_id (numeric). Truthy = MLB active. Falsy = MiLB.
+var _sampleToggle = {};
+// Backward-compat alias — older code inside renderProspects still reads
+// _prospectSampleToggle. Point both at the same object so flipping one
+// flips the other.
+var _prospectSampleToggle = _sampleToggle;
 
-// Frozen-order flag — when populated with an array of mlb_ids in their
-// current rendered order, renderProspects() skips its sort step and uses
-// this order instead. Set by swapProspectStatsSample to keep the toggled
-// row from jumping. Cleared by renderProspects() at the end so the next
-// natural action (sort header click, filter change) re-sorts normally.
-var _prospectFrozenOrder = null;
+// Frozen-order maps — when set, the matching render function skips its
+// sort step and uses the captured order instead. Keyed by table name so
+// each render context manages its own freeze independently. Cleared by
+// the render function at the end so the next natural sort/filter action
+// re-sorts normally.
+var _frozenOrder = {
+  prospects: null,
+  watch: null,
+  pool: null,
+  leaders: null,
+  context: null
+};
+// Backward-compat alias for the original prospects-only flag.
+var _prospectFrozenOrder = null;  // legacy, not used by V2 code path
 
-// Click handler wired to the LVL chip on prospect rows that have BOTH
-// samples. Flips the active sample for THIS row only. Re-renders WITHOUT
-// re-sorting so the toggled player stays put on screen — otherwise his
-// new stats would re-sort him out of view, looking like he disappeared.
-function swapProspectStatsSample(mlbId, evt){
-  if(evt){ evt.stopPropagation(); evt.preventDefault(); }
-  _prospectSampleToggle[mlbId] = !_prospectSampleToggle[mlbId];
-  // Repoint p.stats + p.statsSource on the prospect record so the existing
-  // render code (which reads p.stats and p.statsSource) renders the right
-  // sample. Touching the canonical record is OK because the original
-  // milb/mlb maps are still preserved on p.statsMilb / p.statsMlb.
-  const p = prospectPlayers.find(x => x.mlb_id === mlbId);
-  if(p){
-    if(_prospectSampleToggle[mlbId]){
-      p.stats = p.statsMlb || p.stats;
-      p.statsSource = 'MLB';
+// Helper — resolves which sample is currently active for a player and
+// returns the corresponding stat object. Falls back to whatever the
+// player has if both samples are missing (defensive — should not happen
+// after the backfill runs).
+function _activeSampleFor(p){
+  if(!p) return null;
+  if(_sampleToggle[p.mlb_id]){
+    return p.statsMlb || p.statsMilb || (p.stats || p);
+  }
+  return p.statsMilb || p.statsMlb || (p.stats || p);
+}
+
+// Helper — resolves which source label is currently active. The italic
+// CSS keys off this, so it has to stay in sync with _activeSampleFor.
+function _activeSourceFor(p){
+  if(!p) return null;
+  if(_sampleToggle[p.mlb_id]){
+    return p.statsMlb ? 'MLB' : (p.statsSource || null);
+  }
+  return p.statsMilb ? 'MiLB' : (p.statsSource || null);
+}
+
+// Helper — true when this player has BOTH samples available (and the
+// toggle is therefore meaningful). Used to gate the asterisk + click.
+function _hasBothSamples(p){
+  return !!(p && p.statsMilb && p.statsMlb);
+}
+
+// Helper — copies the currently-active sample's stat values onto the
+// flat fields on the player record (p.avg, p.hr, etc). The watch list
+// / Pool / Leaders / Context renderers all read flat fields directly.
+// Calling this before render means we don't have to touch every
+// `${p.avg}` reference in the codebase. Also updates p.statsSource so
+// the italic CSS class fires correctly. Pure side-effect on p.
+function _applyActiveSampleToFlatFields(p){
+  if(!p) return;
+  const sample = _activeSampleFor(p);
+  if(!sample || sample === p) return;
+  // Stat fields that show up on the rendered tables. Same list as the
+  // counting + rate stats the prospect bulk-fetch builds.
+  const KEYS = ['ab','r','hr','rbi','sb','avg','obp','ops',
+                'ip','k','w','sv','hld','era','whip'];
+  KEYS.forEach(k => {
+    if(sample[k] !== undefined && sample[k] !== null){
+      p[k] = sample[k];
     } else {
-      p.stats = p.statsMilb || p.stats;
-      p.statsSource = 'MiLB';
+      // If the sample doesn't have this stat (e.g. hitter sample for a
+      // pitcher), null it out so stale flat-field values from the other
+      // sample don't leak into render.
+      p[k] = null;
+    }
+  });
+  p.statsSource = _activeSourceFor(p);
+}
+
+// Helper — builds the LVL chip HTML for any table. Returns the chip
+// markup as a string. Pass the player record + which renderer is calling
+// (so the click handler knows which table to re-render). When the player
+// is MLB-only with no level, returns empty string (no chip).
+function _renderLevelChip(p, tableName){
+  if(!p) return '';
+  // No chip if no level info AND no MiLB sample — pure MLB players.
+  // BUT keep the chip for players who have a level on file even if a
+  // sample is missing, so we don't make rows look inconsistent.
+  if(!p.level || p.level === 'MLB') return '';
+  const _hasBoth = _hasBothSamples(p);
+  const _showingMlb = !!_sampleToggle[p.mlb_id];
+  // Color: green AAA, blue AA, orange A, gold MLB.
+  const lvlColor = p.level === 'AAA' ? '#22c55e'
+                 : p.level === 'AA'  ? '#3b82f6'
+                 :                     '#f97316';
+  const _chipColor = _showingMlb ? '#fbbf24' : lvlColor;
+  const _chipLabel = _showingMlb ? 'MLB' : p.level;
+  // Asterisk persists in both directions when both samples exist —
+  // signals "this guy has been up this year" at a glance.
+  const _asterisk = _hasBoth ? `<span style="font-size:11px;font-weight:700;color:#fbbf24;margin-left:1px;line-height:1;vertical-align:super">*</span>` : '';
+  const _swapIcon = _hasBoth ? `<span style="margin-left:3px;font-size:9px;opacity:0.75">↔</span>` : '';
+  const _tooltip  = _hasBoth ? (_showingMlb ? `Showing MLB stats — click to view ${p.level}` : `Showing ${p.level} stats — click to view MLB`) : '';
+  const _cursor   = _hasBoth ? 'cursor:pointer;' : '';
+  const _onclick  = _hasBoth ? `onclick="swapSampleForRow(${p.mlb_id}, '${tableName}', event)"` : '';
+  return `<span ${_onclick} title="${_tooltip}" style="${_cursor}font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:600;color:${_chipColor};background:${_chipColor}22;border:1px solid ${_chipColor}55;border-radius:4px;padding:2px 6px;display:inline-flex;align-items:center;transition:background 0.15s;margin-right:4px;vertical-align:middle">${_chipLabel}${_asterisk}${_swapIcon}</span>`;
+}
+
+// Universal click handler wired to every chip across the four tables.
+// Flips the active sample for THIS row only. Captures current row order
+// from the DOM so the row stays put on the post-flip re-render.
+function swapSampleForRow(mlbId, tableName, evt){
+  if(evt){ evt.stopPropagation(); evt.preventDefault(); }
+  _sampleToggle[mlbId] = !_sampleToggle[mlbId];
+
+  // Update flat fields + statsSource on the watch-list / pool / leaders
+  // / context player records so the existing render code reads the
+  // toggled values without per-row code changes. The lookup is per
+  // table because each draws from a different array.
+  if(tableName === 'prospects'){
+    const p = prospectPlayers.find(x => x.mlb_id === mlbId);
+    if(p){
+      // Prospects tab uses p.stats internally — keep that pointer fresh.
+      p.stats = _sampleToggle[mlbId] ? (p.statsMlb || p.stats) : (p.statsMilb || p.stats);
+      p.statsSource = _activeSourceFor(p);
+    }
+  } else {
+    // Watch list / pool / leaders / context use flat fields. Reapply.
+    let arr = null;
+    if(tableName === 'watch')   arr = (typeof players       !== 'undefined') ? players       : null;
+    if(tableName === 'pool')    arr = (typeof poolPlayers   !== 'undefined') ? poolPlayers   : null;
+    if(tableName === 'leaders') arr = (typeof poolPlayers   !== 'undefined') ? poolPlayers   : null;
+    if(tableName === 'context') arr = (typeof poolPlayers   !== 'undefined') ? poolPlayers   : null;
+    if(arr){
+      const p = arr.find(x => x.mlb_id === mlbId);
+      if(p) _applyActiveSampleToFlatFields(p);
+    }
+    // Watch list also lives on the saved players[] regardless of which
+    // tab is active — keep it in sync so a flip on Pool reflects on
+    // the watch list immediately when the user switches tabs.
+    if(tableName !== 'watch' && typeof players !== 'undefined'){
+      const wp = players.find(x => x.mlb_id === mlbId);
+      if(wp) _applyActiveSampleToFlatFields(wp);
     }
   }
-  // Capture the CURRENT visible row order from the DOM, so the re-render
-  // can keep every player exactly where the user already sees them.
-  // Reading the DOM is the safest way — it reflects whatever combination
-  // of sort + cluster + filters is currently in play.
-  const tbody = document.getElementById('pros-tbody');
-  if(tbody){
-    const ids = Array.from(tbody.querySelectorAll('tr[data-mlb-id]'))
-      .map(tr => parseInt(tr.getAttribute('data-mlb-id'), 10))
-      .filter(id => !isNaN(id));
-    _prospectFrozenOrder = ids.length ? ids : null;
+
+  // Capture current rendered order so re-render keeps the row in place.
+  const tbodyId = tableName === 'prospects' ? 'pros-tbody'
+                : tableName === 'watch'     ? 'tbody'
+                : tableName === 'pool'      ? 'pool-tbody'
+                : tableName === 'leaders'   ? 'leaders-tbody'
+                : tableName === 'context'   ? 'ctx-tbody'
+                :                              null;
+  if(tbodyId){
+    const tbody = document.getElementById(tbodyId);
+    if(tbody){
+      const ids = Array.from(tbody.querySelectorAll('tr[data-mlb-id], tr[data-id]'))
+        .map(tr => {
+          const m = tr.getAttribute('data-mlb-id');
+          if(m && !isNaN(parseInt(m,10))) return parseInt(m,10);
+          // Watch list rows use data-id (uid) — fall back to mapping
+          // through the row's player record by index in the visible list.
+          return null;
+        })
+        .filter(id => id !== null);
+      if(ids.length) _frozenOrder[tableName] = ids;
+      // For watch list, data-mlb-id may not be set on rows — capture
+      // by data-id instead and translate via players[] lookup at render.
+      if(!ids.length){
+        const dids = Array.from(tbody.querySelectorAll('tr[data-id]'))
+          .map(tr => tr.getAttribute('data-id'))
+          .filter(x => x);
+        if(dids.length) _frozenOrder[tableName + '_byid'] = dids;
+      }
+    }
   }
-  renderProspects();
+
+  // Trigger the right re-render.
+  if(tableName === 'prospects' && typeof renderProspects === 'function')   renderProspects();
+  if(tableName === 'watch'     && typeof renderTable     === 'function')   renderTable();
+  if(tableName === 'pool'      && typeof renderPool      === 'function')   renderPool();
+  if(tableName === 'leaders'   && typeof renderLeaders   === 'function')   renderLeaders();
+  if(tableName === 'context'   && typeof renderContext   === 'function')   renderContext();
+}
+
+// Legacy entry point — old code in renderProspects still calls this name.
+// Forward to the unified swapSampleForRow.
+function swapProspectStatsSample(mlbId, evt){
+  return swapSampleForRow(mlbId, 'prospects', evt);
 }
 
 function renderProspects(){
@@ -8979,14 +9395,13 @@ function renderProspects(){
     });
   }
 
-  // MAJORS_VS_MINORS_TOGGLE_V1 (May 9, 2026) — If a frozen order was set
-  // by swapProspectStatsSample, re-arrange `list` to match it so the
-  // toggled row stays in its current screen slot. Players in the frozen
-  // order get reseated; any not in it (shouldn't happen during a swap,
-  // but defense-in-depth) keep their post-sort position at the end.
-  if(_prospectFrozenOrder && _prospectFrozenOrder.length){
+  // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — If a frozen order was set
+  // by swapSampleForRow, re-arrange `list` to match it so the toggled
+  // row stays in its current screen slot. Players in the frozen order
+  // get reseated; any not in it keep their post-sort position at the end.
+  if(_frozenOrder.prospects && _frozenOrder.prospects.length){
     const indexById = {};
-    _prospectFrozenOrder.forEach((id, idx) => { indexById[id] = idx; });
+    _frozenOrder.prospects.forEach((id, idx) => { indexById[id] = idx; });
     list.sort((a, b) => {
       const ai = indexById[a.mlb_id];
       const bi = indexById[b.mlb_id];
@@ -8997,8 +9412,7 @@ function renderProspects(){
       if(bHas) return 1;
       return 0;
     });
-    // Clear the flag so the next sort/filter action re-sorts naturally.
-    _prospectFrozenOrder = null;
+    _frozenOrder.prospects = null;
   }
 
   // Limit display to 200 unless searching
@@ -9037,34 +9451,7 @@ function renderProspects(){
       <td class="pos-cell"><div class="pos-stack pos-one"><span class="pos-badge pos-clickable ${posClass}" onclick="sortProspectsByPos('${p.primaryPos}', event)" title="Cluster list by ${p.primaryPos}">${p.primaryPos}</span></div></td>
       <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${flameEmoji(p)}${p.name}</span></div></td>
       <td class="team-cell">${p.team||na}</td>
-      <td style="text-align:center">${(()=>{
-        // MAJORS_VS_MINORS_TOGGLE_V1 (May 9, 2026) — LVL chip becomes clickable
-        // when this prospect has BOTH samples this year. Click flips active
-        // sample between MiLB (default) and MLB. Chip text changes to reflect
-        // which sample is showing. ↔ icon + tooltip + cursor:pointer signal
-        // interactivity. Non-clickable when only one sample exists (no point
-        // teasing a flip that has nothing to flip to).
-        //
-        // DUAL_SAMPLE_ASTERISK (May 9, 2026) — Add a small superscript asterisk
-        // to the chip whenever this player has BOTH samples available, regardless
-        // of which sample is currently active. The asterisk persists in both
-        // directions: AAA* when showing minor stats, MLB* when showing major
-        // stats. It's the at-a-glance "this guy has been up this year" beacon
-        // for the whole prospect list — baseball-stat-page convention going back
-        // a century, doesn't bloat the chip, doesn't compete with the flame icon.
-        const _hasBoth = !!(p.statsMilb && p.statsMlb);
-        const _showingMlb = !!_prospectSampleToggle[p.mlb_id];
-        const _chipColor = _showingMlb ? '#fbbf24' /* gold for MLB */ : lvlColor;
-        const _chipLabel = _showingMlb ? 'MLB' : p.level;
-        // Asterisk is rendered as a tiny superscript in a contrasting gold tone
-        // so it pops on every chip color (green AAA, blue AA, orange A, gold MLB).
-        const _asterisk = _hasBoth ? `<span style="font-size:11px;font-weight:700;color:#fbbf24;margin-left:1px;line-height:1;vertical-align:super">*</span>` : '';
-        const _swapIcon = _hasBoth ? `<span style="margin-left:3px;font-size:9px;opacity:0.75">↔</span>` : '';
-        const _tooltip = _hasBoth ? (_showingMlb ? `Showing MLB stats — click to view ${p.level}` : `Showing ${p.level} stats — click to view MLB`) : '';
-        const _cursor = _hasBoth ? 'cursor:pointer;' : '';
-        const _onclick = _hasBoth ? `onclick="swapProspectStatsSample(${p.mlb_id}, event)"` : '';
-        return `<span ${_onclick} title="${_tooltip}" style="${_cursor}font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:600;color:${_chipColor};background:${_chipColor}22;border:1px solid ${_chipColor}55;border-radius:4px;padding:2px 6px;display:inline-flex;align-items:center;transition:background 0.15s">${_chipLabel}${_asterisk}${_swapIcon}</span>`;
-      })()}</td>
+      <td style="text-align:center">${_renderLevelChip(p, 'prospects')}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="yahoo-rank no-zero col-zone-divider">${na}</td>
