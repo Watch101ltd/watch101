@@ -2984,6 +2984,66 @@ function fmtPct(val){
   return val.toFixed(1)+'%';
 }
 
+// ── REGISTRY_V1 (May 11 2026) ─────────────────────────────────────────────────
+// Watch 101 Universal Player Registry. One canonical row per player; every
+// external ID (MLBAM, Yahoo, CBS, BBRef, FanGraphs) keyed off the same row.
+// applyYahoo() and applyCBS() join through this map by ID instead of
+// name-matching. No more punctuation bugs, no more team-abbreviation
+// mismatches, no more duplicate-name guards. Built by
+// Brandt Assistant/scripts/build_player_registry.py and served live from
+// the NAS at /registry/lookup, refreshed when the script re-runs.
+
+const REGISTRY_URL = SERVER_URL + '/registry/lookup';
+
+// Three lookup tables, populated by loadRegistry(). All keyed on STRING IDs
+// for consistency — JavaScript object keys are strings anyway.
+let registryByMlbam = {};        // mlbam_id (string) -> registry row
+let registryByYahooId = {};      // yahoo_player_id (string) -> registry row
+let registryByCbsId = {};        // cbs_id (string) -> registry row
+let registryLoadedAt = null;     // timestamp once loaded
+let registryPlayerCount = 0;
+
+async function loadRegistry(){
+  try {
+    const res = await fetch(REGISTRY_URL, {cache: 'no-cache'});
+    if(!res.ok){
+      console.warn('[REGISTRY_V1] registry fetch failed (status ' + res.status + ') — falling back to legacy name-matching');
+      return;
+    }
+    const data = await res.json();
+    registryByMlbam = {};
+    registryByYahooId = {};
+    registryByCbsId = {};
+    (data.players || []).forEach(r => {
+      if(r.mlb != null) registryByMlbam[String(r.mlb)] = r;
+      if(r.yid) registryByYahooId[String(r.yid)] = r;
+      if(r.cid) registryByCbsId[String(r.cid)] = r;
+    });
+    registryPlayerCount = data.player_count || 0;
+    registryLoadedAt = data.generated_at || null;
+    console.log('[REGISTRY_V1] loaded ' + registryPlayerCount + ' players, generated ' + registryLoadedAt);
+    // Re-apply joins now that we have the registry
+    if(typeof players !== 'undefined' && Array.isArray(players)){
+      applyYahoo(players);
+      applyCBS(players);
+      if(typeof renderTable === 'function') renderTable();
+    }
+  } catch(e){
+    console.warn('[REGISTRY_V1] failed to load registry:', e);
+  }
+}
+
+// Helper: given a tracker player, find their registry row. Tries
+// mlb_id first (most reliable), then falls back to other paths.
+function _registryRowFor(p){
+  if(!p) return null;
+  if(p.mlb_id != null){
+    const row = registryByMlbam[String(p.mlb_id)];
+    if(row) return row;
+  }
+  return null;
+}
+
 // ── YAHOO INTEGRATION ─────────────────────────────────────────────────────────
 
 let yahooConnected = false;
@@ -3031,31 +3091,37 @@ function applyYahoo(arr) {
   arr.forEach(p => {
     const n = p.name || '';
 
-    // MANUAL_YAHOO_ID_STAMP_V3 (April 26, 2026) — if the player has a manually
-    // stamped Yahoo ID (from stampManualYahooIds()), use THAT ID first to look
-    // up the correct Yahoo record. This is how the two Max Muncys get the right
-    // live Yahoo data without needing any server-side fix.
-    // DUPLICATE_NAME_FIX_V2 (April 25, 2026) — mlb_id PRIORITY (was name first).
-    // Two players sharing a name (e.g. the two Max Muncys) both matched the same
-    // name-keyed entry, so whichever Yahoo player was indexed under that name
-    // got applied to BOTH MLB players. mlb_id is unique per player. Flipping
-    // priority order: try mlb_id first; name match is now ONLY a fallback for
-    // the rare Yahoo player who synced without an mlb_id.
-    const yp = (p._manual_yahoo_id && yahooDataByMlbId[p._manual_yahoo_id])
-           || (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
-           || yahooDataByName[normalize(n)]
-           || yahooDataByName[normalizeName(n)];
+    // REGISTRY_V1 (May 11 2026) — preferred path: look up tracker player in
+    // the universal registry by mlb_id, get their canonical yahoo_player_id,
+    // then fetch the Yahoo record by THAT id. ID-to-ID join. No name
+    // matching, no team aliasing, no duplicate-name guard needed.
+    let yp = null;
+    const regRow = _registryRowFor(p);
+    if(regRow && regRow.yid){
+      yp = yahooDataByMlbId[String(regRow.yid)];
+      // Yahoo's cache is keyed by what it calls "mlb_id" (which is actually
+      // Yahoo's internal player ID — that misnaming is the original sin of
+      // the legacy join). Our registry stores yid = that same Yahoo internal
+      // ID, so this lookup is correct.
+    }
+
+    // Legacy fallback — for any player not in the registry (older list rows,
+    // custom-added players, etc.) keep the old multi-path lookup so they
+    // still get Yahoo data. The MANUAL_YAHOO_ID_STAMP_V3 path is preserved
+    // for the two Max Muncys until they're confirmed in the registry.
+    if(!yp){
+      yp = (p._manual_yahoo_id && yahooDataByMlbId[p._manual_yahoo_id])
+        || (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
+        || yahooDataByName[normalize(n)]
+        || yahooDataByName[normalizeName(n)];
+      // Old duplicate-name guard: only used on the legacy path.
+      if(yp && !p._manual_yahoo_id && yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) yp = null;
+    }
+
     if(!yp) return;
-    // Also guard the name-fallback case: if we matched by NAME but the
-    // matched Yahoo player has a DIFFERENT mlb_id than the MLB player, refuse
-    // the merge — that's the duplicate-name collision we're trying to prevent.
-    // EXCEPTION: if the player has a _manual_yahoo_id, the mismatch is expected
-    // and intentional (manual stamp pairs a real MLB ID with a Yahoo internal ID).
-    if(!p._manual_yahoo_id && yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) return;
     if(yp.yahoo_rank != null) p.yahoo_rank = yp.yahoo_rank;
     if(yp.roster_pct != null) p.roster_pct = yp.roster_pct;
     if(yp.preseason_rank != null) p.preseason_rank = yp.preseason_rank;
-    // New fields from updated server
     if(yp.eligible_positions && yp.eligible_positions.length > 0){
       p.positions = yp.eligible_positions;
     }
@@ -3077,6 +3143,7 @@ function applyYahoo(arr) {
 //             W:\Watch 101\05 Research\CBS Scraper Architecture — 2026-05-06.md
 
 let cbsDataByName = {};        // normalized name -> {cbs_roster_pct, cbs_start_pct, team}
+let cbsDataByCbsId = {};       // REGISTRY_V1 — cbs_id -> same entry, the new primary lookup key
 let cbsDataAsOf = null;        // ISO timestamp of last CBS scrape
 let cbsDataPlayerCount = 0;    // how many players were in the latest snapshot
 
@@ -3133,15 +3200,18 @@ async function loadCBSData(){
     cbsDataAsOf = data.as_of || null;
     cbsDataPlayerCount = data.player_count || 0;
     cbsDataByName = {};
+    cbsDataByCbsId = {};
     (data.players || []).forEach(p => {
-      const key = normalizeForCBS(p.name || '');
-      if(!key) return;
-      cbsDataByName[key] = {
+      const entry = {
         cbs_roster_pct: p.rostered_pct,
         cbs_start_pct: p.start_pct,
         team: p.team,
         cbs_id: p.cbs_id
       };
+      // REGISTRY_V1 — index by cbs_id (the new join key) as well as by name
+      if(p.cbs_id) cbsDataByCbsId[String(p.cbs_id)] = entry;
+      const key = normalizeForCBS(p.name || '');
+      if(key) cbsDataByName[key] = entry;
     });
     console.log('[CBS_COLUMN_V1] loaded', Object.keys(cbsDataByName).length, 'CBS players, as_of', cbsDataAsOf);
     if(typeof players !== 'undefined' && Array.isArray(players)){
@@ -3188,26 +3258,30 @@ function _cbsTeamsEquivalent(trackerTeam, cbsTeam){
 
 function applyCBS(arr){
   if(!arr || !Array.isArray(arr)) return;
-  if(!cbsDataByName || Object.keys(cbsDataByName).length === 0) return;
   arr.forEach(p => {
     const n = p.name || '';
-    // CBS_NAME_NORMALIZE_V1 (May 7, 2026) — use normalizeForCBS so suffix
-    // stripping + nickname aliases match the keys built in loadCBSData.
-    const key = normalizeForCBS(n);
-    const cbs = cbsDataByName[key];
+
+    // REGISTRY_V1 (May 11 2026) — preferred path: registry knows tracker's
+    // mlb_id -> canonical cbs_id. Look up CBS data by that cbs_id. ID join,
+    // no name match, no team alias map, no normalization. Fixes Bleday,
+    // Varland, Realmuto, Chisholm, and the whole family of punctuation /
+    // suffix / nickname bugs in one move.
+    let cbs = null;
+    const regRow = _registryRowFor(p);
+    if(regRow && regRow.cid){
+      cbs = cbsDataByCbsId[String(regRow.cid)];
+    }
+
+    // Legacy fallback — name-based lookup with all the band-aids. Used only
+    // for players not in the registry (mostly very obscure deep prospects).
+    if(!cbs && cbsDataByName && Object.keys(cbsDataByName).length > 0){
+      const key = normalizeForCBS(n);
+      cbs = cbsDataByName[key];
+      if(cbs && p.team && cbs.team && p.team !== '—' && cbs.team !== '—'
+         && !_cbsTeamsEquivalent(p.team, cbs.team)) cbs = null;
+    }
+
     if(!cbs) return;
-    // PROSPECTS_TEAM_PLACEHOLDER_FIX_V1 (May 7, 2026) — exclude the em-dash
-    // placeholder from the team-mismatch guard. Many prospects come from MLB
-    // StatsAPI without a resolvable parent org and end up with team='—'.
-    // Without this exclusion the guard rejected EVERY such prospect's CBS
-    // merge, so all 8,373 prospects showed 0%. Now: skip the safety check
-    // when either side lacks a real team code; trust the name match alone.
-    //
-    // CBS_TEAM_ALIAS_V1 (May 7, 2026) — replaced the strict-equality check
-    // with _cbsTeamsEquivalent() so the WAS↔WSH / ARI↔AZ / CHW↔CWS aliases
-    // pass through. See block of comments above the helper for the why.
-    if(p.team && cbs.team && p.team !== '—' && cbs.team !== '—'
-       && !_cbsTeamsEquivalent(p.team, cbs.team)) return;
     if(cbs.cbs_roster_pct != null) p.cbs_roster_pct = cbs.cbs_roster_pct;
     if(cbs.cbs_start_pct != null) p.cbs_start_pct = cbs.cbs_start_pct;
   });
@@ -8434,6 +8508,9 @@ loadData();
 
 // CBS_COLUMN_V1 (May 6, 2026) — Load CBS roster % data on page open. Runs in
 // parallel with loadData(); applyCBS re-merges into players[] when both finish.
+// REGISTRY_V1 (May 11 2026) — load registry first so applyYahoo/applyCBS can
+// use ID-based joins. Both calls re-run on completion.
+loadRegistry();
 loadCBSData();
 
 // STAT_FRESHNESS_V1 (May 8, 2026) — Refresh ALL players' season stats on every
