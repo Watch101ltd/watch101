@@ -5168,6 +5168,12 @@ async function loadMainListBio(){
       console.log('[MAIN_LIST_BIO_BULK_V1] populated birthDate for ' + updated + ' main-list players');
       if(typeof renderTable === 'function') renderTable();
       if(typeof saveData === 'function') saveData();
+      // RACE_BACKSTOP — on initial page load, other late renders (applyYahoo,
+      // loadAllPoolStats, etc.) can paint AFTER our renderTable() above and
+      // overwrite the decimal ages with the integer ones from before bio
+      // came in. Re-render again on a small delay so we win the race no
+      // matter what fires last. Cheap insurance.
+      setTimeout(function(){ if(typeof renderTable === 'function') renderTable(); }, 2000);
     }
   } catch(e){ console.warn('[MAIN_LIST_BIO_BULK_V1] failed:', e); }
 }
