@@ -6154,7 +6154,16 @@ async function loadPoolPlayers(){
 // under URL length limits, then fill in p.bats / p.throws on each pool player and re-render.
 async function loadPoolBatsThrows(){
   try {
-    const ids = poolPlayers.filter(p => p.mlb_id && (!p.bats || !p.throws)).map(p => p.mlb_id);
+    // POOL_BIRTHDATE_FIX_V1 (May 11, 2026) — added birthDate to the bulk
+    // bio fetch. The MLB Stats API /people endpoint returns birthDate in
+    // the same response as batSide/pitchHand, but this function used to
+    // only extract batSide and pitchHand and threw birthDate away. That
+    // meant Pool / Leaders rows always showed integer ages (because
+    // decimalAge() falls back to parseInt(p.age) when p.birthDate is
+    // missing). Now we keep birthDate too — decimal ages return.
+    // We also include players that have bats/throws but are missing
+    // birthDate (otherwise on a re-load the function would skip them).
+    const ids = poolPlayers.filter(p => p.mlb_id && (!p.bats || !p.throws || !p.birthDate)).map(p => p.mlb_id);
     if(ids.length === 0) return;
     const chunks = [];
     for(let i=0;i<ids.length;i+=100) chunks.push(ids.slice(i, i+100));
@@ -6170,6 +6179,7 @@ async function loadPoolBatsThrows(){
           if(!p) return;
           if(person.batSide   && person.batSide.code   && !p.bats)   { p.bats   = person.batSide.code;   updated++; }
           if(person.pitchHand && person.pitchHand.code && !p.throws) { p.throws = person.pitchHand.code; }
+          if(person.birthDate                          && !p.birthDate){ p.birthDate = person.birthDate; }
         });
       } catch(e){ /* skip failed chunk */ }
     }
@@ -6380,7 +6390,11 @@ function renderPool(){
       // as a hint in that state.
       if(typeof dateRange !== 'undefined' && dateRange === 'season'){
         var _qhMin = qualifiedHittersThreshold();
-        list = list.filter(p => !isPitcher(p) && p.stats && (p.stats.ab||0) >= _qhMin);
+        // QUALIFIED_HITTERS_V1 BUGFIX (May 11, 2026) — Pool players store AB
+        // at the top level (p.ab), not nested under p.stats.ab. The original
+        // version checked p.stats first, which evaluated to false on every
+        // pool player (no .stats key), filtering out 100% of the table.
+        list = list.filter(p => !isPitcher(p) && (p.ab||0) >= _qhMin);
       } else {
         list = list.filter(p => !isPitcher(p));
       }
@@ -7419,7 +7433,10 @@ function renderLeaders(){
       // as a hint in that state.
       if(typeof dateRange !== 'undefined' && dateRange === 'season'){
         var _qhMinL = qualifiedHittersThreshold();
-        list = list.filter(p => !isPitcher(p) && p.stats && (p.stats.ab||0) >= _qhMinL);
+        // QUALIFIED_HITTERS_V1 BUGFIX (May 11, 2026) — Leaders uses
+        // poolPlayers as its source (see line ~7365), so AB lives at p.ab
+        // (top level), not p.stats.ab. Same fix as the Pool filter above.
+        list = list.filter(p => !isPitcher(p) && (p.ab||0) >= _qhMinL);
       } else {
         list = list.filter(p => !isPitcher(p));
       }
