@@ -2648,6 +2648,24 @@ async function loadData(){
   if(players && players.length > 0){
     syncYahooData(false).catch(e => console.error('[YAHOO_AUTOSYNC_V1] auto-sync failed:', e));
   }
+
+  // MAIN_LIST_BIO_BULK_V1 (May 11, 2026) — Backfill birthDate (and bats) for
+  // any list player who's missing them. Critical for newly-added players
+  // (Add Player / Add Custom Player) since their birthDate is null at save
+  // time, which would otherwise leave decimalAge() falling back to integer
+  // ages until the user manually interacts with the page. Runs non-blocking
+  // after the main render so the page paints fast; once bio data arrives the
+  // function calls renderTable() to flip integer ages to decimal. Fires on
+  // EVERY loadData() call (initial page load + every list switch) since each
+  // list has its own players array and its own set of NEW players to backfill.
+  // Diagnosis trail: console-driven trace on 5/11/2026 confirmed loadData was
+  // returning before loadMainListBio could ever be reached (the earlier edit
+  // accidentally lived inside enrichImportedPlayers, not loadData). Validated
+  // by manually calling loadMainListBio() on both The Dude's List and the
+  // Integrity list — decimal ages appeared in both cases.
+  if(players && players.length > 0){
+    loadMainListBio().catch(e => console.warn('[MAIN_LIST_BIO_BULK_V1] failed:', e));
+  }
 }
 // /MULTILIST_LOAD_V1
 
