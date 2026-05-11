@@ -2376,6 +2376,25 @@ function _isReadOnlyMode(){
   } catch(e){ return false; }
 }
 
+// READONLY_V2 (May 11, 2026) — defense-in-depth guard for admin handlers.
+// Phase 1 hides admin BUTTONS via the .backend-only CSS rule. Phase 2 hardens
+// the underlying HANDLERS so even if someone bypasses the CSS (dev tools,
+// keyboard shortcut, drag-drop, console call), the action exits before
+// mutating any state. Every admin handler calls this at the top:
+//   if(_blockIfReadOnly('functionName')) return;
+// Returns true (= block) when the page is in read-only mode, logs a single
+// debug line, and lets the caller bail out cleanly. Returns false in editing
+// mode so the function continues normally.
+function _blockIfReadOnly(actionName){
+  try {
+    if(_isReadOnlyMode()){
+      console.log('[READONLY_V2] blocked admin action: ' + (actionName || 'unknown') + ' (page is in read-only mode)');
+      return true;
+    }
+  } catch(e){ /* if the check itself errors, fail-open so editing isn't broken on staging */ }
+  return false;
+}
+
 // Apply the readonly-mode body class as early as possible so admin controls
 // never flash visible during page load. Runs immediately if body exists,
 // otherwise on DOMContentLoaded.
@@ -2639,6 +2658,7 @@ function _notifyHomeAssistantOnSave(listId){
 // /HA_NOTIFY_ON_SAVE_V1
 
 async function saveData(opts){
+  if(_blockIfReadOnly('saveData')) return;
   // SILENT_SAVE_V1 (April 26, 2026) — opts.silent=true suppresses the "local
   // draft saved" message in the header. Use it from background processes
   // (e.g. team backfill from Pool data) so a silent housekeeping save doesn't
@@ -2977,10 +2997,12 @@ let cbsDataByName = {};        // normalized name -> {cbs_roster_pct, cbs_start_
 let cbsDataAsOf = null;        // ISO timestamp of last CBS scrape
 let cbsDataPlayerCount = 0;    // how many players were in the latest snapshot
 
-// Where the CBS JSON file lives, relative to index.html. The Cloudflare Deploy
-// folder sits next to "CBS Data" inside Fantasy Baseball, so this relative
-// path resolves correctly both on file:// and on the deployed site.
-const CBS_DATA_URL = 'cbs/cbs_rostered_latest.json';
+// CBS_NAS_ENDPOINT_V1 (May 10, 2026) — switched from a static file path to the
+// NAS endpoint so the CBS OWNED column updates live the moment the weekly
+// Monday-1AM scrape finishes. No Cloudflare or GitHub deploy needed for fresh
+// CBS data anymore. Same architecture as /history/notes and /watchlist —
+// every Watch 101 data source now flows through the NAS.
+const CBS_DATA_URL = SERVER_URL + '/cbs/rostered-latest';
 
 // CBS_NAME_NORMALIZE_V1 (May 7, 2026 — Laptop Walter) — fix two diagnosed name
 // join bugs that left specific players at 0% on CBS even though CBS had them:
@@ -3179,6 +3201,14 @@ function hdrToggleDropdown(id, event){
   }
 }
 function hdrRun(fn){
+  // READONLY_V2 — every header-dropdown action is admin-only, so block them all
+  // in read-only mode as a belt-and-suspenders guard. Even if a future button
+  // gets added without a guard on its handler, this catches it.
+  if(_blockIfReadOnly('hdrRun')){
+    document.querySelectorAll('.hdr-dd.open').forEach(function(el){ el.classList.remove('open'); });
+    document.querySelectorAll('.hdr-dd-btn.open').forEach(function(el){ el.classList.remove('open'); });
+    return;
+  }
   try { if(typeof fn === 'function') fn(); }
   catch(e){ console.error('[HEADER_REDESIGN_V1] action threw:', e); }
   // Close any open dropdown after the action runs
@@ -3859,6 +3889,7 @@ function noteBadgeOpen(playerId){
 // the admin view should. Until Read-Only Mode lands, the button is
 // always visible (acceptable while we're still pre-public).
 async function markNoteAsFresh(mlbId){
+  if(_blockIfReadOnly('markNoteAsFresh')) return;
   try {
     var p = null;
     if(typeof players !== 'undefined' && Array.isArray(players)){
@@ -3896,6 +3927,7 @@ async function markNoteAsFresh(mlbId){
 // **Hide this control when Read-Only Mode ships.** Backend-only override —
 // fans on Cloudflare should never see this button.
 async function markNameAsFlaming(mlbId){
+  if(_blockIfReadOnly('markNameAsFlaming')) return;
   try {
     var p = null;
     if(typeof players !== 'undefined' && Array.isArray(players)){
@@ -3930,6 +3962,7 @@ async function markNameAsFlaming(mlbId){
 // Persists via autoSaveToNAS() and re-renders the main list so the Priority
 // column shows the new value (and re-sorts if Priority is the active sort).
 async function setPriority(mlbId, rawValue){
+  if(_blockIfReadOnly('setPriority')) return;
   try {
     var p = null;
     if(typeof players !== 'undefined' && Array.isArray(players)){
@@ -4012,6 +4045,7 @@ function typeBadge(p){
 // player's type_tags array based on the checkbox state. Persists to NAS,
 // re-renders the main table so the chip flips immediately.
 async function toggleTypeTag(mlbId, tagId, checked){
+  if(_blockIfReadOnly('toggleTypeTag')) return;
   try {
     var p = null;
     if(typeof players !== 'undefined' && Array.isArray(players)){
@@ -4043,6 +4077,7 @@ async function toggleTypeTag(mlbId, tagId, checked){
 // should never see the menu item — but the handlers themselves are harmless
 // to leave in place, since they require the modal to be open.
 function openAddCustomPlayerModal(){
+  if(_blockIfReadOnly('openAddCustomPlayerModal')) return;
   try {
     // Reset form fields each open so we don't bleed yesterday's input.
     var ids = ['acp-name','acp-position','acp-team','acp-age','acp-bats','acp-throws','acp-note'];
@@ -4071,6 +4106,7 @@ function closeAddCustomPlayerModal(){
 }
 
 async function submitAddCustomPlayer(){
+  if(_blockIfReadOnly('submitAddCustomPlayer')) return;
   try {
     var name = (document.getElementById('acp-name').value || '').trim();
     var pos  = (document.getElementById('acp-position').value || '').trim();
@@ -4583,6 +4619,7 @@ async function refreshAllStats(){
 }
 
 function openModal(){
+  if(_blockIfReadOnly('openModal')) return;
   editingId=null;
   selectedMlbId=null;
   document.getElementById('modal-title').textContent='Add Player';
@@ -4616,6 +4653,7 @@ function getPositions(){
 }
 
 function savePlayer(){
+  if(_blockIfReadOnly('savePlayer')) return;
   const name=document.getElementById('f-name').value.trim();
   const positions=getPositions();
   if(!name){alert('Player name is required. Search for a player above.');return;}
@@ -4667,6 +4705,7 @@ function savePlayer(){
 }
 
 function editPlayer(id){
+  if(_blockIfReadOnly('editPlayer')) return;
   const p=players.find(x=>x.id===id);
   if(!p) return;
   editingId=id;
@@ -4696,6 +4735,7 @@ function editPlayer(id){
 }
 
 async function deletePlayer(id){
+  if(_blockIfReadOnly('deletePlayer')) return;
   if(!confirm('Remove this player from the Watch List?')) return;
   players=players.filter(x=>x.id!==id);
   saveData();renderTable();
@@ -4704,6 +4744,7 @@ async function deletePlayer(id){
   try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] deletePlayer autosave failed:', e); }
 }
 async function confirmClear(){
+  if(_blockIfReadOnly('confirmClear')) return;
   if(!confirm('Clear ALL players? This cannot be undone.')) return;
   players=[];saveData();renderTable();
   if(poolLoaded) renderPool();
@@ -4715,6 +4756,7 @@ async function confirmClear(){
 }
 
 function editNote(id,el){
+  if(_blockIfReadOnly('editNote')) return;
   const p=players.find(x=>x.id===id);
   if(!p) return;
   const input=document.createElement('input');
@@ -4739,6 +4781,7 @@ function editNote(id,el){
 }
 
 function importFile(e){
+  if(_blockIfReadOnly('importFile')) return;
   const file = e.target.files[0];
   if(!file) return;
   const name = file.name.toLowerCase();
@@ -4824,12 +4867,14 @@ function processCSVText(text){
 }
 
 function triggerImport(){
+  if(_blockIfReadOnly('triggerImport')) return;
   const input = document.getElementById('import-file-input');
   input.value = '';
   input.click();
 }
 
 function handleImport(e){
+  if(_blockIfReadOnly('handleImport')) return;
   const file = e.target.files[0];
   if(!file) return;
   const isXLSX = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
@@ -5242,6 +5287,7 @@ async function autoSaveToNAS(){
 }
 
 async function exportXLSX(opts){
+  if(_blockIfReadOnly('exportXLSX')) return;
   const silent = !!(opts && opts.silent);
   // MUTATION_AUTOSAVE_V1 — in silent mode we allow an empty players list to be written
   // so Clear All can persist to NAS. In manual mode keep the "No players" alert.
@@ -5492,6 +5538,7 @@ async function exportXLSX(opts){
 // Use case: you know the folder got moved/renamed and you want to fix it before
 // the next save breaks.
 async function forgetSavedFolder(){
+  if(_blockIfReadOnly('forgetSavedFolder')) return;
   const listId = (typeof currentListId !== 'undefined' && currentListId) ? currentListId : 'default';
   let listName = listId;
   try {
@@ -5597,6 +5644,7 @@ function snapshotForUndo(){
 }
 
 async function undoLastMove(){
+  if(_blockIfReadOnly('undoLastMove')) return;
   if(dragUndoStack.length === 0) return;
   const snap = dragUndoStack.pop();
   // Rebuild players array in the snapshotted order
@@ -5644,6 +5692,7 @@ function dragOver(e,idx){e.preventDefault();e.currentTarget.classList.add('drag-
 function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
 async function drop(e,idx){
   e.preventDefault();e.currentTarget.classList.remove('drag-over');
+  if(_blockIfReadOnly('drop')) return;
   if(dragSrcIdx===null||dragSrcIdx===idx) return;
   const list=getFiltered();
   const srcId=list[dragSrcIdx].id,tgtId=list[idx].id;
@@ -5713,6 +5762,7 @@ try {
 } catch(e){}
 
 function savePersonal(){
+  if(_blockIfReadOnly('savePersonal')) return;
   localStorage.setItem('fw101_personal', JSON.stringify(personalPlayers));
 }
 
@@ -5739,6 +5789,7 @@ function toggleDualView(){
 }
 
 function copyOfficialToPersonal(){
+  if(_blockIfReadOnly('copyOfficialToPersonal')) return;
   if(players.length === 0){ alert('Add players to the main list first!'); return; }
   if(personalPlayers.length > 0){
     if(!confirm('This will replace your current personal list with Matt\'s list. Continue?')) return;
@@ -5819,6 +5870,7 @@ function personalDragStart(e, id){ personalDragSrcId = id; e.currentTarget.class
 function personalDragOver(e, id){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
 function personalDrop(e, id){
   e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  if(_blockIfReadOnly('personalDrop')) return;
   if(!personalDragSrcId || personalDragSrcId === id) return;
   const si = personalPlayers.findIndex(p=>p.id===personalDragSrcId);
   const ti = personalPlayers.findIndex(p=>p.id===id);
@@ -7063,6 +7115,7 @@ async function addComparePlayer(mlbId, name, team, primaryPos, age){
 
 // ---- ADD ANCHOR TO WATCH LIST ----
 function addAnchorToList(){
+  if(_blockIfReadOnly('addAnchorToList')) return;
   if(!contextAnchor) return;
   if(atCapacity()){ capAlert(); return; }
   const addedNames = new Set(players.map(p=>p.name.toLowerCase()));
@@ -7096,6 +7149,7 @@ function addAnchorToList(){
 
 // ---- QUICK ADD FROM POOL TABLE OR CONTEXT TABLE ----
 async function quickAddFromPool(mlbId, name, team, primaryPos, age, btnEl){
+  if(_blockIfReadOnly('quickAddFromPool')) return;
   if(atCapacity()){ capAlert(); btnEl.textContent=activeListAddLabel('+ Add to '); btnEl.disabled=false; return; }
   btnEl.textContent='⟳ Adding...'; btnEl.disabled=true;
   const p = poolPlayers.find(x=>x.mlb_id===mlbId)||{ mlb_id:mlbId, name, team, primaryPos, age, stats:null };
@@ -7151,6 +7205,7 @@ async function quickAddFromPool(mlbId, name, team, primaryPos, age, btnEl){
 }
 
 async function quickAddPoolPlayer(mlbId, name, team, primaryPos, age, btnEl){
+  if(_blockIfReadOnly('quickAddPoolPlayer')) return;
   btnEl.textContent='⟳ Adding...'; btnEl.disabled=true;
   await quickAddFromPool(mlbId, name, team, primaryPos, age, btnEl);
   renderContext();
@@ -7895,6 +7950,7 @@ function sortLeadersCol(th, apiKey, lowerIsBetter){
 === END DEAD CODE === */
 
 async function quickAddLeader(mlbId, name, team, primaryPos, btnEl){
+  if(_blockIfReadOnly('quickAddLeader')) return;
   btnEl.textContent='⟳ Adding...'; btnEl.disabled=true;
   // Look up player in pool to get age and confirmed team
   const poolPlayer = poolPlayers.find(x=>x.mlb_id===mlbId);
@@ -8351,6 +8407,7 @@ function showFreshnessDetails(){
 // every player so the auto-refresh path treats them all as "needs update," then
 // re-fires the same refresh code that runs on page load. Saves silently when done.
 async function refreshAllStatsManual(){
+  if(_blockIfReadOnly('refreshAllStatsManual')) return;
   if(!confirm('Wipe saved season stats (AB / R / HR / RBI / SB / AVG / OPS / OBP) on every player and re-fetch fresh from MLB Stats API?\n\nYour list, ranks, OWN%, notes, ratings, and Savant numbers stay untouched.')){
     return;
   }
@@ -9552,6 +9609,7 @@ function renderProspects(){
 }
 
 async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnEl){
+  if(_blockIfReadOnly('addProspectToList')) return;
   if(atCapacity()){ capAlert(); btnEl.textContent=activeListAddLabel('+ Add to '); btnEl.disabled=false; return; }
   btnEl.textContent = '⟳ Adding...'; btnEl.disabled = true;
   const p = prospectPlayers.find(x => x.mlb_id === mlbId) || { mlb_id:mlbId, name, team, primaryPos, age, stats:null, level };
@@ -121689,21 +121747,3 @@ body.day-mode .ppo-movement-mode-btn:hover:not(:disabled) { background: linear-g
   };
   window.closeMovementMode = function(){
     _mmClearTimers();
-    var ov = document.getElementById('movement-mode-overlay');
-    if(ov) ov.classList.remove('mm-open');
-    document.body.style.overflow = '';
-  };
-  window._mmReplay = function(){ _mmAnimate(); };
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' || e.keyCode === 27){
-      var ov = document.getElementById('movement-mode-overlay');
-      if(ov && ov.classList.contains('mm-open')) closeMovementMode();
-    }
-  });
-})();
-</script>
-<!-- ===================================================================== -->
-<!-- END MOVEMENT_MODE_V1+V1.1 -->
-<!-- ===================================================================== -->
-
-</html>
