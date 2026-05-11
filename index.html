@@ -5127,6 +5127,49 @@ async function enrichImportedPlayers(){
     renderTable();
     saveData();
   }
+
+  // MAIN_LIST_BIO_BULK_V1 (May 11, 2026) — backstop bulk fetch. The per-player
+  // loop above used to silently fail on its 5-second timeout under load,
+  // leaving birthDate as null on most main-list players (which then made
+  // decimalAge() fall back to integer ages — exactly what the Dude noticed).
+  // This bulk call mirrors loadPoolBatsThrows() and uses the /people?personIds
+  // batch endpoint (up to 100 IDs per call, no per-player race), so it's
+  // far more reliable. Runs after the per-player loop so it picks up anyone
+  // who got skipped silently. Decimal ages light up everywhere in seconds.
+  await loadMainListBio();
+}
+
+// MAIN_LIST_BIO_BULK_V1 — see comment above. Bulk-fetches birthDate (and bats
+// as a bonus, in case a player still doesn't have it) for every Watch 101 list
+// player in chunks of 100. Re-renders when done so the new ages light up.
+async function loadMainListBio(){
+  try {
+    if(typeof players === 'undefined' || !Array.isArray(players)) return;
+    const ids = players.filter(p => p.mlb_id && (!p.birthDate || !p.bats)).map(p => p.mlb_id);
+    if(ids.length === 0) return;
+    const chunks = [];
+    for(let i=0;i<ids.length;i+=100) chunks.push(ids.slice(i, i+100));
+    const idMap = {};
+    players.forEach(p => { if(p.mlb_id) idMap[p.mlb_id] = p; });
+    let updated = 0;
+    for(const chunk of chunks){
+      try {
+        const res = await fetch('https://statsapi.mlb.com/api/v1/people?personIds=' + chunk.join(','));
+        const data = await res.json();
+        (data.people || []).forEach(person => {
+          const p = idMap[person.id];
+          if(!p) return;
+          if(person.birthDate                          && !p.birthDate){ p.birthDate = person.birthDate; updated++; }
+          if(person.batSide   && person.batSide.code   && !p.bats)     { p.bats     = person.batSide.code; }
+        });
+      } catch(e){ console.warn('[MAIN_LIST_BIO_BULK_V1] chunk failed:', e); }
+    }
+    if(updated > 0){
+      console.log('[MAIN_LIST_BIO_BULK_V1] populated birthDate for ' + updated + ' main-list players');
+      if(typeof renderTable === 'function') renderTable();
+      if(typeof saveData === 'function') saveData();
+    }
+  } catch(e){ console.warn('[MAIN_LIST_BIO_BULK_V1] failed:', e); }
 }
 
 // File System Access API — remembers the chosen save folder across saves
