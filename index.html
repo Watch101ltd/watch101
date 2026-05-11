@@ -3201,10 +3201,15 @@ function hdrToggleDropdown(id, event){
   }
 }
 function hdrRun(fn){
-  // READONLY_V2 — every header-dropdown action is admin-only, so block them all
-  // in read-only mode as a belt-and-suspenders guard. Even if a future button
-  // gets added without a guard on its handler, this catches it.
-  if(_blockIfReadOnly('hdrRun')){
+  // READONLY_V2 — most header-dropdown actions are admin-only and should be
+  // blocked in read-only mode as a belt-and-suspenders guard. View-toggle
+  // actions (Present Mode, etc.) are fan-useful and stay allowed via this
+  // allow-list. To allow a new fan-safe action through, add its function name
+  // to FAN_SAFE_ACTIONS below.
+  var FAN_SAFE_ACTIONS = ['togglePresentMode'];
+  var fnName = (fn && fn.name) || '';
+  var isAllowed = FAN_SAFE_ACTIONS.indexOf(fnName) !== -1;
+  if(!isAllowed && _blockIfReadOnly('hdrRun:' + (fnName || 'anonymous'))){
     document.querySelectorAll('.hdr-dd.open').forEach(function(el){ el.classList.remove('open'); });
     document.querySelectorAll('.hdr-dd-btn.open').forEach(function(el){ el.classList.remove('open'); });
     return;
