@@ -6750,7 +6750,13 @@ function renderPool(){
     }
   });
 
-  tbody.innerHTML = display.map(p => {
+  // POOL_RANK_NUMBERS_V1 (May 12, 2026) — show rank number in the leftmost
+  // column ONLY when the user has sorted by a stat. Default-state alphabetical
+  // sort (and explicit re-sorts by name) hide the number because rank-by-name
+  // is meaningless. The rank is the player's position in the currently visible
+  // (filtered + sorted) list — what you see is what gets numbered.
+  const _showPoolRank = poolSortCol && poolSortCol !== 'name';
+  tbody.innerHTML = display.map((p, idx) => {
     const isAdded = addedNames.has(p.name.toLowerCase());
     const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
     const pit = isPitcherPos(p.primaryPos);
@@ -6826,7 +6832,7 @@ function renderPool(){
     // MAJORS_VS_MINORS_V1 — flag rows showing MiLB-only stats
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
-      <td></td>
+      <td style="text-align:center;color:var(--text3);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600">${_showPoolRank ? (idx+1) : ''}</td>
       <!-- STATIC_ZONE_REORDER_V1 — Pos cell now before Player; col-zone-divider on Y!RANK. -->
       <td class="pos-cell">${posBadgesColumn(poolPositions, 'pool')}</td>
       <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'pool')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
