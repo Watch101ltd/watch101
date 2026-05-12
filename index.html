@@ -1122,6 +1122,14 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
    The body class is applied by _applyReadOnlyBodyClass() in JS. !important
    wins against any inline display the elements might have. */
 body.readonly-mode .backend-only{display:none !important;}
+/* FRONTEND_ONLY_V1 (May 12, 2026 — PC Walter) — inverse of .backend-only.
+   Elements tagged .frontend-only ONLY show when body has the readonly-mode
+   class (Cloudflare prod and any non-github host). They stay hidden on
+   GitHub Pages staging (where the Dude and Matt work) and on file://.
+   First use case: the public-facing League Leaders and Prospects buttons
+   that appear in the toolbar in fan mode but make no sense in admin mode
+   (where Matt has the full tab nav). */
+body:not(.readonly-mode) .frontend-only{display:none !important;}
 
 /* MARK_NOTE_FRESH_V1 (April 25, 2026) — BACKEND_ONLY admin button.
    Lets Walter/the Dude manually re-flag a note as fresh on heavy-publish
@@ -1826,7 +1834,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
               <th class="savant-adv-col" title="Barrel % (Statcast) — top: hitters (higher=better), bottom: pitchers (lower=better)" style="padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortPool('sv_barrel_h')" style="display:block;color:var(--gold);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">BBL% <span class="sort-arrow" id="parr-sv_barrel_h">↕</span></span><span onclick="sortPool('sv_barrel_p')" style="display:block;color:var(--text);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">BBL% <span class="sort-arrow" id="parr-sv_barrel_p">↕</span></span></div></th>
               <th class="savant-adv-col" title="EV 95th Percentile (Statcast) — top: hitters (higher=better), bottom: pitchers (lower=better)" style="padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortPool('sv_ev95_h')" style="display:block;color:var(--gold);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">EV95 <span class="sort-arrow" id="parr-sv_ev95_h">↕</span></span><span onclick="sortPool('sv_ev95_p')" style="display:block;color:var(--text);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">EV95 <span class="sort-arrow" id="parr-sv_ev95_p">↕</span></span></div></th>
               <th class="savant-adv-col" title="Max Exit Velocity (Statcast) — top: hitters (higher=better), bottom: pitchers (lower=better)" style="padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortPool('sv_maxev_h')" style="display:block;color:var(--gold);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">MaxEV <span class="sort-arrow" id="parr-sv_maxev_h">↕</span></span><span onclick="sortPool('sv_maxev_p')" style="display:block;color:var(--text);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">MaxEV <span class="sort-arrow" id="parr-sv_maxev_p">↕</span></span></div></th>
-              <th style="cursor:default;width:60px"><span class="backend-only">Action</span></th>
+              <th class="backend-only" style="cursor:default;width:60px">Action</th>
             </tr>
           </thead>
           <tbody id="pool-tbody"></tbody>
@@ -1981,7 +1989,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
               <th class="savant-adv-col" title="Barrel % (Statcast) — top: hitters (higher=better), bottom: pitchers (lower=better)" style="padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortLeaders('sv_barrel_h')" style="display:block;color:var(--gold);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">BBL% <span class="sort-arrow" id="larr-sv_barrel_h">↕</span></span><span onclick="sortLeaders('sv_barrel_p')" style="display:block;color:var(--text);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">BBL% <span class="sort-arrow" id="larr-sv_barrel_p">↕</span></span></div></th>
               <th class="savant-adv-col" title="EV 95th Percentile (Statcast) — top: hitters (higher=better), bottom: pitchers (lower=better)" style="padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortLeaders('sv_ev95_h')" style="display:block;color:var(--gold);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">EV95 <span class="sort-arrow" id="larr-sv_ev95_h">↕</span></span><span onclick="sortLeaders('sv_ev95_p')" style="display:block;color:var(--text);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">EV95 <span class="sort-arrow" id="larr-sv_ev95_p">↕</span></span></div></th>
               <th class="savant-adv-col" title="Max Exit Velocity (Statcast) — top: hitters (higher=better), bottom: pitchers (lower=better)" style="padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortLeaders('sv_maxev_h')" style="display:block;color:var(--gold);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">MaxEV <span class="sort-arrow" id="larr-sv_maxev_h">↕</span></span><span onclick="sortLeaders('sv_maxev_p')" style="display:block;color:var(--text);cursor:pointer;padding:2px 4px;font-size:9px;text-align:right">MaxEV <span class="sort-arrow" id="larr-sv_maxev_p">↕</span></span></div></th>
-              <th style="cursor:default;width:60px"><span class="backend-only">Action</span></th>
+              <th class="backend-only" style="cursor:default;width:60px">Action</th>
             </tr>
           </thead>
           <tbody id="leaders-tbody"></tbody>
@@ -2246,7 +2254,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
               <th class="savant-adv-col" style="cursor:default">BBL%</th>
               <th class="savant-adv-col" style="cursor:default">EV95</th>
               <th class="savant-adv-col" style="cursor:default">MaxEV</th>
-              <th style="cursor:default;text-align:right"><span class="backend-only">Action</span></th>
+              <th class="backend-only" style="cursor:default;text-align:right">Action</th>
             </tr>
           </thead>
           <tbody id="pros-tbody"></tbody>
@@ -6925,7 +6933,7 @@ function renderPool(){
       <td class="stat-cell savant-adv-col no-zero">${p.sv_barrel!=null?`<span style="color:${!pit?'var(--gold)':'var(--text)'}">${parseFloat(p.sv_barrel).toFixed(1)}%</span>`:na}</td>
       <td class="stat-cell savant-adv-col no-zero">${p.sv_ev95!=null?`<span style="color:${!pit?'var(--gold)':'var(--text)'}">${parseFloat(p.sv_ev95).toFixed(1)}</span>`:na}</td>
       <td class="stat-cell savant-adv-col no-zero">${p.sv_maxev!=null?`<span style="color:${!pit?'var(--gold)':'var(--text)'}">${parseFloat(p.sv_maxev).toFixed(1)}</span>`:na}</td>
-      <td style="text-align:right;padding:4px 6px">${isAdded
+      <td class="backend-only" style="text-align:right;padding:4px 6px">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
         : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
       }</td>
@@ -7422,7 +7430,7 @@ function renderContext(){
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const rp=yw&&yw.roster_pct!=null?yw.roster_pct:p.roster_pct;return rp!=null?parseFloat(rp).toFixed(0)+'%':'0%';})()}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* CBS_COLUMN_V1 — read cbs_roster_pct from player object (applyCBS merged it from cbsDataByName) */ return p.cbs_roster_pct!=null?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':'0%';})()}</td>
         <td class="stat col-adp-hidden" style="color:var(--text);display:none">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const pr=yw&&yw.preseason_rank?yw.preseason_rank:p.preseason_rank;return pr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
-        <td style="text-align:right">${addBtn}</td>
+        <td class="backend-only" style="text-align:right">${addBtn}</td>
       </tr>`;
     } else {
       return `<tr class="${rowClass}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
@@ -7443,7 +7451,7 @@ function renderContext(){
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const rp=yw&&yw.roster_pct!=null?yw.roster_pct:p.roster_pct;return rp!=null?parseFloat(rp).toFixed(0)+'%':'0%';})()}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* CBS_COLUMN_V1 — read cbs_roster_pct from player object (applyCBS merged it from cbsDataByName) */ return p.cbs_roster_pct!=null?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':'0%';})()}</td>
         <td class="stat col-adp-hidden" style="color:var(--text);display:none">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const pr=yw&&yw.preseason_rank?yw.preseason_rank:p.preseason_rank;return pr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
-        <td style="text-align:right">${addBtn}</td>
+        <td class="backend-only" style="text-align:right">${addBtn}</td>
       </tr>`;
     }
   }).join('');
@@ -7938,7 +7946,7 @@ function renderLeaders(){
       <td class="stat-cell savant-adv-col no-zero">${p.sv_barrel!=null?`<span style="color:${!pit?'var(--gold)':'var(--text)'}">${parseFloat(p.sv_barrel).toFixed(1)}%</span>`:na}</td>
       <td class="stat-cell savant-adv-col no-zero">${p.sv_ev95!=null?`<span style="color:${!pit?'var(--gold)':'var(--text)'}">${parseFloat(p.sv_ev95).toFixed(1)}</span>`:na}</td>
       <td class="stat-cell savant-adv-col no-zero">${p.sv_maxev!=null?`<span style="color:${!pit?'var(--gold)':'var(--text)'}">${parseFloat(p.sv_maxev).toFixed(1)}</span>`:na}</td>
-      <td style="text-align:right;padding:4px 6px" onclick="event.stopPropagation()">${isAdded
+      <td class="backend-only" style="text-align:right;padding:4px 6px" onclick="event.stopPropagation()">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
         : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
       }</td>
@@ -8292,7 +8300,7 @@ function renderLeadersTable(splits, highlightStat, isPit){
         <td ${hl('ip')}>${s.inningsPitched!=null?parseFloat(s.inningsPitched).toFixed(1):'—'}</td>
         ${yhooRankCell}
         ${yhooRstCell}
-        <td style="text-align:right">${addBtn}</td>
+        <td class="backend-only" style="text-align:right">${addBtn}</td>
       </tr>`;
     } else {
       return `<tr>
@@ -8311,7 +8319,7 @@ function renderLeadersTable(splits, highlightStat, isPit){
         <td ${hl('ops')}>${s.ops!=null?stripLeadZero(parseFloat(s.ops).toFixed(3)):'—'}</td>
         ${yhooRankCell}
         ${yhooRstCell}
-        <td style="text-align:right">${addBtn}</td>
+        <td class="backend-only" style="text-align:right">${addBtn}</td>
       </tr>`;
     }
   }).join('');
@@ -10041,7 +10049,7 @@ function renderProspects(){
       <td class="stat-cell savant-adv-col no-zero">${na}</td>
       <td class="stat-cell savant-adv-col no-zero">${na}</td>
       <td class="stat-cell savant-adv-col no-zero">${na}</td>
-      <td style="text-align:right;padding:4px 6px" onclick="event.stopPropagation()">${addBtn}</td>
+      <td class="backend-only" style="text-align:right;padding:4px 6px" onclick="event.stopPropagation()">${addBtn}</td>
     </tr>`;
   }).join('');
 
