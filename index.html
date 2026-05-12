@@ -150,6 +150,7 @@ th.sorted .sort-arrow{opacity:1;color:var(--gold)}
 #main-table th.col-pos{width:56px}                         /* Pos (inline width:56px overrides) */
 #main-table th.col-team{width:30px}                        /* Team */
 #main-table th.col-age{width:26px}                         /* Age */
+#main-table th.col-exp{width:30px}                         /* EXP placeholder */
 #main-table th.col-bt{width:24px}                          /* B/T */
 #main-table th.col-note{width:144px}                       /* Note (col-note class also enforces 144 below) */
 #main-table th.col-owned{width:50px}                       /* Y!OWNED */
@@ -1501,6 +1502,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <th class="col-player" onclick="sortBy('name')" style="width:180px;min-width:180px">Player <span class="sort-arrow" id="arr-name">↕</span></th>
         <th class="col-team" onclick="sortBy('team')">Team <span class="sort-arrow" id="arr-team">↕</span></th>
         <th class="col-age" onclick="sortBy('age')" title="Age">Age <span class="sort-arrow" id="arr-age">↕</span></th>
+        <th class="col-exp" onclick="sortBy('exp')" title="Years of MLB experience (R for rookies). Placeholder column — data wiring pending.">EXP <span class="sort-arrow" id="arr-exp">↕</span></th>
         <th class="col-bt" onclick="sortBy('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="arr-bats">↕</span></th>
         <th class="col-rdelta col-zone-divider" onclick="sortBy('rank_delta')" title="Movement from previous save (+ up / - down)">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
         <th class="type-cell col-type" onclick="sortBy('type')" title="Player type tags — placeholder column, Matt is providing emoji categories" style="width:60px;min-width:60px;text-align:center">Type <span class="sort-arrow" id="arr-type">↕</span></th>
@@ -1752,6 +1754,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
               <th onclick="sortPool('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="parr-name">↕</span></th>
               <th onclick="sortPool('team')">Team <span class="sort-arrow" id="parr-team">↕</span></th>
               <th onclick="sortPool('age')" title="Age">Age <span class="sort-arrow" id="parr-age">↕</span></th>
+              <th onclick="sortPool('exp')" title="Years of MLB experience (R for rookies). Placeholder column — data wiring pending.">EXP <span class="sort-arrow" id="parr-exp">↕</span></th>
               <th onclick="sortPool('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="parr-bats">↕</span></th>
               <th class="col-zone-divider" onclick="sortPool('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="parr-yahoo_rank">↕</span></span></div></th>
               <th onclick="sortPool('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="parr-roster_pct">↕</span></span></div></th>
@@ -1905,6 +1908,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
               <th onclick="sortLeaders('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="larr-name">↕</span></th>
               <th onclick="sortLeaders('team')">Team <span class="sort-arrow" id="larr-team">↕</span></th>
               <th onclick="sortLeaders('age')" title="Age">Age <span class="sort-arrow" id="larr-age">↕</span></th>
+              <th onclick="sortLeaders('exp')" title="Years of MLB experience (R for rookies). Placeholder column — data wiring pending.">EXP <span class="sort-arrow" id="larr-exp">↕</span></th>
               <th onclick="sortLeaders('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="larr-bats">↕</span></th>
               <th class="col-zone-divider" onclick="sortLeaders('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="larr-yahoo_rank">↕</span></span></div></th>
               <th onclick="sortLeaders('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="larr-roster_pct">↕</span></span></div></th>
@@ -4447,6 +4451,7 @@ function renderTable(){
       <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}">${_renderLevelChip(p, 'watch')}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
       <td class="stat-cell team-cell col-team">${p.team||na}</td>
       <td class="stat-cell col-age">${decimalAge(p)}</td>
+      <td class="stat-cell col-exp" style="text-align:right">${p.exp != null && p.exp !== '' ? p.exp : '—'}</td>
       <td class="stat-cell col-bt">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="stat-cell col-rdelta col-zone-divider">${renderDelta(p)}</td>
       <td class="stat-cell type-cell col-type" style="text-align:center" title="Player type tags">${typeBadge(p)}</td>
@@ -6771,6 +6776,7 @@ function renderPool(){
       <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'pool')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
+      <td class="stat-cell col-exp" style="text-align:right">${p.exp != null && p.exp !== '' ? p.exp : '—'}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="yahoo-rank no-zero col-zone-divider">${p.yahoo_rank||na}</td>
       <td class="stat-cell no-zero">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(0)+'%':'0%'}</td>
@@ -7277,6 +7283,7 @@ function renderContext(){
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
+        <td class="stat col-exp" style="text-align:right">${p.exp != null && p.exp !== '' ? p.exp : '—'}</td>
         <td class="stat">${s.era!=null?stripLeadZero(parseFloat(s.era).toFixed(2)):'—'}</td>
         <td class="stat">${s.whip!=null?stripLeadZero(parseFloat(s.whip).toFixed(2)):'—'}</td>
         <td class="stat">${s.k??'—'}</td>
@@ -7296,6 +7303,7 @@ function renderContext(){
         <td><span class="pos-badge ${posClass}">${p.primaryPos||'—'}</span></td>
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
+        <td class="stat col-exp" style="text-align:right">${p.exp != null && p.exp !== '' ? p.exp : '—'}</td>
         <td class="stat">${s.ops!=null?stripLeadZero(parseFloat(s.ops).toFixed(3)):'—'}</td>
         <td class="stat">${s.avg!=null?'.'+parseFloat(s.avg).toFixed(3).split('.')[1]:'—'}</td>
         <td class="stat">${s.hr??'—'}</td>
@@ -7771,6 +7779,7 @@ function renderLeaders(){
       <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'leaders')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
       <td class="team-cell">${p.team||na}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
+      <td class="stat-cell col-exp" style="text-align:right">${p.exp != null && p.exp !== '' ? p.exp : '—'}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="yahoo-rank no-zero col-zone-divider">${p.yahoo_rank||na}</td>
       <td class="stat-cell no-zero">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(0)+'%':'0%'}</td>
@@ -9845,6 +9854,7 @@ function renderProspects(){
       <td class="team-cell">${p.team||na}</td>
       <td style="text-align:center">${_renderLevelChip(p, 'prospects')}</td>
       <td class="stat-cell">${decimalAge(p)}</td>
+      <td class="stat-cell col-exp" style="text-align:right">${p.exp != null && p.exp !== '' ? p.exp : '—'}</td>
       <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="yahoo-rank no-zero col-zone-divider">${na}</td>
       <td class="stat-cell no-zero">${na}</td>
