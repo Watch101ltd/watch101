@@ -648,6 +648,13 @@ tr.drag-over{border-top:2px solid var(--gold)}
    far left. Auto layout sizes columns by content instead, mirroring what
    already works cleanly on Prospects. */
 #pool-main-table, #leaders-main-table{table-layout:auto;}
+/* POOL_LEADERS_RANK_COL_WIDTH_V1 (May 12, 2026 — PC Walter) — pin the leftmost
+   column on Pool and Leaders to 36px so it stops absorbing leftover space
+   and creating a wide empty band on the far left of the table. Header has the
+   ↑ back-to-top arrow; body has either rank numbers (Pool when sorted) or a
+   colored rank position (Leaders). 36px fits up to 4-digit numbers cleanly. */
+#pool-main-table th.col-rank-num, #leaders-main-table th.col-rank-num,
+#pool-main-table td.col-rank-num, #leaders-main-table td.col-rank-num{width:36px;min-width:36px;max-width:36px;text-align:center}
 #pros-table-wrap thead th{background:var(--surface);position:sticky;top:0;z-index:10}
 .ctx-count-row td{background:var(--surface2);padding:5px 12px;font-family:'Nunito Sans',sans-serif;font-size:11px;border-bottom:1px solid var(--border)}
 tr.ctx-highlight td{background:#1a1200 !important}
@@ -1792,7 +1799,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <table id="pool-main-table">
           <thead id="pool-main-thead">
             <tr>
-              <th onclick="document.getElementById('pool-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
+              <th class="col-rank-num" onclick="document.getElementById('pool-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
               <!-- STATIC_ZONE_REORDER_V1 (May 7, 2026) — Pos before Player; gold divider on first dynamic col (Y!RANK). -->
               <th class="col-pos" style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
               <th class="col-player" onclick="sortPool('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="parr-name">↕</span></th>
@@ -1947,7 +1954,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <table id="leaders-main-table">
           <thead id="leaders-main-thead">
             <tr>
-              <th onclick="document.getElementById('leaders-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
+              <th class="col-rank-num" onclick="document.getElementById('leaders-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
               <!-- STATIC_ZONE_REORDER_V1 (May 7, 2026) — Pos before Player; gold divider on first dynamic col (Y!RANK). -->
               <th class="col-pos" style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
               <th class="col-player" onclick="sortLeaders('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="larr-name">↕</span></th>
@@ -6851,7 +6858,7 @@ function renderPool(){
     // MAJORS_VS_MINORS_V1 — flag rows showing MiLB-only stats
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
-      <td style="text-align:center;color:var(--text3);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600">${_showPoolRank ? (idx+1) : ''}</td>
+      <td class="col-rank-num" style="text-align:center;color:var(--text3);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600">${_showPoolRank ? (idx+1) : ''}</td>
       <!-- STATIC_ZONE_REORDER_V1 — Pos cell now before Player; col-zone-divider on Y!RANK. -->
       <td class="pos-cell col-pos">${posBadgesColumn(poolPositions, 'pool')}</td>
       <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'pool')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
@@ -7865,7 +7872,7 @@ function renderLeaders(){
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}" style="cursor:pointer">
       <!-- STATIC_ZONE_REORDER_V1 — Pos before Player; col-zone-divider on Y!RANK. -->
-      <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
+      <td class="col-rank-num" style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
       <td class="pos-cell col-pos">${posBadgesColumn(leaderPositions, 'leaders')}</td>
       <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'leaders')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
       <td class="team-cell col-team">${p.team||na}</td>
