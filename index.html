@@ -6329,20 +6329,40 @@ async function loadPoolPlayers(){
     // MANUAL_YAHOO_ID_STAMP_V3 — stamp manual Yahoo IDs FIRST so the lookup below
     // finds the right Yahoo record for same-name players (Max Muncy LAD vs ATH, etc.)
     stampManualYahooIds(poolPlayers);
-    // Apply any already-fetched Yahoo data to pool players
-    // DUPLICATE_NAME_FIX_V2 (April 25, 2026) — mlb_id PRIORITY here too.
-    // Same flaw as applyYahoo() — name lookup ran first and won for duplicate
-    // names. Flipped order plus the cross-id-mismatch guard.
+    // POOL_REGISTRY_YAHOO_MERGE_V1 (May 12, 2026 — PC Walter) — rewrote the inline
+    // Yahoo merge to use the registry path (mirrors applyYahoo() at line 3160).
+    //
+    // ROOT CAUSE OF THE CATCHER DH-ONLY BUG: the old inline merge tried
+    // yahooDataByMlbId[p.mlb_id] (real MLBAM) which always fails because Yahoo's
+    // file keys are Yahoo's internal player ID misnamed as 'mlb_id'. So it fell
+    // through to the name lookup, found the right Yahoo record by name, then
+    // the cross-id-mismatch guard killed the merge (real MLBAM != Yahoo internal
+    // ID by design). Result: catchers like Gary Sánchez, Moisés Ballesteros,
+    // Adrian Del Castillo, Iván Herrera — all not on the watchlist — had no
+    // Yahoo data applied and fell through to primaryPos = 'DH' from MLB Stats API.
+    //
+    // FIX: use the same registry path that applyYahoo() does — look up the
+    // tracker player's mlb_id in registryByMlbam, get their yahoo_player_id,
+    // use THAT to look up the Yahoo record. ID-to-ID, no guard needed.
     if(Object.keys(yahooDataByMlbId).length > 0 || Object.keys(yahooDataByName).length > 0){
       poolPlayers.forEach(p => {
-        // Manual Yahoo ID stamp (V3) — check first so same-name players resolve correctly
-        const yp = (p._manual_yahoo_id && yahooDataByMlbId[p._manual_yahoo_id])
-               || (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
-               || yahooDataByName[normalize(p.name||'')]
-               || yahooDataByName[normalizeName(p.name||'')];
+        let yp = null;
+        // Preferred path — registry mlb_id → yid → Yahoo record (ID-to-ID, no guard)
+        const regRow = _registryRowFor(p);
+        if(regRow && regRow.yid){
+          yp = yahooDataByMlbId[String(regRow.yid)];
+        }
+        // Legacy fallback for players not in the registry — preserves the old
+        // multi-path lookup with the cross-id-mismatch guard for duplicate-name
+        // protection (manual Yahoo ID stamps bypass the guard intentionally).
+        if(!yp){
+          yp = (p._manual_yahoo_id && yahooDataByMlbId[p._manual_yahoo_id])
+            || (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
+            || yahooDataByName[normalize(p.name||'')]
+            || yahooDataByName[normalizeName(p.name||'')];
+          if(yp && !p._manual_yahoo_id && yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) yp = null;
+        }
         if(!yp) return;
-        // Skip the cross-id-mismatch guard when a manual stamp is in play (intentional mismatch)
-        if(!p._manual_yahoo_id && yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) return;
         if(yp.yahoo_rank != null) p.yahoo_rank = yp.yahoo_rank;
         if(yp.roster_pct != null) p.roster_pct = yp.roster_pct;
         if(yp.preseason_rank != null) p.preseason_rank = yp.preseason_rank;
