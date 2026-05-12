@@ -6366,7 +6366,20 @@ async function loadPoolPlayers(){
         if(yp.yahoo_rank != null) p.yahoo_rank = yp.yahoo_rank;
         if(yp.roster_pct != null) p.roster_pct = yp.roster_pct;
         if(yp.preseason_rank != null) p.preseason_rank = yp.preseason_rank;
-        if(yp.eligible_positions && yp.eligible_positions.length > 0) p.eligible_positions = yp.eligible_positions;
+        if(yp.eligible_positions && yp.eligible_positions.length > 0){
+          p.eligible_positions = yp.eligible_positions;
+          // POSITIONS_FIELD_FIX_V1 (May 12, 2026 — PC Walter) — ALSO write to
+          // p.positions, not just p.eligible_positions. Reason: loadAllPoolStats()
+          // at line ~6513 backfills `p.positions = [p.primaryPos]` for any player
+          // whose positions field is empty (needed by mergeSavant's isPitcher
+          // call). If we only set eligible_positions, that backfill stamps
+          // ['DH'] on top of every catcher / 1B / etc. because MLB Stats API
+          // reports their primaryPos as 'DH' when they're DHing right now —
+          // and the renderer prefers p.positions over p.eligible_positions,
+          // so the DH stamp wins. Writing both fields here means the backfill
+          // is skipped and the real Yahoo eligibility comes through.
+          p.positions = yp.eligible_positions;
+        }
         if(yp.pitcher_type) p.pitcher_type = yp.pitcher_type;
         if(yp.injury_status !== undefined) p.injury_status = yp.injury_status;
       });
