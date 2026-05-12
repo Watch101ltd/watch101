@@ -337,7 +337,7 @@ tr.row-minor-stats td.yahoo-rank * {
 .pos-1B,.pos-3B{background:#1a3a1a;color:#86efac;border:1px solid #166534}
 .pos-2B,.pos-SS{background:#1a2a3a;color:#7dd3fc;border:1px solid #0369a1}
 .pos-OF{background:#3a2a0a;color:#fcd34d;border:1px solid #92400e}
-.pos-DH{background:#2a1a1a;color:#fca5a5;border:1px solid #7f1d1d}
+.pos-DH{background:#3a2e0a;color:#fde047;border:1px solid #a16207}                 /* DH — gold (DH_ONLY_RESCUE_V1 May 12, 2026 — shown only for DH-only players) */
 .pos-P{background:#1e3a5f;color:#60a5fa;border:1px solid #1e40af}
 .injury-badge{display:inline-block;font-size:8px;font-family:'Nunito Sans',sans-serif;font-weight:700;padding:1px 3px;border-radius:2px;letter-spacing:0.03em;flex-shrink:0}
 .injury-il10{background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444}
@@ -435,7 +435,7 @@ body.day-mode .pos-C{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
 body.day-mode .pos-1B,body.day-mode .pos-3B{background:#dcfce7;color:#166534;border:1px solid #86efac}
 body.day-mode .pos-2B,body.day-mode .pos-SS{background:#cffafe;color:#0c4a6e;border:1px solid #7dd3fc}
 body.day-mode .pos-OF{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
-body.day-mode .pos-DH{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+body.day-mode .pos-DH{background:#fef9c3;color:#854d0e;border:1px solid #facc15}    /* DH — gold (DH_ONLY_RESCUE_V1 May 12, 2026) */
 body.day-mode .pos-P{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
 body.day-mode .injury-il10{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
 body.day-mode .injury-il60{background:#fecaca;color:#7f1d1d;border:1px solid #f87171}
@@ -3927,6 +3927,13 @@ function normalizePositions(positions){
     return p;
   });
   const allowed = mapped.filter(p => DISPLAY_POSITIONS.includes(p));
+  // DH_ONLY_RESCUE_V1 (May 12, 2026 — PC Walter) — if the whitelist filter produced
+  // an empty result but the player's original positions include DH, give them a
+  // single 'DH' badge so DH-only hitters (Schwarber, Yordan Alvarez, etc.) don't
+  // show an em-dash in the Pos column. Players with any other eligibility keep
+  // their normal badges and stay DH-free, since DH isn't a useful fantasy slot
+  // for them anyway.
+  if(allowed.length === 0 && mapped.includes('DH')) return ['DH'];
   return [...new Set(allowed)];
 }
 function posBadges(positions){
