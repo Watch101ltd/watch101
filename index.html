@@ -8902,6 +8902,30 @@ async function loadProspects(){
   tableWrap.style.display = 'none';
 
   try {
+    // PROSPECT_TEAM_RESOLVE_V1 (May 12, 2026) — fix missing TEAM column on the
+    // prospects page. MLB Stats API's /sports/{id}/players endpoint silently
+    // ignores the hydrate=currentTeam parameter — player records come back
+    // with just {currentTeam: {id, link}}, no abbreviation, no parentOrgId,
+    // no name. So the old "ct.parentOrgId ? orgIdToAbbr(...) : ''" lookup
+    // always returned empty, and every prospect's TEAM column rendered as
+    // em-dash. Solution: one extra API call to /teams?sportIds=11,12,13
+    // returns ALL 90 minor-league teams WITH their parentOrgId, and we
+    // build a minor-team-id -> parent-MLB-abbr map. Then mapPlayer looks
+    // up ct.id against that map.
+    const MINOR_TEAM_TO_PARENT_ABBR = {};
+    try {
+      const teamsRes = await fetch('https://statsapi.mlb.com/api/v1/teams?sportIds=11,12,13&season=2026&activeStatus=Active');
+      const teamsData = await teamsRes.json();
+      (teamsData.teams || []).forEach(t => {
+        if(t.id && t.parentOrgId) {
+          const abbr = orgIdToAbbr(t.parentOrgId);
+          if(abbr) MINOR_TEAM_TO_PARENT_ABBR[t.id] = abbr;
+        }
+      });
+    } catch(e) {
+      console.warn('PROSPECT_TEAM_RESOLVE_V1: minor-team fetch failed, falling back to em-dashes', e);
+    }
+
     // Fetch AAA (sportId=11), AA (sportId=12), A (sportId=13) players
     const [aaaRes, aaRes, aRes] = await Promise.all([
       fetch('https://statsapi.mlb.com/api/v1/sports/11/players?season=2026&gameType=R&hydrate=currentTeam'),
@@ -8914,8 +8938,15 @@ async function loadProspects(){
       // For prospects we want the MLB parent org (PHI, NYY, LAD), not the
       // minor-league club (like IRN). Fall back to minor-league abbr if parent
       // isn't resolvable.
+      // PROSPECT_TEAM_RESOLVE_V1: lookup chain is now (1) parentOrgId on the
+      // player record if present, then (2) the MINOR_TEAM_TO_PARENT_ABBR map
+      // built above keyed off ct.id, then (3) minor-league abbreviation, then
+      // em-dash. In practice MLB no longer hydrates parentOrgId so path (2)
+      // is what does the work for ~all prospects.
       const ct = p.currentTeam || {};
-      const parentAbbr = ct.parentOrgId ? (orgIdToAbbr(ct.parentOrgId) || '') : '';
+      const parentAbbr =
+        (ct.parentOrgId ? (orgIdToAbbr(ct.parentOrgId) || '') : '') ||
+        (ct.id ? (MINOR_TEAM_TO_PARENT_ABBR[ct.id] || '') : '');
       return {
         mlb_id: p.id,
         name: p.fullName,
