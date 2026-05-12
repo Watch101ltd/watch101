@@ -1405,7 +1405,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     <option value="RP">Relief Pitcher</option>
     <option value="SAVE_THREAT">Save Threats</option>
     <option value="SPEEDSTER">Speedsters</option>
-    <option value="SLEEPER">Sleepers (under 25%)</option>
+    <option value="SLEEPER">Low Roster (Under 20%)</option>
     <option value="UNDER25">Under 25</option>
   </select>
   <!-- MULTILIST_V1 — list switcher + info button MOVED to header (LIST_PICKER_HEADER_V2, May 12, 2026) -->
@@ -1713,9 +1713,10 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <option value="RP">Relief Pitcher</option>
         <option value="SAVE_THREAT">Save Threats</option>
         <option value="SPEEDSTER">Speedsters</option>
-        <option value="SLEEPER">Sleepers (under 25%)</option>
+        <option value="SLEEPER">Low Roster (Under 20%)</option>
         <option value="UNDER25">Under 25</option>
         <option value="QUALIFIED">Qualified Hitters</option>
+        <option value="QUALIFIED_P">Qualified Pitchers</option>
       </select>
       <button class="filter-tab" id="pool-adv-tab" onclick="togglePoolAdvancedMode(this)">⚡ Advanced</button>
       <span id="pool-cluster-chip" onclick="sortPoolByPos(poolClusterByPos, event)" title="Click to exit position-cluster sort"></span>
@@ -1889,9 +1890,10 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <option value="RP">Relief Pitcher</option>
         <option value="SAVE_THREAT">Save Threats</option>
         <option value="SPEEDSTER">Speedsters</option>
-        <option value="SLEEPER">Sleepers (under 25%)</option>
+        <option value="SLEEPER">Low Roster (Under 20%)</option>
         <option value="UNDER25">Under 25</option>
         <option value="QUALIFIED">Qualified Hitters</option>
+        <option value="QUALIFIED_P">Qualified Pitchers</option>
       </select>
       <span id="leaders-cluster-chip" onclick="sortLeadersByPos(leadersClusterByPos, event)" title="Click to exit position-cluster sort"></span>
       <div class="pool-status" id="leaders-status">Loading players...</div>
@@ -2376,15 +2378,30 @@ function speedstersThreshold(){
 function speedstersLabel(){
   return 'Speedsters (' + speedstersThreshold() + '+ SB)';
 }
+// QUALIFIED_PITCHERS_V1 (May 12, 2026) — Matt's "third of an inning per game"
+// rule, locked in May 11 meeting. Floor at 5 IP so April isn't a ghost-town,
+// cap at 162 to match the full-season worst case. Independent of date range
+// because the IP number on a player record is season-to-date by default.
+function qualifiedPitchersThreshold(){
+  return Math.max(5, Math.min(162, Math.floor(_daysSinceOpeningDay() / 3)));
+}
+function qualifiedPitchersLabel(){
+  var base = 'Qualified Pitchers (' + qualifiedPitchersThreshold() + '+ IP)';
+  if(typeof dateRange !== 'undefined' && dateRange !== 'season') base += ' — Season only';
+  return base;
+}
 function _wireAutoScaleFilterLabels(){
   try {
     var qhLabel = qualifiedHittersLabel();
+    var qpLabel = qualifiedPitchersLabel();
     var spLabel = speedstersLabel();
     ['pool-player-filter','leaders-player-filter'].forEach(function(id){
       var sel = document.getElementById(id);
       if(!sel) return;
       var qh = sel.querySelector('option[value="QUALIFIED"]');
       if(qh) qh.textContent = qhLabel;
+      var qp = sel.querySelector('option[value="QUALIFIED_P"]');
+      if(qp) qp.textContent = qpLabel;
       var sp = sel.querySelector('option[value="SPEEDSTER"]');
       if(sp) sp.textContent = spLabel;
     });
@@ -3735,7 +3752,11 @@ function getFiltered(){
       // season progresses — 3 is right for late April.
       list = list.filter(p => p.sb != null && p.sb >= 3);
     } else if(playerFilter === 'SLEEPER'){
-      list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
+      // LOW_ROSTER_RENAME_V1 (May 12, 2026) — was "Sleepers (under 25%)" before
+      // Matt's request to drop the word "sleeper" and tighten to 20%. The state
+      // value 'SLEEPER' stays so existing IndexedDB-stored user preferences keep
+      // working — only the label and the threshold changed.
+      list = list.filter(p => p.roster_pct != null && p.roster_pct < 20);
     } else if(playerFilter === 'UNDER25'){
       list = list.filter(p => p.age != null && p.age < 25);
     }
@@ -6547,7 +6568,18 @@ function renderPool(){
       var _spMin = speedstersThreshold();
       list = list.filter(p => p.sb != null && p.sb >= _spMin);
     } else if(poolPlayerFilter === 'SLEEPER'){
-      list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
+      // LOW_ROSTER_RENAME_V1 (May 12, 2026) — was "Sleepers (under 25%)".
+      list = list.filter(p => p.roster_pct != null && p.roster_pct < 20);
+    } else if(poolPlayerFilter === 'QUALIFIED_P'){
+      // QUALIFIED_PITCHERS_V1 (May 12, 2026) — Matt's request. Dynamic
+      // threshold: 0.33 IP per team game played so far. Floor of 5 IP keeps
+      // it meaningful in early April. Filters out hitters entirely.
+      if(typeof dateRange !== 'undefined' && dateRange === 'season'){
+        var _qpMin = qualifiedPitchersThreshold();
+        list = list.filter(p => isPitcher(p) && (parseFloat(p.ip)||0) >= _qpMin);
+      } else {
+        list = list.filter(p => isPitcher(p));
+      }
     } else if(poolPlayerFilter === 'UNDER25'){
       list = list.filter(p => p.age != null && p.age < 25);
     } else if(poolPlayerFilter === 'QUALIFIED'){
@@ -7593,7 +7625,17 @@ function renderLeaders(){
       var _spMinL = speedstersThreshold();
       list = list.filter(p => p.sb != null && p.sb >= _spMinL);
     } else if(leadersPlayerFilter === 'SLEEPER'){
-      list = list.filter(p => p.roster_pct != null && p.roster_pct < 25);
+      // LOW_ROSTER_RENAME_V1 (May 12, 2026) — was "Sleepers (under 25%)".
+      list = list.filter(p => p.roster_pct != null && p.roster_pct < 20);
+    } else if(leadersPlayerFilter === 'QUALIFIED_P'){
+      // QUALIFIED_PITCHERS_V1 (May 12, 2026) — Matt's request. Dynamic
+      // threshold: 0.33 IP per team game played so far. Floor of 5 IP.
+      if(typeof dateRange !== 'undefined' && dateRange === 'season'){
+        var _qpMinL = qualifiedPitchersThreshold();
+        list = list.filter(p => isPitcher(p) && (parseFloat(p.ip)||0) >= _qpMinL);
+      } else {
+        list = list.filter(p => isPitcher(p));
+      }
     } else if(leadersPlayerFilter === 'UNDER25'){
       list = list.filter(p => p.age != null && p.age < 25);
     } else if(leadersPlayerFilter === 'QUALIFIED'){
