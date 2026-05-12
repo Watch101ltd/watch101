@@ -147,11 +147,22 @@ th.sorted .sort-arrow{opacity:1;color:var(--gold)}
 #main-table td.col-priority.pr-8{color:#5ac8fa}    /* Light blue */
 #main-table td.col-priority.pr-9{color:#3da5ff}    /* Sky blue */
 #main-table td.col-priority.pr-10{color:#007aff}   /* Deep blue — lowest priority */
-#main-table th.col-pos{width:56px}                         /* Pos (inline width:56px overrides) */
-#main-table th.col-team{width:30px}                        /* Team */
-#main-table th.col-age{width:26px}                         /* Age */
-#main-table th.col-exp{width:30px}                         /* EXP placeholder */
-#main-table th.col-bt{width:24px}                          /* B/T */
+/* STATIC_ZONE_WIDTHS_V2 (May 12, 2026 — PC Walter) — extended the col-pos/col-team/col-age/col-exp/col-bt width rules
+   from #main-table only to also cover #pool-main-table, #leaders-main-table, and #pros-main-table.
+   Root cause of the long-running alignment bug: only #main-table had width rules on the static-zone columns,
+   so the other three tables had auto-sized columns with headers floating around. Same widths as the Watchlist
+   (which the Dude likes) — no new numbers invented. Also added col-lvl rule for the Prospects-only LVL column. */
+#main-table th.col-pos, #pool-main-table th.col-pos, #leaders-main-table th.col-pos, #pros-main-table th.col-pos,
+#main-table td.col-pos, #pool-main-table td.col-pos, #leaders-main-table td.col-pos, #pros-main-table td.col-pos{width:56px}                         /* Pos (inline width:56px overrides) */
+#main-table th.col-team, #pool-main-table th.col-team, #leaders-main-table th.col-team, #pros-main-table th.col-team,
+#main-table td.col-team, #pool-main-table td.col-team, #leaders-main-table td.col-team, #pros-main-table td.col-team{width:30px}                        /* Team */
+#main-table th.col-age, #pool-main-table th.col-age, #leaders-main-table th.col-age, #pros-main-table th.col-age,
+#main-table td.col-age, #pool-main-table td.col-age, #leaders-main-table td.col-age, #pros-main-table td.col-age{width:26px}                         /* Age */
+#main-table th.col-exp, #pool-main-table th.col-exp, #leaders-main-table th.col-exp,
+#main-table td.col-exp, #pool-main-table td.col-exp, #leaders-main-table td.col-exp{width:30px}                         /* EXP placeholder */
+#main-table th.col-bt, #pool-main-table th.col-bt, #leaders-main-table th.col-bt, #pros-main-table th.col-bt,
+#main-table td.col-bt, #pool-main-table td.col-bt, #leaders-main-table td.col-bt, #pros-main-table td.col-bt{width:24px}                          /* B/T */
+#pros-main-table th.col-lvl, #pros-main-table td.col-lvl{width:54px;text-align:center}        /* LVL (Prospects only — sized for AAA/AA/A chips plus the ↔ swap arrow on toggleable rows) */
 #main-table th.col-note{width:144px}                       /* Note (col-note class also enforces 144 below) */
 #main-table th.col-owned{width:50px}                       /* Y!OWNED */
 #main-table th.col-cbs-owned{width:50px}                   /* CBS OWNED (CBS_COLUMN_V1 2026-05-06) */
@@ -1775,12 +1786,12 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
             <tr>
               <th onclick="document.getElementById('pool-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
               <!-- STATIC_ZONE_REORDER_V1 (May 7, 2026) — Pos before Player; gold divider on first dynamic col (Y!RANK). -->
-              <th style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
-              <th onclick="sortPool('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="parr-name">↕</span></th>
-              <th onclick="sortPool('team')">Team <span class="sort-arrow" id="parr-team">↕</span></th>
-              <th onclick="sortPool('age')" title="Age">Age <span class="sort-arrow" id="parr-age">↕</span></th>
-              <th onclick="sortPool('exp')" title="Years of MLB experience (R for rookies). Placeholder column — data wiring pending.">EXP <span class="sort-arrow" id="parr-exp">↕</span></th>
-              <th onclick="sortPool('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="parr-bats">↕</span></th>
+              <th class="col-pos" style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
+              <th class="col-player" onclick="sortPool('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="parr-name">↕</span></th>
+              <th class="col-team" onclick="sortPool('team')">Team <span class="sort-arrow" id="parr-team">↕</span></th>
+              <th class="col-age" onclick="sortPool('age')" title="Age">Age <span class="sort-arrow" id="parr-age">↕</span></th>
+              <th class="col-exp" onclick="sortPool('exp')" title="Years of MLB experience (R for rookies). Placeholder column — data wiring pending.">EXP <span class="sort-arrow" id="parr-exp">↕</span></th>
+              <th class="col-bt" onclick="sortPool('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="parr-bats">↕</span></th>
               <th class="col-zone-divider" onclick="sortPool('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="parr-yahoo_rank">↕</span></span></div></th>
               <th onclick="sortPool('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="parr-roster_pct">↕</span></span></div></th>
               <th onclick="sortPool('cbs_roster_pct')" title="% Rostered on CBS Sports Fantasy. Updates weekly (vs Yahoo daily) — different signal." style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#003C7C;font-size:7px;font-weight:700;letter-spacing:0.1em">CBS</span><span>OWNED <span class="sort-arrow" id="parr-cbs_roster_pct">↕</span></span></div></th>
@@ -1930,12 +1941,12 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
             <tr>
               <th onclick="document.getElementById('leaders-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
               <!-- STATIC_ZONE_REORDER_V1 (May 7, 2026) — Pos before Player; gold divider on first dynamic col (Y!RANK). -->
-              <th style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
-              <th onclick="sortLeaders('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="larr-name">↕</span></th>
-              <th onclick="sortLeaders('team')">Team <span class="sort-arrow" id="larr-team">↕</span></th>
-              <th onclick="sortLeaders('age')" title="Age">Age <span class="sort-arrow" id="larr-age">↕</span></th>
-              <th onclick="sortLeaders('exp')" title="Years of MLB experience (R for rookies). Placeholder column — data wiring pending.">EXP <span class="sort-arrow" id="larr-exp">↕</span></th>
-              <th onclick="sortLeaders('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="larr-bats">↕</span></th>
+              <th class="col-pos" style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
+              <th class="col-player" onclick="sortLeaders('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="larr-name">↕</span></th>
+              <th class="col-team" onclick="sortLeaders('team')">Team <span class="sort-arrow" id="larr-team">↕</span></th>
+              <th class="col-age" onclick="sortLeaders('age')" title="Age">Age <span class="sort-arrow" id="larr-age">↕</span></th>
+              <th class="col-exp" onclick="sortLeaders('exp')" title="Years of MLB experience (R for rookies). Placeholder column — data wiring pending.">EXP <span class="sort-arrow" id="larr-exp">↕</span></th>
+              <th class="col-bt" onclick="sortLeaders('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="larr-bats">↕</span></th>
               <th class="col-zone-divider" onclick="sortLeaders('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="larr-yahoo_rank">↕</span></span></div></th>
               <th onclick="sortLeaders('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="larr-roster_pct">↕</span></span></div></th>
               <th onclick="sortLeaders('cbs_roster_pct')" title="% Rostered on CBS Sports Fantasy. Updates weekly (vs Yahoo daily) — different signal." style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#003C7C;font-size:7px;font-weight:700;letter-spacing:0.1em">CBS</span><span>OWNED <span class="sort-arrow" id="larr-cbs_roster_pct">↕</span></span></div></th>
@@ -2197,12 +2208,12 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
             <tr>
               <th onclick="document.getElementById('pros-rows-scroll').scrollTo({top:0,behavior:'smooth'})" title="Back to top" style="cursor:pointer" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:50%;font-size:11px;line-height:1;font-weight:700">↑</span></th>
               <!-- STATIC_ZONE_REORDER_V1 (May 7, 2026) — Pos before Player; gold divider on first dynamic col (Y!RANK). LVL stays in the static zone — for prospects it's part of identity (where they are in the minors). -->
-              <th style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
-              <th onclick="sortProspects('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="sparr-name">↕</span></th>
-              <th onclick="sortProspects('team')">Team <span class="sort-arrow" id="sparr-team">↕</span></th>
-              <th onclick="sortProspects('level')" title="Minor League Level">LVL <span class="sort-arrow" id="sparr-level">↕</span></th>
-              <th onclick="sortProspects('age')" title="Age">Age <span class="sort-arrow" id="sparr-age">↕</span></th>
-              <th onclick="sortProspects('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="sparr-bats">↕</span></th>
+              <th class="col-pos" style="cursor:default;width:56px;min-width:56px;text-align:left;padding-left:6px" title="Eligible Positions">Pos</th>
+              <th class="col-player" onclick="sortProspects('name')" style="text-align:left;width:180px;min-width:180px">Player <span class="sort-arrow" id="sparr-name">↕</span></th>
+              <th class="col-team" onclick="sortProspects('team')">Team <span class="sort-arrow" id="sparr-team">↕</span></th>
+              <th class="col-lvl" onclick="sortProspects('level')" title="Minor League Level">LVL <span class="sort-arrow" id="sparr-level">↕</span></th>
+              <th class="col-age" onclick="sortProspects('age')" title="Age">Age <span class="sort-arrow" id="sparr-age">↕</span></th>
+              <th class="col-bt" onclick="sortProspects('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="sparr-bats">↕</span></th>
               <th class="col-zone-divider" style="width:44px;cursor:default"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK</span></div></th>
               <th style="width:50px;cursor:default"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED</span></div></th>
               <th onclick="sortProspects('cbs_roster_pct')" title="% Rostered on CBS Sports Fantasy. Updates weekly. CBS tracks ~8,373 players including AAAA-bubble prospects." style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#003C7C;font-size:7px;font-weight:700;letter-spacing:0.1em">CBS</span><span>OWNED <span class="sort-arrow" id="sparr-cbs_roster_pct">↕</span></span></div></th>
@@ -6834,12 +6845,12 @@ function renderPool(){
     return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
       <td style="text-align:center;color:var(--text3);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600">${_showPoolRank ? (idx+1) : ''}</td>
       <!-- STATIC_ZONE_REORDER_V1 — Pos cell now before Player; col-zone-divider on Y!RANK. -->
-      <td class="pos-cell">${posBadgesColumn(poolPositions, 'pool')}</td>
-      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'pool')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
-      <td class="team-cell">${p.team||na}</td>
-      <td class="stat-cell">${decimalAge(p)}</td>
+      <td class="pos-cell col-pos">${posBadgesColumn(poolPositions, 'pool')}</td>
+      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'pool')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
+      <td class="team-cell col-team">${p.team||na}</td>
+      <td class="stat-cell col-age">${decimalAge(p)}</td>
       <td class="stat-cell col-exp" style="text-align:right">${p.exp != null && p.exp !== '' ? p.exp : '—'}</td>
-      <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
+      <td class="stat-cell no-zero col-bt" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="yahoo-rank no-zero col-zone-divider">${p.yahoo_rank||na}</td>
       <td class="stat-cell no-zero">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(0)+'%':'0%'}</td>
       <td class="stat-cell no-zero">${p.cbs_roster_pct!==undefined&&p.cbs_roster_pct!==null&&p.cbs_roster_pct!==''?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':'0%'}</td>
@@ -7847,12 +7858,12 @@ function renderLeaders(){
     return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}" style="cursor:pointer">
       <!-- STATIC_ZONE_REORDER_V1 — Pos before Player; col-zone-divider on Y!RANK. -->
       <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
-      <td class="pos-cell">${posBadgesColumn(leaderPositions, 'leaders')}</td>
-      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'leaders')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
-      <td class="team-cell">${p.team||na}</td>
-      <td class="stat-cell">${decimalAge(p)}</td>
+      <td class="pos-cell col-pos">${posBadgesColumn(leaderPositions, 'leaders')}</td>
+      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'leaders')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
+      <td class="team-cell col-team">${p.team||na}</td>
+      <td class="stat-cell col-age">${decimalAge(p)}</td>
       <td class="stat-cell col-exp" style="text-align:right">${p.exp != null && p.exp !== '' ? p.exp : '—'}</td>
-      <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
+      <td class="stat-cell no-zero col-bt" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="yahoo-rank no-zero col-zone-divider">${p.yahoo_rank||na}</td>
       <td class="stat-cell no-zero">${p.roster_pct!==undefined&&p.roster_pct!==null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(0)+'%':'0%'}</td>
       <td class="stat-cell no-zero">${p.cbs_roster_pct!==undefined&&p.cbs_roster_pct!==null&&p.cbs_roster_pct!==''?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':'0%'}</td>
@@ -9952,13 +9963,12 @@ function renderProspects(){
     return `<tr class="${isAdded?'already-added':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}" style="cursor:pointer">
       <!-- STATIC_ZONE_REORDER_V1 — Pos before Player; col-zone-divider on Y!RANK. -->
       <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:15px;color:${rankColor}">${i+1}</td>
-      <td class="pos-cell"><div class="pos-stack pos-one"><span class="pos-badge pos-clickable ${posClass}" onclick="sortProspectsByPos('${p.primaryPos}', event)" title="Cluster list by ${p.primaryPos}">${p.primaryPos}</span></div></td>
-      <td class="player-col"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${flameEmoji(p)}${p.name}</span></div></td>
-      <td class="team-cell">${p.team||na}</td>
-      <td style="text-align:center">${_renderLevelChip(p, 'prospects')}</td>
-      <td class="stat-cell">${decimalAge(p)}</td>
-      <td class="stat-cell col-exp" style="text-align:right">${p.exp != null && p.exp !== '' ? p.exp : '—'}</td>
-      <td class="stat-cell no-zero" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
+      <td class="pos-cell col-pos"><div class="pos-stack pos-one"><span class="pos-badge pos-clickable ${posClass}" onclick="sortProspectsByPos('${p.primaryPos}', event)" title="Cluster list by ${p.primaryPos}">${p.primaryPos}</span></div></td>
+      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${flameEmoji(p)}${p.name}</span></div></td>
+      <td class="team-cell col-team">${p.team||na}</td>
+      <td class="col-lvl" style="text-align:center">${_renderLevelChip(p, 'prospects')}</td>
+      <td class="stat-cell col-age">${decimalAge(p)}</td>
+      <td class="stat-cell no-zero col-bt" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="yahoo-rank no-zero col-zone-divider">${na}</td>
       <td class="stat-cell no-zero">${na}</td>
       <td class="stat-cell no-zero">${p.cbs_roster_pct!==undefined&&p.cbs_roster_pct!==null&&p.cbs_roster_pct!==''?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':'0%'}</td>
