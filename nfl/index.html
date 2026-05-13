@@ -209,8 +209,21 @@ table.trending tbody td{
 }
 table.trending tbody tr:hover{background:var(--surface2)}
 table.trending tbody td.rk{color:var(--text3);font-weight:800;width:30px}
-table.trending tbody td.id{font-family:monospace;color:var(--turquoise)}
-table.trending tbody td.cnt{text-align:right;color:var(--turf);font-weight:800}
+table.trending tbody td.name{color:var(--text);font-weight:800}
+table.trending tbody td.team{color:var(--text3);font-weight:600;font-size:12px;letter-spacing:0.05em}
+table.trending tbody td.age{color:var(--text3);font-size:12px;text-align:right;width:40px}
+table.trending tbody td.cnt{text-align:right;color:var(--turf);font-weight:800;width:80px}
+
+/* POS_BADGE_V1 (May 13, 2026) — small color-coded position chip.
+   Football positions: QB blue, RB green, WR orange, TE purple, DEF gray. */
+.pos-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:0.08em;margin-right:8px;font-family:'Nunito Sans',sans-serif;min-width:30px;text-align:center}
+.pos-QB{background:rgba(59,130,246,0.18);color:#60a5fa;border:1px solid #1e3a8a}
+.pos-RB{background:rgba(34,197,94,0.18);color:#4ade80;border:1px solid #166534}
+.pos-WR{background:rgba(249,115,22,0.18);color:#fb923c;border:1px solid #9a3412}
+.pos-TE{background:rgba(168,85,247,0.18);color:#c084fc;border:1px solid #6b21a8}
+.pos-DEF{background:rgba(148,163,184,0.18);color:#cbd5e1;border:1px solid #475569}
+.pos-K{background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid #92400e}
+.pos-other{background:var(--surface2);color:var(--text3);border:1px solid var(--border2)}
 
 /* ── STATUS BAR ─────────────────────────────────────────────────────────── */
 .status-bar{
@@ -267,10 +280,10 @@ table.trending tbody td.cnt{text-align:right;color:var(--turf);font-weight:800}
     <h2>Trending Adds (Last 24 Hours)</h2>
     <table class="trending">
       <thead>
-        <tr><th>Rk</th><th>Player ID</th><th style="text-align:right">Adds</th></tr>
+        <tr><th>Rk</th><th>Player</th><th>Team</th><th style="text-align:right">Age</th><th style="text-align:right">Adds</th></tr>
       </thead>
       <tbody id="trending-body">
-        <tr><td colspan="3" style="color:var(--text3);padding:1rem 0">Loading trending adds…</td></tr>
+        <tr><td colspan="5" style="color:var(--text3);padding:1rem 0">Loading trending adds…</td></tr>
       </tbody>
     </table>
     <div id="trending-status" class="status-bar"></div>
@@ -343,29 +356,86 @@ async function loadSeasonState(){
   }
 }
 
+// ── /sleeper/players (full DB cache) ─────────────────────────────────────────
+// Fetched once per page load; ~5MB; held in memory for the session.
+// Subsequent refreshes re-use this cache so we don't re-pay the 5MB cost
+// on every Refresh button click.
+let _playerDB = null;
+let _playerDBPromise = null;
+
+async function loadPlayers(){
+  if(_playerDB) return _playerDB;
+  if(_playerDBPromise) return _playerDBPromise;  // already in-flight, share
+
+  _playerDBPromise = (async () => {
+    const res = await fetch(`${SERVER_URL}/sleeper/players`);
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    _playerDB = data;
+    return data;
+  })();
+
+  return _playerDBPromise;
+}
+
+// Map a Sleeper player record to the cell content we want to show.
+// Returns { name, team, pos, age } — strings, with '—' for missing fields.
+function _summarizePlayer(p){
+  if(!p) return {name:'(unknown)', team:'—', pos:'?', age:'—'};
+  // Defenses come back as full team objects — first_name/last_name aren't there.
+  // For team defenses Sleeper sets position='DEF' and full_name = "Team Defense".
+  const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
+  return {
+    name,
+    team: p.team || '—',
+    pos:  p.position || '?',
+    age:  (p.age != null) ? String(p.age) : '—'
+  };
+}
+
+// Position class for the badge — falls back to "other" for anything unexpected.
+function _posClass(pos){
+  if(!pos) return 'pos-other';
+  const known = ['QB','RB','WR','TE','DEF','K'];
+  return known.includes(pos) ? `pos-${pos}` : 'pos-other';
+}
+
 // ── /sleeper/trending ────────────────────────────────────────────────────────
 async function loadTrending(){
   const bodyEl   = document.getElementById('trending-body');
   const statusEl = document.getElementById('trending-status');
-  statusEl.textContent = 'Fetching from server…';
+  statusEl.textContent = 'Fetching trending list + player DB…';
   statusEl.className = 'status-bar';
   try{
-    const res = await fetch(`${SERVER_URL}/sleeper/trending?limit=10&hours=24`);
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const rows = (data.trending || []).map((t,i) => `
-      <tr>
-        <td class="rk">${i+1}</td>
-        <td class="id">${t.player_id}</td>
-        <td class="cnt">${fmtNumber(t.count)}</td>
-      </tr>
-    `).join('');
-    bodyEl.innerHTML = rows || '<tr><td colspan="3" style="color:var(--text3);padding:1rem 0">No trending data.</td></tr>';
-    statusEl.textContent = `OK — ${data.trending?.length || 0} players, lookback ${data.lookback_hours}h, fetched ${nowStamp()}`;
+    // Fetch trending and player DB in parallel — both can run concurrently.
+    const [trendRes, players] = await Promise.all([
+      fetch(`${SERVER_URL}/sleeper/trending?limit=10&hours=24`),
+      loadPlayers()
+    ]);
+    if(!trendRes.ok) throw new Error(`HTTP ${trendRes.status}`);
+    const data = await trendRes.json();
+
+    const rows = (data.trending || []).map((t,i) => {
+      const p = players[t.player_id];
+      const s = _summarizePlayer(p);
+      const posBadge = `<span class="pos-badge ${_posClass(s.pos)}">${s.pos}</span>`;
+      return `
+        <tr>
+          <td class="rk">${i+1}</td>
+          <td class="name">${posBadge}${s.name}</td>
+          <td class="team">${s.team}</td>
+          <td class="age">${s.age}</td>
+          <td class="cnt">${fmtNumber(t.count)}</td>
+        </tr>
+      `;
+    }).join('');
+    bodyEl.innerHTML = rows || '<tr><td colspan="5" style="color:var(--text3);padding:1rem 0">No trending data.</td></tr>';
+    const dbSize = Object.keys(players).length;
+    statusEl.textContent = `OK — ${data.trending?.length || 0} players from trending, ${dbSize.toLocaleString()} players in DB, fetched ${nowStamp()}`;
     statusEl.className = 'status-bar ok';
     return true;
   }catch(e){
-    bodyEl.innerHTML = '<tr><td colspan="3" style="color:var(--text3);padding:1rem 0">Could not load trending adds.</td></tr>';
+    bodyEl.innerHTML = '<tr><td colspan="5" style="color:var(--text3);padding:1rem 0">Could not load trending adds.</td></tr>';
     statusEl.textContent = `Error: ${e.message}`;
     statusEl.className = 'status-bar error';
     return false;
