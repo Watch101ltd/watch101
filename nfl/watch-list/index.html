@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Watch 101 NFL — Watch List</title>
+<!--
+  WATCH101 NFL — WATCH LIST V0 (2026-05-13)
+  ============================================================================
+  First baseball-style watch list page for football. Inspired by baseball's
+  v89 (April 14, 2026) structural pattern: header + search-by-name + table.
+
+  What this page does:
+    - Loads the Sleeper player DB from /sleeper/players (cached)
+    - Loads season totals from /sleeper/stats/season/2024 (cached)
+    - User types a player name -> autocomplete dropdown of matches
+    - Click a result -> player joins the watch list table below
+    - Click "remove" on a table row -> player leaves the list
+    - Click "Save" -> list persists to browser localStorage
+
+  What this page does NOT do (yet):
+    - Yahoo Rank / % Owned columns (no /yahoo/players endpoint yet)
+    - Server-side persistence to NAS (localStorage only for v0)
+    - Player Pool bulk-view (separate page in future)
+    - Save-to-Excel
+============================================================================
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bowlby+One&family=Nunito+Sans:wght@400;600;700;800;900&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0d1117;
+  --surface:#161b22;
+  --surface2:#1f2731;
+  --surface3:#2d3744;
+  --text:#e6edf3;
+  --text2:#cbd5e1;
+  --text3:#8b96a3;
+  --turf:#a16207;         /* football brown */
+  --turf-bright:#d97706;
+  --field:#15803d;        /* football green */
+  --field-bright:#22c55e;
+  --baseball-red:#dc2626;
+  --basketball-orange:#ea580c;
+  --border:#30363d;
+}
+
+html,body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif;min-height:100vh}
+
+/* ── Header ── */
+.header{
+  background:linear-gradient(135deg,#0d1117 0%,#1a2030 50%,#0d1117 100%);
+  border-bottom:1px solid var(--turf);
+  padding:1rem 1.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.logo-wrap{display:flex;align-items:baseline;gap:14px}
+.logo{
+  font-family:'Bowlby One',sans-serif;
+  font-size:28px;letter-spacing:0.04em;line-height:1;
+}
+.logo .logo-watch{color:#ffffff}
+.logo .logo-101{color:var(--turf-bright)}
+.logo .logo-nfl{color:var(--field-bright)}
+.logo-sub{
+  font-family:'Nunito Sans',sans-serif;font-size:11px;letter-spacing:0.25em;
+  color:var(--text3);text-transform:uppercase;font-weight:700;
+}
+.header-right{display:flex;align-items:center;gap:14px}
+.back-link{
+  color:var(--text3);text-decoration:none;font-size:12px;
+  letter-spacing:0.08em;text-transform:uppercase;font-weight:700;
+  padding:6px 12px;border-radius:5px;border:1px solid var(--border);
+}
+.back-link:hover{color:var(--text);border-color:var(--turf)}
+.cross-sport-nav{display:flex;gap:8px;align-items:center}
+.logo-mini{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bowlby One',sans-serif;font-size:11px;
+  text-decoration:none;
+}
+.logo-mini.mlb{background:var(--baseball-red);color:#ffffff}
+.logo-mini.nba{background:var(--basketball-orange);color:#ffffff;opacity:0.5;cursor:not-allowed}
+
+/* ── Toolbar ── */
+.toolbar{
+  padding:0.75rem 1.5rem;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.search-wrap{position:relative;flex:1;min-width:280px;max-width:480px}
+.search-input{
+  width:100%;background:var(--surface2);
+  border:1px solid var(--border);border-radius:6px;
+  padding:9px 14px 9px 36px;font-size:14px;color:var(--text);
+  font-family:'Nunito Sans',sans-serif;outline:none;
+}
+.search-input:focus{border-color:var(--turf-bright)}
+.search-input::placeholder{color:var(--text3)}
+.search-icon{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  color:var(--text3);font-size:14px;pointer-events:none;
+}
+.search-results{
+  position:absolute;top:100%;left:0;right:0;background:var(--surface2);
+  border:1px solid var(--border);border-radius:6px;margin-top:4px;z-index:50;
+  max-height:300px;overflow-y:auto;display:none;
+  box-shadow:0 8px 24px rgba(0,0,0,0.5);
+}
+.search-results.open{display:block}
+.search-result-item{
+  padding:10px 14px;cursor:pointer;
+  border-bottom:1px solid var(--border);
+  transition:background 0.1s;
+  display:flex;align-items:center;gap:8px;
+}
+.search-result-item:hover{background:var(--surface3)}
+.search-result-item:last-child{border-bottom:none}
+.search-result-item.already-on-list{opacity:0.4;cursor:not-allowed}
+.sri-name{font-size:14px;font-weight:700;color:var(--text);flex:1}
+.sri-meta{font-size:11px;color:var(--text3);font-weight:600}
+.toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.count-badge{
+  font-size:12px;color:var(--text3);background:var(--surface2);
+  border:1px solid var(--border);padding:6px 12px;border-radius:5px;
+  font-weight:700;letter-spacing:0.05em;
+}
+.btn{
+  padding:7px 14px;border-radius:6px;font-size:12px;
+  font-family:'Nunito Sans',sans-serif;font-weight:800;
+  cursor:pointer;border:1px solid;transition:all 0.15s;
+  letter-spacing:0.06em;text-transform:uppercase;
+}
+.btn-turf{background:var(--turf);color:#0d1117;border-color:var(--turf-bright)}
+.btn-turf:hover{background:var(--turf-bright)}
+.btn-outline{background:transparent;color:var(--text2);border-color:var(--border)}
+.btn-outline:hover{background:var(--surface2);color:var(--text);border-color:var(--text3)}
+.btn-red{background:transparent;color:var(--baseball-red);border-color:#7f1d1d}
+.btn-red:hover{background:#7f1d1d22;border-color:var(--baseball-red)}
+
+/* ── Status bar ── */
+.status-bar{
+  padding:0.6rem 1.5rem;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  font-size:12px;color:var(--text3);font-weight:600;
+}
+
+/* ── Table ── */
+.table-wrap{padding:1rem 1.5rem 4rem;overflow-x:auto}
+table.watch-list{
+  width:100%;border-collapse:separate;border-spacing:0;
+  min-width:900px;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+table.watch-list thead th{
+  padding:10px 8px;text-align:right;
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;
+  letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--text3);background:var(--surface2);
+  border-bottom:2px solid var(--turf);
+  white-space:nowrap;
+}
+table.watch-list thead th.left{text-align:left}
+table.watch-list thead th:nth-child(1){width:50px;text-align:center}
+table.watch-list thead th:nth-child(2){text-align:left}
+table.watch-list thead th:nth-child(3){width:60px}
+table.watch-list thead th:nth-child(4){width:50px}
+table.watch-list thead th:nth-child(5){width:70px}
+table.watch-list thead th:nth-child(6),
+table.watch-list thead th:nth-child(7),
+table.watch-list thead th:nth-child(8),
+table.watch-list thead th:nth-child(9),
+table.watch-list thead th:nth-child(10),
+table.watch-list thead th:nth-child(11),
+table.watch-list thead th:nth-child(12){width:60px}
+table.watch-list thead th:last-child{width:80px;text-align:center}
+table.watch-list tbody td{
+  padding:10px 8px;font-size:13px;text-align:right;
+  border-bottom:1px solid var(--border);vertical-align:middle;
+  white-space:nowrap;
+}
+table.watch-list tbody td.center{text-align:center}
+table.watch-list tbody td.left{text-align:left}
+table.watch-list tbody tr:hover{background:var(--surface2)}
+table.watch-list tbody tr:last-child td{border-bottom:none}
+.player-name{font-weight:800;color:var(--text);font-size:14px}
+.stat-cell{font-weight:700;color:var(--field-bright);font-family:'Nunito Sans',sans-serif}
+.stat-zero{color:var(--text3);font-weight:400}
+.pos-badge{
+  display:inline-block;padding:3px 7px;border-radius:4px;
+  font-size:10px;font-weight:800;letter-spacing:0.05em;
+}
+.pos-QB{background:#1e40af33;color:#60a5fa;border:1px solid #1e40af}
+.pos-RB{background:#15803d33;color:#4ade80;border:1px solid #15803d}
+.pos-WR{background:#c2410c33;color:#fb923c;border:1px solid #c2410c}
+.pos-TE{background:#7c3aed33;color:#c4b5fd;border:1px solid #7c3aed}
+.pos-DEF{background:#37415133;color:#9ca3af;border:1px solid #374151}
+.pos-K{background:#a1620733;color:#fbbf24;border:1px solid #a16207}
+.pos-other{background:#37415133;color:#9ca3af;border:1px solid #374151}
+
+.empty-state{
+  padding:3rem 1rem;text-align:center;color:var(--text3);
+  font-size:14px;font-weight:600;
+}
+.empty-state strong{display:block;color:var(--text2);font-size:16px;margin-bottom:0.5rem}
+
+.remove-btn{
+  background:transparent;border:1px solid #7f1d1d;color:var(--baseball-red);
+  border-radius:4px;padding:4px 10px;font-size:11px;font-weight:800;
+  cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;
+}
+.remove-btn:hover{background:#7f1d1d22;border-color:var(--baseball-red)}
+
+footer{
+  padding:1rem 1.5rem;border-top:1px solid var(--border);
+  color:var(--text3);font-size:11px;text-align:center;
+  letter-spacing:0.05em;text-transform:uppercase;font-weight:700;
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────────── -->
+<header class="header">
+  <div class="logo-wrap">
+    <div class="logo"><span class="logo-watch">WATCH</span><span class="logo-101">101</span> <span class="logo-nfl">NFL</span></div>
+    <div class="logo-sub">Watch List · 2024 Stats</div>
+  </div>
+  <div class="header-right">
+    <a class="back-link" href="../">← Back to NFL Home</a>
+    <div class="cross-sport-nav">
+      <a class="logo-mini mlb" href="https://watch101ltd.github.io/watch101/" title="Watch 101 MLB">MLB</a>
+      <span class="logo-mini nba" title="Watch 101 NBA — coming soon">NBA</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── TOOLBAR ─────────────────────────────────────────── -->
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input id="player-search" class="search-input" type="text" placeholder="Search for a player to add (e.g. 'Hurts', 'Henry')..." autocomplete="off">
+    <div id="search-results" class="search-results"></div>
+  </div>
+  <div class="toolbar-right">
+    <div class="count-badge" id="count-badge">0 players</div>
+    <button class="btn btn-turf" id="save-btn" onclick="saveList()">💾 Save</button>
+    <button class="btn btn-red" onclick="clearList()">Clear All</button>
+  </div>
+</div>
+
+<!-- ── STATUS BAR ─────────────────────────────────────── -->
+<div class="status-bar" id="status-bar">Loading player DB + 2024 season stats…</div>
+
+<!-- ── WATCH LIST TABLE ──────────────────────────────── -->
+<div class="table-wrap">
+  <table class="watch-list">
+    <thead>
+      <tr>
+        <th>Pos</th>
+        <th class="left">Player</th>
+        <th>Team</th>
+        <th>Age</th>
+        <th>FPts</th>
+        <th>PaYd</th>
+        <th>PaTD</th>
+        <th>RuYd</th>
+        <th>RuTD</th>
+        <th>Rec</th>
+        <th>ReYd</th>
+        <th>ReTD</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="watch-list-body">
+      <tr><td colspan="13" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<footer>Watch 101 NFL · Watch List V0 · Stats: Sleeper · 2024 Season Totals</footer>
+
+<!-- ── SCRIPTS ────────────────────────────────────────── -->
+<script>
+// ──────────────────────────────────────────────────────────────────────────
+// CONFIG
+// ──────────────────────────────────────────────────────────────────────────
+const SERVER_URL = 'https://nfl-nas.fantasywatch101.com';
+const STATS_YEAR = '2024';
+const LIST_STORAGE_KEY = 'watch101_nfl_watch_list_v0';
+const MAX_SEARCH_RESULTS = 12;
+
+// ──────────────────────────────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────────────────────────────
+let _playerDB = null;       // { player_id: {full_name, position, team, age, ...} }
+let _seasonStats = null;    // { player_id: {pass_yd, rush_yd, rec_yd, ...} }
+let _watchList = [];        // [player_id, player_id, ...] (ordered)
+
+// ──────────────────────────────────────────────────────────────────────────
+// LOAD DATA
+// ──────────────────────────────────────────────────────────────────────────
+async function bootstrap(){
+  const statusEl = document.getElementById('status-bar');
+  try {
+    statusEl.textContent = 'Loading Sleeper player DB…';
+    const [playersRes, statsRes] = await Promise.all([
+      fetch(SERVER_URL + '/sleeper/players'),
+      fetch(SERVER_URL + '/sleeper/stats/season/' + STATS_YEAR)
+    ]);
+    if(!playersRes.ok) throw new Error('Player DB fetch failed: HTTP ' + playersRes.status);
+    if(!statsRes.ok) throw new Error('Stats fetch failed: HTTP ' + statsRes.status);
+    _playerDB = await playersRes.json();
+    const statsPayload = await statsRes.json();
+    _seasonStats = statsPayload.stats || {};
+
+    const playerCount = Object.keys(_playerDB).length;
+    const statCount = Object.keys(_seasonStats).length;
+    statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' players with 2024 stats. Loaded ' + new Date().toLocaleTimeString() + '.';
+
+    // Restore saved watch list from localStorage
+    loadListFromStorage();
+    renderWatchList();
+  } catch(e){
+    console.error('[bootstrap]', e);
+    statusEl.textContent = '⚠️  Could not load data: ' + e.message;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// SEARCH AUTOCOMPLETE
+// ──────────────────────────────────────────────────────────────────────────
+const searchEl  = document.getElementById('player-search');
+const resultsEl = document.getElementById('search-results');
+let _searchDebounce = null;
+
+searchEl.addEventListener('input', (e) => {
+  clearTimeout(_searchDebounce);
+  _searchDebounce = setTimeout(() => renderSearchResults(e.target.value), 80);
+});
+
+searchEl.addEventListener('blur', () => {
+  // Delay so click handler on a result fires first
+  setTimeout(() => resultsEl.classList.remove('open'), 150);
+});
+
+searchEl.addEventListener('focus', () => {
+  if(searchEl.value.trim()) renderSearchResults(searchEl.value);
+});
+
+function renderSearchResults(term){
+  const t = (term || '').trim().toLowerCase();
+  if(!t || !_playerDB){
+    resultsEl.classList.remove('open');
+    return;
+  }
+  const matches = [];
+  for(const id in _playerDB){
+    const p = _playerDB[id];
+    if(!p || !p.position) continue;
+    // Only show active-ish players: must have a team (or be DEF)
+    if(p.position !== 'DEF' && !p.team) continue;
+    const name = (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
+    if(!name.includes(t)) continue;
+    matches.push({id, p});
+    if(matches.length >= MAX_SEARCH_RESULTS) break;
+  }
+  if(matches.length === 0){
+    resultsEl.innerHTML = '<div class="search-result-item"><span class="sri-meta">No matches.</span></div>';
+    resultsEl.classList.add('open');
+    return;
+  }
+  resultsEl.innerHTML = matches.map(({id, p}) => {
+    const onList = _watchList.includes(id);
+    const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
+    const pos  = p.position || '?';
+    const team = p.team || '—';
+    const age  = (p.age != null) ? String(p.age) : '—';
+    const posClass = posClassFor(pos);
+    return '<div class="search-result-item' + (onList ? ' already-on-list' : '') + '" data-player-id="' + id + '">' +
+      '<span class="pos-badge ' + posClass + '">' + pos + '</span>' +
+      '<span class="sri-name">' + escapeHtml(name) + '</span>' +
+      '<span class="sri-meta">' + team + ' · Age ' + age + (onList ? ' · already on list' : '') + '</span>' +
+    '</div>';
+  }).join('');
+  resultsEl.classList.add('open');
+}
+
+resultsEl.addEventListener('mousedown', (e) => {
+  // mousedown fires before the input's blur, so this beats the auto-close
+  const item = e.target.closest('.search-result-item');
+  if(!item || !item.dataset.playerId) return;
+  if(item.classList.contains('already-on-list')) return;
+  addPlayerToList(item.dataset.playerId);
+  searchEl.value = '';
+  resultsEl.classList.remove('open');
+  searchEl.focus();
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// WATCH LIST OPERATIONS
+// ──────────────────────────────────────────────────────────────────────────
+function addPlayerToList(playerId){
+  if(_watchList.includes(playerId)) return;
+  _watchList.push(playerId);
+  renderWatchList();
+}
+
+function removePlayerFromList(playerId){
+  _watchList = _watchList.filter(id => id !== playerId);
+  renderWatchList();
+}
+
+function clearList(){
+  if(_watchList.length === 0) return;
+  if(!confirm('Remove all ' + _watchList.length + ' players from your watch list?')) return;
+  _watchList = [];
+  renderWatchList();
+}
+
+function renderWatchList(){
+  const tbody = document.getElementById('watch-list-body');
+  const countEl = document.getElementById('count-badge');
+  countEl.textContent = _watchList.length + (_watchList.length === 1 ? ' player' : ' players');
+
+  if(_watchList.length === 0){
+    tbody.innerHTML = '<tr><td colspan="13" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = _watchList.map(pid => {
+    const p = (_playerDB && _playerDB[pid]) || null;
+    const s = (_seasonStats && _seasonStats[pid]) || {};
+    if(!p){
+      return '<tr>' +
+        '<td colspan="12" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
+        '<td class="center"><button class="remove-btn" onclick="removePlayerFromList(' + JSON.stringify(pid) + ')">Remove</button></td>' +
+      '</tr>';
+    }
+    const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
+    const pos  = p.position || '?';
+    const team = p.team || '—';
+    const age  = (p.age != null) ? String(p.age) : '—';
+    return '<tr>' +
+      '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
+      '<td class="left"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
+      '<td>' + team + '</td>' +
+      '<td>' + age + '</td>' +
+      '<td>' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.pass_yd) + '</td>' +
+      '<td>' + statCellOrDash(s.pass_td) + '</td>' +
+      '<td>' + statCellOrDash(s.rush_yd) + '</td>' +
+      '<td>' + statCellOrDash(s.rush_td) + '</td>' +
+      '<td>' + statCellOrDash(s.rec) + '</td>' +
+      '<td>' + statCellOrDash(s.rec_yd) + '</td>' +
+      '<td>' + statCellOrDash(s.rec_td) + '</td>' +
+      '<td class="center"><button class="remove-btn" onclick="removePlayerFromList(' + JSON.stringify(pid) + ')">Remove</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// LOCAL STORAGE PERSISTENCE
+// ──────────────────────────────────────────────────────────────────────────
+function saveList(){
+  try {
+    localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList));
+    const statusEl = document.getElementById('status-bar');
+    statusEl.textContent = '✓ Saved ' + _watchList.length + ' players to browser. (Persists between visits on this browser only — full server-side save coming soon.)';
+  } catch(e){
+    console.error('[save]', e);
+    alert('Could not save: ' + e.message);
+  }
+}
+
+function loadListFromStorage(){
+  try {
+    const raw = localStorage.getItem(LIST_STORAGE_KEY);
+    if(!raw) return;
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr)) _watchList = arr;
+  } catch(e){
+    console.warn('[loadListFromStorage]', e);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ──────────────────────────────────────────────────────────────────────────
+function posClassFor(pos){
+  const known = ['QB','RB','WR','TE','DEF','K'];
+  return known.includes(pos) ? ('pos-' + pos) : 'pos-other';
+}
+
+function statCellOrDash(val, decimals){
+  if(val == null || val === 0) return '<span class="stat-zero">—</span>';
+  const n = Number(val);
+  if(!isFinite(n)) return '<span class="stat-zero">—</span>';
+  const formatted = (decimals != null) ? n.toFixed(decimals) : Math.round(n).toLocaleString();
+  return '<span class="stat-cell">' + formatted + '</span>';
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// GO
+// ──────────────────────────────────────────────────────────────────────────
+bootstrap();
+</script>
+
+</body>
+</html>
