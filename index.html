@@ -2502,11 +2502,15 @@ const PITCHER_POS = ['SP','RP','P'];
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
 // Watch 101 NAS Server
-// NGROK_RETIREMENT_V1 (2026-05-12): switched from ngrok URL to Cloudflare Tunnel
-// hostname so GitHub Pages staging reads through the same pipe Cloudflare production
-// already uses. Old URL kept here as a comment for one rollback cycle:
-// 'https://phonic-nonreceptively-elida.ngrok-free.dev'
-const SERVER_URL = 'https://nas.fantasywatch101.com';
+// NGROK_RETIREMENT_V1 (2026-05-12): switched from ngrok URL to Cloudflare Tunnel.
+// DIAGNOSTIC_REVERT_2026-05-13 (overnight): reverted to ngrok URL temporarily to
+// confirm whether Cloudflare Access wall is the root cause of CORS errors on
+// staging (watch101ltd.github.io). If EXP column populates correctly on Pool +
+// Leaders after this revert, diagnosis is confirmed and we plan the proper
+// Cloudflare Access bypass for staging tomorrow. Once confirmed, revert this
+// revert (put Cloudflare URL back) so production stays on the migrated path.
+// Cloudflare URL was: 'https://nas.fantasywatch101.com'
+const SERVER_URL = 'https://phonic-nonreceptively-elida.ngrok-free.dev';
 
 // Cloudflare Cache Worker — sits in front of Yahoo (and MLB/Savant) to dodge rate limits.
 // Yahoo routes are refreshed twice a day (6 AM + 6 PM Eastern) by the Worker's cron.
