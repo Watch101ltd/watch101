@@ -485,7 +485,7 @@ async function bootstrap(){
     statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' players with 2024 stats.';
     setLastUpdated(new Date().toLocaleTimeString());
 
-    loadListFromStorage();
+    await loadListFromStorage();
     renderWatchList();
   } catch(e){
     console.error('[bootstrap]', e);
@@ -627,27 +627,100 @@ function renderWatchList(){
   }).join('');
 }
 
-// LOCAL STORAGE
-function saveList(){
+// LIST_PERSISTENCE_V1 (2026-05-13) - server-first save/load with localStorage fallback
+// ----------------------------------------------------------------
+// Save: uses showDirectoryPicker so the user picks their Synology-synced folder once,
+// then we write a JSON file there. Synology Drive Client syncs UP to the Synology,
+// and the NFL container picks up the file at /data/List Data/_Staging/Integrity/.
+//
+// Load: tries production endpoint first, falls back to staging endpoint, falls
+// back to localStorage. So users always see SOMETHING even if the server is down.
+// ----------------------------------------------------------------
+
+const LIST_ID = 'integrity-nfl';
+
+async function saveList(){
+  const statusEl = document.getElementById('status-bar');
+  // Fallback: still always save to localStorage so we don't lose data.
   try {
     localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList));
-    const statusEl = document.getElementById('status-bar');
-    statusEl.textContent = '✓ Saved ' + _watchList.length + ' players to browser. (Persists between visits on this browser only — full server-side save coming soon.)';
   } catch(e){
-    console.error('[save]', e);
-    alert('Could not save: ' + e.message);
+    console.warn('[saveList] localStorage save failed:', e);
+  }
+
+  // showDirectoryPicker save (the real server-side save flow).
+  if(!window.showDirectoryPicker){
+    statusEl.textContent = '⚠️ Your browser does not support folder save. Saved to localStorage only.';
+    return;
+  }
+  try {
+    // Build the JSON payload (matches baseball\'s JSON_SIDECAR shape).
+    const nowIso = new Date().toISOString();
+    const fileSafeTimestamp = nowIso.replace(/[:.]/g, '-').slice(0, 19);
+    const fileName = 'Watch101_NFL_Integrity_' + fileSafeTimestamp + '.json';
+    const payload = {
+      list_id: LIST_ID,
+      list_name: 'Watch 101 NFL - List of Integrity',
+      saved_at: nowIso,
+      saved_at_local: new Date().toLocaleString(),
+      source: 'NFL watch list tracker v1',
+      player_count: _watchList.length,
+      players: _watchList,  // array of Sleeper player_ids
+    };
+
+    statusEl.textContent = 'Pick your Synology-synced _Staging/Integrity folder...';
+    const dirHandle = await window.showDirectoryPicker({
+      id: 'watch101-nfl-save-integrity',
+      mode: 'readwrite',
+      startIn: 'documents'
+    });
+    const fileHandle = await dirHandle.getFileHandle(fileName, {create: true});
+    const writable = await fileHandle.createWritable();
+    await writable.write(new Blob(
+      [JSON.stringify(payload, null, 2)],
+      {type: 'application/json'}
+    ));
+    await writable.close();
+    statusEl.textContent = '✓ Saved ' + _watchList.length + ' players as ' + fileName + ' (Synology Drive Client will sync it up).';
+  } catch(e){
+    if(e.name === 'AbortError'){
+      statusEl.textContent = 'Save cancelled. Watch list still saved to browser localStorage.';
+    } else {
+      console.error('[saveList]', e);
+      statusEl.textContent = '⚠️ Save failed: ' + e.message + ' (still saved to browser).';
+    }
   }
 }
-function loadListFromStorage(){
+
+// Load the watch list from the NFL server, falling back to localStorage.
+async function loadListFromStorage(){
+  // Try server-side first.
+  for(const env of ['list', 'list-staging']){
+    try {
+      const res = await fetch(SERVER_URL + '/' + env + '/' + LIST_ID, {cache: 'no-cache'});
+      if(!res.ok) continue;
+      const body = await res.json();
+      const players = body && body.data && body.data.players;
+      if(Array.isArray(players) && players.length > 0){
+        _watchList = players;
+        console.log('[loadList] loaded ' + players.length + ' players from ' + env + ' (' + (body.filename || '') + ')');
+        return;
+      }
+    } catch(e){
+      console.warn('[loadList] ' + env + ' fetch failed:', e.message);
+    }
+  }
+  // localStorage fallback.
   try {
     const raw = localStorage.getItem(LIST_STORAGE_KEY);
     if(!raw) return;
     const arr = JSON.parse(raw);
     if(Array.isArray(arr)) _watchList = arr;
   } catch(e){
-    console.warn('[loadListFromStorage]', e);
+    console.warn('[loadListFromStorage] localStorage fallback failed:', e);
   }
 }
+// ── /LIST_PERSISTENCE_V1 ──────────────────────────────────────────────────
 
 // HELPERS
 function posClassFor(pos){
