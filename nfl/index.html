@@ -291,19 +291,33 @@ table.watch-list thead th{
   white-space:nowrap;
 }
 table.watch-list thead th.left{text-align:left}
-table.watch-list thead th:nth-child(1){width:50px;text-align:center}
-table.watch-list thead th:nth-child(2){text-align:left}
-table.watch-list thead th:nth-child(3){width:60px}
-table.watch-list thead th:nth-child(4){width:50px}
-table.watch-list thead th:nth-child(5){width:70px}
-table.watch-list thead th:nth-child(6),
-table.watch-list thead th:nth-child(7),
-table.watch-list thead th:nth-child(8),
-table.watch-list thead th:nth-child(9),
-table.watch-list thead th:nth-child(10),
-table.watch-list thead th:nth-child(11),
-table.watch-list thead th:nth-child(12){width:60px}
-table.watch-list thead th:last-child{width:80px;text-align:center}
+/* PLAYER_POOL_21COL_V1 - column-width rules for the 23-column football watch list */
+table.watch-list{min-width:1700px}
+table.watch-list thead th.col-handle{width:24px;text-align:center;color:var(--text3)}
+table.watch-list thead th.col-rank{width:42px;text-align:right}
+table.watch-list thead th.col-pos{width:50px;text-align:center}
+table.watch-list thead th.col-player{text-align:left;min-width:160px}
+table.watch-list thead th.col-team{width:50px}
+table.watch-list thead th.col-age{width:42px}
+table.watch-list thead th.col-exp{width:42px}
+table.watch-list thead th.col-delta{width:46px}
+table.watch-list thead th.col-type{width:54px}
+table.watch-list thead th.col-priority{width:60px}
+table.watch-list thead th.col-note{width:80px;text-align:left}
+table.watch-list thead th.col-yrank{width:54px}
+table.watch-list thead th.col-yowned{width:60px}
+table.watch-list thead th.col-cbsowned{width:68px}
+table.watch-list thead th.col-stat{width:54px}
+table.watch-list thead th.col-action{width:80px;text-align:center}
+table.watch-list tbody td.col-handle{color:var(--text3);font-size:14px;text-align:center}
+table.watch-list tbody td.col-rank{font-weight:800;color:var(--text2);text-align:right}
+table.watch-list tbody td.placeholder{color:var(--text3)}
+table.watch-list thead th .y-prefix{color:#6001D2;font-size:8px;font-weight:800;letter-spacing:0.12em;margin-right:2px}
+table.watch-list thead th .cbs-prefix{color:#3b82f6;font-size:8px;font-weight:800;letter-spacing:0.12em;margin-right:2px}
+table.watch-list thead th .sort-arrow{opacity:0.4;font-size:9px;margin-left:2px}
+table.watch-list thead th[data-sort]{cursor:pointer;user-select:none}
+table.watch-list thead th[data-sort]:hover{color:var(--text)}
+table.watch-list thead th[data-sort]:hover .sort-arrow{opacity:0.9}
 table.watch-list tbody td{
   padding:10px 8px;font-size:13px;text-align:right;
   border-bottom:1px solid var(--border);vertical-align:middle;
@@ -554,12 +568,13 @@ function renderWatchList(){
     tbody.innerHTML = '<tr><td colspan="13" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
     return;
   }
-  tbody.innerHTML = _watchList.map(pid => {
+  tbody.innerHTML = _watchList.map((pid, idx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
     const s = (_seasonStats && _seasonStats[pid]) || {};
+    const rank = idx + 1;
     if(!p){
       return '<tr>' +
-        '<td colspan="12" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
+        '<td colspan="''' + str(TOTAL_COLS - 1) + '''" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
         '<td class="center"><button class="remove-btn" onclick="removePlayerFromList(' + JSON.stringify(pid) + ')">Remove</button></td>' +
       '</tr>';
     }
@@ -568,10 +583,20 @@ function renderWatchList(){
     const team = p.team || '—';
     const age  = (p.age != null) ? String(p.age) : '—';
     return '<tr>' +
+      '<td class="center col-handle">☰</td>' +
+      '<td class="col-rank">' + rank + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
+      '<td class="placeholder">—</td>' +
+      '<td class="placeholder">—</td>' +
+      '<td class="placeholder">—</td>' +
+      '<td class="placeholder">—</td>' +
+      '<td class="left placeholder">—</td>' +
+      '<td class="placeholder">—</td>' +
+      '<td class="placeholder">—</td>' +
+      '<td class="placeholder">—</td>' +
       '<td>' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
       '<td>' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td>' + statCellOrDash(s.pass_td) + '</td>' +
