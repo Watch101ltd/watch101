@@ -9760,14 +9760,51 @@ function _hasBothSamples(p){
 //   Rookie (R)         — first MLB year == current year (strict).
 //   Veteran (integer)  — last - first + 1 inclusive season count.
 function experienceLabel(p){
+  // CUP_OF_COFFEE_V2 (May 12, 2026 — the Dude's refined definition)
+  //
+  // Cup of coffee = he's playing in MLB this season but his sample is still
+  // below MLB's official rookie qualifying thresholds: 50 IP for pitchers,
+  // 130 AB for hitters. The thresholds match what MLB itself uses to define
+  // Rookie of the Year eligibility. Once a player crosses either threshold
+  // they graduate from ☕ to R (or to their integer year count if Chadwick
+  // has them as a returning vet).
+  //
+  // Why this is better than V1's _hasBothSamples() check: that helper is
+  // only populated on the Prospects tab, so it produced false negatives on
+  // Integrity / Pool / Leaders where a cup-of-coffee guy like Snelling
+  // (5 IP at MIA on 5/12) showed em-dash instead of ☕. The current-season
+  // counting stats p.ip and p.ab live directly on every player record
+  // everywhere, so this fires correctly on every tab.
+  //
+  // It also beats Chadwick's lag: Chadwick hadn't logged Snelling's MLB
+  // debut yet on 5/12 even though he had already pitched. With this logic
+  // we don't NEED Chadwick to confirm — the live current-season stats are
+  // the source of truth.
   if(!p) return '—';
-  if(_hasBothSamples(p)) return '☕';
+
+  var ip = parseFloat(p.ip) || 0;
+  var ab = parseFloat(p.ab) || 0;
+  var hasMlbAction = (ip > 0) || (ab > 0);
   var first = p.mlb_played_first;
   var last  = p.mlb_played_last;
-  if(first == null || last == null) return '—';
   var currentYear = new Date().getFullYear();
-  if(Number(first) >= currentYear) return 'R';
-  return String(Number(last) - Number(first) + 1);
+
+  // Established veteran first — Chadwick says debut was BEFORE this season.
+  // Returns inclusive season count. Checked first so guys like Mookie with
+  // only a handful of April AB still show their real year count.
+  if(first != null && last != null && Number(first) < currentYear){
+    return String(Number(last) - Number(first) + 1);
+  }
+
+  // Cup of coffee: MLB action this season but below qualifying thresholds.
+  if(hasMlbAction && ip < 50 && ab < 130) return '☕';
+
+  // Real rookie: crossed either threshold this year, OR Chadwick already
+  // has him recorded as first-year-current-season.
+  if(hasMlbAction || (first != null && Number(first) >= currentYear)) return 'R';
+
+  // No MLB activity at all and no Chadwick record → pure prospect.
+  return '—';
 }
 
 // Helper — copies the currently-active sample's stat values onto the
