@@ -821,7 +821,7 @@ document.addEventListener('click', function(e){
 let _sortField = null;    // null = use insertion order (original rank)
 let _sortDir   = 'desc';  // 'desc' or 'asc'
 
-function sortValueFor(field, p, s){
+function sortValueFor(field, p, s, pid){
   switch(field){
     case 'rank':     return null;
     case 'name':     return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
@@ -837,7 +837,7 @@ function sortValueFor(field, p, s){
     case 'reyd':     return (s.rec_yd || 0);
     case 'retd':     return (s.rec_td || 0);
     case 'priority': {
-      const idx = _wlIndexOf(p.player_id || '');
+      const idx = _wlIndexOf(pid || '');
       return (idx >= 0) ? _wlPriority(_watchList[idx]) : 0;
     }
     case 'exp':
@@ -888,13 +888,17 @@ function updateSortArrows(){
 }
 
 function getSortedWatchList(){
+  // Always extract pids from list items - items can be strings (legacy) or {pid, priority}.
+  const pids = _watchList.map(_wlPid);
   if(!_sortField || !_playerDB){
-    return _watchList.slice();
+    return pids;
   }
-  const indexed = _watchList.map((pid, idx) => {
+  const indexed = _watchList.map((item, idx) => {
+    const pid = _wlPid(item);
     const p = _playerDB[pid] || null;
     const s = (_seasonStats && _seasonStats[pid]) || {};
-    return {pid: pid, idx: idx, value: p ? sortValueFor(_sortField, p, s) : null};
+    // Pass pid as third helper arg so sortValueFor can look up priority by pid (not p.player_id which Sleeper doesn't have)
+    return {pid: pid, idx: idx, value: p ? sortValueFor(_sortField, p, s, pid) : null};
   });
   indexed.sort((a, b) => {
     const av = a.value;
