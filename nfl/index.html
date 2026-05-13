@@ -585,10 +585,14 @@ function renderWatchList(){
     tbody.innerHTML = '<tr><td colspan="23" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
     return;
   }
-  tbody.innerHTML = _watchList.map((pid, idx) => {
+  const sortedIds = getSortedWatchList();
+  tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
     const s = (_seasonStats && _seasonStats[pid]) || {};
-    const rank = idx + 1;
+    // Rank shows ORIGINAL insertion order even when display is sorted,
+    // so player #1 stays player #1 even when you sort by FPts.
+    const originalIdx = _watchList.indexOf(pid);
+    const rank = (originalIdx >= 0) ? (originalIdx + 1) : (displayIdx + 1);
     if(!p){
       return '<tr>' +
         '<td colspan="22" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
