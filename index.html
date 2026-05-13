@@ -2502,15 +2502,21 @@ const PITCHER_POS = ['SP','RP','P'];
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
 // Watch 101 NAS Server
-// NGROK_RETIREMENT_V1 (2026-05-12): switched from ngrok URL to Cloudflare Tunnel.
-// DIAGNOSTIC_REVERT_2026-05-13 (overnight): reverted to ngrok URL temporarily to
-// confirm whether Cloudflare Access wall is the root cause of CORS errors on
-// staging (watch101ltd.github.io). If EXP column populates correctly on Pool +
-// Leaders after this revert, diagnosis is confirmed and we plan the proper
-// Cloudflare Access bypass for staging tomorrow. Once confirmed, revert this
-// revert (put Cloudflare URL back) so production stays on the migrated path.
-// Cloudflare URL was: 'https://nas.fantasywatch101.com'
-const SERVER_URL = 'https://phonic-nonreceptively-elida.ngrok-free.dev';
+// NGROK_RETIREMENT_V1 (2026-05-12): migrated from ngrok URL to Cloudflare Tunnel.
+// OPTION_B_STAGING_FIX_2026-05-13: Cloudflare Access bypass policy added for
+// staging origin (watch101ltd.github.io) so staging can fetch nas.fantasywatch101.com
+// directly without needing the Worker's service tokens. This finishes the May 12
+// ngrok migration -- ngrok container will be stopped after verification, soaked
+// for 48h, then deleted. Both production and staging now share one front door.
+// Rollback snapshot: Memory/index_2026-05-13_pre-option-b-staging-fix.html
+const SERVER_URL = 'https://nas.fantasywatch101.com';
+
+// NAS_PROXY_URL (OPTION_B_STAGING_FIX_2026-05-13): all NAS read endpoints go through
+// the Cloudflare Worker so that GitHub Pages staging works without needing direct
+// access through the Cloudflare Access wall. Production also benefits -- one path
+// for everything. The Worker carries the service tokens. /auth/login is the only
+// NAS path that still uses SERVER_URL directly (it's a browser redirect, not a fetch).
+const NAS_PROXY_URL = 'https://watch101-cache.wild-fog-21df.workers.dev/nas-proxy';
 
 // Cloudflare Cache Worker — sits in front of Yahoo (and MLB/Savant) to dodge rate limits.
 // Yahoo routes are refreshed twice a day (6 AM + 6 PM Eastern) by the Worker's cron.
@@ -2526,7 +2532,7 @@ const YAHOO_CACHE_URL = 'https://watch101-cache.wild-fog-21df.workers.dev';
 // arrives after it's already on screen.
 async function loadHistoryNotesFromNAS(){
   try {
-    const res = await fetch(`${SERVER_URL}/history/notes`, {
+    const res = await fetch(`${NAS_PROXY_URL}/history/notes`, {
       headers: {'ngrok-skip-browser-warning': 'true'},
       cache: 'no-store'
     });
@@ -2671,7 +2677,7 @@ async function loadData(){
   // STAGING_VS_PROD_V1 — route to staging endpoint when on GitHub, production otherwise
   const isStaging = _isStagingEnvironment();
   const endpoint  = isStaging ? 'list-staging' : 'list';
-  const url       = listId ? `${SERVER_URL}/${endpoint}/${listId}` : `${SERVER_URL}/watchlist`;
+  const url       = listId ? `${NAS_PROXY_URL}/${endpoint}/${listId}` : `${NAS_PROXY_URL}/watchlist`;
   const envLabel  = isStaging ? 'STAGING' : 'PROD';
   console.log('[STAGING_VS_PROD_V1] loading', listId, 'from', envLabel, '→', url);
 
@@ -3123,7 +3129,7 @@ function fmtPct(val){
 // Brandt Assistant/scripts/build_player_registry.py and served live from
 // the NAS at /registry/lookup, refreshed when the script re-runs.
 
-const REGISTRY_URL = SERVER_URL + '/registry/lookup';
+const REGISTRY_URL = NAS_PROXY_URL + '/registry/lookup';
 
 // Three lookup tables, populated by loadRegistry(). All keyed on STRING IDs
 // for consistency — JavaScript object keys are strings anyway.
@@ -3311,7 +3317,7 @@ let cbsDataPlayerCount = 0;    // how many players were in the latest snapshot
 // Monday-1AM scrape finishes. No Cloudflare or GitHub deploy needed for fresh
 // CBS data anymore. Same architecture as /history/notes and /watchlist —
 // every Watch 101 data source now flows through the NAS.
-const CBS_DATA_URL = SERVER_URL + '/cbs/rostered-latest';
+const CBS_DATA_URL = NAS_PROXY_URL + '/cbs/rostered-latest';
 
 // CBS_NAME_NORMALIZE_V1 (May 7, 2026 — Laptop Walter) — fix two diagnosed name
 // join bugs that left specific players at 0% on CBS even though CBS had them:
@@ -3448,7 +3454,7 @@ function applyCBS(arr){
 
 async function checkYahooStatus(){
   try {
-    const res = await fetch(`${SERVER_URL}/auth/status`, {headers:{'ngrok-skip-browser-warning':'true'}});
+    const res = await fetch(`${NAS_PROXY_URL}/auth/status`, {headers:{'ngrok-skip-browser-warning':'true'}});
     if(!res.ok) throw new Error('Server offline');
     const data = await res.json();
     yahooConnected = data.connected;
