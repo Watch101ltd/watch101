@@ -361,6 +361,16 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
   cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;
 }
 .remove-btn:hover{background:#7f1d1d22;border-color:#dc2626}
+
+/* PRIORITY_STARS_V1 (2026-05-13) - clickable 1-5 stars in the Priority column */
+.priority-stars{display:inline-flex;gap:1px;font-size:11px;line-height:1;cursor:pointer;user-select:none}
+.priority-stars .pstar{
+  color:var(--text3);
+  transition:color 0.1s;
+  padding:0 1px;
+}
+.priority-stars .pstar:hover{color:var(--turf-bright)}
+.priority-stars .pstar.filled{color:var(--turf-bright)}
 </style>
 </head>
 <body>
@@ -486,6 +496,7 @@ async function bootstrap(){
     setLastUpdated(new Date().toLocaleTimeString());
 
     await loadListFromStorage();
+    _normalizeWatchList();
     renderWatchList();
   } catch(e){
     console.error('[bootstrap]', e);
@@ -563,12 +574,12 @@ resultsEl.addEventListener('mousedown', (e) => {
 // WATCH LIST OPERATIONS
 // ──────────────────────────────────────────────────────────────────────────
 function addPlayerToList(playerId){
-  if(_watchList.includes(playerId)) return;
-  _watchList.push(playerId);
+  if(_wlIndexOf(playerId) >= 0) return;
+  _watchList.push({pid: playerId, priority: 0});
   renderWatchList();
 }
 function removePlayerFromList(playerId){
-  _watchList = _watchList.filter(id => id !== playerId);
+  _watchList = _watchList.filter(item => _wlPid(item) !== playerId);
   renderWatchList();
 }
 function clearList(){
@@ -589,10 +600,9 @@ function renderWatchList(){
   tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
     const s = (_seasonStats && _seasonStats[pid]) || {};
-    // Rank shows ORIGINAL insertion order even when display is sorted,
-    // so player #1 stays player #1 even when you sort by FPts.
-    const originalIdx = _watchList.indexOf(pid);
+    const originalIdx = _wlIndexOf(pid);
     const rank = (originalIdx >= 0) ? (originalIdx + 1) : (displayIdx + 1);
+    const priority = (originalIdx >= 0) ? _wlPriority(_watchList[originalIdx]) : 0;
     if(!p){
       return '<tr>' +
         '<td colspan="22" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
@@ -613,7 +623,7 @@ function renderWatchList(){
       '<td class="placeholder">—</td>' +
       '<td class="placeholder">—</td>' +
       '<td class="placeholder">—</td>' +
-      '<td class="placeholder">—</td>' +
+      '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       '<td class="left placeholder">—</td>' +
       '<td class="placeholder">—</td>' +
       '<td class="placeholder">—</td>' +
@@ -742,6 +752,65 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+
+// PRIORITY_STARS_V1 (2026-05-13) - per-player 1-5 priority rating
+// ----------------------------------------------------------------
+// The watch list array used to be flat: ['pid1', 'pid2', 'pid3']
+// It now stores objects:                 [{pid:'pid1', priority:0}, ...]
+// We migrate transparently on load via _normalizeWatchList().
+// ----------------------------------------------------------------
+function _wlPid(item){
+  return (typeof item === 'string') ? item : (item && item.pid);
+}
+function _wlPriority(item){
+  if(typeof item === 'string') return 0;
+  const v = item && item.priority;
+  return (typeof v === 'number' && v >= 0 && v <= 5) ? v : 0;
+}
+function _wlIndexOf(pid){
+  for(let i = 0; i < _watchList.length; i++){
+    if(_wlPid(_watchList[i]) === pid) return i;
+  }
+  return -1;
+}
+function _normalizeWatchList(){
+  if(!Array.isArray(_watchList)) return;
+  _watchList = _watchList.map(item => {
+    if(typeof item === 'string') return {pid: item, priority: 0};
+    if(item && typeof item === 'object' && item.pid){
+      return {pid: item.pid, priority: _wlPriority(item)};
+    }
+    return null;
+  }).filter(Boolean);
+}
+function setPriority(pid, newPriority){
+  const idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  const current = _wlPriority(_watchList[idx]);
+  const finalValue = (current === newPriority) ? 0 : newPriority;
+  _watchList[idx] = {pid: pid, priority: finalValue};
+  renderWatchList();
+}
+function renderPriorityStars(pid, currentPriority){
+  let html = '<span class="priority-stars" data-pid="' + escapeHtml(pid) + '">';
+  for(let n = 1; n <= 5; n++){
+    const filled = (n <= currentPriority) ? ' filled' : '';
+    html += '<span class="pstar' + filled + '" data-value="' + n + '">\u2605</span>';
+  }
+  html += '</span>';
+  return html;
+}
+document.addEventListener('click', function(e){
+  const star = e.target.closest('.priority-stars .pstar');
+  if(!star) return;
+  const wrap = star.closest('.priority-stars');
+  if(!wrap) return;
+  const pid = wrap.dataset.pid;
+  const value = parseInt(star.dataset.value, 10);
+  if(!pid || !value) return;
+  setPriority(pid, value);
+});
+// /PRIORITY_STARS_V1
 // SORTABLE_COLUMNS_V1 (2026-05-13) - click column headers to sort the watch list
 // ----------------------------------------------------------------
 // First click on a column = sort descending by that field
@@ -767,10 +836,13 @@ function sortValueFor(field, p, s){
     case 'rec':      return (s.rec || 0);
     case 'reyd':     return (s.rec_yd || 0);
     case 'retd':     return (s.rec_td || 0);
+    case 'priority': {
+      const idx = _wlIndexOf(p.player_id || '');
+      return (idx >= 0) ? _wlPriority(_watchList[idx]) : 0;
+    }
     case 'exp':
     case 'delta':
     case 'type':
-    case 'priority':
     case 'yrank':
     case 'yowned':
     case 'cbsowned':
