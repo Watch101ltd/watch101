@@ -6395,6 +6395,25 @@ async function loadPoolPlayers(){
     poolPlayers.sort((a,b) => a.name.localeCompare(b.name));
     poolLoaded = true;
 
+    // EXP_LABEL_POOL_FIX_V2 (May 13, 2026) — race-condition fix. The splash in
+    // loadRegistry() only runs once on page load; if it fires BEFORE poolPlayers
+    // is populated (the common case — pool is a slow MLB API fetch), the splash
+    // sees an empty array and does nothing, and there's no re-trigger when
+    // poolPlayers later loads. So splash here too — right after poolPlayers is
+    // populated. registryByMlbam may or may not be ready yet; if not, the splash
+    // is a no-op (no rows found), but loadRegistry's own splash will catch up
+    // when it finishes. Either side that finishes second triggers the complete splash.
+    if(typeof registryByMlbam !== 'undefined' && Object.keys(registryByMlbam).length > 0){
+      poolPlayers.forEach(p => {
+        var row = _registryRowFor(p);
+        if(row){
+          if(row.mlb_played_first != null) p.mlb_played_first = row.mlb_played_first;
+          if(row.mlb_played_last  != null) p.mlb_played_last  = row.mlb_played_last;
+        }
+        p.exp = experienceLabel(p);
+      });
+    }
+
     // Silently backfill missing teams on Watch 101 list using pool roster data
     if(poolPlayers.length > 0){
       const teamLookup = {};
