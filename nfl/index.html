@@ -738,6 +738,118 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// SORTABLE_COLUMNS_V1 (2026-05-13) - click column headers to sort the watch list
+// ----------------------------------------------------------------
+// First click on a column = sort descending by that field
+// Second click on same column = flip to ascending
+// Click "Rank" header = back to insertion order
+// Missing/zero data sinks to the bottom regardless of direction.
+// ----------------------------------------------------------------
+let _sortField = null;    // null = use insertion order (original rank)
+let _sortDir   = 'desc';  // 'desc' or 'asc'
+
+function sortValueFor(field, p, s){
+  switch(field){
+    case 'rank':     return null;
+    case 'name':     return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
+    case 'pos':      return p.position || 'zzz';
+    case 'team':     return p.team || 'zzz';
+    case 'age':      return (p.age != null) ? Number(p.age) : null;
+    case 'fpts':     return (s.pts_half_ppr || 0);
+    case 'payd':     return (s.pass_yd || 0);
+    case 'patd':     return (s.pass_td || 0);
+    case 'ruyd':     return (s.rush_yd || 0);
+    case 'rutd':     return (s.rush_td || 0);
+    case 'rec':      return (s.rec || 0);
+    case 'reyd':     return (s.rec_yd || 0);
+    case 'retd':     return (s.rec_td || 0);
+    case 'exp':
+    case 'delta':
+    case 'type':
+    case 'priority':
+    case 'yrank':
+    case 'yowned':
+    case 'cbsowned':
+      return null;
+    default: return null;
+  }
+}
+
+function sortBy(field){
+  if(!field) return;
+  if(field === 'rank'){
+    _sortField = null;
+    _sortDir = 'desc';
+    updateSortArrows();
+    renderWatchList();
+    return;
+  }
+  if(_sortField === field){
+    _sortDir = (_sortDir === 'desc') ? 'asc' : 'desc';
+  } else {
+    _sortField = field;
+    _sortDir = 'desc';
+  }
+  updateSortArrows();
+  renderWatchList();
+}
+
+function updateSortArrows(){
+  document.querySelectorAll('table.watch-list thead th[data-sort]').forEach(th => {
+    const arrow = th.querySelector('.sort-arrow');
+    if(!arrow) return;
+    const field = th.dataset.sort;
+    if(field === _sortField){
+      arrow.textContent = (_sortDir === 'desc') ? '\u2193' : '\u2191';
+      arrow.style.opacity = '1';
+      arrow.style.color = 'var(--turf-bright)';
+    } else {
+      arrow.textContent = '\u2195';
+      arrow.style.opacity = '0.4';
+      arrow.style.color = '';
+    }
+  });
+}
+
+function getSortedWatchList(){
+  if(!_sortField || !_playerDB){
+    return _watchList.slice();
+  }
+  const indexed = _watchList.map((pid, idx) => {
+    const p = _playerDB[pid] || null;
+    const s = (_seasonStats && _seasonStats[pid]) || {};
+    return {pid: pid, idx: idx, value: p ? sortValueFor(_sortField, p, s) : null};
+  });
+  indexed.sort((a, b) => {
+    const av = a.value;
+    const bv = b.value;
+    const aMissing = (av == null);
+    const bMissing = (bv == null);
+    if(aMissing && bMissing) return a.idx - b.idx;
+    if(aMissing) return 1;
+    if(bMissing) return -1;
+    let cmp = 0;
+    if(typeof av === 'number' && typeof bv === 'number'){
+      cmp = av - bv;
+    } else {
+      cmp = String(av).localeCompare(String(bv));
+    }
+    if(_sortDir === 'desc') cmp = -cmp;
+    if(cmp === 0) return a.idx - b.idx;
+    return cmp;
+  });
+  return indexed.map(x => x.pid);
+}
+
+function initSortHandlers(){
+  document.querySelectorAll('table.watch-list thead th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => sortBy(th.dataset.sort));
+  });
+  updateSortArrows();
+}
+initSortHandlers();
+// /SORTABLE_COLUMNS_V1
+
 bootstrap();
 </script>
 
