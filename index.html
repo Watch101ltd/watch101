@@ -3163,7 +3163,25 @@ async function loadRegistry(){
         }
         p.exp = experienceLabel(p);
       });
+      // EXP_LABEL_POOL_FIX_V1 (May 13, 2026) — same splash on the poolPlayers
+      // array so Player Pool + League Leaders show correct EXP values. Without
+      // this, vets like Trout/Olson/Muncy/Caminero get rendered as "R" or "☕"
+      // because their mlb_played_first/last fields are never populated on the
+      // poolPlayers records (renderPool and renderLeaders iterate poolPlayers,
+      // not the global players array).
+      if(typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers)){
+        poolPlayers.forEach(p => {
+          var row = _registryRowFor(p);
+          if(row){
+            if(row.mlb_played_first != null) p.mlb_played_first = row.mlb_played_first;
+            if(row.mlb_played_last  != null) p.mlb_played_last  = row.mlb_played_last;
+          }
+          p.exp = experienceLabel(p);
+        });
+      }
       if(typeof renderTable === 'function') renderTable();
+      if(typeof renderPool === 'function') try { renderPool(); } catch(_pe){}
+      if(typeof renderLeaders === 'function') try { renderLeaders(); } catch(_le){}
     }
   } catch(e){
     console.warn('[REGISTRY_V1] failed to load registry:', e);
