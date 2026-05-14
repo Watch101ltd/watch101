@@ -4397,14 +4397,33 @@ async function setPriority(mlbId, rawValue){
     // Refresh the main table so the Priority column updates immediately.
     // If currentSort is 'priority', the row will jump to its new sorted spot.
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
-    // Update the live tag text on the overlay (if visible) so the user gets
-    // immediate feedback without having to close + reopen the panel.
+    // PRIORITY_OVERLAY_SYNC_V1 (May 13, 2026) — when the overlay picker is
+    // open, renderTable() above only updates the row stars; the overlay stars
+    // and the helper-text tag stay frozen. So we surgically swap BOTH here:
+    //   1) Replace the overlay's <span class="priority-stars" ...> outerHTML
+    //      with a fresh renderPriorityStars(p, 'overlay') so the gold fill
+    //      reflects the new value the moment the click registers.
+    //   2) Update the sibling .ppo-priority-tag text so it doesn't disagree
+    //      with the stars.
+    // No re-render of the entire overlay panel — that would lose scroll
+    // position and any other in-flight UI state. Just swap the two pieces.
     try {
-      var tagEl = document.querySelector('.priority-stars[data-mlb-id="' + mlbId + '"][data-context="overlay"] ~ .ppo-priority-tag');
-      if(tagEl){
-        tagEl.textContent = (p.priority == null)
-          ? 'Backend only — click stars to rank Matt\'s add-priority (5 = highest)'
-          : 'Currently priority ' + p.priority + ' / 5 — click again to change';
+      var overlayStars = document.querySelector('.priority-stars[data-mlb-id="' + mlbId + '"][data-context="overlay"]');
+      if(overlayStars){
+        overlayStars.outerHTML = renderPriorityStars(p, 'overlay');
+      }
+      // Tag-text update — query the row again because the overlayStars node
+      // we had a moment ago was just replaced (its sibling reference would
+      // be stale). Walk the parent to find the .ppo-priority-tag inside the
+      // same .ppo-priority-row.
+      var overlayRow = document.querySelector('#player-page-overlay .ppo-priority-row');
+      if(overlayRow){
+        var tagEl = overlayRow.querySelector('.ppo-priority-tag');
+        if(tagEl){
+          tagEl.textContent = (p.priority == null)
+            ? 'Backend only — click stars to rank Matt\'s add-priority (5 = highest)'
+            : 'Currently priority ' + p.priority + ' / 5 — click again to change';
+        }
       }
     } catch(_re){}
   } catch(e){
