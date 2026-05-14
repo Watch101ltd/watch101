@@ -3658,6 +3658,19 @@ let yahooSyncing = false;
 // MLB Stats API status.code values are exactly IL10 / IL15 / IL60 — our badge
 // CSS now has classes for all three (.injury-il10, .injury-il15, .injury-il60).
 async function fetchMLBInjuryStatus(){
+  // IL_CADENCE_V2 (May 14, 2026 overnight — bug fix to V1).
+  // V1 used rosterType=injuredList which (verified via curl) returns the
+  // ACTIVE roster, not IL. Result: V1 always returned 0 players. The right
+  // endpoint is rosterType=40Man, which includes both active AND IL players
+  // with their status codes (D7/D10/D15/D60/RM/A) on the same response.
+  //
+  // V1 also assumed status codes were 'IL10'/'IL15'/'IL60'. Wrong. MLB
+  // Stats API uses legacy "Disabled List" terminology — D7 (catchers,
+  // 7-day), D10 (position players, 10-day), D15 (pitchers, 15-day),
+  // D60 (long-term). RM = Rehab Major (player rehabbing in minors,
+  // not technically on IL). A = Active.
+  //
+  // We map: D7+D10 → IL10, D15 → IL15, D60 → IL60, RM → leave alone.
   try {
     // Step 1: get all 30 team IDs.
     const teamsRes = await fetch('https://statsapi.mlb.com/api/v1/teams?sportId=1&season=2026');
@@ -3666,35 +3679,50 @@ async function fetchMLBInjuryStatus(){
     const teams = teamsData.teams || [];
     if(teams.length === 0) throw new Error('No teams returned from MLB API');
 
-    // Step 2: in parallel, fetch the IL roster for each team.
+    // Step 2: in parallel, fetch the 40-man roster for each team. The 40-man
+    // includes both active players AND IL players with their D-status codes.
     const ilMap = {};  // { mlbId: 'IL10' | 'IL15' | 'IL60' }
     const promises = teams.map(team => (async () => {
       try {
-        const rRes = await fetch(`https://statsapi.mlb.com/api/v1/teams/${team.id}/roster?season=2026&rosterType=injuredList`);
+        const rRes = await fetch(`https://statsapi.mlb.com/api/v1/teams/${team.id}/roster?season=2026&rosterType=40Man`);
         if(!rRes.ok) return;
         const rData = await rRes.json();
         for(const player of (rData.roster || [])){
-          // status.code on the IL roster is 'IL10' / 'IL15' / 'IL60' (string).
-          // Normalize defensively in case MLB returns lowercase or has dashes.
+          // Map MLB's D-codes to our IL-codes. Skip 'A' (active) and 'RM'
+          // (rehab major — player isn't on IL anymore, just rehabbing in the
+          // minors before being activated).
           const rawCode = (player.status && player.status.code) || '';
           const normalized = String(rawCode).toUpperCase().replace(/[^A-Z0-9]/g, '');
-          if(normalized === 'IL10' || normalized === 'IL15' || normalized === 'IL60'){
+          let mappedCode = null;
+          if(normalized === 'D7' || normalized === 'D10') mappedCode = 'IL10';
+          else if(normalized === 'D15') mappedCode = 'IL15';
+          else if(normalized === 'D60') mappedCode = 'IL60';
+          // (Active 'A' and Rehab 'RM' fall through — not added to ilMap.)
+          if(mappedCode){
             const pid = player.person && player.person.id;
-            if(pid) ilMap[String(pid)] = normalized;
+            if(pid) ilMap[String(pid)] = mappedCode;
           }
         }
       } catch(e){
         // Fail-quiet for one team — we'd rather have 29/30 teams' IL data than zero.
-        console.warn('[IL_CADENCE_V1] team ' + team.abbreviation + ' IL fetch failed:', e.message);
+        console.warn('[IL_CADENCE_V2] team ' + team.abbreviation + ' IL fetch failed:', e.message);
       }
     })());
     await Promise.all(promises);
 
-    console.log('[IL_CADENCE_V1] fetched IL status for ' + Object.keys(ilMap).length + ' players from MLB API');
+    const count = Object.keys(ilMap).length;
+    console.log('[IL_CADENCE_V2] fetched IL status for ' + count + ' players from MLB API');
+    // SANITY FLOOR — if we got fewer than 30 IL players league-wide, something
+    // went wrong (typical MLB IL count is 150-250). Return empty + log so the
+    // applier knows NOT to clear any Yahoo IL flags.
+    if(count < 30){
+      console.warn('[IL_CADENCE_V2] suspicious low count (' + count + ') — treating as failed fetch, Yahoo fallback in effect');
+      return null;
+    }
     return ilMap;
   } catch(e){
-    console.warn('[IL_CADENCE_V1] fetchMLBInjuryStatus failed (Yahoo fallback in effect):', e);
-    return {};
+    console.warn('[IL_CADENCE_V2] fetchMLBInjuryStatus failed (Yahoo fallback in effect):', e);
+    return null;
   }
 }
 
@@ -3702,7 +3730,15 @@ async function fetchMLBInjuryStatus(){
 // injury_status wherever the MLB API has data; leaves Yahoo's value alone
 // otherwise. Idempotent — safe to call multiple times.
 function applyMLBInjuryStatus(playersArr, ilMap){
-  if(!Array.isArray(playersArr) || !ilMap) return;
+  // IL_CADENCE_V2 (May 14, 2026 overnight) — guard added. If ilMap is null
+  // or has < 30 players, fetchMLBInjuryStatus() returned null (failure), so
+  // do NOTHING — leave Yahoo's injury_status values alone. Without this guard
+  // a failed fetch would clear every IL badge incorrectly.
+  if(!Array.isArray(playersArr)) return;
+  if(!ilMap || typeof ilMap !== 'object' || Object.keys(ilMap).length < 30){
+    // MLB API failure or no data — don't touch anything.
+    return;
+  }
   let _overrideCount = 0;
   let _clearedCount = 0;
   for(const p of playersArr){
@@ -3726,7 +3762,7 @@ function applyMLBInjuryStatus(playersArr, ilMap){
     }
   }
   if(_overrideCount || _clearedCount){
-    console.log('[IL_CADENCE_V1] applied: ' + _overrideCount + ' overrides, ' + _clearedCount + ' clears');
+    console.log('[IL_CADENCE_V2] applied: ' + _overrideCount + ' overrides, ' + _clearedCount + ' clears');
   }
 }
 
