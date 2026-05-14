@@ -9436,6 +9436,13 @@ function updateMilbLegendVisibility(){
 // ============================================================
 let prospectsActive = false;
 let prospectPlayers = [];
+// PROSPECT_ROOKIE_FILTER_V1 (May 14, 2026 overnight) — gate flag. True once
+// loadProspectsBatsThrows() has finished hitting /people for every prospect
+// (or failed and given up). Until true, renderProspects() does NOT apply the
+// 2-year debut-date filter — because mlbDebutDate is null on every record
+// pre-fetch, and filtering on null would either drop everyone or keep
+// everyone depending on read. We hold the first render until this is true.
+let prospectsDebutDatesLoaded = false;
 let prospectsLoaded = false;
 let prosSortCol = 'ops';
 let prosSortDir = -1;
@@ -9600,7 +9607,13 @@ async function loadProspects(){
         bats:   (p.batSide   && p.batSide.code)   || '',
         throws: (p.pitchHand && p.pitchHand.code) || '',
         level,
-        stats: null
+        stats: null,
+        // PROSPECT_ROOKIE_FILTER_V1 (May 14, 2026 overnight) — MLB debut date.
+        // Populated by loadProspectsBatsThrows() from the same /people call.
+        // Used by renderProspects() to filter out established major-leaguers
+        // (debut > 2 years ago) who happen to be playing AAA on a rehab
+        // assignment. Null = never debuted (true prospect) or not yet loaded.
+        mlbDebutDate: null
       };
     };
 
@@ -9646,11 +9659,33 @@ async function loadProspects(){
     // Replaces the per-player lazy-loader that used to trickle stats in after render.
     await fetchProspectStatsBulk();
 
-    if(status) status.textContent = prospectPlayers.length + ' prospects loaded (AAA + AA + A) — click a player for full details';
+    // PROSPECT_ROOKIE_FILTER_V1 (May 14, 2026 overnight) — Strategy B: hold
+    // first render off-screen until /people responses arrive so we can apply
+    // the 2-year debut-date filter on first paint. Previously this ran
+    // after the initial render as a background backfill; that worked for
+    // bats/throws but would cause established major-leaguers (Mookie Betts,
+    // Gerrit Cole, etc.) to flash on screen before disappearing once the
+    // filter kicked in. Awaiting here costs ~2-3s of extra load time but
+    // keeps the user from seeing a pollution-then-cleanup transition.
+    if(status) status.textContent = 'Fetching MLB debut dates to filter out non-prospects...';
+    await loadProspectsBatsThrows();
+
+    // Now render with the filter already active.
+    const _totalLoaded = prospectPlayers.length;
     renderProspects();
     setTimeout(attachProspectsScrollHandler, 150);
-    // Backfill bats/throws via /people endpoint (same approach as Pool)
-    loadProspectsBatsThrows();
+
+    // Status text shows post-filter count + total so Matt can see the filter
+    // is doing real work. (Actual visible count after position/level/search
+    // filters is shown by the table itself; this is the universe size.)
+    if(status){
+      const _eligible = prospectPlayers.filter(p => {
+        if(!p.mlbDebutDate) return true;
+        const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 2);
+        return new Date(p.mlbDebutDate) >= cutoff;
+      }).length;
+      status.textContent = _eligible + ' rookie-eligible prospects (filtered from ' + _totalLoaded + ' total) — click a player for full details';
+    }
 
   } catch(e) {
     loading.textContent = '⚠ Could not load prospect data. Check your connection.';
@@ -10101,8 +10136,22 @@ async function fetchProspectStats(p){
 // Same approach as loadPoolBatsThrows — chunks of 100 IDs via /people endpoint.
 async function loadProspectsBatsThrows(){
   try {
-    const ids = prospectPlayers.filter(p => p.mlb_id && (!p.bats || !p.throws)).map(p => p.mlb_id);
-    if(ids.length === 0) return;
+    // PROSPECT_ROOKIE_FILTER_V1 (May 14, 2026 overnight) — also stamp
+    // mlbDebutDate on each prospect from the same /people response so
+    // renderProspects() can filter out players who debuted > 2 years ago
+    // (established major-leaguers on rehab assignments, NOT prospects).
+    //
+    // ID list now includes any prospect missing EITHER bats/throws OR a
+    // debut-date marker (we use the `mlbDebutDate` field — null means
+    // either "never debuted in MLB" OR "not yet loaded", but we want to
+    // hit the API once to distinguish those two cases per player).
+    const ids = prospectPlayers
+      .filter(p => p.mlb_id && (!p.bats || !p.throws || p._debutDateChecked !== true))
+      .map(p => p.mlb_id);
+    if(ids.length === 0){
+      prospectsDebutDatesLoaded = true;
+      return;
+    }
     const chunks = [];
     for(let i=0;i<ids.length;i+=100) chunks.push(ids.slice(i, i+100));
     const idMap = {};
@@ -10116,11 +10165,24 @@ async function loadProspectsBatsThrows(){
           if(!p) return;
           if(person.batSide   && person.batSide.code   && !p.bats)   p.bats   = person.batSide.code;
           if(person.pitchHand && person.pitchHand.code && !p.throws) p.throws = person.pitchHand.code;
+          // PROSPECT_ROOKIE_FILTER_V1 — stamp debut date if present.
+          // mlbDebutDate is an ISO date string like "2014-06-29" or absent.
+          if(person.mlbDebutDate) p.mlbDebutDate = person.mlbDebutDate;
+          // Mark that we've checked this player so we don't refetch.
+          p._debutDateChecked = true;
         });
       } catch(e){}
     }
+    // PROSPECT_ROOKIE_FILTER_V1 — flip the gate so renderProspects starts
+    // applying the rookie-eligibility filter from this point onward.
+    prospectsDebutDatesLoaded = true;
     if(prospectsActive) renderProspects();
-  } catch(e){}
+  } catch(e){
+    // Even on failure, flip the gate — we'd rather show an unfiltered list
+    // than a permanently-loading spinner. Filter quietly no-ops on null
+    // mlbDebutDate values, so the worst case is pre-filter behavior.
+    prospectsDebutDatesLoaded = true;
+  }
 }
 
 // ---- PROSPECTS ADVANCED MODE TOGGLE ----
@@ -10494,6 +10556,31 @@ function renderProspects(){
   const isPit = pos => ['SP','RP','P'].includes(pos);
 
   let list = [...prospectPlayers];
+
+  // PROSPECT_ROOKIE_FILTER_V1 (May 14, 2026 overnight) — drop established
+  // major-leaguers from the prospects view. A player who debuted more than
+  // 2 years ago is no longer a prospect by any reasonable definition, even
+  // if he happens to be playing AAA right now on a rehab assignment (Mookie
+  // Betts, Gerrit Cole, Carlos Rodón, etc. were polluting the list).
+  //
+  // Gate on prospectsDebutDatesLoaded so we don't filter the list to zero
+  // on first render before the /people fetch has populated mlbDebutDate.
+  // Once the gate flips true, the filter applies on every subsequent render.
+  if(prospectsDebutDatesLoaded){
+    const _cutoff = new Date();
+    _cutoff.setFullYear(_cutoff.getFullYear() - 2);
+    list = list.filter(p => {
+      // No debut date = never played MLB = true prospect = KEEP.
+      if(!p.mlbDebutDate) return true;
+      // Debut date present — compare to 2-year cutoff.
+      const debut = new Date(p.mlbDebutDate);
+      // Bad date parse (shouldn't happen, but guard) — fall through to KEEP.
+      if(isNaN(debut.getTime())) return true;
+      // Debut within last 2 years = recent rookie = KEEP.
+      // Debut older than 2 years = established major-leaguer = DROP.
+      return debut >= _cutoff;
+    });
+  }
 
   // Filter
   if(prosFilterLevel !== 'all') list = list.filter(p => p.level === prosFilterLevel);
