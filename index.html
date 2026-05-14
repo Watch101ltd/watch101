@@ -5028,9 +5028,9 @@ async function saveTierFromModal(){
     } catch(e){ console.warn('[TIERS_V1] autoSaveToNAS failed:', e); }
 
     closeCreateTierModal();
-    // Phase D will call renderTiers() here to draw the bracket.
-    // For now we just confirm the save so Matt knows it worked.
-    try { alert('Tier saved: ' + name + '. Bracket rendering ships in the next build step.'); } catch(_){}
+    // TIERS_V1 (Phase D) — draw the bracket immediately so Matt sees
+    // his tier land on the list without waiting for a full re-render.
+    try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers after save failed:', e); }
   } catch(e){
     console.warn('[TIERS_V1] saveTierFromModal failed:', e);
     showErr('Something went wrong. Check the console for details.');
@@ -5043,6 +5043,157 @@ function closeCreateTierModal(){
     if(modal) modal.classList.remove('open');
   } catch(e){ console.warn('[TIERS_V1] closeCreateTierModal failed:', e); }
 }
+
+// TIERS_V1 (May 14, 2026) — Phase D bracket overlay renderer.
+// Strategy: rather than injecting HTML into table rows (which would risk
+// breaking sort/drag/filter and introduce row-corruption bugs), we paint
+// absolutely-positioned div overlays on top of the table. Think of them
+// as a transparency sheet that floats over the printout — the table
+// underneath is untouched.
+//
+// Hide rule: brackets only show when the list is in default order
+// (rank ascending, no search, no filter, no team/player filter, no
+// position cluster). Any of those being non-default scrambles the row
+// order so rank-based ranges stop making sense.
+//
+// Color palette mirrors the modal swatches.
+const TIER_COLOR_HEX = {
+  red:'#ef4444', orange:'#f97316', gold:'#eab308', green:'#22c55e',
+  blue:'#3b82f6', purple:'#a855f7', pink:'#ec4899', gray:'#94a3b8'
+};
+
+function _tiersDefaultOrder(){
+  // Returns true only when the table is showing players in default rank
+  // order. If anything is filtered, sorted, or clustered, return false
+  // so the renderer hides all brackets.
+  try {
+    if(typeof sortCol !== 'undefined' && sortCol !== 'rank') return false;
+    if(typeof sortDir !== 'undefined' && sortDir !== 1) return false;
+    var search = document.getElementById('search');
+    if(search && search.value && search.value.trim() !== '') return false;
+    if(typeof filter !== 'undefined' && filter && filter !== 'ALL') return false;
+    if(typeof teamFilter !== 'undefined' && teamFilter && teamFilter !== 'ALL') return false;
+    if(typeof playerFilter !== 'undefined' && playerFilter && playerFilter !== 'ALL') return false;
+    if(typeof clusterByPos !== 'undefined' && clusterByPos) return false;
+    return true;
+  } catch(e){ return false; }
+}
+
+function _tiersClearOverlay(){
+  var layer = document.getElementById('tier-overlay-layer');
+  if(layer) layer.innerHTML = '';
+}
+
+function _tiersGetOrCreateLayer(){
+  // Find the table's positioning context. We anchor the overlay layer to
+  // the same scroll container the table sits in so overlays line up.
+  var tbody = document.getElementById('tbody');
+  if(!tbody) return null;
+  var table = tbody.closest('table');
+  if(!table) return null;
+  var anchor = table.parentElement; // the scroll wrapper
+  if(!anchor) return null;
+  // Make sure the anchor can host absolutely-positioned children.
+  var cs = window.getComputedStyle(anchor);
+  if(cs.position === 'static') anchor.style.position = 'relative';
+  var layer = document.getElementById('tier-overlay-layer');
+  if(!layer){
+    layer = document.createElement('div');
+    layer.id = 'tier-overlay-layer';
+    layer.style.cssText = 'position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;z-index:5';
+    anchor.appendChild(layer);
+  } else if(layer.parentElement !== anchor){
+    anchor.appendChild(layer);
+  }
+  return { layer: layer, anchor: anchor };
+}
+
+function renderTiers(){
+  // Always start by clearing the previous paint so stale brackets don't
+  // pile up across renders.
+  _tiersClearOverlay();
+  if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
+  if(!_tiersDefaultOrder()) return;  // hide brackets when filtered/sorted
+
+  var ctx = _tiersGetOrCreateLayer();
+  if(!ctx) return;
+  var layer = ctx.layer;
+  var anchor = ctx.anchor;
+  var anchorRect = anchor.getBoundingClientRect();
+
+  currentTiers.forEach(function(tier){
+    try {
+      var startSel = '#tbody tr[data-mlb-id="' + String(tier.start_mlb_id).replace(/"/g,'\\"') + '"]';
+      var endSel   = '#tbody tr[data-mlb-id="' + String(tier.end_mlb_id).replace(/"/g,'\\"')   + '"]';
+      var startRow = document.querySelector(startSel);
+      var endRow   = document.querySelector(endSel);
+      if(!startRow || !endRow) return;  // player not on screen — skip
+
+      var sRect = startRow.getBoundingClientRect();
+      var eRect = endRow.getBoundingClientRect();
+      // Translate to anchor-local coords (since the overlay layer lives
+      // inside the anchor, not the document).
+      var top    = sRect.top - anchorRect.top + anchor.scrollTop;
+      var bottom = eRect.bottom - anchorRect.top + anchor.scrollTop;
+      var left   = sRect.left - anchorRect.left + anchor.scrollLeft;
+      var height = bottom - top;
+      if(height <= 0) return;
+
+      var hex = TIER_COLOR_HEX[tier.color] || '#94a3b8';
+
+      // Vertical bar: thin colored strip on the left edge of the row range.
+      var bar = document.createElement('div');
+      bar.className = 'tier-bracket-bar';
+      bar.setAttribute('data-tier-id', tier.id);
+      bar.style.cssText =
+        'position:absolute;' +
+        'top:' + top + 'px;' +
+        'left:' + Math.max(0, left - 8) + 'px;' +
+        'width:5px;' +
+        'height:' + height + 'px;' +
+        'background:' + hex + ';' +
+        'border-radius:3px;' +
+        'box-shadow:0 0 6px ' + hex + '55;' +
+        'pointer-events:auto;' +
+        'cursor:pointer;';
+      bar.title = tier.name + ' — click to edit (coming soon)';
+
+      // Label tab: small colored chip floating above the top of the bar.
+      var tab = document.createElement('div');
+      tab.className = 'tier-bracket-tab';
+      tab.setAttribute('data-tier-id', tier.id);
+      tab.textContent = tier.name;
+      tab.style.cssText =
+        'position:absolute;' +
+        'top:' + Math.max(0, top - 18) + 'px;' +
+        'left:' + Math.max(0, left - 8) + 'px;' +
+        'background:' + hex + ';' +
+        'color:#fff;' +
+        'font-family:"Nunito Sans",sans-serif;' +
+        'font-size:10px;' +
+        'font-weight:700;' +
+        'letter-spacing:0.04em;' +
+        'text-transform:uppercase;' +
+        'padding:2px 8px;' +
+        'border-radius:4px 4px 0 0;' +
+        'box-shadow:0 -1px 4px ' + hex + '55;' +
+        'pointer-events:auto;' +
+        'cursor:pointer;' +
+        'white-space:nowrap;';
+      tab.title = 'Tier: ' + tier.name + ' (edit/delete coming in next build step)';
+
+      layer.appendChild(bar);
+      layer.appendChild(tab);
+    } catch(e){
+      console.warn('[TIERS_V1] failed to render tier:', tier, e);
+    }
+  });
+}
+
+// Repaint brackets if the user resizes the window (row positions can shift).
+window.addEventListener('resize', function(){
+  try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){}
+});
 
 function openAddCustomPlayerModal(){
   if(_blockIfReadOnly('openAddCustomPlayerModal')) return;
@@ -5245,7 +5396,7 @@ function renderTable(){
     const statAvg = (val) => loading ? pending : fmtAvg(val);
     // MAJORS_VS_MINORS_V1 — flag rows whose stats came from MiLB only
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
-    return `<tr class="${rowClass(p.move)}${_minorStatsClass}" draggable="true" data-id="${p.id}" data-idx="${i}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
+    return `<tr class="${rowClass(p.move)}${_minorStatsClass}" draggable="true" data-id="${p.id}" data-idx="${i}" data-mlb-id="${p.mlb_id||''}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
       <!-- STATIC_ZONE_REORDER_V1 (May 7, 2026) — cells in the same order as the thead above. -->
       <td class="col-drag"><span class="drag-handle backend-only">⠿</span></td>
       <td class="col-rank"><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
@@ -5314,6 +5465,10 @@ function renderTable(){
   setTimeout(syncMainFixedHeader, 50);
   // Auto-shrink long player names to fit the column instead of getting clipped
   setTimeout(fitPlayerNames, 60);
+  // TIERS_V1 (May 14, 2026) — Phase D bracket render. Runs after row paint
+  // so it can measure row positions. Wrapped in try/catch + typeof guard
+  // so a tier-rendering bug can never break the table itself.
+  setTimeout(function(){ try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers crashed:', e); } }, 70);
 }
 
 // Auto-shrink long player names so they fit inside the Player column width.
