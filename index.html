@@ -9987,23 +9987,37 @@ function experienceLabel(p){
   // the source of truth.
   if(!p) return '—';
 
-  // EXP_LABEL_V4 (May 13, 2026 — bug fix: prospects on the watch list with
-  // a MiLB-active sample were getting 'R' because the flat-field p.ab held
-  // their MINOR LEAGUE at-bats, which the old check mistook for MLB action.
-  // Fix: prefer p.statsMlb.ab / p.statsMlb.ip when available (those fields
-  // are MLB-only by construction — built by mlbStatsMap from the MLB API).
-  // Fall back to flat fields ONLY if statsMlb is missing, preserving the
-  // original behavior on Pool/Leaders/Context where flat fields ARE the
-  // MLB sample by default.
+  // EXP_LABEL_V5 (May 13, 2026 — second bug fix in two passes).
+  //
+  // The story: V4 tried to read p.statsMlb.ab/ip first to avoid being fooled
+  // by MiLB at-bats sitting in the flat fields (p.ab / p.ip). Problem: at
+  // load time, when this function is called from line 3192 etc., the MLB
+  // stats bulk fetch hasn't finished yet, so p.statsMlb is still null. The
+  // V4 fallback then read p.ab — same bug, same wrong answer.
+  //
+  // V5 logic: figure out whether the flat fields are trustworthy as MLB
+  // counts BEFORE deciding what to do.
+  //   * If p.statsMlb exists, use it (most accurate).
+  //   * If p.statsMlb is null AND p.statsMilb exists, the flat fields are
+  //     MiLB data — DO NOT treat them as MLB action. hasMlbAction = false.
+  //   * If both are null, we have no sample data either way; fall back to
+  //     flat fields (legacy behavior on tabs without a sample split).
+  // This fires correctly at load time because statsMilb IS populated for
+  // prospects/AAA guys at the moment p.exp gets stamped.
   var ip = 0, ab = 0;
+  var hasMlbAction = false;
   if(p.statsMlb){
     ip = parseFloat(p.statsMlb.ip) || 0;
     ab = parseFloat(p.statsMlb.ab) || 0;
+    hasMlbAction = (ip > 0) || (ab > 0);
+  } else if(p.statsMilb){
+    // MiLB-only sample → no proven MLB action. Don't trust flat fields.
+    hasMlbAction = false;
   } else {
     ip = parseFloat(p.ip) || 0;
     ab = parseFloat(p.ab) || 0;
+    hasMlbAction = (ip > 0) || (ab > 0);
   }
-  var hasMlbAction = (ip > 0) || (ab > 0);
   var first = p.mlb_played_first;
   var last  = p.mlb_played_last;
   var currentYear = new Date().getFullYear();
