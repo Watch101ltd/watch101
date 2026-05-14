@@ -2335,6 +2335,14 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
 let players = [];
 const MAX_PLAYERS = 101;
 
+// TIERS_V1 (May 14, 2026) — Phase B data model. currentTiers parallels
+// `players`: it's the editorial tier definitions for the active list.
+// Each tier is { id, name, color, start_mlb_id, end_mlb_id, created_at }.
+// Per-list scoped: when the active list switches, this swaps to that
+// list's tiers via loadData(). Persisted via the JSON sidecar paired
+// with each Save-to-Excel.
+let currentTiers = [];
+
 // ===== MULTILIST_V1 — six-list switcher (Apr 22, 2026) =====
 // Day-one design: all 6 lists are in-memory clones of the loaded 101.
 // Switching lists swaps the active player array reference + page title.
@@ -2719,6 +2727,11 @@ async function loadData(){
 
       if(playerArr.length > 0){
         players = playerArr;
+        // TIERS_V1 (May 14, 2026) — Phase B. Hydrate tiers from the same
+        // NAS response if present. data.tiers will be undefined on legacy
+        // responses (lists saved before tiers existed) — default to []
+        // so currentTiers always has a sane value.
+        currentTiers = Array.isArray(data.tiers) ? data.tiers : [];
         _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
         // STAGING_VS_PROD_V1 — different label depending on where the data came from.
         // PUBLISHED_LABEL_V1 (April 26, 2026) — production says "Published:" instead of
@@ -2740,6 +2753,9 @@ async function loadData(){
       // /list-staging/:listId returns 404 when nothing has been saved to staging yet.
       // Either way, fall back to localStorage for whatever was last in memory.
       try { const d = localStorage.getItem(lsKey); if(d) players = JSON.parse(d); }catch(e2){}
+      // TIERS_V1 (May 14, 2026) — Phase B. Restore tiers from localStorage
+      // alongside players when NAS returns 404. Same lsKey + '_tiers' pattern.
+      try { const t = localStorage.getItem(lsKey + '_tiers'); currentTiers = t ? JSON.parse(t) : []; } catch(e3){ currentTiers = []; }
       _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
       const ts = localStorage.getItem(lsTime);
       const envBadge = isStaging ? ' [STAGING]' : '';
@@ -6278,7 +6294,21 @@ async function exportXLSX(opts){
           source: 'tracker exportXLSX (paired with ' + fileName + ')',
           player_count: players.length,
           players: players,
+          // TIERS_V1 (May 14, 2026) — Phase B. Editorial tier definitions
+          // ride along in the JSON sidecar. Each tier is {id, name, color,
+          // start_mlb_id, end_mlb_id, created_at}. Empty array on lists
+          // that have no tiers — never null, never undefined.
+          tiers: (typeof currentTiers !== 'undefined' && Array.isArray(currentTiers)) ? currentTiers : [],
         };
+        // TIERS_V1 (May 14, 2026) — also persist tiers to localStorage so
+        // they survive page reload even without a successful NAS save.
+        // Same lsKey scheme as players: 'fw101_v2_<listId>_tiers'.
+        try {
+          const lsKeyTiers = 'fw101_v2_' + ((typeof currentListId !== 'undefined' && currentListId) ? currentListId : 'integrity') + '_tiers';
+          localStorage.setItem(lsKeyTiers, JSON.stringify(jsonPayload.tiers));
+        } catch(lsErr){
+          console.warn('[TIERS_V1] localStorage save failed:', lsErr);
+        }
         const jsonHandle = await _xlsxDirHandles[listId].getFileHandle(jsonName, {create:true});
         const jsonWritable = await jsonHandle.createWritable();
         await jsonWritable.write(new Blob(
