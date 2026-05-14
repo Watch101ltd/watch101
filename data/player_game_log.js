@@ -45919,7 +45919,7 @@ var PLAYER_GAME_LOG = {
         "rbi": null,
         "result": "",
         "sb": null,
-        "status": "scratched"
+        "status": "off"
       }
     ],
     "summary": {
@@ -45931,7 +45931,7 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 1,
+      "scratches": 0,
       "starts": 0,
       "window": 1
     }
