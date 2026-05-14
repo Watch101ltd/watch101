@@ -1544,6 +1544,11 @@ var PLAYER_LINEUP_BLURBS = {
     "blurb": "No starts in last 7 days.",
     "name": "Jos\u00e9 Suarez"
   },
+  "660813": {
+    "as_of": "2026-05-14",
+    "blurb": "On IL since May 13 - no starts in last 7 days.",
+    "name": "Brusdar Graterol"
+  },
   "660821": {
     "as_of": "2026-05-14",
     "blurb": "Scratched 2 of 6 games last week.",
@@ -3768,11 +3773,6 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-05-14",
     "blurb": "Played all 1 available game last week.",
     "name": "Anthony Volpe"
-  },
-  "683079": {
-    "as_of": "2026-05-14",
-    "blurb": "Scratched 1 of 1 games last week.",
-    "name": "Omar Martinez"
   },
   "683083": {
     "as_of": "2026-05-14",
