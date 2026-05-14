@@ -1198,8 +1198,28 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
    started getting 3+ tags. Mirrors the .pos-stack pattern: 2-column grid,
    wraps to a second row at 3+ chips, tight 1px gap. Chip font-size dropped
    from 14px to 11px to match Position chip visual weight. */
-.type-stack{display:grid;grid-template-columns:repeat(2, auto);gap:1px;justify-content:center;align-items:center;width:auto;}
-.type-chip{display:inline-block;font-size:11px;line-height:1;margin:0;cursor:default;}
+.type-stack{display:grid;grid-template-columns:repeat(2, auto);gap:1px;justify-content:center;align-items:center;width:auto;cursor:pointer;}
+.type-stack:hover{filter:brightness(1.25);}
+.type-chip{display:inline-block;font-size:11px;line-height:1;margin:0;cursor:pointer;}
+
+/* TYPE_TAG_TOOLTIPS_V1 (May 14, 2026) — fan-facing click tooltip that
+   explains the emoji chips. Reads window._activeTooltipPlayerId to know
+   which player's tags to render. Closes on outside-click, ESC, or re-click.
+   Fan-facing AND backend-visible — no .backend-only gating. */
+#type-tag-tooltip{display:none;position:fixed;z-index:10002;background:#0b1220;border:1px solid var(--gold,#ffc107);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,0.7);padding:12px 14px;min-width:240px;max-width:340px;color:var(--text,#e8e8e8);font-family:'Nunito Sans',sans-serif;font-size:13px;line-height:1.4;}
+#type-tag-tooltip.open{display:block;}
+#type-tag-tooltip .ttt-title{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold,#ffc107);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,193,7,0.25);}
+#type-tag-tooltip .ttt-row{display:flex;gap:10px;align-items:flex-start;padding:5px 0;}
+#type-tag-tooltip .ttt-row + .ttt-row{border-top:1px dashed rgba(255,255,255,0.08);}
+#type-tag-tooltip .ttt-emoji{font-size:18px;line-height:1.2;flex:0 0 auto;}
+#type-tag-tooltip .ttt-text{flex:1 1 auto;}
+#type-tag-tooltip .ttt-label{font-weight:700;color:var(--gold,#ffc107);margin-bottom:1px;}
+#type-tag-tooltip .ttt-meaning{color:var(--text2,#aaa);font-size:12px;}
+body.day-mode #type-tag-tooltip{background:#ffffff;border-color:#b87a00;color:#1f2937;box-shadow:0 12px 30px rgba(0,0,0,0.2);}
+body.day-mode #type-tag-tooltip .ttt-title{color:#b87a00;border-bottom-color:rgba(184,122,0,0.3);}
+body.day-mode #type-tag-tooltip .ttt-label{color:#b87a00;}
+body.day-mode #type-tag-tooltip .ttt-meaning{color:#4b5563;}
+body.day-mode #type-tag-tooltip .ttt-row + .ttt-row{border-top-color:rgba(0,0,0,0.1);}
 #player-page-overlay .ppo-notes-scroll{max-height:380px;overflow-y:auto;padding-right:6px;}
 #player-page-overlay .ppo-quadrant-scroll{max-height:380px;overflow-y:auto;padding-right:6px;}
 #player-page-overlay .ppo-notes-count{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);}
@@ -4779,12 +4799,17 @@ function _typeTagById(id){
 // Render the Type-column chip(s) for one player. Reads p.type_tags (array of
 // tag IDs). Returns empty string if the player has no tags. Each chip carries
 // a hover tooltip with the human label.
+// TYPE_TAG_TOOLTIPS_V1 (May 14, 2026) — wrap .type-stack with an onclick that
+// opens the fan-facing tooltip showing all this player's emojis + plain-English
+// meanings. stopPropagation prevents the row's open-Deep-Cut handler from
+// firing on the same click.
 function typeBadge(p){
   if(!p || !Array.isArray(p.type_tags) || p.type_tags.length === 0) return '';
   // TYPE_CHIP_STACK_V1 (May 13, 2026) — wrap chips in .type-stack so they
   // form a 2-column grid that wraps to a second row at 3+ tags. Mirrors
   // the .pos-stack pattern used in the Position column.
-  var out = '<div class="type-stack">';
+  var mlbIdAttr = (p.mlb_id != null) ? String(p.mlb_id) : '';
+  var out = '<div class="type-stack" onclick="event.stopPropagation();showTypeTooltip(\'' + mlbIdAttr + '\',event)">';
   for(var i=0; i<p.type_tags.length; i++){
     var def = _typeTagById(p.type_tags[i]);
     if(!def) continue;
@@ -4792,6 +4817,130 @@ function typeBadge(p){
   }
   out += '</div>';
   return out;
+}
+
+// TYPE_TAG_TOOLTIPS_V1 (May 14, 2026) — fan-facing snappier wording for the
+// click tooltip. Lives parallel to TYPE_TAGS_V1 (which is the source of truth
+// for picker UI / chip rendering) so the vocabulary doc's authoritative labels
+// stay untouched. When adding a new entry to TYPE_TAGS_V1, also add a matching
+// entry here. If an id is missing here, the tooltip falls back to the entry's
+// canonical label so it still reads cleanly.
+var TYPE_TAG_TOOLTIPS = {
+  must_watch:       "Drop everything. Read this player's notes first.",
+  injury_promotion: "Got the call because a starter got hurt.",
+  il_return:        "Back from the injured list, back in business.",
+  power_bat:        "Home runs and RBIs are his game.",
+  speed_specialist: "Speed and stolen bases are his bread and butter.",
+  hot_streak:       "On fire right now — last 7-14 days.",
+  undervalued:      "Yahoo and the public have him too low. We saw him first.",
+  future_stash:     "Not contributing yet — grab him before the breakout.",
+  cup_of_coffee:    "Brief MLB look. The story is still being written."
+};
+
+// TYPE_TAG_TOOLTIPS_V1 — opens the floating tooltip near the click point.
+// Looks up the player by mlbId in the active rendering list (players /
+// poolPlayers / prospectPlayers, in that order). Iterates that player's
+// type_tags array and renders one row per tag. Sets up the auto-close
+// listeners (outside click, ESC) on first open.
+function showTypeTooltip(mlbIdStr, ev){
+  if(!mlbIdStr) return;
+  var tip = document.getElementById('type-tag-tooltip');
+  if(!tip) return;
+  // Same-click toggle: if the tooltip is already open for this player, close it.
+  if(tip.classList.contains('open') && tip.dataset.mlbId === mlbIdStr){
+    _closeTypeTooltip();
+    return;
+  }
+  // Find the player record. Try the visible rendering arrays in priority order.
+  var mlbId = parseInt(mlbIdStr, 10);
+  var p = null;
+  var sources = ['players', 'poolPlayers', 'prospectPlayers'];
+  for(var si=0; si<sources.length; si++){
+    var arr = window[sources[si]];
+    if(arr && Array.isArray(arr)){
+      p = arr.find(function(x){ return x && Number(x.mlb_id) === mlbId; });
+      if(p) break;
+    }
+  }
+  if(!p || !Array.isArray(p.type_tags) || p.type_tags.length === 0) return;
+
+  // Build the tooltip body — one row per tag the player actually has.
+  var rowsHtml = '';
+  for(var i=0; i<p.type_tags.length; i++){
+    var def = _typeTagById(p.type_tags[i]);
+    if(!def) continue;
+    var meaning = TYPE_TAG_TOOLTIPS[def.id] || def.label;
+    rowsHtml += '<div class="ttt-row">'
+              +   '<span class="ttt-emoji">' + def.emoji + '</span>'
+              +   '<span class="ttt-text">'
+              +     '<div class="ttt-label">' + _escapeHtml(def.label) + '</div>'
+              +     '<div class="ttt-meaning">' + _escapeHtml(meaning) + '</div>'
+              +   '</span>'
+              + '</div>';
+  }
+  var headline = (p.name || 'Type Tags') + ' — Tag Key';
+  tip.innerHTML = '<div class="ttt-title">' + _escapeHtml(headline) + '</div>' + rowsHtml;
+
+  // Position the tooltip near the click. Try to keep it inside the viewport.
+  var x = (ev && ev.clientX) ? ev.clientX : (window.innerWidth/2);
+  var y = (ev && ev.clientY) ? ev.clientY : (window.innerHeight/2);
+  tip.style.left = '0px';
+  tip.style.top  = '0px';
+  tip.classList.add('open');
+  // Now that it's visible, measure and clamp.
+  var w = tip.offsetWidth  || 280;
+  var h = tip.offsetHeight || 180;
+  var pad = 12;
+  var left = Math.min(x + 14, window.innerWidth  - w - pad);
+  var top  = Math.min(y + 14, window.innerHeight - h - pad);
+  if(left < pad) left = pad;
+  if(top  < pad) top  = pad;
+  tip.style.left = left + 'px';
+  tip.style.top  = top  + 'px';
+  tip.dataset.mlbId = mlbIdStr;
+
+  // Wire close-on-outside-click + ESC. Use a small delay so the click that
+  // opened the tooltip doesn't immediately close it.
+  setTimeout(function(){
+    document.addEventListener('click',   _typeTooltipOutsideClick, true);
+    document.addEventListener('keydown', _typeTooltipEscKey,       true);
+  }, 0);
+}
+
+function _closeTypeTooltip(){
+  var tip = document.getElementById('type-tag-tooltip');
+  if(tip){
+    tip.classList.remove('open');
+    tip.dataset.mlbId = '';
+  }
+  document.removeEventListener('click',   _typeTooltipOutsideClick, true);
+  document.removeEventListener('keydown', _typeTooltipEscKey,       true);
+}
+
+function _typeTooltipOutsideClick(e){
+  var tip = document.getElementById('type-tag-tooltip');
+  if(!tip) return;
+  // If the click landed inside the tooltip itself, ignore.
+  if(tip.contains(e.target)) return;
+  // If the click landed on another .type-stack, let that handler open its
+  // own tooltip — close this one first so showTypeTooltip can take over.
+  _closeTypeTooltip();
+}
+
+function _typeTooltipEscKey(e){
+  if(e.key === 'Escape' || e.keyCode === 27){
+    _closeTypeTooltip();
+  }
+}
+
+// Tiny HTML-escape so emoji labels with apostrophes etc. render correctly.
+function _escapeHtml(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // TYPE_TAGS_V1 — BACKEND_ONLY toggle handler.
@@ -154952,6 +155101,11 @@ body.day-mode .ppo-movement-mode-btn:hover:not(:disabled) { background: linear-g
 .mm-ctrl-btn.primary:hover { background: rgba(255,193,7,0.12); }
 .mm-empty-state { padding: 40px 20px; text-align: center; color: var(--text2, #aaa); font-size: 14px; line-height: 1.5; }
 </style>
+
+<!-- TYPE_TAG_TOOLTIPS_V1 (May 14, 2026) — fan-facing tooltip element.
+     Position:fixed + open class toggle controlled by showTypeTooltip() at
+     line ~4825. Stays empty until first click; populated dynamically. -->
+<div id="type-tag-tooltip" data-mlb-id=""></div>
 
 <div id="movement-mode-overlay" role="dialog" aria-modal="true" aria-label="Movement Mode — player rank history replay" onclick="if(event.target===this)closeMovementMode()">
   <div class="mm-header">
