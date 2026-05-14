@@ -1540,6 +1540,14 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="hdr-dd-item backend-only" onclick="hdrRun(triggerImport)" title="Import from CSV or Excel">📥 Import</button>
         <button class="hdr-dd-item" onclick="hdrRun(togglePresentMode)" title="Presentation mode — full-screen view for screen-share">🔍 Present</button>
         <button class="hdr-dd-item" onclick="hdrRun(exportCSV)" title="Export the current list as a CSV file">📤 CSV</button>
+        <!-- EXCEL_DOWNLOAD_V1 (May 14, 2026) — Fan-facing Excel download button.
+             Mirrors the CSV button. NOT the same as the backend-only "💾 Save to
+             Excel" button in the Save dropdown (which writes to a folder via
+             showDirectoryPicker for Matt's per-list workflow). This one downloads
+             an .xlsx file straight to the user's Downloads folder, same UX pattern
+             as the CSV button. Visible to everyone (no .backend-only class) per
+             Matt's request — fans hate converting CSVs to Excel. -->
+        <button class="hdr-dd-item" onclick="hdrRun(exportXLSXDownload)" title="Download the current list as an Excel (.xlsx) file">📊 Excel</button>
         <!-- STAT_FRESHNESS_V1 (May 8, 2026) — Manual nuke-and-refetch. Wipes saved
              season stats on every player and re-fires the refresh. Use only when
              auto-refresh isn't catching up. -->
@@ -6393,6 +6401,30 @@ function exportCSV(){
   const d = new Date();
   const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   a.download = `Watch101_${_activeListFileSlug()}_${dateStr}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// EXCEL_DOWNLOAD_V1 (May 14, 2026) — Fan-facing Excel download.
+// Mirrors exportCSV()'s blob-download pattern but emits an .xlsx via SheetJS.
+// Reuses _buildXLSXWorkbook() (same workbook used by the backend Save-to-Excel
+// path) so column shape stays consistent across both export buttons.
+//
+// NOT the same as exportXLSX() above — that one writes to a folder via
+// showDirectoryPicker for Matt's per-list pipeline. This one is a simple
+// browser download for fans who hate manually converting CSVs.
+function exportXLSXDownload(){
+  if(!players.length){ alert('No players to export.'); return; }
+  const wb = _buildXLSXWorkbook();
+  // XLSX.write returns the binary as an ArrayBuffer when type:'array'.
+  const out = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  const blob = new Blob([out], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  a.download = `Watch101_${_activeListFileSlug()}_${dateStr}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
 }
