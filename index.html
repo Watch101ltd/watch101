@@ -1191,7 +1191,13 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-type-tag-emoji{font-size:14px;line-height:1;}
 #player-page-overlay .ppo-type-tag-label{font-size:11px;color:var(--text2);}
 /* Type column chip in the main row — small, single emoji per tag, hover for label. */
-.type-chip{display:inline-block;font-size:14px;line-height:1;margin:0 1px;cursor:default;}
+/* TYPE_CHIP_STACK_V1 (May 13, 2026 late-late evening) — chips were sized for
+   "1 chip per player" and were leaking into the Priority column once players
+   started getting 3+ tags. Mirrors the .pos-stack pattern: 2-column grid,
+   wraps to a second row at 3+ chips, tight 1px gap. Chip font-size dropped
+   from 14px to 11px to match Position chip visual weight. */
+.type-stack{display:grid;grid-template-columns:repeat(2, auto);gap:1px;justify-content:center;align-items:center;width:auto;}
+.type-chip{display:inline-block;font-size:11px;line-height:1;margin:0;cursor:default;}
 #player-page-overlay .ppo-notes-scroll{max-height:380px;overflow-y:auto;padding-right:6px;}
 #player-page-overlay .ppo-quadrant-scroll{max-height:380px;overflow-y:auto;padding-right:6px;}
 #player-page-overlay .ppo-notes-count{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);}
@@ -4500,12 +4506,16 @@ function _typeTagById(id){
 // a hover tooltip with the human label.
 function typeBadge(p){
   if(!p || !Array.isArray(p.type_tags) || p.type_tags.length === 0) return '';
-  var out = '';
+  // TYPE_CHIP_STACK_V1 (May 13, 2026) — wrap chips in .type-stack so they
+  // form a 2-column grid that wraps to a second row at 3+ tags. Mirrors
+  // the .pos-stack pattern used in the Position column.
+  var out = '<div class="type-stack">';
   for(var i=0; i<p.type_tags.length; i++){
     var def = _typeTagById(p.type_tags[i]);
     if(!def) continue;
     out += '<span class="type-chip" title="' + def.label + '">' + def.emoji + '</span>';
   }
+  out += '</div>';
   return out;
 }
 
