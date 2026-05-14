@@ -9987,8 +9987,22 @@ function experienceLabel(p){
   // the source of truth.
   if(!p) return '—';
 
-  var ip = parseFloat(p.ip) || 0;
-  var ab = parseFloat(p.ab) || 0;
+  // EXP_LABEL_V4 (May 13, 2026 — bug fix: prospects on the watch list with
+  // a MiLB-active sample were getting 'R' because the flat-field p.ab held
+  // their MINOR LEAGUE at-bats, which the old check mistook for MLB action.
+  // Fix: prefer p.statsMlb.ab / p.statsMlb.ip when available (those fields
+  // are MLB-only by construction — built by mlbStatsMap from the MLB API).
+  // Fall back to flat fields ONLY if statsMlb is missing, preserving the
+  // original behavior on Pool/Leaders/Context where flat fields ARE the
+  // MLB sample by default.
+  var ip = 0, ab = 0;
+  if(p.statsMlb){
+    ip = parseFloat(p.statsMlb.ip) || 0;
+    ab = parseFloat(p.statsMlb.ab) || 0;
+  } else {
+    ip = parseFloat(p.ip) || 0;
+    ab = parseFloat(p.ab) || 0;
+  }
   var hasMlbAction = (ip > 0) || (ab > 0);
   var first = p.mlb_played_first;
   var last  = p.mlb_played_last;
