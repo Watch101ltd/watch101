@@ -2813,9 +2813,12 @@ async function loadData(){
     // IL_CADENCE_V1 (May 14, 2026) — MLB Stats API gives us live injury status,
     // which is hours (sometimes a full day) fresher than the Yahoo cache.
     // Runs in parallel with Yahoo sync; result overrides Yahoo's injury_status.
-    fetchMLBInjuryStatus().then(ilMap => {
-      applyMLBInjuryStatus(players, ilMap);
-      if(typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers)) applyMLBInjuryStatus(poolPlayers, ilMap);
+    fetchMLBInjuryStatus().then(envelope => {
+      // REHAB_FILTER_V1 — envelope is now { ilMap, rehabMap }; applyMLBInjuryStatus
+      // unwraps it. Old code passed a bare ilMap here; the unwrap is
+      // backward-compatible so this rename is purely cosmetic.
+      applyMLBInjuryStatus(players, envelope);
+      if(typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers)) applyMLBInjuryStatus(poolPlayers, envelope);
       if(typeof renderTable === 'function') try { renderTable(); } catch(_re){}
       if(typeof renderPool === 'function' && typeof poolLoaded !== 'undefined' && poolLoaded) try { renderPool(); } catch(_re){}
       if(typeof renderLeaders === 'function') try { renderLeaders(); } catch(_re){}
@@ -3751,25 +3754,37 @@ async function fetchMLBInjuryStatus(){
     // Step 2: in parallel, fetch the 40-man roster for each team. The 40-man
     // includes both active players AND IL players with their D-status codes.
     const ilMap = {};  // { mlbId: 'IL10' | 'IL15' | 'IL60' }
+    // REHAB_FILTER_V1 (May 14, 2026 overnight) — Yahoo tags rehab-assignment
+    // major-leaguers with injury_status='NA' (same as true minor-leaguers).
+    // That pollutes the NA / minors-owned filter with rehabbing MLB guys.
+    // The MLB Stats API returns these players with status.code='RM' on the
+    // 40-man fetch we already do. Build a parallel rehabMap, stamp p.on_rehab
+    // in applyMLBInjuryStatus, then exclude on_rehab from the NA filter and
+    // include it in the Injured filter. Marker: REHAB_FILTER_V1.
+    const rehabMap = {};  // { mlbId: true } for status.code === 'RM'
     const promises = teams.map(team => (async () => {
       try {
         const rRes = await fetch(`https://statsapi.mlb.com/api/v1/teams/${team.id}/roster?season=2026&rosterType=40Man`);
         if(!rRes.ok) return;
         const rData = await rRes.json();
         for(const player of (rData.roster || [])){
-          // Map MLB's D-codes to our IL-codes. Skip 'A' (active) and 'RM'
-          // (rehab major — player isn't on IL anymore, just rehabbing in the
-          // minors before being activated).
+          // Map MLB's D-codes to our IL-codes. Skip 'A' (active). Capture 'RM'
+          // (Rehab Major — player rehabbing in minors before being activated)
+          // into rehabMap for the REHAB_FILTER_V1 minors-filter exclusion.
           const rawCode = (player.status && player.status.code) || '';
           const normalized = String(rawCode).toUpperCase().replace(/[^A-Z0-9]/g, '');
           let mappedCode = null;
           if(normalized === 'D7' || normalized === 'D10') mappedCode = 'IL10';
           else if(normalized === 'D15') mappedCode = 'IL15';
           else if(normalized === 'D60') mappedCode = 'IL60';
-          // (Active 'A' and Rehab 'RM' fall through — not added to ilMap.)
+          // (Active 'A' falls through — not added to ilMap or rehabMap.)
           if(mappedCode){
             const pid = player.person && player.person.id;
             if(pid) ilMap[String(pid)] = mappedCode;
+          } else if(normalized === 'RM'){
+            // REHAB_FILTER_V1 — flag rehab-assignment players.
+            const pid = player.person && player.person.id;
+            if(pid) rehabMap[String(pid)] = true;
           }
         }
       } catch(e){
@@ -3780,15 +3795,21 @@ async function fetchMLBInjuryStatus(){
     await Promise.all(promises);
 
     const count = Object.keys(ilMap).length;
+    const rehabCount = Object.keys(rehabMap).length;
     console.log('[IL_CADENCE_V2] fetched IL status for ' + count + ' players from MLB API');
+    console.log('[REHAB_FILTER_V1] fetched ' + rehabCount + ' rehab-assignment players from MLB API');
     // SANITY FLOOR — if we got fewer than 30 IL players league-wide, something
     // went wrong (typical MLB IL count is 150-250). Return empty + log so the
-    // applier knows NOT to clear any Yahoo IL flags.
+    // applier knows NOT to clear any Yahoo IL flags. NOTE: a 0-rehab count is
+    // legitimate (no one on rehab is rare but possible), so rehabMap does NOT
+    // have its own sanity floor — only ilMap drives the failure decision.
     if(count < 30){
       console.warn('[IL_CADENCE_V2] suspicious low count (' + count + ') — treating as failed fetch, Yahoo fallback in effect');
       return null;
     }
-    return ilMap;
+    // REHAB_FILTER_V1 — return both maps in a single envelope object so the
+    // caller can pass both to applyMLBInjuryStatus(). Callers updated.
+    return { ilMap: ilMap, rehabMap: rehabMap };
   } catch(e){
     console.warn('[IL_CADENCE_V2] fetchMLBInjuryStatus failed (Yahoo fallback in effect):', e);
     return null;
@@ -3798,18 +3819,37 @@ async function fetchMLBInjuryStatus(){
 // Apply an MLB API injury map to a players array. Overwrites Yahoo's
 // injury_status wherever the MLB API has data; leaves Yahoo's value alone
 // otherwise. Idempotent — safe to call multiple times.
-function applyMLBInjuryStatus(playersArr, ilMap){
-  // IL_CADENCE_V2 (May 14, 2026 overnight) — guard added. If ilMap is null
-  // or has < 30 players, fetchMLBInjuryStatus() returned null (failure), so
-  // do NOTHING — leave Yahoo's injury_status values alone. Without this guard
+//
+// REHAB_FILTER_V1 (May 14, 2026 overnight) — second arg is now an envelope:
+// { ilMap, rehabMap } instead of a bare ilMap. Old shape (bare ilMap) still
+// accepted for backward compatibility — auto-promoted to envelope form.
+function applyMLBInjuryStatus(playersArr, envelope){
+  // IL_CADENCE_V2 (May 14, 2026 overnight) — guard added. If envelope is null
+  // or its ilMap has < 30 players, fetchMLBInjuryStatus() returned null (failure),
+  // so do NOTHING — leave Yahoo's injury_status values alone. Without this guard
   // a failed fetch would clear every IL badge incorrectly.
   if(!Array.isArray(playersArr)) return;
-  if(!ilMap || typeof ilMap !== 'object' || Object.keys(ilMap).length < 30){
+  if(!envelope || typeof envelope !== 'object') return;
+
+  // REHAB_FILTER_V1 — unwrap envelope. Accept both old shape (bare ilMap)
+  // and new shape ({ ilMap, rehabMap }). Old shape: no rehab data, on_rehab
+  // stays null on all records — same as legacy behavior.
+  let ilMap, rehabMap;
+  if(envelope.ilMap && typeof envelope.ilMap === 'object'){
+    ilMap = envelope.ilMap;
+    rehabMap = (envelope.rehabMap && typeof envelope.rehabMap === 'object') ? envelope.rehabMap : {};
+  } else {
+    // Old shape — assume envelope IS the ilMap.
+    ilMap = envelope;
+    rehabMap = {};
+  }
+  if(!ilMap || Object.keys(ilMap).length < 30){
     // MLB API failure or no data — don't touch anything.
     return;
   }
   let _overrideCount = 0;
   let _clearedCount = 0;
+  let _rehabCount = 0;
   for(const p of playersArr){
     if(!p || p.mlb_id == null) continue;
     const mlbVal = ilMap[String(p.mlb_id)];
@@ -3829,9 +3869,19 @@ function applyMLBInjuryStatus(playersArr, ilMap){
         _clearedCount++;
       }
     }
+    // REHAB_FILTER_V1 — stamp on_rehab. Idempotent: re-stamp every call
+    // so a player who comes off rehab gets cleared on the next refresh.
+    const isRehab = !!rehabMap[String(p.mlb_id)];
+    if(isRehab !== !!p.on_rehab){
+      p.on_rehab = isRehab;
+      if(isRehab) _rehabCount++;
+    }
   }
   if(_overrideCount || _clearedCount){
     console.log('[IL_CADENCE_V2] applied: ' + _overrideCount + ' overrides, ' + _clearedCount + ' clears');
+  }
+  if(_rehabCount){
+    console.log('[REHAB_FILTER_V1] flagged ' + _rehabCount + ' players as on_rehab');
   }
 }
 
@@ -4077,14 +4127,19 @@ function getFiltered(){
   if(playerFilter !== 'ALL'){
     if(playerFilter === 'INJURED'){
       // Anyone with an injury status EXCEPT NA (NA gets its own bucket — those are minor-leaguers, not injuries)
+      // REHAB_FILTER_V1 — also includes rehab-assignment major-leaguers (on_rehab=true).
+      // Yahoo tags them as 'NA' so the legacy filter missed them; we catch them here.
       list = list.filter(p => {
+        if(p.on_rehab === true) return true;  // REHAB_FILTER_V1
         const s = (p.injury_status || '').toUpperCase();
         if(!s) return false;
         if(s === 'NA') return false;
         return true;
       });
     } else if(playerFilter === 'NA'){
-      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA');
+      // REHAB_FILTER_V1 — exclude rehab-assignment major-leaguers. They show
+      // as Yahoo 'NA' but they're not true minor-leaguers (they belong in INJURED).
+      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA' && p.on_rehab !== true);
     } else if(playerFilter === 'SP'){
       list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
     } else if(playerFilter === 'RP'){
@@ -7070,14 +7125,18 @@ function renderPool(){
   // PLAYER_FILTER_V1 — Pool — Matt's curated filter dropdown (single-select, AND logic with poolPosFilter)
   if(poolPlayerFilter !== 'ALL'){
     if(poolPlayerFilter === 'INJURED'){
+      // REHAB_FILTER_V1 — also includes rehab-assignment major-leaguers (on_rehab=true).
       list = list.filter(p => {
+        if(p.on_rehab === true) return true;  // REHAB_FILTER_V1
         const s = (p.injury_status || '').toUpperCase();
         if(!s) return false;
         if(s === 'NA') return false;
         return true;
       });
     } else if(poolPlayerFilter === 'NA'){
-      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA');
+      // REHAB_FILTER_V1 — exclude rehab-assignment major-leaguers (they show as
+      // Yahoo 'NA' but belong in INJURED, not the minors-owned bucket).
+      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA' && p.on_rehab !== true);
     } else if(poolPlayerFilter === 'SP'){
       list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
     } else if(poolPlayerFilter === 'RP'){
@@ -8133,14 +8192,18 @@ function renderLeaders(){
   // PLAYER_FILTER_V1 — Leaders — Matt's curated filter dropdown (single-select, AND logic with leadersPosFilter)
   if(leadersPlayerFilter !== 'ALL'){
     if(leadersPlayerFilter === 'INJURED'){
+      // REHAB_FILTER_V1 — also includes rehab-assignment major-leaguers (on_rehab=true).
       list = list.filter(p => {
+        if(p.on_rehab === true) return true;  // REHAB_FILTER_V1
         const s = (p.injury_status || '').toUpperCase();
         if(!s) return false;
         if(s === 'NA') return false;
         return true;
       });
     } else if(leadersPlayerFilter === 'NA'){
-      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA');
+      // REHAB_FILTER_V1 — exclude rehab-assignment major-leaguers (they show as
+      // Yahoo 'NA' but belong in INJURED, not the minors-owned bucket).
+      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA' && p.on_rehab !== true);
     } else if(leadersPlayerFilter === 'SP'){
       list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
     } else if(leadersPlayerFilter === 'RP'){
@@ -146878,100 +146941,4 @@ body.day-mode .ppo-movement-mode-btn:hover:not(:disabled) { background: linear-g
     var wrap = document.getElementById('mm-board-wrap');
     if(!wrap) return;
     var y = _mmYForRank(rank);
-    var target = y - (wrap.clientHeight / 2) + (MM_ROW_HEIGHT / 2);
-    if(target < 0) target = 0;
-    wrap.scrollTo({ top: target, behavior: 'smooth' });
-  }
-  function _mmUpdateTicker(point){
-    var dEl = document.getElementById('mm-ticker-date');
-    var rEl = document.getElementById('mm-ticker-rank');
-    if(dEl) dEl.textContent = point && point.date
-      ? point.date + (point.time && point.time !== '0000' ? ' ' + point.time.substring(0,2) + ':' + point.time.substring(2,4) : '')
-      : '—';
-    if(rEl) rEl.textContent = point && point.rank ? '#' + point.rank : '#—';
-  }
-  function _mmUpdateSubtitle(){
-    var el = document.getElementById('mm-subtitle');
-    if(!el || !_mmFocalPlayer) return;
-    var listLbl = (typeof currentListId !== 'undefined' && currentListId) ? String(currentListId) : 'list';
-    el.textContent = _mmFocalPlayer.name + ' · ' + _mmHistory.length + ' approved publish' + (_mmHistory.length === 1 ? '' : 'es') + ' on the ' + listLbl + ' list';
-  }
-  function _mmClearTimers(){
-    for(var i=0; i<_mmTimers.length; i++) clearTimeout(_mmTimers[i]);
-    _mmTimers = [];
-  }
-  function _mmUpdateFocalRankNum(rank){
-    // V1.1 — keep the focal card's inline rank number in sync with the
-    // historical step we're animating to, so it visually matches the big
-    // ticker and doesn't show the player's CURRENT real rank during replay.
-    var el = document.querySelector('#mm-focal .mm-rank-num');
-    if(el) el.textContent = '#' + rank;
-  }
-  function _mmAnimate(){
-    var focalEl = document.getElementById('mm-focal');
-    if(!focalEl) return;
-    if(!_mmHistory.length){
-      focalEl.style.transform = 'translateY(' + _mmYForRank(_mmFocalPlayer.rank || 1) + 'px)';
-      _mmUpdateTicker({ date: 'No history yet', rank: _mmFocalPlayer.rank });
-      _mmUpdateFocalRankNum(_mmFocalPlayer.rank || '—');
-      return;
-    }
-    _mmClearTimers();
-    var first = _mmHistory[0];
-    focalEl.style.transition = 'none';
-    focalEl.style.transform = 'translateY(' + _mmYForRank(first.rank) + 'px)';
-    _mmUpdateTicker(first);
-    _mmUpdateFocalRankNum(first.rank);
-    _mmScrollFocalIntoView(first.rank);
-    void focalEl.offsetHeight;
-    focalEl.style.transition = '';
-    for(var i=1; i<_mmHistory.length; i++){
-      (function(idx){
-        var dot = _mmHistory[idx];
-        var t = setTimeout(function(){
-          focalEl.style.transform = 'translateY(' + _mmYForRank(dot.rank) + 'px)';
-          _mmUpdateTicker(dot);
-          _mmUpdateFocalRankNum(dot.rank);
-          _mmScrollFocalIntoView(dot.rank);
-        }, idx * MM_STEP_MS);
-        _mmTimers.push(t);
-      })(i);
-    }
-  }
-  window.openMovementMode = function(){
-    var btn = document.getElementById('ppo-movement-mode-btn');
-    if(!btn || btn.disabled) return;
-    var mlbId = btn.dataset.mlbId;
-    if(!mlbId){ console.warn('[MovementMode] no mlbId on button dataset'); return; }
-    _mmFocalPlayer = _mmGetPlayer(mlbId);
-    if(!_mmFocalPlayer){
-      console.warn('[MovementMode] player not found in active list:', mlbId);
-      return;
-    }
-    _mmHistory = _mmGetHistory(mlbId);
-    _mmRender();
-    _mmUpdateSubtitle();
-    var ov = document.getElementById('movement-mode-overlay');
-    if(ov) ov.classList.add('mm-open');
-    document.body.style.overflow = 'hidden';
-    requestAnimationFrame(function(){ requestAnimationFrame(_mmAnimate); });
-  };
-  window.closeMovementMode = function(){
-    _mmClearTimers();
-    var ov = document.getElementById('movement-mode-overlay');
-    if(ov) ov.classList.remove('mm-open');
-    document.body.style.overflow = '';
-  };
-  window._mmReplay = function(){ _mmAnimate(); };
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' || e.keyCode === 27){
-      var ov = document.getElementById('movement-mode-overlay');
-      if(ov && ov.classList.contains('mm-open')) closeMovementMode();
-    }
-  });
-})();
-</script>
-<!-- ===================================================================== -->
-<!-- END MOVEMENT_MODE_V1+V1.1 -->
-
-</html>
+    var target = y
