@@ -4852,13 +4852,24 @@ function showTypeTooltip(mlbIdStr, ev){
   }
   var mlbId = parseInt(mlbIdStr, 10);
   var p = null;
-  var sources = ['players', 'poolPlayers', 'prospectPlayers'];
-  for(var si=0; si<sources.length; si++){
-    var arr = window[sources[si]];
-    if(arr && Array.isArray(arr)){
-      p = arr.find(function(x){ return x && Number(x.mlb_id) === mlbId; });
-      if(p){ console.log('[TYPE_TAG_TOOLTIP] found player in', sources[si], '- name:', p.name, 'tags:', p.type_tags); break; }
+  // Look in each visible rendering array. Try direct identifier first (works
+  // if the array is in scope), fall back to window[name] if not. The earlier
+  // window-only version silently failed when these arrays were declared with
+  // `var` outside the window scope.
+  var sources = [];
+  try { if(typeof players         !== 'undefined' && Array.isArray(players))         sources.push({name:'players',         arr:players}); } catch(_){}
+  try { if(typeof poolPlayers     !== 'undefined' && Array.isArray(poolPlayers))     sources.push({name:'poolPlayers',     arr:poolPlayers}); } catch(_){}
+  try { if(typeof prospectPlayers !== 'undefined' && Array.isArray(prospectPlayers)) sources.push({name:'prospectPlayers', arr:prospectPlayers}); } catch(_){}
+  // Belt-and-suspenders: also try window in case any of them got attached there later.
+  ['players','poolPlayers','prospectPlayers'].forEach(function(n){
+    if(window[n] && Array.isArray(window[n]) && !sources.find(function(s){return s.arr===window[n];})){
+      sources.push({name:'window.'+n, arr:window[n]});
     }
+  });
+  console.log('[TYPE_TAG_TOOLTIP] searching', sources.length, 'source arrays:', sources.map(function(s){return s.name+'('+s.arr.length+')';}));
+  for(var si=0; si<sources.length; si++){
+    p = sources[si].arr.find(function(x){ return x && Number(x.mlb_id) === mlbId; });
+    if(p){ console.log('[TYPE_TAG_TOOLTIP] found player in', sources[si].name, '- name:', p.name, 'tags:', p.type_tags); break; }
   }
   if(!p){ console.log('[TYPE_TAG_TOOLTIP] BAIL: no player found in any source array'); return; }
   if(!Array.isArray(p.type_tags)){ console.log('[TYPE_TAG_TOOLTIP] BAIL: p.type_tags is not an array:', p.type_tags); return; }
