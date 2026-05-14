@@ -9872,15 +9872,16 @@ function experienceLabel(p){
     return String(Number(last) - Number(first) + 1);
   }
 
-  // Cup of coffee: MLB action this season but below qualifying thresholds.
-  if(hasMlbAction && ip < 50 && ab < 130) return '☕';
-
-  // Real rookie: crossed either threshold this year, OR Chadwick already
-  // has him recorded as first-year-current-season.
+  // EXP_LABEL_V3 (May 13, 2026 — Dude's "kill the coffee emoji" pass)
+  // The cup-of-coffee branch was retired. The Dude's refined rule:
+  //   * Any MLB action this season  → 'R' (rookie until Chadwick promotes)
+  //   * Chadwick has him as first-year-current-season → 'R'
+  //   * Everyone else → 'M' (pure minor leaguer / no MLB record)
+  // Vet branch above (Chadwick first<currentYear) handles year counts.
   if(hasMlbAction || (first != null && Number(first) >= currentYear)) return 'R';
 
-  // No MLB activity at all and no Chadwick record → pure prospect.
-  return '—';
+  // No MLB activity and no Chadwick first-year record → minor leaguer.
+  return 'M';
 }
 
 // Helper — copies the currently-active sample's stat values onto the
@@ -9936,7 +9937,7 @@ function _renderLevelChip(p, tableName){
   // CUP_OF_COFFEE_V1 (May 12, 2026 - Dude's idea, finally shipped) - when a
   // prospect-tab player has both MLB+MiLB samples AND is showing the MLB view,
   // the chip reads coffee-emoji instead of 'MLB'. Asterisk + swap arrow stay.
-  const _chipLabel = _showingMlb ? '☕' : p.level;
+  const _chipLabel = _showingMlb ? 'MLB' : p.level;
   // Asterisk persists in both directions when both samples exist —
   // signals "this guy has been up this year" at a glance.
   const _asterisk = _hasBoth ? `<span style="font-size:11px;font-weight:700;color:#fbbf24;margin-left:1px;line-height:1;vertical-align:super">*</span>` : '';
