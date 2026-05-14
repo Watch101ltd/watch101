@@ -2973,23 +2973,61 @@ async function saveData(opts){
 async function loadSavantData(){
   if(savantLoaded) return;
   try{
+    // SAVANT_REFACTOR_PHASE1_V1 (May 14, 2026 overnight) — added four new
+    // endpoints to power Matt's hitter+pitcher advanced-stats refactor:
+    //   - /savant/custom/batter           K%, BB%, Whiff%, Chase%, Sprint Speed,
+    //                                     Bat Speed, Exit Velo, Barrel%, Hard Hit%
+    //   - /savant/custom/pitcher          K%, BB%, Whiff%, Chase%
+    //   - /savant/batted-ball/pitcher     gb_rate (Ground Ball %)
+    //   - /savant/pitch-arsenals/fastball ff_avg_speed (Fastball Velo)
+    // These all add fields onto the same savantHitters / savantPitchers maps
+    // that the existing 4 endpoints populate. mergeSavant() (below) reads from
+    // those maps and stamps everything onto the player record. Phase 1 is
+    // plumbing only — no visual changes. Phase 2 makes the new columns visible.
     const hitterUrl = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/expected/batter';
     const pitcherUrl = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/expected/pitcher';
     const hitterAdvUrl = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/statcast/batter';
     const pitcherAdvUrl = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/statcast/pitcher';
+    // NEW Phase 1 endpoints
+    const hitterCustomUrl  = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/custom/batter';
+    const pitcherCustomUrl = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/custom/pitcher';
+    const pitcherBattedUrl = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/batted-ball/pitcher';
+    const fastballUrl      = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/pitch-arsenals/fastball';
 
     const timeout = (ms) => new Promise((_,reject) => setTimeout(()=>reject(new Error('timeout')),ms));
-    const [hRes, pRes, hAdvRes, pAdvRes] = await Promise.all([
+    const [hRes, pRes, hAdvRes, pAdvRes, hCustomRes, pCustomRes, pBattedRes, fbRes] = await Promise.all([
       Promise.race([fetch(hitterUrl), timeout(8000)]),
       Promise.race([fetch(pitcherUrl), timeout(8000)]),
       Promise.race([fetch(hitterAdvUrl), timeout(8000)]),
-      Promise.race([fetch(pitcherAdvUrl), timeout(8000)])
+      Promise.race([fetch(pitcherAdvUrl), timeout(8000)]),
+      Promise.race([fetch(hitterCustomUrl), timeout(8000)]).catch(e => ({ok:false, _err:e})),
+      Promise.race([fetch(pitcherCustomUrl), timeout(8000)]).catch(e => ({ok:false, _err:e})),
+      Promise.race([fetch(pitcherBattedUrl), timeout(8000)]).catch(e => ({ok:false, _err:e})),
+      Promise.race([fetch(fastballUrl), timeout(8000)]).catch(e => ({ok:false, _err:e}))
     ]);
 
     if(hRes.ok){ parseSavantCSV(await hRes.text(), savantHitters); }
     if(pRes.ok){ parseSavantCSV(await pRes.text(), savantPitchers); }
     if(hAdvRes.ok){ parseSavantCSV(await hAdvRes.text(), savantHitters); }
     if(pAdvRes.ok){ parseSavantCSV(await pAdvRes.text(), savantPitchers); }
+    // NEW Phase 1 — merge the four new endpoints. Each one targets the same
+    // savantHitters or savantPitchers map and Object.assigns its fields, so
+    // mergeSavant() below picks them up automatically.
+    if(hCustomRes.ok){ parseSavantCSV(await hCustomRes.text(), savantHitters); }
+    if(pCustomRes.ok){ parseSavantCSV(await pCustomRes.text(), savantPitchers); }
+    if(pBattedRes.ok){
+      // Batted-ball CSV uses 'id' as the player-id column instead of 'player_id'.
+      // Normalize before parse so parseSavantCSV's row['player_id'] lookup works.
+      var _bbText = await pBattedRes.text();
+      _bbText = _bbText.replace(/^"id"/, '"player_id"');
+      parseSavantCSV(_bbText, savantPitchers);
+    }
+    if(fbRes.ok){
+      // Pitch-arsenals CSV uses 'pitcher' as the player-id column. Same fix.
+      var _fbText = await fbRes.text();
+      _fbText = _fbText.replace(/,"pitcher",/, ',"player_id",');
+      parseSavantCSV(_fbText, savantPitchers);
+    }
     savantLoaded = true;
     buildPercentileMaps();
     // Merge into existing players and re-render
@@ -3047,6 +3085,37 @@ function mergeSavant(p){
   if(src['avg_hit_speed'])         p.sv_ev        = parseFloat(src['avg_hit_speed']);
   if(src['max_hit_speed'])         p.sv_maxev     = parseFloat(src['max_hit_speed']);
   if(src['anglesweetspotpercent']) p.sv_sweetspot = parseFloat(src['anglesweetspotpercent']);
+  // SAVANT_REFACTOR_PHASE1_V1 (May 14, 2026) — fields from the four new endpoints.
+  // All come from the same savantHitters / savantPitchers maps because parseSavantCSV
+  // does Object.assign by player_id. Hitter fields apply only to hitter-record paths
+  // (since `src` is savantHitters[id] for hitters); pitcher fields likewise.
+  // K-BB% is a derived field — computed live, not scraped. Stays correct even
+  // if K% and BB% update independently.
+  if(src['k_percent'])           p.sv_k_pct        = parseFloat(src['k_percent']);
+  if(src['bb_percent'])          p.sv_bb_pct       = parseFloat(src['bb_percent']);
+  if(src['whiff_percent'])       p.sv_whiff_pct    = parseFloat(src['whiff_percent']);
+  if(src['chase_percent'])       p.sv_chase_pct    = parseFloat(src['chase_percent']);
+  // Hitter-only Phase 1 fields
+  if(src['sprint_speed'])        p.sv_sprint_speed = parseFloat(src['sprint_speed']);
+  if(src['bat_speed'])           p.sv_bat_speed    = parseFloat(src['bat_speed']);
+  if(src['brl_percent'])         p.sv_brl_pct      = parseFloat(src['brl_percent']);
+  if(src['hard_hit_percent'])    p.sv_hard_hit_pct = parseFloat(src['hard_hit_percent']);
+  // exit_velocity is the same field as avg_hit_speed but spelled differently
+  // on the custom endpoint. If we have it from custom and not from statcast, use it.
+  if(src['exit_velocity'] && p.sv_ev == null) p.sv_ev = parseFloat(src['exit_velocity']);
+  // Pitcher-only Phase 1 fields
+  if(src['gb_rate']){
+    // gb_rate from batted-ball is a 0-1 fraction (0.4494 = 44.94%). Multiply
+    // by 100 so it lines up with the other percent stats that are already in
+    // 0-100 form (e.g. k_percent of 21.5 means 21.5%).
+    p.sv_gb_pct = parseFloat(src['gb_rate']) * 100;
+  }
+  if(src['ff_avg_speed'])        p.sv_fb_velo      = parseFloat(src['ff_avg_speed']);
+  // Live-computed: K-BB% (a single column per Matt's call). Both inputs must
+  // be present; otherwise leave undefined so the render shows em-dash.
+  if(p.sv_k_pct != null && p.sv_bb_pct != null){
+    p.sv_k_minus_bb = p.sv_k_pct - p.sv_bb_pct;
+  }
   if(src['brl_percent'])           p.sv_barrel    = parseFloat(src['brl_percent']);
   if(src['ev95percent'])           p.sv_ev95      = parseFloat(src['ev95percent']);
   // Pitcher only
@@ -10915,7 +10984,12 @@ function openPlayerCard(e, p){
 
   // Name and meta
   document.getElementById('player-card-name').textContent = p.name || '';
-  var pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
+  // POSITION_FILTER_DEEPCUT_V1 (5/14/2026) — same fix as the live Deep Cut path.
+  // This block is in the legacy openPlayerCard small-popup code that's been
+  // unreachable since the bridge to openPlayerPage was added (see line ~10728);
+  // patching for safety in case the legacy path ever fires again.
+  var _normalizedPosLegacy = normalizePositions(p.positions || []);
+  var pos = _normalizedPosLegacy.length > 0 ? _normalizedPosLegacy.join(', ') : (p.primaryPos || '—');
   document.getElementById('player-card-meta').textContent = (p.team||'—') + ' · ' + pos + ' · Age ' + (p.age||'—');
 
   // Show/hide advanced button — hide it when already in advanced mode
@@ -145537,7 +145611,15 @@ function openPlayerPage(p){
   photoEl.alt = p.name || '';
 
   document.getElementById('ppo-name').textContent = p.name || '';
-  var pos = (p.positions && p.positions.length > 0) ? p.positions.join(', ') : (p.primaryPos || '—');
+  // POSITION_FILTER_DEEPCUT_V1 (5/14/2026 overnight) — Deep Cut hero meta was
+  // showing CI / MI / IF compound labels (e.g. Burleson as "1B, CI, IF, OF")
+  // because Yahoo's eligible_positions includes those redundant rollups.
+  // Other render paths (main row, pool, leaders) already strip them via
+  // normalizePositions() against the DISPLAY_POSITIONS whitelist
+  // ['C','1B','2B','3B','SS','P','OF']. The Deep Cut page was the missed spot.
+  // Routing through normalizePositions() makes Burleson display as "1B, OF".
+  var _normalizedPos = normalizePositions(p.positions || []);
+  var pos = _normalizedPos.length > 0 ? _normalizedPos.join(', ') : (p.primaryPos || '—');
   var hand = isPitcher(p) ? (p.throws || p.bats || '') : (p.bats || '');
   var subParts = [p.team||'—', pos, 'Age ' + decimalAge(p)];
   if(hand) subParts.push(hand);
