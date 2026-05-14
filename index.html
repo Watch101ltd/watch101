@@ -132,21 +132,24 @@ th.sorted .sort-arrow{opacity:1;color:var(--gold)}
 #main-table th.col-player{width:180px;text-align:left}     /* Player */
 #main-table th.col-rdelta{width:44px}                      /* +/- */
 #main-table th.col-type{width:60px}                        /* Type (Matt's emoji categories - PLACEHOLDER) */
-#main-table th.col-priority{width:56px;text-align:center}  /* Priority (1-10, set on Deep Cut page) */
-/* PRIORITY_COLOR_V1 (May 5, 2026) — color-grade Priority cells from red (1, hot) → blue (10, cold).
-   Apple-iOS-derived palette picked for legibility against both night-mode (#0c0c12) and day-mode
-   (light gray) backgrounds. Empty cells (em dash) stay muted via the .stat-na class. */
-#main-table td.col-priority{font-weight:800;font-variant-numeric:tabular-nums;}
-#main-table td.col-priority.pr-1{color:#ff3b30}    /* Bright red — highest priority */
-#main-table td.col-priority.pr-2{color:#ff6b35}    /* Red-orange */
-#main-table td.col-priority.pr-3{color:#ff9500}    /* Orange */
-#main-table td.col-priority.pr-4{color:#ffcc00}    /* Amber */
-#main-table td.col-priority.pr-5{color:#a3d955}    /* Lime */
-#main-table td.col-priority.pr-6{color:#34c759}    /* Green */
-#main-table td.col-priority.pr-7{color:#5ac8c8}    /* Teal */
-#main-table td.col-priority.pr-8{color:#5ac8fa}    /* Light blue */
-#main-table td.col-priority.pr-9{color:#3da5ff}    /* Sky blue */
-#main-table td.col-priority.pr-10{color:#007aff}   /* Deep blue — lowest priority */
+#main-table th.col-priority{width:88px;text-align:center}  /* Priority (5 stars, half-step, set on Deep Cut page or by clicking row) */
+/* PRIORITY_STARS_V1 (May 13, 2026) — half-step star rating in the Priority column.
+   Replaces the old PRIORITY_COLOR_V1 1-10 colored integer. Five star slots,
+   each can be empty / half-filled / fully-filled. Click cycles half → full →
+   clear on the same star; clicking a different star restarts the cycle on it.
+   Gold (#fbbf24) matches the rest of the tracker's brand accents. Inspired
+   by the football watch-list star widget shipped earlier the same day. */
+#main-table td.col-priority{text-align:center;line-height:1;}
+.priority-stars{display:inline-flex;gap:1px;font-size:14px;line-height:1;cursor:pointer;user-select:none;vertical-align:middle;}
+.priority-stars .pstar-slot{position:relative;display:inline-block;width:14px;height:14px;color:#3a3f4a;}
+.priority-stars .pstar-slot::before{content:'\2605';position:absolute;left:0;top:0;width:100%;height:100%;color:inherit;}
+.priority-stars .pstar-slot.full::before{color:#fbbf24;}
+.priority-stars .pstar-slot.half::after{content:'\2605';position:absolute;left:0;top:0;width:50%;height:100%;color:#fbbf24;overflow:hidden;}
+.priority-stars:hover .pstar-slot{filter:brightness(1.15);}
+/* The same widget is reused inside the Deep Cut overlay picker; size it up
+   slightly there so it's easier for Matt to click. */
+#player-page-overlay .priority-stars{font-size:20px;}
+#player-page-overlay .priority-stars .pstar-slot{width:20px;height:20px;}
 /* STATIC_ZONE_WIDTHS_V2 (May 12, 2026 — PC Walter) — extended the col-pos/col-team/col-age/col-exp/col-bt width rules
    from #main-table only to also cover #pool-main-table, #leaders-main-table, and #pros-main-table.
    Root cause of the long-running alignment bug: only #main-table had width rules on the static-zone columns,
@@ -1582,7 +1585,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <th class="col-bt" onclick="sortBy('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="arr-bats">↕</span></th>
         <th class="col-rdelta col-zone-divider" onclick="sortBy('rank_delta')" title="Movement from previous save (+ up / - down)">+/- <span class="sort-arrow" id="arr-rank_delta">↕</span></th>
         <th class="type-cell col-type" onclick="sortBy('type')" title="Player type tags — placeholder column, Matt is providing emoji categories" style="width:60px;min-width:60px;text-align:center">Type <span class="sort-arrow" id="arr-type">↕</span></th>
-        <th class="col-priority" onclick="sortBy('priority')" title="Priority 1-10 — order in which Matt wants players added (set on the player Deep Cut page)">Priority <span class="sort-arrow" id="arr-priority">↕</span></th>
+        <th class="col-priority" onclick="sortBy('priority')" title="Priority — half-step star rating (0.5–5.0). Click stars in any row, or set from the Deep Cut page. 5 = highest priority.">Priority <span class="sort-arrow" id="arr-priority">↕</span></th>
         <th class="col-note">Note</th>
         <th class="col-yahoo-rank" onclick="sortBy('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="arr-yahoo_rank">↕</span></span></div></th>
         <th class="col-owned" onclick="sortBy('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="arr-roster_pct">↕</span></span></div></th>
@@ -2781,6 +2784,21 @@ async function loadData(){
   // is instant (cached) and Yahoo never sees per-user traffic. No OAuth status
   // check needed — the Worker + NAS handle auth server-to-server. Fires even on
   // the localStorage fallback path since every path in loadData() ends here.
+  // PRIORITY_STARS_MIGRATION_V1 (May 13, 2026) — migrate any legacy 1–10
+  // integer priority values on the just-loaded players array to the new
+  // 0.5–5.0 half-step scale. Idempotent: values already in 0.5–5 pass
+  // through untouched. Runs once per loadData() call (initial load + every
+  // list switch) so even old NAS lists get cleaned up the first time
+  // they're opened after V2 deploys.
+  if(players && players.length > 0){
+    for(var _mi = 0; _mi < players.length; _mi++){
+      var _mp = players[_mi];
+      if(_mp && _mp.priority != null && _mp.priority !== ''){
+        _mp.priority = _normalizeLegacyPriority(_mp.priority);
+      }
+    }
+  }
+
   if(players && players.length > 0){
     syncYahooData(false).catch(e => console.error('[YAHOO_AUTOSYNC_V1] auto-sync failed:', e));
   }
@@ -4295,10 +4313,62 @@ async function markNameAsFlaming(mlbId){
   }
 }
 
-// PRIORITY_V1 (May 5, 2026) — set or clear a player's add-priority (1-10 or null).
-// Wired from the Deep Cut overlay's <select id="ppo-priority-select-...">.
-// Persists via autoSaveToNAS() and re-renders the main list so the Priority
-// column shows the new value (and re-sorts if Priority is the active sort).
+// PRIORITY_STARS_MIGRATION_V1 (May 13, 2026) — normalize any priority value
+// (from CSV, NAS, manual input) to the new 0.5–5.0 half-step scale.
+//   * null / '' / 0 / negative / NaN  → null (no priority set)
+//   * 0.5–5.0                          → snapped to nearest 0.5, returned as-is
+//   * 5.5–10  (legacy V1 integers)     → divided by 2 to map old 1–10 onto new
+//                                        0.5–5.0 (e.g. old "10" → new "5",
+//                                        old "5" → new "2.5", old "1" → new "0.5")
+//   * > 10                             → clamped to 5
+// Used by the CSV loader and by the load-time normalization pass that runs
+// over every players array right after loadData() completes (so saved-list
+// data gets migrated transparently the first time someone opens the page
+// after the V2 ship).
+function _normalizeLegacyPriority(raw){
+  if(raw == null || raw === '') return null;
+  var n = Number(raw);
+  if(isNaN(n) || n <= 0) return null;
+  if(n > 5) n = n / 2;          // legacy V1 1–10 → V2 0.5–5
+  if(n > 5) n = 5;              // safety clamp (shouldn't happen)
+  if(n < 0.5) n = 0.5;
+  return Math.round(n * 2) / 2; // snap to nearest 0.5
+}
+
+// PRIORITY_STARS_V1 (May 13, 2026) — render the 5-star half-step widget for
+// the Priority column AND the Deep Cut overlay picker. Called from the row
+// render in renderTable() and from the overlay picker template.
+//
+// Reads p.priority (a number from 0.5 to 5.0 in 0.5 steps, or null/0/blank
+// for "not set"). Returns the inline HTML for five star slots, each marked
+// 'full' / 'half' / '' (empty) according to the value.
+//
+// data-mlb-id on the wrapper lets the global click handler (further down,
+// PRIORITY_STARS_CLICK_V1) resolve which player was rated without needing
+// per-star inline onclicks. data-context lets the same widget appear in
+// the row AND the overlay without conflict.
+function renderPriorityStars(p, context){
+  var ctx = context || 'row';
+  var v = (p && p.priority != null && p.priority !== '') ? Number(p.priority) : 0;
+  if(isNaN(v) || v < 0) v = 0;
+  if(v > 5) v = 5;
+  var mlbId = (p && p.mlb_id != null) ? p.mlb_id : '';
+  var html = '<span class="priority-stars" data-mlb-id="' + mlbId + '" data-context="' + ctx + '" title="Click stars to set priority (half / full / clear)">';
+  for(var n = 1; n <= 5; n++){
+    var cls = 'pstar-slot';
+    if(v >= n) cls += ' full';
+    else if(v >= (n - 0.5)) cls += ' half';
+    html += '<span class="' + cls + '" data-value="' + n + '"></span>';
+  }
+  html += '</span>';
+  return html;
+}
+
+// PRIORITY_V2 (May 13, 2026) — set or clear a player's add-priority.
+// Now accepts a half-step number from 0 (clear) through 5.0 in 0.5 increments.
+// Called from the global click delegator below (PRIORITY_STARS_CLICK_V1) which
+// handles the half/full/clear cycle math. Persists via autoSaveToNAS() and
+// re-renders the main list so the Priority column updates immediately.
 async function setPriority(mlbId, rawValue){
   if(_blockIfReadOnly('setPriority')) return;
   try {
@@ -4307,39 +4377,76 @@ async function setPriority(mlbId, rawValue){
       p = players.find(function(x){ return String(x.mlb_id) === String(mlbId); });
     }
     if(!p){
-      console.warn('[PRIORITY_V1] player not found in active list for mlb_id:', mlbId);
+      console.warn('[PRIORITY_V2] player not found in active list for mlb_id:', mlbId);
       return;
     }
-    // Empty string from <option value=""> means clear the priority.
-    if(rawValue === '' || rawValue == null){
+    // Empty / null / 0 means clear the priority.
+    if(rawValue === '' || rawValue == null || rawValue === 0 || rawValue === '0'){
       p.priority = null;
     } else {
-      var n = parseInt(rawValue, 10);
-      if(isNaN(n) || n < 1 || n > 10){
-        console.warn('[PRIORITY_V1] invalid priority value:', rawValue);
+      var n = Number(rawValue);
+      if(isNaN(n) || n < 0.5 || n > 5){
+        console.warn('[PRIORITY_V2] invalid priority value:', rawValue);
         return;
       }
-      p.priority = n;
+      // Snap to the nearest 0.5 just in case.
+      p.priority = Math.round(n * 2) / 2;
     }
     // Persist so the next Save-to-Excel and any reload keeps the value.
-    try { await autoSaveToNAS(); } catch(e){ console.warn('[PRIORITY_V1] autosave failed:', e); }
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[PRIORITY_V2] autosave failed:', e); }
     // Refresh the main table so the Priority column updates immediately.
     // If currentSort is 'priority', the row will jump to its new sorted spot.
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
-    // Update the live "Currently priority N" tag text on the overlay so the
-    // user gets immediate feedback without having to close + reopen the panel.
+    // Update the live tag text on the overlay (if visible) so the user gets
+    // immediate feedback without having to close + reopen the panel.
     try {
-      var tagEl = document.querySelector('#ppo-priority-select-' + mlbId + ' ~ .ppo-priority-tag');
+      var tagEl = document.querySelector('.priority-stars[data-mlb-id="' + mlbId + '"][data-context="overlay"] ~ .ppo-priority-tag');
       if(tagEl){
         tagEl.textContent = (p.priority == null)
-          ? 'Backend only — set the order Matt wants this player added (1 = highest)'
-          : 'Currently priority ' + p.priority + ' — change anytime';
+          ? 'Backend only — click stars to rank Matt\'s add-priority (5 = highest)'
+          : 'Currently priority ' + p.priority + ' / 5 — click again to change';
       }
     } catch(_re){}
   } catch(e){
-    console.warn('[PRIORITY_V1] setPriority failed:', e);
+    console.warn('[PRIORITY_V2] setPriority failed:', e);
   }
 }
+
+// PRIORITY_STARS_CLICK_V1 (May 13, 2026) — global click delegator for the
+// star widget. Wired once on document load. Reads data-mlb-id from the
+// .priority-stars wrapper and data-value from the clicked .pstar-slot, then
+// computes the next state in the half → full → clear cycle and calls
+// setPriority(). Same widget instance works in the row AND the overlay.
+function _priorityStarsClickHandler(e){
+  var slot = e.target.closest && e.target.closest('.priority-stars .pstar-slot');
+  if(!slot) return;
+  var wrap = slot.closest('.priority-stars');
+  if(!wrap) return;
+  var mlbId = wrap.getAttribute('data-mlb-id');
+  var clicked = parseInt(slot.getAttribute('data-value'), 10);
+  if(!mlbId || !clicked) return;
+  // Find current priority from the player record.
+  var p = null;
+  if(typeof players !== 'undefined' && Array.isArray(players)){
+    p = players.find(function(x){ return String(x.mlb_id) === String(mlbId); });
+  }
+  var current = (p && p.priority != null && p.priority !== '') ? Number(p.priority) : 0;
+  if(isNaN(current)) current = 0;
+  // Cycle math:
+  //   if current === clicked         → clear (0)
+  //   if current === clicked - 0.5   → advance to full (clicked)
+  //   else (different star or fresh) → set to half (clicked - 0.5)
+  var next;
+  if(current === clicked){
+    next = 0;
+  } else if(current === clicked - 0.5){
+    next = clicked;
+  } else {
+    next = clicked - 0.5;
+  }
+  setPriority(mlbId, next);
+}
+document.addEventListener('click', _priorityStarsClickHandler);
 
 // TYPE_TAGS_V1 (April 27, 2026) — Type Column emoji vocabulary + render helper.
 // BACKEND-DRIVEN, FRONT-END VISIBLE: the picker UI in the Deep Cut overlay is
@@ -4632,7 +4739,7 @@ function renderTable(){
       <td class="stat-cell col-bt">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
       <td class="stat-cell col-rdelta col-zone-divider">${renderDelta(p)}</td>
       <td class="stat-cell type-cell col-type" style="text-align:center" title="Player type tags">${typeBadge(p)}</td>
-      <td class="stat-cell col-priority${(p.priority!=null&&p.priority!=='')?(' pr-'+p.priority):''}" style="text-align:center">${(p.priority!=null&&p.priority!=='')?p.priority:'<span class="stat-na">—</span>'}</td>
+      <td class="stat-cell col-priority" style="text-align:center">${renderPriorityStars(p)}</td>
       <td class="col-note">${(()=>{
           // NOTE_ARCHIVE_V1 (April 25, 2026) — Notes column shows p.note if it
           // has content (the live edit). If p.note is empty but p.note_history
@@ -5248,12 +5355,10 @@ function handleImport(e){
           rosterNameMap[name.toLowerCase().trim()] ||
           rosterNameMap[normalizeName(name).toLowerCase().trim()] ||
           null;
-        // PRIORITY_COL_V1 (May 5, 2026) — parse priority 1-10 or null. Empty/invalid → null.
-        let _parsedPriority = null;
-        if(priority != null && priority !== ''){
-          const _pn = parseInt(priority, 10);
-          if(!isNaN(_pn) && _pn >= 1 && _pn <= 10) _parsedPriority = _pn;
-        }
+        // PRIORITY_COL_V2 (May 13, 2026) — parse priority as a half-step number
+        // (0.5–5.0). Legacy CSV values from V1 (integers 1–10) are auto-divided
+        // by 2 so an old "10" becomes the new "5". Lossless 1:1 mapping.
+        let _parsedPriority = _normalizeLegacyPriority(priority);
         players.push({ id:uid(), name, positions, team,
           mlb_id: resolvedId,
           rank: parseInt(rank)||players.length+1,
@@ -145386,25 +145491,19 @@ function openPlayerPage(p){
     + '<span class="ppo-mark-flaming-tag">' + _flameTagText + '</span>'
     + '</div>';
 
-  // PRIORITY_V1 (May 5, 2026) — BACKEND_ONLY priority picker.
-  // Sets p.priority (1-10 or null). Drives the Priority column on the main
-  // list. Sibling to MARK_FLAMING_V1 / MARK_NOTE_FRESH_V1.
+  // PRIORITY_V2 (May 13, 2026) — BACKEND_ONLY priority picker, now using the
+  // half-step star widget instead of the old 1-10 <select> dropdown. Same
+  // widget that's rendered in the row, just sized larger via the overlay-
+  // scoped CSS (#player-page-overlay .priority-stars). Click handler is the
+  // global PRIORITY_STARS_CLICK_V1 delegator — no per-instance wiring needed.
   // **Hide when Read-Only Mode ships.** Already tagged backend-only.
-  var _currentPriority = (p.priority != null && p.priority !== '') ? String(p.priority) : '';
-  var _priorityOptions = '<option value=""' + (_currentPriority === '' ? ' selected' : '') + '>—</option>';
-  for(var _pi = 1; _pi <= 10; _pi++){
-    _priorityOptions += '<option value="' + _pi + '"' + (_currentPriority === String(_pi) ? ' selected' : '') + '>' + _pi + '</option>';
-  }
-  var _priorityTagText = _currentPriority === ''
-    ? 'Backend only — set the order Matt wants this player added (1 = highest)'
-    : 'Currently priority ' + _currentPriority + ' — change anytime';
+  var _currentPriority = (p.priority != null && p.priority !== '') ? Number(p.priority) : 0;
+  var _priorityTagText = (_currentPriority === 0 || isNaN(_currentPriority))
+    ? 'Backend only — click stars to rank Matt\'s add-priority (5 = highest)'
+    : 'Currently priority ' + _currentPriority + ' / 5 — click again to change';
   notesHtml += '<div class="ppo-priority-row backend-only">'
-    + '<label class="ppo-priority-label" for="ppo-priority-select-' + mlbId + '">Priority</label>'
-    + '<select id="ppo-priority-select-' + mlbId + '" class="ppo-priority-select" '
-    +   'onchange="setPriority(\'' + mlbId + '\', this.value)" '
-    +   'title="Set add-priority 1-10. — = no priority set.">'
-    +   _priorityOptions
-    + '</select>'
+    + '<label class="ppo-priority-label">Priority</label>'
+    + renderPriorityStars(p, 'overlay')
     + '<span class="ppo-priority-tag">' + _priorityTagText + '</span>'
     + '</div>';
 
