@@ -2072,6 +2072,75 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
   </div>
 </div>
 
+<!-- TIERS_V1 (May 14, 2026) — Phase C BACKEND_ONLY modal for creating an
+     editorial tier (a colored bracket around a contiguous range of players
+     on the active list). Reuses existing .modal-overlay / .modal /
+     .form-grid / .form-group / .modal-actions styles so it inherits the
+     established Watch 101 aesthetic.
+     Color swatches are styled inline; clicking one sets the hidden
+     #tier-color value and adds a .selected class for visual feedback.
+     Start/End player dropdowns are populated by openCreateTierModal()
+     at open time so they always reflect the live players[] order. -->
+<div class="modal-overlay" id="create-tier-modal">
+  <div class="modal">
+    <h2>🏷️ Create a Tier</h2>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px;font-family:'Nunito Sans',sans-serif;line-height:1.5">
+      Draws a colored bracket around a contiguous range of players on the current list.
+      Brackets hide automatically when the list is filtered or sorted, and reappear when
+      the list returns to its default rank order. Each list keeps its own tiers.
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Tier Name *</label>
+        <input type="text" id="tier-name" placeholder="e.g. Power Bats, Sleepers, Avoid" autocomplete="off" maxlength="40">
+      </div>
+      <div class="form-group full">
+        <label>Color *</label>
+        <input type="hidden" id="tier-color" value="">
+        <div id="tier-color-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+          <button type="button" class="tier-swatch" data-color="red"    style="background:#ef4444" onclick="selectTierColor('red')"    title="Red"></button>
+          <button type="button" class="tier-swatch" data-color="orange" style="background:#f97316" onclick="selectTierColor('orange')" title="Orange"></button>
+          <button type="button" class="tier-swatch" data-color="gold"   style="background:#eab308" onclick="selectTierColor('gold')"   title="Gold"></button>
+          <button type="button" class="tier-swatch" data-color="green"  style="background:#22c55e" onclick="selectTierColor('green')"  title="Green"></button>
+          <button type="button" class="tier-swatch" data-color="blue"   style="background:#3b82f6" onclick="selectTierColor('blue')"   title="Blue"></button>
+          <button type="button" class="tier-swatch" data-color="purple" style="background:#a855f7" onclick="selectTierColor('purple')" title="Purple"></button>
+          <button type="button" class="tier-swatch" data-color="pink"   style="background:#ec4899" onclick="selectTierColor('pink')"   title="Pink"></button>
+          <button type="button" class="tier-swatch" data-color="gray"   style="background:#94a3b8" onclick="selectTierColor('gray')"   title="Gray"></button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Start Player *</label>
+        <select id="tier-start"><option value="">Select…</option></select>
+      </div>
+      <div class="form-group">
+        <label>End Player *</label>
+        <select id="tier-end"><option value="">Select…</option></select>
+      </div>
+    </div>
+    <div id="tier-error" style="display:none;color:var(--red);font-size:12px;font-family:'Nunito Sans',sans-serif;margin-bottom:8px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCreateTierModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="saveTierFromModal()">Create Tier</button>
+    </div>
+  </div>
+</div>
+<style>
+  /* TIERS_V1 — color swatch styling. Uses an inline .selected class so we
+     don't depend on stylesheet load order. The ring is a box-shadow so it
+     doesn't shift layout when toggled. */
+  .tier-swatch {
+    width:32px; height:32px; border-radius:50%;
+    border:2px solid var(--border); cursor:pointer;
+    padding:0; transition:transform 0.1s, box-shadow 0.1s;
+  }
+  .tier-swatch:hover { transform:scale(1.1); }
+  .tier-swatch.selected {
+    border-color:var(--gold);
+    box-shadow:0 0 0 3px rgba(234,179,8,0.35);
+    transform:scale(1.1);
+  }
+</style>
+
 <!-- ADD_CUSTOM_PLAYER_V1 (April 25, 2026) — BACKEND_ONLY admin modal for
      manually adding a player who isn't yet in the MLB or Yahoo data.
      Hide when Read-Only Mode ships. Reuses existing .modal-overlay /
@@ -4844,13 +4913,135 @@ async function toggleTypeTag(mlbId, tagId, checked){
 // **Hide these from the UI when Read-Only Mode ships.** Fans on Cloudflare
 // should never see the menu item — but the handlers themselves are harmless
 // to leave in place, since they require the modal to be open.
-// TIERS_V1 (May 14, 2026) — Phase A placeholder.
-// Real modal builds in Phase C. This stub fires when Matt clicks
-// "🏷️ Create a Tier" so the menu item is wired even before the modal exists.
+// TIERS_V1 (May 14, 2026) — Phase C BACKEND_ONLY tier-creation handlers.
+// Opens the modal, populates Start/End dropdowns from the active players[]
+// array (so the order matches what's on screen), validates the form on
+// submit, builds a tier object, pushes it to currentTiers, and persists
+// via autoSaveToNAS so the JSON sidecar gets the new tier.
+//
+// Identity: tiers reference players by mlb_id (not by index) so they
+// survive list reorders. End-rank is enforced ≥ Start-rank to keep
+// ranges sane. Color is picked from a fixed 8-color palette.
 function openCreateTierModal(){
   if(_blockIfReadOnly('openCreateTierModal')) return;
-  console.log('[TIERS_V1] openCreateTierModal called — Phase C will build the actual modal');
-  alert('Tier creation modal — coming in Phase C build step.');
+  try {
+    // Reset the form each open so we don't bleed last attempt's input.
+    var nameEl  = document.getElementById('tier-name');
+    var colorEl = document.getElementById('tier-color');
+    var startEl = document.getElementById('tier-start');
+    var endEl   = document.getElementById('tier-end');
+    var errEl   = document.getElementById('tier-error');
+    if(nameEl)  nameEl.value  = '';
+    if(colorEl) colorEl.value = '';
+    if(errEl){  errEl.style.display = 'none'; errEl.textContent = ''; }
+
+    // Clear any previously-selected swatch ring.
+    document.querySelectorAll('#tier-color-swatches .tier-swatch.selected')
+      .forEach(function(b){ b.classList.remove('selected'); });
+
+    // Populate Start + End dropdowns from the active list, in current
+    // display order. Each <option> stores the player's mlb_id so the
+    // tier survives reorders.
+    if(startEl && endEl && Array.isArray(players)){
+      var optsHtml = '<option value="">Select…</option>';
+      players.forEach(function(p, idx){
+        if(!p || !p.mlb_id) return;     // skip rows without an mlb_id
+        var rank = (idx + 1);
+        var label = '#' + rank + '  ' + (p.name || '(unnamed)');
+        optsHtml += '<option value="' + p.mlb_id + '">' + label.replace(/</g,'&lt;') + '</option>';
+      });
+      startEl.innerHTML = optsHtml;
+      endEl.innerHTML   = optsHtml;
+    }
+
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.classList.add('open');
+    setTimeout(function(){ if(nameEl) nameEl.focus(); }, 50);
+  } catch(e){
+    console.warn('[TIERS_V1] openCreateTierModal failed:', e);
+  }
+}
+
+// Swatch click handler — sets the hidden color value and toggles the
+// .selected ring. Single-select: picking a new color clears the old one.
+function selectTierColor(color){
+  try {
+    var hidden = document.getElementById('tier-color');
+    if(hidden) hidden.value = color;
+    document.querySelectorAll('#tier-color-swatches .tier-swatch')
+      .forEach(function(b){
+        if(b.getAttribute('data-color') === color) b.classList.add('selected');
+        else b.classList.remove('selected');
+      });
+  } catch(e){ console.warn('[TIERS_V1] selectTierColor failed:', e); }
+}
+
+async function saveTierFromModal(){
+  if(_blockIfReadOnly('saveTierFromModal')) return;
+  var errEl = document.getElementById('tier-error');
+  function showErr(msg){
+    if(errEl){ errEl.textContent = msg; errEl.style.display = 'block'; }
+  }
+  try {
+    var name  = (document.getElementById('tier-name').value || '').trim();
+    var color = (document.getElementById('tier-color').value || '').trim();
+    var startId = document.getElementById('tier-start').value;
+    var endId   = document.getElementById('tier-end').value;
+
+    if(!name)    { showErr('Tier name is required.'); return; }
+    if(!color)   { showErr('Pick a color from the palette.'); return; }
+    if(!startId) { showErr('Pick a Start Player.'); return; }
+    if(!endId)   { showErr('Pick an End Player.'); return; }
+
+    // Resolve indexes so we can enforce End ≥ Start (rank order).
+    var startIdx = players.findIndex(function(p){ return p && String(p.mlb_id) === String(startId); });
+    var endIdx   = players.findIndex(function(p){ return p && String(p.mlb_id) === String(endId); });
+    if(startIdx < 0 || endIdx < 0){
+      showErr('Could not find one of the selected players. Try reopening the modal.');
+      return;
+    }
+    if(endIdx < startIdx){
+      showErr('End Player must be the same as or below the Start Player on the list.');
+      return;
+    }
+
+    // Build the tier object. Currying current timestamp into the id
+    // gives a stable, unique key we can target for edit/delete later.
+    var tier = {
+      id: 'tier_' + Date.now(),
+      name: name,
+      color: color,
+      start_mlb_id: String(startId),
+      end_mlb_id: String(endId),
+      created_at: new Date().toISOString(),
+      created_by: 'matt'
+    };
+
+    if(!Array.isArray(currentTiers)) currentTiers = [];
+    currentTiers.push(tier);
+    console.log('[TIERS_V1] tier created:', tier, '— total tiers now:', currentTiers.length);
+
+    // Persist. autoSaveToNAS writes the JSON sidecar with currentTiers
+    // included (wired in Phase B at the jsonPayload site).
+    try {
+      if(typeof autoSaveToNAS === 'function'){ await autoSaveToNAS(); }
+    } catch(e){ console.warn('[TIERS_V1] autoSaveToNAS failed:', e); }
+
+    closeCreateTierModal();
+    // Phase D will call renderTiers() here to draw the bracket.
+    // For now we just confirm the save so Matt knows it worked.
+    try { alert('Tier saved: ' + name + '. Bracket rendering ships in the next build step.'); } catch(_){}
+  } catch(e){
+    console.warn('[TIERS_V1] saveTierFromModal failed:', e);
+    showErr('Something went wrong. Check the console for details.');
+  }
+}
+
+function closeCreateTierModal(){
+  try {
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.classList.remove('open');
+  } catch(e){ console.warn('[TIERS_V1] closeCreateTierModal failed:', e); }
 }
 
 function openAddCustomPlayerModal(){
