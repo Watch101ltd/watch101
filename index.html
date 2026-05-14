@@ -344,6 +344,7 @@ tr.row-minor-stats td.yahoo-rank * {
 .pos-P{background:#1e3a5f;color:#60a5fa;border:1px solid #1e40af}
 .injury-badge{display:inline-block;font-size:8px;font-family:'Nunito Sans',sans-serif;font-weight:700;padding:1px 3px;border-radius:2px;letter-spacing:0.03em;flex-shrink:0}
 .injury-il10{background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444}
+.injury-il15{background:#641818;color:#fca5a5;border:1px solid #e83434}  /* IL_CADENCE_V1 (5/14/2026) — between IL10 and IL60 visually */
 .injury-il60{background:#4a0000;color:#f87171;border:1px solid #dc2626}
 .injury-dtd{background:#78350f;color:#fcd34d;border:1px solid #f59e0b}
 .injury-na{background:#1f2937;color:#9ca3af;border:1px solid #4b5563}
@@ -441,6 +442,7 @@ body.day-mode .pos-OF{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
 body.day-mode .pos-DH{background:#fef9c3;color:#854d0e;border:1px solid #facc15}    /* DH — gold (DH_ONLY_RESCUE_V1 May 12, 2026) */
 body.day-mode .pos-P{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
 body.day-mode .injury-il10{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+body.day-mode .injury-il15{background:#fed7d7;color:#8b1818;border:1px solid #f9a8a8}  /* IL_CADENCE_V1 day-mode */
 body.day-mode .injury-il60{background:#fecaca;color:#7f1d1d;border:1px solid #f87171}
 body.day-mode .injury-dtd{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
 body.day-mode .injury-na{background:#e5e7eb;color:#374151;border:1px solid #9ca3af}
@@ -2807,6 +2809,17 @@ async function loadData(){
 
   if(players && players.length > 0){
     syncYahooData(false).catch(e => console.error('[YAHOO_AUTOSYNC_V1] auto-sync failed:', e));
+
+    // IL_CADENCE_V1 (May 14, 2026) — MLB Stats API gives us live injury status,
+    // which is hours (sometimes a full day) fresher than the Yahoo cache.
+    // Runs in parallel with Yahoo sync; result overrides Yahoo's injury_status.
+    fetchMLBInjuryStatus().then(ilMap => {
+      applyMLBInjuryStatus(players, ilMap);
+      if(typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers)) applyMLBInjuryStatus(poolPlayers, ilMap);
+      if(typeof renderTable === 'function') try { renderTable(); } catch(_re){}
+      if(typeof renderPool === 'function' && typeof poolLoaded !== 'undefined' && poolLoaded) try { renderPool(); } catch(_re){}
+      if(typeof renderLeaders === 'function') try { renderLeaders(); } catch(_re){}
+    }).catch(e => console.warn('[IL_CADENCE_V1] hook failed:', e));
   }
 
   // MAIN_LIST_BIO_BULK_V1 (May 11, 2026) — Backfill birthDate (and bats) for
@@ -3628,6 +3641,95 @@ function yahooButtonClick(){
 }
 
 let yahooSyncing = false;
+// IL_CADENCE_V1 (May 14, 2026 overnight) — pull current IL designations directly
+// from MLB Stats API (free, no auth, no rate-limit issues at 30 calls/load).
+//
+// Why this exists: Yahoo's injury_status field is served via the Cloudflare cache
+// Worker, which only refreshes twice a day (6 AM / 6 PM Eastern). So a guy like
+// Yellich who comes off the IL and plays the same day could show stale IL10 for
+// up to ~12 hours after activation.
+//
+// MLB Stats API approach: hit /teams/{teamId}/roster?rosterType=injuredList for
+// each of the 30 MLB teams in parallel via Promise.all. Build a map keyed by
+// mlb_id. After Yahoo data applies, walk the players arrays and overwrite
+// injury_status with the MLB API value wherever present. Yahoo stays as fallback
+// for players the MLB API doesn't have (minor leaguers etc.).
+//
+// MLB Stats API status.code values are exactly IL10 / IL15 / IL60 — our badge
+// CSS now has classes for all three (.injury-il10, .injury-il15, .injury-il60).
+async function fetchMLBInjuryStatus(){
+  try {
+    // Step 1: get all 30 team IDs.
+    const teamsRes = await fetch('https://statsapi.mlb.com/api/v1/teams?sportId=1&season=2026');
+    if(!teamsRes.ok) throw new Error('MLB teams fetch failed');
+    const teamsData = await teamsRes.json();
+    const teams = teamsData.teams || [];
+    if(teams.length === 0) throw new Error('No teams returned from MLB API');
+
+    // Step 2: in parallel, fetch the IL roster for each team.
+    const ilMap = {};  // { mlbId: 'IL10' | 'IL15' | 'IL60' }
+    const promises = teams.map(team => (async () => {
+      try {
+        const rRes = await fetch(`https://statsapi.mlb.com/api/v1/teams/${team.id}/roster?season=2026&rosterType=injuredList`);
+        if(!rRes.ok) return;
+        const rData = await rRes.json();
+        for(const player of (rData.roster || [])){
+          // status.code on the IL roster is 'IL10' / 'IL15' / 'IL60' (string).
+          // Normalize defensively in case MLB returns lowercase or has dashes.
+          const rawCode = (player.status && player.status.code) || '';
+          const normalized = String(rawCode).toUpperCase().replace(/[^A-Z0-9]/g, '');
+          if(normalized === 'IL10' || normalized === 'IL15' || normalized === 'IL60'){
+            const pid = player.person && player.person.id;
+            if(pid) ilMap[String(pid)] = normalized;
+          }
+        }
+      } catch(e){
+        // Fail-quiet for one team — we'd rather have 29/30 teams' IL data than zero.
+        console.warn('[IL_CADENCE_V1] team ' + team.abbreviation + ' IL fetch failed:', e.message);
+      }
+    })());
+    await Promise.all(promises);
+
+    console.log('[IL_CADENCE_V1] fetched IL status for ' + Object.keys(ilMap).length + ' players from MLB API');
+    return ilMap;
+  } catch(e){
+    console.warn('[IL_CADENCE_V1] fetchMLBInjuryStatus failed (Yahoo fallback in effect):', e);
+    return {};
+  }
+}
+
+// Apply an MLB API injury map to a players array. Overwrites Yahoo's
+// injury_status wherever the MLB API has data; leaves Yahoo's value alone
+// otherwise. Idempotent — safe to call multiple times.
+function applyMLBInjuryStatus(playersArr, ilMap){
+  if(!Array.isArray(playersArr) || !ilMap) return;
+  let _overrideCount = 0;
+  let _clearedCount = 0;
+  for(const p of playersArr){
+    if(!p || p.mlb_id == null) continue;
+    const mlbVal = ilMap[String(p.mlb_id)];
+    if(mlbVal){
+      // MLB says he's on IL — set the badge.
+      if(p.injury_status !== mlbVal){
+        p.injury_status = mlbVal;
+        _overrideCount++;
+      }
+    } else {
+      // MLB says he's NOT on IL. If Yahoo has him as IL anything, that's stale —
+      // clear it. But only clear actual IL designations, not 'NA' (which means
+      // not-on-active-roster, a separate concept Yahoo uses for minor leaguers).
+      const yahooStatus = (p.injury_status || '').toUpperCase();
+      if(yahooStatus === 'IL10' || yahooStatus === 'IL15' || yahooStatus === 'IL60' || yahooStatus === 'DTD'){
+        p.injury_status = null;
+        _clearedCount++;
+      }
+    }
+  }
+  if(_overrideCount || _clearedCount){
+    console.log('[IL_CADENCE_V1] applied: ' + _overrideCount + ' overrides, ' + _clearedCount + ' clears');
+  }
+}
+
 async function syncYahooData(manual = false){
   // YAHOO_AUTOSYNC_V1 (April 24, 2026) — removed `!yahooConnected` gate.
   // The Cloudflare Worker + NAS handle Yahoo OAuth server-to-server now,
