@@ -5141,48 +5141,62 @@ function renderTiers(){
 
       var hex = TIER_COLOR_HEX[tier.color] || '#94a3b8';
 
-      // Vertical bar: thin colored strip on the left edge of the row range.
-      var bar = document.createElement('div');
-      bar.className = 'tier-bracket-bar';
-      bar.setAttribute('data-tier-id', tier.id);
-      bar.style.cssText =
-        'position:absolute;' +
-        'top:' + top + 'px;' +
-        'left:' + Math.max(0, left - 8) + 'px;' +
-        'width:5px;' +
-        'height:' + height + 'px;' +
-        'background:' + hex + ';' +
-        'border-radius:3px;' +
-        'box-shadow:0 0 6px ' + hex + '55;' +
-        'pointer-events:auto;' +
-        'cursor:pointer;';
-      bar.title = tier.name + ' — click to edit (coming soon)';
+      // Full-box bracket: 4-sided colored outline that wraps the row range,
+      // matching Matt's iPad sketch. We measure the table width so the box
+      // spans every column (not just where the rows happen to start). The
+      // outline floats above the table on its own layer — no row HTML
+      // touched — so it never interferes with sort, drag, filter, etc.
+      var tbodyRect = document.getElementById('tbody').getBoundingClientRect();
+      var boxLeft   = tbodyRect.left  - anchorRect.left + anchor.scrollLeft;
+      var boxRight  = tbodyRect.right - anchorRect.left + anchor.scrollLeft;
+      var boxWidth  = boxRight - boxLeft;
+      // Pad the box outward a few pixels so the outline doesn't kiss the
+      // first/last column text — gives it the "drawn around it" feel.
+      var pad = 4;
 
-      // Label tab: small colored chip floating above the top of the bar.
+      var box = document.createElement('div');
+      box.className = 'tier-bracket-box';
+      box.setAttribute('data-tier-id', tier.id);
+      box.style.cssText =
+        'position:absolute;' +
+        'top:' + (top - pad) + 'px;' +
+        'left:' + (boxLeft - pad) + 'px;' +
+        'width:' + (boxWidth + pad * 2) + 'px;' +
+        'height:' + (height + pad * 2) + 'px;' +
+        'border:3px solid ' + hex + ';' +
+        'border-radius:6px;' +
+        'box-shadow:0 0 8px ' + hex + '55, inset 0 0 4px ' + hex + '22;' +
+        'background:transparent;' +
+        'pointer-events:none;' +
+        'box-sizing:border-box;';
+      box.title = tier.name;
+
+      // Label tab anchored to the top-left of the box, sitting on top of
+      // the border so it reads as part of the bracket (like a folder tab).
       var tab = document.createElement('div');
       tab.className = 'tier-bracket-tab';
       tab.setAttribute('data-tier-id', tier.id);
       tab.textContent = tier.name;
       tab.style.cssText =
         'position:absolute;' +
-        'top:' + Math.max(0, top - 18) + 'px;' +
-        'left:' + Math.max(0, left - 8) + 'px;' +
+        'top:' + (top - pad - 14) + 'px;' +
+        'left:' + (boxLeft - pad) + 'px;' +
         'background:' + hex + ';' +
         'color:#fff;' +
         'font-family:"Nunito Sans",sans-serif;' +
-        'font-size:10px;' +
+        'font-size:11px;' +
         'font-weight:700;' +
-        'letter-spacing:0.04em;' +
+        'letter-spacing:0.05em;' +
         'text-transform:uppercase;' +
-        'padding:2px 8px;' +
-        'border-radius:4px 4px 0 0;' +
+        'padding:2px 10px;' +
+        'border-radius:6px 6px 0 0;' +
         'box-shadow:0 -1px 4px ' + hex + '55;' +
         'pointer-events:auto;' +
         'cursor:pointer;' +
         'white-space:nowrap;';
       tab.title = 'Tier: ' + tier.name + ' (edit/delete coming in next build step)';
 
-      layer.appendChild(bar);
+      layer.appendChild(box);
       layer.appendChild(tab);
     } catch(e){
       console.warn('[TIERS_V1] failed to render tier:', tier, e);
