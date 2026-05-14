@@ -146306,6 +146306,28 @@ document.addEventListener('click', function(e){
       if(p2) openPlayerCard(e, p2);
       return;
     }
+    // PROSPECTS_DEEPCUT_V1 (May 13, 2026) — Prospects tab was missing a branch
+    // here, so clicking a prospect's name was a silent no-op. Rows in
+    // #pros-tbody carry data-mlb-id="${p.mlb_id}" and data source is the
+    // prospectPlayers array (separate from the watchlist/pool arrays).
+    // Fall back to poolPlayers / players if the lookup misses, same belt-and-
+    // suspenders pattern as the Pool/Leaders branch above.
+    if(nameCell.closest('#pros-tbody')){
+      var mlbIdPros = parseInt(row.dataset.mlbId);
+      if(isNaN(mlbIdPros)){ closePlayerCard(); return; }
+      var p3 = null;
+      if(typeof prospectPlayers !== 'undefined' && Array.isArray(prospectPlayers)){
+        p3 = prospectPlayers.find(function(pp){ return pp.mlb_id === mlbIdPros; });
+      }
+      if(!p3 && typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers)){
+        p3 = poolPlayers.find(function(pp){ return pp.mlb_id === mlbIdPros; });
+      }
+      if(!p3 && typeof players !== 'undefined' && Array.isArray(players)){
+        p3 = players.find(function(pp){ return pp.mlb_id === mlbIdPros; });
+      }
+      if(p3) openPlayerCard(e, p3);
+      return;
+    }
   }
   closePlayerCard();
 });
