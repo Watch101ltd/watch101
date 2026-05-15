@@ -7921,14 +7921,18 @@ async function loadAllPoolStats(){
         const st = s.stat || {};
         statMap[id] = statMap[id] || {};
         Object.assign(statMap[id], {
-          ip:   st.inningsPitched,
-          k:    st.strikeOuts,
-          w:    st.wins,
-          sv:   st.saves,
-          hld:  st.holds,
-          era:  st.era,
-          whip: st.whip,
-          xera: st.xera
+          ip:    st.inningsPitched,
+          k:     st.strikeOuts,
+          w:     st.wins,
+          sv:    st.saves,
+          hld:   st.holds,
+          era:   st.era,
+          whip:  st.whip,
+          xera:  st.xera,
+          // POOL_GOLD_BLOCK_V1 (May 15, 2026) — capture pitcher walks. Needed for the
+          // live-computed kbb_ratio + k_per_9 stamping in the merge loop below. Without
+          // this, Pool's K/BB and K/9 cells render em-dash because bb_pit is undefined.
+          bb_pit: st.baseOnBalls
         });
       });
     }
@@ -7939,6 +7943,13 @@ async function loadAllPoolStats(){
       if(!s) return;
       Object.assign(p, s);
       p.stats = true; // mark as having stats
+      // POOL_GOLD_BLOCK_V1 (May 15, 2026) — live-computed pitcher derivatives. Mirrors
+      // the watchlist's refreshAllStats path (lines 6210/6212). Without this, the new
+      // Gold-block K/BB and K/9 columns render em-dash for every Pool pitcher even
+      // though bb_pit is now being captured upstream.
+      const _ipNum = parseFloat(p.ip);
+      p.kbb_ratio = (p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
+      p.k_per_9   = (_ipNum > 0 && p.k != null)  ? +((p.k * 9) / _ipNum).toFixed(2) : null;
       // Pull the FULL Savant payload (xBA, xwOBA, EV, SS%, BBL%, EV95, MaxEV, xERA)
       // via mergeSavant so the new advanced columns actually populate. Earlier this
       // only set sv_xba/sv_xwoba which is why EV/SS%/BBL%/EV95/MaxEV showed dashes.
