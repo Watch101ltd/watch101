@@ -13315,10 +13315,131 @@ body.day-mode .cp-close-btn:hover { background: rgba(0,0,0,0.05); color: #111; b
   </div>
 </div>
 <script>
-// PREVIOUS_SEASONS_V1 (May 15 2026) — open/close functions for the career popup.
-// Phase 3 will add the fetch + cache layer; Phase 4 will fill the table render.
-// Right now these functions just open and close the visual shell so we can verify
-// the dropdown intercept + popup chrome work end-to-end before wiring data.
+// PREVIOUS_SEASONS_V1 (May 15 2026) — open/close + fetch/cache for the career popup.
+// Phase 4 will replace the diagnostic render below with the real career table.
+
+// Cache key prefix. Career stats are immutable per year, so once cached we never re-fetch.
+var CAREER_CACHE_PREFIX = 'career_stats_v1_';
+
+// Slim a single MLB Stats API "split" record down to just the fields we display.
+// Keeps localStorage tiny and decouples our render code from the API's full shape.
+function _cpSlimSplit(split, group){
+  var s = (split && split.stat) || {};
+  var out = {
+    season:   split.season || '',
+    team:    (split.team && (split.team.abbreviation || split.team.name)) || '',
+    teamFull:(split.team && split.team.name) || '',
+    group:    group  // 'hitting' or 'pitching'
+  };
+  if(group === 'hitting'){
+    out.g    = s.gamesPlayed;
+    out.ab   = s.atBats;
+    out.r    = s.runs;
+    out.hr   = s.homeRuns;
+    out.rbi  = s.rbi;
+    out.sb   = s.stolenBases;
+    out.avg  = s.avg;   // string like ".284"
+    out.obp  = s.obp;
+    out.ops  = s.ops;
+  } else if(group === 'pitching'){
+    out.g    = s.gamesPlayed;
+    out.ip   = s.inningsPitched;  // string like "187.2"
+    out.w    = s.wins;
+    out.l    = s.losses;
+    out.sv   = s.saves;
+    out.era  = s.era;
+    out.whip = s.whip;
+    out.k    = s.strikeOuts;
+    out.bb   = s.baseOnBalls;
+  }
+  return out;
+}
+
+// Fetch yearByYear career stats for a given MLB ID. Returns a Promise that resolves to:
+//   { hitting: [slim row, …], pitching: [slim row, …] }
+// MLB-only rows. Cached forever in localStorage under CAREER_CACHE_PREFIX + mlbId.
+function fetchCareerStats(mlbId){
+  return new Promise(function(resolve, reject){
+    if(!mlbId){ resolve({hitting: [], pitching: []}); return; }
+    var cacheKey = CAREER_CACHE_PREFIX + String(mlbId);
+    // 1) Cache hit — return immediately
+    try {
+      var cached = localStorage.getItem(cacheKey);
+      if(cached){
+        var parsed = JSON.parse(cached);
+        if(parsed && (Array.isArray(parsed.hitting) || Array.isArray(parsed.pitching))){
+          resolve(parsed);
+          return;
+        }
+      }
+    } catch(e){ /* localStorage may be unavailable; fall through to fetch */ }
+    // 2) Cache miss — fetch upstream
+    var url = 'https://statsapi.mlb.com/api/v1/people/' + encodeURIComponent(mlbId)
+            + '/stats?stats=yearByYear&group=hitting,pitching';
+    fetch(url, {cache: 'force-cache'})
+      .then(function(r){
+        if(!r.ok) throw new Error('MLB API HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(d){
+        var result = {hitting: [], pitching: []};
+        var blocks = (d && d.stats) || [];
+        blocks.forEach(function(block){
+          var grp = (block.group && block.group.displayName) || '';
+          var splits = block.splits || [];
+          splits.forEach(function(split){
+            // MLB-only filter — drop MiLB / foreign-league rows.
+            var sportAbbr = (split.sport && split.sport.abbreviation) || '';
+            if(sportAbbr !== 'MLB') return;
+            // Drop postseason / spring-training rows if any sneak through.
+            if(split.gameType && split.gameType !== 'R') return;
+            var slim = _cpSlimSplit(split, grp);
+            if(grp === 'hitting')       result.hitting.push(slim);
+            else if(grp === 'pitching') result.pitching.push(slim);
+          });
+        });
+        // Sort each group by season ascending — render can re-sort, but a stable
+        // baseline order means default view is chronological.
+        result.hitting.sort(function(a,b){ return String(a.season).localeCompare(String(b.season)); });
+        result.pitching.sort(function(a,b){ return String(a.season).localeCompare(String(b.season)); });
+        // Best-effort write to localStorage. Don't fail the fetch on storage errors.
+        try { localStorage.setItem(cacheKey, JSON.stringify(result)); } catch(e){ /* quota or private mode */ }
+        resolve(result);
+      })
+      .catch(function(err){
+        console.warn('[career] fetch failed for', mlbId, err);
+        // On network error, still resolve with empty so the popup shows a clean empty state.
+        resolve({hitting: [], pitching: []});
+      });
+  });
+}
+
+// Phase 3 diagnostic renderer — temporary. Phase 4 replaces this with the real
+// role-aware table. The goal here is end-to-end verification: dropdown ->
+// intercept -> popup open -> fetch -> data lands -> render. Once verified,
+// we swap the body content for the real table.
+function _cpRenderDiagnostic(body, data){
+  if(!body) return;
+  var h = (data && data.hitting) || [];
+  var p = (data && data.pitching) || [];
+  if(h.length === 0 && p.length === 0){
+    body.innerHTML = '<div class="cp-empty">No MLB seasons yet.</div>';
+    return;
+  }
+  var html = '';
+  if(h.length){
+    html += '<div class="cp-section-title">Hitting (' + h.length + ' seasons — diagnostic)</div>';
+    html += '<pre style="font-size:11px;color:#bbb;white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;max-height:240px;overflow:auto">'
+          + JSON.stringify(h, null, 2) + '</pre>';
+  }
+  if(p.length){
+    html += '<div class="cp-section-title">Pitching (' + p.length + ' seasons — diagnostic)</div>';
+    html += '<pre style="font-size:11px;color:#bbb;white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;max-height:240px;overflow:auto">'
+          + JSON.stringify(p, null, 2) + '</pre>';
+  }
+  body.innerHTML = html;
+}
+
 function openCareerPopup(player){
   if(!player) return;
   var bd  = document.getElementById('career-popup-backdrop');
@@ -13330,8 +13451,15 @@ function openCareerPopup(player){
   body.innerHTML = '<div class="cp-loading">Loading career stats…</div>';
   bd.classList.add('cp-open');
   pop.classList.add('cp-open');
-  // Stash the mlb_id on the popup for later phases (fetch + render).
-  pop.dataset.mlbId = String(player.mlb_id || player.mlbId || '');
+  var mlbId = player.mlb_id || player.mlbId || null;
+  pop.dataset.mlbId = String(mlbId || '');
+  // Phase 3 — fetch + render diagnostic. Phase 4 will swap the renderer.
+  fetchCareerStats(mlbId).then(function(data){
+    // Guard against the user closing the popup before the fetch resolves.
+    var stillOpen = pop.classList.contains('cp-open') && pop.dataset.mlbId === String(mlbId || '');
+    if(!stillOpen) return;
+    _cpRenderDiagnostic(body, data);
+  });
 }
 function closeCareerPopup(){
   var bd  = document.getElementById('career-popup-backdrop');
