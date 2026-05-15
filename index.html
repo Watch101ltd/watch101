@@ -1529,7 +1529,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
              on the current list. Each list has its own independent tiers.
              Phase A: menu item only. Phase B adds data model. Phase C adds
              the modal. Phase D adds the bracket rendering. Phase E adds edit. -->
-        <button class="hdr-dd-item" onclick="hdrRun(openCreateTierModal)" title="Draw a colored bracket around a range of players">🏷️ Create a Tier</button>
+        <button class="hdr-dd-item backend-only" onclick="hdrRun(openCreateTierModal)" title="Draw a colored bracket around a range of players">🏷️ Create a Tier</button>
       </div>
     </div>
     <div class="hdr-dd backend-only" id="dd-save">
@@ -2083,7 +2083,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
      at open time so they always reflect the live players[] order. -->
 <div class="modal-overlay" id="create-tier-modal">
   <div class="modal">
-    <h2>🏷️ Create a Tier</h2>
+    <h2 id="tier-modal-title">🏷️ Create a Tier</h2>
     <div style="font-size:12px;color:var(--text3);margin-bottom:14px;font-family:'Nunito Sans',sans-serif;line-height:1.5">
       Draws a colored bracket around a contiguous range of players on the current list.
       Brackets hide automatically when the list is filtered or sorted, and reappear when
@@ -2118,9 +2118,16 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       </div>
     </div>
     <div id="tier-error" style="display:none;color:var(--red);font-size:12px;font-family:'Nunito Sans',sans-serif;margin-bottom:8px"></div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeCreateTierModal()">Cancel</button>
-      <button class="btn btn-gold" onclick="saveTierFromModal()">Create Tier</button>
+    <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center">
+      <!-- TIERS_V1 (Phase E) — Delete button is left-aligned and only
+           appears when editing an existing tier. When creating new,
+           the slot is invisible to keep the right-side actions in place. -->
+      <button class="btn btn-red" id="tier-delete-btn" style="display:none" onclick="deleteTierFromModal()">🗑️ Delete Tier</button>
+      <span id="tier-delete-spacer" style="flex:0 0 auto"></span>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-outline" onclick="closeCreateTierModal()">Cancel</button>
+        <button class="btn btn-gold" id="tier-save-btn" onclick="saveTierFromModal()">Create Tier</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4913,52 +4920,97 @@ async function toggleTypeTag(mlbId, tagId, checked){
 // **Hide these from the UI when Read-Only Mode ships.** Fans on Cloudflare
 // should never see the menu item — but the handlers themselves are harmless
 // to leave in place, since they require the modal to be open.
-// TIERS_V1 (May 14, 2026) — Phase C BACKEND_ONLY tier-creation handlers.
-// Opens the modal, populates Start/End dropdowns from the active players[]
-// array (so the order matches what's on screen), validates the form on
-// submit, builds a tier object, pushes it to currentTiers, and persists
-// via autoSaveToNAS so the JSON sidecar gets the new tier.
+// TIERS_V1 (May 14, 2026) — Phase C+E BACKEND_ONLY tier-creation handlers.
+// The modal is dual-purpose: open it via openCreateTierModal() to make a
+// new tier, or via openEditTierModal(tierId) to edit/delete an existing
+// one. _tierEditingId tracks which mode we're in. null = creating new;
+// a string id = editing that tier.
 //
 // Identity: tiers reference players by mlb_id (not by index) so they
 // survive list reorders. End-rank is enforced ≥ Start-rank to keep
 // ranges sane. Color is picked from a fixed 8-color palette.
+let _tierEditingId = null;
+
+// Helper: shared form-population logic used by both Create and Edit.
+// Resets the form, repopulates the Start/End dropdowns from players[],
+// then optionally pre-fills with an existing tier's values.
+function _tierPopulateForm(tierToEdit){
+  var nameEl  = document.getElementById('tier-name');
+  var colorEl = document.getElementById('tier-color');
+  var startEl = document.getElementById('tier-start');
+  var endEl   = document.getElementById('tier-end');
+  var errEl   = document.getElementById('tier-error');
+  if(nameEl)  nameEl.value  = '';
+  if(colorEl) colorEl.value = '';
+  if(errEl){  errEl.style.display = 'none'; errEl.textContent = ''; }
+  document.querySelectorAll('#tier-color-swatches .tier-swatch.selected')
+    .forEach(function(b){ b.classList.remove('selected'); });
+
+  if(startEl && endEl && Array.isArray(players)){
+    var optsHtml = '<option value="">Select…</option>';
+    players.forEach(function(p, idx){
+      if(!p || !p.mlb_id) return;
+      var rank = (idx + 1);
+      var label = '#' + rank + '  ' + (p.name || '(unnamed)');
+      optsHtml += '<option value="' + p.mlb_id + '">' + label.replace(/</g,'&lt;') + '</option>';
+    });
+    startEl.innerHTML = optsHtml;
+    endEl.innerHTML   = optsHtml;
+  }
+
+  // If we were given a tier to edit, pre-fill all four fields.
+  if(tierToEdit){
+    if(nameEl)  nameEl.value  = tierToEdit.name || '';
+    if(startEl) startEl.value = String(tierToEdit.start_mlb_id || '');
+    if(endEl)   endEl.value   = String(tierToEdit.end_mlb_id || '');
+    if(tierToEdit.color) selectTierColor(tierToEdit.color);
+  }
+}
+
+// Helper: toggle the modal title + button labels + Delete-button visibility
+// based on whether we're creating or editing.
+function _tierConfigureMode(isEdit){
+  var title    = document.getElementById('tier-modal-title');
+  var saveBtn  = document.getElementById('tier-save-btn');
+  var delBtn   = document.getElementById('tier-delete-btn');
+  if(title)   title.textContent   = isEdit ? '🏷️ Edit Tier' : '🏷️ Create a Tier';
+  if(saveBtn) saveBtn.textContent = isEdit ? 'Save Changes' : 'Create Tier';
+  if(delBtn)  delBtn.style.display = isEdit ? '' : 'none';
+}
+
 function openCreateTierModal(){
   if(_blockIfReadOnly('openCreateTierModal')) return;
   try {
-    // Reset the form each open so we don't bleed last attempt's input.
-    var nameEl  = document.getElementById('tier-name');
-    var colorEl = document.getElementById('tier-color');
-    var startEl = document.getElementById('tier-start');
-    var endEl   = document.getElementById('tier-end');
-    var errEl   = document.getElementById('tier-error');
-    if(nameEl)  nameEl.value  = '';
-    if(colorEl) colorEl.value = '';
-    if(errEl){  errEl.style.display = 'none'; errEl.textContent = ''; }
-
-    // Clear any previously-selected swatch ring.
-    document.querySelectorAll('#tier-color-swatches .tier-swatch.selected')
-      .forEach(function(b){ b.classList.remove('selected'); });
-
-    // Populate Start + End dropdowns from the active list, in current
-    // display order. Each <option> stores the player's mlb_id so the
-    // tier survives reorders.
-    if(startEl && endEl && Array.isArray(players)){
-      var optsHtml = '<option value="">Select…</option>';
-      players.forEach(function(p, idx){
-        if(!p || !p.mlb_id) return;     // skip rows without an mlb_id
-        var rank = (idx + 1);
-        var label = '#' + rank + '  ' + (p.name || '(unnamed)');
-        optsHtml += '<option value="' + p.mlb_id + '">' + label.replace(/</g,'&lt;') + '</option>';
-      });
-      startEl.innerHTML = optsHtml;
-      endEl.innerHTML   = optsHtml;
-    }
-
+    _tierEditingId = null;
+    _tierPopulateForm(null);
+    _tierConfigureMode(false);
     var modal = document.getElementById('create-tier-modal');
     if(modal) modal.classList.add('open');
-    setTimeout(function(){ if(nameEl) nameEl.focus(); }, 50);
+    setTimeout(function(){ var n = document.getElementById('tier-name'); if(n) n.focus(); }, 50);
   } catch(e){
     console.warn('[TIERS_V1] openCreateTierModal failed:', e);
+  }
+}
+
+// Phase E — opened by clicking a tier's label tab on the bracket.
+// Loads the existing tier into the form so Matt can change name/color/range
+// or delete it entirely.
+function openEditTierModal(tierId){
+  if(_blockIfReadOnly('openEditTierModal')) return;
+  try {
+    var tier = (Array.isArray(currentTiers) ? currentTiers : []).find(function(t){ return t && t.id === tierId; });
+    if(!tier){
+      console.warn('[TIERS_V1] openEditTierModal — tier not found:', tierId);
+      return;
+    }
+    _tierEditingId = tierId;
+    _tierPopulateForm(tier);
+    _tierConfigureMode(true);
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.classList.add('open');
+    setTimeout(function(){ var n = document.getElementById('tier-name'); if(n) n.focus(); }, 50);
+  } catch(e){
+    console.warn('[TIERS_V1] openEditTierModal failed:', e);
   }
 }
 
@@ -5005,21 +5057,37 @@ async function saveTierFromModal(){
       return;
     }
 
-    // Build the tier object. Currying current timestamp into the id
-    // gives a stable, unique key we can target for edit/delete later.
-    var tier = {
-      id: 'tier_' + Date.now(),
-      name: name,
-      color: color,
-      start_mlb_id: String(startId),
-      end_mlb_id: String(endId),
-      created_at: new Date().toISOString(),
-      created_by: 'matt'
-    };
-
     if(!Array.isArray(currentTiers)) currentTiers = [];
-    currentTiers.push(tier);
-    console.log('[TIERS_V1] tier created:', tier, '— total tiers now:', currentTiers.length);
+
+    if(_tierEditingId){
+      // Edit mode — find the existing tier and update fields in place.
+      // We keep the original id, created_at, created_by so history is
+      // preserved; only the editable fields change.
+      var existing = currentTiers.find(function(t){ return t && t.id === _tierEditingId; });
+      if(!existing){
+        showErr('Could not find the tier to update. It may have been deleted in another tab.');
+        return;
+      }
+      existing.name = name;
+      existing.color = color;
+      existing.start_mlb_id = String(startId);
+      existing.end_mlb_id   = String(endId);
+      existing.updated_at = new Date().toISOString();
+      console.log('[TIERS_V1] tier updated:', existing);
+    } else {
+      // Create mode — push a brand-new tier object.
+      var tier = {
+        id: 'tier_' + Date.now(),
+        name: name,
+        color: color,
+        start_mlb_id: String(startId),
+        end_mlb_id: String(endId),
+        created_at: new Date().toISOString(),
+        created_by: 'matt'
+      };
+      currentTiers.push(tier);
+      console.log('[TIERS_V1] tier created:', tier, '— total tiers now:', currentTiers.length);
+    }
 
     // Persist. autoSaveToNAS writes the JSON sidecar with currentTiers
     // included (wired in Phase B at the jsonPayload site).
@@ -5028,8 +5096,8 @@ async function saveTierFromModal(){
     } catch(e){ console.warn('[TIERS_V1] autoSaveToNAS failed:', e); }
 
     closeCreateTierModal();
-    // TIERS_V1 (Phase D) — draw the bracket immediately so Matt sees
-    // his tier land on the list without waiting for a full re-render.
+    // TIERS_V1 (Phase D) — repaint the bracket immediately so Matt sees
+    // the change land on the list without waiting for a full re-render.
     try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers after save failed:', e); }
   } catch(e){
     console.warn('[TIERS_V1] saveTierFromModal failed:', e);
@@ -5041,7 +5109,40 @@ function closeCreateTierModal(){
   try {
     var modal = document.getElementById('create-tier-modal');
     if(modal) modal.classList.remove('open');
+    // Always clear edit state on close so the next "Create" open
+    // doesn't accidentally inherit edit mode.
+    _tierEditingId = null;
   } catch(e){ console.warn('[TIERS_V1] closeCreateTierModal failed:', e); }
+}
+
+// Phase E — delete the tier currently being edited. Confirms before
+// destroying since there's no undo. Closes modal + repaints brackets.
+async function deleteTierFromModal(){
+  if(_blockIfReadOnly('deleteTierFromModal')) return;
+  if(!_tierEditingId){
+    console.warn('[TIERS_V1] deleteTierFromModal called with no _tierEditingId');
+    return;
+  }
+  try {
+    var idx = (Array.isArray(currentTiers) ? currentTiers : [])
+      .findIndex(function(t){ return t && t.id === _tierEditingId; });
+    if(idx < 0){ closeCreateTierModal(); return; }
+    var doomed = currentTiers[idx];
+    var ok = confirm('Delete tier "' + (doomed.name || '(untitled)') + '"?\n\nThe players stay on the list — only the colored bracket disappears. This cannot be undone.');
+    if(!ok) return;
+
+    currentTiers.splice(idx, 1);
+    console.log('[TIERS_V1] tier deleted:', doomed.id, '— remaining:', currentTiers.length);
+
+    try {
+      if(typeof autoSaveToNAS === 'function'){ await autoSaveToNAS(); }
+    } catch(e){ console.warn('[TIERS_V1] autoSaveToNAS failed after delete:', e); }
+
+    closeCreateTierModal();
+    try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers after delete failed:', e); }
+  } catch(e){
+    console.warn('[TIERS_V1] deleteTierFromModal failed:', e);
+  }
 }
 
 // TIERS_V1 (May 14, 2026) — Phase D bracket overlay renderer.
@@ -5194,7 +5295,24 @@ function renderTiers(){
         'pointer-events:auto;' +
         'cursor:pointer;' +
         'white-space:nowrap;';
-      tab.title = 'Tier: ' + tier.name + ' (edit/delete coming in next build step)';
+      // TIERS_V1 (Phase F) — read-only fans see a passive tab (no edit
+     // affordance, default cursor). Backend admins get the click handler
+     // and a "click to edit" tooltip.
+      var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+      if(isFan){
+        tab.title = 'Tier: ' + tier.name;
+        tab.style.cursor = 'default';
+      } else {
+        tab.title = 'Tier: ' + tier.name + ' — click to edit or delete';
+        // Phase E — click the tab to edit/delete this tier.
+        // Captured in a closure so each tab knows its own tier id.
+        (function(tid){
+          tab.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            if(typeof openEditTierModal === 'function') openEditTierModal(tid);
+          });
+        })(tier.id);
+      }
 
       layer.appendChild(box);
       layer.appendChild(tab);
