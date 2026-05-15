@@ -4879,7 +4879,11 @@ function typeBadge(p){
   // TYPE_CHIP_STACK_V1 (May 13, 2026) — wrap chips in .type-stack so they
   // form a 2-column grid that wraps to a second row at 3+ tags. Mirrors
   // the .pos-stack pattern used in the Position column.
-  var out = '<div class="type-stack">';
+  // TYPE_TAG_TOOLTIPS_V1 (May 14, 2026 — re-add after rollback) — data-mlb-id
+  // on the wrapper lets the document-level click delegator look up which
+  // player the click belongs to. The delegator stops propagation so the
+  // click never bubbles up to the row-level Deep Cut handler.
+  var out = '<div class="type-stack" data-mlb-id="' + (p.mlb_id||'') + '">';
   for(var i=0; i<p.type_tags.length; i++){
     var def = _typeTagById(p.type_tags[i]);
     if(!def) continue;
@@ -4917,6 +4921,109 @@ async function toggleTypeTag(mlbId, tagId, checked){
     console.warn('[TYPE_TAGS_V1] toggleTypeTag failed:', e);
   }
 }
+
+// TYPE_TAG_TOOLTIPS_V1 (May 14, 2026 — re-add after afternoon rollback)
+// Click any .type-chip or .type-stack on the main list → small dark popup
+// appears next to the click, showing every tag this player has, one per
+// line (emoji + label). Click anywhere else → popup closes.
+//
+// DELEGATOR PATTERN: one document-level listener (not inline onclick) so
+// the click NEVER bubbles up to the row-level Deep Cut handler. Without
+// this, clicking a chip would both show our tooltip AND open Deep Cut,
+// which was the "fighting" behavior the Dude described.
+//
+// The tooltip element lives in document.body (appended once, then reused),
+// so it can never be clipped by overflow:hidden on the cell or table.
+function _ensureTypeTagTooltipEl(){
+  var el = document.getElementById('type-tag-tooltip');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'type-tag-tooltip';
+  el.style.cssText =
+    'position:absolute;' +
+    'display:none;' +
+    'background:#1a1a1a;' +
+    'color:#fff;' +
+    'border:1px solid var(--gold);' +
+    'border-radius:6px;' +
+    'padding:8px 12px;' +
+    'font-family:"Nunito Sans",sans-serif;' +
+    'font-size:12px;' +
+    'line-height:1.6;' +
+    'box-shadow:0 4px 16px rgba(0,0,0,0.6);' +
+    'z-index:9999;' +
+    'pointer-events:none;' +
+    'white-space:nowrap;';
+  document.body.appendChild(el);
+  return el;
+}
+
+function _showTypeTagTooltip(player, anchorEl){
+  if(!player || !Array.isArray(player.type_tags) || player.type_tags.length === 0) return;
+  var el = _ensureTypeTagTooltipEl();
+  var lines = [];
+  for(var i=0; i<player.type_tags.length; i++){
+    var def = _typeTagById(player.type_tags[i]);
+    if(!def) continue;
+    // Escape the label minimally so a stray < doesn't break the HTML.
+    var safeLabel = String(def.label).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    lines.push('<div>' + def.emoji + '&nbsp; ' + safeLabel + '</div>');
+  }
+  if(lines.length === 0) return;
+  el.innerHTML = lines.join('');
+  // Position the tooltip just below the click anchor, aligned to its left edge.
+  var rect = anchorEl.getBoundingClientRect();
+  el.style.left = (rect.left + window.scrollX) + 'px';
+  el.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+  el.style.display = 'block';
+}
+
+function _hideTypeTagTooltip(){
+  var el = document.getElementById('type-tag-tooltip');
+  if(el) el.style.display = 'none';
+}
+
+// Single document-level click listener handles ALL Type-chip clicks plus
+// the "click outside to dismiss" behavior. Attached once at page load.
+document.addEventListener('click', function(ev){
+  try {
+    var target = ev.target;
+    // Walk up looking for either a .type-chip or .type-stack ancestor —
+    // either one is a valid click target (so clicking the wrapper's padding
+    // works the same as clicking the emoji itself).
+    var chipOrStack = null;
+    var node = target;
+    while(node && node !== document.body){
+      if(node.classList && (node.classList.contains('type-chip') || node.classList.contains('type-stack'))){
+        chipOrStack = node;
+        break;
+      }
+      node = node.parentElement;
+    }
+    if(chipOrStack){
+      ev.stopPropagation();   // Don't let this click bubble up to the row → no Deep Cut.
+      ev.preventDefault();
+      // Find the .type-stack wrapper for the data-mlb-id lookup.
+      var stack = chipOrStack.classList.contains('type-stack')
+        ? chipOrStack
+        : chipOrStack.closest('.type-stack');
+      var mlbId = stack ? stack.getAttribute('data-mlb-id') : null;
+      if(!mlbId){ _hideTypeTagTooltip(); return; }
+      var player = (Array.isArray(players) ? players : []).find(function(p){
+        return p && String(p.mlb_id) === String(mlbId);
+      });
+      if(!player){ _hideTypeTagTooltip(); return; }
+      _showTypeTagTooltip(player, stack);
+      return;
+    }
+    // Click landed OUTSIDE any type chip/stack → dismiss any open tooltip.
+    _hideTypeTagTooltip();
+  } catch(e){ console.warn('[TYPE_TAG_TOOLTIPS_V1] delegator failed:', e); }
+}, true);  // useCapture=true so we intercept BEFORE row-level listeners fire.
+
+// Dismiss the tooltip on scroll/resize so it doesn't float in a stale spot.
+window.addEventListener('scroll', _hideTypeTagTooltip, true);
+window.addEventListener('resize', _hideTypeTagTooltip);
 
 // ADD_CUSTOM_PLAYER_V1 (April 25, 2026) — BACKEND_ONLY admin handlers.
 // Opens the modal, validates the form on submit, builds a new player object,
