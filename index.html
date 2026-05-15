@@ -3310,8 +3310,20 @@ function parseSavantCSV(text, target){
     // player_id is the MLBAM ID — same as our mlb_id
     const id = row['player_id'];
     if(id){
-      if(target[id]) Object.assign(target[id], row);
-      else target[id] = row;
+      if(target[id]){
+        // POOL_GOLD_BLOCK_V1 (May 15, 2026) — merge non-empty values only.
+        // Savant's /custom endpoint ships some columns (e.g. brl_percent for
+        // hitters) as empty strings, while /statcast ships the real values.
+        // Both writes hit the same target[id] via this function. A naive
+        // Object.assign overwrites the real values with empty strings because
+        // /custom typically loads AFTER /statcast. Only copy keys whose new
+        // value is truthy; for empty/blank cells, keep whatever was there.
+        for(const k in row){
+          if(row[k] !== '' && row[k] != null) target[id][k] = row[k];
+        }
+      } else {
+        target[id] = row;
+      }
     }
   }
 }
