@@ -1060,10 +1060,49 @@ function onYahooAuthBadgeClick(){
         });
     }
   } else {
-    // Open the sign-in flow. Yahoo redirects back to nfl-nas /auth/callback.
-    // User then comes back to this tab and hits Refresh.
+    // YAHOO_AUTH_POLL_V1 (May 15, 2026) — open the sign-in popup, then poll
+    // /auth/status every 2 seconds for up to 60 seconds. The moment Yahoo
+    // confirms (yahoo_connected true), refresh the badge AND auto-trigger
+    // loadYahooData() so the user doesn't have to manually refresh the page.
+    //
+    // Why poll instead of waiting for a postMessage from the popup?
+    //   The OAuth callback lands on the NFL NAS at /auth/callback, NOT on a
+    //   page we control — so we can't have the popup postMessage back to us.
+    //   Polling /auth/status is the dumb-but-reliable workaround.
     window.open(SERVER_URL + '/auth/login', '_blank');
-    setTimeout(refreshYahooAuthBadge, 2000);
+    const statusEl = document.getElementById('status-bar');
+    if(statusEl) statusEl.textContent = 'Waiting for Yahoo sign-in to complete (popup window)…';
+
+    const pollStart = Date.now();
+    const POLL_MAX_MS = 60000;     // 60 seconds total
+    const POLL_INTERVAL_MS = 2000; // every 2 seconds
+    const pollHandle = setInterval(async () => {
+      try {
+        const res = await fetch(SERVER_URL + '/auth/status', { cache:'no-cache' });
+        if(res.ok){
+          const data = await res.json();
+          if(data && data.yahoo_connected){
+            // Connected. Stop polling, refresh the badge, kick off the data load.
+            clearInterval(pollHandle);
+            console.log('[yahoo] auth poll detected sign-in success');
+            refreshYahooAuthBadge();
+            loadYahooData().catch(err => console.warn('[yahoo] post-sign-in load failed:', err.message));
+            return;
+          }
+        }
+      } catch(e){
+        // Transient error — keep polling, don't bail. Most likely a momentary
+        // network blip while the OAuth handshake completes.
+        console.warn('[yahoo] auth poll tick error:', e.message);
+      }
+      // Time-out after POLL_MAX_MS without seeing yahoo_connected:true.
+      if(Date.now() - pollStart > POLL_MAX_MS){
+        clearInterval(pollHandle);
+        console.warn('[yahoo] auth poll timed out after ' + (POLL_MAX_MS/1000) + 's');
+        if(statusEl) statusEl.textContent = 'Yahoo sign-in did not complete in 60 seconds. Try clicking the badge again, or just hard-refresh the page after signing in.';
+        refreshYahooAuthBadge();
+      }
+    }, POLL_INTERVAL_MS);
   }
 }
 
