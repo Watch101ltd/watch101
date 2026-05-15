@@ -1551,6 +1551,14 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="hdr-dd-item backend-only" onclick="hdrRun(triggerImport)" title="Import from CSV or Excel">📥 Import</button>
         <button class="hdr-dd-item" onclick="hdrRun(togglePresentMode)" title="Presentation mode — full-screen view for screen-share">🔍 Present</button>
         <button class="hdr-dd-item" onclick="hdrRun(exportCSV)" title="Export the current list as a CSV file">📤 CSV</button>
+        <!-- EXCEL_DOWNLOAD_V1 (May 14, 2026 — re-add after afternoon rollback)
+             Matt's ask from 5/11 meeting: "I hate when the site's like, oh CSV.
+             Why can't it just be in Excel? Why do I have to convert it?" Fan-
+             visible (NOT backend-only) — downloads an .xlsx via SheetJS using
+             the same _buildXLSXWorkbook() helper the backend Save-to-Excel uses,
+             so columns match exactly. NOT to be confused with backend-only
+             exportXLSX() which writes to a folder via showDirectoryPicker. -->
+        <button class="hdr-dd-item" onclick="hdrRun(exportXLSXDownload)" title="Download the current list as an Excel (.xlsx) file">📊 Excel</button>
         <!-- STAT_FRESHNESS_V1 (May 8, 2026) — Manual nuke-and-refetch. Wipes saved
              season stats on every player and re-fires the refresh. Use only when
              auto-refresh isn't catching up. -->
@@ -7066,6 +7074,36 @@ function exportCSV(){
   a.download = `Watch101_${_activeListFileSlug()}_${dateStr}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// EXCEL_DOWNLOAD_V1 (May 14, 2026 — re-add after afternoon rollback)
+// Fan-facing Excel download. Mirrors exportCSV()'s blob-download pattern but
+// emits an .xlsx via SheetJS, using the same _buildXLSXWorkbook() helper the
+// backend Save-to-Excel pipeline uses — column shape stays consistent across
+// both flows. Pure user-Downloads write; no folder picker, no permissions.
+//
+// NOT to be confused with exportXLSX() (the backend Save-to-Excel function).
+// That one writes to a per-list NAS folder via showDirectoryPicker for Matt's
+// approval pipeline. This one is the fan-facing simple-download cousin.
+function exportXLSXDownload(){
+  if(!players.length){ alert('No players to export.'); return; }
+  try {
+    const wb = _buildXLSXWorkbook();
+    // SheetJS write → array buffer → blob → invisible anchor click → done.
+    const wbArray = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+    const blob = new Blob([wbArray], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const d = new Date();
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    a.download = `Watch101_${_activeListFileSlug()}_${dateStr}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e){
+    console.error('[EXCEL_DOWNLOAD_V1] export failed:', e);
+    alert('Excel download failed. Check the console for details.');
+  }
 }
 
 // Keyboard shortcut: Ctrl+Shift+E = Export
