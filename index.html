@@ -12909,12 +12909,14 @@ function renderPlayerStatBar(p){
   }).join('');
 
   // Advanced row — Statcast numbers. These are season-only on the player object (no date-range variant exists upstream).
+  // GOLD_BLOCK_V1 (May 14, 2026 PM) — Pass 2: replaced the legacy 7-stat indigo/blue block with Matt's 8 gold-block stats per role. Helpers now take a role tag so each value renders with `hit` or `pit` class — the new .ppo-adv-row.gold CSS rule colors hit=gold, pit=white. Order matches the gold block in the main table and the percentile-bars chart below (PCT_CHART_STATS_HITTER / PCT_CHART_STATS_PITCHER).
   var advCells = [];
+  var roleCls = pit ? 'pit' : 'hit'; // value coloring class per role
   function advNum(v, dec, suffix){
     if(v === null || v === undefined || v === '') return '<span class="ppo-adv-val na">&mdash;</span>';
     var n = Number(v);
     if(isNaN(n)) return '<span class="ppo-adv-val na">&mdash;</span>';
-    return '<span class="ppo-adv-val">'+(dec!=null?n.toFixed(dec):n)+(suffix||'')+'</span>';
+    return '<span class="ppo-adv-val '+roleCls+'">'+(dec!=null?n.toFixed(dec):n)+(suffix||'')+'</span>';
   }
   function advAvg(v){
     if(v === null || v === undefined || v === '') return '<span class="ppo-adv-val na">&mdash;</span>';
@@ -12922,27 +12924,33 @@ function renderPlayerStatBar(p){
     if(isNaN(n)) return '<span class="ppo-adv-val na">&mdash;</span>';
     var t = n.toFixed(3);
     if(t.charAt(0) === '0') t = t.substring(1);
-    return '<span class="ppo-adv-val">'+t+'</span>';
+    return '<span class="ppo-adv-val '+roleCls+'">'+t+'</span>';
   }
-  // Order matches PCT_CHART_STATS below so tiles and bars line up visually
+  // Order matches PCT_CHART_STATS_HITTER / PCT_CHART_STATS_PITCHER so the tile row at the top of the Player Page lines up 1-to-1 with the percentile bar chart at the bottom.
   if(pit){
-    advCells.push({label:'xwOBA', val: advAvg(p.sv_xwoba)});
-    advCells.push({label:'Avg EV',val: advNum(p.sv_ev, 1)});
-    advCells.push({label:'EV95',  val: advNum(p.sv_ev95, 1)});
-    advCells.push({label:'MaxEV', val: advNum(p.sv_maxev, 1)});
-    advCells.push({label:'Brl%',  val: advNum(p.sv_barrel, 1, '%')});
-    advCells.push({label:'SS%',   val: advNum(p.sv_sweetspot, 1, '%')});
-    advCells.push({label:'xERA',  val: advNum(p.sv_xera, 2)});
+    // 8 pitcher stats — xERA, xwOBA(against), FB Velo, K-BB%, GB%, Chase%, Whiff%, K/9
+    advCells.push({label:'xERA',    val: advNum(p.sv_xera, 2)});
+    advCells.push({label:'xwOBA',   val: advAvg(p.sv_xwoba)});
+    advCells.push({label:'FB Velo', val: advNum(p.sv_fb_velo, 1)});
+    advCells.push({label:'K-BB%',   val: advNum(p.sv_k_minus_bb, 1, '%')});
+    advCells.push({label:'GB%',     val: advNum(p.sv_gb_pct, 1, '%')});
+    advCells.push({label:'Chase%',  val: advNum(p.sv_chase_pct, 1, '%')});
+    advCells.push({label:'Whiff%',  val: advNum(p.sv_whiff_pct, 1, '%')});
+    advCells.push({label:'K/9',     val: advNum(p.k_per_9, 2)});
   } else {
-    advCells.push({label:'xwOBA', val: advAvg(p.sv_xwoba)});
-    advCells.push({label:'xBA',   val: advAvg(p.sv_xba)});
-    advCells.push({label:'Avg EV',val: advNum(p.sv_ev, 1)});
-    advCells.push({label:'EV95',  val: advNum(p.sv_ev95, 1)});
-    advCells.push({label:'MaxEV', val: advNum(p.sv_maxev, 1)});
-    advCells.push({label:'Brl%',  val: advNum(p.sv_barrel, 1, '%')});
-    advCells.push({label:'SS%',   val: advNum(p.sv_sweetspot, 1, '%')});
+    // 8 hitter stats — xBA, xwOBA, Brl%, EV, Bat Spd, K%, BB%, Sprint
+    advCells.push({label:'xBA',     val: advAvg(p.sv_xba)});
+    advCells.push({label:'xwOBA',   val: advAvg(p.sv_xwoba)});
+    advCells.push({label:'Brl%',    val: advNum(p.sv_brl_pct, 1, '%')});
+    advCells.push({label:'EV',      val: advNum(p.sv_ev, 1)});
+    advCells.push({label:'Bat Spd', val: advNum(p.sv_bat_speed, 1)});
+    advCells.push({label:'K%',      val: advNum(p.sv_k_pct, 1, '%')});
+    advCells.push({label:'BB%',     val: advNum(p.sv_bb_pct, 1, '%')});
+    advCells.push({label:'Sprint',  val: advNum(p.sv_sprint_speed, 1)});
   }
   if(advRow){
+    // GOLD_BLOCK_V1 — add `gold` class so the new .ppo-adv-row.gold CSS rule (border + background + label/value colors) fires. classList.add is idempotent so refresh-renders don't pile up duplicates.
+    advRow.classList.add('gold');
     advRow.innerHTML = advCells.map(function(c){
       return '<div class="ppo-adv-cell"><div class="ppo-adv-label">'+c.label+'</div>'+c.val+'</div>';
     }).join('');
