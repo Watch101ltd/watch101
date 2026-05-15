@@ -13468,6 +13468,114 @@ function _cpRenderDiagnostic(body, data){
   body.innerHTML = html;
 }
 
+// ---- Phase 4: Real role-aware tables ----
+// Column definitions, one place. To swap a column later, edit this array.
+// Each entry: { key, label, type, render }
+//   - key:   property name on the slim row (or 'season'/'team' for sort identification)
+//   - label: header text
+//   - type:  'string' | 'int' | 'float' — drives sort numeric/text behavior in Phase 5
+//   - render: function(row) returning the cell's display string (already HTML-safe)
+// _cpEsc safely escapes any value before inserting into HTML.
+function _cpEsc(v){
+  if(v === null || typeof v === 'undefined') return '';
+  return String(v).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function _cpFmt(v, fallback){
+  if(v === null || typeof v === 'undefined' || v === '') return fallback || '—';
+  return _cpEsc(v);
+}
+var CP_HIT_COLS = [
+  { key: 'season', label: 'Year', type: 'int',    render: function(r){ return _cpEsc(r.season); } },
+  { key: 'team',   label: 'Team', type: 'string', render: function(r){ return _cpEsc(r.team); } },
+  { key: 'g',     label: 'G',   type: 'int',   render: function(r){ return _cpFmt(r.g); } },
+  { key: 'ab',    label: 'AB',  type: 'int',   render: function(r){ return _cpFmt(r.ab); } },
+  { key: 'r',     label: 'R',   type: 'int',   render: function(r){ return _cpFmt(r.r); } },
+  { key: 'hr',    label: 'HR',  type: 'int',   render: function(r){ return _cpFmt(r.hr); } },
+  { key: 'rbi',   label: 'RBI', type: 'int',   render: function(r){ return _cpFmt(r.rbi); } },
+  { key: 'sb',    label: 'SB',  type: 'int',   render: function(r){ return _cpFmt(r.sb); } },
+  { key: 'avg',   label: 'AVG', type: 'float', render: function(r){ return _cpFmt(r.avg); } },
+  { key: 'obp',   label: 'OBP', type: 'float', render: function(r){ return _cpFmt(r.obp); } },
+  { key: 'ops',   label: 'OPS', type: 'float', render: function(r){ return _cpFmt(r.ops); } }
+];
+var CP_PIT_COLS = [
+  { key: 'season', label: 'Year', type: 'int',    render: function(r){ return _cpEsc(r.season); } },
+  { key: 'team',   label: 'Team', type: 'string', render: function(r){ return _cpEsc(r.team); } },
+  { key: 'g',     label: 'G',    type: 'int',   render: function(r){ return _cpFmt(r.g); } },
+  { key: 'ip',    label: 'IP',   type: 'float', render: function(r){ return _cpFmt(r.ip); } },
+  { key: 'w',     label: 'W',    type: 'int',   render: function(r){ return _cpFmt(r.w); } },
+  { key: 'l',     label: 'L',    type: 'int',   render: function(r){ return _cpFmt(r.l); } },
+  { key: 'sv',    label: 'SV',   type: 'int',   render: function(r){ return _cpFmt(r.sv); } },
+  { key: 'era',   label: 'ERA',  type: 'float', render: function(r){ return _cpFmt(r.era); } },
+  { key: 'whip',  label: 'WHIP', type: 'float', render: function(r){ return _cpFmt(r.whip); } },
+  { key: 'k',     label: 'K',    type: 'int',   render: function(r){ return _cpFmt(r.k); } },
+  { key: 'bb',    label: 'BB',   type: 'int',   render: function(r){ return _cpFmt(r.bb); } }
+];
+
+// Build a single <table> for one role's rows. tableTag is 'hitting' or 'pitching'
+// — used by Phase 5's sort handler to identify which dataset/cols to re-sort.
+function _cpBuildTable(rows, cols, tableTag){
+  var thead = '<tr>';
+  for(var c = 0; c < cols.length; c++){
+    var col = cols[c];
+    // data-sort-key / data-sort-type / data-col-idx will be read by Phase 5 sort handler.
+    thead += '<th data-sort-key="' + _cpEsc(col.key)
+          + '" data-sort-type="' + _cpEsc(col.type)
+          + '" data-col-idx="' + c + '">'
+          + _cpEsc(col.label)
+          + '<span class="cp-sort-ind">&#9650;&#9660;</span></th>';
+  }
+  thead += '</tr>';
+  var tbody = '';
+  for(var i = 0; i < rows.length; i++){
+    var row = rows[i];
+    tbody += '<tr>';
+    for(var c2 = 0; c2 < cols.length; c2++){
+      var col2 = cols[c2];
+      var cls;
+      if(col2.key === 'season')      cls = 'cp-col-year';
+      else if(col2.key === 'team')   cls = 'cp-col-team';
+      else                            cls = 'cp-col-num';
+      tbody += '<td class="' + cls + '">' + col2.render(row) + '</td>';
+    }
+    tbody += '</tr>';
+  }
+  return '<div class="cp-table-wrap">'
+       +   '<table class="cp-table" data-cp-table="' + _cpEsc(tableTag) + '">'
+       +     '<thead>' + thead + '</thead>'
+       +     '<tbody>' + tbody + '</tbody>'
+       +   '</table>'
+       + '</div>';
+}
+
+// Phase 4 real renderer — replaces _cpRenderDiagnostic.
+// Decides which table(s) to show based on the locked thresholds, then renders them.
+function _cpRenderTables(body, data){
+  if(!body) return;
+  var h = (data && data.hitting) || [];
+  var p = (data && data.pitching) || [];
+  var showHit = _cpQualifiesHitting(h);
+  var showPit = _cpQualifiesPitching(p);
+  if(!showHit && !showPit){
+    body.innerHTML = '<div class="cp-empty">No MLB seasons yet.</div>';
+    return;
+  }
+  var html = '';
+  if(showHit){
+    html += '<div class="cp-section-title">Hitting</div>';
+    html += _cpBuildTable(h, CP_HIT_COLS, 'hitting');
+  }
+  if(showPit){
+    html += '<div class="cp-section-title">Pitching</div>';
+    html += _cpBuildTable(p, CP_PIT_COLS, 'pitching');
+  }
+  body.innerHTML = html;
+  // Stash the rendered data + col defs on the body element so Phase 5's sort
+  // handler can grab them without re-fetching or re-parsing.
+  body._cpData = { hitting: h, pitching: p };
+}
+
 function openCareerPopup(player){
   if(!player) return;
   var bd  = document.getElementById('career-popup-backdrop');
@@ -13481,12 +13589,13 @@ function openCareerPopup(player){
   pop.classList.add('cp-open');
   var mlbId = player.mlb_id || player.mlbId || null;
   pop.dataset.mlbId = String(mlbId || '');
-  // Phase 3 — fetch + render diagnostic. Phase 4 will swap the renderer.
+  // Phase 4 — fetch + render real role-aware tables. (_cpRenderDiagnostic is
+  // kept above as a fallback during verification; can be removed once signed off.)
   fetchCareerStats(mlbId).then(function(data){
     // Guard against the user closing the popup before the fetch resolves.
     var stillOpen = pop.classList.contains('cp-open') && pop.dataset.mlbId === String(mlbId || '');
     if(!stillOpen) return;
-    _cpRenderDiagnostic(body, data);
+    _cpRenderTables(body, data);
   });
 }
 function closeCareerPopup(){
