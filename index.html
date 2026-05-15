@@ -3333,6 +3333,18 @@ const ADV_STAT_CONFIG = {
   sv_ev95:     { higher: true  },
   sv_maxev:    { higher: true  },
   sv_xera:     { higher: false }, // lower xERA is better
+  // GOLD_BLOCK_V1 (May 14, 2026 PM) — register the new stats so the Player Page percentile bars can rank them. Direction matches the Player Page chart arrays (PCT_CHART_STATS_HITTER / PCT_CHART_STATS_PITCHER).
+  sv_brl_pct:      { higher: true  }, // alias of sv_barrel
+  sv_fb_velo:      { higher: true  }, // higher fastball velo = better pitcher
+  sv_gb_pct:       { higher: true  }, // higher GB rate = groundball pitcher (editorial)
+  sv_chase_pct:    { higher: true  }, // pitcher induces more chase = good
+  sv_whiff_pct:    { higher: true  }, // higher whiff = better pitcher
+  sv_bat_speed:    { higher: true  }, // hitter: higher bat speed = better
+  sv_sprint_speed: { higher: true  }, // hitter: higher sprint speed = better
+  sv_k_pct:        { higher: true  }, // BUT see render: for HITTERS, the PCT_CHART_STATS_HITTER row sets higher:false (low K = contact hitter). Direction is per-row in PCT_CHART_STATS, not global here. ADV_STAT_CONFIG is the GLOBAL fallback when role isn't known.
+  sv_bb_pct:       { higher: true  },
+  sv_k_minus_bb:   { higher: true  }, // K-BB% pitcher: higher = better
+  k_per_9:         { higher: true  }, // K/9 pitcher: higher = better
 };
 
 // Build percentile lookup maps from the full savant pool (all loaded players)
@@ -3340,8 +3352,11 @@ let pctMaps = {}; // { fieldName: sortedArray of values }
 
 function buildPercentileMaps(){
   pctMaps = {};
-  const hitterFields = ['sv_xba','sv_xwoba','sv_ev','sv_sweetspot','sv_barrel','sv_ev95','sv_maxev'];
-  const pitcherFields = ['sv_xwoba','sv_ev','sv_sweetspot','sv_barrel','sv_ev95','sv_maxev','sv_xera'];
+  // GOLD_BLOCK_V1 (May 14, 2026 PM) — Hitter and pitcher field lists extended to cover Matt's 8 new gold-block stats. Each gets a sorted array of all available MLB values so getPercentile() can rank a player against the league.
+  const hitterFields = ['sv_xba','sv_xwoba','sv_ev','sv_sweetspot','sv_barrel','sv_ev95','sv_maxev',
+                        'sv_brl_pct','sv_bat_speed','sv_sprint_speed','sv_k_pct','sv_bb_pct','sv_whiff_pct'];
+  const pitcherFields = ['sv_xwoba','sv_ev','sv_sweetspot','sv_barrel','sv_ev95','sv_maxev','sv_xera',
+                         'sv_fb_velo','sv_gb_pct','sv_chase_pct','sv_whiff_pct','sv_k_pct','sv_bb_pct'];
 
   // Collect all values from the savant data stores (full MLB pool, not just watch list)
   hitterFields.forEach(field => {
@@ -3349,7 +3364,14 @@ function buildPercentileMaps(){
     const apiKey = {
       xba:'est_ba', xwoba:'est_woba', ev:'avg_hit_speed',
       sweetspot:'anglesweetspotpercent', barrel:'brl_percent',
-      ev95:'ev95percent', maxev:'max_hit_speed'
+      ev95:'ev95percent', maxev:'max_hit_speed',
+      // GOLD_BLOCK_V1 hitter additions
+      brl_pct:'brl_percent',     // alias — same Savant column as barrel
+      bat_speed:'bat_speed',     // empty data from Savant — map will be empty, getPercentile returns null = em-dash
+      sprint_speed:'sprint_speed',
+      k_pct:'k_percent',
+      bb_pct:'bb_percent',
+      whiff_pct:'whiff_percent'
     }[key];
     if(!apiKey) return;
     const vals = Object.values(savantHitters)
@@ -3364,15 +3386,50 @@ function buildPercentileMaps(){
     const apiKey = {
       xwoba:'est_woba', ev:'avg_hit_speed',
       sweetspot:'anglesweetspotpercent', barrel:'brl_percent',
-      ev95:'ev95percent', maxev:'max_hit_speed', xera:'xera'
+      ev95:'ev95percent', maxev:'max_hit_speed', xera:'xera',
+      // GOLD_BLOCK_V1 pitcher additions
+      fb_velo:'ff_avg_speed',    // Savant pitch-arsenals CSV column for avg 4-seam velo
+      gb_pct:'gb_rate',          // GB% needs * 100 transform — handled below
+      chase_pct:'chase_percent', // empty data — map will be empty, em-dash
+      whiff_pct:'whiff_percent',
+      k_pct:'k_percent',
+      bb_pct:'bb_percent'
     }[key];
     if(!apiKey) return;
-    const vals = Object.values(savantPitchers)
+    let vals = Object.values(savantPitchers)
       .map(r => parseFloat(r[apiKey]))
       .filter(v => !isNaN(v));
+    // GOLD_BLOCK_V1 — special-case gb_rate which ships as a 0-1 fraction. Multiply by 100 so the percentile lookup matches the displayed 0-100 percent values. Same transform as mergeSavant line ~3302.
+    if(field === 'sv_gb_pct') vals = vals.map(v => v * 100);
     vals.sort((a,b) => a-b);
     pctMaps['p_'+field] = vals;
   });
+
+  // GOLD_BLOCK_V1 (May 14, 2026 PM) — sv_brl_pct percentile aliases sv_barrel's map (same underlying data, brl_percent column from Savant — sv_brl_pct is just a render-time alias added in mergeSavant when sv_brl_pct didn't get populated from custom endpoint).
+  pctMaps['h_sv_brl_pct'] = pctMaps['h_sv_barrel'] || [];
+  pctMaps['p_sv_brl_pct'] = pctMaps['p_sv_barrel'] || [];
+
+  // GOLD_BLOCK_V1 — Computed-live stats. K-BB% is sv_k_pct minus sv_bb_pct; build the map from per-pitcher pairs that have BOTH inputs.
+  const kbbVals = Object.values(savantPitchers)
+    .map(r => {
+      const k = parseFloat(r['k_percent']);
+      const bb = parseFloat(r['bb_percent']);
+      if(isNaN(k) || isNaN(bb)) return NaN;
+      return k - bb;
+    })
+    .filter(v => !isNaN(v));
+  kbbVals.sort((a,b) => a-b);
+  pctMaps['p_sv_k_minus_bb'] = kbbVals;
+
+  // GOLD_BLOCK_V1 — K/9 has no raw Savant CSV column. Compute from the watch-list `players` array: K/9 = (k * 9) / ip for every pitcher with ip > 0. Per Dude's call, your watch list IS the population we care about for this stat's percentile.
+  if(typeof players !== 'undefined' && Array.isArray(players)){
+    const k9Vals = players
+      .filter(p => isPitcher(p) && p.ip > 0 && p.k != null)
+      .map(p => (p.k * 9) / p.ip)
+      .filter(v => !isNaN(v));
+    k9Vals.sort((a,b) => a-b);
+    pctMaps['p_k_per_9'] = k9Vals;
+  }
 }
 
 function getPercentile(val, field, isPit){
