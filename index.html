@@ -3142,9 +3142,11 @@ async function loadSavantData(){
     const pitcherCustomUrl = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/custom/pitcher';
     const pitcherBattedUrl = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/batted-ball/pitcher';
     const fastballUrl      = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/pitch-arsenals/fastball';
+    // GOLD_BLOCK_V1 (May 14, 2026 PM) — Bat-tracking endpoint added to recover the hitter Bat Speed field. The Savant /custom/batter endpoint ships bat_speed as a header but empty values for every row. /leaderboard/bat-tracking has a real `avg_bat_speed` column.
+    const batTrackingUrl   = 'https://watch101-cache.wild-fog-21df.workers.dev/savant/bat-tracking/batter';
 
     const timeout = (ms) => new Promise((_,reject) => setTimeout(()=>reject(new Error('timeout')),ms));
-    const [hRes, pRes, hAdvRes, pAdvRes, hCustomRes, pCustomRes, pBattedRes, fbRes] = await Promise.all([
+    const [hRes, pRes, hAdvRes, pAdvRes, hCustomRes, pCustomRes, pBattedRes, fbRes, batTrackRes] = await Promise.all([
       Promise.race([fetch(hitterUrl), timeout(8000)]),
       Promise.race([fetch(pitcherUrl), timeout(8000)]),
       Promise.race([fetch(hitterAdvUrl), timeout(8000)]),
@@ -3152,7 +3154,9 @@ async function loadSavantData(){
       Promise.race([fetch(hitterCustomUrl), timeout(8000)]).catch(e => ({ok:false, _err:e})),
       Promise.race([fetch(pitcherCustomUrl), timeout(8000)]).catch(e => ({ok:false, _err:e})),
       Promise.race([fetch(pitcherBattedUrl), timeout(8000)]).catch(e => ({ok:false, _err:e})),
-      Promise.race([fetch(fastballUrl), timeout(8000)]).catch(e => ({ok:false, _err:e}))
+      Promise.race([fetch(fastballUrl), timeout(8000)]).catch(e => ({ok:false, _err:e})),
+      // GOLD_BLOCK_V1 — bat-tracking goes here as the 9th endpoint. Catches errors quietly so a failure on this one route doesn't bring down the others.
+      Promise.race([fetch(batTrackingUrl), timeout(8000)]).catch(e => ({ok:false, _err:e}))
     ]);
 
     if(hRes.ok){ parseSavantCSV(await hRes.text(), savantHitters); }
@@ -3192,6 +3196,15 @@ async function loadSavantData(){
       var _fbText = await fbRes.text();
       _fbText = _fbText.replace(/,"pitcher",/, ',"player_id",');
       parseSavantCSV(_fbText, savantPitchers);
+    }
+    // GOLD_BLOCK_V1 (May 14, 2026 PM) — Bat-tracking parse. CSV uses `id` as the player-id column (same as batted-ball), so we apply the same first-column rename trick before parseSavantCSV's row['player_id'] lookup runs. Lands on savantHitters so mergeSavant pulls avg_bat_speed for hitters only.
+    if(batTrackRes && batTrackRes.ok){
+      var _btText = await batTrackRes.text();
+      _btText = _btText.replace(/^"id"/, '"player_id"');
+      try {
+        console.log('[GOLD_BLOCK_V1] Bat-tracking CSV columns:', _btText.split('\n')[0]);
+      } catch(e){}
+      parseSavantCSV(_btText, savantHitters);
     }
     savantLoaded = true;
     buildPercentileMaps();
