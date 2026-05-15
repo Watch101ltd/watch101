@@ -560,17 +560,111 @@ function dropRow(e, idx){
   document.getElementById('status-line').textContent = 'Reordered (unsaved — Save button coming in Phase E).';
 }
 
-// ── Action button placeholders (Phase D / E wire the real behavior) ──
+// ── PHASE D (May 15, 2026) — Real PROMOTE + REMOVE wiring ────────────────
+// Both buttons operate via localStorage for now (no NAS save yet — Phase E
+// brings that). The bridge from Phase C means the main page reads the same
+// localStorage keys so changes propagate when Matt refreshes the main tab.
+//
+// Main list lives at localStorage[fw101_v2_integrity] — array of player objects.
+// Tank lives at localStorage[fw101_v2_integrity_holding_tank] — same shape.
+//
+// Cross-tab limitation: if Matt has the main list open in another tab,
+// promoting/removing on the Tank page doesn't update that other tab's
+// in-memory state. Matt has to refresh the main tab to see the change.
+// We could wire a `storage` event listener for live cross-tab updates later
+// — banked as a polish item if it bothers him.
+
+const MAIN_LIST_KEY = 'fw101_v2_' + LIST_ID;
+const TANK_KEY      = 'fw101_v2_' + LIST_ID + '_holding_tank';
+const WATCH101_CAP  = 101;
+
+function _readMainList(){
+  try {
+    const raw = localStorage.getItem(MAIN_LIST_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch(e){ console.warn('[tank] _readMainList parse failed:', e); return []; }
+}
+
+function _saveMainList(list){
+  try { localStorage.setItem(MAIN_LIST_KEY, JSON.stringify(list)); }
+  catch(e){ console.warn('[tank] _saveMainList failed:', e); }
+}
+
+function _saveTank(){
+  try { localStorage.setItem(TANK_KEY, JSON.stringify(_tank)); }
+  catch(e){ console.warn('[tank] _saveTank failed:', e); }
+}
+
+function _setStatusToast(msg, persistMs){
+  const el = document.getElementById('status-line');
+  if(!el) return;
+  const prior = el.textContent;
+  el.textContent = msg;
+  setTimeout(() => { if(el.textContent === msg) el.textContent = prior; }, persistMs || 4000);
+}
+
 function onPromote(idx){
   const p = _tank[idx];
-  alert('PROMOTE wiring coming in Phase D.\n\nWould promote "' + (p && p.name)
-    + '" to the main Watch 101 list at the next-available slot.');
+  if(!p) return;
+  // Read main list and check the cap
+  const mainList = _readMainList();
+  if(mainList.length >= WATCH101_CAP){
+    alert('Watch 101 is full (' + WATCH101_CAP + ' players).\n\n' +
+          'Remove someone from the main list first, then promote ' +
+          (p.name || 'this player') + ' from the Tank.');
+    return;
+  }
+  if(!confirm('Promote ' + (p.name || 'this player') + ' to Watch 101?')) return;
+
+  // Find next-available rank — highest in-use + 1, capped at WATCH101_CAP
+  let maxRank = 0;
+  mainList.forEach(mp => {
+    const r = parseInt(mp.rank, 10);
+    if(!isNaN(r) && r > maxRank) maxRank = r;
+  });
+  const newRank = Math.min(maxRank + 1, WATCH101_CAP);
+
+  // Stamp the player for the main list — fresh rank, mark as new so the
+  // flame text / 🆕 indicator lights up on the main page after refresh.
+  // Keep all other fields (stats, positions, notes etc.) intact.
+  const promoted = Object.assign({}, p, {
+    rank: newRank,
+    move: 'new',
+    prev_rank: null
+  });
+
+  mainList.push(promoted);
+  _saveMainList(mainList);
+
+  // Remove from the Tank
+  _tank.splice(idx, 1);
+  // Re-rank the remaining Tank players so ranks stay contiguous 1..N
+  _tank.forEach((tp, i) => { tp.rank = i + 1; });
+  _saveTank();
+
+  renderTank();
+
+  _setStatusToast('🪣 Promoted "' + (p.name || 'player') + '" to Watch 101 at rank ' +
+    newRank + '. Refresh the main list tab to see them.', 5000);
 }
+
 function onRemove(idx){
   const p = _tank[idx];
-  alert('REMOVE wiring coming in Phase D.\n\nWould remove "' + (p && p.name)
-    + '" from the Holding Tank (returns to the general MLB pool).');
+  if(!p) return;
+  if(!confirm('Remove ' + (p.name || 'this player') + ' from the Holding Tank?\n\n' +
+              'They will go back to the general MLB pool. You can always re-add them later.')) return;
+
+  _tank.splice(idx, 1);
+  // Re-rank
+  _tank.forEach((tp, i) => { tp.rank = i + 1; });
+  _saveTank();
+  renderTank();
+
+  _setStatusToast('Removed "' + (p.name || 'player') + '" from Holding Tank (' +
+    _tank.length + ' remaining)', 3500);
 }
+// ── /PHASE D ──────────────────────────────────────────────────────────────
 
 // ── Boot ──────────────────────────────────────────────────────────────
 reloadTank();
