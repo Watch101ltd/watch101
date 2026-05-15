@@ -496,6 +496,31 @@ body.readonly-mode #leaders-main-table td.savant-adv-col{display:table-cell;}
 .level-aa{background:#7a5a2a;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-right:4px;vertical-align:middle;flex-shrink:0}
 .savant-col:first-of-type{border-left:2px solid rgba(201,168,76,0.4);}
 th.savant-col{color:var(--gold);font-size:8px;letter-spacing:0.03em;padding:3px 2px;width:48px;min-width:48px;max-width:48px;}
+/* GOLD_BLOCK_V1 (May 14, 2026 PM) — visual styling for the 8 new gold-block dual-stat columns. Matches the legacy savant-col gold tint background + gold left-border. First column (col-gold-xba-xera) gets a stronger left border to mark the boundary between basic block and gold block. Header text in gold per Matt's picker design. */
+th.col-gold-xba-xera, td.col-gold-xba-xera,
+th.col-gold-xwoba, td.col-gold-xwoba,
+th.col-gold-brl-fbvelo, td.col-gold-brl-fbvelo,
+th.col-gold-ev-kbbpct, td.col-gold-ev-kbbpct,
+th.col-gold-batspd-gbpct, td.col-gold-batspd-gbpct,
+th.col-gold-kpct-chase, td.col-gold-kpct-chase,
+th.col-gold-bbpct-whiff, td.col-gold-bbpct-whiff,
+th.col-gold-sprint-k9, td.col-gold-sprint-k9 {
+  background: rgba(201,168,76,0.06);
+  font-size: 11px;
+}
+th.col-gold-xba-xera, td.col-gold-xba-xera {
+  border-left: 2px solid rgba(201,168,76,0.4);
+}
+th.col-gold-xba-xera,
+th.col-gold-xwoba,
+th.col-gold-brl-fbvelo,
+th.col-gold-ev-kbbpct,
+th.col-gold-batspd-gbpct,
+th.col-gold-kpct-chase,
+th.col-gold-bbpct-whiff,
+th.col-gold-sprint-k9 {
+  color: var(--gold);
+}
 #savant-indicator{font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text3);padding:0 8px;}
 #yahoo-btn{font-family:'Nunito Sans',sans-serif;font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--border2);cursor:pointer;transition:all 0.2s;}
 #theme-toggle{background:transparent;border:1px solid var(--border2);color:var(--text);font-size:14px;cursor:pointer;padding:4px 10px;border-radius:6px;line-height:1;transition:all 0.15s;user-select:none}
@@ -3130,13 +3155,29 @@ async function loadSavantData(){
     // NEW Phase 1 — merge the four new endpoints. Each one targets the same
     // savantHitters or savantPitchers map and Object.assigns its fields, so
     // mergeSavant() below picks them up automatically.
-    if(hCustomRes.ok){ parseSavantCSV(await hCustomRes.text(), savantHitters); }
-    if(pCustomRes.ok){ parseSavantCSV(await pCustomRes.text(), savantPitchers); }
+    if(hCustomRes.ok){
+      var _hcText = await hCustomRes.text();
+      // GOLD_BLOCK_V1 DEBUG — log the hitter custom CSV column headers so we can confirm field names line up.
+      try { console.log('[GOLD_BLOCK_V1] Hitter custom CSV columns:', _hcText.split('\n')[0]); } catch(e){}
+      parseSavantCSV(_hcText, savantHitters);
+    }
+    if(pCustomRes.ok){
+      var _pcText = await pCustomRes.text();
+      // GOLD_BLOCK_V1 DEBUG — log the pitcher custom CSV column headers. This is the one we need for Chase%/Whiff%/K%/BB% pitcher-side.
+      try { console.log('[GOLD_BLOCK_V1] Pitcher custom CSV columns:', _pcText.split('\n')[0]); } catch(e){}
+      parseSavantCSV(_pcText, savantPitchers);
+    }
     if(pBattedRes.ok){
       // Batted-ball CSV uses 'id' as the player-id column instead of 'player_id'.
       // Normalize before parse so parseSavantCSV's row['player_id'] lookup works.
       var _bbText = await pBattedRes.text();
       _bbText = _bbText.replace(/^"id"/, '"player_id"');
+      // GOLD_BLOCK_V1 DEBUG — log batted-ball CSV columns + first data row so we can see what units gb_rate is in.
+      try {
+        var _bbLines = _bbText.split('\n');
+        console.log('[GOLD_BLOCK_V1] Batted-ball CSV columns:', _bbLines[0]);
+        console.log('[GOLD_BLOCK_V1] Batted-ball CSV first row:', _bbLines[1]);
+      } catch(e){}
       parseSavantCSV(_bbText, savantPitchers);
     }
     if(fbRes.ok){
@@ -3211,7 +3252,11 @@ function mergeSavant(p){
   if(src['k_percent'])           p.sv_k_pct        = parseFloat(src['k_percent']);
   if(src['bb_percent'])          p.sv_bb_pct       = parseFloat(src['bb_percent']);
   if(src['whiff_percent'])       p.sv_whiff_pct    = parseFloat(src['whiff_percent']);
+  // GOLD_BLOCK_V1 (May 14, 2026 PM) — Chase% for pitchers may use a different column name than 'chase_percent' in the custom/pitcher CSV. Try multiple possible header variants so whatever Savant ships gets stamped.
   if(src['chase_percent'])       p.sv_chase_pct    = parseFloat(src['chase_percent']);
+  else if(src['o_swing_percent']) p.sv_chase_pct   = parseFloat(src['o_swing_percent']);
+  else if(src['oz_swing_percent']) p.sv_chase_pct  = parseFloat(src['oz_swing_percent']);
+  else if(src['out_zone_swing_rate']) p.sv_chase_pct = parseFloat(src['out_zone_swing_rate']);
   // Hitter-only Phase 1 fields
   if(src['sprint_speed'])        p.sv_sprint_speed = parseFloat(src['sprint_speed']);
   if(src['bat_speed'])           p.sv_bat_speed    = parseFloat(src['bat_speed']);
@@ -3222,10 +3267,16 @@ function mergeSavant(p){
   if(src['exit_velocity'] && p.sv_ev == null) p.sv_ev = parseFloat(src['exit_velocity']);
   // Pitcher-only Phase 1 fields
   if(src['gb_rate']){
-    // gb_rate from batted-ball is a 0-1 fraction (0.4494 = 44.94%). Multiply
-    // by 100 so it lines up with the other percent stats that are already in
-    // 0-100 form (e.g. k_percent of 21.5 means 21.5%).
-    p.sv_gb_pct = parseFloat(src['gb_rate']) * 100;
+    // GOLD_BLOCK_V1 (May 14, 2026 PM) — self-correcting unit conversion. Original
+    // overnight code assumed 0-1 fraction and multiplied by 100, but live data shows
+    // values like 12900% which means raw input was around 129 (already over-multiplied
+    // upstream OR sent as a non-fraction). Now: if raw is < 1 it's a fraction (multiply
+    // by 100). If 1-100 it's already a percent (leave as-is). If > 100 it was pre-multiplied,
+    // divide by 100. Final value should always land in 0-100 range.
+    let _gb = parseFloat(src['gb_rate']);
+    if(_gb < 1) _gb = _gb * 100;
+    else if(_gb > 100) _gb = _gb / 100;
+    p.sv_gb_pct = _gb;
   }
   if(src['ff_avg_speed'])        p.sv_fb_velo      = parseFloat(src['ff_avg_speed']);
   // Live-computed: K-BB% (a single column per Matt's call). Both inputs must
@@ -5743,15 +5794,15 @@ function renderTable(){
       <td class="stat-cell col-avg-era" style="text-align:right">${!pit?`<span style="color:${statColor}">${statAvg(sc&&sc.avg)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.era,2)}</span>`}</td>
       <td class="stat-cell col-obp col-obp-whip" style="text-align:right">${!pit?`<span style="color:${statColor}">${statAvg(sc&&sc.obp)}</span>`:`<span style="color:${pitStatColor}">${statVal(sc&&sc.whip,2)}</span>`}</td>
       <td class="stat-cell col-ops col-ops-kbb" style="text-align:right">${!pit?`<span style="color:${statColor}">${statVal(sc&&sc.ops,3)}</span>`:`<span style="color:${pitStatColor}">${p.kbb_ratio!=null?p.kbb_ratio.toFixed(2):'—'}</span>`}</td>
-      <!-- GOLD_BLOCK_V1 (May 14, 2026) — 8 dual-stat cells matching Matt's gold block layout. Each follows the !pit ? hitter : pitcher pattern. xBA / xERA both use stripLeadZero pattern since they're sub-1 / sub-10 decimals. -->
-      <td class="stat-cell col-gold-xba-xera" style="text-align:right">${!pit?`<span style="color:${statColor}">${p.sv_xba!=null?stripLeadZero(p.sv_xba.toFixed(3)):'—'}</span>`:`<span style="color:${pitStatColor}">${p.sv_xera!=null?p.sv_xera.toFixed(2):'—'}</span>`}</td>
-      <td class="stat-cell col-gold-xwoba" style="text-align:right">${!pit?`<span style="color:${statColor}">${p.sv_xwoba!=null?stripLeadZero(p.sv_xwoba.toFixed(3)):'—'}</span>`:`<span style="color:${pitStatColor}">${p.sv_xwoba!=null?stripLeadZero(p.sv_xwoba.toFixed(3)):'—'}</span>`}</td>
-      <td class="stat-cell col-gold-brl-fbvelo" style="text-align:right">${!pit?`<span style="color:${statColor}">${p.sv_brl_pct!=null?p.sv_brl_pct.toFixed(1)+'%':'—'}</span>`:`<span style="color:${pitStatColor}">${p.sv_fb_velo!=null?p.sv_fb_velo.toFixed(1):'—'}</span>`}</td>
-      <td class="stat-cell col-gold-ev-kbbpct" style="text-align:right">${!pit?`<span style="color:${statColor}">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`:`<span style="color:${pitStatColor}">${p.sv_k_minus_bb!=null?p.sv_k_minus_bb.toFixed(1)+'%':'—'}</span>`}</td>
-      <td class="stat-cell col-gold-batspd-gbpct" style="text-align:right">${!pit?`<span style="color:${statColor}">${p.sv_bat_speed!=null?p.sv_bat_speed.toFixed(1):'—'}</span>`:`<span style="color:${pitStatColor}">${p.sv_gb_pct!=null?p.sv_gb_pct.toFixed(1)+'%':'—'}</span>`}</td>
-      <td class="stat-cell col-gold-kpct-chase" style="text-align:right">${!pit?`<span style="color:${statColor}">${p.sv_k_pct!=null?p.sv_k_pct.toFixed(1)+'%':'—'}</span>`:`<span style="color:${pitStatColor}">${p.sv_chase_pct!=null?p.sv_chase_pct.toFixed(1)+'%':'—'}</span>`}</td>
-      <td class="stat-cell col-gold-bbpct-whiff" style="text-align:right">${!pit?`<span style="color:${statColor}">${p.sv_bb_pct!=null?p.sv_bb_pct.toFixed(1)+'%':'—'}</span>`:`<span style="color:${pitStatColor}">${p.sv_whiff_pct!=null?p.sv_whiff_pct.toFixed(1)+'%':'—'}</span>`}</td>
-      <td class="stat-cell col-gold-sprint-k9" style="text-align:right">${!pit?`<span style="color:${statColor}">${p.sv_sprint_speed!=null?p.sv_sprint_speed.toFixed(1):'—'}</span>`:`<span style="color:${pitStatColor}">${p.k_per_9!=null?p.k_per_9.toFixed(2):'—'}</span>`}</td>
+      <!-- GOLD_BLOCK_V1 (May 14, 2026) — 8 dual-stat cells matching Matt's gold block layout. Each follows the !pit ? hitter : pitcher pattern. Hitter text in gold, pitcher text in light-white (matches Matt's picker design, distinct from the basic block's red/blue dual-stat coloring). xBA/xERA both use stripLeadZero pattern since they're sub-1 / sub-10 decimals. -->
+      <td class="stat-cell col-gold-xba-xera" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_xba!=null?stripLeadZero(p.sv_xba.toFixed(3)):'—'}</span>`:`<span style="color:#d8e0e8">${p.sv_xera!=null?p.sv_xera.toFixed(2):'—'}</span>`}</td>
+      <td class="stat-cell col-gold-xwoba" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_xwoba!=null?stripLeadZero(p.sv_xwoba.toFixed(3)):'—'}</span>`:`<span style="color:#d8e0e8">${p.sv_xwoba!=null?stripLeadZero(p.sv_xwoba.toFixed(3)):'—'}</span>`}</td>
+      <td class="stat-cell col-gold-brl-fbvelo" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_brl_pct!=null?p.sv_brl_pct.toFixed(1)+'%':'—'}</span>`:`<span style="color:#d8e0e8">${p.sv_fb_velo!=null?p.sv_fb_velo.toFixed(1):'—'}</span>`}</td>
+      <td class="stat-cell col-gold-ev-kbbpct" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_ev!=null?p.sv_ev.toFixed(1):'—'}</span>`:`<span style="color:#d8e0e8">${p.sv_k_minus_bb!=null?p.sv_k_minus_bb.toFixed(1)+'%':'—'}</span>`}</td>
+      <td class="stat-cell col-gold-batspd-gbpct" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_bat_speed!=null?p.sv_bat_speed.toFixed(1):'—'}</span>`:`<span style="color:#d8e0e8">${p.sv_gb_pct!=null?p.sv_gb_pct.toFixed(1)+'%':'—'}</span>`}</td>
+      <td class="stat-cell col-gold-kpct-chase" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_k_pct!=null?p.sv_k_pct.toFixed(1)+'%':'—'}</span>`:`<span style="color:#d8e0e8">${p.sv_chase_pct!=null?p.sv_chase_pct.toFixed(1)+'%':'—'}</span>`}</td>
+      <td class="stat-cell col-gold-bbpct-whiff" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_bb_pct!=null?p.sv_bb_pct.toFixed(1)+'%':'—'}</span>`:`<span style="color:#d8e0e8">${p.sv_whiff_pct!=null?p.sv_whiff_pct.toFixed(1)+'%':'—'}</span>`}</td>
+      <td class="stat-cell col-gold-sprint-k9" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_sprint_speed!=null?p.sv_sprint_speed.toFixed(1):'—'}</span>`:`<span style="color:#d8e0e8">${p.k_per_9!=null?p.k_per_9.toFixed(2):'—'}</span>`}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-outline backend-only" style="padding:4px 8px;font-size:11px;margin-right:3px;color:var(--text)" onclick="editPlayer('${p.id}')">Edit</button>
         <button class="btn btn-red backend-only" style="padding:4px 8px;font-size:11px" onclick="deletePlayer('${p.id}')">✕</button>
