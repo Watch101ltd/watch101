@@ -342,7 +342,28 @@ async function reloadTank(){
   try {
     const res = await fetch(`${NAS_PROXY_URL}/list-staging/${LIST_ID}/holding-tank`, { cache: 'no-cache' });
     if(res.status === 404){
-      // No Tank file yet — show empty state
+      // HOLDING_TANK_LOCALSTORAGE_BRIDGE_V1 (May 15, 2026 — Phase C)
+      // No Tank file on the NAS yet — fall back to localStorage which the main
+      // page populates when Matt clicks REMOVE on a player. Same origin
+      // (github.io) means localStorage is shared between the main page at
+      // /watch101/ and this Tank page at /watch101/holding-tank/. Future Phase E
+      // will save the Tank to the NAS so this bridge becomes unnecessary, but
+      // tonight it gets us the full end-to-end loop working.
+      try {
+        const lsKey = 'fw101_v2_' + LIST_ID + '_holding_tank';
+        const raw = localStorage.getItem(lsKey);
+        const lsTank = raw ? JSON.parse(raw) : [];
+        if(Array.isArray(lsTank) && lsTank.length > 0){
+          _tank = lsTank;
+          renderTank();
+          status.textContent = 'Loaded from browser storage · ' + lsTank.length +
+            ' player' + (lsTank.length !== 1 ? 's' : '') +
+            ' · (Phase E will sync to NAS so other devices see the same Tank)';
+          return;
+        }
+      } catch(e){
+        console.warn('[tank] localStorage fallback failed:', e);
+      }
       _tank = [];
       renderTank();
       status.textContent = 'Holding Tank is empty.';
