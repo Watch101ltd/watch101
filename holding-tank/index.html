@@ -259,6 +259,7 @@ body.day-mode .pos-badge { background: var(--surface-2); color: var(--text); }
   <div class="tank-header-right">
     <a class="btn btn-back" href="../">← Back to Watch 101</a>
     <button class="btn" onclick="reloadTank()" title="Refresh from NAS">↻ Refresh</button>
+    <button class="btn" id="tank-save-btn" onclick="saveTank()" title="Save Holding Tank to NAS staging folder (cross-device sync)">💾 Save</button>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
   </div>
 </div>
@@ -374,6 +375,12 @@ async function reloadTank(){
     }
     const data = await res.json();
     _tank = (data && Array.isArray(data.players)) ? data.players : [];
+    // PHASE E (May 15, 2026): when NAS returns real data, mirror to localStorage
+    // so the Phase C bridge stays consistent. The main page reads from
+    // localStorage for cross-tab handoff (delete on main -> Tank picks it up).
+    try {
+      localStorage.setItem('fw101_v2_' + LIST_ID + '_holding_tank', JSON.stringify(_tank));
+    } catch(lsErr){ console.warn('[tank] could not mirror NAS data to localStorage:', lsErr); }
     renderTank();
     status.textContent = 'Loaded from ' + (data.environment || 'staging')
       + ' · ' + (data.filename || 'unknown file');
@@ -665,6 +672,172 @@ function onRemove(idx){
     _tank.length + ' remaining)', 3500);
 }
 // ── /PHASE D ──────────────────────────────────────────────────────────────
+
+// ── PHASE E (May 15, 2026) — NAS Save via showDirectoryPicker ─────────
+// REUSES the main page's IndexedDB folder handle for this list (no separate
+// Tank folder pick). Same database, same store, same key. Tank file lives
+// in a _HoldingTank/ subfolder we auto-create inside the picked folder.
+//
+// Why reuse: Matt's already picked the Integrity folder when he saved the
+// main list. Re-prompting him to pick the same folder a second time for the
+// Tank would be friction with no benefit. Subfolder isolation still gives
+// us the architectural guarantees (no production crossover).
+//
+// IndexedDB schema mirrored from main page (lines 6862-6864 of index.html):
+//   DB name:    watch101-folders
+//   Store:      dirHandles
+//   Key scheme: list IDs (e.g. 'integrity')
+
+const _IDB_DB_NAME = 'watch101-folders';
+const _IDB_STORE   = 'dirHandles';
+const _IDB_VERSION = 1;
+
+function _openIdb(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(_IDB_DB_NAME, _IDB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(_IDB_STORE)){
+        db.createObjectStore(_IDB_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function _idbGetHandle(listId){
+  try {
+    const db = await _openIdb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(_IDB_STORE, 'readonly');
+      const store = tx.objectStore(_IDB_STORE);
+      const req = store.get(listId);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch(e){ console.warn('[tank/idb] _idbGetHandle failed:', e); return null; }
+}
+
+async function _idbSetHandle(listId, handle){
+  try {
+    const db = await _openIdb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(_IDB_STORE, 'readwrite');
+      const store = tx.objectStore(_IDB_STORE);
+      const req = store.put(handle, listId);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  } catch(e){ console.warn('[tank/idb] _idbSetHandle failed:', e); }
+}
+
+async function _ensureHandlePermission(handle){
+  if(!handle || !handle.queryPermission) return true;
+  const opts = { mode: 'readwrite' };
+  try {
+    let perm = await handle.queryPermission(opts);
+    if(perm === 'granted') return true;
+    perm = await handle.requestPermission(opts);
+    return perm === 'granted';
+  } catch(e){
+    console.warn('[tank/idb] permission check failed:', e);
+    return false;
+  }
+}
+
+async function saveTank(){
+  const statusEl = document.getElementById('status-line');
+  const btn = document.getElementById('tank-save-btn');
+
+  if(!window.showDirectoryPicker){
+    alert('Your browser does not support folder writes (showDirectoryPicker).\n\n' +
+          'Use Chrome / Edge / Brave on desktop for the Save feature.');
+    return;
+  }
+
+  try {
+    if(btn){ btn.disabled = true; btn.textContent = '💾 Saving…'; }
+
+    // STEP 1: get the main list's folder handle from IndexedDB.
+    let parentHandle = await _idbGetHandle(LIST_ID);
+
+    // STEP 2: if no remembered handle (Matt has never saved the main list),
+    // open the folder picker to pick the parent folder.
+    if(!parentHandle){
+      _setStatusToast('No folder remembered yet — pick the Integrity staging folder…', 8000);
+      parentHandle = await window.showDirectoryPicker({
+        id: 'watch101-save-' + LIST_ID,
+        mode: 'readwrite',
+        startIn: 'documents'
+      });
+      // Persist so future saves don't prompt again.
+      try { await _idbSetHandle(LIST_ID, parentHandle); }
+      catch(e){ console.warn('[tank/save] could not persist parent handle:', e); }
+    }
+
+    // STEP 3: verify permission on the parent handle is still alive.
+    const okPerm = await _ensureHandlePermission(parentHandle);
+    if(!okPerm){
+      alert('Folder access was denied. The Tank cannot be saved.\n\n' +
+            'Tip: clear the saved folder via the main page More dropdown ' +
+            '→ Forget Folder, then try again.');
+      return;
+    }
+
+    // STEP 4: drill into (or create) the _HoldingTank/ subfolder.
+    const tankFolderHandle = await parentHandle.getDirectoryHandle('_HoldingTank', { create: true });
+
+    // STEP 5: build the file payload + filename.
+    const d = new Date();
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const timeStr = `${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+    const listSlug = LIST_ID.charAt(0).toUpperCase() + LIST_ID.slice(1);  // "integrity" -> "Integrity"
+    const fileName = `Watch101_${listSlug}_HoldingTank_${dateStr}_${timeStr}.json`;
+
+    const payload = {
+      list_id: LIST_ID,
+      list_name: 'Watch 101 — Holding Tank — ' + listSlug,
+      is_holding_tank: true,
+      saved_at: new Date().toISOString(),
+      saved_at_local: new Date().toLocaleString(),
+      source: 'holding-tank/index.html saveTank()',
+      player_count: _tank.length,
+      players: _tank
+    };
+
+    // STEP 6: write the JSON file.
+    const fileHandle = await tankFolderHandle.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+    await writable.close();
+
+    // STEP 7: also save to localStorage so next reload still sees the data
+    // immediately (NAS endpoint may take a moment to pick up the new file).
+    _saveTank();
+
+    console.log('[tank/save] wrote ' + fileName + ' to _HoldingTank subfolder (' + _tank.length + ' players)');
+
+    if(btn){ btn.textContent = '✅ Saved!'; }
+    _setStatusToast('✅ Saved ' + _tank.length + ' players to ' + fileName, 5000);
+
+    setTimeout(() => {
+      if(btn){ btn.disabled = false; btn.textContent = '💾 Save'; }
+    }, 2500);
+
+  } catch(err){
+    if(err && err.name === 'AbortError'){
+      // User cancelled the folder picker — silent
+      if(btn){ btn.disabled = false; btn.textContent = '💾 Save'; }
+      return;
+    }
+    console.error('[tank/save] save failed:', err);
+    alert('Save failed: ' + (err && err.message ? err.message : 'unknown error') +
+          '\n\nCheck the F12 console for details. Your Tank is still in browser storage so nothing is lost.');
+    if(btn){ btn.disabled = false; btn.textContent = '💾 Save'; }
+  }
+}
+// ── /PHASE E ──────────────────────────────────────────────────────────────
 
 // ── Boot ──────────────────────────────────────────────────────────────
 reloadTank();
