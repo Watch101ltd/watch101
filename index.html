@@ -4851,17 +4851,20 @@ var TYPE_TAGS_V1 = [
   // Source of truth: `07 Reference/Type Column Emoji Vocabulary v1.md`.
   // MUST_WATCH_V1 (May 14, 2026 — re-add after afternoon rollback)
   // Listed first so it appears at the top of the picker — Matt's
-  // highest-priority "this guy NOW" flag. Pure attention-getter; not
-  // tied to stats or category.
-  { id: 'must_watch',       label: 'Must Watch',        emoji: '🚨' },
-  { id: 'speed_specialist', label: 'Steal Specialist',  emoji: '🏃' },
-  { id: 'cup_of_coffee',    label: 'Cup of Coffee',     emoji: '☕' },
-  { id: 'injury_promotion', label: 'Injury Promotion',  emoji: '🚑' },
-  { id: 'il_return',        label: 'IL Return',         emoji: '💪' },
-  { id: 'power_bat',        label: 'Power Bat',         emoji: '🛢️' },
-  { id: 'hot_streak',       label: 'Hot Streak',        emoji: '🌶️' },
-  { id: 'undervalued',      label: 'Undervalued',       emoji: '🔍' },
-  { id: 'future_stash',     label: 'Future Stash',      emoji: '🏦' }
+  // highest-priority "this guy NOW" flag.
+  // TYPE_TAG_TAGLINES_V1 (May 14, 2026 — re-add after rollback) — each tag
+  // gets a 'tagline' one-liner shown in the click tooltip. Voice matches
+  // 07 Reference/Type Column Emoji Vocabulary v1.md and the original
+  // ground-truth screenshot from the Dude.
+  { id: 'must_watch',       label: 'Must Watch',        emoji: '🚨',  tagline: "Drop everything. Read this player's notes first." },
+  { id: 'speed_specialist', label: 'Steal Specialist',  emoji: '🏃',  tagline: "Speed and stolen bases are his bread and butter." },
+  { id: 'cup_of_coffee',    label: 'Cup of Coffee',     emoji: '☕',  tagline: "Brief MLB look. Story's still being written." },
+  { id: 'injury_promotion', label: 'Injury Promotion',  emoji: '🚑',  tagline: "The starter went down. He got the call." },
+  { id: 'il_return',        label: 'IL Return',         emoji: '💪',  tagline: "Healthy and back on the field. Value's back." },
+  { id: 'power_bat',        label: 'Power Bat',         emoji: '🛢️',  tagline: "Home runs and RBIs are his game." },
+  { id: 'hot_streak',       label: 'Hot Streak',        emoji: '🌶️',  tagline: "Cooking the last 7-14 days. Ride it." },
+  { id: 'undervalued',      label: 'Undervalued',       emoji: '🔍',  tagline: "Yahoo and the public have him too low. We saw him first." },
+  { id: 'future_stash',     label: 'Future Stash',      emoji: '🏦',  tagline: "Not paying off now. Will later. Bank him." }
 ];
 
 function _typeTagById(id){
@@ -4939,21 +4942,26 @@ function _ensureTypeTagTooltipEl(){
   if(el) return el;
   el = document.createElement('div');
   el.id = 'type-tag-tooltip';
+  // TYPE_TAG_TAGLINES_V1 (May 14, 2026) — full-card layout: dark panel with
+  // gold border, player-name header in gold, then each tag as a row with
+  // emoji on the left and label + tagline on the right. Max-width so the
+  // taglines wrap cleanly on 2 lines instead of forcing the panel wide.
   el.style.cssText =
     'position:absolute;' +
     'display:none;' +
     'background:#1a1a1a;' +
     'color:#fff;' +
     'border:1px solid var(--gold);' +
-    'border-radius:6px;' +
-    'padding:8px 12px;' +
+    'border-radius:10px;' +
+    'padding:14px 18px;' +
     'font-family:"Nunito Sans",sans-serif;' +
-    'font-size:12px;' +
-    'line-height:1.6;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,0.6);' +
+    'font-size:13px;' +
+    'line-height:1.4;' +
+    'box-shadow:0 6px 24px rgba(0,0,0,0.7);' +
     'z-index:9999;' +
     'pointer-events:none;' +
-    'white-space:nowrap;';
+    'max-width:420px;' +
+    'min-width:300px;';
   document.body.appendChild(el);
   return el;
 }
@@ -4961,21 +4969,44 @@ function _ensureTypeTagTooltipEl(){
 function _showTypeTagTooltip(player, anchorEl){
   if(!player || !Array.isArray(player.type_tags) || player.type_tags.length === 0) return;
   var el = _ensureTypeTagTooltipEl();
-  var lines = [];
+  var html = '';
+  // TYPE_TAG_TAGLINES_V1 — player name header in gold + thin divider
+  var safeName = String(player.name || '(unnamed)').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  html += '<div style="font-weight:800;letter-spacing:0.08em;font-size:11px;color:var(--gold);text-transform:uppercase;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid rgba(234,179,8,0.25)">'
+        + safeName + ' &mdash; Tag Key</div>';
+  // One row per tag — emoji left, label + tagline right
   for(var i=0; i<player.type_tags.length; i++){
     var def = _typeTagById(player.type_tags[i]);
     if(!def) continue;
-    // Escape the label minimally so a stray < doesn't break the HTML.
-    var safeLabel = String(def.label).replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    lines.push('<div>' + def.emoji + '&nbsp; ' + safeLabel + '</div>');
+    var safeLabel   = String(def.label).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var safeTagline = String(def.tagline || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var rowTopPad = (i === 0) ? '0' : '10px';   // first row sits right under the divider
+    html +=
+      '<div style="display:flex;align-items:flex-start;gap:12px;padding-top:' + rowTopPad + '">' +
+        '<div style="font-size:24px;line-height:1.2;flex:0 0 auto">' + def.emoji + '</div>' +
+        '<div style="flex:1 1 auto">' +
+          '<div style="color:var(--gold);font-weight:700;font-size:14px;line-height:1.25">' + safeLabel + '</div>' +
+          (safeTagline
+            ? '<div style="color:#fff;font-weight:600;font-size:12px;line-height:1.35;margin-top:2px">' + safeTagline + '</div>'
+            : '') +
+        '</div>' +
+      '</div>';
   }
-  if(lines.length === 0) return;
-  el.innerHTML = lines.join('');
+  el.innerHTML = html;
   // Position the tooltip just below the click anchor, aligned to its left edge.
+  // Clamp to viewport so it doesn't fall off the right edge.
   var rect = anchorEl.getBoundingClientRect();
-  el.style.left = (rect.left + window.scrollX) + 'px';
-  el.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+  var left = rect.left + window.scrollX;
+  var top  = rect.bottom + window.scrollY + 6;
+  el.style.left = left + 'px';
+  el.style.top  = top + 'px';
   el.style.display = 'block';
+  // After it's rendered, check if it's spilling off the right edge of the viewport — if so, shift it left.
+  var elRect = el.getBoundingClientRect();
+  var overflowRight = elRect.right - window.innerWidth;
+  if(overflowRight > 0){
+    el.style.left = (left - overflowRight - 12) + 'px';
+  }
 }
 
 function _hideTypeTagTooltip(){
