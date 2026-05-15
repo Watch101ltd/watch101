@@ -3311,6 +3311,8 @@ function mergeSavant(p){
   if(src['ev95percent'])           p.sv_ev95      = parseFloat(src['ev95percent']);
   // Pitcher only
   if(pit && src['xera'])           p.sv_xera      = parseFloat(src['xera']);
+  // GOLD_BLOCK_V1 (May 14, 2026 PM) — The Savant /custom/batter Worker route ships an empty brl_percent column for every player (column header exists, all values blank). But the older /statcast endpoint correctly populates p.sv_barrel from the same brl_percent field on a DIFFERENT CSV. Alias sv_brl_pct to sv_barrel when sv_brl_pct didn't get populated, so the new Gold block's Brl% cell can read from a working source. Same value, different field name.
+  if(p.sv_brl_pct == null && p.sv_barrel != null) p.sv_brl_pct = p.sv_barrel;
 }
 
 // ── PERCENTILE SHADING ────────────────────────────────────────────────────────
