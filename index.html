@@ -4415,8 +4415,14 @@ function getFiltered(){
     const PITCHER_KEYS = ['ip','k','w','sv','hld','era','whip','sv_xera','kbb_ratio',
                           'sv_fb_velo','sv_k_minus_bb','sv_gb_pct','sv_chase_pct','sv_whiff_pct','k_per_9'];
     const STRING_KEYS  = ['name','team','primaryPos','pos','bats'];
-    const pushPitchers = forceHitter || HITTER_KEYS.includes(key);
-    const pushHitters  = forcePitcher || PITCHER_KEYS.includes(key);
+    // GOLD_BLOCK_V1 (May 14, 2026 PM) — explicit force flags take priority. When
+    // a column is dual (e.g. sv_xwoba lives on BOTH player types — hitter xwOBA
+    // and pitcher xwOBA-against), the `_h` / `_p` suffix tells us which side the
+    // user clicked. Before this fix, sv_xwoba_p triggered BOTH pushPitchers AND
+    // pushHitters because sv_xwoba is in HITTER_KEYS, sentineling every row.
+    // Now: explicit force wins, default keys only apply when no suffix is set.
+    const pushPitchers = forceHitter ? true  : (forcePitcher ? false : HITTER_KEYS.includes(key));
+    const pushHitters  = forcePitcher ? true : (forceHitter  ? false : PITCHER_KEYS.includes(key));
 
     const sentinel = sortDir === 1 ? Infinity : -Infinity;
 
@@ -8057,8 +8063,9 @@ function renderPool(){
     // range capable; they stay reading from p[key].
     const DATE_RANGE_KEYS = ['ab','r','hr','rbi','sb','avg','obp','ops','ip','k','w','sv','hld','era','whip'];
     const useDateRange = (typeof dateRange !== 'undefined' && dateRange !== 'season' && DATE_RANGE_KEYS.includes(key));
-    const pushPitchers = forceHitter || HITTER_KEYS.includes(key);
-    const pushHitters  = forcePitcher || PITCHER_KEYS.includes(key);
+    // GOLD_BLOCK_V1 — explicit _h/_p force flags take priority over default keyword membership. Prevents the both-flags-true sentinel bug.
+    const pushPitchers = forceHitter ? true  : (forcePitcher ? false : HITTER_KEYS.includes(key));
+    const pushHitters  = forcePitcher ? true : (forceHitter  ? false : PITCHER_KEYS.includes(key));
 
     const sentinel = poolSortDir === 1 ? Infinity : -Infinity;
 
@@ -9121,8 +9128,9 @@ function renderLeaders(){
     // Pool: read from pre-baked cache first, fall back to runtime poolDateRangeCache.
     const DATE_RANGE_KEYS = ['ab','r','hr','rbi','sb','avg','obp','ops','ip','k','w','sv','hld','era','whip'];
     const useDateRange = (typeof dateRange !== 'undefined' && dateRange !== 'season' && DATE_RANGE_KEYS.includes(key));
-    const pushPitchers = forceHitter || HITTER_KEYS.includes(key);
-    const pushHitters  = forcePitcher || PITCHER_KEYS.includes(key);
+    // GOLD_BLOCK_V1 — explicit _h/_p force flags take priority over default keyword membership. Prevents the both-flags-true sentinel bug.
+    const pushPitchers = forceHitter ? true  : (forcePitcher ? false : HITTER_KEYS.includes(key));
+    const pushHitters  = forcePitcher ? true : (forceHitter  ? false : PITCHER_KEYS.includes(key));
 
     const sentinel = leadersSortDir === 1 ? Infinity : -Infinity;
 
@@ -11348,8 +11356,9 @@ function renderProspects(){
     // Role-specific stat fields — off-role players drop to bottom.
     const HITTER_KEYS  = ['ab','r','hr','rbi','sb','avg','obp','ops'];
     const PITCHER_KEYS = ['ip','k','w','sv','hld','era','whip'];
-    const pushPitchers = forceHitter || HITTER_KEYS.includes(key);
-    const pushHitters  = forcePitcher || PITCHER_KEYS.includes(key);
+    // GOLD_BLOCK_V1 — explicit _h/_p force flags take priority over default keyword membership. Prevents the both-flags-true sentinel bug.
+    const pushPitchers = forceHitter ? true  : (forcePitcher ? false : HITTER_KEYS.includes(key));
+    const pushHitters  = forcePitcher ? true : (forceHitter  ? false : PITCHER_KEYS.includes(key));
     const aPit = isPit(a.primaryPos);
     const bPit = isPit(b.primaryPos);
     const aOff = (pushPitchers && aPit) || (pushHitters && !aPit);
