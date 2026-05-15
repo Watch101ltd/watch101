@@ -3303,11 +3303,14 @@ function mergeSavant(p){
   if(src['k_percent'])           p.sv_k_pct        = parseFloat(src['k_percent']);
   if(src['bb_percent'])          p.sv_bb_pct       = parseFloat(src['bb_percent']);
   if(src['whiff_percent'])       p.sv_whiff_pct    = parseFloat(src['whiff_percent']);
-  // GOLD_BLOCK_V1 (May 14, 2026 PM) — Diagnostic confirmed pitcher custom CSV ships `chase_percent` as the column name. Earlier fallback fudges removed. Field is sparse because only qualified pitchers (enough innings) are in the Savant custom leaderboard.
+  // GOLD_BLOCK_V1 (May 14, 2026 PM) — Pitcher Chase%: Savant's /custom?type=pitcher silently drops chase_percent values for every pitcher (header present, all blank). The Worker was updated to request `oz_swing_percent` instead, which is the same underlying metric (out-of-zone swing rate) with real data. Try chase_percent first for the hitter side (where it works), fall back to oz_swing_percent for pitchers.
   if(src['chase_percent'])       p.sv_chase_pct    = parseFloat(src['chase_percent']);
+  else if(src['oz_swing_percent']) p.sv_chase_pct  = parseFloat(src['oz_swing_percent']);
   // Hitter-only Phase 1 fields
   if(src['sprint_speed'])        p.sv_sprint_speed = parseFloat(src['sprint_speed']);
+  // GOLD_BLOCK_V1 (May 14, 2026 PM) — Bat Speed: Savant's /custom?type=batter ships bat_speed column but blank values. Worker now also pulls /leaderboard/bat-tracking which has real `avg_bat_speed`. Try the old `bat_speed` first (in case Savant ever fills it in), fall back to the new `avg_bat_speed` from bat-tracking endpoint.
   if(src['bat_speed'])           p.sv_bat_speed    = parseFloat(src['bat_speed']);
+  else if(src['avg_bat_speed']) p.sv_bat_speed    = parseFloat(src['avg_bat_speed']);
   if(src['brl_percent'])         p.sv_brl_pct      = parseFloat(src['brl_percent']);
   if(src['hard_hit_percent'])    p.sv_hard_hit_pct = parseFloat(src['hard_hit_percent']);
   // exit_velocity is the same field as avg_hit_speed but spelled differently
@@ -3380,7 +3383,8 @@ function buildPercentileMaps(){
       ev95:'ev95percent', maxev:'max_hit_speed',
       // GOLD_BLOCK_V1 hitter additions
       brl_pct:'brl_percent',     // alias — same Savant column as barrel
-      bat_speed:'bat_speed',     // empty data from Savant — map will be empty, getPercentile returns null = em-dash
+      // GOLD_BLOCK_V1 (May 14, 2026 PM) — bat_speed now maps to `avg_bat_speed` from the bat-tracking endpoint. Savant's /custom?type=batter ships bat_speed as a blank column; the dedicated bat-tracking leaderboard has the real values.
+      bat_speed:'avg_bat_speed',
       sprint_speed:'sprint_speed',
       k_pct:'k_percent',
       bb_pct:'bb_percent',
@@ -3403,7 +3407,8 @@ function buildPercentileMaps(){
       // GOLD_BLOCK_V1 pitcher additions
       fb_velo:'ff_avg_speed',    // Savant pitch-arsenals CSV column for avg 4-seam velo
       gb_pct:'gb_rate',          // GB% needs * 100 transform — handled below
-      chase_pct:'chase_percent', // empty data — map will be empty, em-dash
+      // GOLD_BLOCK_V1 (May 14, 2026 PM) — chase_pct now maps to `oz_swing_percent` from the custom-pitcher endpoint (after Worker update). Savant ships chase_percent as blank for pitchers; oz_swing_percent is the same metric with real data.
+      chase_pct:'oz_swing_percent',
       whiff_pct:'whiff_percent',
       k_pct:'k_percent',
       bb_pct:'bb_percent'
