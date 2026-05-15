@@ -42,7 +42,7 @@
   Main NFL landing page. Baseball-style watch list table:
     - Search by player name (autocomplete from Sleeper player DB)
     - Click a result to add to the list
-    - Each row shows 2024 season stats from Sleeper
+    - Each row shows previous-season stats from Sleeper (year derived dynamically — see DYNAMIC_STATS_YEAR_V1)
     - Save persists to browser localStorage (server-side TBD)
 
   Header uses the SAME logo blocks as the secondary dashboard page so the
@@ -413,7 +413,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <div class="logo">
       <span class="logo-watch">Watch</span><img class="logo-img" src="images/watch101_football_logo.png" alt="Watch 101 NFL"><span class="logo-football">NFL</span>
     </div>
-    <div class="logo-sub">Watch List · 2024 Stats</div>
+    <div class="logo-sub" id="logo-sub">Watch List · Loading…</div>
   </div>
   <div class="header-right">
     <a class="logo-mini mlb" href="../" title="Watch 101 MLB — open the baseball site"><img class="logo-mini-img" src="images/watch101_baseball_logo.png" alt="101"><span class="logo-mini-sport">MLB</span></a><div class="logo-mini nba" title="Watch 101 NBA — coming soon"><img class="logo-mini-img" src="images/watch101_basketball_logo.png" alt="101"><span class="logo-mini-sport">NBA</span></div>
@@ -440,7 +440,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 </div>
 
 <!-- ── STATUS BAR ─────────────────────────────────────── -->
-<div class="status-bar-wl" id="status-bar">Loading player DB + 2024 season stats…</div>
+<div class="status-bar-wl" id="status-bar">Loading…</div>
 
 <!-- ── WATCH LIST TABLE ──────────────────────────────── -->
 <div class="table-wrap">
@@ -499,7 +499,21 @@ let _yahooDataByPid = {};
 // True once loadYahooData() has run and stamped values onto _yahooDataByPid.
 // Until then, row render shows em-dashes; sort treats yrank/yowned as null.
 let _yahooDataLoaded = false;
-const STATS_YEAR = '2024';
+// DYNAMIC_STATS_YEAR_V1 (May 15, 2026) — STATS_YEAR is no longer a hardcoded
+// '2024' string. It's set at page-load by _deriveStatsYear() which asks
+// Sleeper's /state/nfl endpoint for the current season + season_type, then
+// applies this rule:
+//   - During offseason or preseason ('off' or 'pre'): show LAST completed
+//     season's stats, i.e. season - 1. Right now (May 2026) that's 2025.
+//   - During regular season or postseason ('regular' or 'post'): show
+//     CURRENT season's stats-so-far. Updates weekly as games happen.
+// Failsafe: if /sleeper/state errors out, default to '2025' so the page
+// never crashes. A console.warn fires so we know the fallback fired.
+//
+// Future feature (banked on Football To-Do List): multi-year selector
+// dropdown so the Dude can flip between 2026 / 2025 / 2024 / all-time
+// without leaving the page. Tonight we just get THIS year right.
+let STATS_YEAR = '2025';  // initial fallback; overwritten by _deriveStatsYear()
 const LIST_STORAGE_KEY = 'watch101_nfl_watch_list_v0';
 const MAX_SEARCH_RESULTS = 12;
 
@@ -525,10 +539,50 @@ async function reloadWatchList(){
   await bootstrap();
 }
 
+// DYNAMIC_STATS_YEAR_V1 — once STATS_YEAR is set, refresh the static labels
+// on the page that need the year inline (the logo subtitle, mostly). All
+// other label strings are built fresh inside their functions and pick up
+// STATS_YEAR's current value naturally.
+function _updateYearLabels(){
+  const sub = document.getElementById('logo-sub');
+  if(sub) sub.textContent = 'Watch List · ' + STATS_YEAR + ' Stats';
+}
+
+// DYNAMIC_STATS_YEAR_V1 — derives the right stats year from Sleeper's
+// season state. Called once at bootstrap before player + stats fetches.
+async function _deriveStatsYear(){
+  try {
+    const res = await fetch(SERVER_URL + '/sleeper/state');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const state = await res.json();
+    const season = parseInt(state.season, 10);
+    const sType = String(state.season_type || '').toLowerCase();
+    if(!season || isNaN(season)){
+      console.warn('[stats-year] /sleeper/state returned no usable season; falling back to 2025');
+      return '2025';
+    }
+    // During regular season or postseason — show this year's stats so far.
+    // During offseason or preseason — show last year's final stats.
+    const year = (sType === 'regular' || sType === 'post') ? season : (season - 1);
+    console.log('[stats-year] Sleeper state: season=' + season + ', season_type=' + sType + ' -> STATS_YEAR=' + year);
+    return String(year);
+  } catch(e){
+    console.warn('[stats-year] /sleeper/state fetch failed (' + e.message + '); falling back to 2025');
+    return '2025';
+  }
+}
+
 async function bootstrap(){
   const statusEl = document.getElementById('status-bar');
   try {
-    statusEl.textContent = 'Loading Sleeper player DB + 2024 stats…';
+    // DYNAMIC_STATS_YEAR_V1: derive the right year BEFORE fetching stats.
+    // ~50-150ms one-shot call; everything else runs after this resolves.
+    statusEl.textContent = 'Checking season state…';
+    STATS_YEAR = await _deriveStatsYear();
+    // Now we know the year — update the page subtitle and the loading text.
+    _updateYearLabels();
+
+    statusEl.textContent = 'Loading Sleeper player DB + ' + STATS_YEAR + ' stats…';
     setLastUpdated('Loading…');
     const [playersRes, statsRes] = await Promise.all([
       fetch(SERVER_URL + '/sleeper/players'),
@@ -542,7 +596,7 @@ async function bootstrap(){
 
     const playerCount = Object.keys(_playerDB).length;
     const statCount = Object.keys(_seasonStats).length;
-    statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' players with 2024 stats.';
+    statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' players with ' + STATS_YEAR + ' stats.';
     setLastUpdated(new Date().toLocaleTimeString());
 
     await loadListFromStorage();
@@ -1305,7 +1359,7 @@ async function loadYahooData(){
   if(statusEl) {
     const playerCount = _playerDB ? Object.keys(_playerDB).length : 0;
     const statCount = _seasonStats ? Object.keys(_seasonStats).length : 0;
-    statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' with 2024 stats. Yahoo data: ' + matched + ' matched (' + matchedByNameTeam + ' via name fallback).';
+    statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' with ' + STATS_YEAR + ' stats. Yahoo data: ' + matched + ' matched (' + matchedByNameTeam + ' via name fallback).';
   }
   renderWatchList();
 }
