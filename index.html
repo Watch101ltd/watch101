@@ -6914,11 +6914,18 @@ if(document.readyState === 'loading'){
 
 function _buildXLSXWorkbook(){
   // PRIORITY_COL_V1 (May 5, 2026) — 'Priority' (1-10 or blank) added at the end.
-  // Appended rather than slotted between existing columns so legacy XLSX files
-  // without this column still import cleanly (older files just skip it).
+  // EXCEL_GOLD_BLOCK_V1 (May 15, 2026) — added 15 gold-block Statcast columns
+  // (8 hitter + 7 pitcher) and K/9, slotted RIGHT AFTER the basic stats so the
+  // shape mirrors the on-screen left-to-right reading order. Hitter and pitcher
+  // get SEPARATE columns so spreadsheet sorts/filters stay meaningful — sorting
+  // "xERA" only ranks pitchers; sorting "xBA" only ranks hitters; the other lane
+  // shows blanks. New columns appended in groups (hitter Statcast, then pitcher
+  // Statcast) so legacy XLSX imports still work column-by-name.
   const headers = ['Rank','Player','Positions','Team','Age','Bats','Yahoo Rank','Roster %',
     'AB','R','HR','RBI','SB','AVG','OBP','OPS',
-    'W','SV','HLD','IP','ERA','WHIP','K','K/BB',
+    'W','SV','HLD','IP','ERA','WHIP','K','K/BB','K/9',
+    'xBA','xwOBA','Brl%','EV','Bat Spd','K%','BB%','Sprint',
+    'xERA','xwOBA Against','FB Velo','K-BB%','GB%','Chase%','Whiff%',
     'Movement','Note','Priority'];
   const rows = players.map(p => [
     p.rank||'', p.name||'', (p.positions||[]).join('/'), p.team||'',
@@ -6926,7 +6933,14 @@ function _buildXLSXWorkbook(){
     p.ab??'', p.r??'', p.hr??'', p.rbi??'', p.sb??'',
     p.avg||'', p.obp||'', p.ops||'',
     p.w??'', p.sv??'', p.hld??'', p.ip||'',
-    p.era||'', p.whip||'', p.k??'', p.kbb||'',
+    p.era||'', p.whip||'', p.k??'', p.kbb||'', p.k_per_9??'',
+    // Hitter Statcast (8) — only populated for hitters; pitchers get blanks
+    p.sv_xba_h??p.sv_xba??'', p.sv_xwoba_h??p.sv_xwoba??'', p.sv_brl_pct??'',
+    p.sv_ev_h??p.sv_ev??'', p.sv_bat_speed??'', p.sv_k_pct_h??'',
+    p.sv_bb_pct_h??'', p.sv_sprint_speed??'',
+    // Pitcher Statcast (7) — only populated for pitchers; hitters get blanks
+    p.sv_xera??'', p.sv_xwoba_p??'', p.sv_fb_velo??'',
+    p.sv_k_minus_bb??'', p.sv_gb_pct??'', p.sv_chase_pct??'', p.sv_whiff_pct??'',
     p.move||'', p.note||'', (p.priority!=null&&p.priority!=='')?p.priority:''
   ]);
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -6938,7 +6952,9 @@ function _buildXLSXWorkbook(){
   ws['!cols'] = [
     {wch:6},{wch:22},{wch:8},{wch:6},{wch:4},{wch:5},{wch:8},{wch:8},
     {wch:5},{wch:5},{wch:5},{wch:5},{wch:5},{wch:7},{wch:7},{wch:7},
-    {wch:5},{wch:5},{wch:5},{wch:6},{wch:7},{wch:7},{wch:5},{wch:6},
+    {wch:5},{wch:5},{wch:5},{wch:6},{wch:7},{wch:7},{wch:5},{wch:6},{wch:6},
+    {wch:7},{wch:7},{wch:6},{wch:6},{wch:8},{wch:6},{wch:6},{wch:7},
+    {wch:7},{wch:13},{wch:7},{wch:7},{wch:6},{wch:7},{wch:7},
     {wch:8},{wch:25},{wch:8}
   ];
   const wb = XLSX.utils.book_new();
@@ -7312,9 +7328,15 @@ function exportCSV(){
   // PRIORITY_COL_V1 (May 5, 2026) — Priority appended at the end. Legacy CSVs
   // without the column still import cleanly because the import function reads
   // by column name, not position.
+  // CSV_GOLD_BLOCK_V1 (May 15, 2026) — kept in sync with _buildXLSXWorkbook so
+  // CSV downloads and Excel downloads show the same data. 15 new Statcast
+  // columns + K/9 added. Hitter and pitcher get separate columns; the unused
+  // lane shows blank.
   const headers = ['Rank','Player','Position','Team','Age','Yahoo Rank','Roster %',
     'AB','R','HR','RBI','SB','AVG','OBP','OPS',
-    'W','SV','HLD','IP','ERA','WHIP','K','K/BB',
+    'W','SV','HLD','IP','ERA','WHIP','K','K/BB','K/9',
+    'xBA','xwOBA','Brl%','EV','Bat Spd','K%','BB%','Sprint',
+    'xERA','xwOBA Against','FB Velo','K-BB%','GB%','Chase%','Whiff%',
     'Movement','Note','Priority'];
   const rows = players.map(p => [
     p.rank || '',
@@ -7327,7 +7349,14 @@ function exportCSV(){
     p.ab ?? '', p.r || '', p.hr || '', p.rbi || '', p.sb || '',
     p.avg || '', p.obp || '', p.ops || '',
     p.w || '', p.sv || '', p.hld || '', p.ip || '',
-    p.era || '', p.whip || '', p.k || '', p.kbb || '',
+    p.era || '', p.whip || '', p.k || '', p.kbb || '', p.k_per_9 ?? '',
+    // Hitter Statcast (8)
+    p.sv_xba_h ?? p.sv_xba ?? '', p.sv_xwoba_h ?? p.sv_xwoba ?? '', p.sv_brl_pct ?? '',
+    p.sv_ev_h ?? p.sv_ev ?? '', p.sv_bat_speed ?? '', p.sv_k_pct_h ?? '',
+    p.sv_bb_pct_h ?? '', p.sv_sprint_speed ?? '',
+    // Pitcher Statcast (7)
+    p.sv_xera ?? '', p.sv_xwoba_p ?? '', p.sv_fb_velo ?? '',
+    p.sv_k_minus_bb ?? '', p.sv_gb_pct ?? '', p.sv_chase_pct ?? '', p.sv_whiff_pct ?? '',
     p.move || '',
     (p.note || '').replace(/,/g, ';'),
     (p.priority!=null&&p.priority!=='')?p.priority:''
