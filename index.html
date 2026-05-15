@@ -6415,14 +6415,70 @@ function editPlayer(id){
   document.getElementById('modal').classList.add('open');
 }
 
+// HOLDING_TANK_V1 (May 15, 2026) — Matt's editorial bench, parallel to the
+// main `players` array. When a player is removed from the main Watch 101
+// list (deletePlayer), instead of vanishing they get pushed into _holdingTank.
+// The Tank persists to localStorage under fw101_v2_<listId>_holding_tank so it
+// survives close-and-reopen. Tank page (`/holding-tank/`) reads this key as a
+// fallback so the round-trip works end-to-end even before Phase E ties the
+// Tank to the NAS file.
+//
+// Same-origin guarantee: main page and Tank page are both served from
+// github.io (staging) — same origin, different paths — so localStorage is
+// shared across them. Production (Cloudflare) doesn't have a Tank page because
+// the Tank is backend-only by design.
+let _holdingTank = [];
+function _tankStorageKey(){
+  const listId = (typeof currentListId !== 'undefined' && currentListId) ? currentListId : 'integrity';
+  return 'fw101_v2_' + listId + '_holding_tank';
+}
+function saveHoldingTank(){
+  try { localStorage.setItem(_tankStorageKey(), JSON.stringify(_holdingTank)); }
+  catch(e){ console.warn('[HOLDING_TANK_V1] saveHoldingTank failed:', e); }
+}
+function loadHoldingTank(){
+  try {
+    const raw = localStorage.getItem(_tankStorageKey());
+    _holdingTank = raw ? JSON.parse(raw) : [];
+    if(!Array.isArray(_holdingTank)) _holdingTank = [];
+  } catch(e){ _holdingTank = []; console.warn('[HOLDING_TANK_V1] loadHoldingTank failed:', e); }
+}
+// Load the Tank from localStorage at script-eval time so any in-progress
+// session sees yesterday's Tank state immediately.
+loadHoldingTank();
+// /HOLDING_TANK_V1 helpers
+
 async function deletePlayer(id){
   if(_blockIfReadOnly('deletePlayer')) return;
-  if(!confirm('Remove this player from the Watch List?')) return;
+  if(!confirm('Remove this player from the Watch List?\n\nThey will be moved to the Holding Tank (your editorial bench) instead of disappearing.')) return;
+  // HOLDING_TANK_V1: capture the player object BEFORE filtering so we can
+  // push them into the Tank. If the player isn't found (defensive — shouldn't
+  // happen if the row was rendered with this id), silently fall through to
+  // the original delete behavior. Avoid pushing duplicates: if the player
+  // is already in the Tank, just remove from main without re-adding.
+  const _removed = players.find(x => x.id === id) || null;
+  if(_removed && !_holdingTank.some(t => t.id === _removed.id)){
+    // Reset rank since they're starting fresh in the Tank. New rank = end of Tank.
+    _removed.rank = _holdingTank.length + 1;
+    _holdingTank.push(_removed);
+    saveHoldingTank();
+  }
   players=players.filter(x=>x.id!==id);
   saveData();renderTable();
   // MUTATION_AUTOSAVE_V1 (2026-04-24) — persist removal to NAS too, not just localStorage.
   // Without this, a close-and-reopen would bring the removed player back from the server copy.
   try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] deletePlayer autosave failed:', e); }
+  // HOLDING_TANK_V1: brief status banner so Matt sees the move happened.
+  if(_removed){
+    try {
+      const banner = document.getElementById('save-status') || document.getElementById('hdr-status-strip');
+      if(banner) {
+        const prior = banner.textContent;
+        banner.textContent = '🪣 Moved "' + (_removed.name || 'player') + '" to Holding Tank (' + _holdingTank.length + ' total)';
+        setTimeout(() => { if(banner.textContent.startsWith('🪣 Moved')) banner.textContent = prior; }, 3500);
+      }
+    } catch(e){ /* status banner unavailable — silent ok */ }
+  }
 }
 async function confirmClear(){
   if(_blockIfReadOnly('confirmClear')) return;
