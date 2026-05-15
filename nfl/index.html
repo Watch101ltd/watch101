@@ -1029,7 +1029,7 @@ async function refreshYahooAuthBadge(){
   try {
     const res = await fetch(SERVER_URL + '/auth/status');
     const data = await res.json();
-    if(data && data.yahoo_connected){
+    if(data && data.connected){
       el.textContent = 'Yahoo ✓';
       el.title = 'Yahoo Fantasy connected. Click to sign out.';
       el.dataset.state = 'connected';
@@ -1081,7 +1081,7 @@ function onYahooAuthBadgeClick(){
         const res = await fetch(SERVER_URL + '/auth/status', { cache:'no-cache' });
         if(res.ok){
           const data = await res.json();
-          if(data && data.yahoo_connected){
+          if(data && data.connected){
             // Connected. Stop polling, refresh the badge, kick off the data load.
             clearInterval(pollHandle);
             console.log('[yahoo] auth poll detected sign-in success');
@@ -1166,7 +1166,7 @@ async function loadYahooData(){
     return;
   }
   const authData = await authRes.json();
-  if(!authData.yahoo_connected){
+  if(!authData.connected){
     console.log('[yahoo] not signed in; Y!Rank and Y!Owned will stay as em-dashes');
     return;
   }
