@@ -3226,6 +3226,29 @@ async function loadSavantData(){
     renderTable();
     // Safety net re-render after short delay in case first render was too early
     setTimeout(() => { players.forEach(p => mergeSavant(p)); renderTable(); }, 1000);
+    // POOL_GOLD_BLOCK_V1 (May 15, 2026) — also re-merge poolPlayers if they've
+    // already loaded. Without this, Pool's one-time mergeSavant call in
+    // loadAllPoolStats races against this Savant load — when Pool wins, BRL%
+    // and other Savant fields render em-dash for everyone except watchlisted
+    // players (who get fixed by the player-loop above).
+    try {
+      if(typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers) && poolPlayers.length){
+        poolPlayers.forEach(p => mergeSavant(p));
+        if(typeof renderPool === 'function' && typeof poolStatsLoaded !== 'undefined' && poolStatsLoaded) renderPool();
+        if(typeof renderLeaders === 'function' && typeof leadersActive !== 'undefined' && leadersActive) renderLeaders();
+      }
+    } catch(e){ console.warn('[POOL_GOLD_BLOCK_V1] post-Savant pool re-merge failed:', e); }
+    // Safety net for Pool/Leaders too — covers the case where poolPlayers
+    // hasn't loaded by the time Savant lands. Mirrors the watchlist retry above.
+    setTimeout(() => {
+      try {
+        if(typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers) && poolPlayers.length){
+          poolPlayers.forEach(p => mergeSavant(p));
+          if(typeof renderPool === 'function' && typeof poolStatsLoaded !== 'undefined' && poolStatsLoaded) renderPool();
+          if(typeof renderLeaders === 'function' && typeof leadersActive !== 'undefined' && leadersActive) renderLeaders();
+        }
+      } catch(e){ console.warn('[POOL_GOLD_BLOCK_V1] delayed pool re-merge failed:', e); }
+    }, 1500);
     // Update toolbar indicator
     const ind = document.getElementById('savant-indicator');
     if(ind){
