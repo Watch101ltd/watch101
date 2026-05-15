@@ -13018,6 +13018,24 @@ function clearPlayerStatBarPoll(){
 }
 
 function onOverlayDateRangeChange(val){
+  // PREVIOUS_SEASONS_V1 (May 15 2026) — intercept the special-cased "previous_seasons" value
+  // BEFORE it flows into setDateRange/syncDateRangeDropdowns. The popup opens, the dropdown
+  // reverts to whatever was selected before, and the rest of the site's date range is untouched.
+  if(val === 'previous_seasons'){
+    var sel = document.getElementById('ppo-daterange-select');
+    // Revert the <select> back to the last "real" date-range value before opening the popup.
+    // window._ppoLastDateRangeValue is maintained below for any non-popup value change.
+    if(sel){
+      var revertTo = window._ppoLastDateRangeValue || 'season';
+      sel.value = revertTo;
+    }
+    if(window._ppoCurrentPlayer && typeof openCareerPopup === 'function'){
+      openCareerPopup(window._ppoCurrentPlayer);
+    }
+    return;
+  }
+  // Remember the most recent "real" value so we can revert to it next time the popup option is picked.
+  window._ppoLastDateRangeValue = val;
   // Reuse the main-page infrastructure so data fetching + syncing across all dropdowns happens the same way
   if(typeof setDateRange === 'function') setDateRange(val);
   if(typeof syncDateRangeDropdowns === 'function') syncDateRangeDropdowns(val);
@@ -13142,6 +13160,11 @@ document.addEventListener('click', function(e){
           <option value="7">Last 7 Days</option>
           <option value="14">Last 14 Days</option>
           <option value="30">Last 30 Days</option>
+          <!-- PREVIOUS_SEASONS_V1 (May 15 2026) — special-cased entry. Opens
+               the career-by-season popup instead of changing the date range.
+               onOverlayDateRangeChange intercepts this value before it flows
+               into setDateRange()/syncDateRangeDropdowns(). -->
+          <option value="previous_seasons">Previous Seasons</option>
         </select>
         <span class="ppo-statbar-loading" id="ppo-statbar-loading" style="display:none">&#8635; loading&#8230;</span>
       </div>
@@ -13224,6 +13247,111 @@ document.addEventListener('click', function(e){
   </div>
 </div>
 
+
+<!-- ===================================================================== -->
+<!-- PREVIOUS_SEASONS_V1 (May 15 2026) — Career-by-Season popup              -->
+<!--                                                                         -->
+<!-- Self-contained block: CSS + backdrop + popup HTML + JS (Phase 3 adds    -->
+<!-- the fetch + cache + render logic; this scaffold is the visual shell).   -->
+<!--                                                                         -->
+<!-- Triggered from the Player Page (Deep Cut) "Stats For" dropdown via the  -->
+<!-- "Previous Seasons" option. onOverlayDateRangeChange intercepts and      -->
+<!-- calls openCareerPopup(player). Close via × button, backdrop click, or  -->
+<!-- the Escape key. z-index 10002 sits above #movement-mode-overlay (10001) -->
+<!-- so the popup always renders on top.                                     -->
+<!-- ===================================================================== -->
+<style id="career-popup-styles">
+#career-popup-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 10002; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+#career-popup-backdrop.cp-open { display: block; }
+#career-popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10003; max-width: 1080px; width: calc(100vw - 48px); max-height: calc(100vh - 64px); background: var(--surface, #14141c); border: 1px solid var(--gold, #ffc107); border-radius: 14px; box-shadow: 0 24px 64px rgba(0,0,0,0.65), 0 0 28px rgba(255,193,7,0.18); font-family: 'Nunito Sans', sans-serif; color: var(--text, #e8e8e8); overflow: hidden; flex-direction: column; }
+#career-popup.cp-open { display: flex; }
+.cp-header { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 22px; border-bottom: 1px solid var(--border, #333); background: linear-gradient(180deg, rgba(20,20,28,0.92), rgba(20,20,28,0.62)); }
+.cp-title-block { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cp-title-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--gold, #ffc107); }
+.cp-title-name { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: 0.02em; line-height: 1.15; }
+.cp-close-btn { flex: 0 0 auto; background: transparent; color: var(--text2, #aaa); border: 1px solid var(--border, #444); border-radius: 8px; width: 36px; height: 36px; font-size: 18px; font-weight: 700; cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease; }
+.cp-close-btn:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: #777; }
+.cp-body { flex: 1 1 auto; overflow-y: auto; padding: 18px 22px 22px; }
+.cp-empty { padding: 36px 12px; text-align: center; color: var(--text2, #aaa); font-style: italic; font-size: 14px; }
+.cp-loading { padding: 36px 12px; text-align: center; color: var(--text2, #aaa); font-size: 13px; letter-spacing: 0.04em; }
+.cp-section-title { font-size: 12px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--gold, #ffc107); margin: 6px 0 8px; }
+.cp-section-title:not(:first-child) { margin-top: 18px; }
+.cp-table-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--border, #333); border-radius: 8px; background: rgba(0,0,0,0.25); }
+.cp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cp-table thead th { position: sticky; top: 0; background: linear-gradient(180deg, rgba(30,30,40,0.96), rgba(20,20,28,0.96)); color: var(--gold, #ffc107); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 10px 8px; border-bottom: 1px solid var(--border, #333); cursor: pointer; user-select: none; white-space: nowrap; }
+.cp-table thead th:hover { background: linear-gradient(180deg, rgba(50,40,15,0.96), rgba(35,28,12,0.96)); }
+.cp-table thead th .cp-sort-ind { display: inline-block; margin-left: 4px; opacity: 0.55; font-size: 9px; vertical-align: 1px; }
+.cp-table thead th.cp-sort-asc .cp-sort-ind, .cp-table thead th.cp-sort-desc .cp-sort-ind { opacity: 1; color: var(--gold, #ffc107); }
+.cp-table tbody tr:nth-child(odd) { background: rgba(255,255,255,0.015); }
+.cp-table tbody tr:hover { background: rgba(255,193,7,0.05); }
+.cp-table tbody td { padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cp-table tbody td.cp-col-year { font-weight: 700; color: var(--gold, #ffc107); }
+.cp-table tbody td.cp-col-team { color: var(--text, #e8e8e8); }
+.cp-table tbody td.cp-col-num { text-align: right; }
+/* Day-mode tweaks — match the rest of the site's day-mode treatment */
+body.day-mode #career-popup { background: var(--surface, #f6f6f4); border-color: #b87a00; color: var(--text, #1a1a1a); }
+body.day-mode .cp-header { background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(245,245,245,0.62)); }
+body.day-mode .cp-title-name { color: #111; }
+body.day-mode .cp-title-eyebrow, body.day-mode .cp-section-title, body.day-mode .cp-table thead th, body.day-mode .cp-table tbody td.cp-col-year { color: #b87a00; }
+body.day-mode .cp-table thead th { background: linear-gradient(180deg, rgba(245,245,245,0.96), rgba(235,235,235,0.96)); }
+body.day-mode .cp-table thead th:hover { background: linear-gradient(180deg, rgba(255,240,200,0.96), rgba(250,230,180,0.96)); }
+body.day-mode .cp-table tbody tr:nth-child(odd) { background: rgba(0,0,0,0.025); }
+body.day-mode .cp-table tbody tr:hover { background: rgba(180,120,0,0.08); }
+body.day-mode .cp-table tbody td { border-bottom-color: rgba(0,0,0,0.05); color: #222; }
+body.day-mode .cp-close-btn { border-color: #c0c0c0; color: #444; }
+body.day-mode .cp-close-btn:hover { background: rgba(0,0,0,0.05); color: #111; border-color: #888; }
+</style>
+<div id="career-popup-backdrop" onclick="closeCareerPopup()"></div>
+<div id="career-popup" role="dialog" aria-modal="true" aria-label="Career by season">
+  <div class="cp-header">
+    <div class="cp-title-block">
+      <div class="cp-title-eyebrow">Career by Season</div>
+      <div class="cp-title-name" id="cp-title-name">—</div>
+    </div>
+    <button class="cp-close-btn" type="button" onclick="closeCareerPopup()" aria-label="Close">&times;</button>
+  </div>
+  <div class="cp-body" id="cp-body">
+    <div class="cp-loading">Loading career stats…</div>
+  </div>
+</div>
+<script>
+// PREVIOUS_SEASONS_V1 (May 15 2026) — open/close functions for the career popup.
+// Phase 3 will add the fetch + cache layer; Phase 4 will fill the table render.
+// Right now these functions just open and close the visual shell so we can verify
+// the dropdown intercept + popup chrome work end-to-end before wiring data.
+function openCareerPopup(player){
+  if(!player) return;
+  var bd  = document.getElementById('career-popup-backdrop');
+  var pop = document.getElementById('career-popup');
+  var ttl = document.getElementById('cp-title-name');
+  var body = document.getElementById('cp-body');
+  if(!bd || !pop || !ttl || !body) return;
+  ttl.textContent = player.name || player.fullName || '—';
+  body.innerHTML = '<div class="cp-loading">Loading career stats…</div>';
+  bd.classList.add('cp-open');
+  pop.classList.add('cp-open');
+  // Stash the mlb_id on the popup for later phases (fetch + render).
+  pop.dataset.mlbId = String(player.mlb_id || player.mlbId || '');
+}
+function closeCareerPopup(){
+  var bd  = document.getElementById('career-popup-backdrop');
+  var pop = document.getElementById('career-popup');
+  if(bd)  bd.classList.remove('cp-open');
+  if(pop) pop.classList.remove('cp-open');
+}
+// Escape key closes the popup. Capture-phase so it runs before the Deep Cut's
+// own Escape handler — otherwise pressing Escape would close BOTH at once.
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' || e.keyCode === 27){
+    var pop = document.getElementById('career-popup');
+    if(pop && pop.classList.contains('cp-open')){
+      e.stopPropagation();
+      e.preventDefault();
+      closeCareerPopup();
+    }
+  }
+}, true);
+</script>
 
 
 <!-- ===================================================================== -->
