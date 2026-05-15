@@ -419,6 +419,8 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <a class="logo-mini mlb" href="../" title="Watch 101 MLB — open the baseball site"><img class="logo-mini-img" src="images/watch101_baseball_logo.png" alt="101"><span class="logo-mini-sport">MLB</span></a><div class="logo-mini nba" title="Watch 101 NBA — coming soon"><img class="logo-mini-img" src="images/watch101_basketball_logo.png" alt="101"><span class="logo-mini-sport">NBA</span></div>
     <span id="last-updated" class="last-updated">Loading…</span>
     <a class="btn btn-outline" href="dashboard/" style="text-decoration:none;display:inline-block">⤵️ More</a>
+    <!-- YAHOO_AUTH_V1 (May 15, 2026) — sign-in badge / button. Updated by refreshYahooAuthBadge() on page load. -->
+    <span id="yahoo-auth-badge" class="btn btn-outline" style="cursor:pointer" onclick="onYahooAuthBadgeClick()" title="Yahoo Fantasy connection status">Yahoo: …</span>
     <button class="btn btn-outline" onclick="reloadWatchList()">Refresh</button>
   </div>
 </div>
@@ -481,6 +483,22 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 // CONFIG
 // ──────────────────────────────────────────────────────────────────────────
 const SERVER_URL = 'https://nfl-nas.fantasywatch101.com';
+
+// YAHOO_DATA_V1 (May 15, 2026) — browser hits the Cloudflare Worker for Yahoo
+// data, not the NAS directly. Worker enforces 4-hour cooldown lockout + 10/24h
+// hard call ceiling + KV cache, so even runaway browser loops can't trigger a
+// Yahoo ban. Same architecture baseball uses.
+// Sleeper calls stay on SERVER_URL — Sleeper isn't ban-prone and doesn't need
+// a Worker layer. ONLY route Yahoo calls through YAHOO_CACHE_URL.
+const YAHOO_CACHE_URL = 'https://watch101-nfl-cache.wild-fog-21df.workers.dev';
+
+// In-memory cache of Yahoo data merged onto watch-list players. Keyed by Sleeper pid.
+// Populated by loadYahooData() after a successful league-ranks fetch.
+// Each entry: { yahoo_rank: number|null, roster_pct: number|null }
+let _yahooDataByPid = {};
+// True once loadYahooData() has run and stamped values onto _yahooDataByPid.
+// Until then, row render shows em-dashes; sort treats yrank/yowned as null.
+let _yahooDataLoaded = false;
 const STATS_YEAR = '2024';
 const LIST_STORAGE_KEY = 'watch101_nfl_watch_list_v0';
 const MAX_SEARCH_RESULTS = 12;
@@ -530,6 +548,13 @@ async function bootstrap(){
     await loadListFromStorage();
     _normalizeWatchList();
     renderWatchList();
+
+    // YAHOO_DATA_V1 (May 15, 2026) — kick off Yahoo data load AFTER the watch
+    // list renders so the user sees em-dashes immediately, then values appear
+    // when the Worker responds. Awaits intentionally NOT used — fire-and-forget
+    // so Yahoo's slow first build (90-120s on cold cache) doesn't block render.
+    refreshYahooAuthBadge();
+    loadYahooData().catch(err => console.warn('[yahoo] background load failed:', err.message));
   } catch(e){
     console.error('[bootstrap]', e);
     statusEl.textContent = '⚠ Could not load data: ' + e.message;
@@ -657,8 +682,9 @@ function renderWatchList(){
       '<td class="placeholder">—</td>' +
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       '<td class="left placeholder">—</td>' +
-      '<td class="placeholder">—</td>' +
-      '<td class="placeholder">—</td>' +
+      // YAHOO_DATA_V1: y!rank, y!owned, cbs owned cells
+      '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
+      '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       '<td class="placeholder">—</td>' +
       '<td>' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
       '<td>' + statCellOrDash(s.pass_yd) + '</td>' +
@@ -875,10 +901,13 @@ function sortValueFor(field, p, s, pid){
     case 'exp':
     case 'delta':
     case 'type':
-    case 'yrank':
-    case 'yowned':
     case 'cbsowned':
       return null;
+    // YAHOO_DATA_V1: real values from _yahooDataByPid (null = sort to bottom)
+    case 'yrank':
+      return _yahooLookupNum(pid, 'yahoo_rank');
+    case 'yowned':
+      return _yahooLookupNum(pid, 'roster_pct');
     default: return null;
   }
 }
@@ -963,6 +992,213 @@ initSortHandlers();
 // /SORTABLE_COLUMNS_V1
 
 bootstrap();
+</script>
+
+<script>
+// ============================================================================
+// YAHOO_DATA_V1 (May 15, 2026) — football watch list Yahoo data layer.
+// ----------------------------------------------------------------------------
+// PURPOSE
+//   Fetch Yahoo Fantasy NFL ownership + rank data and merge it onto the
+//   players in the watch list so the Y!Rank and Y!Owned columns populate.
+//
+// ARCHITECTURE
+//   Browser   → YAHOO_CACHE_URL (Cloudflare Worker)   → NFL NAS → Yahoo API
+//   Browser   → SERVER_URL (NFL NAS direct)            → /auth/* and /yahoo/leagues
+//
+//   Why two URLs:
+//     - Yahoo league-ranks goes through the Worker (heavy, ~300 Yahoo calls
+//       per fresh build, must be cached + ban-protected).
+//     - Auth + leagues lookup go direct to NAS (lightweight, OAuth flow,
+//       one-shot calls — don't need Worker caching).
+//
+// FLOW
+//   1. refreshYahooAuthBadge() checks /auth/status on the NAS, paints the
+//      sign-in badge appropriately.
+//   2. loadYahooData() — if signed in, gets the user's leagues list, picks
+//      the first NFL league, calls the Worker's /yahoo/league-ranks/{key}.
+//   3. The big payload comes back with ranked players + ownership. We build
+//      a lookup map from Sleeper pid -> {yahoo_rank, roster_pct} using the
+//      Sleeper player DB's yahoo_id field as the bridge.
+//   4. renderWatchList() runs again so the cells fill in.
+// ============================================================================
+
+async function refreshYahooAuthBadge(){
+  const el = document.getElementById('yahoo-auth-badge');
+  if(!el) return;
+  try {
+    const res = await fetch(SERVER_URL + '/auth/status');
+    const data = await res.json();
+    if(data && data.yahoo_connected){
+      el.textContent = 'Yahoo ✓';
+      el.title = 'Yahoo Fantasy connected. Click to sign out.';
+      el.dataset.state = 'connected';
+    } else {
+      el.textContent = 'Sign in with Yahoo';
+      el.title = 'Click to sign in with Yahoo Fantasy.';
+      el.dataset.state = 'disconnected';
+    }
+  } catch(e){
+    el.textContent = 'Yahoo ?';
+    el.title = 'Could not reach NFL server: ' + e.message;
+    el.dataset.state = 'error';
+  }
+}
+
+function onYahooAuthBadgeClick(){
+  const el = document.getElementById('yahoo-auth-badge');
+  if(!el) return;
+  const state = el.dataset.state || 'disconnected';
+  if(state === 'connected'){
+    if(confirm('Sign out of Yahoo? You will need to sign in again to refresh ranks and ownership.')){
+      fetch(SERVER_URL + '/auth/logout', { method:'POST' })
+        .finally(() => {
+          _yahooDataByPid = {};
+          _yahooDataLoaded = false;
+          refreshYahooAuthBadge();
+          renderWatchList();
+        });
+    }
+  } else {
+    // Open the sign-in flow. Yahoo redirects back to nfl-nas /auth/callback.
+    // User then comes back to this tab and hits Refresh.
+    window.open(SERVER_URL + '/auth/login', '_blank');
+    setTimeout(refreshYahooAuthBadge, 2000);
+  }
+}
+
+// Pick the first NFL league from /yahoo/leagues.
+// Returns the league_key (e.g. "461.l.123456") or null if user has no NFL leagues.
+async function _yahooFirstNflLeagueKey(){
+  try {
+    const res = await fetch(SERVER_URL + '/yahoo/leagues');
+    if(res.status === 401) {
+      console.log('[yahoo] not signed in; skipping league lookup');
+      return null;
+    }
+    if(!res.ok) {
+      console.warn('[yahoo] /yahoo/leagues HTTP ' + res.status);
+      return null;
+    }
+    const data = await res.json();
+    const leagues = (data && data.leagues) || [];
+    if(!leagues.length){
+      console.warn('[yahoo] user has zero leagues');
+      return null;
+    }
+    // /yahoo/leagues on the NFL container returns NFL leagues only — first one wins.
+    const first = leagues[0];
+    const key = first.league_key || first.key || null;
+    if(!key){
+      console.warn('[yahoo] first league had no league_key field:', first);
+      return null;
+    }
+    console.log('[yahoo] using NFL league:', key, '(' + (first.name || 'unnamed') + ')');
+    return key;
+  } catch(e){
+    console.warn('[yahoo] _yahooFirstNflLeagueKey error:', e.message);
+    return null;
+  }
+}
+
+// Pull the big league-ranks payload from the WORKER (not the NAS direct).
+async function _yahooFetchLeagueRanks(leagueKey){
+  const url = YAHOO_CACHE_URL + '/yahoo/league-ranks/' + encodeURIComponent(leagueKey);
+  const res = await fetch(url);
+  if(res.status === 503){
+    const body = await res.json().catch(() => ({}));
+    console.warn('[yahoo] Worker guardrail blocked the call:', body);
+    throw new Error('Yahoo guardrail: ' + (body.detail || 'unavailable'));
+  }
+  if(!res.ok){
+    throw new Error('league-ranks HTTP ' + res.status);
+  }
+  return await res.json();
+}
+
+// Top-level orchestrator. Runs once on page load (fire-and-forget) and again
+// whenever the user clicks the Sign-in badge after signing in.
+async function loadYahooData(){
+  const statusEl = document.getElementById('status-bar');
+  // Auth check first.
+  const authRes = await fetch(SERVER_URL + '/auth/status').catch(() => null);
+  if(!authRes || !authRes.ok){
+    console.log('[yahoo] auth check failed; skipping Yahoo load');
+    return;
+  }
+  const authData = await authRes.json();
+  if(!authData.yahoo_connected){
+    console.log('[yahoo] not signed in; Y!Rank and Y!Owned will stay as em-dashes');
+    return;
+  }
+
+  const leagueKey = await _yahooFirstNflLeagueKey();
+  if(!leagueKey) return;
+
+  if(statusEl) statusEl.textContent = 'Loading Yahoo league data (may take 90-120 sec on first load)…';
+
+  let payload;
+  try {
+    payload = await _yahooFetchLeagueRanks(leagueKey);
+  } catch(e){
+    console.warn('[yahoo] league-ranks fetch failed:', e.message);
+    if(statusEl) statusEl.textContent = 'Yahoo data unavailable: ' + e.message;
+    return;
+  }
+
+  const yahooPlayers = (payload && payload.players) || [];
+  // Build a Sleeper-pid -> Yahoo-data map using the Sleeper DB as the bridge.
+  // Every Sleeper player record has a yahoo_id field (5/12 sandbox verified).
+  // Pre-build a Yahoo-id -> Sleeper-pid index from _playerDB first.
+  const yahooIdToSleeperPid = {};
+  if(_playerDB){
+    for(const sleeperPid in _playerDB){
+      const yId = _playerDB[sleeperPid] && _playerDB[sleeperPid].yahoo_id;
+      if(yId) yahooIdToSleeperPid[String(yId)] = sleeperPid;
+    }
+  }
+
+  const merged = {};
+  let matched = 0;
+  for(const yp of yahooPlayers){
+    const yid = yp.yahoo_player_id;
+    if(!yid) continue;
+    const sleeperPid = yahooIdToSleeperPid[String(yid)];
+    if(!sleeperPid) continue;
+    merged[sleeperPid] = {
+      yahoo_rank: (typeof yp.yahoo_rank === 'number') ? yp.yahoo_rank : null,
+      roster_pct: (typeof yp.roster_pct === 'number') ? yp.roster_pct : null
+    };
+    matched++;
+  }
+
+  _yahooDataByPid = merged;
+  _yahooDataLoaded = true;
+  console.log('[yahoo] data loaded: ' + matched + ' Yahoo players matched to Sleeper IDs out of ' + yahooPlayers.length + ' total');
+
+  if(statusEl) {
+    const playerCount = _playerDB ? Object.keys(_playerDB).length : 0;
+    const statCount = _seasonStats ? Object.keys(_seasonStats).length : 0;
+    statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' with 2024 stats. Yahoo data: ' + matched + ' players matched.';
+  }
+  renderWatchList();
+}
+
+// Lookup helpers used by renderWatchList and sortBy.
+function _yahooLookupNum(pid, field){
+  const rec = _yahooDataByPid[pid];
+  if(!rec) return null;
+  const v = rec[field];
+  return (typeof v === 'number') ? v : null;
+}
+
+function _yahooLookupFmt(pid, field, isPercent){
+  const v = _yahooLookupNum(pid, field);
+  if(v == null) return '—';
+  if(isPercent) return v + '%';
+  return String(v);
+}
+// /YAHOO_DATA_V1
 </script>
 
 </body>
