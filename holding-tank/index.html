@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Watch 101 — Holding Tank (Integrity)</title>
+<!--
+  ============================================================================
+  HOLDING_TANK_V1 — Matt's editorial bench (May 15, 2026)
+  ============================================================================
+  PURPOSE
+    Matt often has more than 101 players on his mental radar. The main Watch
+    101 list is capped at 101 by design — that's the brand. The Holding Tank
+    is a second list, backend-only, where players Matt is watching but isn't
+    ready to promote can live. Capped at 101 too — but it's HIS bench, fans
+    never see it.
+
+  BIDIRECTIONAL FLOW WITH THE MAIN LIST
+    - REMOVE on the main Watch 101 list → player auto-drops into the Tank
+      (Phase C — coming next session — the main page edit)
+    - PROMOTE on the Tank → player goes to the main list at next-available slot
+
+  PHASE B SCOPE (this file as of 5/15 night)
+    - Stripped-down skeleton of the main Watch 101 page
+    - Same column shape, same sort handlers, same drag-and-drop reorder
+    - NO editorial decoration: no notes, no Type emojis, no priority stars,
+      no flame text, no badges (per Dude's spec)
+    - Action column has PROMOTE + REMOVE buttons (placeholder onclick — wired
+      in Phase D)
+    - Yahoo / CBS / Statcast columns shown but em-dashed for now (data wiring
+      deferred to future polish phases)
+    - Deep Cut on name click deferred (heavy wiring — banked for later)
+    - Save button deferred (Phase E)
+
+  DATA FETCH
+    Fetches via the existing baseball Worker's /nas-proxy/ pass-through:
+      https://watch101-cache.wild-fog-21df.workers.dev/nas-proxy/list-staging/integrity/holding-tank
+    The Worker has the Cloudflare Access service-token credentials baked in,
+    so it can talk to nas.fantasywatch101.com (which is otherwise locked
+    behind Access). The browser cannot hit the NAS directly.
+
+  PERSISTENCE RULE (locked)
+    Holding Tank files ONLY live in _Staging. NEVER in Production. The NAS
+    serves the Tank from /list-staging/integrity/holding-tank which reads
+    from _Staging/Integrity/_HoldingTank/. The Approval batch cannot promote
+    Tank files into Production by design (subfolder isolation).
+
+  Saved at: C:\Users\jaypd\Watch 101\Fantasy Baseball\Cloudflare Deploy\holding-tank\index.html
+  Deploys to: GitHub Pages at /holding-tank/index.html (next to /index.html)
+  URL pattern: https://watch101ltd.github.io/watch101/holding-tank/ (staging)
+  ============================================================================
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=Bowlby+One&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Surface palette — matches the main Watch 101 night-mode look ─────── */
+:root {
+  --bg: #0a0a0f;
+  --surface: #14141c;
+  --surface-2: #1c1c26;
+  --border: #2a2a36;
+  --border2: #3a3a48;
+  --text: #e8e8e8;
+  --text2: #aaa;
+  --text3: #666;
+  --gold: #ffc107;
+  --hitter: #ffd351;
+  --pitcher: #d8e0e8;
+  --stat-hitter: #ffd351;
+  --stat-pitcher: #d8e0e8;
+  --link: #6ab0ff;
+  --red: #e74c3c;
+  --green: #2ecc71;
+}
+body.day-mode {
+  --bg: #f6f6f4;
+  --surface: #fff;
+  --surface-2: #f0f0eb;
+  --border: #ddd;
+  --border2: #bbb;
+  --text: #1a1a1a;
+  --text2: #555;
+  --text3: #888;
+  --gold: #b87a00;
+  --stat-hitter: #b87a00;
+  --stat-pitcher: #1a1a1a;
+  --link: #1d4ed8;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Nunito Sans', sans-serif;
+  min-height: 100vh;
+  padding: 12px 16px 32px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.tank-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0 16px;
+  border-bottom: 2px solid var(--gold);
+  margin-bottom: 16px;
+}
+.tank-header-left { display: flex; align-items: center; gap: 14px; }
+.logo-wrap { display: flex; align-items: baseline; gap: 6px; line-height: 1; }
+.logo-watch { font-family: 'Bowlby One', sans-serif; font-size: 30px; color: var(--green); }
+.logo-101   { font-family: 'Bowlby One', sans-serif; font-size: 30px; color: var(--gold); }
+.tank-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--gold);
+}
+.tank-title { font-size: 18px; font-weight: 800; color: var(--text); }
+.tank-header-right { display: flex; align-items: center; gap: 10px; }
+.btn {
+  background: transparent; border: 1px solid var(--border2); color: var(--text);
+  padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  font-family: inherit; transition: background 0.15s, border-color 0.15s;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+}
+.btn:hover { background: var(--surface-2); border-color: var(--gold); }
+.btn-back { color: var(--link); }
+#theme-toggle { background: transparent; border: 1px solid var(--border2); color: var(--text);
+  width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+
+/* ── Status strip ───────────────────────────────────────────────────── */
+.tank-status {
+  display: flex; gap: 10px; align-items: center;
+  padding: 6px 0 12px; font-size: 12px; color: var(--text2);
+}
+.status-sep { color: var(--text3); }
+.count-badge {
+  background: var(--surface-2); border: 1px solid var(--border);
+  padding: 3px 10px; border-radius: 12px; font-weight: 600; color: var(--text);
+}
+
+/* ── Table ──────────────────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+table.tank-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  background: var(--surface);
+}
+.tank-table thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surface-2); color: var(--gold);
+  font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+  text-transform: uppercase; padding: 8px 6px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; white-space: nowrap;
+  text-align: right;
+}
+.tank-table thead th.col-name,
+.tank-table thead th.col-handle,
+.tank-table thead th.col-action { text-align: left; cursor: default; }
+.tank-table thead th .sort-arrow {
+  display: inline-block; margin-left: 2px; opacity: 0.55; font-size: 8px;
+  vertical-align: 1px; letter-spacing: 0;
+}
+.tank-table thead th.sort-asc .sort-arrow,
+.tank-table thead th.sort-desc .sort-arrow { opacity: 1; color: var(--gold); }
+.tank-table tbody tr {
+  border-bottom: 1px solid var(--border);
+}
+.tank-table tbody tr:nth-child(odd) { background: rgba(255,255,255,0.015); }
+.tank-table tbody tr:hover { background: rgba(255,193,7,0.04); }
+.tank-table tbody td {
+  padding: 6px 6px; font-variant-numeric: tabular-nums; white-space: nowrap;
+  text-align: right;
+}
+.tank-table tbody td.col-name,
+.tank-table tbody td.col-handle,
+.tank-table tbody td.col-action { text-align: left; }
+.tank-table tbody td.col-rank {
+  font-weight: 700; color: var(--gold); text-align: center;
+}
+.col-handle { width: 24px; }
+.drag-handle {
+  cursor: grab; color: var(--text3); user-select: none;
+  display: inline-block; padding: 0 4px;
+}
+.drag-handle:active { cursor: grabbing; }
+.tank-table tbody tr.dragging { opacity: 0.4; }
+.tank-table tbody tr.drag-over { background: rgba(255,193,7,0.15); }
+
+.pos-badge {
+  display: inline-block; padding: 2px 6px; border-radius: 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.02em;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border2); min-width: 28px; text-align: center;
+}
+.player-name { font-weight: 700; color: var(--text); }
+
+/* Empty / loading / error states */
+.tank-empty, .tank-loading, .tank-error {
+  padding: 40px 20px; text-align: center;
+  color: var(--text2); font-size: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.tank-empty strong { display: block; color: var(--text); font-size: 16px;
+  margin-bottom: 6px; }
+.tank-empty em { color: var(--text3); font-style: normal; font-size: 12px; }
+.tank-error { color: var(--red); }
+
+/* Action buttons */
+.tank-action-btns {
+  display: flex; gap: 4px;
+}
+.btn-promote {
+  background: rgba(46,204,113,0.15); color: var(--green);
+  border: 1px solid rgba(46,204,113,0.4); padding: 3px 8px;
+  border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;
+  font-family: inherit;
+}
+.btn-promote:hover { background: rgba(46,204,113,0.25); }
+.btn-remove {
+  background: rgba(231,76,60,0.10); color: var(--red);
+  border: 1px solid rgba(231,76,60,0.4); padding: 3px 8px;
+  border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;
+  font-family: inherit;
+}
+.btn-remove:hover { background: rgba(231,76,60,0.20); }
+
+/* Stat-empty placeholder */
+.stat-na { color: var(--text3); }
+
+/* Day-mode tweaks */
+body.day-mode .tank-table { background: var(--surface); }
+body.day-mode .tank-table thead th { background: var(--surface-2); color: var(--gold); }
+body.day-mode .tank-table tbody tr:nth-child(odd) { background: rgba(0,0,0,0.02); }
+body.day-mode .pos-badge { background: var(--surface-2); color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- THEME_INIT — set day/night from localStorage before any visible paint -->
+<script>
+(function(){ try {
+  var saved = localStorage.getItem('watch101_theme');
+  if(saved === 'day') document.body.classList.add('day-mode');
+} catch(e){} })();
+</script>
+
+<!-- ── Header ─────────────────────────────────────────────────────────── -->
+<div class="tank-header">
+  <div class="tank-header-left">
+    <div class="logo-wrap">
+      <span class="logo-watch">Watch</span><span class="logo-101">101</span>
+    </div>
+    <div>
+      <div class="tank-eyebrow">Holding Tank</div>
+      <div class="tank-title" id="tank-title">Integrity</div>
+    </div>
+  </div>
+  <div class="tank-header-right">
+    <a class="btn btn-back" href="../">← Back to Watch 101</a>
+    <button class="btn" onclick="reloadTank()" title="Refresh from NAS">↻ Refresh</button>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
+  </div>
+</div>
+
+<!-- ── Status strip ──────────────────────────────────────────────────── -->
+<div class="tank-status">
+  <div class="count-badge" id="count-badge">0 players</div>
+  <span class="status-sep">·</span>
+  <span id="status-line">Loading…</span>
+</div>
+
+<!-- ── Table or empty/loading state ─────────────────────────────────── -->
+<div id="tank-body-wrap">
+  <div class="tank-loading" id="tank-loading">Loading Holding Tank…</div>
+</div>
+
+<script>
+// ============================================================================
+// HOLDING_TANK_V1 — page script
+// ============================================================================
+// Phase B minimal skeleton. Does NOT include:
+//   - Yahoo / CBS / Statcast data wiring (placeholders for now)
+//   - Deep Cut overlay on name click (banked for future polish)
+//   - Save button (Phase E)
+//   - PROMOTE / REMOVE wiring (Phase D — buttons present but onclick is alert)
+//
+// What this file DOES include:
+//   - Fetch from the Worker's /nas-proxy/list-staging/integrity/holding-tank
+//   - Render the player list as a table with basic stats
+//   - Sort handlers on every column
+//   - Drag-and-drop reorder within the tank
+//   - Empty / loading / error states
+//   - Theme toggle (day/night mode persistence via localStorage)
+// ============================================================================
+
+const NAS_PROXY_URL = 'https://watch101-cache.wild-fog-21df.workers.dev/nas-proxy';
+const LIST_ID = 'integrity';
+
+// In-memory state
+let _tank = [];           // array of player records, in display order
+let _sortField = null;    // current sort field (null = freeze to file order)
+let _sortDir = 'asc';     // 'asc' or 'desc'
+
+// ── Theme toggle ──────────────────────────────────────────────────────
+function toggleTheme(){
+  document.body.classList.toggle('day-mode');
+  try { localStorage.setItem('watch101_theme',
+    document.body.classList.contains('day-mode') ? 'day' : 'night'); } catch(e){}
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function fmt(v, dec){
+  if(v == null || v === '') return '<span class="stat-na">—</span>';
+  if(typeof v === 'number'){
+    return dec ? v.toFixed(dec) : String(v);
+  }
+  return String(v);
+}
+function fmtAvg(v){
+  if(v == null || v === '') return '<span class="stat-na">—</span>';
+  const n = parseFloat(v);
+  if(isNaN(n)) return String(v);
+  return n.toFixed(3).replace(/^0\./, '.');
+}
+function isPitcher(p){
+  // Mirror main page logic: position string includes P / SP / RP
+  const pos = (p.positions || []).join(',') + '/' + (p.position || '');
+  return /\bP\b|\bSP\b|\bRP\b/.test(pos);
+}
+function escapeHtml(s){
+  if(s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ── Fetch + initial load ─────────────────────────────────────────────
+async function reloadTank(){
+  const wrap = document.getElementById('tank-body-wrap');
+  const status = document.getElementById('status-line');
+  wrap.innerHTML = '<div class="tank-loading">Loading Holding Tank…</div>';
+  status.textContent = 'Loading…';
+  try {
+    const res = await fetch(`${NAS_PROXY_URL}/list-staging/${LIST_ID}/holding-tank`, { cache: 'no-cache' });
+    if(res.status === 404){
+      // No Tank file yet — show empty state
+      _tank = [];
+      renderTank();
+      status.textContent = 'Holding Tank is empty.';
+      return;
+    }
+    if(!res.ok){
+      throw new Error('HTTP ' + res.status);
+    }
+    const data = await res.json();
+    _tank = (data && Array.isArray(data.players)) ? data.players : [];
+    renderTank();
+    status.textContent = 'Loaded from ' + (data.environment || 'staging')
+      + ' · ' + (data.filename || 'unknown file');
+  } catch(e){
+    console.error('[tank] load failed:', e);
+    wrap.innerHTML = '<div class="tank-error">Failed to load Holding Tank: '
+      + escapeHtml(e.message) + '</div>';
+    status.textContent = 'Error: ' + e.message;
+  }
+}
+
+// ── Render ────────────────────────────────────────────────────────────
+function renderTank(){
+  const wrap = document.getElementById('tank-body-wrap');
+  const countEl = document.getElementById('count-badge');
+  countEl.textContent = _tank.length + ' player' + (_tank.length !== 1 ? 's' : '');
+
+  if(_tank.length === 0){
+    wrap.innerHTML = `
+      <div class="tank-empty">
+        <strong>Holding Tank is empty</strong>
+        <em>REMOVE players from the main Watch 101 list to send them here,<br>
+        or add players directly from Pool / Leaders / Prospects (coming in a follow-up phase).</em>
+      </div>`;
+    return;
+  }
+
+  // Sort if a column is active. Otherwise file order.
+  const list = _sortField
+    ? _tank.slice().sort((a, b) => {
+        const av = _getSortValue(a, _sortField);
+        const bv = _getSortValue(b, _sortField);
+        // Nulls always sink
+        if(av == null && bv == null) return 0;
+        if(av == null) return 1;
+        if(bv == null) return -1;
+        if(typeof av === 'number' && typeof bv === 'number'){
+          return _sortDir === 'asc' ? av - bv : bv - av;
+        }
+        return _sortDir === 'asc' ? String(av).localeCompare(String(bv))
+                                  : String(bv).localeCompare(String(av));
+      })
+    : _tank;
+
+  const rows = list.map((p, i) => {
+    const pit = isPitcher(p);
+    return `<tr draggable="true" data-idx="${i}"
+              ondragstart="dragStart(event, ${i})"
+              ondragover="dragOver(event, ${i})"
+              ondrop="dropRow(event, ${i})"
+              ondragleave="dragLeave(event)">
+      <td class="col-handle"><span class="drag-handle">⠿</span></td>
+      <td class="col-rank">${p.rank || (i + 1)}</td>
+      <td><span class="pos-badge">${escapeHtml((p.positions || [p.position || '?'])[0])}</span></td>
+      <td class="col-name"><span class="player-name">${escapeHtml(p.name || '(unnamed)')}</span></td>
+      <td>${escapeHtml(p.team || '—')}</td>
+      <td>${fmt(p.age)}</td>
+      <td>${pit ? fmt(p.ip, 1) : fmt(p.ab)}</td>
+      <td>${pit ? fmt(p.w) : fmt(p.r)}</td>
+      <td>${pit ? fmt(p.sv) : fmt(p.hr)}</td>
+      <td>${pit ? fmt(p.hld) : fmt(p.rbi)}</td>
+      <td>${pit ? fmt(p.k) : fmt(p.sb)}</td>
+      <td>${pit ? fmt(p.era, 2) : fmtAvg(p.avg)}</td>
+      <td>${pit ? fmt(p.whip, 2) : fmtAvg(p.obp)}</td>
+      <td>${pit ? '<span class="stat-na">—</span>' : fmtAvg(p.ops)}</td>
+      <td><span class="stat-na">—</span></td>
+      <td><span class="stat-na">—</span></td>
+      <td><span class="stat-na">—</span></td>
+      <td class="col-action">
+        <div class="tank-action-btns">
+          <button class="btn-promote" onclick="onPromote(${i})" title="Promote to Watch 101 at next-available slot">PROMOTE</button>
+          <button class="btn-remove" onclick="onRemove(${i})" title="Remove from Holding Tank (returns to general MLB pool)">REMOVE</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="table-wrap">
+      <table class="tank-table">
+        <thead>
+          <tr>
+            <th class="col-handle"></th>
+            <th class="col-rank" data-sort="rank">Rank <span class="sort-arrow">↕</span></th>
+            <th data-sort="pos">Pos <span class="sort-arrow">↕</span></th>
+            <th class="col-name" data-sort="name">Player <span class="sort-arrow">↕</span></th>
+            <th data-sort="team">Team <span class="sort-arrow">↕</span></th>
+            <th data-sort="age">Age <span class="sort-arrow">↕</span></th>
+            <th data-sort="ab_or_ip">AB/IP <span class="sort-arrow">↕</span></th>
+            <th data-sort="r_or_w">R/W <span class="sort-arrow">↕</span></th>
+            <th data-sort="hr_or_sv">HR/SV <span class="sort-arrow">↕</span></th>
+            <th data-sort="rbi_or_hld">RBI/HLD <span class="sort-arrow">↕</span></th>
+            <th data-sort="sb_or_k">SB/K <span class="sort-arrow">↕</span></th>
+            <th data-sort="avg_or_era">AVG/ERA <span class="sort-arrow">↕</span></th>
+            <th data-sort="obp_or_whip">OBP/WHIP <span class="sort-arrow">↕</span></th>
+            <th data-sort="ops">OPS <span class="sort-arrow">↕</span></th>
+            <th data-sort="yrank">Y!Rank <span class="sort-arrow">↕</span></th>
+            <th data-sort="yowned">Y!Owned <span class="sort-arrow">↕</span></th>
+            <th data-sort="cbsowned">CBS Owned <span class="sort-arrow">↕</span></th>
+            <th class="col-action">Action</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+  // Wire sort handlers
+  wrap.querySelectorAll('thead th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const field = th.getAttribute('data-sort');
+      if(_sortField === field){
+        _sortDir = _sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        _sortField = field;
+        // Default direction: numbers desc, text asc
+        _sortDir = (field === 'name' || field === 'pos' || field === 'team') ? 'asc' : 'desc';
+      }
+      renderTank();
+    });
+  });
+
+  // Apply sort indicator
+  if(_sortField){
+    const activeTh = wrap.querySelector(`thead th[data-sort="${_sortField}"]`);
+    if(activeTh) activeTh.classList.add(_sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  }
+}
+
+// ── Sort value extraction ─────────────────────────────────────────────
+function _getSortValue(p, field){
+  const pit = isPitcher(p);
+  switch(field){
+    case 'rank': return parseFloat(p.rank) || null;
+    case 'pos':  return (p.positions || [p.position || ''])[0] || '';
+    case 'name': return p.name || '';
+    case 'team': return p.team || '';
+    case 'age':  return parseFloat(p.age) || null;
+    case 'ab_or_ip':     return parseFloat(pit ? p.ip : p.ab) || null;
+    case 'r_or_w':       return parseFloat(pit ? p.w : p.r) || null;
+    case 'hr_or_sv':     return parseFloat(pit ? p.sv : p.hr) || null;
+    case 'rbi_or_hld':   return parseFloat(pit ? p.hld : p.rbi) || null;
+    case 'sb_or_k':      return parseFloat(pit ? p.k : p.sb) || null;
+    case 'avg_or_era':   return parseFloat(pit ? p.era : p.avg) || null;
+    case 'obp_or_whip':  return parseFloat(pit ? p.whip : p.obp) || null;
+    case 'ops':          return pit ? null : (parseFloat(p.ops) || null);
+    case 'yrank':
+    case 'yowned':
+    case 'cbsowned':
+      return null;  // No data yet — sort to bottom
+    default: return null;
+  }
+}
+
+// ── Drag-and-drop reorder ─────────────────────────────────────────────
+let _dragSrcIdx = -1;
+function dragStart(e, idx){
+  _dragSrcIdx = idx;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dragOver(e, idx){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  // Add drag-over highlight to the row being hovered
+  document.querySelectorAll('tr.drag-over').forEach(r => r.classList.remove('drag-over'));
+  if(idx !== _dragSrcIdx) e.currentTarget.classList.add('drag-over');
+}
+function dragLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+function dropRow(e, idx){
+  e.preventDefault();
+  document.querySelectorAll('tr.dragging').forEach(r => r.classList.remove('dragging'));
+  document.querySelectorAll('tr.drag-over').forEach(r => r.classList.remove('drag-over'));
+  if(_dragSrcIdx < 0 || _dragSrcIdx === idx) return;
+  // Reorder in _tank (the underlying source-of-truth array)
+  const moved = _tank.splice(_dragSrcIdx, 1)[0];
+  _tank.splice(idx, 0, moved);
+  // Re-rank
+  _tank.forEach((p, i) => { p.rank = i + 1; });
+  _sortField = null;  // drop manual sort to honor the new order
+  _dragSrcIdx = -1;
+  renderTank();
+  document.getElementById('status-line').textContent = 'Reordered (unsaved — Save button coming in Phase E).';
+}
+
+// ── Action button placeholders (Phase D / E wire the real behavior) ──
+function onPromote(idx){
+  const p = _tank[idx];
+  alert('PROMOTE wiring coming in Phase D.\n\nWould promote "' + (p && p.name)
+    + '" to the main Watch 101 list at the next-available slot.');
+}
+function onRemove(idx){
+  const p = _tank[idx];
+  alert('REMOVE wiring coming in Phase D.\n\nWould remove "' + (p && p.name)
+    + '" from the Holding Tank (returns to the general MLB pool).');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────
+reloadTank();
+</script>
+
+</body>
+</html>
