@@ -13664,6 +13664,131 @@ function _cpRenderTables(body, data){
   body._cpData = { hitting: h, pitching: p };
 }
 
+// ============================================================================
+// CAREER_SORT_V1 (May 15 2026) — Click-to-sort handlers for the Previous Seasons popup.
+//
+// Each column header (<th>) carries:
+//   data-sort-key   — which property to sort on (e.g. "ab", "ops")
+//   data-sort-type  — "int" | "float" | "string"
+//   data-col-idx    — column position (unused here, reserved for highlighting)
+//
+// Behavior:
+//   - Default order on popup open: chronological (oldest -> newest). We do NOT
+//     change that here. Sorting is opt-in via click.
+//   - First click on a column -> sort by that column. Numeric cols default to
+//     DESC (highest on top, the usual "who hit the most HRs?" question). The
+//     Year column also defaults to DESC (newest first). Text cols default ASC.
+//   - Second click on the same column -> flip direction.
+//   - Click a different column -> that becomes the active sort with its default
+//     direction; the previous column's arrow indicator dims.
+//   - Empty / null / missing values ALWAYS sink to the bottom regardless of
+//     direction, so a missing AVG never pretends to be 0.000.
+//   - Hitting and Pitching tables sort independently — clicking a column in
+//     one table does not change the other.
+// ============================================================================
+function _cpNumVal(v){
+  // parseFloat handles ".284" (no leading zero) and "187.2" (IP) just fine.
+  if(v === null || typeof v === 'undefined' || v === '') return null;
+  var n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+function _cpStrVal(v){
+  if(v === null || typeof v === 'undefined') return '';
+  return String(v);
+}
+function _cpSortRows(rows, key, type, dir){
+  // Return a NEW sorted array; don't mutate the cached dataset.
+  var sign = (dir === 'asc') ? 1 : -1;
+  var isNumeric = (type === 'int' || type === 'float');
+  var copy = rows.slice();
+  copy.sort(function(a, b){
+    if(isNumeric){
+      var an = _cpNumVal(a[key]);
+      var bn = _cpNumVal(b[key]);
+      // Nulls always sink to the bottom regardless of dir.
+      if(an === null && bn === null) return 0;
+      if(an === null) return 1;
+      if(bn === null) return -1;
+      if(an < bn) return -1 * sign;
+      if(an > bn) return  1 * sign;
+      return 0;
+    } else {
+      var as = _cpStrVal(a[key]);
+      var bs = _cpStrVal(b[key]);
+      // Empty strings sink to the bottom regardless of dir.
+      if(as === '' && bs === '') return 0;
+      if(as === '') return 1;
+      if(bs === '') return -1;
+      return as.localeCompare(bs) * sign;
+    }
+  });
+  return copy;
+}
+function _cpDefaultDir(type){
+  // Numbers default DESC (highest on top); text defaults ASC (A->Z).
+  return (type === 'int' || type === 'float') ? 'desc' : 'asc';
+}
+function _cpHandleSortClick(th){
+  if(!th) return;
+  var table = th.closest('table.cp-table');
+  if(!table) return;
+  var tag = table.getAttribute('data-cp-table');           // "hitting" or "pitching"
+  var body = document.getElementById('cp-body');
+  if(!body || !body._cpData) return;
+  var rows = body._cpData[tag];
+  var cols = (tag === 'pitching') ? CP_PIT_COLS : CP_HIT_COLS;
+  if(!rows || !cols) return;
+  var key  = th.getAttribute('data-sort-key');
+  var type = th.getAttribute('data-sort-type');
+  // Decide direction. If this same header is already the active sort, flip it.
+  // Otherwise apply the default direction for this column type.
+  var dir;
+  if(th.classList.contains('cp-sort-asc'))       dir = 'desc';
+  else if(th.classList.contains('cp-sort-desc')) dir = 'asc';
+  else                                            dir = _cpDefaultDir(type);
+  var sorted = _cpSortRows(rows, key, type, dir);
+  // Re-render just this table's <tbody>. Header row stays; we only swap rows.
+  var tbody = table.querySelector('tbody');
+  if(!tbody) return;
+  var html = '';
+  for(var i = 0; i < sorted.length; i++){
+    var row = sorted[i];
+    html += '<tr>';
+    for(var c = 0; c < cols.length; c++){
+      var col = cols[c];
+      var cls;
+      if(col.key === 'season')    cls = 'cp-col-year';
+      else if(col.key === 'team') cls = 'cp-col-team';
+      else                         cls = 'cp-col-num';
+      html += '<td class="' + cls + '">' + col.render(row) + '</td>';
+    }
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+  // Update arrow indicators: clear all in THIS table, then mark the clicked one.
+  var allTh = table.querySelectorAll('thead th');
+  for(var t = 0; t < allTh.length; t++){
+    allTh[t].classList.remove('cp-sort-asc', 'cp-sort-desc');
+  }
+  th.classList.add(dir === 'asc' ? 'cp-sort-asc' : 'cp-sort-desc');
+}
+function _cpAttachSortHandlers(){
+  var body = document.getElementById('cp-body');
+  if(!body || body._cpSortBound) return;          // bind once
+  body.addEventListener('click', function(e){
+    var th = e.target.closest && e.target.closest('th[data-sort-key]');
+    if(!th) return;
+    _cpHandleSortClick(th);
+  });
+  body._cpSortBound = true;
+}
+// Wire on script load. The popup body element exists at parse time because
+// the <div id="career-popup"> sits above this <script> in the source.
+_cpAttachSortHandlers();
+// ============================================================================
+// /CAREER_SORT_V1
+// ============================================================================
+
 function openCareerPopup(player){
   if(!player) return;
   var bd  = document.getElementById('career-popup-backdrop');
