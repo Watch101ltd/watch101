@@ -1140,18 +1140,60 @@ async function _yahooFirstNflLeagueKey(){
   }
 }
 
-// Pull the big league-ranks payload from the WORKER (not the NAS direct).
+// YAHOO_FALLBACK_V1 (May 15, 2026) — two-stage fetch with Worker-first /
+// NAS-fallback. Self-healing: if the Worker can't deliver (most often because
+// the NAS cache is cold and building the full payload outlasts Cloudflare's
+// 30-second Worker wall-clock timeout), fall back to a direct NAS call which
+// has no client-side timeout. The NAS finishes its build, the response lands,
+// and the NAS cache is now warm — so the next Worker call hits an instant
+// cache hit and finishes well within the Worker timeout.
+//
+// 99% of normal page loads will only ever exercise the fast (Worker) path.
+// The slow (NAS-direct) path only fires on cold cache or after the NAS cache
+// expires (every 6 hours).
 async function _yahooFetchLeagueRanks(leagueKey){
-  const url = YAHOO_CACHE_URL + '/yahoo/league-ranks/' + encodeURIComponent(leagueKey);
-  const res = await fetch(url);
-  if(res.status === 503){
-    const body = await res.json().catch(() => ({}));
-    console.warn('[yahoo] Worker guardrail blocked the call:', body);
-    throw new Error('Yahoo guardrail: ' + (body.detail || 'unavailable'));
+  const statusEl = document.getElementById('status-bar');
+  const workerUrl = YAHOO_CACHE_URL + '/yahoo/league-ranks/' + encodeURIComponent(leagueKey);
+  const nasUrl    = SERVER_URL      + '/yahoo/league-ranks/' + encodeURIComponent(leagueKey);
+
+  // ── Fast path: Worker (KV cache hit returns in ~50ms) ─────────────────────
+  try {
+    const res = await fetch(workerUrl);
+    if(res.status === 503){
+      // Worker guardrail blocked the call (cooldown or 24h ceiling). DO NOT
+      // fall back to NAS direct here — that would defeat the ban protection.
+      const body = await res.json().catch(() => ({}));
+      console.warn('[yahoo] Worker guardrail blocked the call:', body);
+      throw new Error('Yahoo guardrail: ' + (body.detail || 'unavailable'));
+    }
+    if(res.ok){
+      console.log('[yahoo] league-ranks via Worker (fast path)');
+      return await res.json();
+    }
+    // Worker returned a non-OK / non-503 status. Most common cause is a 502
+    // because the NAS work outlasted the 30s Worker wall-clock timeout.
+    // Falls through to the NAS-direct path below.
+    console.warn('[yahoo] Worker returned HTTP ' + res.status + ' — falling back to NAS direct (slow path)');
+  } catch(e){
+    // Network error reaching the Worker (rare — Worker is global edge). Fall
+    // through to the NAS-direct path so we still have a chance.
+    console.warn('[yahoo] Worker fetch threw (' + e.message + ') — falling back to NAS direct');
   }
+
+  // ── Slow path: NAS direct (90-120 sec on cold cache, no client timeout) ──
+  // This is the FIRST-TIME build. The NAS walks the full NFL player list
+  // through Yahoo's API (~300 calls), parses ownership + ADP, builds the big
+  // payload. After this completes, the NAS cache is warm for 6 hours and the
+  // Worker fast path takes over for all subsequent loads.
+  if(statusEl){
+    statusEl.textContent = 'Loading Yahoo league data — first-time build can take up to 2 minutes. Worker cache will be hot for the next 6 hours after this.';
+  }
+  console.log('[yahoo] league-ranks via NAS direct (slow first-time build)');
+  const res = await fetch(nasUrl);
   if(!res.ok){
-    throw new Error('league-ranks HTTP ' + res.status);
+    throw new Error('league-ranks NAS-direct HTTP ' + res.status);
   }
+  console.log('[yahoo] NAS-direct build complete — cache is now warm; subsequent loads will use fast path');
   return await res.json();
 }
 
