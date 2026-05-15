@@ -1344,6 +1344,13 @@ body.day-mode #player-page-overlay .ppo-sched-row.yellow{background:rgba(255,184
 #player-page-overlay .ppo-statbar-val.pit{color:var(--stat-pitcher);}
 #player-page-overlay .ppo-statbar-val.na{color:var(--text3);font-weight:500;}
 #player-page-overlay .ppo-adv-row{display:flex;flex-wrap:wrap;margin-top:10px;border:1px solid var(--indigo2);border-radius:8px;overflow:hidden;background:rgba(67,56,202,0.06);}
+/* GOLD_BLOCK_V1 (May 14, 2026 PM) — Gold-treatment override for the Player Page advanced-stats row. Used when the row is showing the new 8-stat gold block (replaces the legacy 7-stat blue/indigo treatment). Border and background use the same gold tints as the main-table gold zone for visual consistency. Hitter values render gold, pitcher values render light-white. */
+#player-page-overlay .ppo-adv-row.gold{border:1px solid rgba(201,168,76,0.5);background:rgba(201,168,76,0.06);}
+#player-page-overlay .ppo-adv-row.gold .ppo-adv-cell{border-right:1px solid rgba(201,168,76,0.25);}
+#player-page-overlay .ppo-adv-row.gold .ppo-adv-cell:last-child{border-right:none;}
+#player-page-overlay .ppo-adv-row.gold .ppo-adv-label{color:var(--gold);}
+#player-page-overlay .ppo-adv-row.gold .ppo-adv-val.hit{color:var(--gold);}
+#player-page-overlay .ppo-adv-row.gold .ppo-adv-val.pit{color:#d8e0e8;}
 #player-page-overlay .ppo-daterange-wrap{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap;}
 #player-page-overlay .ppo-daterange-label{font-family:'Bowlby One',sans-serif;font-size:10px;letter-spacing:0.12em;color:var(--text3);text-transform:uppercase;}
 #player-page-overlay .ppo-daterange-select{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em;}
@@ -11866,16 +11873,29 @@ window.addEventListener('load', function(){
 var playerCard = document.getElementById('player-card');
 var currentCardPlayer = null;
 
-var PCT_CHART_STATS = [
-  { field:'sv_xwoba',   label:'xwOBA',  higher:true,  fmt:function(v){return v!=null?v.toFixed(3):'—';} },
-  { field:'sv_xba',     label:'xBA',    higher:true,  fmt:function(v){return v!=null?v.toFixed(3):'—';}, hitterOnly:true },
-  { field:'sv_ev',      label:'Avg EV', higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
-  { field:'sv_ev95',    label:'EV95',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
-  { field:'sv_maxev',   label:'MaxEV',  higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
-  { field:'sv_barrel',  label:'Brl%',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
-  { field:'sv_sweetspot',label:'SS%',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
-  { field:'sv_xera',    label:'xERA',   higher:false, fmt:function(v){return v!=null?v.toFixed(2):'—';}, pitcherOnly:true },
+// GOLD_BLOCK_V1 (May 14, 2026 PM) — Replaced the legacy single-array PCT_CHART_STATS (7 stats, role-flagged via hitterOnly/pitcherOnly) with two role-specific arrays of 8 stats each. Matches Matt's column-order email. Per-role `higher` direction lets dual-meaning stats like xwOBA flip their percentile direction by role (high xwOBA = good hitter; low xwOBA-against = good pitcher). The legacy variable name PCT_CHART_STATS is kept as an alias so any legacy code that references it still works during the transition.
+var PCT_CHART_STATS_HITTER = [
+  { field:'sv_xba',          label:'xBA',     higher:true,  fmt:function(v){return v!=null?v.toFixed(3):'—';} },
+  { field:'sv_xwoba',        label:'xwOBA',   higher:true,  fmt:function(v){return v!=null?v.toFixed(3):'—';} },
+  { field:'sv_brl_pct',      label:'Brl%',    higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'sv_ev',           label:'EV',      higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
+  { field:'sv_bat_speed',    label:'Bat Spd', higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
+  { field:'sv_k_pct',        label:'K%',      higher:false, fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'sv_bb_pct',       label:'BB%',     higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'sv_sprint_speed', label:'Sprint',  higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
 ];
+var PCT_CHART_STATS_PITCHER = [
+  { field:'sv_xera',         label:'xERA',    higher:false, fmt:function(v){return v!=null?v.toFixed(2):'—';} },
+  { field:'sv_xwoba',        label:'xwOBA',   higher:false, fmt:function(v){return v!=null?v.toFixed(3):'—';} },
+  { field:'sv_fb_velo',      label:'FB Velo', higher:true,  fmt:function(v){return v!=null?v.toFixed(1):'—';} },
+  { field:'sv_k_minus_bb',   label:'K-BB%',   higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'sv_gb_pct',       label:'GB%',     higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'sv_chase_pct',    label:'Chase%',  higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'sv_whiff_pct',    label:'Whiff%',  higher:true,  fmt:function(v){return v!=null?v.toFixed(1)+'%':'—';} },
+  { field:'k_per_9',         label:'K/9',     higher:true,  fmt:function(v){return v!=null?v.toFixed(2):'—';} },
+];
+// Legacy alias — anything still referencing PCT_CHART_STATS (e.g. legacy openPlayerCard) keeps working with the hitter array as a default. The two render sites that previously filtered this array by role have been switched over to pick the right new array (search for PCT_CHART_STATS_HITTER / PCT_CHART_STATS_PITCHER).
+var PCT_CHART_STATS = PCT_CHART_STATS_HITTER;
 
 function openPlayerCard(e, p){
   // --- BRIDGE: delegate to the full-screen Player Page overlay ---
@@ -11906,11 +11926,8 @@ function openPlayerCard(e, p){
   advBtn.style.display = advancedMode ? 'none' : 'inline-block';
 
   // Build bars
-  var stats = PCT_CHART_STATS.filter(function(s){
-    if(s.hitterOnly && pit) return false;
-    if(s.pitcherOnly && !pit) return false;
-    return true;
-  });
+  // GOLD_BLOCK_V1 — pick the role-specific 8-stat array. Replaces the legacy single-array filter.
+  var stats = pit ? PCT_CHART_STATS_PITCHER : PCT_CHART_STATS_HITTER;
 
   var barsHtml = stats.map(function(s){
     var val = p[s.field];
@@ -12052,11 +12069,8 @@ function openPlayerPage(p){
   }
 
   var pit = isPitcher(p);
-  var stats = PCT_CHART_STATS.filter(function(s){
-    if(s.hitterOnly && pit) return false;
-    if(s.pitcherOnly && !pit) return false;
-    return true;
-  });
+  // GOLD_BLOCK_V1 — pick the role-specific 8-stat array (live Player Page path). Replaces the legacy single-array filter.
+  var stats = pit ? PCT_CHART_STATS_PITCHER : PCT_CHART_STATS_HITTER;
   var barsHtml = stats.map(function(s){
     var val = p[s.field];
     var pct = getPercentile(val, s.field, pit);
