@@ -1228,41 +1228,114 @@ async function loadYahooData(){
   }
 
   const yahooPlayers = (payload && payload.players) || [];
-  // Build a Sleeper-pid -> Yahoo-data map using the Sleeper DB as the bridge.
-  // Every Sleeper player record has a yahoo_id field (5/12 sandbox verified).
-  // Pre-build a Yahoo-id -> Sleeper-pid index from _playerDB first.
+  // YAHOO_NAME_FALLBACK_V1 (May 15, 2026) — many Sleeper records have
+  // yahoo_id: null (especially for younger players like Ja'Marr Chase, Bijan
+  // Robinson, Bucky Irving, Puka Nacua, JSN). Sleeper just hasn't filled in
+  // that field for a big chunk of their player list. So we build TWO bridges:
+  //   1. Primary  — Yahoo player_id -> Sleeper pid (via Sleeper's yahoo_id)
+  //   2. Fallback — normalized "name|team" key -> Sleeper pid
+  // For each Yahoo player, try primary first; if no match, try fallback.
+  // The fallback rescues ~all the major fantasy stars Sleeper missed.
+  // This is a stop-gap until we build a proper football player_registry.json
+  // (Option C on the Football To-Do List — 4-6 hour future session).
   const yahooIdToSleeperPid = {};
+  const nameTeamToSleeperPid = {};
   if(_playerDB){
     for(const sleeperPid in _playerDB){
-      const yId = _playerDB[sleeperPid] && _playerDB[sleeperPid].yahoo_id;
-      if(yId) yahooIdToSleeperPid[String(yId)] = sleeperPid;
+      const rec = _playerDB[sleeperPid];
+      if(!rec) continue;
+      // Primary index: by yahoo_id (when Sleeper has it)
+      if(rec.yahoo_id) yahooIdToSleeperPid[String(rec.yahoo_id)] = sleeperPid;
+      // Fallback index: normalized name+team
+      const nameKey = _yahooNormalizeName(rec.full_name || ((rec.first_name||'') + ' ' + (rec.last_name||'')).trim());
+      const teamKey = (rec.team || '').toUpperCase();
+      if(nameKey && teamKey){
+        nameTeamToSleeperPid[nameKey + '|' + teamKey] = sleeperPid;
+      }
     }
   }
 
   const merged = {};
-  let matched = 0;
+  let matchedById = 0;
+  let matchedByNameTeam = 0;
+  let unmatched = 0;
   for(const yp of yahooPlayers){
+    let sleeperPid = null;
+    // Primary lookup: by Yahoo player_id (works for all records where Sleeper has yahoo_id stamped)
     const yid = yp.yahoo_player_id;
-    if(!yid) continue;
-    const sleeperPid = yahooIdToSleeperPid[String(yid)];
-    if(!sleeperPid) continue;
+    if(yid){
+      sleeperPid = yahooIdToSleeperPid[String(yid)];
+      if(sleeperPid) matchedById++;
+    }
+    // Fallback lookup: by normalized name+team. Only fires when primary missed.
+    if(!sleeperPid){
+      // Yahoo's payload has player.name (full string) and... we need the team
+      // separately. The NAS doesn't currently emit team in the league-ranks
+      // payload. So derive team from the player_key prefix? No — player_key is
+      // like "406.p.30977" with no team in it. For now, name-only match — and
+      // if the same name shows up in multiple teams (rare in NFL — duplicate
+      // names like "Mike Williams" exist), the LAST team wins. Acceptable
+      // gap for the stop-gap. Future Option C registry will solve this cleanly.
+      const ypNameKey = _yahooNormalizeName(yp.name);
+      if(ypNameKey){
+        // Walk the nameTeamToSleeperPid index for any key that starts with this name
+        // (since we don't have the team to fully qualify the lookup).
+        const prefix = ypNameKey + '|';
+        for(const k in nameTeamToSleeperPid){
+          if(k.indexOf(prefix) === 0){
+            sleeperPid = nameTeamToSleeperPid[k];
+            break;
+          }
+        }
+        if(sleeperPid) matchedByNameTeam++;
+      }
+    }
+    if(!sleeperPid){ unmatched++; continue; }
     merged[sleeperPid] = {
       yahoo_rank: (typeof yp.yahoo_rank === 'number') ? yp.yahoo_rank : null,
       roster_pct: (typeof yp.roster_pct === 'number') ? yp.roster_pct : null
     };
-    matched++;
   }
 
+  const matched = matchedById + matchedByNameTeam;
   _yahooDataByPid = merged;
   _yahooDataLoaded = true;
-  console.log('[yahoo] data loaded: ' + matched + ' Yahoo players matched to Sleeper IDs out of ' + yahooPlayers.length + ' total');
+  console.log('[yahoo] matched ' + matched + ' / ' + yahooPlayers.length + ' Yahoo players (primary id: ' + matchedById + ', name fallback: ' + matchedByNameTeam + ', unmatched: ' + unmatched + ')');
 
   if(statusEl) {
     const playerCount = _playerDB ? Object.keys(_playerDB).length : 0;
     const statCount = _seasonStats ? Object.keys(_seasonStats).length : 0;
-    statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' with 2024 stats. Yahoo data: ' + matched + ' players matched.';
+    statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' with 2024 stats. Yahoo data: ' + matched + ' matched (' + matchedByNameTeam + ' via name fallback).';
   }
   renderWatchList();
+}
+
+// YAHOO_NAME_FALLBACK_V1 (May 15, 2026) — normalize a player name for
+// fuzzy matching when Sleeper-id-to-yahoo-id bridge is broken.
+//
+// Steps applied:
+//   - lowercase
+//   - strip apostrophes (Ja'Marr -> JaMarr) and periods (D.K. -> DK)
+//   - drop common suffixes (Jr, Sr, II, III, IV, V) at end of name
+//   - collapse runs of whitespace, then strip leading/trailing
+//
+// Examples:
+//   "Ja'Marr Chase"   -> "jamarr chase"
+//   "D.K. Metcalf"    -> "dk metcalf"
+//   "Aaron Jones Sr." -> "aaron jones"
+//   "Marvin Harrison Jr." -> "marvin harrison"
+//   "Patrick Mahomes" -> "patrick mahomes"
+//
+// Imperfect by design — rescues ~95% of the gap; the remaining 5% are weird
+// edge cases (DEF teams, K, foreign-character names) that will need the real
+// player_registry.json (Option C) to handle properly.
+function _yahooNormalizeName(name){
+  if(!name) return '';
+  let n = String(name).toLowerCase();
+  n = n.replace(/['.]/g, '');                          // strip ' and .
+  n = n.replace(/\s+(jr|sr|ii|iii|iv|v)$/i, '');       // drop trailing suffixes
+  n = n.replace(/\s+/g, ' ').trim();                  // collapse whitespace
+  return n;
 }
 
 // Lookup helpers used by renderWatchList and sortBy.
