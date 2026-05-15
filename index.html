@@ -13414,6 +13414,32 @@ function fetchCareerStats(mlbId){
   });
 }
 
+// Display-threshold rule (locked May 15 2026):
+//   Hitting block shows only if the player has at least one season with AB >= 30.
+//   Pitching block shows only if the player has at least one season with IP >= 10.
+// This filters position-player blowout pitching outings (e.g., Ernie Clement's
+// 1-IP relief appearances) and incidental pitcher at-bats. Real two-way players
+// (Ohtani) pass both thresholds naturally. The raw cached data is preserved;
+// we just decide what to RENDER — so thresholds can be tuned later without a refetch.
+var CP_HIT_AB_THRESHOLD = 30;
+var CP_PIT_IP_THRESHOLD = 10;
+function _cpQualifiesHitting(rows){
+  if(!rows || !rows.length) return false;
+  for(var i = 0; i < rows.length; i++){
+    var ab = parseFloat(rows[i].ab);
+    if(!isNaN(ab) && ab >= CP_HIT_AB_THRESHOLD) return true;
+  }
+  return false;
+}
+function _cpQualifiesPitching(rows){
+  if(!rows || !rows.length) return false;
+  for(var i = 0; i < rows.length; i++){
+    var ip = parseFloat(rows[i].ip);   // "187.2" -> 187.2 via parseFloat
+    if(!isNaN(ip) && ip >= CP_PIT_IP_THRESHOLD) return true;
+  }
+  return false;
+}
+
 // Phase 3 diagnostic renderer — temporary. Phase 4 replaces this with the real
 // role-aware table. The goal here is end-to-end verification: dropdown ->
 // intercept -> popup open -> fetch -> data lands -> render. Once verified,
@@ -13422,17 +13448,19 @@ function _cpRenderDiagnostic(body, data){
   if(!body) return;
   var h = (data && data.hitting) || [];
   var p = (data && data.pitching) || [];
-  if(h.length === 0 && p.length === 0){
+  var showHit = _cpQualifiesHitting(h);
+  var showPit = _cpQualifiesPitching(p);
+  if(!showHit && !showPit){
     body.innerHTML = '<div class="cp-empty">No MLB seasons yet.</div>';
     return;
   }
   var html = '';
-  if(h.length){
+  if(showHit){
     html += '<div class="cp-section-title">Hitting (' + h.length + ' seasons — diagnostic)</div>';
     html += '<pre style="font-size:11px;color:#bbb;white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;max-height:240px;overflow:auto">'
           + JSON.stringify(h, null, 2) + '</pre>';
   }
-  if(p.length){
+  if(showPit){
     html += '<div class="cp-section-title">Pitching (' + p.length + ' seasons — diagnostic)</div>';
     html += '<pre style="font-size:11px;color:#bbb;white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;max-height:240px;overflow:auto">'
           + JSON.stringify(p, null, 2) + '</pre>';
