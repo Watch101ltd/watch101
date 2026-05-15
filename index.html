@@ -9934,6 +9934,15 @@ setTimeout(async () => {
         }
         if(group.group&&group.group.displayName==='pitching'){
           if(s.inningsPitched!==undefined){ p.ip=parseFloat(s.inningsPitched); touched = true; }
+          // BASIC_BLOCK_KBB_V1 (May 14, 2026) — silent auto-refresh now mirrors the full pitcher block so K/BB stays current on page-load auto-refresh too.
+          if(s.era) p.era=parseFloat(s.era);
+          if(s.whip) p.whip=parseFloat(s.whip);
+          if(s.strikeOuts!==undefined) p.k=s.strikeOuts;
+          if(s.wins!==undefined) p.w=s.wins;
+          if(s.saves!==undefined) p.sv=s.saves;
+          if(s.holds!==undefined) p.hld=s.holds;
+          if(s.baseOnBalls!==undefined) p.bb_pit=Number(s.baseOnBalls);
+          p.kbb_ratio = (p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
         }
       }
       if(touched){ updated++; }
@@ -10101,6 +10110,15 @@ async function refreshAllStatsManual(){
         }
         if(group.group&&group.group.displayName==='pitching'){
           if(s.inningsPitched!==undefined){ p.ip=parseFloat(s.inningsPitched); touched = true; }
+          // BASIC_BLOCK_KBB_V1 (May 14, 2026) — refreshAllStatsManual was only stamping IP for pitchers, leaving K/W/SV/HLD/ERA/WHIP frozen from prior loads and never stamping BB at all. Now mirrors refreshAllStats's pitcher block fully so K/BB can derive cleanly on a manual refresh click.
+          if(s.era) p.era=parseFloat(s.era);
+          if(s.whip) p.whip=parseFloat(s.whip);
+          if(s.strikeOuts!==undefined) p.k=s.strikeOuts;
+          if(s.wins!==undefined) p.w=s.wins;
+          if(s.saves!==undefined) p.sv=s.saves;
+          if(s.holds!==undefined) p.hld=s.holds;
+          if(s.baseOnBalls!==undefined) p.bb_pit=Number(s.baseOnBalls);
+          p.kbb_ratio = (p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
         }
       }
       if(touched){ updated++; }
