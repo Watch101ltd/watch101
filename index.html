@@ -6674,17 +6674,13 @@ async function deletePlayer(id){
   // MUTATION_AUTOSAVE_V1 (2026-04-24) — persist removal to NAS too, not just localStorage.
   // Without this, a close-and-reopen would bring the removed player back from the server copy.
   try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] deletePlayer autosave failed:', e); }
-  // HOLDING_TANK_V1: brief status banner so Matt sees the move happened.
-  if(_removed){
-    try {
-      const banner = document.getElementById('save-status') || document.getElementById('hdr-status-strip');
-      if(banner) {
-        const prior = banner.textContent;
-        banner.textContent = '🪣 Moved "' + (_removed.name || 'player') + '" to Holding Tank (' + _holdingTank.length + ' total)';
-        setTimeout(() => { if(banner.textContent.startsWith('🪣 Moved')) banner.textContent = prior; }, 3500);
-      }
-    } catch(e){ /* status banner unavailable — silent ok */ }
-  }
+  // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — the "🪣 Moved player to Holding Tank" status banner
+  // block was removed because it referenced #save-status (which doesn't exist anywhere on the page)
+  // and silently fell through to #hdr-status-strip, where setting .textContent destroyed all
+  // children (count-badge, savant-indicator, yahoo-btn) by replacing them with a plain text node.
+  // After the first delete, count-badge was gone, and renderTable would crash on every subsequent
+  // mutation trying to set .textContent on null. The banner message itself wasn't important —
+  // the user can see the player moved by checking the Tank.
 }
 async function confirmClear(){
   if(_blockIfReadOnly('confirmClear')) return;
