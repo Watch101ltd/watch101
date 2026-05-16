@@ -2014,7 +2014,10 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     <!-- POOL SECONDARY HEADER — scrolls away under the main title header as you scroll down -->
     <div class="tank-toolbar" id="tank-toolbar">
       <div class="tab-nav-group">
-        <button class="tab-nav-btn" onclick="closePlayerPool()">🏠 Watch 101</button>
+        <!-- HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — Tank's Home button calls closeHoldingTank, NOT closePlayerPool.
+             The clone-step rename missed this because the onclick handler text was identical between the original
+             Pool toolbar and the cloned Tank toolbar at extraction time. -->
+        <button class="tab-nav-btn" onclick="closeHoldingTank()">🏠 Watch 101</button>
         <button class="tab-nav-btn" onclick="openLeagueLeaders()">🏆 League Leaders</button>
         <button class="tab-nav-btn" onclick="openProspects()">🍼 Prospects</button>
       </div>
@@ -7972,6 +7975,8 @@ function openPlayerPool(){
   poolActive = true;
   if(typeof leadersActive !== 'undefined' && leadersActive) closeLeagueLeaders();
   if(typeof prospectsActive !== 'undefined' && prospectsActive) closeProspects();
+  // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — close Tank if it's open, so overlays don't stack.
+  if(typeof tankActive !== 'undefined' && tankActive) closeHoldingTank();
   document.querySelector('.toolbar').style.display = 'none';
   document.querySelector('.table-wrap').style.display = 'none';
   document.getElementById('dual-wrap').classList.remove('active');
@@ -9424,6 +9429,8 @@ function openLeagueLeaders(){
   leadersActive = true;
   poolActive = false;
   if(typeof prospectsActive !== 'undefined' && prospectsActive) closeProspects();
+  // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — close Tank if it's open, so overlays don't stack.
+  if(typeof tankActive !== 'undefined' && tankActive) closeHoldingTank();
   document.querySelector('.toolbar').style.display = 'none';
   document.querySelector('.table-wrap').style.display = 'none';
   document.getElementById('dual-wrap').classList.remove('active');
@@ -10852,6 +10859,8 @@ function openProspects(){
   poolActive = false;
   if(typeof leadersActive !== 'undefined' && leadersActive) closeLeagueLeaders();
   closePlayerPool();
+  // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — close Tank if it's open, so overlays don't stack.
+  if(typeof tankActive !== 'undefined' && tankActive) closeHoldingTank();
   document.querySelector('.toolbar').style.display = 'none';
   document.querySelector('.table-wrap').style.display = 'none';
   document.getElementById('dual-wrap').classList.remove('active');
@@ -13718,6 +13727,8 @@ function openHoldingTank(){
   tankActive = true;
   if(typeof leadersActive !== 'undefined' && leadersActive) closeLeagueLeaders();
   if(typeof prospectsActive !== 'undefined' && prospectsActive) closeProspects();
+  // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — close Pool if it's open, so overlays don't stack.
+  if(typeof poolActive !== 'undefined' && poolActive) closePlayerPool();
   document.querySelector('.toolbar').style.display = 'none';
   document.querySelector('.table-wrap').style.display = 'none';
   document.getElementById('dual-wrap').classList.remove('active');
