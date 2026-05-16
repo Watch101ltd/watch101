@@ -14148,7 +14148,7 @@ function renderTank(){
     }
     // MAJORS_VS_MINORS_V1 — flag rows showing MiLB-only stats
     const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
-    return `<tr class="${isAdded?'already-added':isInTank?'tank-row':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
+    return `<tr class="${_minorStatsClass.trim()}" data-mlb-id="${p.mlb_id}">
       <td class="col-rank-num" style="text-align:center;color:var(--text3);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600">${_showPoolRank ? (idx+1) : ''}</td>
       <!-- STATIC_ZONE_REORDER_V1 — Pos cell now before Player; col-zone-divider on Y!RANK. -->
       <td class="pos-cell col-pos">${posBadgesColumn(poolPositions, 'pool')}</td>
@@ -15064,20 +15064,4 @@ body.day-mode .ppo-movement-mode-btn:hover:not(:disabled) { background: linear-g
     var board = document.getElementById('mm-board');
     if(!board || !_mmFocalPlayer) return false;
     if(typeof players === 'undefined' || !Array.isArray(players)){
-      board.innerHTML = '<div class="mm-empty-state">No active list loaded.</div>';
-      return false;
-    }
-    var snapshot = players.filter(function(p){ return p && p.rank > 0; })
-                          .slice()
-                          .sort(function(a,b){ return a.rank - b.rank; })
-                          .slice(0, MM_MAX_ROWS);
-    var focalMlbId = String(_mmFocalPlayer.mlb_id);
-    var rowsHtml = '';
-    for(var i=0; i<snapshot.length; i++){
-      rowsHtml += _mmRowHtml(snapshot[i]);
-    }
-    rowsHtml += '<div class="mm-focal" id="mm-focal" data-mlb-id="' + _mmEscape(focalMlbId) + '">'
-              + _mmFocalHtml(_mmFocalPlayer, _mmFocalPlayer.rank)
-              + '</div>';
-    board.innerHTML = rowsHtml;
-    return true;
+      board.innerHTML = '<div
