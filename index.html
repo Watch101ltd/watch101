@@ -730,9 +730,9 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .context-table-wrap{overflow-x:auto;padding:0 0 2rem}
 .context-table-wrap .pool-table thead th{background:var(--surface);}
 /* Pool clone fixed header - appears when pool thead scrolls off screen */
-#pool-clone-header,#leaders-clone-header,#pros-clone-header{display:none;position:fixed;left:0;right:0;z-index:62;background:var(--bg);border-bottom:2px solid var(--gold2);overflow:hidden;pointer-events:auto;}
-#pool-clone-header table,#leaders-clone-header table,#pros-clone-header table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
-#pool-clone-header th,#leaders-clone-header th,#pros-clone-header th{padding:5px 4px;font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--text);text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);}
+#pool-clone-header,#leaders-clone-header,#pros-clone-header,#tank-clone-header{display:none;position:fixed;left:0;right:0;z-index:62;background:var(--bg);border-bottom:2px solid var(--gold2);overflow:hidden;pointer-events:auto;}
+#pool-clone-header table,#leaders-clone-header table,#pros-clone-header table,#tank-clone-header table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
+#pool-clone-header th,#leaders-clone-header th,#pros-clone-header th,#tank-clone-header th{padding:5px 4px;font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--text);text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);}
 /* Prospects table: auto layout so global nth-child widths don't corrupt the different column set */
 #pros-main-table{table-layout:auto;}
 /* POOL_LEADERS_AUTO_LAYOUT_V1 (May 12, 2026 — PC Walter) — extended the same
@@ -13721,12 +13721,22 @@ function onTankPromote(mlbId){
           (p.name || 'this player') + ' from the Tank.');
     return;
   }
+  // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — bail out if already on main list (mlb_id collision).
+  // Without this guard, promoting a player who's already on Watch 101 would create a phantom duplicate
+  // — same player on the list twice, indistinguishable in the UI.
+  if(p.mlb_id && players.some(mp => mp.mlb_id === p.mlb_id)){
+    alert((p.name || 'This player') + ' is already on Watch 101. Remove them from the Tank instead.');
+    return;
+  }
   if(!confirm('Promote ' + (p.name || 'this player') + ' to Watch 101?')) return;
 
   let maxRank = 0;
   players.forEach(mp => { const r = parseInt(mp.rank,10); if(!isNaN(r) && r > maxRank) maxRank = r; });
   const newRank = Math.min(maxRank + 1, CAP);
-  const promoted = Object.assign({}, p, { rank: newRank, move: 'new', prev_rank: null });
+  // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — stamp a fresh uid() so the X-delete button and any
+  // other id-based handlers work on promoted players. Without this the promoted player has no .id
+  // and clicking the X is a silent no-op (the filter never matches).
+  const promoted = Object.assign({}, p, { id: uid(), rank: newRank, move: 'new', prev_rank: null });
   players.push(promoted);
   saveData();
 
