@@ -701,6 +701,12 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .btn-add-pool{padding:4px 12px;border-radius:5px;font-size:11px;font-family:'Nunito Sans',sans-serif;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green);transition:all 0.15s;white-space:nowrap}
 .btn-add-pool:hover{background:#14532d33}
 .btn-add-pool.added{border-color:var(--text3);color:var(--text3);cursor:default}
+/* HOLDING_TANK_V1 (May 15, 2026) — gold-bordered sibling to btn-add-pool. Side-by-side
+   in the row's action cell. Sends the player to Matt's editorial bench instead of the
+   main Watch 101 list. Backend-only — readonly mode hides these via .backend-only. */
+.btn-add-tank{padding:4px 8px;border-radius:5px;font-size:11px;font-family:'Nunito Sans',sans-serif;cursor:pointer;border:1px solid var(--gold);background:transparent;color:var(--gold);transition:all 0.15s;white-space:nowrap;margin-left:4px}
+.btn-add-tank:hover{background:rgba(255,193,7,0.10)}
+.btn-add-tank.added{border-color:var(--text3);color:var(--text3);cursor:default}
 .pool-loading{text-align:center;padding:2.5rem;color:var(--text3);font-family:'Nunito Sans',sans-serif;font-size:13px}
 .pool-empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:14px}
 
@@ -8532,7 +8538,7 @@ function renderPool(){
       <td class="stat-cell col-gold-sprint-k9" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_sprint_speed!=null?parseFloat(p.sv_sprint_speed).toFixed(1):'—'}</span>`:`<span style="color:#d8e0e8">${p.k_per_9!=null?parseFloat(p.k_per_9).toFixed(2):'—'}</span>`}</td>
       <td class="backend-only" style="text-align:right;padding:4px 6px">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
-        : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
+        : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddFromPoolToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">🪣 Tank</button>`
       }</td>
     </tr>`;
   }).join('');
@@ -9004,7 +9010,7 @@ function renderContext(){
     const rankStyle = isAnchor ? 'color:var(--gold);font-weight:700' : 'color:var(--text3)';
     const addBtn = isAdded
       ? '<span class="btn-add-pool added">✓ On List</span>'
-      : `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button>`;
+      : `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddFromPoolToTank(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">🪣 Tank</button>`;
     // MILB_ITALIC_V1 (May 8, 2026) — flag MiLB-sourced rows so the italic+dim
     // stat treatment fires in the context table the same way it does in the
     // main list, pool, and leaders.
@@ -9555,7 +9561,7 @@ function renderLeaders(){
       <td class="stat-cell col-gold-sprint-k9" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_sprint_speed!=null?parseFloat(p.sv_sprint_speed).toFixed(1):'—'}</span>`:`<span style="color:#d8e0e8">${p.k_per_9!=null?parseFloat(p.k_per_9).toFixed(2):'—'}</span>`}</td>
       <td class="backend-only" style="text-align:right;padding:4px 6px" onclick="event.stopPropagation()">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
-        : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
+        : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="event.stopPropagation();quickAddFromPoolToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">🪣 Tank</button>`
       }</td>
     </tr>`;
   }).join('');
@@ -9891,7 +9897,7 @@ function renderLeadersTable(splits, highlightStat, isPit){
     const yhooRstCell = yhooRst != null ? `<td class="stat" style="color:var(--text)">${parseFloat(yhooRst).toFixed(0)}%</td>` : `<td class="stat" style="color:var(--text)">0%</td>`;
     const addBtn = isAdded
       ? '<span class="btn-add-pool added">✓ On List</span>'
-      : `<button class="btn-add-pool" onclick="quickAddLeader(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">${activeListAddLabel('+ Add to ')}</button>`;
+      : `<button class="btn-add-pool" onclick="quickAddLeader(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddLeaderToTank(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">🪣 Tank</button>`;
 
     if(isPit){
       return `<tr>
@@ -10005,6 +10011,71 @@ async function quickAddLeader(mlbId, name, team, primaryPos, btnEl){
   // AUTOSAVE_ADD_V1 — push the new player to the NAS immediately, not just localStorage.
   try { await autoSaveToNAS(); } catch(e){ console.warn('[AUTOSAVE_ADD_V1] quickAddLeader autosave failed:', e); }
 }
+
+// ============================================================
+// HOLDING_TANK_V1 — Send-to-Tank from Pool / Leaders / Prospects
+// ============================================================
+// Parallel structure to add-to-Watch-101 functions above. Pushes to
+// _holdingTank instead of players. Same-tab only — refresh Tank tab.
+//
+// Already-on-list rules (locked):
+//   - Already on main: alert + stop. No silent demotion.
+//   - Already in Tank: silent skip, just disable button.
+//   - Tank at 101 cap: alert + stop.
+
+const HOLDING_TANK_CAP = 101;
+function _tankIsFull(){ return Array.isArray(_holdingTank) && _holdingTank.length >= HOLDING_TANK_CAP; }
+function _tankAlreadyHas(mlbId){ if(!Array.isArray(_holdingTank)) return false; const t=String(mlbId); return _holdingTank.some(p => String(p.mlb_id)===t); }
+function _alreadyOnMain(mlbId){ if(!Array.isArray(players)) return false; const t=String(mlbId); return players.some(p => String(p.mlb_id)===t); }
+
+async function quickAddFromPoolToTank(mlbId, name, team, primaryPos, age, btnEl){
+  if(_blockIfReadOnly('quickAddFromPoolToTank')) return;
+  if(_alreadyOnMain(mlbId)){ alert('"' + (name||'This player') + '" is already on your main Watch 101 list.\n\nIf you want them in the Holding Tank instead, remove them from the main list first.'); return; }
+  if(_tankAlreadyHas(mlbId)){ btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added'; btnEl.disabled=true; return; }
+  if(_tankIsFull()){ alert('Holding Tank is full (' + HOLDING_TANK_CAP + ' players).\n\nPromote or remove someone from the Tank first.'); return; }
+  btnEl.textContent='⟳ Tanking...'; btnEl.disabled=true;
+  const p = poolPlayers.find(x=>x.mlb_id===mlbId)||{ mlb_id:mlbId, name, team, primaryPos, age, stats:null };
+  await fetchPoolStats(p);
+  const finalAge = p.age || parseInt(age) || null;
+  const isMinorLvl = p.level==='AAA'||p.level==='AA'||p.level==='A';
+  let finalTeam = p.team || team || '';
+  if(isMinorLvl && mlbId){ try{ const pr=await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}?hydrate=currentTeam`); const pd=await pr.json(); const ct=pd.people&&pd.people[0]&&pd.people[0].currentTeam; if(ct&&ct.parentOrgId) finalTeam=orgIdToAbbr(ct.parentOrgId)||finalTeam; }catch(e){} }
+  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions: p.eligible_positions&&p.eligible_positions.length>0?p.eligible_positions:(primaryPos?[primaryPos]:[]), age:finalAge, birthDate:p.birthDate||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, pitcher_type:p.pitcher_type||null, injury_status:p.injury_status||null };
+  _holdingTank.push(newPlayer); saveHoldingTank();
+  btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added';
+}
+
+async function quickAddLeaderToTank(mlbId, name, team, primaryPos, btnEl){
+  if(_blockIfReadOnly('quickAddLeaderToTank')) return;
+  if(_alreadyOnMain(mlbId)){ alert('"' + (name||'This player') + '" is already on your main Watch 101 list.\n\nIf you want them in the Holding Tank instead, remove them from the main list first.'); return; }
+  if(_tankAlreadyHas(mlbId)){ btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added'; btnEl.disabled=true; return; }
+  if(_tankIsFull()){ alert('Holding Tank is full (' + HOLDING_TANK_CAP + ' players).\n\nPromote or remove someone from the Tank first.'); return; }
+  btnEl.textContent='⟳ Tanking...'; btnEl.disabled=true;
+  const poolPlayer = poolPlayers.find(x=>x.mlb_id===mlbId);
+  const p = poolPlayer || { mlb_id:mlbId, name, team, primaryPos, age:null, stats:null };
+  await fetchPoolStats(p);
+  const finalAge = p.age || null;
+  const finalTeam = p.team || team || '';
+  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], age:finalAge, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip') };
+  _holdingTank.push(newPlayer); saveHoldingTank();
+  btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added';
+}
+
+async function addProspectToTank(mlbId, name, team, primaryPos, age, level, btnEl){
+  if(_blockIfReadOnly('addProspectToTank')) return;
+  if(_alreadyOnMain(mlbId)){ alert('"' + (name||'This player') + '" is already on your main Watch 101 list.\n\nIf you want them in the Holding Tank instead, remove them from the main list first.'); return; }
+  if(_tankAlreadyHas(mlbId)){ btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added'; btnEl.disabled=true; return; }
+  if(_tankIsFull()){ alert('Holding Tank is full (' + HOLDING_TANK_CAP + ' players).\n\nPromote or remove someone from the Tank first.'); return; }
+  btnEl.textContent='⟳ Tanking...'; btnEl.disabled=true;
+  const p = prospectPlayers.find(x=>x.mlb_id===mlbId) || { mlb_id:mlbId, name, team, primaryPos, age, stats:null, level };
+  if(!p.stats) await fetchProspectStats(p);
+  let finalTeam = team || '—';
+  try{ const pr=await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}?hydrate=currentTeam`); const pd=await pr.json(); const ct=pd.people&&pd.people[0]&&pd.people[0].currentTeam; if(ct&&ct.parentOrgId) finalTeam=orgIdToAbbr(ct.parentOrgId)||finalTeam; }catch(e){}
+  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], age:p.age||parseInt(age)||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:null, hld:null, ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, level:level, statsSource:'MiLB' };
+  _holdingTank.push(newPlayer); saveHoldingTank();
+  btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added';
+}
+// ── /HOLDING_TANK_V1 send-to-tank ───────────────────────────────────────
 
 // ============================================================
 // DATE RANGE STATS
@@ -11739,7 +11810,7 @@ function renderProspects(){
     const safeName = p.name.replace(/'/g,"\\'");
     const addBtn = isAdded
       ? '<span class="btn-add-pool added">✓ On List</span>'
-      : `<button class="btn-add-pool" onclick="addProspectToList(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">${activeListAddLabel('+ Add to ')}</button>`;
+      : `<button class="btn-add-pool" onclick="addProspectToList(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="addProspectToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">🪣 Tank</button>`;
     // MILB_ITALIC_V2 (May 8, 2026) — Smarter italic gate for Prospects. Some
     // prospects have an MLB sample this year (got called up; maybe back down).
     // We want their MLB numbers to render upright so we can tell at a glance
