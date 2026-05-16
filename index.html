@@ -8202,6 +8202,7 @@ function setPoolPos(pos, el){
 function renderPool(){
   const tbody = document.getElementById('pool-tbody');
   const addedNames = new Set(players.map(p => p.name.toLowerCase()));
+  const tankNames  = new Set((typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)) ? _holdingTank.map(p => (p.name||'').toLowerCase()) : []);
   let list = [...poolPlayers];
   if(poolPosFilter === 'PITCHER') list = list.filter(p => isPitcherPos(p.primaryPos));
   if(poolPosFilter === 'HITTER')  list = list.filter(p => !isPitcherPos(p.primaryPos));
@@ -8433,6 +8434,7 @@ function renderPool(){
   const _showPoolRank = poolSortCol && poolSortCol !== 'name';
   tbody.innerHTML = display.map((p, idx) => {
     const isAdded = addedNames.has(p.name.toLowerCase());
+    const isInTank = !isAdded && tankNames.has(p.name.toLowerCase());
     const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
     const pit = isPitcherPos(p.primaryPos);
     // MANUAL_YAHOO_ID_STAMP_V3 — make sure the manual ID is stamped on this player
@@ -8538,7 +8540,9 @@ function renderPool(){
       <td class="stat-cell col-gold-sprint-k9" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_sprint_speed!=null?parseFloat(p.sv_sprint_speed).toFixed(1):'—'}</span>`:`<span style="color:#d8e0e8">${p.k_per_9!=null?parseFloat(p.k_per_9).toFixed(2):'—'}</span>`}</td>
       <td class="backend-only" style="text-align:right;padding:4px 6px">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
-        : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddFromPoolToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">🪣 Tank</button>`
+        : isInTank
+          ? `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><span class="btn-add-tank added">✓ Tank</span>`
+          : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddFromPoolToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">🪣 Tank</button>`
       }</td>
     </tr>`;
   }).join('');
@@ -8890,6 +8894,7 @@ function renderContext(){
   if(!contextAnchor) return;
   const isPit = isPitcherPos(contextAnchor.primaryPos);
   const addedNames = new Set(players.map(p => p.name.toLowerCase()));
+  const tankNames  = new Set((typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)) ? _holdingTank.map(p => (p.name||'').toLowerCase()) : []);
 
   // If Yahoo cache is empty and we are connected, trigger a sync then re-render
   if(yahooConnected && Object.keys(yahooDataByName).length === 0){
@@ -9004,13 +9009,16 @@ function renderContext(){
     const isAnchor = p.mlb_id === contextAnchor.mlb_id;
     const isCompare = contextCompares.some(c=>c.mlb_id===p.mlb_id);
     const isAdded = addedNames.has(p.name.toLowerCase());
+    const isInTank = !isAdded && tankNames.has(p.name.toLowerCase());
     const rowClass = isAnchor?'ctx-highlight':isCompare?'ctx-compare':'';
     const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
     const s = p.stats||{};
     const rankStyle = isAnchor ? 'color:var(--gold);font-weight:700' : 'color:var(--text3)';
     const addBtn = isAdded
       ? '<span class="btn-add-pool added">✓ On List</span>'
-      : `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddFromPoolToTank(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">🪣 Tank</button>`;
+      : isInTank
+        ? `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button><span class="btn-add-tank added">✓ Tank</span>`
+        : `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddFromPoolToTank(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">🪣 Tank</button>`;
     // MILB_ITALIC_V1 (May 8, 2026) — flag MiLB-sourced rows so the italic+dim
     // stat treatment fires in the context table the same way it does in the
     // main list, pool, and leaders.
@@ -9109,6 +9117,7 @@ function addAnchorToList(){
   if(!contextAnchor) return;
   if(atCapacity()){ capAlert(); return; }
   const addedNames = new Set(players.map(p=>p.name.toLowerCase()));
+  const tankNames  = new Set((typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)) ? _holdingTank.map(p=>(p.name||'').toLowerCase()) : []);
   if(addedNames.has(contextAnchor.name.toLowerCase())){ alert(`${contextAnchor.name} is already on your Watch 101 list.`); return; }
   const s = contextAnchor.stats||{};
   const poolP = poolPlayers.find(x => x.mlb_id === contextAnchor.mlb_id);
@@ -9264,6 +9273,7 @@ function renderLeaders(){
   const tbody = document.getElementById('leaders-tbody');
   if(!tbody) return;
   const addedNames = new Set(players.map(p => p.name.toLowerCase()));
+  const tankNames  = new Set((typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)) ? _holdingTank.map(p => (p.name||'').toLowerCase()) : []);
   let list = [...poolPlayers];
 
   // LEADERS_DATERANGE_OVERLAY_V1
@@ -9491,6 +9501,7 @@ function renderLeaders(){
 
   tbody.innerHTML = display.map((p, i) => {
     const isAdded = addedNames.has(p.name.toLowerCase());
+    const isInTank = !isAdded && tankNames.has(p.name.toLowerCase());
     const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
     const pit = isPitcherPos(p.primaryPos);
     let yw = null;
@@ -9561,7 +9572,9 @@ function renderLeaders(){
       <td class="stat-cell col-gold-sprint-k9" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_sprint_speed!=null?parseFloat(p.sv_sprint_speed).toFixed(1):'—'}</span>`:`<span style="color:#d8e0e8">${p.k_per_9!=null?parseFloat(p.k_per_9).toFixed(2):'—'}</span>`}</td>
       <td class="backend-only" style="text-align:right;padding:4px 6px" onclick="event.stopPropagation()">${isAdded
         ? '<span class="btn-add-pool added">✓ On List</span>'
-        : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="event.stopPropagation();quickAddFromPoolToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">🪣 Tank</button>`
+        : isInTank
+          ? `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><span class="btn-add-tank added">✓ Tank</span>`
+          : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="event.stopPropagation();quickAddFromPoolToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">🪣 Tank</button>`
       }</td>
     </tr>`;
   }).join('');
@@ -9796,6 +9809,8 @@ async function _dead_loadLeaders(statLabel, group, statKey, statName){
     }
 
     const addedNames = new Set(players.map(p => p.name.toLowerCase()));
+    const tankNames  = new Set((typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)) ? _holdingTank.map(p => (p.name||'').toLowerCase()) : []);
+  const tankNames  = new Set((typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)) ? _holdingTank.map(p => (p.name||'').toLowerCase()) : []);
 
     // Build sortable header
     const leaderStaticHead = document.getElementById('leaders-thead-static');
@@ -9867,6 +9882,7 @@ async function _dead_loadLeaders(statLabel, group, statKey, statName){
 function renderLeadersTable(splits, highlightStat, isPit){
   const tbody = document.getElementById('leaders-tbody');
   const addedNames = new Set(players.map(p => p.name.toLowerCase()));
+  const tankNames  = new Set((typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)) ? _holdingTank.map(p => (p.name||'').toLowerCase()) : []);
   // Build Yahoo lookup — global cache first, watch list overrides
   const yahooLookup = {};
   Object.values(yahooDataByName).forEach(yp => {
@@ -9881,6 +9897,7 @@ function renderLeadersTable(splits, highlightStat, isPit){
     const age = l.player && l.player.currentAge || '—';
     const s = l.stat || {};
     const isAdded = addedNames.has(name.toLowerCase());
+    const isInTank = !isAdded && tankNames.has(name.toLowerCase());
     const posClass = isPitcherPos(pos)?'pos-SP':pos==='C'?'pos-C':pos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(pos)?'pos-'+pos:'pos-DH';
     const rankClass = i===0?'color:var(--gold)':i<3?'color:var(--gold)':i<10?'color:var(--text)':'color:var(--text2)';
     const hl = (key) => key===highlightStat ? `style="text-align:right;color:var(--gold);font-weight:600"` : `class="stat"`;
@@ -9897,7 +9914,9 @@ function renderLeadersTable(splits, highlightStat, isPit){
     const yhooRstCell = yhooRst != null ? `<td class="stat" style="color:var(--text)">${parseFloat(yhooRst).toFixed(0)}%</td>` : `<td class="stat" style="color:var(--text)">0%</td>`;
     const addBtn = isAdded
       ? '<span class="btn-add-pool added">✓ On List</span>'
-      : `<button class="btn-add-pool" onclick="quickAddLeader(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddLeaderToTank(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">🪣 Tank</button>`;
+      : isInTank
+        ? `<button class="btn-add-pool" onclick="quickAddLeader(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">${activeListAddLabel('+ Add to ')}</button><span class="btn-add-tank added">✓ Tank</span>`
+        : `<button class="btn-add-pool" onclick="quickAddLeader(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddLeaderToTank(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">🪣 Tank</button>`;
 
     if(isPit){
       return `<tr>
@@ -11679,6 +11698,7 @@ function renderProspects(){
   if(!tbody) return;
   const q = normalize(document.getElementById('pros-search')?.value || '');
   const addedNames = new Set(players.map(p => p.name.toLowerCase()));
+  const tankNames  = new Set((typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)) ? _holdingTank.map(p => (p.name||'').toLowerCase()) : []);
   const isPit = pos => ['SP','RP','P'].includes(pos);
 
   let list = [...prospectPlayers];
@@ -11803,6 +11823,7 @@ function renderProspects(){
     // PROSPECTS_DATERANGE_V1 — swap stats source based on active dateRange
     const s = (typeof getProspectDisplayStats === 'function') ? getProspectDisplayStats(p) : (p.stats || {});
     const isAdded = addedNames.has(p.name.toLowerCase());
+    const isInTank = !isAdded && tankNames.has(p.name.toLowerCase());
     const pit = isPit(p.primaryPos);
     const posClass = pit ? 'pos-SP' : p.primaryPos === 'C' ? 'pos-C' : p.primaryPos === 'OF' ? 'pos-OF' : ['1B','2B','3B','SS'].includes(p.primaryPos) ? 'pos-'+p.primaryPos : 'pos-DH';
     const lvlColor = p.level === 'AAA' ? '#22c55e' : p.level === 'AA' ? '#3b82f6' : '#f97316';
@@ -11810,7 +11831,9 @@ function renderProspects(){
     const safeName = p.name.replace(/'/g,"\\'");
     const addBtn = isAdded
       ? '<span class="btn-add-pool added">✓ On List</span>'
-      : `<button class="btn-add-pool" onclick="addProspectToList(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="addProspectToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">🪣 Tank</button>`;
+      : isInTank
+        ? `<button class="btn-add-pool" onclick="addProspectToList(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">${activeListAddLabel('+ Add to ')}</button><span class="btn-add-tank added">✓ Tank</span>`
+        : `<button class="btn-add-pool" onclick="addProspectToList(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="addProspectToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">🪣 Tank</button>`;
     // MILB_ITALIC_V2 (May 8, 2026) — Smarter italic gate for Prospects. Some
     // prospects have an MLB sample this year (got called up; maybe back down).
     // We want their MLB numbers to render upright so we can tell at a glance
