@@ -13706,7 +13706,13 @@ function destroyTankFixedHeader(){
   if(cloneBar) cloneBar.style.display = 'none';
 }
 
-function onTankPromote(idx){
+// HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — PROMOTE/REMOVE look up by mlb_id, NOT by array index.
+// The previous version took idx directly off the rendered row, but idx was the position in the
+// FILTERED+SORTED display list, not the position in _holdingTank — so the wrong player was being
+// promoted/removed every time. Looking up by mlb_id is collision-proof regardless of sort/filter state.
+function onTankPromote(mlbId){
+  const idx = _holdingTank.findIndex(x => x && x.mlb_id === mlbId);
+  if(idx < 0) return;
   const p = _holdingTank[idx];
   if(!p) return;
   const CAP = 101;
@@ -13735,7 +13741,9 @@ function onTankPromote(idx){
   }
 }
 
-function onTankRemove(idx){
+function onTankRemove(mlbId){
+  const idx = _holdingTank.findIndex(x => x && x.mlb_id === mlbId);
+  if(idx < 0) return;
   const p = _holdingTank[idx];
   if(!p) return;
   if(!confirm('Remove ' + (p.name || 'this player') + ' from the Holding Tank?\n\nThey will go back to the general MLB pool. You can always re-add them later.')) return;
@@ -14203,7 +14211,7 @@ function renderTank(){
       <td class="stat-cell col-gold-bbpct-whiff" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_bb_pct!=null?parseFloat(p.sv_bb_pct).toFixed(1)+'%':'—'}</span>`:`<span style="color:#d8e0e8">${p.sv_whiff_pct!=null?parseFloat(p.sv_whiff_pct).toFixed(1)+'%':'—'}</span>`}</td>
       <td class="stat-cell col-gold-sprint-k9" style="text-align:right">${!pit?`<span style="color:var(--gold)">${p.sv_sprint_speed!=null?parseFloat(p.sv_sprint_speed).toFixed(1):'—'}</span>`:`<span style="color:#d8e0e8">${p.k_per_9!=null?parseFloat(p.k_per_9).toFixed(2):'—'}</span>`}</td>
       <td class="backend-only" style="text-align:right;padding:4px 6px;white-space:nowrap">
-        <button class="btn-add-pool" title="Promote to ${activeListName()}" onclick="onTankPromote(${idx})" style="background:var(--gold);color:#000;font-weight:700;font-size:10px;padding:3px 7px;border-radius:4px;border:none;cursor:pointer;margin-right:2px">PROMOTE</button><button class="btn-add-tank backend-only" title="Remove from Tank" onclick="onTankRemove(${idx})" style="background:#5a1818;color:#fff;font-weight:700;font-size:10px;padding:3px 7px;border-radius:4px;border:none;cursor:pointer">REMOVE</button>
+        <button class="btn-add-pool" title="Promote to ${activeListName()}" onclick="onTankPromote(${p.mlb_id})" style="background:var(--gold);color:#000;font-weight:700;font-size:10px;padding:3px 7px;border-radius:4px;border:none;cursor:pointer;margin-right:2px">PROMOTE</button><button class="btn-add-tank backend-only" title="Remove from Tank" onclick="onTankRemove(${p.mlb_id})" style="background:#5a1818;color:#fff;font-weight:700;font-size:10px;padding:3px 7px;border-radius:4px;border:none;cursor:pointer">REMOVE</button>
       </td>
     </tr>`;
   }).join('');
