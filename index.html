@@ -11835,12 +11835,14 @@ function swapSampleForRow(mlbId, tableName, evt){
       pp.statsSource = _activeSourceFor(pp, 'prospects');
     }
   } else {
-    // Watch list / pool / leaders / context use flat fields. Reapply.
+    // Watch list / pool / leaders / context / tank use flat fields. Reapply.
     let arr = null;
     if(tableName === 'watch')   arr = (typeof players       !== 'undefined') ? players       : null;
     if(tableName === 'pool')    arr = (typeof poolPlayers   !== 'undefined') ? poolPlayers   : null;
     if(tableName === 'leaders') arr = (typeof poolPlayers   !== 'undefined') ? poolPlayers   : null;
     if(tableName === 'context') arr = (typeof poolPlayers   !== 'undefined') ? poolPlayers   : null;
+    // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — Tank uses _holdingTank as its source array.
+    if(tableName === 'tank')    arr = (typeof _holdingTank  !== 'undefined') ? _holdingTank  : null;
     if(arr){
       const pp = arr.find(x => x.mlb_id === mlbId);
       if(pp) _applyActiveSampleToFlatFields(pp, tableName);
@@ -11860,6 +11862,7 @@ function swapSampleForRow(mlbId, tableName, evt){
                 : tableName === 'pool'      ? 'pool-tbody'
                 : tableName === 'leaders'   ? 'leaders-tbody'
                 : tableName === 'context'   ? 'ctx-tbody'
+                : tableName === 'tank'      ? 'tank-tbody'  // HOLDING_TANK_AS_TAB_V1
                 :                              null;
   if(tbodyId){
     const tbody = document.getElementById(tbodyId);
@@ -11891,6 +11894,7 @@ function swapSampleForRow(mlbId, tableName, evt){
   if(tableName === 'pool'      && typeof renderPool      === 'function')   renderPool();
   if(tableName === 'leaders'   && typeof renderLeaders   === 'function')   renderLeaders();
   if(tableName === 'context'   && typeof renderContext   === 'function')   renderContext();
+  if(tableName === 'tank'      && typeof renderTank      === 'function')   renderTank();   // HOLDING_TANK_AS_TAB_V1
 }
 
 // Legacy entry point — old code in renderProspects still calls this name.
@@ -13586,6 +13590,26 @@ document.addEventListener('click', function(e){
       if(p2) openPlayerCard(e, p2);
       return;
     }
+    // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — Tank deep-cut click handler.
+    // Tank rows carry data-mlb-id="${p.mlb_id}". Look up in _holdingTank first
+    // (where the warehouse-stamped Yahoo/CBS/Statcast data lives), then fall
+    // back to poolPlayers / players so the lookup still works for cross-list players.
+    if(nameCell.closest('#tank-tbody')){
+      var mlbIdTank = parseInt(row.dataset.mlbId);
+      if(isNaN(mlbIdTank)){ closePlayerCard(); return; }
+      var pT = null;
+      if(typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)){
+        pT = _holdingTank.find(function(pp){ return pp.mlb_id === mlbIdTank; });
+      }
+      if(!pT && typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers)){
+        pT = poolPlayers.find(function(pp){ return pp.mlb_id === mlbIdTank; });
+      }
+      if(!pT && typeof players !== 'undefined' && Array.isArray(players)){
+        pT = players.find(function(pp){ return pp.mlb_id === mlbIdTank; });
+      }
+      if(pT) openPlayerCard(e, pT);
+      return;
+    }
     // PROSPECTS_DEEPCUT_V1 (May 13, 2026) — Prospects tab was missing a branch
     // here, so clicking a prospect's name was a silent no-op. Rows in
     // #pros-tbody carry data-mlb-id="${p.mlb_id}" and data source is the
@@ -14152,7 +14176,7 @@ function renderTank(){
       <td class="col-rank-num" style="text-align:center;color:var(--text3);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600">${_showPoolRank ? (idx+1) : ''}</td>
       <!-- STATIC_ZONE_REORDER_V1 — Pos cell now before Player; col-zone-divider on Y!RANK. -->
       <td class="pos-cell col-pos">${posBadgesColumn(poolPositions, 'pool')}</td>
-      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'pool')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
+      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'tank')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
       <td class="team-cell col-team">${p.team||na}</td>
       <td class="stat-cell col-age">${decimalAge(p)}</td>
       <td class="stat-cell col-exp" style="text-align:right">${experienceLabel(p)}</td>
