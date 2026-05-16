@@ -101,6 +101,15 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif
 .hdr-dd-item.danger{color:var(--red)}
 .hdr-dd-item.danger:hover{background:#7f1d1d22}
 .hdr-status-strip{padding:0.4rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--turquoise2);display:flex;align-items:center;gap:14px;font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text3);letter-spacing:0.04em}
+/* HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — header for the Tank overlay. Matches main .header
+   gradient and padding so it reads as a real page header, not a strip. Logo is injected at
+   open-time by cloning the main .logo (avoids duplicating the 347 KB inline SVG). */
+.tank-header{background:linear-gradient(135deg,var(--header-grad-1) 0%,var(--header-grad-2) 50%,var(--header-grad-1) 100%);border-bottom:1px solid var(--turquoise2);padding:1.25rem 1.5rem;display:flex;align-items:center;gap:18px;flex-shrink:0}
+.tank-header-logo-slot{display:flex;align-items:center}
+.tank-header-logo-slot .logo{font-size:42px}
+.tank-header-logo-slot .logo-img{height:1.6em}
+.tank-header-title{font-family:'Bowlby One',sans-serif;font-size:32px;letter-spacing:0.06em;color:var(--gold);line-height:1;display:flex;align-items:center;gap:0.3em}
+.tank-header-sub{font-family:'Nunito Sans',sans-serif;font-size:10px;letter-spacing:0.2em;color:var(--turquoise);text-transform:uppercase;margin-left:auto}
 .hdr-status-strip .status-sep{opacity:0.5}
 .hdr-status-strip #count-badge{background:transparent;border:none;padding:0;color:var(--text3)}
 .hdr-status-strip #savant-indicator{padding:0;color:var(--text3)}
@@ -2007,6 +2016,15 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
 <div id="tank-clone-header"><table id="tank-clone-table" style="width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;"></table></div>
 
 <div class="pool-wrap" id="tank-wrap">
+
+  <!-- HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — Tank page header. Logo is cloned in at open-time
+       by openHoldingTank() so we don't duplicate the 347 KB inline SVG of the main page logo.
+       Backend-only — fans never see this overlay because the entry point is backend-only. -->
+  <div class="tank-header backend-only" id="tank-header">
+    <div class="tank-header-logo-slot" id="tank-header-logo-slot"></div>
+    <div class="tank-header-title">🪣 Holding Tank</div>
+    <div class="tank-header-sub">Matt's editorial bench</div>
+  </div>
 
   <!-- SCROLLING AREA — toolbar + content all scroll together, toolbar slides under main header -->
   <div class="tank-rows-scroll" id="tank-rows-scroll">
@@ -13767,6 +13785,21 @@ function openHoldingTank(){
   if(typeof prospectsActive !== 'undefined' && prospectsActive) closeProspects();
   // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — close Pool if it's open, so overlays don't stack.
   if(typeof poolActive !== 'undefined' && poolActive) closePlayerPool();
+  // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — inject the cloned main-page logo into the Tank's
+  // header slot, ONCE. Cloning the existing .logo node (instead of duplicating the 347 KB SVG
+  // in the source) keeps the page weight unchanged. The injected copy lives forever after the
+  // first open; subsequent opens are no-ops.
+  try {
+    const slot = document.getElementById('tank-header-logo-slot');
+    if(slot && !slot.firstChild){
+      const srcLogo = document.querySelector('.header .logo');
+      if(srcLogo){
+        const cloned = srcLogo.cloneNode(true);
+        cloned.querySelectorAll('[id]').forEach(el => el.removeAttribute('id')); // avoid duplicate IDs
+        slot.appendChild(cloned);
+      }
+    }
+  } catch(e){ console.warn('[tank] logo clone failed:', e); }
   document.querySelector('.toolbar').style.display = 'none';
   document.querySelector('.table-wrap').style.display = 'none';
   document.getElementById('dual-wrap').classList.remove('active');
