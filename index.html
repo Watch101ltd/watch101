@@ -449,12 +449,18 @@ body.day-mode .flame-warm{
    default — same trick as the day-mode flame fix: use :has() to defeat it so
    the glow can render past the box edge. */
 @keyframes must-watch-pulse {
-  0%   { text-shadow: 0 0 0 transparent; }
-  50%  { text-shadow: 0 0 12px #ef4444, 0 0 20px rgba(239,68,68,0.55); }
-  100% { text-shadow: 0 0 0 transparent; }
+  0%   { text-shadow: 0 0 0 transparent;
+         color: inherit; }
+  40%  { text-shadow: 0 0 8px #ffffff, 0 0 18px #ff3b3b, 0 0 32px #ff3b3b, 0 0 48px rgba(255,59,59,0.7);
+         color: #ffe5e5; }
+  60%  { text-shadow: 0 0 8px #ffffff, 0 0 18px #ff3b3b, 0 0 32px #ff3b3b, 0 0 48px rgba(255,59,59,0.7);
+         color: #ffe5e5; }
+  100% { text-shadow: 0 0 0 transparent;
+         color: inherit; }
 }
 .must-watch-flash{
   animation: must-watch-pulse 1.5s ease-in-out infinite;
+  will-change: text-shadow, color;
 }
 /* Let the glow halo escape the .name-cell clipping box (mirrors DAYMODE_FLAME_V2 trick) */
 tr td .name-cell:has(.must-watch-flash){
@@ -466,9 +472,14 @@ tr td .name-cell:has(.must-watch-flash){
 }
 /* Day-mode override — darker red so the glow shows against cool-gray background */
 @keyframes must-watch-pulse-daymode {
-  0%   { text-shadow: 0 0 0 transparent; }
-  50%  { text-shadow: 0 0 10px #dc2626, 0 0 16px rgba(220,38,38,0.45); }
-  100% { text-shadow: 0 0 0 transparent; }
+  0%   { text-shadow: 0 0 0 transparent;
+         color: inherit; }
+  40%  { text-shadow: 0 0 6px #ffffff, 0 0 14px #dc2626, 0 0 26px #dc2626, 0 0 38px rgba(220,38,38,0.6);
+         color: #b91c1c; }
+  60%  { text-shadow: 0 0 6px #ffffff, 0 0 14px #dc2626, 0 0 26px #dc2626, 0 0 38px rgba(220,38,38,0.6);
+         color: #b91c1c; }
+  100% { text-shadow: 0 0 0 transparent;
+         color: inherit; }
 }
 body.day-mode .must-watch-flash{
   animation: must-watch-pulse-daymode 1.5s ease-in-out infinite;
@@ -5445,6 +5456,15 @@ function _isMustWatchActive(p){
 function _mustWatchFlashClass(p){
   return _isMustWatchActive(p) ? ' must-watch-flash' : '';
 }
+// Acknowledge a must-watch player — stops the pulse for the rest of the session.
+// No-op if the player isn't actually must-watch or already acknowledged.
+function _dismissMustWatch(mlbId){
+  if(!mlbId) return;
+  var key = String(mlbId);
+  if(_mustWatchAcknowledged.has(key)) return;
+  _mustWatchAcknowledged.add(key);
+  if(typeof renderTable === 'function'){ renderTable(); }
+}
 
 // Render the Type-column chip(s) for one player. Reads p.type_tags (array of
 // tag IDs). Returns empty string if the player has no tags. Each chip carries
@@ -5611,6 +5631,13 @@ document.addEventListener('click', function(ev){
         ? chipOrStack
         : chipOrStack.closest('.type-stack');
       var mlbId = stack ? stack.getAttribute('data-mlb-id') : null;
+      // MUST_WATCH_FLASH_V1 — if the user clicked the 🚨 chip specifically,
+      // count it as acknowledgment and stop the pulse. Only fires when the
+      // actual clicked element is a .type-chip whose text is the 🚨 emoji.
+      if(mlbId && chipOrStack.classList.contains('type-chip') &&
+         (chipOrStack.textContent || '').trim() === '🚨'){
+        _dismissMustWatch(mlbId);
+      }
       if(!mlbId){ _hideTypeTagTooltip(); return; }
       var player = (Array.isArray(players) ? players : []).find(function(p){
         return p && String(p.mlb_id) === String(mlbId);
@@ -12573,6 +12600,8 @@ var PCT_CHART_STATS_PITCHER = [
 var PCT_CHART_STATS = PCT_CHART_STATS_HITTER;
 
 function openPlayerCard(e, p){
+  // MUST_WATCH_FLASH_V1 — row/name click counts as acknowledgment.
+  if(p && p.mlb_id){ _dismissMustWatch(p.mlb_id); }
   // --- BRIDGE: delegate to the full-screen Player Page overlay ---
   openPlayerPage(p);
   return;
