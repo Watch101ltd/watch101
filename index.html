@@ -15475,6 +15475,64 @@ document.addEventListener('keydown', function(e){
 
 
 <!-- ===================================================================== -->
+<!-- DROP_INDICATOR_V1 (May 17, 2026) — scaffolding only. Adds two hidden DOM -->
+<!-- elements + their CSS for the snap-to-gap insertion bar and the live      -->
+<!-- "→ Rank N" pill that will follow the cursor during drag-and-drop         -->
+<!-- reordering. No JS wiring in this push — Push 2 hooks them to dragStart/  -->
+<!-- dragOver/dragEnd, Push 3 adds the rank pill behavior, Push 4 polishes    -->
+<!-- edge cases. To preview styling without dragging, open DevTools and run:  -->
+<!--   document.getElementById('drop-indicator-bar').style.display = 'block'; -->
+<!--   document.getElementById('drop-indicator-bar').style.top = '300px';     -->
+<!--   document.getElementById('drop-indicator-bar').style.width = '800px';   -->
+<!--   document.getElementById('drop-indicator-pill').style.display = 'block';-->
+<!--   document.getElementById('drop-indicator-pill').textContent = '\u2192 Rank 51'; -->
+<!-- ===================================================================== -->
+<style id="drop-indicator-v1-styles">
+  /* The fat insertion bar — snaps into the gap between rows during drag.
+     position:absolute relative to the document so it floats above the
+     table without disrupting layout. pointer-events:none so it never
+     interferes with drag events on the rows underneath. */
+  #drop-indicator-bar {
+    position: absolute;
+    display: none;            /* hidden by default; JS toggles to 'block' */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 5px;
+    background: var(--gold, #ffc107);
+    box-shadow: 0 0 10px 2px rgba(255, 193, 7, 0.7);
+    border-radius: 3px;
+    pointer-events: none;
+    z-index: 9998;
+    transition: top 0.05s linear;  /* small smoothing so jumps aren't jarring */
+  }
+  /* The floating "→ Rank N" pill — follows the cursor a few px offset
+     so it doesn't hide what's underneath. Same z-index family as the bar. */
+  #drop-indicator-pill {
+    position: fixed;          /* fixed to viewport so it tracks the cursor cleanly */
+    display: none;            /* hidden by default; JS toggles to 'block' */
+    left: 0;
+    top: 0;
+    padding: 4px 10px;
+    background: var(--gold, #ffc107);
+    color: #000;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    z-index: 9999;
+    white-space: nowrap;
+    user-select: none;
+  }
+</style>
+<div id="drop-indicator-bar" aria-hidden="true"></div>
+<div id="drop-indicator-pill" aria-hidden="true"></div>
+<!-- /DROP_INDICATOR_V1 scaffolding -->
+
+<!-- ===================================================================== -->
 <!-- MOVEMENT_MODE_V1+V1.1 (April 30 2026 build, attached to index May 5 2026) -->
 <!--                                                                         -->
 <!-- Self-contained block: CSS + overlay HTML + IIFE script.                 -->
