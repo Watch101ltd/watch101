@@ -486,6 +486,37 @@ body.day-mode .must-watch-flash{
 }
 /* /MUST_WATCH_FLASH_V1 */
 
+/* TIER_DRAG_V1 (May 17, 2026) — Tier armed-state pulse glow. When a tier is
+   armed via the "Draggable as a group" checkbox in the Edit Tier modal, its
+   overlay bracket box pulses with a red halo (same energy as MUST_WATCH_FLASH_V1
+   but applied via box-shadow on the border, since the tier box has no text).
+   Default state is unarmed — pointer-events:none, no halo, click-through to
+   rows works as today. Armed adds pointer-events:auto and cursor:grab so the
+   user can grab the whole tier and drag it. */
+@keyframes tier-armed-pulse {
+  0%   { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
+  50%  { box-shadow: 0 0 14px #ff3b3b, 0 0 28px rgba(255,59,59,0.7), inset 0 0 10px rgba(255,59,59,0.35); }
+  100% { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
+}
+@keyframes tier-armed-pulse-daymode {
+  0%   { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
+  50%  { box-shadow: 0 0 12px #dc2626, 0 0 22px rgba(220,38,38,0.6), inset 0 0 8px rgba(220,38,38,0.3); }
+  100% { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
+}
+.tier-bracket-box.tier-armed {
+  animation: tier-armed-pulse 1.5s ease-in-out infinite;
+  pointer-events: auto !important;
+  cursor: grab;
+  will-change: box-shadow;
+}
+.tier-bracket-box.tier-armed:active {
+  cursor: grabbing;
+}
+body.day-mode .tier-bracket-box.tier-armed {
+  animation: tier-armed-pulse-daymode 1.5s ease-in-out infinite;
+}
+/* /TIER_DRAG_V1 */
+
 /* DAYMODE_BADGES_V1 (April 24, 2026) — day-mode overrides for position + injury badges.
    Night-mode badges use dark fill + bright text (perfect on black background).
    On the light gray day-mode background they read as heavy dark blobs. This block
