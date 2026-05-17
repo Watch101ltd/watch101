@@ -8396,6 +8396,173 @@ document.addEventListener('dragend',()=>{
   _hideDropIndicator();
 });
 
+/* DROP_INDICATOR_V1 Push 5 (May 17, 2026) — LEFT_MARGIN_DRIFT_FIX.
+   Problem: the table-wrap has ~8px left padding, and if Matt's cursor drifts
+   even a little past the left edge of the table while dragging, the browser
+   shows the no-drop cursor and a release there cancels the drag. Matt does
+   hundreds of re-ranks per session and this caused constant cancel-by-accident.
+   Fix: a document-level dragover listener that re-routes the drag back onto
+   the nearest row when the cursor is to the LEFT of the main table. The top
+   and bottom cancel hatches are preserved generously (80px above first row
+   or below last row still cancels normally).
+   Scope: ONLY the main-table single-player drag (dragSrcIdx !== null) and
+   tier drag (_tierDragPayload). Pool/Tank/Leaders/Prospects use their own
+   tables and listeners — untouched. */
+(function _wireLeftMarginDriftFix(){
+  var CANCEL_ZONE_PX = 80; // distance above/below the list before we let the cancel through
+
+  document.addEventListener('dragover', function(e){
+    // Only act when a main-table drag is actually in progress.
+    var isSingle = (typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null);
+    var isTier   = (typeof _tierDragPayload !== 'undefined' && _tierDragPayload);
+    if(!isSingle && !isTier) return;
+
+    var tbl = document.getElementById('main-table');
+    if(!tbl) return;
+    var tblRect = tbl.getBoundingClientRect();
+
+    // If cursor is NOT left of the table, do nothing — normal row-level handlers
+    // will fire and handle the dragOver correctly.
+    if(e.clientX >= tblRect.left) return;
+
+    // Find the row whose vertical range contains the cursor's y-coordinate.
+    // Walk the visible <tr> rows in the main table's tbody.
+    var tbody = document.getElementById('tbody');
+    if(!tbody) return;
+    var rows = tbody.querySelectorAll('tr[data-idx]');
+    if(rows.length === 0) return;
+
+    var firstRect = rows[0].getBoundingClientRect();
+    var lastRect  = rows[rows.length - 1].getBoundingClientRect();
+
+    // Cancel hatch: cursor is well above first row or well below last row.
+    if(e.clientY < firstRect.top - CANCEL_ZONE_PX) return;
+    if(e.clientY > lastRect.bottom + CANCEL_ZONE_PX) return;
+
+    // Find the row containing the cursor's y. If above first row but within
+    // the cancel buffer, snap to first row. Same for below last row.
+    var targetRow = null;
+    if(e.clientY < firstRect.top) {
+      targetRow = rows[0];
+    } else if(e.clientY > lastRect.bottom) {
+      targetRow = rows[rows.length - 1];
+    } else {
+      for(var i = 0; i < rows.length; i++){
+        var r = rows[i].getBoundingClientRect();
+        if(e.clientY >= r.top && e.clientY <= r.bottom){ targetRow = rows[i]; break; }
+      }
+    }
+    if(!targetRow) return;
+
+    // We have a valid drop target. Prevent default so the browser stops
+    // showing the no-drop cursor, and re-route to the row's dragOver handler.
+    e.preventDefault();
+    if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+
+    var rowIdx = parseInt(targetRow.getAttribute('data-idx'), 10);
+    if(isNaN(rowIdx)) return;
+
+    // Synthesize a dragOver on the target row. We can't fully forge an event,
+    // but we can manually do what dragOver/tbody-dragover would do: position
+    // the bar + pill based on cursor's vertical position relative to the row.
+    var rect = targetRow.getBoundingClientRect();
+    var midpoint = rect.top + (rect.height / 2);
+    var above = (e.clientY < midpoint);
+    _dropAbove = above;
+    _positionDropIndicatorBar(targetRow, above);
+
+    // Pill: single-player path uses _computeSinglePlayerDestRank; tier path
+    // uses the tier-specific math from the tbody-dragover interceptor.
+    if(isTier){
+      try {
+        var tgtIdx = rowIdx;
+        var srcStart = _tierDragPayload.startIdx;
+        var srcEnd   = _tierDragPayload.endIdx;
+        var tierLen  = (srcEnd - srcStart + 1);
+        var insertAt = above ? tgtIdx : tgtIdx + 1;
+        if(srcStart < insertAt) insertAt -= tierLen;
+        var destRank = insertAt + 1;
+        if(destRank < 1) destRank = 1;
+        _showDropIndicatorPill(e.clientX, e.clientY, destRank);
+      } catch(_){}
+    } else {
+      try {
+        // For single-player drag, dragSrcIdx is an index into the FILTERED list.
+        // We need the full-players index for both src and target.
+        var list = getFiltered();
+        if(list && list[dragSrcIdx] && list[rowIdx]){
+          var srcId = list[dragSrcIdx].id;
+          var tgtId = list[rowIdx].id;
+          var srcIdxFull = players.findIndex(function(p){ return p && p.id === srcId; });
+          var tgtIdxFull = players.findIndex(function(p){ return p && p.id === tgtId; });
+          if(srcIdxFull >= 0 && tgtIdxFull >= 0){
+            var destRank2 = _computeSinglePlayerDestRank(srcIdxFull, tgtIdxFull, above);
+            _showDropIndicatorPill(e.clientX, e.clientY, destRank2);
+          }
+        }
+      } catch(_){}
+    }
+  }, false);
+
+  // Mirror the drop handling: if the user releases the mouse while the cursor
+  // is to the left of the table (in the rescued zone), route the drop to the
+  // appropriate handler. Without this, releasing in the left margin still
+  // does nothing — the rescue dragover would set up the visuals but the drop
+  // event itself would have no row-level handler to fire.
+  document.addEventListener('drop', function(e){
+    var isSingle = (typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null);
+    var isTier   = (typeof _tierDragPayload !== 'undefined' && _tierDragPayload);
+    if(!isSingle && !isTier) return;
+
+    var tbl = document.getElementById('main-table');
+    if(!tbl) return;
+    var tblRect = tbl.getBoundingClientRect();
+    if(e.clientX >= tblRect.left) return; // not in rescue zone — let normal handlers run
+
+    var tbody = document.getElementById('tbody');
+    if(!tbody) return;
+    var rows = tbody.querySelectorAll('tr[data-idx]');
+    if(rows.length === 0) return;
+
+    var firstRect = rows[0].getBoundingClientRect();
+    var lastRect  = rows[rows.length - 1].getBoundingClientRect();
+    if(e.clientY < firstRect.top - CANCEL_ZONE_PX) return; // beyond cancel buffer — let it cancel
+    if(e.clientY > lastRect.bottom + CANCEL_ZONE_PX) return;
+
+    var targetRow = null;
+    if(e.clientY < firstRect.top) {
+      targetRow = rows[0];
+    } else if(e.clientY > lastRect.bottom) {
+      targetRow = rows[rows.length - 1];
+    } else {
+      for(var i = 0; i < rows.length; i++){
+        var r = rows[i].getBoundingClientRect();
+        if(e.clientY >= r.top && e.clientY <= r.bottom){ targetRow = rows[i]; break; }
+      }
+    }
+    if(!targetRow) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    var rowIdx = parseInt(targetRow.getAttribute('data-idx'), 10);
+    if(isNaN(rowIdx)) return;
+
+    if(isTier){
+      // Mirror the tbody interceptor's behavior.
+      _hideDropIndicator();
+      tierDrop(rowIdx);
+    } else {
+      // Mirror the single-player drop() function. We can't forge the event
+      // perfectly, so we set currentTarget to the row and call drop directly.
+      // The drop() function only reads e.currentTarget.classList.remove
+      // (harmless on any element) and idx. We pass the rowIdx.
+      Object.defineProperty(e, 'currentTarget', { value: targetRow, configurable: true });
+      drop(e, rowIdx);
+    }
+  }, true); // capture phase so we run BEFORE any other drop handler
+})();
+/* /DROP_INDICATOR_V1 Push 5 LEFT_MARGIN_DRIFT_FIX */
+
 // Edge auto-scroll during drag — scrolls page when cursor nears top/bottom of viewport.
 // Works for any HTML5 drag (Main List rows, personal-list rows, etc).
 // Uses setInterval rather than rAF because some browsers throttle rAF during drag ops.
