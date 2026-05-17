@@ -439,6 +439,42 @@ body.day-mode .flame-warm{
 }
 /* /DAYMODE_FLAME_V2 */
 
+/* MUST_WATCH_FLASH_V1 (May 16, 2026 night) — Pulse glow on player name when the
+   🚨 Must Watch type tag is checked AND the fan hasn't acknowledged this player
+   yet this session (acknowledged = clicked the row, the name, or the 🚨 emoji
+   specifically). The glow is a soft red-orange halo that fades in/out on a 1.5s
+   cycle. Name text color stays default; only the halo pulses. Day mode uses a
+   darker red (#dc2626) that reads against the cool-gray background; night mode
+   uses #ef4444 against black. The .name-cell parent has overflow:hidden by
+   default — same trick as the day-mode flame fix: use :has() to defeat it so
+   the glow can render past the box edge. */
+@keyframes must-watch-pulse {
+  0%   { text-shadow: 0 0 0 transparent; }
+  50%  { text-shadow: 0 0 12px #ef4444, 0 0 20px rgba(239,68,68,0.55); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+.must-watch-flash{
+  animation: must-watch-pulse 1.5s ease-in-out infinite;
+}
+/* Let the glow halo escape the .name-cell clipping box (mirrors DAYMODE_FLAME_V2 trick) */
+tr td .name-cell:has(.must-watch-flash){
+  overflow:visible !important;
+}
+.player-col tr td .name-cell:has(.must-watch-flash){
+  overflow:visible !important;
+  text-overflow:clip !important;
+}
+/* Day-mode override — darker red so the glow shows against cool-gray background */
+@keyframes must-watch-pulse-daymode {
+  0%   { text-shadow: 0 0 0 transparent; }
+  50%  { text-shadow: 0 0 10px #dc2626, 0 0 16px rgba(220,38,38,0.45); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+body.day-mode .must-watch-flash{
+  animation: must-watch-pulse-daymode 1.5s ease-in-out infinite;
+}
+/* /MUST_WATCH_FLASH_V1 */
+
 /* DAYMODE_BADGES_V1 (April 24, 2026) — day-mode overrides for position + injury badges.
    Night-mode badges use dark fill + bright text (perfect on black background).
    On the light gray day-mode background they read as heavy dark blobs. This block
@@ -2748,6 +2784,11 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
 
 <script>
 let players = [];
+
+// MUST_WATCH_FLASH_V1 (May 16, 2026 night) — Session-only Set of mlb_ids the fan
+// has acknowledged (clicked row / name / 🚨 emoji specifically). Lives in JS
+// memory only — page refresh resets it so the alert state is fresh every visit.
+let _mustWatchAcknowledged = new Set();
 const MAX_PLAYERS = 101;
 
 // TIERS_V1 (May 14, 2026) — Phase B data model. currentTiers parallels
@@ -5389,6 +5430,22 @@ function _typeTagById(id){
   return null;
 }
 
+// MUST_WATCH_FLASH_V1 (May 16, 2026 night) — Pulse-glow helpers. The pulse fires
+// only when the player has the must_watch tag AND the fan hasn't acknowledged
+// them this session. The class string returned by _mustWatchFlashClass is meant
+// to be concatenated directly into the renderTable() row-builder template after
+// flameClass(p), so the leading space matters.
+function _isMustWatchActive(p){
+  if(!p || !Array.isArray(p.type_tags)) return false;
+  if(p.type_tags.indexOf('must_watch') === -1) return false;
+  var mid = p.mlb_id || '';
+  if(_mustWatchAcknowledged.has(mid)) return false;
+  return true;
+}
+function _mustWatchFlashClass(p){
+  return _isMustWatchActive(p) ? ' must-watch-flash' : '';
+}
+
 // Render the Type-column chip(s) for one player. Reads p.type_tags (array of
 // tag IDs). Returns empty string if the player has no tags. Each chip carries
 // a hover tooltip with the human label.
@@ -6191,7 +6248,7 @@ function renderTable(){
       <td class="col-drag"><span class="drag-handle backend-only">⠿</span></td>
       <td class="col-rank"><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
       <td class="pos-cell col-pos">${posBadgesColumn(p.positions)}</td>
-      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}">${_renderLevelChip(p, 'watch')}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
+      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}${_mustWatchFlashClass(p)}">${_renderLevelChip(p, 'watch')}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
       <td class="stat-cell team-cell col-team">${p.team||na}</td>
       <td class="stat-cell col-age">${decimalAge(p)}</td>
       <td class="stat-cell col-exp" style="text-align:right">${experienceLabel(p)}</td>
@@ -15042,138 +15099,4 @@ document.addEventListener('keydown', function(e){
 <style id="movement-mode-styles">
 .ppo-block-h2-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
 .ppo-block-h2-row h2 { margin: 0; flex: 1 1 auto; }
-.ppo-movement-mode-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: linear-gradient(180deg, rgba(255,193,7,0.12), rgba(255,193,7,0.06)); border: 1px solid var(--gold, #ffc107); border-radius: 8px; color: var(--gold, #ffc107); font-family: 'Nunito Sans', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: background .15s ease, transform .12s ease, box-shadow .15s ease; }
-.ppo-movement-mode-btn:hover:not(:disabled) { background: linear-gradient(180deg, rgba(255,193,7,0.22), rgba(255,193,7,0.10)); box-shadow: 0 0 16px rgba(255,193,7,0.35); transform: translateY(-1px); }
-.ppo-movement-mode-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.ppo-mm-icon { font-size: 11px; line-height: 1; }
-.ppo-mm-label { letter-spacing: 0.06em; }
-body.day-mode .ppo-movement-mode-btn { background: linear-gradient(180deg, rgba(180,120,0,0.08), rgba(180,120,0,0.04)); border-color: #b87a00; color: #b87a00; }
-body.day-mode .ppo-movement-mode-btn:hover:not(:disabled) { background: linear-gradient(180deg, rgba(180,120,0,0.18), rgba(180,120,0,0.08)); box-shadow: 0 0 16px rgba(180,120,0,0.35); }
-
-#movement-mode-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 10001; font-family: 'Nunito Sans', sans-serif; color: var(--text, #e8e8e8); overflow: hidden; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-#movement-mode-overlay.mm-open { display: flex; flex-direction: column; }
-.mm-header { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--border, #333); background: linear-gradient(180deg, rgba(20,20,28,0.95), rgba(20,20,28,0.75)); }
-.mm-title-block { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.mm-title { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold, #ffc107); }
-.mm-subtitle { font-size: 12px; color: var(--text2, #aaa); }
-.mm-ticker { display: flex; flex-direction: column; align-items: center; padding: 4px 18px; background: rgba(0,0,0,0.45); border: 1px solid var(--gold, #ffc107); border-radius: 10px; min-width: 200px; }
-.mm-ticker-date { font-size: 11px; color: var(--text2, #aaa); letter-spacing: 0.05em; text-transform: uppercase; }
-.mm-ticker-rank { font-size: 22px; font-weight: 800; color: var(--gold, #ffc107); line-height: 1.1; font-variant-numeric: tabular-nums; }
-.mm-close-btn { flex: 0 0 auto; background: transparent; color: var(--text2, #aaa); border: 1px solid var(--border, #444); border-radius: 8px; width: 36px; height: 36px; font-size: 18px; font-weight: 700; cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease; }
-.mm-close-btn:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: #777; }
-.mm-board-wrap { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; position: relative; padding: 12px 24px 24px; scroll-behavior: smooth; }
-.mm-board { position: relative; max-width: 720px; margin: 0 auto; }
-.mm-row { display: grid; grid-template-columns: 56px 1fr 80px 100px; align-items: center; gap: 12px; padding: 6px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; line-height: 1.3; height: 36px; box-sizing: border-box; transition: background .2s ease, opacity .2s ease; }
-.mm-row:hover { background: rgba(255,255,255,0.02); }
-.mm-row .mm-rank-num { font-weight: 800; color: var(--text2, #aaa); font-variant-numeric: tabular-nums; text-align: right; }
-.mm-row .mm-name { color: var(--text, #e8e8e8); font-weight: 600; }
-.mm-row .mm-team { color: var(--text2, #aaa); font-size: 12px; text-align: right; }
-.mm-row .mm-pos { color: var(--text3, #888); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
-.mm-row.mm-ghost { opacity: 0.35; border-left: 2px dashed var(--gold, #ffc107); padding-left: 12px; }
-.mm-row.mm-ghost .mm-name { font-style: italic; color: var(--text2, #aaa); }
-.mm-focal { position: absolute; left: 0; right: 0; top: 0; height: 36px; display: grid; grid-template-columns: 56px 1fr 80px 100px; align-items: center; gap: 12px; padding: 6px 14px; box-sizing: border-box; background-color: #14141c; background-image: linear-gradient(90deg, rgba(255,193,7,0.22), rgba(255,193,7,0.08)); border: 2px solid var(--gold, #ffc107); border-radius: 8px; box-shadow: 0 0 24px rgba(255,193,7,0.45), 0 6px 22px rgba(0,0,0,0.55); z-index: 5; pointer-events: none; transition: transform 0.55s cubic-bezier(0.4, 0.0, 0.2, 1.0); will-change: transform; }
-.mm-focal .mm-rank-num { color: var(--gold, #ffc107); font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
-.mm-focal .mm-name { color: #fff; font-weight: 800; }
-.mm-focal .mm-team { color: var(--gold, #ffc107); font-size: 13px; font-weight: 700; }
-.mm-focal .mm-pos { color: var(--text2, #aaa); }
-.mm-footer { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 14px 24px 18px; border-top: 1px solid var(--border, #333); background: linear-gradient(0deg, rgba(20,20,28,0.95), rgba(20,20,28,0.75)); }
-.mm-ctrl-btn { background: transparent; border: 1px solid var(--border, #444); border-radius: 8px; color: var(--text, #e8e8e8); padding: 8px 16px; font-family: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease; }
-.mm-ctrl-btn:hover { background: rgba(255,255,255,0.05); border-color: #777; }
-.mm-ctrl-btn.primary { color: var(--gold, #ffc107); border-color: var(--gold, #ffc107); }
-.mm-ctrl-btn.primary:hover { background: rgba(255,193,7,0.12); }
-.mm-empty-state { padding: 40px 20px; text-align: center; color: var(--text2, #aaa); font-size: 14px; line-height: 1.5; }
-</style>
-
-<div id="movement-mode-overlay" role="dialog" aria-modal="true" aria-label="Movement Mode — player rank history replay" onclick="if(event.target===this)closeMovementMode()">
-  <div class="mm-header">
-    <div class="mm-title-block">
-      <div class="mm-title">&#9654; Movement Mode</div>
-      <div class="mm-subtitle" id="mm-subtitle">Replaying rank movement&hellip;</div>
-    </div>
-    <div class="mm-ticker" id="mm-ticker" aria-live="polite">
-      <div class="mm-ticker-date" id="mm-ticker-date">&mdash;</div>
-      <div class="mm-ticker-rank" id="mm-ticker-rank">#&mdash;</div>
-    </div>
-    <button class="mm-close-btn" type="button" onclick="closeMovementMode()" title="Close (ESC)">&times;</button>
-  </div>
-  <div class="mm-board-wrap" id="mm-board-wrap">
-    <div class="mm-board" id="mm-board"></div>
-  </div>
-  <div class="mm-footer">
-    <button class="mm-ctrl-btn primary" type="button" id="mm-replay-btn" onclick="_mmReplay()">&#8635; Replay</button>
-    <button class="mm-ctrl-btn" type="button" onclick="closeMovementMode()">Close</button>
-  </div>
-</div>
-
-<script>
-/* MOVEMENT_MODE_V1+V1.1 — production wiring.
-   openMovementMode() reads the focal mlbId from #ppo-movement-mode-btn's dataset
-   (stamped by renderRankHistory), looks up the player in the live `players`
-   array, pulls their notes-history filtered by currentListId, then animates the
-   focal card between historical rank positions while the rest of the leaderboard
-   stays frozen at the current standings (Option (i) per the April 21 spec). */
-(function(){
-  'use strict';
-  var MM_STEP_MS = 800;
-  var MM_ROW_HEIGHT = 36;
-  var MM_MAX_ROWS = 101;
-  var _mmTimers = [];
-  var _mmFocalPlayer = null;
-  var _mmHistory = [];
-
-  function _mmGetPlayer(mlbId){
-    if(typeof players === 'undefined' || !Array.isArray(players)) return null;
-    for(var i=0; i<players.length; i++){
-      if(players[i] && String(players[i].mlb_id) === String(mlbId)) return players[i];
-    }
-    return null;
-  }
-  function _mmGetHistory(mlbId){
-    if(typeof window.PLAYER_NOTES_HISTORY === 'undefined' || !window.PLAYER_NOTES_HISTORY) return [];
-    var raw = window.PLAYER_NOTES_HISTORY[String(mlbId)];
-    if(!Array.isArray(raw)) return [];
-    var activeListId = (typeof currentListId !== 'undefined' && currentListId) ? String(currentListId).toLowerCase() : null;
-    var pts = [];
-    for(var i=0; i<raw.length; i++){
-      var h = raw[i];
-      if(!h || !h.date || h.rank == null) continue;
-      var entryListId = h.list_id ? String(h.list_id).toLowerCase() : null;
-      if(activeListId && entryListId && entryListId !== activeListId) continue;
-      pts.push({date: String(h.date), time: h.time ? String(h.time) : '0000', rank: Number(h.rank)});
-    }
-    pts.sort(function(a,b){
-      if(a.date !== b.date) return a.date < b.date ? -1 : 1;
-      return a.time < b.time ? -1 : a.time > b.time ? 1 : 0;
-    });
-    return pts;
-  }
-  function _mmEscape(s){
-    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
-  function _mmFirstPos(p){
-    if(!p) return '';
-    var raw = p.positions || p.eligible_positions || p.primaryPos || '';
-    if(Array.isArray(raw)) raw = raw.join(',');
-    return String(raw).split(/[,/]/)[0].trim();
-  }
-  function _mmRowHtml(p, isFocalSlot){
-    var pos = _mmFirstPos(p);
-    return '<div class="mm-row" data-rank="' + p.rank + '">'
-         + '<span class="mm-rank-num">' + _mmEscape(p.rank) + '</span>'
-         + '<span class="mm-name">' + _mmEscape(p.name) + '</span>'
-         + '<span class="mm-team">' + _mmEscape(p.team || p.mlb_team || '') + '</span>'
-         + '<span class="mm-pos">' + _mmEscape(pos) + '</span>'
-         + '</div>';
-  }
-  function _mmFocalHtml(p, rank){
-    var pos = _mmFirstPos(p);
-    return '<span class="mm-rank-num">#' + _mmEscape(rank) + '</span>'
-         + '<span class="mm-name">' + _mmEscape(p.name) + '</span>'
-         + '<span class="mm-team">' + _mmEscape(p.team || p.mlb_team || '') + '</span>'
-         + '<span class="mm-pos">' + _mmEscape(pos) + '</span>';
-  }
-  function _mmRender(){
-    var board = document.getElementById('mm-board');
-    if(!board || !_mmFocalPlayer) return false;
-    if(typeof players === 'undefined' || !Array.isArray(players)){
-      board.innerHTML = '<div
+.ppo-movement-mode-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: linear-gradient(180deg, rgba(255,193,7,0.12), rgba(255,193,7,0.06)); border: 1px solid var(--gold, #ffc107); border-radius: 8px; color: var(--gold, #ffc107); font-family: 'Nunito Sans', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: background .15s ease, transform .12s ease, box-shadow .15s 
