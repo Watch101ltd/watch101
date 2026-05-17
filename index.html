@@ -5449,7 +5449,11 @@ function _typeTagById(id){
 function _isMustWatchActive(p){
   if(!p || !Array.isArray(p.type_tags)) return false;
   if(p.type_tags.indexOf('must_watch') === -1) return false;
-  var mid = p.mlb_id || '';
+  // MUST_WATCH_FLASH_V1 type-fix: mlb_id is a number on player records, but
+  // _dismissMustWatch stores String(mlbId) in the Set. Coerce here so the
+  // .has() check matches the stored key. Without this, the pulse never stops.
+  var mid = (p.mlb_id !== undefined && p.mlb_id !== null) ? String(p.mlb_id) : '';
+  if(!mid) return false;
   if(_mustWatchAcknowledged.has(mid)) return false;
   return true;
 }
