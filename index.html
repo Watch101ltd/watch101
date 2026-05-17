@@ -8137,10 +8137,20 @@ function reorderRanks(){
 let dragUndoStack = [];
 const DRAG_UNDO_LIMIT = 20;
 
+/* UNDO_REMOVAL_V1 (May 17, 2026) — snapshot upgraded from a flat ID array
+   to a richer object so undo can restore not just drag reorders but also
+   player removals (X-button → Holding Tank). Drag-drop callers don't need
+   to change — they still call snapshotForUndo() with no args. */
 function snapshotForUndo(){
-  // We only need the ID order — player data itself doesn't change on a drag,
-  // just their positions. Keeps memory light even for long sessions.
-  dragUndoStack.push(players.map(p => p.id));
+  // Shallow copies of the two arrays. Player OBJECTS are shared by reference
+  // because their data doesn't change on drag/remove — only WHICH array they
+  // live in and WHERE in that array. Copying the arrays (not the contents)
+  // is the cheap, correct move.
+  dragUndoStack.push({
+    type: 'reorder',
+    players: players.slice(),
+    holdingTank: (typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)) ? _holdingTank.slice() : []
+  });
   if(dragUndoStack.length > DRAG_UNDO_LIMIT) dragUndoStack.shift();
   updateUndoButton();
 }
@@ -8149,10 +8159,15 @@ async function undoLastMove(){
   if(_blockIfReadOnly('undoLastMove')) return;
   if(dragUndoStack.length === 0) return;
   const snap = dragUndoStack.pop();
-  // Rebuild players array in the snapshotted order
-  const byId = {};
-  players.forEach(p => byId[p.id] = p);
-  players = snap.map(id => byId[id]).filter(Boolean);
+  // UNDO_REMOVAL_V1 — snap is now {type, players, holdingTank}.
+  // Restore both arrays from the snapshot.
+  if(snap && Array.isArray(snap.players)){
+    players = snap.players.slice();
+    if(Array.isArray(snap.holdingTank) && typeof _holdingTank !== 'undefined'){
+      _holdingTank = snap.holdingTank.slice();
+      if(typeof saveHoldingTank === 'function') saveHoldingTank();
+    }
+  }
   reorderRanks();
   renderTable();
   updateUndoButton();
