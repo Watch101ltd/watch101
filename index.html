@@ -2531,6 +2531,15 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <select id="tier-end"><option value="">Select…</option></select>
       </div>
     </div>
+    <!-- TIER_DRAG_V1 (May 17, 2026) — Edit-mode-only checkbox. Ticking it
+         arms the tier as draggable-as-a-group; modal auto-closes on tick.
+         Hidden in Create mode (you can't arm a tier that doesn't exist yet). -->
+    <div id="tier-drag-row" style="display:none;margin-top:14px;padding:10px 12px;border-radius:8px;background:rgba(255,59,59,0.08);border:1px solid rgba(255,59,59,0.25);font-family:'Nunito Sans',sans-serif">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="tier-drag-checkbox" style="width:16px;height:16px;cursor:pointer;accent-color:#ef4444" onchange="_onTierDragCheckboxChanged()">
+        <span><strong>Draggable as a group</strong> — tick this, then drop the whole tier somewhere new on the list. Auto-disarms after the drop.</span>
+      </label>
+    </div>
     <div id="tier-error" style="display:none;color:var(--red);font-size:12px;font-family:'Nunito Sans',sans-serif;margin-bottom:8px"></div>
     <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center">
       <!-- TIERS_V1 (Phase E) — Delete button is left-aligned and only
@@ -5720,6 +5729,10 @@ function _tierPopulateForm(tierToEdit){
   if(nameEl)  nameEl.value  = '';
   if(colorEl) colorEl.value = '';
   if(errEl){  errEl.style.display = 'none'; errEl.textContent = ''; }
+  // TIER_DRAG_V1 — always reset the "Draggable as a group" checkbox unticked
+  // when the modal opens. Never carry over an armed state from a previous open.
+  var dragCb = document.getElementById('tier-drag-checkbox');
+  if(dragCb) dragCb.checked = false;
   document.querySelectorAll('#tier-color-swatches .tier-swatch.selected')
     .forEach(function(b){ b.classList.remove('selected'); });
 
@@ -5753,6 +5766,10 @@ function _tierConfigureMode(isEdit){
   if(title)   title.textContent   = isEdit ? '🏷️ Edit Tier' : '🏷️ Create a Tier';
   if(saveBtn) saveBtn.textContent = isEdit ? 'Save Changes' : 'Create Tier';
   if(delBtn)  delBtn.style.display = isEdit ? '' : 'none';
+  // TIER_DRAG_V1 — show the "Draggable as a group" row only when editing.
+  // No point arming a tier that doesn't exist yet.
+  var dragRow = document.getElementById('tier-drag-row');
+  if(dragRow) dragRow.style.display = isEdit ? '' : 'none';
 }
 
 function openCreateTierModal(){
@@ -5890,6 +5907,17 @@ function closeCreateTierModal(){
     // doesn't accidentally inherit edit mode.
     _tierEditingId = null;
   } catch(e){ console.warn('[TIERS_V1] closeCreateTierModal failed:', e); }
+}
+
+// TIER_DRAG_V1 (May 17, 2026) — Push 2 stub. Push 3 will replace this body
+// with the real armTier()/disarmTier() wiring. For now we just log that the
+// checkbox was toggled so we can verify the wiring round-trips correctly.
+function _onTierDragCheckboxChanged(){
+  try {
+    var cb = document.getElementById('tier-drag-checkbox');
+    var ticked = !!(cb && cb.checked);
+    console.log('[TIER_DRAG_V1] checkbox changed - ticked:', ticked, ' editingTierId:', _tierEditingId);
+  } catch(e){ console.warn('[TIER_DRAG_V1] _onTierDragCheckboxChanged failed:', e); }
 }
 
 // Phase E — delete the tier currently being edited. Confirms before
