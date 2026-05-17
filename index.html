@@ -5909,16 +5909,254 @@ function closeCreateTierModal(){
   } catch(e){ console.warn('[TIERS_V1] closeCreateTierModal failed:', e); }
 }
 
-// TIER_DRAG_V1 (May 17, 2026) — Push 2 stub. Push 3 will replace this body
-// with the real armTier()/disarmTier() wiring. For now we just log that the
-// checkbox was toggled so we can verify the wiring round-trips correctly.
+// TIER_DRAG_V1 (May 17, 2026) — Push 3 full wiring. Tick checkbox -> close
+// modal -> arm the tier (pulse halo + draggable). Drop or any disarm path
+// returns us to the default passive bracket state.
+//
+// Session-only state: which tier is currently armed (id), and the players
+// inside that tier captured at dragstart time so the drop knows what to move.
+let _armedTierId = null;
+let _tierDragPayload = null;   // { tierId, playerIds: [...] } during a drag
+
 function _onTierDragCheckboxChanged(){
   try {
     var cb = document.getElementById('tier-drag-checkbox');
     var ticked = !!(cb && cb.checked);
-    console.log('[TIER_DRAG_V1] checkbox changed - ticked:', ticked, ' editingTierId:', _tierEditingId);
+    if(!ticked) return;            // unticking does nothing — modal stays open
+    var tid = _tierEditingId;
+    if(!tid){ console.warn('[TIER_DRAG_V1] checkbox ticked with no editingTierId — ignoring'); return; }
+    closeCreateTierModal();        // auto-close per Question 2 = B
+    armTier(tid);
   } catch(e){ console.warn('[TIER_DRAG_V1] _onTierDragCheckboxChanged failed:', e); }
 }
+
+// Find the tier box DOM element by id. Returns null if not currently painted
+// (e.g. table is sorted/filtered so brackets are hidden).
+function _tierGetBoxEl(tierId){
+  return document.querySelector('.tier-bracket-box[data-tier-id="' + String(tierId).replace(/"/g,'\\"') + '"]');
+}
+
+function armTier(tierId){
+  if(_blockIfReadOnly('armTier')) return;
+  if(!tierId) return;
+  // If a different tier is already armed, disarm it first — only one at a time.
+  if(_armedTierId && _armedTierId !== tierId) disarmTier();
+  var box = _tierGetBoxEl(tierId);
+  if(!box){
+    console.warn('[TIER_DRAG_V1] cannot arm — tier box not in DOM (list filtered or sorted?):', tierId);
+    alert('Cannot arm this tier right now — make sure the list is in its default rank order (no sort, filter, or search active), then try again.');
+    return;
+  }
+  _armedTierId = tierId;
+  box.classList.add('tier-armed');
+  box.setAttribute('draggable', 'true');
+  // Attach drag handlers. We do this with addEventListener so disarmTier
+  // can remove them cleanly (inline ondragstart="" can't be removed by name).
+  box._tdv1_ondragstart = function(e){ tierDragStart(e, tierId); };
+  box._tdv1_ondragend   = function(e){ tierDragEnd(e); };
+  box.addEventListener('dragstart', box._tdv1_ondragstart);
+  box.addEventListener('dragend',   box._tdv1_ondragend);
+  console.log('[TIER_DRAG_V1] armed:', tierId);
+}
+
+function disarmTier(){
+  if(!_armedTierId) return;
+  var box = _tierGetBoxEl(_armedTierId);
+  if(box){
+    box.classList.remove('tier-armed');
+    box.removeAttribute('draggable');
+    if(box._tdv1_ondragstart) box.removeEventListener('dragstart', box._tdv1_ondragstart);
+    if(box._tdv1_ondragend)   box.removeEventListener('dragend',   box._tdv1_ondragend);
+    box._tdv1_ondragstart = null;
+    box._tdv1_ondragend = null;
+  }
+  console.log('[TIER_DRAG_V1] disarmed:', _armedTierId);
+  _armedTierId = null;
+  _tierDragPayload = null;
+}
+
+// Capture the players currently inside the tier's range. Stash them so the
+// drop handler can move them together. We capture by mlb_id (stable across
+// rerenders) rather than array index (shifts during splices).
+function tierDragStart(e, tierId){
+  try {
+    var tier = (Array.isArray(currentTiers) ? currentTiers : []).find(function(t){ return t && t.id === tierId; });
+    if(!tier){ console.warn('[TIER_DRAG_V1] dragstart — tier not found:', tierId); return; }
+    var startIdx = players.findIndex(function(p){ return p && String(p.mlb_id) === String(tier.start_mlb_id); });
+    var endIdx   = players.findIndex(function(p){ return p && String(p.mlb_id) === String(tier.end_mlb_id); });
+    if(startIdx < 0 || endIdx < 0 || endIdx < startIdx){
+      console.warn('[TIER_DRAG_V1] dragstart — invalid range, aborting drag');
+      e.preventDefault();
+      return;
+    }
+    var ids = [];
+    for(var i = startIdx; i <= endIdx; i++) ids.push(players[i].mlb_id);
+    _tierDragPayload = { tierId: tierId, playerIds: ids, startIdx: startIdx, endIdx: endIdx };
+    // dataTransfer is required for HTML5 drag to actually fire on some browsers.
+    if(e.dataTransfer){
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', 'tier:' + tierId); } catch(_){}
+    }
+    console.log('[TIER_DRAG_V1] dragstart — tier', tierId, 'players:', ids.length);
+  } catch(err){
+    console.warn('[TIER_DRAG_V1] tierDragStart failed:', err);
+  }
+}
+
+function tierDragEnd(e){
+  // If drag was cancelled (Esc, dropped on nothing), still disarm.
+  // If drag succeeded, drop handler already called disarmTier — this is a no-op.
+  if(_armedTierId) disarmTier();
+}
+
+// Given a player index in players[], return the tierId of any OTHER tier
+// (not the one being dragged) whose range contains that index. Used to
+// reject drops that would land inside another tier.
+function _tierIndexInOtherTier(idx, excludeTierId){
+  if(!Array.isArray(currentTiers)) return null;
+  for(var i = 0; i < currentTiers.length; i++){
+    var t = currentTiers[i];
+    if(!t || t.id === excludeTierId) continue;
+    var sIdx = players.findIndex(function(p){ return p && String(p.mlb_id) === String(t.start_mlb_id); });
+    var eIdx = players.findIndex(function(p){ return p && String(p.mlb_id) === String(t.end_mlb_id); });
+    if(sIdx < 0 || eIdx < 0) continue;
+    if(idx >= sIdx && idx <= eIdx) return { tierId: t.id, startIdx: sIdx, endIdx: eIdx };
+  }
+  return null;
+}
+
+// We hook into the existing single-row drop handler at the table level: when
+// a tier is armed and a drop happens on a regular player row, we route to
+// tierDrop() instead of the normal single-player drop logic.
+// To do this without forking the existing row HTML, we add a capturing
+// dragover/drop listener at the tbody level that intercepts when payload is set.
+(function _wireTierDropInterceptor(){
+  // Wait for tbody to exist; the renderer creates rows after data loads.
+  function attach(){
+    var tbody = document.getElementById('tbody');
+    if(!tbody) return false;
+    if(tbody._tdv1_wired) return true;
+    tbody._tdv1_wired = true;
+    tbody.addEventListener('dragover', function(e){
+      if(!_tierDragPayload) return;
+      e.preventDefault();
+      if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    }, true);
+    tbody.addEventListener('drop', async function(e){
+      if(!_tierDragPayload) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var row = e.target && e.target.closest ? e.target.closest('tr[data-idx]') : null;
+      if(!row){ disarmTier(); return; }
+      var dropIdx = parseInt(row.getAttribute('data-idx'), 10);
+      if(isNaN(dropIdx)){ disarmTier(); return; }
+      await tierDrop(dropIdx);
+    }, true);
+    return true;
+  }
+  if(!attach()){
+    // tbody not in DOM yet — retry until it is, then attach once.
+    var poll = setInterval(function(){ if(attach()) clearInterval(poll); }, 250);
+  }
+})();
+
+async function tierDrop(dropIdx){
+  if(_blockIfReadOnly('tierDrop')){ disarmTier(); return; }
+  if(!_tierDragPayload){ disarmTier(); return; }
+  var payload = _tierDragPayload;
+  var tier = (Array.isArray(currentTiers) ? currentTiers : []).find(function(t){ return t && t.id === payload.tierId; });
+  if(!tier){ disarmTier(); return; }
+
+  // Resolve the dragged players in current players[] (indices may have shifted
+  // since dragstart if other code mutated the array, though unlikely).
+  var srcIndices = payload.playerIds.map(function(pid){
+    return players.findIndex(function(p){ return p && String(p.mlb_id) === String(pid); });
+  });
+  if(srcIndices.some(function(i){ return i < 0; })){
+    console.warn('[TIER_DRAG_V1] tierDrop — some players missing from list, aborting');
+    disarmTier();
+    return;
+  }
+  // Sort src indices ascending so we splice deterministically
+  srcIndices.sort(function(a,b){ return a-b; });
+  var srcStart = srcIndices[0];
+  var srcEnd   = srcIndices[srcIndices.length - 1];
+
+  // If drop is inside the tier's own current range, no-op
+  if(dropIdx >= srcStart && dropIdx <= srcEnd){
+    console.log('[TIER_DRAG_V1] drop inside own range — no-op');
+    disarmTier();
+    return;
+  }
+
+  // Check if drop lands inside another tier — snap above or below it
+  var collision = _tierIndexInOtherTier(dropIdx, payload.tierId);
+  if(collision){
+    // Snap to above if dragging upward into the tier, below if dragging downward
+    if(dropIdx - collision.startIdx < collision.endIdx - dropIdx){
+      dropIdx = collision.startIdx;       // snap above
+    } else {
+      dropIdx = collision.endIdx + 1;     // snap below
+    }
+    console.log('[TIER_DRAG_V1] drop collided with tier', collision.tierId, '- snapped to idx', dropIdx);
+  }
+
+  // Snapshot for undo before mutating
+  if(typeof snapshotForUndo === 'function') snapshotForUndo();
+
+  // Extract the block. Splice from highest index downward so lower indices stay valid.
+  var block = [];
+  for(var i = srcEnd; i >= srcStart; i--){
+    block.unshift(players.splice(i, 1)[0]);
+  }
+  // After extraction, adjust dropIdx if it was past the removed block (every
+  // index above srcEnd shifted left by block.length).
+  var adjDropIdx = dropIdx;
+  if(dropIdx > srcEnd) adjDropIdx = dropIdx - block.length;
+  // Clamp to valid bounds
+  if(adjDropIdx < 0) adjDropIdx = 0;
+  if(adjDropIdx > players.length) adjDropIdx = players.length;
+
+  // Splice the block back in as a unit
+  players.splice.apply(players, [adjDropIdx, 0].concat(block));
+
+  // The tier's start_mlb_id and end_mlb_id are still pointing at the same
+  // players — those players just moved with the block, so the IDs are still
+  // correct. No need to update them.
+
+  if(typeof reorderRanks === 'function') reorderRanks();
+  if(typeof renderTable === 'function') renderTable();
+  if(typeof renderTiers === 'function') renderTiers();
+  if(typeof saveData === 'function') saveData();
+  try { if(typeof autoSaveToNAS === 'function') await autoSaveToNAS(); }
+  catch(err){ console.warn('[TIER_DRAG_V1] autoSaveToNAS after tier drop failed:', err); }
+
+  console.log('[TIER_DRAG_V1] tier moved:', payload.tierId, '— ' + block.length + ' players to idx', adjDropIdx);
+  disarmTier();
+}
+
+// Disarm escape hatches: click outside the armed tier box, or press Escape.
+document.addEventListener('click', function(e){
+  if(!_armedTierId) return;
+  var box = _tierGetBoxEl(_armedTierId);
+  if(!box) return;
+  // Ignore clicks on the tier box itself, the tier label tab, or anywhere
+  // inside the Edit Tier modal (so opening the modal to untick doesn't disarm).
+  if(box.contains(e.target)) return;
+  var tab = document.querySelector('.tier-bracket-tab[data-tier-id="' + String(_armedTierId).replace(/"/g,'\\"') + '"]');
+  if(tab && tab.contains(e.target)) return;
+  var modal = document.getElementById('create-tier-modal');
+  if(modal && modal.contains(e.target)) return;
+  disarmTier();
+}, true);
+
+document.addEventListener('keydown', function(e){
+  if(!_armedTierId) return;
+  if(e.key === 'Escape' || e.key === 'Esc'){
+    e.preventDefault();
+    disarmTier();
+  }
+});
 
 // Phase E — delete the tier currently being edited. Confirms before
 // destroying since there's no undo. Closes modal + repaints brackets.
