@@ -6015,6 +6015,11 @@ function tierDragEnd(e){
   // If drag was cancelled (Esc, dropped on nothing), still disarm.
   // If drag succeeded, drop handler already called disarmTier — this is a no-op.
   if(_armedTierId) disarmTier();
+  // DROP_INDICATOR_V1 unified (May 17, 2026) — explicitly hide the gold drop
+  // bar+pill here too. Belt-and-suspenders alongside the global dragend
+  // listener, because the tbody re-render after tierDrop can detach the drag
+  // source element before the global listener fires reliably.
+  if(typeof _hideDropIndicator === 'function') _hideDropIndicator();
 }
 
 // Given a player index in players[], return the tierId of any OTHER tier
@@ -6054,6 +6059,9 @@ function _tierIndexInOtherTier(idx, excludeTierId){
       if(!_tierDragPayload) return;
       e.preventDefault();
       e.stopPropagation();
+      // DROP_INDICATOR_V1 unified (May 17, 2026) — hide the gold bar+pill
+      // immediately on tier drop, before any DOM re-render in tierDrop().
+      if(typeof _hideDropIndicator === 'function') _hideDropIndicator();
       var row = e.target && e.target.closest ? e.target.closest('tr[data-idx]') : null;
       if(!row){ disarmTier(); return; }
       var dropIdx = parseInt(row.getAttribute('data-idx'), 10);
