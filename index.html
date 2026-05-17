@@ -486,21 +486,22 @@ body.day-mode .must-watch-flash{
 }
 /* /MUST_WATCH_FLASH_V1 */
 
-/* TIER_DRAG_V1 (May 17, 2026) — Tier armed-state pulse glow. When a tier is
-   armed via the "Draggable as a group" checkbox in the Edit Tier modal, its
-   overlay bracket box pulses with a red halo (same energy as MUST_WATCH_FLASH_V1
-   but applied via box-shadow on the border, since the tier box has no text).
+/* TIER_DRAG_V1 (May 17, 2026) — Tier armed-state pulse glow.
+   UNIFIED with DROP_INDICATOR_V1 on May 17, 2026 — pulse changed from red to
+   gold so the entire drag-and-drop experience uses one consistent color
+   language. When a tier is armed via the "Draggable as a group" checkbox in
+   the Edit Tier modal, its overlay bracket box pulses with a gold halo.
    Default state is unarmed — pointer-events:none, no halo, click-through to
    rows works as today. Armed adds pointer-events:auto and cursor:grab so the
    user can grab the whole tier and drag it. */
 @keyframes tier-armed-pulse {
   0%   { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
-  50%  { box-shadow: 0 0 14px #ff3b3b, 0 0 28px rgba(255,59,59,0.7), inset 0 0 10px rgba(255,59,59,0.35); }
+  50%  { box-shadow: 0 0 14px #ffc107, 0 0 28px rgba(255,193,7,0.7), inset 0 0 10px rgba(255,193,7,0.35); }
   100% { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
 }
 @keyframes tier-armed-pulse-daymode {
   0%   { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
-  50%  { box-shadow: 0 0 12px #dc2626, 0 0 22px rgba(220,38,38,0.6), inset 0 0 8px rgba(220,38,38,0.3); }
+  50%  { box-shadow: 0 0 12px #d97706, 0 0 22px rgba(217,119,6,0.6), inset 0 0 8px rgba(217,119,6,0.3); }
   100% { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
 }
 .tier-bracket-box.tier-armed {
@@ -5996,29 +5997,13 @@ function tierDragStart(e, tierId){
     if(e.dataTransfer){
       e.dataTransfer.effectAllowed = 'move';
       try { e.dataTransfer.setData('text/plain', 'tier:' + tierId); } catch(_){}
-      // TIER_DRAG_V1 Push 4 — Custom drag image. The default browser drag image
-      // for a transparent bordered box is invisible, so we build a solid colored
-      // pill with the tier name and use it as the floating ghost during the drag.
-      try {
-        var hex = (typeof TIER_COLOR_HEX !== 'undefined' && TIER_COLOR_HEX[tier.color]) ? TIER_COLOR_HEX[tier.color] : '#94a3b8';
-        var ghost = document.createElement('div');
-        ghost.id = '_tier_drag_ghost';
-        ghost.textContent = (tier.name || 'Tier') + '  (' + ids.length + ' player' + (ids.length === 1 ? '' : 's') + ')';
-        ghost.style.cssText =
-          'position:absolute;top:-9999px;left:-9999px;' +
-          'background:' + hex + ';color:#fff;' +
-          'font-family:"Nunito Sans",sans-serif;font-size:13px;font-weight:700;' +
-          'letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;' +
-          'padding:8px 16px;border-radius:24px;' +
-          'box-shadow:0 4px 14px rgba(0,0,0,0.45), 0 0 0 2px rgba(255,255,255,0.25);' +
-          'pointer-events:none;z-index:9999;';
-        document.body.appendChild(ghost);
-        // Anchor offset so the pill sits slightly down-right of the cursor (looks better than dead-center)
-        e.dataTransfer.setDragImage(ghost, 12, 18);
-        // Clean up the ghost after the browser has captured it for the drag.
-        // A short timeout is the standard pattern — setDragImage takes a snapshot.
-        setTimeout(function(){ if(ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost); }, 0);
-      } catch(_ghostErr){ console.warn('[TIER_DRAG_V1] custom drag image failed:', _ghostErr); }
+      // TIER_DRAG_V1 Push 4 — Custom colored-pill drag image REMOVED on May 17, 2026
+      // by the DROP_INDICATOR_V1 unification pass. The Dude wants the tier drag
+      // to look identical to a single-player drag: just the gold drop bar +
+      // (Push 3) the gold "→ Rank N" pill near the cursor. The browser's default
+      // transparent drag image is fine because the new gold indicators do all
+      // the visual work.
+      // (intentionally no setDragImage call — the default ghost is acceptable)
     }
     console.log('[TIER_DRAG_V1] dragstart — tier', tierId, 'players:', ids.length);
   } catch(err){
@@ -8269,11 +8254,9 @@ function dragStart(e,idx){
 function dragOver(e,idx){
   e.preventDefault();
   e.currentTarget.classList.add('drag-over');
-  // DROP_INDICATOR_V1 — if a tier is armed for group-drag, get out of the
-  // way and let TIER_DRAG_V1 do its thing. The classic gold-border style
-  // from before still fires via the .drag-over CSS, so the user isn't
-  // left with zero feedback.
-  if(typeof _armedTierId !== 'undefined' && _armedTierId) return;
+  // DROP_INDICATOR_V1 unified (May 17, 2026) — early-return for armed tiers
+  // REMOVED. The Dude wants the gold drop bar to fire for tier drags too so
+  // the visual language is identical for single-player and tier moves.
   // Compute top-half vs bottom-half of the row using the cursor's clientY
   // and the row's bounding rect.
   var rowEl = e.currentTarget;
