@@ -7100,6 +7100,13 @@ loadHoldingTank();
 async function deletePlayer(id){
   if(_blockIfReadOnly('deletePlayer')) return;
   if(!confirm('Remove this player from the Watch List?\n\nThey will be moved to the Holding Tank (your editorial bench) instead of disappearing.')) return;
+  // UNDO_REMOVAL_V1 (May 17, 2026) — snapshot the pre-removal state so Undo
+  // can put this player back on the main list (in their original rank) AND
+  // remove them from the Tank. Fires AFTER the confirm so cancelled removals
+  // don't pollute the undo stack. Fires BEFORE any mutation so the photo is
+  // clean. reorderRanks() on undo re-derives rank from array position, so
+  // the rank mutation a few lines below (line ~7111) is harmless.
+  if(typeof snapshotForUndo === 'function') snapshotForUndo();
   // HOLDING_TANK_V1: capture the player object BEFORE filtering so we can
   // push them into the Tank. If the player isn't found (defensive — shouldn't
   // happen if the row was rendered with this id), silently fall through to
