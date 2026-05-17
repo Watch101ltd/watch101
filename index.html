@@ -8226,11 +8226,76 @@ document.addEventListener('keydown', function(e){
   undoLastMove();
 });
 
-function dragStart(e,idx){dragSrcIdx=idx;e.currentTarget.classList.add('dragging');}
-function dragOver(e,idx){e.preventDefault();e.currentTarget.classList.add('drag-over');}
-function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
+/* DROP_INDICATOR_V1 (May 17, 2026) — module-scope state used by the
+   insertion bar and (Push 3) the rank pill. _dropAbove tracks whether the
+   cursor was in the top half (true) or bottom half (false) of the most
+   recently hovered row, so drop() can land the player in the correct gap. */
+let _dropAbove = true;
+
+/* Hide the insertion bar + (future) pill. Called from dragend and from
+   drop() after a successful move. Safe to call when elements aren't shown. */
+function _hideDropIndicator(){
+  var bar = document.getElementById('drop-indicator-bar');
+  if(bar) bar.style.display = 'none';
+  // Pill toggling lives in Push 3, but pre-hide here too for safety.
+  var pill = document.getElementById('drop-indicator-pill');
+  if(pill) pill.style.display = 'none';
+}
+
+/* Position the insertion bar in the gap above OR below the given row.
+   above=true → bar sits at the row's top edge. above=false → bottom edge.
+   Uses absolute positioning relative to the document, so we add window.scrollY
+   to the bounding-rect top to get the page-absolute y coordinate. */
+function _positionDropIndicatorBar(rowEl, above){
+  var bar = document.getElementById('drop-indicator-bar');
+  if(!bar || !rowEl) return;
+  var rect = rowEl.getBoundingClientRect();
+  var y = (above ? rect.top : rect.bottom) + window.scrollY - 2; // -2 centers the 5px bar on the gap
+  bar.style.top = y + 'px';
+  bar.style.left = (rect.left + window.scrollX) + 'px';
+  bar.style.width = rect.width + 'px';
+  bar.style.display = 'block';
+}
+
+function dragStart(e,idx){
+  dragSrcIdx=idx;
+  e.currentTarget.classList.add('dragging');
+  // DROP_INDICATOR_V1 — reset state on a fresh drag. Bar stays hidden until
+  // first dragOver fires (which is where we know cursor position).
+  _dropAbove = true;
+  _hideDropIndicator();
+}
+
+function dragOver(e,idx){
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+  // DROP_INDICATOR_V1 — if a tier is armed for group-drag, get out of the
+  // way and let TIER_DRAG_V1 do its thing. The classic gold-border style
+  // from before still fires via the .drag-over CSS, so the user isn't
+  // left with zero feedback.
+  if(typeof _armedTierId !== 'undefined' && _armedTierId) return;
+  // Compute top-half vs bottom-half of the row using the cursor's clientY
+  // and the row's bounding rect.
+  var rowEl = e.currentTarget;
+  var rect = rowEl.getBoundingClientRect();
+  var midpoint = rect.top + (rect.height / 2);
+  _dropAbove = (e.clientY < midpoint);
+  _positionDropIndicatorBar(rowEl, _dropAbove);
+}
+
+function dragLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+  // We intentionally do NOT hide the bar here. dragLeave fires constantly
+  // as the cursor moves between rows; hiding on every leave would cause
+  // ugly flicker. The next dragOver will re-position it, and dragend/drop
+  // is responsible for final cleanup.
+}
+
 async function drop(e,idx){
   e.preventDefault();e.currentTarget.classList.remove('drag-over');
+  // DROP_INDICATOR_V1 — always hide the bar+pill once a drop happens,
+  // regardless of whether the drop actually mutates the list.
+  _hideDropIndicator();
   if(_blockIfReadOnly('drop')) return;
   if(dragSrcIdx===null||dragSrcIdx===idx) return;
   const list=getFiltered();
@@ -8238,7 +8303,18 @@ async function drop(e,idx){
   const si=players.findIndex(p=>p.id===srcId),ti=players.findIndex(p=>p.id===tgtId);
   // Snapshot BEFORE the move so undo can restore it
   snapshotForUndo();
-  const[moved]=players.splice(si,1);players.splice(ti,0,moved);
+  // DROP_INDICATOR_V1 — honor the top-half / bottom-half choice the user
+  // made during dragOver. If they were in the bottom half, the player
+  // should land BELOW the target row, i.e. at index ti+1 (after the splice
+  // that removed src). The classic always-above-target behavior is the
+  // _dropAbove=true branch.
+  const[moved]=players.splice(si,1);
+  // After the splice, every index after si has shifted by -1. Recompute ti
+  // against the now-shortened array to keep insertion correct.
+  var insertAt = players.findIndex(p=>p.id===tgtId);
+  if(insertAt < 0) insertAt = ti; // fallback (shouldn't happen)
+  if(!_dropAbove) insertAt = insertAt + 1; // land below the target
+  players.splice(insertAt,0,moved);
   reorderRanks();
   dragSrcIdx=null;
   renderTable();
@@ -8248,7 +8324,12 @@ async function drop(e,idx){
   saveData();
   try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] drop autosave failed:', e); }
 }
-document.addEventListener('dragend',()=>{document.querySelectorAll('tr').forEach(r=>r.classList.remove('dragging','drag-over'));});
+document.addEventListener('dragend',()=>{
+  document.querySelectorAll('tr').forEach(r=>r.classList.remove('dragging','drag-over'));
+  // DROP_INDICATOR_V1 — dragend fires on Escape, drop, mouseup-outside-page,
+  // window blur, etc. Universal cleanup hook for the bar+pill.
+  _hideDropIndicator();
+});
 
 // Edge auto-scroll during drag — scrolls page when cursor nears top/bottom of viewport.
 // Works for any HTML5 drag (Main List rows, personal-list rows, etc).
