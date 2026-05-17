@@ -6054,6 +6054,33 @@ function _tierIndexInOtherTier(idx, excludeTierId){
       if(!_tierDragPayload) return;
       e.preventDefault();
       if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      // DROP_INDICATOR_V1 Push 3 — update the rank pill for tier drags.
+      // We show the rank the TIER'S FIRST player will end up at — that's the
+      // clearest signal. Compute target row, top-half/bottom-half, then
+      // figure out where the tier's first player will sit after the move.
+      try {
+        var row = e.target && e.target.closest ? e.target.closest('tr[data-idx]') : null;
+        if(!row) return;
+        var tgtIdx = parseInt(row.getAttribute('data-idx'), 10);
+        if(isNaN(tgtIdx)) return;
+        var rect = row.getBoundingClientRect();
+        var midpoint = rect.top + (rect.height / 2);
+        var above = (e.clientY < midpoint);
+        // The tier's source range comes from _tierDragPayload.startIdx/endIdx.
+        // After we splice out (endIdx - startIdx + 1) players starting at
+        // startIdx, everything below shifts up by that count. The tier's
+        // first player then lands at the insertion point in the shortened array.
+        var srcStart = _tierDragPayload.startIdx;
+        var srcEnd   = _tierDragPayload.endIdx;
+        var tierLen  = (srcEnd - srcStart + 1);
+        var insertAt = above ? tgtIdx : tgtIdx + 1;
+        if(srcStart < insertAt) insertAt -= tierLen;
+        var destRank = insertAt + 1; // 1-indexed display
+        if(destRank < 1) destRank = 1;
+        if(typeof _showDropIndicatorPill === 'function'){
+          _showDropIndicatorPill(e.clientX, e.clientY, destRank);
+        }
+      } catch(_pillErr){ /* swallow — pill is cosmetic */ }
     }, true);
     tbody.addEventListener('drop', async function(e){
       if(!_tierDragPayload) return;
@@ -8250,6 +8277,35 @@ function _positionDropIndicatorBar(rowEl, above){
   bar.style.display = 'block';
 }
 
+/* DROP_INDICATOR_V1 Push 3 (May 17, 2026) — show the floating "→ Rank N"
+   pill near the cursor. clientX/clientY come from the dragover event.
+   The pill is position:fixed so we don't need to add scroll offsets.
+   Offset 14px right and 18px down so it sits just below the cursor and
+   doesn't block what the cursor is hovering. */
+function _showDropIndicatorPill(clientX, clientY, rankNum){
+  var pill = document.getElementById('drop-indicator-pill');
+  if(!pill) return;
+  pill.textContent = '\u2192 Rank ' + rankNum;
+  pill.style.left = (clientX + 14) + 'px';
+  pill.style.top  = (clientY + 18) + 'px';
+  pill.style.display = 'block';
+}
+
+/* Compute the destination rank for a single-player drag landing above-or-below
+   the given target row index. The displayed rank is what the dragged player's
+   row number will read after the drop (1-indexed). For a same-position drop
+   (dropping above the source's current position), we account for the splice
+   shift so the displayed rank doesn't lie. */
+function _computeSinglePlayerDestRank(srcIdx, targetIdx, above){
+  // After splice(srcIdx, 1), everything below srcIdx shifts up by 1.
+  // The insertion point is targetIdx (or targetIdx+1 for below) in the
+  // ORIGINAL array, but we need to adjust for the source removal.
+  var insertAt = above ? targetIdx : targetIdx + 1;
+  // If source was above the insertion point, removing it shifts everything down by 1.
+  if(srcIdx < insertAt) insertAt -= 1;
+  return insertAt + 1; // 1-indexed display
+}
+
 function dragStart(e,idx){
   dragSrcIdx=idx;
   e.currentTarget.classList.add('dragging');
@@ -8272,6 +8328,24 @@ function dragOver(e,idx){
   var midpoint = rect.top + (rect.height / 2);
   _dropAbove = (e.clientY < midpoint);
   _positionDropIndicatorBar(rowEl, _dropAbove);
+  // DROP_INDICATOR_V1 Push 3 — floating rank pill. For tier drags, the tbody
+  // interceptor below handles its own pill update (different rank math —
+  // it's the tier's first player's rank), so we skip here to avoid double-fire.
+  if(typeof _tierDragPayload === 'undefined' || !_tierDragPayload){
+    if(dragSrcIdx !== null && dragSrcIdx !== undefined){
+      var list = getFiltered();
+      if(list && list[dragSrcIdx] && list[idx]){
+        var srcId = list[dragSrcIdx].id;
+        var tgtId = list[idx].id;
+        var srcIdxFull = players.findIndex(function(p){ return p && p.id === srcId; });
+        var tgtIdxFull = players.findIndex(function(p){ return p && p.id === tgtId; });
+        if(srcIdxFull >= 0 && tgtIdxFull >= 0){
+          var destRank = _computeSinglePlayerDestRank(srcIdxFull, tgtIdxFull, _dropAbove);
+          _showDropIndicatorPill(e.clientX, e.clientY, destRank);
+        }
+      }
+    }
+  }
 }
 
 function dragLeave(e){
