@@ -4988,11 +4988,37 @@ function getFiltered(){
 
     const sentinel = sortDir === 1 ? Infinity : -Infinity;
 
+    // MAIN_DATERANGE_SORT_V1 (May 18, 2026) — when a non-season date range is
+    // active, sort counting + rate stats by the date-range value, not the
+    // season value. Without this, sorting on Yesterday/7/14/30 days showed
+    // rows visually displaying date-range numbers but ordered by season totals.
+    // Matt flagged this as the next thing to fix. Pool already had this on
+    // its own sort path; this brings the main Watch 101 sort to parity.
+    const DATE_RANGE_KEYS = ['ab','r','hr','rbi','sb','avg','obp','ops','ip','k','w','sv','hld','era','whip'];
+    const useDateRangeForSort = (typeof dateRange !== 'undefined' && dateRange !== 'season' && DATE_RANGE_KEYS.includes(key));
+
     const getVal = (p) => {
       const pit = isPitcher(p);
       if((pushPitchers && pit) || (pushHitters && !pit)) return sentinel;
       if(key === 'rank') return p.rank || 999;
-      let v = p[key];
+      // MAIN_DATERANGE_SORT_V1 — read from dateRangeCache when applicable.
+      // Pre-baked PLAYER_DATERANGE_CACHE is keyed by mlb_id; runtime
+      // dateRangeCache is keyed by p.id + '_' + range. Try pre-baked first
+      // (matches getDisplayStats() lookup order on render side).
+      let v;
+      if(useDateRangeForSort){
+        let dr = null;
+        if(typeof PLAYER_DATERANGE_CACHE !== 'undefined' && p.mlb_id){
+          const _pre = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
+          if(_pre && _pre[dateRange]) dr = _pre[dateRange];
+        }
+        if(!dr && typeof dateRangeCache !== 'undefined' && p.id){
+          dr = dateRangeCache[p.id + '_' + dateRange] || null;
+        }
+        v = dr ? dr[key] : undefined;
+      } else {
+        v = p[key];
+      }
       if(v === undefined || v === null || v === '') return sentinel;
       if(typeof v === 'number' && Number.isNaN(v)) return sentinel;
       if(typeof v === 'string'){
