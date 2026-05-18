@@ -2127,6 +2127,10 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="tab-nav-btn backend-only" onclick="openPlayerPool()">⚾ Player Pool</button>
         <button class="tab-nav-btn" onclick="openLeagueLeaders()">🏆 League Leaders</button>
         <button class="tab-nav-btn" onclick="openProspects()">🍼 Prospects</button>
+        <!-- TANK_NAS_SAVE_V1 (May 18, 2026) — manual Save button for the Tank. Writes
+             the current Tank to _Staging/<List>/_HoldingTank/. Auto-save hooks (Push 3c)
+             will also fire saveHoldingTankToNAS on every Tank mutation. -->
+        <button class="tab-nav-btn backend-only" onclick="saveHoldingTankToNAS()" title="Save the Holding Tank to your Synology — first save on a new list auto-creates the _HoldingTank folder">💾 Save Tank</button>
       </div>
       <select id="daterange-select-pool" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
         <option value="live">🔴 Live</option>
@@ -7174,8 +7178,9 @@ async function saveHoldingTankToNAS(opts){
     const listId = (typeof currentListId !== 'undefined' && currentListId) ? currentListId : 'integrity';
     const list = (typeof getCurrentList === 'function') ? getCurrentList() : null;
     const listName = (list && list.name) ? list.name : listId;
-    // Sanitize listName for filename use (drop spaces, slashes, etc.)
-    const slug = String(listName).replace(/[^A-Za-z0-9]+/g, '');
+    // Use the short listId in the filename (e.g., 'integrity', 'deeper15') so it
+    // matches the parent _Staging folder name and avoids the double-"Watch101"
+    // collision when the human-readable list name itself starts with "Watch 101".
     const handle = (typeof _xlsxDirHandles !== 'undefined') ? _xlsxDirHandles[listId] : null;
     if(!handle){
       if(!silent && status) status.textContent = 'Tank save skipped — save the main list first to pick the folder.';
@@ -7196,7 +7201,7 @@ async function saveHoldingTankToNAS(opts){
     const pad = (n) => String(n).padStart(2, '0');
     const dateStr = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
     const timeStr = pad(now.getHours()) + pad(now.getMinutes());
-    const fname = 'Watch101_' + slug + '_HoldingTank_' + dateStr + '_' + timeStr + '.json';
+    const fname = 'Watch101_' + listId + '_HoldingTank_' + dateStr + '_' + timeStr + '.json';
     const payload = {
       list_id: listId,
       list_name: listName,
