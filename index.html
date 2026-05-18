@@ -7161,6 +7161,64 @@ function loadHoldingTank(){
     if(!Array.isArray(_holdingTank)) _holdingTank = [];
   } catch(e){ _holdingTank = []; console.warn('[HOLDING_TANK_V1] loadHoldingTank failed:', e); }
 }
+// TANK_NAS_SAVE_V1 (May 18, 2026) — write the current Tank to the Synology as a
+// timestamped JSON inside _Staging/<List>/_HoldingTank/. Reuses the per-list
+// folder handle from _xlsxDirHandles[currentListId] (same handle the main list's
+// exportXLSX uses). First save on a list auto-creates the _HoldingTank subfolder.
+// Silent no-op if no folder handle exists yet — Matt must save the main list at
+// least once so the directory picker establishes the handle.
+async function saveHoldingTankToNAS(opts){
+  const silent = !!(opts && opts.silent);
+  const status = document.getElementById('tank-status');
+  try {
+    const listId = (typeof currentListId !== 'undefined' && currentListId) ? currentListId : 'integrity';
+    const list = (typeof getCurrentList === 'function') ? getCurrentList() : null;
+    const listName = (list && list.name) ? list.name : listId;
+    // Sanitize listName for filename use (drop spaces, slashes, etc.)
+    const slug = String(listName).replace(/[^A-Za-z0-9]+/g, '');
+    const handle = (typeof _xlsxDirHandles !== 'undefined') ? _xlsxDirHandles[listId] : null;
+    if(!handle){
+      if(!silent && status) status.textContent = 'Tank save skipped — save the main list first to pick the folder.';
+      console.warn('[TANK_NAS_SAVE_V1] no folder handle for list', listId, '— main list must be saved at least once first');
+      return;
+    }
+    // Drill into _HoldingTank subfolder (create if missing).
+    let tankDir;
+    try {
+      tankDir = await handle.getDirectoryHandle('_HoldingTank', { create: true });
+    } catch(dirErr){
+      console.error('[TANK_NAS_SAVE_V1] could not access _HoldingTank subfolder:', dirErr);
+      if(status) status.textContent = '⚠ Tank save failed — could not access _HoldingTank folder.';
+      return;
+    }
+    // Filename: Watch101_<Slug>_HoldingTank_<YYYY-MM-DD>_<HHMM>.json
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const dateStr = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+    const timeStr = pad(now.getHours()) + pad(now.getMinutes());
+    const fname = 'Watch101_' + slug + '_HoldingTank_' + dateStr + '_' + timeStr + '.json';
+    const payload = {
+      list_id: listId,
+      list_name: listName,
+      saved_at: now.toISOString(),
+      saved_at_local: now.toLocaleString(),
+      source: 'tracker saveHoldingTankToNAS',
+      is_holding_tank: true,
+      player_count: Array.isArray(_holdingTank) ? _holdingTank.length : 0,
+      players: Array.isArray(_holdingTank) ? _holdingTank : []
+    };
+    const fileHandle = await tankDir.getFileHandle(fname, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+    await writable.close();
+    if(status) status.textContent = '✓ Tank saved to _HoldingTank at ' + now.toLocaleTimeString();
+    console.log('[TANK_NAS_SAVE_V1] saved', payload.player_count, 'players to', fname);
+  } catch(e){
+    console.error('[TANK_NAS_SAVE_V1] saveHoldingTankToNAS failed:', e);
+    if(status) status.textContent = '⚠ Tank save failed — ' + (e && e.message ? e.message : 'unknown error');
+  }
+}
+// /TANK_NAS_SAVE_V1
 // Load the Tank from localStorage at script-eval time so any in-progress
 // session sees yesterday's Tank state immediately.
 loadHoldingTank();
