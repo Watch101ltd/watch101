@@ -7250,6 +7250,9 @@ async function deletePlayer(id){
     _removed.rank = _holdingTank.length + 1;
     _holdingTank.push(_removed);
     saveHoldingTank();
+    // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save to Synology after every Tank mutation.
+    try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
+    catch(e){ console.warn('[TANK_NAS_SAVE_V1] deletePlayer→Tank auto-save failed:', e); }
   }
   players=players.filter(x=>x.id!==id);
   saveData();renderTable();
@@ -11178,6 +11181,9 @@ async function quickAddFromPoolToTank(mlbId, name, team, primaryPos, age, btnEl)
   if(isMinorLvl && mlbId){ try{ const pr=await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}?hydrate=currentTeam`); const pd=await pr.json(); const ct=pd.people&&pd.people[0]&&pd.people[0].currentTeam; if(ct&&ct.parentOrgId) finalTeam=orgIdToAbbr(ct.parentOrgId)||finalTeam; }catch(e){} }
   const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions: p.eligible_positions&&p.eligible_positions.length>0?p.eligible_positions:(primaryPos?[primaryPos]:[]), age:finalAge, birthDate:p.birthDate||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, pitcher_type:p.pitcher_type||null, injury_status:p.injury_status||null };
   _holdingTank.push(newPlayer); saveHoldingTank();
+  // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after Pool→Tank.
+  try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
+  catch(e){ console.warn('[TANK_NAS_SAVE_V1] quickAddFromPoolToTank auto-save failed:', e); }
   btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added';
 }
 
@@ -11194,6 +11200,9 @@ async function quickAddLeaderToTank(mlbId, name, team, primaryPos, btnEl){
   const finalTeam = p.team || team || '';
   const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], age:finalAge, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip') };
   _holdingTank.push(newPlayer); saveHoldingTank();
+  // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after Leaders→Tank.
+  try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
+  catch(e){ console.warn('[TANK_NAS_SAVE_V1] quickAddLeaderToTank auto-save failed:', e); }
   btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added';
 }
 
@@ -11209,6 +11218,9 @@ async function addProspectToTank(mlbId, name, team, primaryPos, age, level, btnE
   try{ const pr=await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}?hydrate=currentTeam`); const pd=await pr.json(); const ct=pd.people&&pd.people[0]&&pd.people[0].currentTeam; if(ct&&ct.parentOrgId) finalTeam=orgIdToAbbr(ct.parentOrgId)||finalTeam; }catch(e){}
   const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], age:p.age||parseInt(age)||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:null, hld:null, ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, level:level, statsSource:'MiLB' };
   _holdingTank.push(newPlayer); saveHoldingTank();
+  // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after Prospect→Tank.
+  try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
+  catch(e){ console.warn('[TANK_NAS_SAVE_V1] addProspectToTank auto-save failed:', e); }
   btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added';
 }
 // ── /HOLDING_TANK_V1 send-to-tank ───────────────────────────────────────
@@ -14755,6 +14767,9 @@ function onTankPromote(mlbId){
   _holdingTank.splice(idx, 1);
   _holdingTank.forEach((tp, i) => { tp.rank = i + 1; });
   saveHoldingTank();
+  // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after promote.
+  try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
+  catch(e){ console.warn('[TANK_NAS_SAVE_V1] onTankPromote auto-save failed:', e); }
 
   renderTank();
   renderTable();
@@ -14772,6 +14787,9 @@ function onTankRemove(mlbId){
   _holdingTank.splice(idx, 1);
   _holdingTank.forEach((tp, i) => { tp.rank = i + 1; });
   saveHoldingTank();
+  // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after remove.
+  try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
+  catch(e){ console.warn('[TANK_NAS_SAVE_V1] onTankRemove auto-save failed:', e); }
   renderTank();
 }
 
