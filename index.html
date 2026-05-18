@@ -12058,15 +12058,23 @@ async function fetchSampleBackfillForListPlayers(){
   const wantedIds = new Set(targets.map(p => p.mlb_id));
   const milbStatsMap = {};
   const mlbStatsMap = {};
+  // CHIP_BACKFILL_FIX_V1 — track which MiLB level each playerId showed up in so we
+  // can stamp p.level later. milbUrls is built in order [AAA-hit, AAA-pit, AA-hit,
+  // AA-pit, A-hit, A-pit], so idx//2 maps to MILB_LEVELS.
+  const milbLevelMap = {};
   const _hitTotals = {};
   const _pitTotals = {};
 
   milbResponses.forEach((resp, idx) => {
     if(!resp || !resp.stats) return;
     const isPit = (idx % 2) === 1;
+    const _level = MILB_LEVELS[Math.floor(idx / 2)] ? MILB_LEVELS[Math.floor(idx / 2)].label : null;
     (resp.stats[0] && resp.stats[0].splits || []).forEach(sp => {
       const pid = sp.player && sp.player.id;
       if(!pid || !wantedIds.has(pid)) return;
+      // CHIP_BACKFILL_FIX_V1 — remember the highest level this player appears in.
+      // Order is AAA -> AA -> A so first hit wins (since we iterate AAA first).
+      if(_level && !milbLevelMap[pid]) milbLevelMap[pid] = _level;
       const s = sp.stat || {};
       if(!milbStatsMap[pid]) milbStatsMap[pid] = {};
       const target = milbStatsMap[pid];
@@ -12154,6 +12162,10 @@ async function fetchSampleBackfillForListPlayers(){
   targets.forEach(p => {
     p.statsMilb = milbStatsMap[p.mlb_id] || null;
     p.statsMlb  = mlbStatsMap[p.mlb_id]  || null;
+    // CHIP_BACKFILL_FIX_V1 — stamp p.level from MiLB data if not already set.
+    // Without this, players added while up in MLB have undefined level and the
+    // chip render exits early on the `if(!p.level)` guard at line ~12714.
+    if(!p.level && milbLevelMap[p.mlb_id]) p.level = milbLevelMap[p.mlb_id];
     if(p.statsMilb || p.statsMlb) _hitCount++;
     // Only re-apply if the user hasn't explicitly toggled this player
     // already (would happen if backfill races a click — unlikely but safe).
