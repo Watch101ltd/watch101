@@ -14842,6 +14842,19 @@ function stampHoldingTankFromWarehouses(){
     if(typeof applyYahoo === 'function' && Array.isArray(_holdingTank))   applyYahoo(_holdingTank);
     if(typeof applyCBS   === 'function' && Array.isArray(_holdingTank))   applyCBS(_holdingTank);
     if(typeof mergeSavant === 'function' && Array.isArray(_holdingTank)) _holdingTank.forEach(p => mergeSavant(p));
+    // CHIP_BACKFILL_FIX_V3 (May 18, 2026) — extend the V2 pattern to the Tank.
+    // Same widened-targets sample backfill as Pool: stamps `level` + statsMilb on
+    // any Tank player with MiLB history so the green AAA*↔ chip renders correctly
+    // on the Tank tab. Fires non-blocking. Tank re-render happens via the existing
+    // renderTank() call that follows stampHoldingTankFromWarehouses in
+    // loadHoldingTankFromNAS / openHoldingTank. Modeled exactly on the
+    // loadPoolPlayers hook from CHIP_BACKFILL_FIX_V2.
+    try {
+      if(typeof fetchSampleBackfillForListPlayers === 'function' && Array.isArray(_holdingTank) && _holdingTank.length){
+        fetchSampleBackfillForListPlayers(_holdingTank, 'tank')
+          .catch(e => console.warn('[CHIP_BACKFILL_FIX_V3] tank backfill failed:', e));
+      }
+    } catch(e){ console.warn('[CHIP_BACKFILL_FIX_V3] tank backfill kickoff failed:', e); }
     // TANK_AB_BACKFILL_V1 (May 18, 2026) — older Tank players were saved before
     // the `ab` field was added to the Send-to-Tank functions, so their AB column
     // renders blank. Pull `ab` (and a few other counting stats) from poolPlayers
