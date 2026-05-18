@@ -13684,60 +13684,62 @@ function renderNewsStrip(p){
   var mlbId = p && p.mlb_id;
   var blurb = (mlbId && window.PLAYER_HIGHLIGHTS) ? window.PLAYER_HIGHLIGHTS[String(mlbId)] : null;
 
-  // No blurb for this player? Hide the strip AND wipe the text in case the CSS
-  // hide-rule ever fails (Push 4d fix — belt-and-suspenders against the bug
-  // where the wrapper's stale text from the prior player was showing through).
-  if(!blurb){
-    strip.classList.add('ppo-news-empty');
-    var hEl = document.getElementById('ppo-news-headline');
-    var dEl = document.getElementById('ppo-news-description');
-    var mEl = document.getElementById('ppo-news-meta');
-    if(hEl) hEl.textContent = '';
-    if(dEl) dEl.textContent = '';
-    if(mEl) mEl.textContent = '';
-    return;
-  }
+  // NEWS_LINKS_V1 Push 4e (May 17, 2026) — the strip is now ALWAYS visible.
+  // The Dude's call: MLB and FG buttons should appear for every player so Matt
+  // can always jump out to those reference pages. Only the blurb CONTENT
+  // (headline, description, meta) is conditional on data.
   strip.classList.remove('ppo-news-empty');
 
-  // Headline + description
   var headlineEl = document.getElementById('ppo-news-headline');
   var descEl     = document.getElementById('ppo-news-description');
-  if(headlineEl) headlineEl.textContent = blurb.headline || '';
-  if(descEl)     descEl.textContent     = blurb.description || '';
+  var metaEl     = document.getElementById('ppo-news-meta');
 
-  // Meta line: format "May 16 vs NYM" from game_date + opponent. Falls back
-  // gracefully if either piece is missing.
-  var metaEl = document.getElementById('ppo-news-meta');
-  if(metaEl){
-    var metaParts = [];
-    if(blurb.game_date){
-      try {
-        // game_date is "YYYY-MM-DD"; render as "Mon DD" in local convention.
-        var d = new Date(blurb.game_date + 'T12:00:00');
-        var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        metaParts.push(monthNames[d.getMonth()] + ' ' + d.getDate());
-      } catch(_){ metaParts.push(blurb.game_date); }
+  if(blurb){
+    // Real blurb path: fill all three text elements.
+    if(headlineEl) headlineEl.textContent = blurb.headline || '';
+    if(descEl)     descEl.textContent     = blurb.description || '';
+    if(metaEl){
+      var metaParts = [];
+      if(blurb.game_date){
+        try {
+          // game_date is "YYYY-MM-DD"; render as "Mon DD" in local convention.
+          var d = new Date(blurb.game_date + 'T12:00:00');
+          var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          metaParts.push(monthNames[d.getMonth()] + ' ' + d.getDate());
+        } catch(_){ metaParts.push(blurb.game_date); }
+      }
+      if(blurb.opponent_team_name){
+        metaParts.push('vs ' + blurb.opponent_team_name);
+      }
+      metaEl.textContent = metaParts.join(' \u00B7 ');
     }
-    if(blurb.opponent_team_name){
-      // Try to abbreviate to 3 letters by looking up the team in the registry,
-      // otherwise just use the full name. Simple approach: if a TEAM_ABBR_MAP
-      // exists, use it; otherwise just append the full name.
-      var oppName = blurb.opponent_team_name;
-      metaParts.push('vs ' + oppName);
-    }
-    metaEl.textContent = metaParts.join(' · ');
+  } else {
+    // Empty-blurb path: friendly placeholder so the strip doesn't look broken.
+    // Player didn't appear in any highlight clip from yesterday's games — could
+    // be IL, bench, off day, or just didn't do anything highlight-worthy.
+    if(headlineEl) headlineEl.textContent = 'No recent highlight';
+    if(descEl)     descEl.textContent     = 'No highlight clip from this player\u2019s most recent game. Use the links \u2192 for full stats and news.';
+    if(metaEl)     metaEl.textContent     = '';
   }
 
-  // MLB.com deep link — always available. MLB.com redirects /player/<id> to
-  // the canonical slug, so we don't need to look up a slug ourselves.
+  // MLB.com deep link — ALWAYS shown. MLB.com redirects /player/<id> to the
+  // canonical slug automatically.
   var mlbLink = document.getElementById('ppo-news-link-mlb');
   if(mlbLink){
-    mlbLink.href = 'https://www.mlb.com/player/' + encodeURIComponent(mlbId);
-    mlbLink.title = 'Open ' + (p.name || 'player') + ' on MLB.com';
+    if(mlbId){
+      mlbLink.href = 'https://www.mlb.com/player/' + encodeURIComponent(mlbId);
+      mlbLink.title = 'Open ' + (p.name || 'player') + ' on MLB.com';
+      mlbLink.style.display = '';
+    } else {
+      // No mlb_id (rare — would mean a tracker player with no MLBAM ID).
+      // Hide the button rather than send the user to a broken page.
+      mlbLink.style.display = 'none';
+    }
   }
 
-  // FanGraphs deep link — use registry's fg_id if we have it, otherwise fall
-  // back to FanGraphs' search by player name (always works for any name).
+  // FanGraphs deep link — ALWAYS shown. Uses registry's fg_id when available,
+  // falls back to FanGraphs site search when not. Search fallback works for
+  // any player so this button essentially always has a meaningful destination.
   var fgLink = document.getElementById('ppo-news-link-fg');
   if(fgLink){
     var fgId = null;
@@ -13746,16 +13748,13 @@ function renderNewsStrip(p){
       if(reg && reg.fg) fgId = reg.fg;
     }
     if(fgId){
-      // Canonical FanGraphs URL pattern. The slug part can be anything (or
-      // even omitted) — FanGraphs redirects to the right page based on the ID.
       fgLink.href = 'https://www.fangraphs.com/players/-/' + encodeURIComponent(fgId) + '/stats';
     } else {
-      // Fallback: FanGraphs site search. Works for any player name even if we
-      // never had a FanGraphs ID.
       var q = (p.name || '').trim();
       fgLink.href = 'https://www.fangraphs.com/players/search?q=' + encodeURIComponent(q);
     }
     fgLink.title = 'Open ' + (p.name || 'player') + ' on FanGraphs';
+    fgLink.style.display = '';
   }
 }
 
