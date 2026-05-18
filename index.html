@@ -12851,6 +12851,15 @@ function swapSampleForRow(mlbId, tableName, evt){
   if(tableName === 'prospects' && typeof prospectPlayers !== 'undefined'){
     p = prospectPlayers.find(x => x.mlb_id === mlbId);
   }
+  // TANK_CHIP_TOGGLE_FIX_V1 (May 18, 2026) — when clicking the chip on the Tank
+  // tab, look in _holdingTank FIRST (the source array for the Tank). Without
+  // this, the function fell through to players/poolPlayers — neither of which
+  // typically contain Tank players (Tank = editorial bench, not on main list) —
+  // so `p` stayed null and the toggle silently failed. We still keep the fall-
+  // throughs below for the other tableName values.
+  if(!p && tableName === 'tank' && typeof _holdingTank !== 'undefined' && Array.isArray(_holdingTank)){
+    p = _holdingTank.find(x => x && x.mlb_id === mlbId);
+  }
   if(!p && typeof players     !== 'undefined') p = players.find(x => x.mlb_id === mlbId);
   if(!p && typeof poolPlayers !== 'undefined') p = poolPlayers.find(x => x.mlb_id === mlbId);
   // Determine current active sample for this table (default + explicit),
