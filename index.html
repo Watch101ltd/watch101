@@ -3091,6 +3091,41 @@ async function loadHistoryNotesFromNAS(){
 // Kick it off immediately at parse time — doesn't block anything else.
 loadHistoryNotesFromNAS();
 
+// NEWS_LINKS_V1 (May 17, 2026) Push 4b — pull PLAYER_HIGHLIGHTS from the NAS
+// endpoint /highlights on every page load. Daily refresh script writes new data
+// at 6:30 AM Eastern; this fetch makes the Deep Cut "Latest" blurb update
+// instantly after each refresh with no Cloudflare push needed. Mirrors the
+// HISTORY_NOTES_LIVE_FETCH_V1 pattern above exactly. Falls back silently to an
+// empty object if the fetch fails (the Deep Cut blurb strip's empty-state hides
+// itself cleanly via the .ppo-news-empty class).
+async function loadHighlightsFromNAS(){
+  try {
+    const res = await fetch(`${NAS_PROXY_URL}/highlights`, {
+      headers: {'ngrok-skip-browser-warning': 'true'},
+      cache: 'no-store'
+    });
+    if(!res.ok) return; // silent fail — empty PLAYER_HIGHLIGHTS stays in place as fallback
+    const data = await res.json();
+    if(data && typeof data === 'object' && data.players && typeof data.players === 'object'){
+      window.PLAYER_HIGHLIGHTS = data.players;
+      window.PLAYER_HIGHLIGHTS_META = {
+        generated_at: data.generated_at || null,
+        target_date: data.target_date || null,
+        total_games: data.total_games || 0,
+        total_players_with_blurbs: data.total_players_with_blurbs || 0,
+      };
+      console.log('[NEWS_LINKS_V1] loaded', Object.keys(data.players).length, 'player blurbs from NAS (target date:', data.target_date, ')');
+    }
+  } catch(e){
+    console.warn('[NEWS_LINKS_V1] fetch failed:', e && e.message);
+  }
+}
+// Defensive default so any code that reads PLAYER_HIGHLIGHTS before the fetch
+// resolves doesn't blow up.
+if(typeof window.PLAYER_HIGHLIGHTS === 'undefined') window.PLAYER_HIGHLIGHTS = {};
+// Kick it off immediately at parse time — doesn't block anything else.
+loadHighlightsFromNAS();
+
 // STAGING_VS_PROD_V1 — pick the right endpoint based on what domain we're on (Apr 22, 2026).
 // GitHub = staging environment (reads from _Staging\<List>\ — sees works-in-progress)
 // Anything else (Cloudflare prod, custom domain, file://) = production
