@@ -13330,6 +13330,16 @@ function attachPoolScrollHandler(){
       buildClone();
       cloneBar.style.display = 'block';
       cloneVisible = true;
+    } else if(shouldShow && cloneVisible){
+      // POOL_CLONE_REBUILD_FIX_V1 (May 18, 2026) — rebuild on every scroll
+      // tick while the clone is showing. The original code only rebuilt at
+      // show-time; if the real table's column widths changed AFTER that
+      // (data loaded, sort fired, layout settled), the clone stayed frozen
+      // with stale widths. Worst symptom: clone had a truncated set of
+      // columns rendered at 0px width when buildClone first ran before the
+      // table had finished its first paint. Now we re-bake widths every
+      // scroll while visible so the clone always tracks the real table.
+      buildClone();
     } else if(!shouldShow && cloneVisible){
       cloneBar.style.display = 'none';
       cloneVisible = false;
@@ -15609,6 +15619,16 @@ function attachTankScrollHandler(){
       buildClone();
       cloneBar.style.display = 'block';
       cloneVisible = true;
+    } else if(shouldShow && cloneVisible){
+      // POOL_CLONE_REBUILD_FIX_V1 (May 18, 2026) — rebuild on every scroll
+      // tick while the clone is showing. The original code only rebuilt at
+      // show-time; if the real table's column widths changed AFTER that
+      // (data loaded, sort fired, layout settled), the clone stayed frozen
+      // with stale widths. Worst symptom: clone had a truncated set of
+      // columns rendered at 0px width when buildClone first ran before the
+      // table had finished its first paint. Now we re-bake widths every
+      // scroll while visible so the clone always tracks the real table.
+      buildClone();
     } else if(!shouldShow && cloneVisible){
       cloneBar.style.display = 'none';
       cloneVisible = false;
