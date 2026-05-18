@@ -13684,9 +13684,17 @@ function renderNewsStrip(p){
   var mlbId = p && p.mlb_id;
   var blurb = (mlbId && window.PLAYER_HIGHLIGHTS) ? window.PLAYER_HIGHLIGHTS[String(mlbId)] : null;
 
-  // No blurb for this player? Hide the strip and bail out.
+  // No blurb for this player? Hide the strip AND wipe the text in case the CSS
+  // hide-rule ever fails (Push 4d fix — belt-and-suspenders against the bug
+  // where the wrapper's stale text from the prior player was showing through).
   if(!blurb){
     strip.classList.add('ppo-news-empty');
+    var hEl = document.getElementById('ppo-news-headline');
+    var dEl = document.getElementById('ppo-news-description');
+    var mEl = document.getElementById('ppo-news-meta');
+    if(hEl) hEl.textContent = '';
+    if(dEl) dEl.textContent = '';
+    if(mEl) mEl.textContent = '';
     return;
   }
   strip.classList.remove('ppo-news-empty');
@@ -16078,7 +16086,13 @@ document.addEventListener('keydown', function(e){
   }
   /* When the blurb is empty (no clip available for this player yet),
      the strip can hide itself entirely via the .ppo-news-empty class —
-     applied by Push 4's JS. Push 3 leaves it always visible with test data. */
+     applied by Push 4's JS. NEWS_LINKS_V1 Push 4d (May 17, 2026) — selector
+     fixed to target the outer wrapper .ppo-news-strip-wrap (which is what
+     has id="ppo-news-strip" and what JS adds the class to). The old selector
+     targeted the INNER .ppo-news-strip div, which never received the class
+     — causing the strip to stay visible with stale text for any player who
+     didn't have a blurb. */
+  #player-page-overlay .ppo-news-strip-wrap.ppo-news-empty,
   #player-page-overlay .ppo-news-strip.ppo-news-empty {
     display: none;
   }
