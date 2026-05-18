@@ -656,6 +656,82 @@ body.day-mode td.col-gold-bbpct-whiff span[style*="--gold"],
 body.day-mode td.col-gold-sprint-k9 span[style*="--gold"] {
   color: #b87a00 !important;
 }
+
+/* ============ SQUISH_FIX_V1 (May 18, 2026) — Main Watch 101 table only ============
+   Matt's laptop at 100% zoom (and Jay's widescreen at 175%) showed the gold-block
+   Statcast columns and the basic-block dual-stat columns collapsing to width:0,
+   stacking numbers on top of each other. Root cause: table-layout:fixed + min-width:0
+   on those columns let the layout engine zero them out under viewport pressure.
+
+   Fix is hybrid per the Dude's call (5/18 evening):
+     (A) Real min-widths on the squishable columns so they refuse to collapse.
+     (B) Modest font/padding shrink at sub-1600px viewports (Matt's laptop zone).
+     (C) Stronger shrink at sub-1280px (extreme zoom / small laptop).
+     (D) Below that, the table exceeds .table-wrap and the wrap's existing
+         overflow-x:auto produces a horizontal scrollbar — the user can scroll
+         right to see the rest. Same pattern every fantasy site uses.
+
+   Scope is strictly #main-table so Pool / Leaders / Tank are UNCHANGED on this push.
+   They'll get the same treatment in a follow-up if Matt confirms this works on the
+   main list. */
+
+/* (A) Min-widths on the squishable columns. Numbers chosen to fit dual-stat values
+   like ".245 / 3.45" or "12 / 87" comfortably without truncation. */
+#main-table th.col-r-k,          #main-table td.col-r-k,
+#main-table th.col-hr-w,         #main-table td.col-hr-w,
+#main-table th.col-ab-ip,        #main-table td.col-ab-ip,
+#main-table th.col-rbi-sv,       #main-table td.col-rbi-sv,
+#main-table th.col-sb-hld,       #main-table td.col-sb-hld,
+#main-table th.col-avg-era,      #main-table td.col-avg-era,
+#main-table th.col-obp-whip,     #main-table td.col-obp-whip,
+#main-table th.col-ops-kbb,      #main-table td.col-ops-kbb {
+  min-width: 50px;
+}
+#main-table th.col-gold-xba-xera,     #main-table td.col-gold-xba-xera,
+#main-table th.col-gold-xwoba,        #main-table td.col-gold-xwoba,
+#main-table th.col-gold-brl-fbvelo,   #main-table td.col-gold-brl-fbvelo,
+#main-table th.col-gold-ev-kbbpct,    #main-table td.col-gold-ev-kbbpct,
+#main-table th.col-gold-batspd-gbpct, #main-table td.col-gold-batspd-gbpct,
+#main-table th.col-gold-kpct-chase,   #main-table td.col-gold-kpct-chase,
+#main-table th.col-gold-bbpct-whiff,  #main-table td.col-gold-bbpct-whiff,
+#main-table th.col-gold-sprint-k9,    #main-table td.col-gold-sprint-k9 {
+  min-width: 60px;
+}
+
+/* (B) Modest shrink at sub-1600px viewports — Matt's laptop range. About 10% smaller
+   font on data cells, slightly tighter padding on data cells (headers stay readable).
+   Targets only the main table so other tables are untouched. */
+@media (max-width: 1600px){
+  #main-table tbody td{
+    font-size: 12px;
+    padding-left: 3px;
+    padding-right: 3px;
+  }
+  #main-table tbody td.col-gold-xba-xera span,
+  #main-table tbody td.col-gold-xwoba span,
+  #main-table tbody td.col-gold-brl-fbvelo span,
+  #main-table tbody td.col-gold-ev-kbbpct span,
+  #main-table tbody td.col-gold-batspd-gbpct span,
+  #main-table tbody td.col-gold-kpct-chase span,
+  #main-table tbody td.col-gold-bbpct-whiff span,
+  #main-table tbody td.col-gold-sprint-k9 span{
+    font-size: 11px;
+  }
+}
+
+/* (C) Stronger shrink at sub-1280px — heavy zoom / smaller laptop screens. */
+@media (max-width: 1280px){
+  #main-table tbody td{
+    font-size: 11px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+  #main-table thead th{
+    font-size: 8px;
+  }
+}
+/* ============ /SQUISH_FIX_V1 ============ */
+
 #savant-indicator{font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text3);padding:0 8px;}
 #yahoo-btn{font-family:'Nunito Sans',sans-serif;font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--border2);cursor:pointer;transition:all 0.2s;}
 #theme-toggle{background:transparent;border:1px solid var(--border2);color:var(--text);font-size:14px;cursor:pointer;padding:4px 10px;border-radius:6px;line-height:1;transition:all 0.15s;user-select:none}
