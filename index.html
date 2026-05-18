@@ -2915,6 +2915,20 @@ function switchActiveList(newId){
     try { renderLeaders && renderLeaders(); } catch(e){}
     try { renderProspects && renderProspects(); } catch(e){}
   }
+  // TANK_MULTILIST_RESET_V1 (May 18, 2026) — reset Tank state when the active list
+  // changes. Without this, the Tank's in-memory _holdingTank array and tankLoaded
+  // flag carry over from the previous list, so opening the Tank tab after switching
+  // would show the old list's Tank players. currentListId was already updated above,
+  // so loadHoldingTank() reads from the new list's localStorage key automatically,
+  // and the next openHoldingTank() call will fetch the new list's Tank from NAS.
+  try {
+    if(typeof tankActive !== 'undefined' && tankActive && typeof closeHoldingTank === 'function'){
+      closeHoldingTank();
+    }
+    if(typeof _holdingTank !== 'undefined') _holdingTank = [];
+    if(typeof tankLoaded !== 'undefined') tankLoaded = false;
+    if(typeof loadHoldingTank === 'function') loadHoldingTank();
+  } catch(e){ console.warn('[TANK_MULTILIST_RESET_V1] Tank reset on list switch failed:', e); }
 }
 function openListInfoOverlay(){
   const overlay = document.getElementById('list-info-overlay');
