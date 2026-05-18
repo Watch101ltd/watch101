@@ -11282,7 +11282,7 @@ async function quickAddFromPoolToTank(mlbId, name, team, primaryPos, age, btnEl)
   const isMinorLvl = p.level==='AAA'||p.level==='AA'||p.level==='A';
   let finalTeam = p.team || team || '';
   if(isMinorLvl && mlbId){ try{ const pr=await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}?hydrate=currentTeam`); const pd=await pr.json(); const ct=pd.people&&pd.people[0]&&pd.people[0].currentTeam; if(ct&&ct.parentOrgId) finalTeam=orgIdToAbbr(ct.parentOrgId)||finalTeam; }catch(e){} }
-  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions: p.eligible_positions&&p.eligible_positions.length>0?p.eligible_positions:(primaryPos?[primaryPos]:[]), age:finalAge, birthDate:p.birthDate||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, pitcher_type:p.pitcher_type||null, injury_status:p.injury_status||null };
+  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions: p.eligible_positions&&p.eligible_positions.length>0?p.eligible_positions:(primaryPos?[primaryPos]:[]), age:finalAge, birthDate:p.birthDate||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', ab:_readStat(p,'ab'), avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, pitcher_type:p.pitcher_type||null, injury_status:p.injury_status||null };
   _holdingTank.push(newPlayer); saveHoldingTank();
   // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after Pool→Tank.
   try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
@@ -11301,7 +11301,7 @@ async function quickAddLeaderToTank(mlbId, name, team, primaryPos, btnEl){
   await fetchPoolStats(p);
   const finalAge = p.age || null;
   const finalTeam = p.team || team || '';
-  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], age:finalAge, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip') };
+  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], age:finalAge, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', ab:_readStat(p,'ab'), avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip') };
   _holdingTank.push(newPlayer); saveHoldingTank();
   // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after Leaders→Tank.
   try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
@@ -11319,7 +11319,7 @@ async function addProspectToTank(mlbId, name, team, primaryPos, age, level, btnE
   if(!p.stats) await fetchProspectStats(p);
   let finalTeam = team || '—';
   try{ const pr=await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}?hydrate=currentTeam`); const pd=await pr.json(); const ct=pd.people&&pd.people[0]&&pd.people[0].currentTeam; if(ct&&ct.parentOrgId) finalTeam=orgIdToAbbr(ct.parentOrgId)||finalTeam; }catch(e){}
-  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], age:p.age||parseInt(age)||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:null, hld:null, ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, level:level, statsSource:'MiLB' };
+  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], age:p.age||parseInt(age)||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', ab:_readStat(p,'ab'), avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:null, hld:null, ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, level:level, statsSource:'MiLB' };
   _holdingTank.push(newPlayer); saveHoldingTank();
   // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after Prospect→Tank.
   try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
@@ -11347,6 +11347,8 @@ function setDateRange(val){
     renderTable();
     if(poolActive) renderPool();
     if(typeof leadersActive !== 'undefined' && leadersActive && typeof renderLeaders === 'function') renderLeaders();
+    // TANK_DATERANGE_FIX_V1 (May 18, 2026) — also re-render the Tank when switching back to season.
+    if(typeof tankActive !== 'undefined' && tankActive && typeof renderTank === 'function') renderTank();
   } else {
     sel.classList.add('daterange-active');
     if(val === 'live'){
@@ -11359,14 +11361,24 @@ function setDateRange(val){
       Object.keys(dateRangeCache).forEach(k => { if(k.endsWith('_yesterday')) delete dateRangeCache[k]; });
       Object.keys(poolDateRangeCache).forEach(k => { if(k.endsWith('_yesterday')) delete poolDateRangeCache[k]; });
       if(typeof prospectsDateRangeCache !== 'undefined') Object.keys(prospectsDateRangeCache).forEach(k => { if(k.endsWith('_yesterday')) delete prospectsDateRangeCache[k]; });
+    // TANK_DATERANGE_FIX_V1 (May 18, 2026) — also wipe the equivalent Tank cache slot so
+    // a fresh date-range pull happens when the user has the Tank tab open.
+    if(typeof tankDateRangeCache !== 'undefined' && (val === 'live' || val === 'yesterday')){
+      Object.keys(tankDateRangeCache).forEach(k => { if(k.endsWith('_' + val)) delete tankDateRangeCache[k]; });
+    }
     }
     // Fire all three simultaneously — pool and prospects run silently in background
     fetchDateRangeStats(val);
     fetchPoolDateRangeStats(val);
     if(typeof fetchProspectsDateRangeStats === 'function') fetchProspectsDateRangeStats(val);
+    // TANK_DATERANGE_FIX_V1 (May 18, 2026) — fire the Tank fetch too, and re-render
+    // the Tank if active. setDateRange used to skip the Tank entirely, so changing
+    // the dropdown FROM the Tank tab did nothing visible.
+    if(typeof fetchTankDateRangeStats === 'function') fetchTankDateRangeStats(val);
     if(poolActive) renderPool();
     if(typeof leadersActive !== 'undefined' && leadersActive && typeof renderLeaders === 'function') renderLeaders();
     if(typeof prospectsActive !== 'undefined' && prospectsActive && typeof renderProspects === 'function') renderProspects();
+    if(typeof tankActive !== 'undefined' && tankActive && typeof renderTank === 'function') renderTank();
   }
 }
 
@@ -11588,6 +11600,57 @@ async function fetchPoolDateRangeStats(range){
   }
   poolDateRangeFetching = false;
   if(poolActive && poolLoaded) renderPool();
+}
+
+// TANK_DATERANGE_FIX_V1 (May 18, 2026) — fetch date-range stats for the Holding
+// Tank players. Modeled on fetchPoolDateRangeStats. Uses the same Worker bundle
+// endpoint (cached upstream so cost is near zero). Populates tankDateRangeCache
+// keyed by mlb_id + '_' + range. Tank's renderTank reads this exact cache shape
+// already (line ~15343), so once populated the Tank picks up the values on its
+// next render. Re-renders the Tank periodically as chunks resolve so values
+// fill in progressively.
+let tankDateRangeFetching = false;
+async function fetchTankDateRangeStats(range){
+  if(tankDateRangeFetching) return;
+  if(!Array.isArray(_holdingTank) || _holdingTank.length === 0) return;
+  tankDateRangeFetching = true;
+  try {
+    const needsFetch = _holdingTank.filter(p => {
+      if(!p || !p.mlb_id) return false;
+      if(tankDateRangeCache[p.mlb_id + '_' + range]) return false;
+      if(typeof hasPrebakedStats === 'function' && hasPrebakedStats(p, range)) return false;
+      return true;
+    });
+    if(needsFetch.length === 0){
+      tankDateRangeFetching = false;
+      if(typeof tankActive !== 'undefined' && tankActive && typeof renderTank === 'function') renderTank();
+      return;
+    }
+    const allIds = needsFetch.map(p => p.mlb_id).filter(Boolean);
+    const CHUNK = 200;
+    for(let i = 0; i < allIds.length; i += CHUNK){
+      if(dateRange !== range) break; // user switched away, abort
+      const chunk = allIds.slice(i, i + CHUNK);
+      const bundleUrl = `https://watch101-cache.wild-fog-21df.workers.dev/mlb/player-stats-bundle?ids=${chunk.join(',')}&range=${range}`;
+      const bRes = await fetch(bundleUrl);
+      const bundle = await bRes.json();
+      chunk.forEach(mlbId => {
+        const stats = bundle[mlbId] || {};
+        tankDateRangeCache[mlbId + '_' + range] = Object.assign({ mlb_id: mlbId }, stats);
+      });
+      if(typeof tankActive !== 'undefined' && tankActive && typeof renderTank === 'function') renderTank();
+    }
+  } catch(e){
+    console.warn('[TANK_DATERANGE_FIX_V1] fetch failed, marking remaining ids as empty:', e);
+    _holdingTank.forEach(p => {
+      if(p && p.mlb_id && !tankDateRangeCache[p.mlb_id + '_' + range]){
+        tankDateRangeCache[p.mlb_id + '_' + range] = { mlb_id: p.mlb_id };
+      }
+    });
+  } finally {
+    tankDateRangeFetching = false;
+    if(typeof tankActive !== 'undefined' && tankActive && typeof renderTank === 'function') renderTank();
+  }
 }
 
 loadData();
@@ -14854,6 +14917,30 @@ function stampHoldingTankFromWarehouses(){
     if(typeof applyYahoo === 'function' && Array.isArray(_holdingTank))   applyYahoo(_holdingTank);
     if(typeof applyCBS   === 'function' && Array.isArray(_holdingTank))   applyCBS(_holdingTank);
     if(typeof mergeSavant === 'function' && Array.isArray(_holdingTank)) _holdingTank.forEach(p => mergeSavant(p));
+    // TANK_AB_BACKFILL_V1 (May 18, 2026) — older Tank players were saved before
+    // the `ab` field was added to the Send-to-Tank functions, so their AB column
+    // renders blank. Pull `ab` (and a few other counting stats) from poolPlayers
+    // or players[] by mlb_id whenever the warehouse stamp runs. This is harmless
+    // on freshly-added players (their fields are already set) and recovers the
+    // missing values on the older ones.
+    if(Array.isArray(_holdingTank)){
+      _holdingTank.forEach(p => {
+        if(!p || !p.mlb_id) return;
+        const src = (typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers) ? poolPlayers.find(x => x && x.mlb_id === p.mlb_id) : null)
+                 || (typeof players !== 'undefined' && Array.isArray(players) ? players.find(x => x && x.mlb_id === p.mlb_id) : null);
+        if(!src) return;
+        // Only fill if missing — never overwrite values the Tank already has.
+        ['ab','r','hr','rbi','sb','ip','k','w','sv','hld'].forEach(f => {
+          if((p[f] == null || p[f] === '') && src[f] != null) p[f] = src[f];
+        });
+        ['avg','obp','ops','era','whip'].forEach(f => {
+          if((p[f] == null || p[f] === '') && src[f] != null){
+            const n = parseFloat(src[f]);
+            if(!isNaN(n)) p[f] = n;
+          }
+        });
+      });
+    }
   } catch(e){ console.warn('[tank] stamp from warehouses failed:', e); }
 }
 
