@@ -13659,12 +13659,96 @@ function openPlayerPage(p){
   renderSchedule7D(mlbId);
   renderPodcastMentions(mlbId);
   renderGameLog(mlbId);
+  // NEWS_LINKS_V1 (May 17, 2026) Push 4c — populate the Latest blurb strip
+  // with this player's most recent highlight from yesterday's slate. If no
+  // blurb exists, the function hides the whole strip cleanly.
+  renderNewsStrip(p);
 
   overlay.classList.add('visible');
   // Show the dim backdrop behind the windowed panel
   var backdrop = document.getElementById('player-page-backdrop');
   if(backdrop) backdrop.classList.add('visible');
   document.body.classList.add('pp-open');
+}
+
+// NEWS_LINKS_V1 (May 17, 2026) Push 4c — Deep Cut "Latest" blurb strip renderer.
+// Pulls this player's blurb out of window.PLAYER_HIGHLIGHTS (keyed by mlb_id,
+// populated by loadHighlightsFromNAS at parse time). Builds deep-link buttons
+// to MLB.com (always available — built from mlb_id) and FanGraphs (uses
+// registry's fangraphs_id when available, falls back to FanGraphs search by
+// name when not). If no blurb exists for this player, the entire strip hides
+// itself via the .ppo-news-empty class — see CSS in news-links-v1-styles.
+function renderNewsStrip(p){
+  var strip = document.getElementById('ppo-news-strip');
+  if(!strip) return;
+  var mlbId = p && p.mlb_id;
+  var blurb = (mlbId && window.PLAYER_HIGHLIGHTS) ? window.PLAYER_HIGHLIGHTS[String(mlbId)] : null;
+
+  // No blurb for this player? Hide the strip and bail out.
+  if(!blurb){
+    strip.classList.add('ppo-news-empty');
+    return;
+  }
+  strip.classList.remove('ppo-news-empty');
+
+  // Headline + description
+  var headlineEl = document.getElementById('ppo-news-headline');
+  var descEl     = document.getElementById('ppo-news-description');
+  if(headlineEl) headlineEl.textContent = blurb.headline || '';
+  if(descEl)     descEl.textContent     = blurb.description || '';
+
+  // Meta line: format "May 16 vs NYM" from game_date + opponent. Falls back
+  // gracefully if either piece is missing.
+  var metaEl = document.getElementById('ppo-news-meta');
+  if(metaEl){
+    var metaParts = [];
+    if(blurb.game_date){
+      try {
+        // game_date is "YYYY-MM-DD"; render as "Mon DD" in local convention.
+        var d = new Date(blurb.game_date + 'T12:00:00');
+        var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        metaParts.push(monthNames[d.getMonth()] + ' ' + d.getDate());
+      } catch(_){ metaParts.push(blurb.game_date); }
+    }
+    if(blurb.opponent_team_name){
+      // Try to abbreviate to 3 letters by looking up the team in the registry,
+      // otherwise just use the full name. Simple approach: if a TEAM_ABBR_MAP
+      // exists, use it; otherwise just append the full name.
+      var oppName = blurb.opponent_team_name;
+      metaParts.push('vs ' + oppName);
+    }
+    metaEl.textContent = metaParts.join(' · ');
+  }
+
+  // MLB.com deep link — always available. MLB.com redirects /player/<id> to
+  // the canonical slug, so we don't need to look up a slug ourselves.
+  var mlbLink = document.getElementById('ppo-news-link-mlb');
+  if(mlbLink){
+    mlbLink.href = 'https://www.mlb.com/player/' + encodeURIComponent(mlbId);
+    mlbLink.title = 'Open ' + (p.name || 'player') + ' on MLB.com';
+  }
+
+  // FanGraphs deep link — use registry's fg_id if we have it, otherwise fall
+  // back to FanGraphs' search by player name (always works for any name).
+  var fgLink = document.getElementById('ppo-news-link-fg');
+  if(fgLink){
+    var fgId = null;
+    if(typeof registryByMlbam !== 'undefined' && mlbId != null){
+      var reg = registryByMlbam[String(mlbId)];
+      if(reg && reg.fg) fgId = reg.fg;
+    }
+    if(fgId){
+      // Canonical FanGraphs URL pattern. The slug part can be anything (or
+      // even omitted) — FanGraphs redirects to the right page based on the ID.
+      fgLink.href = 'https://www.fangraphs.com/players/-/' + encodeURIComponent(fgId) + '/stats';
+    } else {
+      // Fallback: FanGraphs site search. Works for any player name even if we
+      // never had a FanGraphs ID.
+      var q = (p.name || '').trim();
+      fgLink.href = 'https://www.fangraphs.com/players/search?q=' + encodeURIComponent(q);
+    }
+    fgLink.title = 'Open ' + (p.name || 'player') + ' on FanGraphs';
+  }
 }
 
 function renderRankHistory(mlbId){
