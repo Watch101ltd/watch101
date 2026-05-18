@@ -675,38 +675,12 @@ body.day-mode td.col-gold-sprint-k9 span[style*="--gold"] {
    They'll get the same treatment in a follow-up if Matt confirms this works on the
    main list. */
 
-/* (A0) Table-layout override — the global `table { table-layout: fixed }` rule at
-   line ~126 ignores min-width on columns, which is why SQUISH_FIX_V1's first
-   attempt failed even though min-widths were correctly computed. Flipping the
-   main table to `auto` lets columns honor min-width AND lets content widths
-   push the table beyond its wrap (triggering the existing overflow-x:auto
-   scroll). Pool/Leaders/Tank tables stay on fixed-layout for now — we extend
-   this when Matt confirms the main table works the way he wants. !important
-   needed to overpower the unscoped global rule. */
-#main-table { table-layout: auto !important; }
-
-/* (A) Min-widths on the squishable columns. Numbers chosen to fit dual-stat values
-   like ".245 / 3.45" or "12 / 87" comfortably without truncation. */
-#main-table th.col-r-k,          #main-table td.col-r-k,
-#main-table th.col-hr-w,         #main-table td.col-hr-w,
-#main-table th.col-ab-ip,        #main-table td.col-ab-ip,
-#main-table th.col-rbi-sv,       #main-table td.col-rbi-sv,
-#main-table th.col-sb-hld,       #main-table td.col-sb-hld,
-#main-table th.col-avg-era,      #main-table td.col-avg-era,
-#main-table th.col-obp-whip,     #main-table td.col-obp-whip,
-#main-table th.col-ops-kbb,      #main-table td.col-ops-kbb {
-  min-width: 50px;
-}
-#main-table th.col-gold-xba-xera,     #main-table td.col-gold-xba-xera,
-#main-table th.col-gold-xwoba,        #main-table td.col-gold-xwoba,
-#main-table th.col-gold-brl-fbvelo,   #main-table td.col-gold-brl-fbvelo,
-#main-table th.col-gold-ev-kbbpct,    #main-table td.col-gold-ev-kbbpct,
-#main-table th.col-gold-batspd-gbpct, #main-table td.col-gold-batspd-gbpct,
-#main-table th.col-gold-kpct-chase,   #main-table td.col-gold-kpct-chase,
-#main-table th.col-gold-bbpct-whiff,  #main-table td.col-gold-bbpct-whiff,
-#main-table th.col-gold-sprint-k9,    #main-table td.col-gold-sprint-k9 {
-  min-width: 60px;
-}
+/* SQUISH_FIX_V1 PARTIAL REVERT (May 18, 2026 evening) — Matt prefers the squish over
+   horizontal scrolling. Removed the table-layout:auto override and the explicit
+   column min-widths that together caused the table to grow past the viewport.
+   The @media font-shrink rules below are kept because they're harmless at any
+   zoom and may help readability slightly. Restoring this if/when we revisit the
+   layout problem: see backup index_2026-05-18_1751_pre-squish-revert.html. */
 
 /* (B) Modest shrink at sub-1600px viewports — Matt's laptop range. About 10% smaller
    font on data cells, slightly tighter padding on data cells (headers stay readable).
@@ -11282,7 +11256,7 @@ async function quickAddFromPoolToTank(mlbId, name, team, primaryPos, age, btnEl)
   const isMinorLvl = p.level==='AAA'||p.level==='AA'||p.level==='A';
   let finalTeam = p.team || team || '';
   if(isMinorLvl && mlbId){ try{ const pr=await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}?hydrate=currentTeam`); const pd=await pr.json(); const ct=pd.people&&pd.people[0]&&pd.people[0].currentTeam; if(ct&&ct.parentOrgId) finalTeam=orgIdToAbbr(ct.parentOrgId)||finalTeam; }catch(e){} }
-  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions: p.eligible_positions&&p.eligible_positions.length>0?p.eligible_positions:(primaryPos?[primaryPos]:[]), age:finalAge, birthDate:p.birthDate||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', ab:_readStat(p,'ab'), avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, pitcher_type:p.pitcher_type||null, injury_status:p.injury_status||null };
+  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions: p.eligible_positions&&p.eligible_positions.length>0?p.eligible_positions:(primaryPos?[primaryPos]:[]), primaryPos: p.primaryPos||primaryPos||null, age:finalAge, birthDate:p.birthDate||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', ab:_readStat(p,'ab'), avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, pitcher_type:p.pitcher_type||null, injury_status:p.injury_status||null };
   _holdingTank.push(newPlayer); saveHoldingTank();
   // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after Pool→Tank.
   try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
@@ -11301,7 +11275,7 @@ async function quickAddLeaderToTank(mlbId, name, team, primaryPos, btnEl){
   await fetchPoolStats(p);
   const finalAge = p.age || null;
   const finalTeam = p.team || team || '';
-  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], age:finalAge, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', ab:_readStat(p,'ab'), avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip') };
+  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], primaryPos: p.primaryPos||primaryPos||null, age:finalAge, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', ab:_readStat(p,'ab'), avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:_readStat(p,'sv'), hld:_readStat(p,'hld'), ip:_readStatFloat(p,'ip') };
   _holdingTank.push(newPlayer); saveHoldingTank();
   // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after Leaders→Tank.
   try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
@@ -11319,7 +11293,7 @@ async function addProspectToTank(mlbId, name, team, primaryPos, age, level, btnE
   if(!p.stats) await fetchProspectStats(p);
   let finalTeam = team || '—';
   try{ const pr=await fetch(`https://statsapi.mlb.com/api/v1/people/${mlbId}?hydrate=currentTeam`); const pd=await pr.json(); const ct=pd.people&&pd.people[0]&&pd.people[0].currentTeam; if(ct&&ct.parentOrgId) finalTeam=orgIdToAbbr(ct.parentOrgId)||finalTeam; }catch(e){}
-  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], age:p.age||parseInt(age)||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', ab:_readStat(p,'ab'), avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:null, hld:null, ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, level:level, statsSource:'MiLB' };
+  const newPlayer = { id:uid(), mlb_id:mlbId, name, team:finalTeam, positions:primaryPos?[primaryPos]:[], primaryPos: p.primaryPos||primaryPos||null, age:p.age||parseInt(age)||null, rank:_holdingTank.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'', ab:_readStat(p,'ab'), avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'), rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'), era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'), sv:null, hld:null, ip:_readStatFloat(p,'ip'), yahoo_rank:null, roster_pct:null, bats:p.bats||null, level:level, statsSource:'MiLB' };
   _holdingTank.push(newPlayer); saveHoldingTank();
   // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save Tank to Synology after Prospect→Tank.
   try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
@@ -14939,6 +14913,30 @@ function stampHoldingTankFromWarehouses(){
             if(!isNaN(n)) p[f] = n;
           }
         });
+        // TANK_PRIMARYPOS_BACKFILL_V1 (May 18, 2026) — older Tank players were saved
+        // without `primaryPos`, which broke the renderTank pitcher/hitter split
+        // (`pit = isPitcherPos(p.primaryPos)`) — pitchers got misclassified as
+        // hitters and showed empty AB/R/HR/RBI/SB cells. Recover the field from
+        // the source player, falling back to positions[0] if source isn't available.
+        if((!p.primaryPos || p.primaryPos === '') && src.primaryPos){
+          p.primaryPos = src.primaryPos;
+        }
+        if((!p.primaryPos || p.primaryPos === '') && Array.isArray(p.positions) && p.positions.length){
+          // Prefer P over RP/SP since isPitcherPos catches P, RP, SP, CL all.
+          // Just take the first position string — good enough for the pit/hitter split.
+          p.primaryPos = p.positions[0];
+        }
+      });
+    }
+    // TANK_PRIMARYPOS_BACKFILL_V1 — also try the positions[0] fallback on Tank
+    // players that didn't have a source match in pool/main (catches pitchers
+    // whose source records don't exist on the current list, but whose Tank
+    // record DOES have a positions[] array from the original add).
+    if(Array.isArray(_holdingTank)){
+      _holdingTank.forEach(p => {
+        if((!p.primaryPos || p.primaryPos === '') && Array.isArray(p.positions) && p.positions.length){
+          p.primaryPos = p.positions[0];
+        }
       });
     }
   } catch(e){ console.warn('[tank] stamp from warehouses failed:', e); }
