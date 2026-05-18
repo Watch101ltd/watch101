@@ -8992,6 +8992,19 @@ async function loadPoolPlayers(){
     poolPlayers.sort((a,b) => a.name.localeCompare(b.name));
     poolLoaded = true;
 
+    // CHIP_BACKFILL_FIX_V2 (May 18, 2026) — fire the sample backfill against
+    // poolPlayers so the MLB/AAA toggle chip shows on Pool rows. Same function
+    // the main watch list uses, now parameterized to accept a target array.
+    // Fires non-blocking so the Pool render isn't held up. On resolution it
+    // re-renders the Pool (and other visible tables) so chips appear once the
+    // MLB Stats API rolls back the bulk responses.
+    try {
+      if(typeof fetchSampleBackfillForListPlayers === 'function'){
+        fetchSampleBackfillForListPlayers(poolPlayers, 'pool')
+          .catch(e => console.warn('[CHIP_BACKFILL_FIX_V2] pool backfill failed:', e));
+      }
+    } catch(e){ console.warn('[CHIP_BACKFILL_FIX_V2] pool backfill kickoff failed:', e); }
+
     // EXP_LABEL_POOL_FIX_V2 (May 13, 2026) — race-condition fix. The splash in
     // loadRegistry() only runs once on page load; if it fires BEFORE poolPlayers
     // is populated (the common case — pool is a slow MLB API fetch), the splash
@@ -12011,8 +12024,14 @@ async function loadProspects(){
 // Leaders / Context can flip rows freely. Cost: 8 MLB API calls (4 levels
 // × 2 groups), parallelized. Numbers stay fresh because MLB's stats API is
 // our cheapest, fastest upstream — no Yahoo rate limit, no NAS roundtrip.
-async function fetchSampleBackfillForListPlayers(){
-  if(!Array.isArray(players) || !players.length) return;
+async function fetchSampleBackfillForListPlayers(targetArray, surfaceName){
+  // CHIP_BACKFILL_FIX_V2 (May 18, 2026) — parameterized so the same backfill can
+  // run on either the main `players` array (default) OR `poolPlayers` (called from
+  // loadPoolPlayers). Without the parameter the Pool's chip column was always
+  // empty because no code path was stamping statsMilb on poolPlayers.
+  const source = Array.isArray(targetArray) ? targetArray : players;
+  const _surface = surfaceName || 'watch';
+  if(!Array.isArray(source) || !source.length) return;
   // CHIP_BACKFILL_FIX_V1 (May 18, 2026) — backfill MiLB+MLB samples for EVERY player
   // on the list (not just ones pre-flagged with level=AAA/AA/A). Players added to the
   // list while up in MLB had no level set, so they were skipped — meaning their chip
@@ -12021,9 +12040,9 @@ async function fetchSampleBackfillForListPlayers(){
   // target list costs zero extra network — just a bigger wantedIds filter on the
   // response side. After fetch, players who genuinely have NO MiLB data get statsMilb
   // = null (no chip), and players who DO get the chip + samples wired up correctly.
-  const targets = players.filter(p => p && p.mlb_id);
+  const targets = source.filter(p => p && p.mlb_id);
   if(!targets.length) return;
-  console.log('[SAMPLE_BACKFILL] backfilling', targets.length, 'on-list prospects with both samples...');
+  console.log('[SAMPLE_BACKFILL]', _surface, '— backfilling', targets.length, 'players with both samples...');
 
   // Same shape as fetchProspectStatsBulk — 4 MiLB level/group combos
   // (AAA/AA/A × hitting/pitching) plus the MLB feed (sportId=1, both groups).
@@ -12170,11 +12189,12 @@ async function fetchSampleBackfillForListPlayers(){
     // Only re-apply if the user hasn't explicitly toggled this player
     // already (would happen if backfill races a click — unlikely but safe).
     if(!_sampleToggle[p.mlb_id]){
-      // _applyActiveSampleToFlatFields uses the watch-list default (MLB).
-      _applyActiveSampleToFlatFields(p, 'watch');
+      // _applyActiveSampleToFlatFields uses the active surface default (MLB for
+      // watch/pool/leaders/context; MiLB only on prospects which has its own bulk).
+      _applyActiveSampleToFlatFields(p, _surface);
     }
   });
-  console.log('[SAMPLE_BACKFILL] resolved samples for', _hitCount, '/', targets.length, 'on-list prospects.');
+  console.log('[SAMPLE_BACKFILL]', _surface, '— resolved samples for', _hitCount, '/', targets.length, 'players.');
 
   // Re-render every visible table so the chips appear with asterisks.
   if(typeof renderTable      === 'function') try { renderTable(); }      catch(e){}
