@@ -3198,6 +3198,56 @@ if(typeof window.PLAYER_HIGHLIGHTS === 'undefined') window.PLAYER_HIGHLIGHTS = {
 // Kick it off immediately at parse time — doesn't block anything else.
 loadHighlightsFromNAS();
 
+// ── DATERANGE_NAS_FETCH_V1 (May 19, 2026) ────────────────────────────────────
+// Fetch byDateRange stats cache (yesterday / 7 / 14 / 30) from the NAS
+// endpoint added in DATERANGE_NAS_ENDPOINT_V1. Populates window.PLAYER_DATERANGE_CACHE
+// which is read by every renderer + sort comparator that respects date range.
+//
+// Coexistence with the static file (data/player_daterange_cache.js):
+//   The static <script src="data/player_daterange_cache.js"> tag still loads
+//   first (synchronous, before this fetch resolves). PLAYER_DATERANGE_CACHE is
+//   populated by that file with MLB-only data. THIS function then fetches the
+//   NAS version (MLB + MiLB) and OVERWRITES the static-file version. Result:
+//   no flash of empty stats during page load — there's always some cache to
+//   read from — and the NAS data wins once it arrives.
+//
+// Failure mode: if NAS is offline or the endpoint errors, the static-file
+// version stays in place. Worst case is "MLB date range works, MiLB doesn't."
+//
+// PROSPECTS / RENDERS that fire after page load:
+//   They re-read PLAYER_DATERANGE_CACHE each time, so they pick up the NAS
+//   data automatically once it arrives. No manual re-render needed.
+async function loadDateRangeCacheFromNAS(){
+  try {
+    const res = await fetch(`${NAS_PROXY_URL}/daterange-cache`, {
+      headers: {'ngrok-skip-browser-warning': 'true'},
+      cache: 'no-store'
+    });
+    if(!res.ok) return; // silent fail — static file stays in place as fallback
+    const data = await res.json();
+    if(data && typeof data === 'object' && data.player_daterange_cache && typeof data.player_daterange_cache === 'object'){
+      window.PLAYER_DATERANGE_CACHE = data.player_daterange_cache;
+      window.PLAYER_DATERANGE_CACHE_META = data.meta || null;
+      var _count = Object.keys(data.player_daterange_cache).length;
+      var _ts = (data.meta && data.meta.generated_at) ? data.meta.generated_at : 'unknown';
+      console.log('[DATERANGE_NAS_FETCH_V1] loaded ' + _count + ' players from NAS (generated: ' + _ts + ')');
+      // Re-render any active tables so the NAS data lands immediately if a date
+      // range is already selected. No-ops if the tables aren't visible yet.
+      try { if(typeof dateRange !== 'undefined' && dateRange !== 'season' && typeof renderTable === 'function') renderTable(); } catch(_e){}
+      try { if(typeof dateRange !== 'undefined' && dateRange !== 'season' && typeof renderPool === 'function' && typeof poolActive !== 'undefined' && poolActive) renderPool(); } catch(_e){}
+      try { if(typeof dateRange !== 'undefined' && dateRange !== 'season' && typeof renderLeaders === 'function' && typeof leadersActive !== 'undefined' && leadersActive) renderLeaders(); } catch(_e){}
+      try { if(typeof dateRange !== 'undefined' && dateRange !== 'season' && typeof renderTank === 'function' && typeof tankActive !== 'undefined' && tankActive) renderTank(); } catch(_e){}
+      try { if(typeof dateRange !== 'undefined' && dateRange !== 'season' && typeof renderProspects === 'function' && typeof prospectsActive !== 'undefined' && prospectsActive) renderProspects(); } catch(_e){}
+    }
+  } catch(e){
+    console.warn('[DATERANGE_NAS_FETCH_V1] fetch failed:', e && e.message);
+  }
+}
+// Kick it off immediately at parse time. Static file (if loaded) provides
+// the initial value; this fetch upgrades it to MLB + MiLB once it lands.
+loadDateRangeCacheFromNAS();
+// ── /DATERANGE_NAS_FETCH_V1 ──────────────────────────────────────────────────
+
 // STAGING_VS_PROD_V1 — pick the right endpoint based on what domain we're on (Apr 22, 2026).
 // GitHub = staging environment (reads from _Staging\<List>\ — sees works-in-progress)
 // Anything else (Cloudflare prod, custom domain, file://) = production
