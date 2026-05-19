@@ -14463,11 +14463,18 @@ function _renderPitcherGameLog(mlbId, wrap){
     + sc('starts', (s.starts || 0) + '/' + (s.appearances || s.window || 7))
     + '</div>';
 
-  // 8 columns: Date, Opp, Dec, IP, H, ER, BB, K
+  // PITCHER_ERA_COLUMN_V1 (May 19, 2026) — ERA added as the first stat
+  // column (leftmost after Dec) so the reader sees the per-game ERA at
+  // a glance, the same way the hitter card's H-for-AB sits first. ERA
+  // shows "INF" when ER>0 and IP==0 (blow-up, division by zero) and
+  // "0.00" when ER==0 and IP==0 (rare, no harm done). Otherwise the
+  // formula is (ER * 27) / outs, since IP is base-3 (1.1 IP = 4 outs).
+  //
+  // 9 columns: Date, Opp, Dec, ERA, IP, H, ER, BB, K
   // (R dropped — duplicate of ER for pitchers; Result dropped — empty for pitchers
   //  because the MLB pitching gameLog doesn't expose team/opp scores cleanly,
   //  and Decision already tells you W/L which is the fantasy-useful piece)
-  var headers = ['Date','Opp','Dec','IP','H','ER','BB','K'];
+  var headers = ['Date','Opp','Dec','ERA','IP','H','ER','BB','K'];
   var leftCols = {0:1, 1:1, 2:1};
   var thHtml = '';
   for(var i=0; i<headers.length; i++){
@@ -14493,10 +14500,22 @@ function _renderPitcherGameLog(mlbId, wrap){
   }
   function _outs2ip(o){ return Math.floor(o/3) + '.' + (o%3); }
 
+  // PITCHER_ERA_COLUMN_V1: per-game ERA formatter. Handles the
+  // division-by-zero cases up front so the rest of the formula
+  // can assume outs > 0.
+  function _gameEra(er, outs){
+    var _er = Number(er) || 0;
+    if(outs === 0){
+      return _er > 0 ? 'INF' : '0.00';
+    }
+    return ((_er * 27) / outs).toFixed(2);
+  }
+
   var rowsHtml = '';
   for(var g=0; g<entry.games.length; g++){
     var r = entry.games[g] || {};
-    totOuts += _ip2outs(r.ip);
+    var _rowOuts = _ip2outs(r.ip);
+    totOuts += _rowOuts;
     totH  += (r.h  || 0);
     totER += (r.er || 0);
     totBB += (r.bb || 0);
@@ -14505,6 +14524,7 @@ function _renderPitcherGameLog(mlbId, wrap){
       + '<td class="gl-left gl-date">' + escapeHtml(r.date_short || r.date || '') + '</td>'
       + '<td class="gl-left ' + (r.home ? 'gl-opp-home' : 'gl-opp-away') + '">' + escapeHtml(String(r.opp || '—')) + '</td>'
       + '<td class="gl-left">' + decisionChip(r.decision) + '</td>'
+      + '<td>' + escapeHtml(_gameEra(r.er, _rowOuts)) + '</td>'
       + '<td>' + escapeHtml(String(r.ip || '0.0')) + '</td>'
       + '<td>' + (r.h  || 0) + '</td>'
       + '<td>' + (r.er || 0) + '</td>'
@@ -14513,8 +14533,12 @@ function _renderPitcherGameLog(mlbId, wrap){
       + '</tr>';
   }
 
+  // PITCHER_ERA_COLUMN_V1: cumulative L7 ERA = (totER * 27) / totOuts.
+  // Same edge-case handling as the per-game cells: INF if all outs are
+  // zero and any earned runs were given up; 0.00 if everything's zero.
   var footHtml = '<tr class="gl-tot-row">'
     + '<td class="gl-left" colspan="3">Totals</td>'
+    + '<td>' + escapeHtml(_gameEra(totER, totOuts)) + '</td>'
     + '<td>' + _outs2ip(totOuts) + '</td>'
     + '<td>' + totH + '</td>'
     + '<td>' + totER + '</td>'
