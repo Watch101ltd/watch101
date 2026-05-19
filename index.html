@@ -1446,6 +1446,23 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-gamelog-table tfoot td strong{color:var(--text1);font-weight:700;}
 #player-page-overlay .ppo-gamelog-table tfoot td.gl-total-label{color:var(--gold);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;}
 #player-page-overlay .ppo-gamelog-table tfoot td.gl-total-starts{color:var(--text3);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;}
+/* GAMELOG_COLORIZE_V1 (May 19, 2026) — color stat cells by role.
+   Hitter game log stats render in --stat-hitter (red). Pitcher game log
+   stats render in --stat-pitcher (blue). Both variables already swap
+   to darker variants in day mode automatically. The body-row rules use
+   td.gl-hit-stat / td.gl-pit-stat; the tfoot overrides use a more-specific
+   selector to beat the existing `tfoot td strong{color:var(--text1)}`
+   white-forcing rule above. The DNP override ensures em-dashes on
+   scratched/IL rows stay muted text3 instead of rendering as colored
+   em-dashes (which would look weird and fight the gl-dnp row dimming). */
+#player-page-overlay .ppo-gamelog-table td.gl-hit-stat{color:var(--stat-hitter);}
+#player-page-overlay .ppo-gamelog-table td.gl-pit-stat{color:var(--stat-pitcher);}
+#player-page-overlay .ppo-gamelog-table tfoot td.gl-hit-stat,
+#player-page-overlay .ppo-gamelog-table tfoot td.gl-hit-stat strong{color:var(--stat-hitter);}
+#player-page-overlay .ppo-gamelog-table tfoot td.gl-pit-stat,
+#player-page-overlay .ppo-gamelog-table tfoot td.gl-pit-stat strong{color:var(--stat-pitcher);}
+#player-page-overlay .ppo-gamelog-table tr.gl-dnp td.gl-hit-stat,
+#player-page-overlay .ppo-gamelog-table tr.gl-dnp td.gl-pit-stat{color:var(--text3);}
 /* ---- Rank History chart (Matt's "prior Watch 101 ranks by date" graph) ---- */
 #player-page-overlay .ppo-chart-wrap{position:relative;padding:10px 0 4px;}
 #player-page-overlay .ppo-chart{width:100%;height:220px;display:block;}
@@ -14340,6 +14357,12 @@ function renderGameLog(mlbId){
     if(v === null || v === undefined) return dash();
     return '<td>' + escapeHtml(String(v)) + '</td>';
   }
+  // GAMELOG_COLORIZE_V1: hitter-role stat cell variant. Same shape as
+  // cellNum but adds the gl-hit-stat class so the value renders in red.
+  function cellNumHit(v){
+    if(v === null || v === undefined) return dash();
+    return '<td class="gl-hit-stat">' + escapeHtml(String(v)) + '</td>';
+  }
 
   // Running totals for the tfoot summary.
   var tot = {ab:0, r:0, h:0, hr:0, rbi:0, sb:0, bb:0, k:0, starts:0};
@@ -14377,10 +14400,11 @@ function renderGameLog(mlbId){
     if(started2){
       var _abVal = (r2.ab == null) ? 0 : Number(r2.ab) || 0;
       var _hVal  = (r2.h  == null) ? 0 : Number(r2.h)  || 0;
-      abC = '<td>' + escapeHtml(_hVal + '-for-' + _abVal) + '</td>';
-      rC = cellNum(r2.r); hrC = cellNum(r2.hr);
-      rbiC = cellNum(r2.rbi); sbC = cellNum(r2.sb); bbC = cellNum(r2.bb); kC = cellNum(r2.k);
-      avgCell2 = '<td>' + escapeHtml(String(r2.avg || '.000')) + '</td>';
+      // GAMELOG_COLORIZE_V1: tag every stat cell with gl-hit-stat.
+      abC = '<td class="gl-hit-stat">' + escapeHtml(_hVal + '-for-' + _abVal) + '</td>';
+      rC = cellNumHit(r2.r); hrC = cellNumHit(r2.hr);
+      rbiC = cellNumHit(r2.rbi); sbC = cellNumHit(r2.sb); bbC = cellNumHit(r2.bb); kC = cellNumHit(r2.k);
+      avgCell2 = '<td class="gl-hit-stat">' + escapeHtml(String(r2.avg || '.000')) + '</td>';
       tot.ab  += (r2.ab  || 0);
       tot.r   += (r2.r   || 0);
       tot.h   += (r2.h   || 0);
@@ -14418,17 +14442,19 @@ function renderGameLog(mlbId){
   // HITTER_LINE_COLLAPSE_V1: totals row collapses AB + H to one cell
   // showing "10-for-19" style (H-for-AB). Same shape as the per-game cells
   // above so the column reads consistently top to bottom.
+  // GAMELOG_COLORIZE_V1: tag every totals-row stat cell with gl-hit-stat
+  // so the cumulative numbers read in red alongside the per-game cells.
   var footHtml = '<tr class="gl-total-row">'
     + '<td class="gl-left gl-total-label" colspan="3">L' + (s.window || 7) + ' Totals</td>'
     + '<td class="gl-total-starts">' + tot.starts + ' G</td>'
-    + '<td><strong>' + tot.h + '-for-' + tot.ab + '</strong></td>'
-    + '<td><strong>' + tot.r   + '</strong></td>'
-    + '<td><strong>' + tot.hr  + '</strong></td>'
-    + '<td><strong>' + tot.rbi + '</strong></td>'
-    + '<td><strong>' + tot.sb  + '</strong></td>'
-    + '<td><strong>' + tot.bb  + '</strong></td>'
-    + '<td><strong>' + tot.k   + '</strong></td>'
-    + '<td><strong>' + escapeHtml(totAvg) + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + tot.h + '-for-' + tot.ab + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + tot.r   + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + tot.hr  + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + tot.rbi + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + tot.sb  + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + tot.bb  + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + tot.k   + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + escapeHtml(totAvg) + '</strong></td>'
     + '</tr>';
 
   wrap.innerHTML = summaryHtml
@@ -14532,30 +14558,32 @@ function _renderPitcherGameLog(mlbId, wrap){
     totER += (r.er || 0);
     totBB += (r.bb || 0);
     totK  += (r.k  || 0);
+    // GAMELOG_COLORIZE_V1: tag every pitcher stat cell with gl-pit-stat.
     rowsHtml += '<tr>'
       + '<td class="gl-left gl-date">' + escapeHtml(r.date_short || r.date || '') + '</td>'
       + '<td class="gl-left ' + (r.home ? 'gl-opp-home' : 'gl-opp-away') + '">' + escapeHtml(String(r.opp || '—')) + '</td>'
       + '<td class="gl-left">' + decisionChip(r.decision) + '</td>'
-      + '<td>' + escapeHtml(_gameEra(r.er, _rowOuts)) + '</td>'
-      + '<td>' + escapeHtml(String(r.ip || '0.0')) + '</td>'
-      + '<td>' + (r.h  || 0) + '</td>'
-      + '<td>' + (r.er || 0) + '</td>'
-      + '<td>' + (r.bb || 0) + '</td>'
-      + '<td>' + (r.k  || 0) + '</td>'
+      + '<td class="gl-pit-stat">' + escapeHtml(_gameEra(r.er, _rowOuts)) + '</td>'
+      + '<td class="gl-pit-stat">' + escapeHtml(String(r.ip || '0.0')) + '</td>'
+      + '<td class="gl-pit-stat">' + (r.h  || 0) + '</td>'
+      + '<td class="gl-pit-stat">' + (r.er || 0) + '</td>'
+      + '<td class="gl-pit-stat">' + (r.bb || 0) + '</td>'
+      + '<td class="gl-pit-stat">' + (r.k  || 0) + '</td>'
       + '</tr>';
   }
 
   // PITCHER_ERA_COLUMN_V1: cumulative L7 ERA = (totER * 27) / totOuts.
   // Same edge-case handling as the per-game cells: INF if all outs are
   // zero and any earned runs were given up; 0.00 if everything's zero.
+  // GAMELOG_COLORIZE_V1: tag pitcher totals row stats with gl-pit-stat.
   var footHtml = '<tr class="gl-tot-row">'
     + '<td class="gl-left" colspan="3">Totals</td>'
-    + '<td>' + escapeHtml(_gameEra(totER, totOuts)) + '</td>'
-    + '<td>' + _outs2ip(totOuts) + '</td>'
-    + '<td>' + totH + '</td>'
-    + '<td>' + totER + '</td>'
-    + '<td>' + totBB + '</td>'
-    + '<td>' + totK + '</td>'
+    + '<td class="gl-pit-stat">' + escapeHtml(_gameEra(totER, totOuts)) + '</td>'
+    + '<td class="gl-pit-stat">' + _outs2ip(totOuts) + '</td>'
+    + '<td class="gl-pit-stat">' + totH + '</td>'
+    + '<td class="gl-pit-stat">' + totER + '</td>'
+    + '<td class="gl-pit-stat">' + totBB + '</td>'
+    + '<td class="gl-pit-stat">' + totK + '</td>'
     + '</tr>';
 
   wrap.innerHTML = summaryHtml
