@@ -14291,9 +14291,15 @@ function renderGameLog(mlbId){
     + (s.scratches ? sc('scratched', s.scratches, scratchExtra) : '')
     + '</div>';
 
-  // 13 columns total: Date, Opp, Result, Pos, AB, R, H, HR, RBI, SB, BB, K, AVG
+  // HITTER_LINE_COLLAPSE_V1 (May 19, 2026) — collapsed AB + H into one column.
+  // The AB column now shows "H-for-AB" per game (e.g., "3-for-4" or "0-for-3"),
+  // matching every box score on the planet. Reads more intuitively than two
+  // separate numbers a user has to mentally combine. Pitcher game log NOT
+  // affected — pitchers keep their own column shape in _renderPitcherGameLog.
+  //
+  // 12 columns total: Date, Opp, Result, Pos, AB, R, HR, RBI, SB, BB, K, AVG
   // (Status is represented by the row's DNP chip in the Opp cell area — see below.)
-  var headers = ['Date','Opp','Result','Pos','AB','R','H','HR','RBI','SB','BB','K','AVG'];
+  var headers = ['Date','Opp','Result','Pos','AB','R','HR','RBI','SB','BB','K','AVG'];
   var leftCols = {0:1, 1:1, 2:1}; // Date, Opp, Result align left
   var thHtml = '';
   for(var i=0;i<headers.length;i++){
@@ -14353,9 +14359,14 @@ function renderGameLog(mlbId){
     }
 
     // Stat cells - em-dash for DNP, real number for started.
-    var abC, rC, hC, hrC, rbiC, sbC, bbC, kC, avgCell2;
+    // HITTER_LINE_COLLAPSE_V1: abC now shows "H-for-AB" instead of just AB.
+    // hC is gone — the H value lives inside abC's text now.
+    var abC, rC, hrC, rbiC, sbC, bbC, kC, avgCell2;
     if(started2){
-      abC = cellNum(r2.ab); rC = cellNum(r2.r); hC = cellNum(r2.h); hrC = cellNum(r2.hr);
+      var _abVal = (r2.ab == null) ? 0 : Number(r2.ab) || 0;
+      var _hVal  = (r2.h  == null) ? 0 : Number(r2.h)  || 0;
+      abC = '<td>' + escapeHtml(_hVal + '-for-' + _abVal) + '</td>';
+      rC = cellNum(r2.r); hrC = cellNum(r2.hr);
       rbiC = cellNum(r2.rbi); sbC = cellNum(r2.sb); bbC = cellNum(r2.bb); kC = cellNum(r2.k);
       avgCell2 = '<td>' + escapeHtml(String(r2.avg || '.000')) + '</td>';
       tot.ab  += (r2.ab  || 0);
@@ -14368,16 +14379,16 @@ function renderGameLog(mlbId){
       tot.k   += (r2.k   || 0);
       tot.starts += 1;
     } else {
-      abC = rC = hC = hrC = rbiC = sbC = bbC = kC = avgCell2 = dash();
+      abC = rC = hrC = rbiC = sbC = bbC = kC = avgCell2 = dash();
     }
 
-    // Row structure: 13 cells — Date, Opp, Result, Pos/Status, AB, R, H, HR, RBI, SB, BB, K, AVG
+    // Row structure: 12 cells — Date, Opp, Result, Pos/Status, AB(=H-for-AB), R, HR, RBI, SB, BB, K, AVG
     rowsHtml += '<tr' + rcls2 + '>'
       + '<td class="gl-left gl-date">' + escapeHtml(r2.date_short || r2.date || '') + '</td>'
       + '<td class="gl-left ' + (r2.home ? 'gl-opp-home' : 'gl-opp-away') + '">' + escapeHtml(String(r2.opp || '\u2014')) + '</td>'
       + resultCell
       + posCell
-      + abC + rC + hC + hrC + rbiC + sbC + bbC + kC
+      + abC + rC + hrC + rbiC + sbC + bbC + kC
       + avgCell2
       + '</tr>';
   }
@@ -14392,12 +14403,14 @@ function renderGameLog(mlbId){
   } else {
     totAvg = '.000';
   }
+  // HITTER_LINE_COLLAPSE_V1: totals row collapses AB + H to one cell
+  // showing "10-for-19" style (H-for-AB). Same shape as the per-game cells
+  // above so the column reads consistently top to bottom.
   var footHtml = '<tr class="gl-total-row">'
     + '<td class="gl-left gl-total-label" colspan="3">L' + (s.window || 7) + ' Totals</td>'
     + '<td class="gl-total-starts">' + tot.starts + ' G</td>'
-    + '<td><strong>' + tot.ab + '</strong></td>'
+    + '<td><strong>' + tot.h + '-for-' + tot.ab + '</strong></td>'
     + '<td><strong>' + tot.r   + '</strong></td>'
-    + '<td><strong>' + tot.h   + '</strong></td>'
     + '<td><strong>' + tot.hr  + '</strong></td>'
     + '<td><strong>' + tot.rbi + '</strong></td>'
     + '<td><strong>' + tot.sb  + '</strong></td>'
