@@ -13409,12 +13409,31 @@ function attachPoolScrollHandler(){
     cloneTable.appendChild(clone);
     const realTable = realThead.closest('table');
     if(realTable){
-      const realCols = realThead.querySelectorAll('th');
+      // POOL_CLONE_BODYROW_FIX_V1 (May 19, 2026) — measure widths from the
+      // FIRST BODY ROW instead of from the <th> cells. Why: the stat and
+      // gold-block <th> cells use padding:0 with their content wrapped in
+      // a flex <div> + <span>s. The browser reports those <th>'s
+      // offsetWidth/clientWidth/getBoundingClientRect().width all as 0
+      // because the <th>'s own box has zero padding — the inner spans
+      // claim the visual width. Meanwhile the body row's <td> cells size
+      // naturally based on their numeric content and return accurate
+      // widths. This swap replaces every prior band-aid in the
+      // POOL_CLONE_REBUILD_FIX_V1 / CLONE_HEADER_SELECTOR_FIX_V1 family —
+      // all of which were measuring the wrong element.
+      //
+      // Fallback: if the body has no rows yet (filtered to empty, or
+      // before stats finish loading), fall back to the old <th> path so
+      // we don't leave the clone completely unstyled.
+      const tbody = realTable.querySelector('tbody');
+      const firstRow = tbody ? tbody.querySelector('tr') : null;
+      const measureCells = firstRow
+        ? firstRow.querySelectorAll('td')
+        : realThead.querySelectorAll('th');
       const fixedCols = cloneTable.querySelectorAll('th');
-      realCols.forEach((th, i) => {
+      measureCells.forEach((cell, i) => {
         if(fixedCols[i]){
-          fixedCols[i].style.width = th.offsetWidth + 'px';
-          fixedCols[i].style.minWidth = th.offsetWidth + 'px';
+          fixedCols[i].style.width = cell.offsetWidth + 'px';
+          fixedCols[i].style.minWidth = cell.offsetWidth + 'px';
         }
       });
       cloneTable.style.width = realTable.offsetWidth + 'px';
