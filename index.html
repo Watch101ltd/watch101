@@ -112,6 +112,21 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif
 .hdr-dd-item:hover{background:var(--surface2);color:var(--text)}
 .hdr-dd-item.danger{color:var(--red)}
 .hdr-dd-item.danger:hover{background:#7f1d1d22}
+/* RIGHTCLICK_MENU_V1 (May 19, 2026) — page-level right-click navigation
+   context menu. Fires on right-click anywhere on the body EXCLUDING the
+   header (so native browser menu still works on logo) and EXCLUDING
+   links/images/inputs (so native menu still works on those for copy URL
+   etc.). Menu items dynamically rebuild based on which page is active
+   so the current page is always omitted from the destination list.
+   Visual styling mirrors the existing .hdr-dd-menu dropdown pattern. */
+#rc-menu{position:fixed;display:none;min-width:200px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,0.45),0 0 0 1px rgba(255,255,255,0.04);z-index:1000;padding:4px;font-family:'Nunito Sans',sans-serif;}
+#rc-menu.visible{display:block;animation:rcAppear 0.12s ease-out;}
+@keyframes rcAppear{from{opacity:0;transform:scale(0.96);}to{opacity:1;transform:scale(1);}}
+#rc-menu .rc-menu-header{padding:6px 12px;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);font-weight:800;border-bottom:1px dashed var(--border);margin-bottom:4px;}
+#rc-menu .rc-menu-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;color:var(--text2);border:none;padding:8px 12px;font-size:13px;font-family:'Nunito Sans',sans-serif;cursor:pointer;border-radius:4px;letter-spacing:0.03em;transition:background 0.1s;font-weight:600;}
+#rc-menu .rc-menu-item:hover{background:var(--surface2);color:var(--text);}
+#rc-menu .rc-menu-item .rc-emoji{font-size:15px;line-height:1;width:18px;text-align:center;}
+#rc-menu .rc-menu-item .rc-label{flex:1;}
 .hdr-status-strip{padding:0.4rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--turquoise2);display:flex;align-items:center;gap:14px;font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text3);letter-spacing:0.04em}
 /* HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — header for the Tank overlay. Matches main .header
    gradient and padding so it reads as a real page header, not a strip. Logo is injected at
@@ -16459,6 +16474,147 @@ document.addEventListener('keydown', function(e){
     }
   }
 }, true);
+
+// ============================================================================
+// RIGHTCLICK_MENU_V1 (May 19, 2026) — page-level right-click navigation menu.
+// Right-click anywhere on the body (excluding header / links / images / form
+// fields) → menu appears at cursor with up to 4 destination options. The
+// CURRENT page is always omitted, computed dynamically from poolActive /
+// leadersActive / prospectsActive / tankActive globals. Click outside,
+// Escape, or scroll all close the menu.
+// ============================================================================
+(function(){
+  // ----- Build the menu DOM once and attach to body -----
+  var menu = document.createElement('div');
+  menu.id = 'rc-menu';
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', 'Page navigation');
+  document.body.appendChild(menu);
+
+  // ----- Destination registry: emoji + label + activeFlag + nav action -----
+  // The activeFlag tells us when the user is ON that page (so we omit it).
+  // The navTo function takes them TO that page.
+  var DESTS = [
+    {
+      id: 'main',
+      emoji: '\uD83D\uDCCB', // 📋
+      label: 'Watch 101 Main',
+      isActive: function(){
+        // Main is active when ALL overlays are closed.
+        return !((typeof poolActive      !== 'undefined' && poolActive)
+              || (typeof leadersActive   !== 'undefined' && leadersActive)
+              || (typeof prospectsActive !== 'undefined' && prospectsActive)
+              || (typeof tankActive      !== 'undefined' && tankActive));
+      },
+      navTo: function(){
+        // Navigate to main = close whichever overlay is currently up.
+        try { if(typeof poolActive      !== 'undefined' && poolActive      && typeof closePlayerPool    === 'function') closePlayerPool(); } catch(e){}
+        try { if(typeof leadersActive   !== 'undefined' && leadersActive   && typeof closeLeagueLeaders === 'function') closeLeagueLeaders(); } catch(e){}
+        try { if(typeof prospectsActive !== 'undefined' && prospectsActive && typeof closeProspects    === 'function') closeProspects(); } catch(e){}
+        try { if(typeof tankActive      !== 'undefined' && tankActive      && typeof closeHoldingTank  === 'function') closeHoldingTank(); } catch(e){}
+      }
+    },
+    {
+      id: 'pool',
+      emoji: '\u26BE', // ⚾
+      label: 'Player Pool',
+      isActive: function(){ return typeof poolActive !== 'undefined' && poolActive; },
+      navTo: function(){ if(typeof openPlayerPool === 'function') openPlayerPool(); }
+    },
+    {
+      id: 'leaders',
+      emoji: '\uD83C\uDFC6', // 🏆
+      label: 'League Leaders',
+      isActive: function(){ return typeof leadersActive !== 'undefined' && leadersActive; },
+      navTo: function(){ if(typeof openLeagueLeaders === 'function') openLeagueLeaders(); }
+    },
+    {
+      id: 'prospects',
+      emoji: '\uD83C\uDF7C', // 🍼
+      label: 'Prospects',
+      isActive: function(){ return typeof prospectsActive !== 'undefined' && prospectsActive; },
+      navTo: function(){ if(typeof openProspects === 'function') openProspects(); }
+    },
+    {
+      id: 'tank',
+      emoji: '\uD83E\uDEA3', // 🪣
+      label: 'Holding Tank',
+      isActive: function(){ return typeof tankActive !== 'undefined' && tankActive; },
+      navTo: function(){ if(typeof openHoldingTank === 'function') openHoldingTank(); }
+    }
+  ];
+
+  // ----- Rebuild menu items, omitting the active page -----
+  function rebuildMenu(){
+    var html = '<div class="rc-menu-header">Switch To</div>';
+    for(var i=0; i<DESTS.length; i++){
+      var d = DESTS[i];
+      var isActive = false;
+      try { isActive = !!d.isActive(); } catch(e){ isActive = false; }
+      if(isActive) continue; // skip current page
+      html += '<button class="rc-menu-item" data-dest="' + d.id + '">'
+           +   '<span class="rc-emoji">' + d.emoji + '</span>'
+           +   '<span class="rc-label">' + d.label + '</span>'
+           + '</button>';
+    }
+    menu.innerHTML = html;
+  }
+
+  // ----- Show / position / hide -----
+  function showMenu(x, y){
+    rebuildMenu();
+    // Initial position so we can measure dimensions
+    menu.style.left = '0px';
+    menu.style.top  = '0px';
+    menu.classList.add('visible');
+    var rect = menu.getBoundingClientRect();
+    var W = window.innerWidth, H = window.innerHeight;
+    var left = x, top = y;
+    if(left + rect.width  > W - 8) left = W - rect.width  - 8;
+    if(top  + rect.height > H - 8) top  = H - rect.height - 8;
+    if(left < 8) left = 8;
+    if(top  < 8) top  = 8;
+    menu.style.left = left + 'px';
+    menu.style.top  = top  + 'px';
+  }
+  function hideMenu(){ menu.classList.remove('visible'); }
+
+  // ----- contextmenu handler with sensible exclusions -----
+  document.addEventListener('contextmenu', function(e){
+    var t = e.target;
+    if(!t || !t.closest) return; // safety guard for text nodes / SVG
+    // Inside the main page header? Keep native menu (so logo right-click works).
+    if(t.closest('.header')) return;
+    // On a link / image / form control? Keep native menu (so users can copy URLs etc.).
+    if(t.closest('a, img, input, textarea, select')) return;
+    // Otherwise, hijack with our custom menu.
+    e.preventDefault();
+    showMenu(e.clientX, e.clientY);
+  });
+
+  // ----- Click an item → run its navTo and close -----
+  menu.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('.rc-menu-item');
+    if(!btn) return;
+    var destId = btn.getAttribute('data-dest');
+    var dest = null;
+    for(var i=0; i<DESTS.length; i++){ if(DESTS[i].id === destId){ dest = DESTS[i]; break; } }
+    hideMenu();
+    if(dest && typeof dest.navTo === 'function'){
+      try { dest.navTo(); } catch(err){ console.warn('[RIGHTCLICK_MENU_V1] nav failed:', err); }
+    }
+  });
+
+  // ----- Click outside / Escape / scroll / resize → close -----
+  document.addEventListener('mousedown', function(e){
+    if(menu.classList.contains('visible') && !menu.contains(e.target)) hideMenu();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && menu.classList.contains('visible')) hideMenu();
+  });
+  window.addEventListener('scroll', hideMenu, true);
+  window.addEventListener('resize', hideMenu);
+})();
 </script>
 
 
