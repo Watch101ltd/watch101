@@ -12826,6 +12826,55 @@ function _applyActiveSampleToFlatFields(p, tableName){
   p.statsSource = _activeSourceFor(p, tableName || 'watch');
 }
 
+// CHIP_VISIBILITY_V1 (May 19, 2026) — Single source of truth for whether
+// the MLB/MiLB chip should render on a given player row. Replaces the
+// "always show if p.level is set" guard that let chips appear on
+// veterans, established starters, and guys with no real MiLB sample.
+//
+// Hide rules, in order — first match returns false:
+//   1. No real MiLB sample (null, empty object, or all-zero stats)
+//        → kills the Otto Lopez bug (stale p.level + empty statsMilb)
+//   2. Chadwick says MLB debut was BEFORE this season (veteran)
+//        → kills JJ Bleday / Casey Mize / Griffin Jax-style noise
+//   3. Hitter has crossed 50 MLB AB this season
+//        → matches Matt's "few weeks up in the majors" intent
+//   4. Pitcher has crossed 20 MLB IP this season
+//        → tighter than the 50 IP rookie limit because starter vs reliever
+//          paces differ wildly; 20 IP is "couple weeks of work" for either
+//
+// Otherwise → show chip. Keeps it on for: true call-ups under the
+// thresholds, AAA/AA prospects on cup-of-coffee stints, rookies in
+// their first month bouncing between MiLB and MLB.
+//
+// IMPORTANT: reads from p.statsMlb / p.statsMilb directly, NOT from the
+// flat fields p.ab / p.ip. Flat fields are clobbered by the chip toggle,
+// so a user-flipped-to-MiLB view would make p.ab read as the MiLB AB
+// and falsely trigger the "fresh call-up" branch.
+function _chipShouldShow(p){
+  if(!p) return false;
+
+  // Rule 1: must have a meaningful MiLB sample.
+  const milb = p.statsMilb;
+  if(!milb) return false;
+  const milbAb = Number(milb.ab) || 0;
+  const milbIp = parseFloat(milb.ip) || 0;
+  if(milbAb === 0 && milbIp === 0) return false;
+
+  // Rule 2: established veteran per Chadwick.
+  const first = p.mlb_played_first;
+  const currentYear = new Date().getFullYear();
+  if(first != null && Number(first) < currentYear) return false;
+
+  // Rules 3 + 4: crossed the MLB threshold this season.
+  const mlb = p.statsMlb || {};
+  const mlbAb = Number(mlb.ab) || 0;
+  const mlbIp = parseFloat(mlb.ip) || 0;
+  if(mlbAb >= 50) return false;
+  if(mlbIp >= 20) return false;
+
+  return true;
+}
+
 // Helper — builds the LVL chip HTML for any table. Returns the chip
 // markup as a string. Pass the player record + which renderer is calling
 // (so the click handler knows which table to re-render AND so the chip
@@ -12835,6 +12884,10 @@ function _renderLevelChip(p, tableName){
   if(!p) return '';
   // No chip if no level info AND no MiLB sample — pure MLB players.
   if(!p.level || p.level === 'MLB') return '';
+  // CHIP_VISIBILITY_V1 (May 19, 2026) — hide chip for veterans, guys
+  // past the MLB threshold, and rows with no real MiLB sample. Matt's
+  // request: declutter the column once a guy is established.
+  if(!_chipShouldShow(p)) return '';
   const _hasBoth = _hasBothSamples(p);
   // Resolve which sample is showing for this row in this table. Honors
   // explicit user toggle first, then table default (MLB for watch/pool/
