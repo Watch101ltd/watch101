@@ -13215,7 +13215,15 @@ function renderProspects(){
   const display = q ? list : list.slice(0, 200);
 
   const na = '<span style="color:var(--text3)">—</span>';
-  const sv  = (val, dec=0) => (val===undefined||val===null||val==='' ? na : (dec>0 ? parseFloat(val).toFixed(dec) : val));
+  // LEADZERO_STRIP_V1 (May 19, 2026) — Prospects sv() now routes decimal
+  // output through stripLeadZero, matching the Pool and Leaders helpers.
+  // Matt's complaint: Prospects OPS column was rendering '0.000' instead
+  // of '.000' because this local sv() had never been updated when the
+  // STRIP_LEADING_ZERO_V1 sweep ran across the other tabs. svAvg already
+  // strips correctly via its '.' + split('.')[1] pattern — leaving it
+  // alone to minimize blast radius. ERA / WHIP on pitcher prospects
+  // (rare sub-1.0 values) now also strip correctly as a free byproduct.
+  const sv  = (val, dec=0) => (val===undefined||val===null||val==='' ? na : (dec>0 ? stripLeadZero(parseFloat(val).toFixed(dec)) : val));
   const svAvg = (val) => (val===undefined||val===null||val==='' ? na : '.' + parseFloat(val).toFixed(3).split('.')[1]);
   const statColor = 'var(--stat-hitter)';
   const pitColor  = 'var(--stat-pitcher)';
