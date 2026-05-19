@@ -5120,7 +5120,15 @@ function getFiltered(){
         let dr = null;
         if(typeof PLAYER_DATERANGE_CACHE !== 'undefined' && p.mlb_id){
           const _pre = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
-          if(_pre && _pre[dateRange]) dr = _pre[dateRange];
+          if(_pre && _pre[dateRange]){
+            // CHIP_AWARE_DATERANGE_V1 (May 19, 2026) — pick the sub-object
+            // matching chip state, falling back to flat fields. Same logic
+            // as getDisplayStats() so the sort order matches the cells.
+            const _row = _pre[dateRange];
+            if(p.statsSource === 'MiLB' && _row.milb) dr = _row.milb;
+            else if(p.statsSource === 'MLB' && _row.mlb) dr = _row.mlb;
+            else dr = _row;
+          }
         }
         if(!dr && typeof dateRangeCache !== 'undefined' && p.id){
           dr = dateRangeCache[p.id + '_' + dateRange] || null;
@@ -11545,10 +11553,25 @@ function getDisplayStats(p){
   //  - 'yesterday' / '7' / '14' / '30' -> the pre-baked server-side cache when possible,
   //    falling back to the runtime dateRangeCache for fresh additions not yet in the bake
   //  - 'live' -> always the runtime cache (byDateRange API fetch of today's window)
+  //
+  // CHIP_AWARE_DATERANGE_V1 (May 19, 2026) — when the player has both MLB and MiLB
+  // samples in the window, the cache row now carries .mlb and .milb sub-objects
+  // (see DATERANGE_SPLIT_V1 in daterange_fetch.py). We read whichever side matches
+  // p.statsSource ('MLB' vs 'MiLB' — set by the chip toggle). For backward compat,
+  // if the sub-object doesn't exist (most players, who only played at one level
+  // in the window), we fall back to the flat fields on the range row itself.
   if(dateRange === 'season') return p;
   if(dateRange !== 'live' && p && p.mlb_id && typeof PLAYER_DATERANGE_CACHE !== 'undefined'){
     var pre = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
-    if(pre && pre[dateRange]) return pre[dateRange];
+    if(pre && pre[dateRange]){
+      var _row = pre[dateRange];
+      // CHIP_AWARE_DATERANGE_V1: pick the sub-object that matches the chip state.
+      // statsSource is 'MLB' or 'MiLB' on chip-toggle-able players.
+      if(p.statsSource === 'MiLB' && _row.milb) return _row.milb;
+      if(p.statsSource === 'MLB'  && _row.mlb)  return _row.mlb;
+      // Fallback: row's flat fields. Same value the old code returned.
+      return _row;
+    }
   }
   var cached = dateRangeCache[p.id + '_' + dateRange];
   if(cached) return cached;
