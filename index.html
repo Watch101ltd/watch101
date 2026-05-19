@@ -1521,6 +1521,15 @@ body.day-mode #player-page-overlay .ppo-sched-row{background:rgba(0,0,0,0.015);}
 body.day-mode #player-page-overlay .ppo-sched-row.green{background:rgba(68,189,50,0.13);}
 body.day-mode #player-page-overlay .ppo-sched-row.red{background:rgba(232,44,44,0.10);}
 body.day-mode #player-page-overlay .ppo-sched-row.yellow{background:rgba(255,184,0,0.09);}
+/* PITCHER_SCHEDULE_EXPAND_V1 (May 19, 2026) — gold pill marking the day(s) a
+   pitcher is the probable starter, inside the row's matchup cell. Used only
+   on pitcher Deep Cut pages. Non-start days for pitchers now render neutral
+   (no pill, no green/yellow background) so the user can tell at a glance
+   which day is THE start. */
+#player-page-overlay .ppo-sched-prob-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(240,165,0,0.18);border:1px solid rgba(240,165,0,0.55);color:var(--gold);font-family:'Bowlby One',sans-serif;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;padding:2px 8px;border-radius:4px;font-weight:700;}
+#player-page-overlay .ppo-sched-prob-pill .pill-loc{color:var(--text2);font-family:'Nunito Sans',sans-serif;font-size:10px;letter-spacing:0.04em;text-transform:none;font-weight:600;}
+#player-page-overlay .ppo-sched-disclaimer{margin-top:10px;padding:8px 12px;font-size:11px;color:var(--text3);font-style:italic;letter-spacing:0.02em;line-height:1.45;border-top:1px dashed var(--border);}
+body.day-mode #player-page-overlay .ppo-sched-prob-pill{background:rgba(161,98,7,0.18);border-color:rgba(161,98,7,0.5);color:var(--gold);}
 /* ---- Player overlay: main-page-style stat bar + Advanced Stats toggle ---- */
 #player-page-overlay .ppo-statbar{display:flex;flex-wrap:wrap;gap:0;margin-top:14px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
 #player-page-overlay .ppo-statbar-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;min-width:72px;flex:1;border-right:1px solid var(--border);text-align:center;}
@@ -14690,13 +14699,17 @@ function renderSchedule7D(mlbId){
   var role = info.role || 'hitter';
   var sched = schedAll[info.team].slice();
 
+  // PITCHER_SCHEDULE_EXPAND_V1 (May 19, 2026) — Matt's ask from the 5/18
+  // meeting: show ALL team games for pitchers (not just the day they're the
+  // probable starter). Mark probable-start day(s) with a gold pill instead
+  // of filtering them down. MLB Stats API only knows probable starters for
+  // ~3 days out, so days 4-7 may legitimately have no probable info — we
+  // surface that with a disclaimer at the bottom.
+  var startsSet = {};
   if(role === 'pitcher'){
-    var starts = (window.PLAYER_PROBABLE_STARTS && PLAYER_PROBABLE_STARTS[mlbId]) ? PLAYER_PROBABLE_STARTS[mlbId] : [];
-    if(!starts.length){
-      container.innerHTML = '<div class="ppo-sched-empty">No probable starts in the next 7 days.</div>';
-      return;
-    }
-    sched = sched.filter(function(d){ return !d.off && starts.indexOf(d.date) >= 0; });
+    var startsArr = (window.PLAYER_PROBABLE_STARTS && PLAYER_PROBABLE_STARTS[mlbId]) ? PLAYER_PROBABLE_STARTS[mlbId] : [];
+    startsArr.forEach(function(d){ startsSet[d] = true; });
+    // Do NOT filter sched. Show the full team schedule, same as hitters.
   }
 
   function esc(s){ return String(s||'').replace(/[&<>"\']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"\'":'&#39;'}[c]; }); }
@@ -14710,6 +14723,9 @@ function renderSchedule7D(mlbId){
   function colorFor(day){
     if(day.off) return '';
     if(role === 'pitcher'){
+      // PITCHER_SCHEDULE_EXPAND_V1 — color only fires on probable-start days.
+      // Other days render neutral so the actual start day pops visually.
+      if(!startsSet[day.date]) return '';
       if(day.at_home) return 'green';
       return 'yellow';
     }
@@ -14739,7 +14755,14 @@ function renderSchedule7D(mlbId){
         pp = '<span class="hand">TBD</span>';
       }
     } else {
-      pp = '<span class="hand">'+(d.at_home ? 'Home start' : 'Road start')+'</span>';
+      // PITCHER_SCHEDULE_EXPAND_V1 — gold pill on probable-start days, neutral
+      // text on team-game-only days.
+      if(startsSet[d.date]){
+        pp = '<span class="ppo-sched-prob-pill">PROBABLE START <span class="pill-loc">'
+           + (d.at_home ? 'Home' : 'Road') + '</span></span>';
+      } else {
+        pp = '<span class="hand">Team game</span>';
+      }
     }
     return '<div class="ppo-sched-row '+color+'">'
       + '<span class="ppo-sched-day">'+esc(dayLabel(d.date))+'</span>'
@@ -14749,6 +14772,11 @@ function renderSchedule7D(mlbId){
       + '<span class="ppo-sched-time">'+esc(d.time||'')+'</span>'
       + '</div>';
   }).join('') + '</div>';
+  // PITCHER_SCHEDULE_EXPAND_V1 — disclaimer about MLB API 3-day limitation
+  // shown only on pitcher pages (where the limitation is relevant).
+  if(role === 'pitcher'){
+    html += '<div class="ppo-sched-disclaimer">Probable starts available for the next 3 days only — Major League Baseball hasn\u2019t announced beyond that.</div>';
+  }
   container.innerHTML = html;
 }
 
