@@ -4092,6 +4092,13 @@ async function loadRegistry(){
           p.exp = experienceLabel(p);
         });
       }
+      // PROSPECTS_YAHOO_V1 (May 19, 2026) — re-apply Yahoo merge to prospects
+      // too, in case the registry loads AFTER prospects (race-condition safety).
+      // loadProspects() also calls applyYahoo at load time; this is the
+      // belt-and-suspenders for the late-arriving registry case.
+      if(typeof prospectPlayers !== 'undefined' && Array.isArray(prospectPlayers) && prospectPlayers.length > 0){
+        applyYahoo(prospectPlayers);
+      }
       if(typeof renderTable === 'function') renderTable();
       if(typeof renderPool === 'function') try { renderPool(); } catch(_pe){}
       if(typeof renderLeaders === 'function') try { renderLeaders(); } catch(_le){}
@@ -12174,6 +12181,14 @@ async function loadProspects(){
     // Yahoo only shows em-dashes. Mirrors the applyCBS(poolPlayers) call in
     // loadPoolPlayers().
     if(typeof applyCBS === 'function') applyCBS(prospectPlayers);
+    // PROSPECTS_YAHOO_V1 (May 19, 2026) — same idea for Yahoo. Most prospects
+    // are MiLB-only and Yahoo doesn't carry them, BUT some prospects ARE on
+    // Yahoo (call-ups, rehab MLB guys, dual-tier rookies). For those, the
+    // registry-yid path resolves them correctly. The Y!Owned column shows
+    // 0% for prospects Yahoo doesn't carry (matching the CBS column default)
+    // and real % for prospects Yahoo does carry. Y!Rank stays em-dash for
+    // not-carried prospects (Dude's call — em-dash is more honest than 0).
+    if(typeof applyYahoo === 'function') applyYahoo(prospectPlayers);
 
     prospectsLoaded = true;
     loading.style.display = 'none';
@@ -13276,8 +13291,11 @@ function renderProspects(){
       <td class="col-lvl" style="text-align:center">${_renderLevelChip(p, 'prospects')}</td>
       <td class="stat-cell col-age">${decimalAge(p)}</td>
       <td class="stat-cell no-zero col-bt" style="text-align:center">${pit ? (p.throws||p.bats||na) : (p.bats||na)}</td>
-      <td class="yahoo-rank no-zero col-zone-divider">${na}</td>
-      <td class="stat-cell no-zero">${na}</td>
+      <!-- PROSPECTS_YAHOO_V1 (May 19, 2026) — Y!Rank shows real rank if Yahoo has the player,
+           em-dash if not (Dude's call: em-dash is honest about "not ranked" vs "ranked 0").
+           Y!Owned shows real % if Yahoo has the player, 0% if not (matches CBS default below). -->
+      <td class="yahoo-rank no-zero col-zone-divider">${p.yahoo_rank!=null&&p.yahoo_rank!==''?p.yahoo_rank:na}</td>
+      <td class="stat-cell no-zero">${p.roster_pct!=null&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(0)+'%':'0%'}</td>
       <td class="stat-cell no-zero">${p.cbs_roster_pct!==undefined&&p.cbs_roster_pct!==null&&p.cbs_roster_pct!==''?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':'0%'}</td>
       <td class="yahoo-rank no-zero col-adp-hidden" style="color:var(--text3);display:none">${na}</td>
       <td class="stat-cell" style="text-align:right">${p.stats ? (!pit?`<span style="color:${statColor}">${sv(s.ab)}</span>`:`<span style="color:${pitColor}">${sv(s.ip,1)}</span>`) : na}</td>
