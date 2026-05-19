@@ -10962,8 +10962,13 @@ function attachLeadersScrollHandler(){
     const leadersWrap = document.getElementById('leaders-wrap');
     const wrapTop = leadersWrap ? leadersWrap.getBoundingClientRect().top : 0;
     cloneBar.style.top = wrapTop + 'px';
-    cloneBar.style.left = '0';
-    cloneBar.style.right = '0';
+    // CLONE_POSITION_FIX_V1 (May 19, 2026) — same fix as Pool. See Pool's
+    // positionCloneBar for the full explanation.
+    const realTable = document.getElementById('leaders-main-table');
+    const tableLeft = realTable ? realTable.getBoundingClientRect().left : 0;
+    cloneBar.style.left = tableLeft + 'px';
+    cloneBar.style.right = 'auto';
+    cloneBar.style.width = (window.innerWidth - tableLeft) + 'px';
   }
 
   // Threshold = height of the toolbar + category buttons combined
@@ -13427,8 +13432,18 @@ function attachPoolScrollHandler(){
     const poolWrap = document.getElementById('pool-wrap');
     const wrapTop = poolWrap ? poolWrap.getBoundingClientRect().top : 0;
     cloneBar.style.top = wrapTop + 'px';
-    cloneBar.style.left = '0';
-    cloneBar.style.right = '0';
+    // CLONE_POSITION_FIX_V1 (May 19, 2026) — align clone bar to the real
+    // table's left edge instead of viewport-left=0. The real table starts
+    // ~8px to the right of viewport-left because of wrapper padding/border;
+    // pinning the clone to viewport-left made the entire clone bar drift
+    // ~8px to the left of the body columns. Reading the table's actual
+    // left edge fixes the visible misalignment. Width is set explicitly
+    // so right edge stays clamped to the viewport.
+    const realTable = document.getElementById('pool-main-table');
+    const tableLeft = realTable ? realTable.getBoundingClientRect().left : 0;
+    cloneBar.style.left = tableLeft + 'px';
+    cloneBar.style.right = 'auto';
+    cloneBar.style.width = (window.innerWidth - tableLeft) + 'px';
   }
 
   // Cache the pool toolbar height — this is the scroll threshold.
@@ -15800,8 +15815,13 @@ function attachTankScrollHandler(){
     const poolWrap = document.getElementById('tank-wrap');
     const wrapTop = poolWrap ? poolWrap.getBoundingClientRect().top : 0;
     cloneBar.style.top = wrapTop + 'px';
-    cloneBar.style.left = '0';
-    cloneBar.style.right = '0';
+    // CLONE_POSITION_FIX_V1 (May 19, 2026) — same fix as Pool. See Pool's
+    // positionCloneBar for the full explanation.
+    const realTable = document.getElementById('tank-main-table');
+    const tableLeft = realTable ? realTable.getBoundingClientRect().left : 0;
+    cloneBar.style.left = tableLeft + 'px';
+    cloneBar.style.right = 'auto';
+    cloneBar.style.width = (window.innerWidth - tableLeft) + 'px';
   }
 
   // Cache the pool toolbar height — this is the scroll threshold.
