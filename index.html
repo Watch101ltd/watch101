@@ -6684,8 +6684,11 @@ function renderTable(){
     const isMinor = p.level && p.level !== 'MLB';
     const statColor = 'var(--stat-hitter)';
     const pitStatColor = 'var(--stat-pitcher)';
-    // s = stat source: date-range cache if active, otherwise player object
-    const s = usingDateRange ? getDisplayStats(p) : p;
+    // s = stat source: date-range cache if active, otherwise the
+    // chip-resolved sample (Phase 2 refactor — was just `p`; now reads
+    // through _activeSampleFor so the chip toggle no longer relies on
+    // flat-field copying. See STAT_NORMALIZER_V1 block for the why.)
+    const s = usingDateRange ? getDisplayStats(p) : (_activeSampleFor(p, 'watch') || p);
     const loading = usingDateRange && !s; // still fetching this player
     const sc = loading ? null : s; // safe stat container
     const na = '<span class="stat-na">—</span>';
@@ -9626,7 +9629,8 @@ function renderPool(){
       const _pre = typeof PLAYER_DATERANGE_CACHE !== 'undefined' && p.mlb_id ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
       sc = (_pre && _pre[dateRange]) || poolDateRangeCache[p.mlb_id + '_' + dateRange];
     } else {
-      sc = p;
+      // Phase 2 refactor — read through chip-resolved sample (was just `p`).
+      sc = _activeSampleFor(p, 'pool') || p;
     }
     const loading = usingDR && !sc;
     const pending = `<span style="color:var(--border2);font-size:10px">…</span>`;
@@ -10164,7 +10168,8 @@ function renderContext(){
     const isInTank = !isAdded && tankNames.has(p.name.toLowerCase());
     const rowClass = (isAnchor?'ctx-highlight':isCompare?'ctx-compare':'') + (isAdded?' already-added':isInTank?' tank-row':'');
     const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
-    const s = p.stats||{};
+    // Phase 2 refactor — read through chip-resolved sample (was just `p.stats||{}`).
+    const s = _activeSampleFor(p, 'context') || p.stats || {};
     const rankStyle = isAnchor ? 'color:var(--gold);font-weight:700' : 'color:var(--text3)';
     const addBtn = isAdded
       ? '<span class="btn-add-pool added">✓ On List</span>'
@@ -12826,6 +12831,48 @@ function _applyActiveSampleToFlatFields(p, tableName){
   p.statsSource = _activeSourceFor(p, tableName || 'watch');
 }
 
+// STAT_NORMALIZER_V1 (May 19, 2026) — converts a raw MLB Stats API stat
+// split into our internal player-record shape. The API uses verbose
+// camelCase names (strikeOuts, homeRuns, inningsPitched) but the rest
+// of the codebase uses short codes (k, hr, ip). Historically Leaders
+// read API names raw and every other table read short codes — which is
+// the root cause of the MAJORS_VS_MINORS / MILB_ITALIC / CHIP_BACKFILL
+// band-aid chain. With this normalizer, everywhere in the code reads
+// the same shape.
+//
+// Inputs:
+//   rawStat  — the .stat object from an MLB Stats API split
+//              (e.g. splits[i].stat from /api/v1/stats or /people/{id}/stats)
+//   group    — 'hitting' or 'pitching' — tells us which fields to pull
+//
+// Returns a flat object with the codebase's standard short-code fields.
+// Missing values come back as null (not undefined) so downstream null-
+// checks behave consistently with the rest of the renderer code.
+function _normalizeMlbStatSplit(rawStat, group){
+  if(!rawStat) return null;
+  const s = rawStat;
+  const out = {};
+  if(group === 'hitting'){
+    out.ab  = s.atBats       != null ? Number(s.atBats)       : null;
+    out.r   = s.runs         != null ? Number(s.runs)         : null;
+    out.hr  = s.homeRuns     != null ? Number(s.homeRuns)     : null;
+    out.rbi = s.rbi          != null ? Number(s.rbi)          : null;
+    out.sb  = s.stolenBases  != null ? Number(s.stolenBases)  : null;
+    out.avg = s.avg          != null ? parseFloat(s.avg)      : null;
+    out.obp = s.obp          != null ? parseFloat(s.obp)      : null;
+    out.ops = s.ops          != null ? parseFloat(s.ops)      : null;
+  } else if(group === 'pitching'){
+    out.ip   = s.inningsPitched != null ? parseFloat(s.inningsPitched) : null;
+    out.k    = s.strikeOuts     != null ? Number(s.strikeOuts)         : null;
+    out.w    = s.wins           != null ? Number(s.wins)               : null;
+    out.sv   = s.saves          != null ? Number(s.saves)              : null;
+    out.hld  = s.holds          != null ? Number(s.holds)              : null;
+    out.era  = s.era            != null ? parseFloat(s.era)            : null;
+    out.whip = s.whip           != null ? parseFloat(s.whip)           : null;
+  }
+  return out;
+}
+
 // CHIP_VISIBILITY_V1 (May 19, 2026) — Single source of truth for whether
 // the MLB/MiLB chip should render on a given player row. Replaces the
 // "always show if p.level is set" guard that let chips appear on
@@ -15479,7 +15526,8 @@ function renderTank(){
       const _pre = typeof PLAYER_DATERANGE_CACHE !== 'undefined' && p.mlb_id ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
       sc = (_pre && _pre[dateRange]) || tankDateRangeCache[p.mlb_id + '_' + dateRange];
     } else {
-      sc = p;
+      // Phase 2 refactor — read through chip-resolved sample (was just `p`).
+      sc = _activeSampleFor(p, 'tank') || p;
     }
     const loading = usingDR && !sc;
     const pending = `<span style="color:var(--border2);font-size:10px">…</span>`;
