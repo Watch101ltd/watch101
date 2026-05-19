@@ -13409,31 +13409,20 @@ function attachPoolScrollHandler(){
     cloneTable.appendChild(clone);
     const realTable = realThead.closest('table');
     if(realTable){
-      // POOL_CLONE_BODYROW_FIX_V1 (May 19, 2026) — measure widths from the
-      // FIRST BODY ROW instead of from the <th> cells. Why: the stat and
-      // gold-block <th> cells use padding:0 with their content wrapped in
-      // a flex <div> + <span>s. The browser reports those <th>'s
-      // offsetWidth/clientWidth/getBoundingClientRect().width all as 0
-      // because the <th>'s own box has zero padding — the inner spans
-      // claim the visual width. Meanwhile the body row's <td> cells size
-      // naturally based on their numeric content and return accurate
-      // widths. This swap replaces every prior band-aid in the
-      // POOL_CLONE_REBUILD_FIX_V1 / CLONE_HEADER_SELECTOR_FIX_V1 family —
-      // all of which were measuring the wrong element.
-      //
-      // Fallback: if the body has no rows yet (filtered to empty, or
-      // before stats finish loading), fall back to the old <th> path so
-      // we don't leave the clone completely unstyled.
-      const tbody = realTable.querySelector('tbody');
-      const firstRow = tbody ? tbody.querySelector('tr') : null;
-      const measureCells = firstRow
-        ? firstRow.querySelectorAll('td')
-        : realThead.querySelectorAll('th');
+      // POOL_REBUILD_LOOP_FIX_V1 (May 19, 2026) — reverted POOL_CLONE_BODYROW_FIX_V1
+      // back to the original thead-measurement code path. The body-row workaround
+      // was treating a symptom of a different bug (the constant rebuild-during-scroll
+      // loop below — see scroll handler comment). Once that loop is removed, the
+      // original thead measurement works correctly — same code Leaders, Tank,
+      // and Prospects all use successfully. The Dude's instinct nailed it: "why
+      // is Pool special?" — it WAS special because it kept rebuilding mid-scroll;
+      // remove that and it's no longer special.
+      const realCols = realThead.querySelectorAll('th');
       const fixedCols = cloneTable.querySelectorAll('th');
-      measureCells.forEach((cell, i) => {
+      realCols.forEach((th, i) => {
         if(fixedCols[i]){
-          fixedCols[i].style.width = cell.offsetWidth + 'px';
-          fixedCols[i].style.minWidth = cell.offsetWidth + 'px';
+          fixedCols[i].style.width = th.offsetWidth + 'px';
+          fixedCols[i].style.minWidth = th.offsetWidth + 'px';
         }
       });
       cloneTable.style.width = realTable.offsetWidth + 'px';
@@ -13481,21 +13470,22 @@ function attachPoolScrollHandler(){
 
     const shouldShow = scrollTop > cachedToolbarH;
     if(shouldShow && !cloneVisible){
-      // Rebuild just before showing so column widths stay fresh if the table
-      // changed (e.g. stats finished lazy-loading).
+      // POOL_REBUILD_LOOP_FIX_V1 (May 19, 2026) — retired the
+      // POOL_CLONE_REBUILD_FIX_V1 "rebuild on every scroll tick" branch
+      // that used to live here. It was the actual cause of the Pool-only
+      // misalignment: measuring widths mid-scroll catches the table during
+      // transient reflow states, returning unstable widths that drift the
+      // clone column-by-column. Leaders/Tank/Prospects don't have the
+      // visible misalignment bug — even though Tank also carries this
+      // branch (copy-paste artifact). Pool is the surface where the bug
+      // manifests most reliably (most columns, widest table, most scroll
+      // activity). Per the Dude's call we're touching ONLY Pool today.
+      // Tank may benefit from the same fix but we're not doing it without
+      // explicit approval. Rebuild ONCE when the clone becomes visible,
+      // then leave alone — same as Leaders/Prospects.
       buildClone();
       cloneBar.style.display = 'block';
       cloneVisible = true;
-    } else if(shouldShow && cloneVisible){
-      // POOL_CLONE_REBUILD_FIX_V1 (May 18, 2026) — rebuild on every scroll
-      // tick while the clone is showing. The original code only rebuilt at
-      // show-time; if the real table's column widths changed AFTER that
-      // (data loaded, sort fired, layout settled), the clone stayed frozen
-      // with stale widths. Worst symptom: clone had a truncated set of
-      // columns rendered at 0px width when buildClone first ran before the
-      // table had finished its first paint. Now we re-bake widths every
-      // scroll while visible so the clone always tracks the real table.
-      buildClone();
     } else if(!shouldShow && cloneVisible){
       cloneBar.style.display = 'none';
       cloneVisible = false;
