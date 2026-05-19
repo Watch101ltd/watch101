@@ -5613,6 +5613,45 @@ function typeBadge(p){
   return out;
 }
 
+// CHIP_TOGGLE_MANUAL_V1 (May 19, 2026) — BACKEND_ONLY per-player toggle.
+// Sister handler to toggleTypeTag below. Sets/clears p.hideChip and
+// triggers a save + re-render. The checkbox label reads "Show MLB/MiLB
+// chip" (positive framing), so `checked === true` means SHOW the chip,
+// which means p.hideChip = false. We invert here.
+//
+// Why p.hideChip and not p.showChip: default (missing/undefined) is
+// 'show', so the property is only carried in the JSON when the user
+// has explicitly chosen to hide. Cleaner round-trip, smaller payload.
+async function toggleChipVisibility(mlbId, checked){
+  if(_blockIfReadOnly('toggleChipVisibility')) return;
+  try {
+    var p = (players || []).find(function(x){ return String(x.mlb_id) === String(mlbId); });
+    if(!p){
+      console.warn('[CHIP_TOGGLE_MANUAL_V1] player not found in active list for mlb_id:', mlbId);
+      return;
+    }
+    // checked === true  → user wants chip shown → p.hideChip = false (delete the key)
+    // checked === false → user wants chip hidden → p.hideChip = true
+    if(checked){
+      delete p.hideChip;
+    } else {
+      p.hideChip = true;
+    }
+    // Save to NAS + localStorage. Same pattern as toggleTypeTag.
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[CHIP_TOGGLE_MANUAL_V1] autosave failed:', e); }
+    // Re-render every surface that paints the chip so the change is
+    // visible immediately without a page reload.
+    try { if(typeof renderTable === 'function') renderTable(); } catch(e){}
+    try { if(typeof renderPool === 'function' && typeof poolActive !== 'undefined' && poolActive) renderPool(); } catch(e){}
+    try { if(typeof renderLeaders === 'function' && typeof leadersActive !== 'undefined' && leadersActive) renderLeaders(); } catch(e){}
+    try { if(typeof renderProspects === 'function' && typeof prospectsActive !== 'undefined' && prospectsActive) renderProspects(); } catch(e){}
+    try { if(typeof renderTank === 'function' && typeof tankActive !== 'undefined' && tankActive) renderTank(); } catch(e){}
+    try { if(typeof renderContext === 'function') renderContext(p); } catch(e){}
+  } catch(e){
+    console.warn('[CHIP_TOGGLE_MANUAL_V1] toggleChipVisibility failed:', e);
+  }
+}
+
 // TYPE_TAGS_V1 — BACKEND_ONLY toggle handler.
 // Mirrors markNameAsFlaming's pattern. Adds or removes a tag id on the
 // player's type_tags array based on the checkbox state. Persists to NAS,
@@ -12882,6 +12921,11 @@ function _renderLevelChip(p, tableName){
   if(!p) return '';
   // No chip if no level info AND no MiLB sample — pure MLB players.
   if(!p.level || p.level === 'MLB') return '';
+  // CHIP_TOGGLE_MANUAL_V1 (May 19, 2026) — per-player editorial hide.
+  // Default missing/false → show. Set true by user via the Deep Cut
+  // player page checkbox. Round-trips through the JSON sidecar
+  // automatically (loadData reads the full player object).
+  if(p.hideChip) return '';
   const _hasBoth = _hasBothSamples(p);
   // Resolve which sample is showing for this row in this table. Honors
   // explicit user toggle first, then table default (MLB for watch/pool/
@@ -13943,7 +13987,29 @@ function openPlayerPage(p){
     + '<div class="ppo-type-tags-list">' + _typeRowsHtml + '</div>'
     + '</div>';
 
-  document.getElementById('ppo-note-body').innerHTML = notesHtml;
+  // CHIP_TOGGLE_MANUAL_V1 (May 19, 2026) — per-player MLB/MiLB chip toggle.
+  // Sits as a sibling to the Type Tags block above. Only renders for players
+  // who actually have a level (would have shown a chip pre-toggle). For
+  // pure MLB-only players the chip never shows anyway, so the toggle has
+  // nothing to control and we hide the whole block.
+  if(p.level && p.level !== 'MLB'){
+    var _chipShown = !p.hideChip; // default missing/false → show
+    var _chipCheckedAttr = _chipShown ? ' checked' : '';
+    notesHtml += '<div class="ppo-type-tags-block backend-only">'
+      + '<div class="ppo-type-tags-title">MLB/MiLB chip <span class="ppo-type-tags-tag">Backend only — uncheck to hide chip for this player</span></div>'
+      + '<div class="ppo-type-tags-list">'
+      +   '<label class="ppo-type-tag-row">'
+      +     '<input type="checkbox" data-chip-toggle="1"' + _chipCheckedAttr
+      +     ' onchange="toggleChipVisibility(\'' + mlbId + '\', this.checked)">'
+      +     '<span class="ppo-type-tag-emoji">🏷️</span>'
+      +     '<span class="ppo-type-tag-label">Show MLB/MiLB chip</span>'
+      +   '</label>'
+      + '</div>'
+      + '</div>';
+    document.getElementById('ppo-note-body').innerHTML = notesHtml;
+  } else {
+    document.getElementById('ppo-note-body').innerHTML = notesHtml;
+  }
 
   // News rendering retired April 27, 2026 along with The Buzz section.
   // The ppo-news element is no longer in the DOM either.
