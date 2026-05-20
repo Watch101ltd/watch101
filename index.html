@@ -4655,12 +4655,26 @@ async function fetchMLBInjuryStatus(){
     // in applyMLBInjuryStatus, then exclude on_rehab from the NA filter and
     // include it in the Injured filter. Marker: REHAB_FILTER_V1.
     const rehabMap = {};  // { mlbId: true } for status.code === 'RM'
+    // PROSPECTS_REHAB_FILTER_V2 (May 20, 2026 00:00 ET — PC Walter) — capture
+    // EVERY player on a 40-man roster regardless of status code (A/D7/D10/D15/
+    // D60/RM/optioned/etc). The Prospects page uses this to filter out anyone
+    // currently in the MLB ecosystem — whether they're active, on IL, or
+    // optioned to AAA. Rationale: by definition a "prospect" is a player
+    // outside the 40-man pool. The earlier V1 filter using on_rehab missed
+    // optioned guys (Mookie Betts, Suzuki) who'd done a rehab stint and were
+    // sent back down but remained on the 40-man. The 40-man-membership signal
+    // is the "right now" version of the MLB-ecosystem question.
+    const fortyManMap = {};  // { mlbId: true } for every player on a 40-man
     const promises = teams.map(team => (async () => {
       try {
         const rRes = await fetch(`https://statsapi.mlb.com/api/v1/teams/${team.id}/roster?season=2026&rosterType=40Man`);
         if(!rRes.ok) return;
         const rData = await rRes.json();
         for(const player of (rData.roster || [])){
+          // PROSPECTS_REHAB_FILTER_V2 — capture every 40-man player ID first,
+          // before any status-code branching. Even Active players go in here.
+          const pid = player.person && player.person.id;
+          if(pid) fortyManMap[String(pid)] = true;
           // Map MLB's D-codes to our IL-codes. Skip 'A' (active). Capture 'RM'
           // (Rehab Major — player rehabbing in minors before being activated)
           // into rehabMap for the REHAB_FILTER_V1 minors-filter exclusion.
@@ -4672,11 +4686,9 @@ async function fetchMLBInjuryStatus(){
           else if(normalized === 'D60') mappedCode = 'IL60';
           // (Active 'A' falls through — not added to ilMap or rehabMap.)
           if(mappedCode){
-            const pid = player.person && player.person.id;
             if(pid) ilMap[String(pid)] = mappedCode;
           } else if(normalized === 'RM'){
             // REHAB_FILTER_V1 — flag rehab-assignment players.
-            const pid = player.person && player.person.id;
             if(pid) rehabMap[String(pid)] = true;
           }
         }
@@ -4689,8 +4701,10 @@ async function fetchMLBInjuryStatus(){
 
     const count = Object.keys(ilMap).length;
     const rehabCount = Object.keys(rehabMap).length;
+    const fortyManCount = Object.keys(fortyManMap).length;
     console.log('[IL_CADENCE_V2] fetched IL status for ' + count + ' players from MLB API');
     console.log('[REHAB_FILTER_V1] fetched ' + rehabCount + ' rehab-assignment players from MLB API');
+    console.log('[PROSPECTS_REHAB_FILTER_V2] captured ' + fortyManCount + ' 40-man players from MLB API');
     // SANITY FLOOR — if we got fewer than 30 IL players league-wide, something
     // went wrong (typical MLB IL count is 150-250). Return empty + log so the
     // applier knows NOT to clear any Yahoo IL flags. NOTE: a 0-rehab count is
@@ -4700,9 +4714,10 @@ async function fetchMLBInjuryStatus(){
       console.warn('[IL_CADENCE_V2] suspicious low count (' + count + ') — treating as failed fetch, Yahoo fallback in effect');
       return null;
     }
-    // REHAB_FILTER_V1 — return both maps in a single envelope object so the
-    // caller can pass both to applyMLBInjuryStatus(). Callers updated.
-    return { ilMap: ilMap, rehabMap: rehabMap };
+    // REHAB_FILTER_V1 — return all maps in a single envelope object so the
+    // caller can pass them to applyMLBInjuryStatus(). Callers updated.
+    // PROSPECTS_REHAB_FILTER_V2 — fortyManMap added for the Prospects page filter.
+    return { ilMap: ilMap, rehabMap: rehabMap, fortyManMap: fortyManMap };
   } catch(e){
     console.warn('[IL_CADENCE_V2] fetchMLBInjuryStatus failed (Yahoo fallback in effect):', e);
     return null;
@@ -4725,16 +4740,19 @@ function applyMLBInjuryStatus(playersArr, envelope){
   if(!envelope || typeof envelope !== 'object') return;
 
   // REHAB_FILTER_V1 — unwrap envelope. Accept both old shape (bare ilMap)
-  // and new shape ({ ilMap, rehabMap }). Old shape: no rehab data, on_rehab
-  // stays null on all records — same as legacy behavior.
-  let ilMap, rehabMap;
+  // and new shape ({ ilMap, rehabMap, fortyManMap }). Old shape: no rehab/40-man
+  // data, on_rehab/on_40man stay null on all records — same as legacy behavior.
+  let ilMap, rehabMap, fortyManMap;
   if(envelope.ilMap && typeof envelope.ilMap === 'object'){
     ilMap = envelope.ilMap;
     rehabMap = (envelope.rehabMap && typeof envelope.rehabMap === 'object') ? envelope.rehabMap : {};
+    // PROSPECTS_REHAB_FILTER_V2 — also unwrap fortyManMap.
+    fortyManMap = (envelope.fortyManMap && typeof envelope.fortyManMap === 'object') ? envelope.fortyManMap : {};
   } else {
     // Old shape — assume envelope IS the ilMap.
     ilMap = envelope;
     rehabMap = {};
+    fortyManMap = {};
   }
   if(!ilMap || Object.keys(ilMap).length < 30){
     // MLB API failure or no data — don't touch anything.
@@ -4768,6 +4786,13 @@ function applyMLBInjuryStatus(playersArr, envelope){
     if(isRehab !== !!p.on_rehab){
       p.on_rehab = isRehab;
       if(isRehab) _rehabCount++;
+    }
+    // PROSPECTS_REHAB_FILTER_V2 — stamp on_40man. Idempotent same as on_rehab.
+    // Used by renderProspects() to exclude any 40-man player from the Prospects
+    // tab. By definition a "prospect" lives outside the 40-man pool.
+    const isOn40 = !!fortyManMap[String(p.mlb_id)];
+    if(isOn40 !== !!p.on_40man){
+      p.on_40man = isOn40;
     }
   }
   if(_overrideCount || _clearedCount){
@@ -13277,14 +13302,18 @@ function renderProspects(){
 
   let list = [...prospectPlayers];
 
-  // PROSPECTS_REHAB_FILTER_V1 (May 19, 2026 23:46 ET — PC Walter) — exclude
-  // MLB veterans on rehab assignments. They get stamped p.on_rehab=true by
-  // applyMLBInjuryStatus() inside loadProspects(). Without this filter, guys
-  // like Acuña and Suzuki appear in the Prospects list while rehabbing in the
-  // minors, which is misleading (they're not prospects, they're injured MLB
-  // veterans temporarily playing AAA). The MLB Stats API tags them with code
-  // 'RM' (Rehab Major) on the 40-man fetch, which feeds the rehabMap.
-  list = list.filter(p => p.on_rehab !== true);
+  // PROSPECTS_REHAB_FILTER_V2 (May 20, 2026 00:00 ET — PC Walter) — exclude any
+  // player currently on a 40-man MLB roster. The original V1 filtered on
+  // p.on_rehab (status code RM only), which missed Mookie Betts / Seiya Suzuki /
+  // Acuña: those guys did rehab in the minors earlier in the season (so MLB's
+  // /sports/11/players endpoint returns them on AAA player lists), but their
+  // RM status was lifted when they came off rehab and back to active MLB. The
+  // V2 filter uses 40-man membership instead — captures every active, optioned,
+  // IL, or RM player on every team's 40-man. That maps exactly to "is this
+  // player currently in the MLB ecosystem?" — which by definition means
+  // they're not a prospect. The on_rehab filter is kept as a belt-and-suspenders
+  // safety net for the rare case where 40-man capture misses a player.
+  list = list.filter(p => p.on_40man !== true && p.on_rehab !== true);
 
   // Filter
   if(prosFilterLevel !== 'all') list = list.filter(p => p.level === prosFilterLevel);
