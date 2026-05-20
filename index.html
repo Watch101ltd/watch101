@@ -1192,6 +1192,20 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
    wider gets clipped or scrolls inside the cell's own overflow. Now every
    row sits as true 50/50 quadrants regardless of inner content. */
 #player-page-overlay .ppo-grid{padding:1.5rem;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;}
+/* GAMELOG_GRID_CONSTRAIN_V1 (May 20, 2026 — PC Walter, after detailed recon)
+   Diagnostic on a hitter Last 7 page showed: grid template was computing to
+   1163.91px (way wider than the 645px .ppo-grid container), .ppo-block was
+   1164px wide (escaped the grid), and the table inside was 1120px. Root cause:
+   each grid item has a default min-width:auto that lets its INNER content
+   push the item past its grid-template fair share — minmax(0,1fr) alone is
+   not enough. Setting min-width:0 on the grid items themselves makes them
+   respect their allocated track and crush down to 0 if needed. With that
+   constraint, the table inside hits its overflow-x:auto wrapper and scrolls
+   horizontally inside its quadrant cell instead of busting out of the layout.
+   Also adding max-width:100% on the table itself so it cannot exceed its
+   container even if a future inner-content quirk tries. */
+#player-page-overlay .ppo-grid > .ppo-block{min-width:0;}
+#player-page-overlay .ppo-gamelog-table{max-width:100%;}
 @media(max-width:880px){#player-page-overlay .ppo-grid{grid-template-columns:1fr}}
 /* On phones, revert the windowed panel to full-screen so the content has room to breathe */
 @media(max-width:768px){
