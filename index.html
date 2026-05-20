@@ -1457,70 +1457,12 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-gamelog-table th{background:var(--surface1,#0c0c0c);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);font-weight:700;padding:8px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
 #player-page-overlay .ppo-gamelog-table th.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
-/* GAMELOG_HIDE_RESULT_V1 (May 20, 2026 — PC Walter, second attempt) — REVIVED.
-   Diagnostic on a scratched-player page (May 16 and May 10 rows) confirmed
-   SCRATCHED pill renders in the POS column (4), NOT the Result column (3).
-   Result column has been pure em-dash on every player tested. It's a dead
-   column. Killing it cleanly with display:none. Scoped to :has(td.gl-hit-stat)
-   so pitcher Dec column at position 3 is untouched. */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(3),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tbody tr td:nth-child(3),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tfoot tr td:nth-child(3){display:none;}
-/* GAMELOG_FIT_QUADRANT_V1 (May 20, 2026 — PC Walter, side-by-side phase 2)
-   After GAMELOG_GRID_EQUAL_V1 forced 50/50 grid quadrants, the hitter Last 7
-   table still horizontal-scrolled inside its half because its natural widths
-   exceeded the quadrant. Pin every column to a tight content-based width
-   and reduce horizontal padding 8px → 3px. Targets: Date 56, Opp 46, Result
-   60, Pos 38, AB-cell 56 (holds "2-for-5"), R/HR/RBI/SB/BB/K 30 each (single
-   digits), AVG 42. Sum ≈ 478px plus borders ≈ 490-500px. Fits the quadrant
-   on any reasonable monitor. Scoped to hitter via :has(td.gl-hit-stat) so
-   pitcher gamelog stays full-width until we address it separately. */
-/* GAMELOG_NTH_CHILD_V1 (May 20, 2026 — PC Walter, definitive rewrite) — after
-   multiple class-based-selector attempts failed because cell classes vary
-   per row (gl-dash on em-dash rows, gl-status on SCRATCHED rows, gl-pos on
-   normal rows, etc.), this rewrite uses pure nth-child(N) selectors which
-   target the Nth cell in every row regardless of class. Combined with
-   table-layout:fixed which makes the browser respect the th widths and
-   propagate them to the td cells in the same column.
-
-   Column layout for hitter Last 7 Games:
-   col 1 = Date (56)
-   col 2 = Opp (46)
-   col 3 = Result (HIDDEN — display:none via GAMELOG_HIDE_RESULT_V1, dead column)
-   col 4 = Pos / SCRATCHED chip (when col 3 is hidden, this shifts left visually
-           but is still col 4 in the source) — 50px
-   col 5 = AB cell "X-for-Y" — 50px
-   col 6-11 = R, HR, RBI, SB, BB, K — 28px each (single digits)
-   col 12 = AVG ".266" — 42px
-
-   Sum: 56+46+0+50+50+(28*6)+42 = 412px content + ~24px padding = ~436px total.
-   Fits comfortably inside any reasonable quadrant width. */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat){table-layout:fixed;width:auto;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th,
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td{padding-left:3px;padding-right:3px;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(1),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(1){width:56px;padding-left:6px;padding-right:4px;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(2),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(2){width:46px;padding-left:4px;padding-right:4px;}
-/* col 3 (Result) — hidden by GAMELOG_HIDE_RESULT_V1 above */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(4),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(4){width:50px;padding-left:4px;padding-right:4px;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(5),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(5){width:50px;padding-left:3px;padding-right:3px;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(6),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(6),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(7),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(7),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(8),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(8),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(9),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(9),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(10),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(10),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(11),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(11){width:28px;padding-left:2px;padding-right:2px;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(12),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(12){width:42px;padding-left:3px;padding-right:3px;}
+/* GAMELOG column-width tightening rules from May 20 session were STRIPPED at
+   ~01:30 ET (Option B reset). Multiple CSS approaches attempted, none visibly
+   tightened the columns. Banked as a fresh-Walter project. See To-Do list:
+   "Gamelog column tightening — hitter Last 7 columns are too wide for quadrant."
+   The structural side-by-side win (GAMELOG_SIDEBYSIDE_V1 + GAMELOG_GRID_EQUAL_V1
+   below in the same session) is preserved. */
 #player-page-overlay .ppo-gamelog-table td.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table tr:last-child td{border-bottom:none;}
 #player-page-overlay .ppo-gamelog-table tr.gl-dnp td{color:var(--text3);}
