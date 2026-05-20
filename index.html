@@ -1436,11 +1436,6 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-lineup-blurb.neutral .ppo-lineup-label{color:var(--text3);}
 /* GAME_LOG_CSS_V1 — Last 7 Games card (LAST7_LABELS_V1 — was Last 10 Games) */
 #player-page-overlay #ppo-gamelog-wrap{margin-top:4px;}
-/* GAMELOG_QUADRANT_V1 (May 20, 2026 00:30 ET — PC Walter) RETIRED at 00:45 ET
-   when GAMELOG_SIDEBYSIDE_V1 replaced the max-width:50vw cap with native grid
-   layout. The section <section class="ppo-block"> at the bottom of the player
-   page overlay now occupies one grid cell — no inner div cap needed. Kept this
-   comment block for archaeology in case the cap needs to be re-introduced. */
 #player-page-overlay .ppo-gamelog-summary{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 14px;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px;font-size:12px;color:var(--text2);}
 #player-page-overlay .ppo-gamelog-summary .gl-sum-label{font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:700;}
 #player-page-overlay .ppo-gamelog-summary .gl-sum-avg{font-size:16px;font-weight:700;color:var(--text1);font-variant-numeric:tabular-nums;}
@@ -1453,46 +1448,6 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-gamelog-table th{background:var(--surface1,#0c0c0c);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);font-weight:700;padding:8px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
 #player-page-overlay .ppo-gamelog-table th.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
-/* GAMELOG_TIGHTEN_V1 (May 20, 2026 00:15 ET — PC Walter) — hitters only pilot.
-   The gamelog stat columns (AB/R/HR/RBI/SB/BB/K/AVG) were spread evenly across
-   the full table width — Dude's eye had to track all the way across the monitor
-   to read across a single row. Pin small explicit widths on the hitter stat
-   cells so they cluster together at their natural width. The Date column
-   absorbs the leftover space on the left (which is fine — dates can breathe).
-   Scoped to .gl-hit-stat only so the pitcher table is untouched until the
-   pilot is verified. Reduced horizontal padding from 8px → 4px for further
-   tightening. Counterpart matching th selectors via :nth-child since the
-   header cells don't carry the gl-hit-stat class.
-   Pitcher table (.gl-pit-stat) gets the same treatment in a follow-up edit
-   after the Dude verifies hitters look right. */
-#player-page-overlay .ppo-gamelog-table td.gl-hit-stat{width:42px;min-width:42px;padding-left:4px;padding-right:4px;}
-#player-page-overlay .ppo-gamelog-table tfoot td.gl-hit-stat{width:42px;min-width:42px;padding-left:4px;padding-right:4px;}
-/* Match the th cells to the same widths. Hitter headers are in cells 5-12
-   (AB, R, HR, RBI, SB, BB, K, AVG). The headers don't carry gl-hit-stat
-   so we use :has() to only match the th cells in a TABLE that contains at
-   least one gl-hit-stat cell — that scopes to hitter tables only. Pitcher
-   tables (no gl-hit-stat cells) are completely unaffected. */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(n+5){width:42px;min-width:42px;padding-left:4px;padding-right:4px;}
-/* GAMELOG_TIGHTEN_LEFT_V1 (May 20, 2026 00:35 ET — PC Walter) — pilot pinned
-   the stat columns (cells 5-12) but left the identifier columns (Date / Opp /
-   Result / Pos = cells 1-4) free-floating. With nothing constraining them,
-   they expanded to fill the remaining viewport width, overflowed the 50vw
-   quadrant cap, and triggered horizontal scroll on .ppo-gamelog-table-wrap.
-   Pin tight widths on cells 1-4 too — both td and th. Date needs the most
-   room ("May 18" + padding), then Opp ("@ DET"), Result (placeholder em-dash
-   or short text), Pos ("1st"). Sums to ~220px left + 336px stats + 8px
-   borders/padding ≈ 575px, well under 50vw on any reasonable monitor.
-   Scoped via :has(td.gl-hit-stat) so pitcher table is untouched. */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-date,
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(1){width:60px;min-width:60px;max-width:60px;padding-left:8px;padding-right:6px;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-opp-home,
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-opp-away,
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(2){width:55px;min-width:55px;max-width:55px;padding-left:6px;padding-right:6px;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-result,
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(3){width:65px;min-width:65px;max-width:65px;padding-left:6px;padding-right:6px;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-pos,
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-status,
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(4){width:48px;min-width:48px;max-width:48px;padding-left:6px;padding-right:6px;}
 #player-page-overlay .ppo-gamelog-table td.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table tr:last-child td{border-bottom:none;}
 #player-page-overlay .ppo-gamelog-table tr.gl-dnp td{color:var(--text3);}
@@ -16187,20 +16142,12 @@ function attachTankScrollHandler(){
     </section>
     <!-- /NEWS_LINKS_V1 strip (relocated) -->
     <!-- GAME_LOG_CARD_V1 — last-10-games table replaces the old blurb card. -->
-    <!-- GAMELOG_SIDEBYSIDE_V1 (May 20, 2026 00:45 ET — PC Walter) — removed
-         inline grid-column:1/-1 from both Last 7 Games and Next 7 Games so they
-         each occupy ONE grid cell instead of forcing full-width. Result: the two
-         cards sit side-by-side as quadrants, mirroring the Podcast Mentions /
-         Advanced Stats layout pattern from ADVSTATS_QUADRANT_V1 (April 27).
-         Internal column tightening on each is a separate concern — handled by
-         the GAMELOG_TIGHTEN_V1 + GAMELOG_TIGHTEN_LEFT_V1 rules earlier in this
-         session for the hitter Last 7 table. -->
-    <section class="ppo-block">
+    <section class="ppo-block" style="grid-column:1 / -1">
       <h2>Last 7 Games</h2>
       <div class="ppo-note">Per-game box scores &middot; Newest first &middot; Source: MLB Stats API</div>
       <div id="ppo-gamelog-wrap"></div>
     </section>
-    <section class="ppo-block">
+    <section class="ppo-block" style="grid-column:1 / -1">
       <h2>Next 7 Games</h2>
       <div class="ppo-note">Upcoming schedule &middot; Hitters show opposing probable pitcher (hand, ERA) &middot; Pitchers show their probable starts only &middot; Green = favorable matchup, Red = tough</div>
       <div id="ppo-schedule"></div>
