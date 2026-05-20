@@ -16969,14 +16969,29 @@ document.addEventListener('keydown', function(e){
   document.body.appendChild(qepPopup);
 
   function _qepFindPlayer(mlbId){
-    var candidates = ['players', '_players', 'playerData'];
+    // QUICK_EDIT_POPUP_V1 (fixed 5/20 17:45 ET) — the main page declares
+    // `let players = [];` at script scope (line ~2997). `let` does NOT
+    // attach to window, so window.players is undefined. We use an indirect
+    // eval — (0,eval)('players') — which evaluates in global scope and CAN
+    // see top-level let/const declarations. Wrapped in try/catch so a missing
+    // reference can't break anything. Var-declared globals are still checked
+    // first via window in case future renames or refactors land.
+    var arr = null;
+    var candidates = ['players', '_players', 'playerData', 'allPlayers', 'watchPlayers'];
     for(var i=0; i<candidates.length; i++){
-      var arr = window[candidates[i]];
-      if(Array.isArray(arr)){
-        for(var j=0; j<arr.length; j++){
-          if(arr[j] && String(arr[j].mlb_id) === String(mlbId)) return arr[j];
-        }
-      }
+      var wArr = window[candidates[i]];
+      if(Array.isArray(wArr)){ arr = wArr; break; }
+    }
+    if(!arr){
+      try {
+        var ev = (0, eval);
+        var cand = ev('typeof players !== "undefined" ? players : null');
+        if(Array.isArray(cand)) arr = cand;
+      } catch(e){ /* silent */ }
+    }
+    if(!Array.isArray(arr)) return null;
+    for(var j=0; j<arr.length; j++){
+      if(arr[j] && String(arr[j].mlb_id) === String(mlbId)) return arr[j];
     }
     return null;
   }
