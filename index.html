@@ -817,6 +817,13 @@ tr.drag-over{border-top:2px solid var(--gold)}
 #pool-wrap .table-wrap thead{position:sticky;top:0;z-index:10;background:var(--surface);}
 #pool-wrap .table-wrap thead th{background:var(--surface);}
 #pool-wrap .table-wrap{overflow:visible;}
+/* TANK_STICKY_V1 (May 20, 2026 17:00 ET — PC Walter) — same architectural fix
+   as POOL_STICKY_V1 and LEADERS_STICKY_*, scoped to #tank-wrap. Tank's clone
+   bar is being permanently hidden in attachTankScrollHandler in the matching
+   JS edit; CSS sticky on the real thead takes over the visual pinning. */
+#tank-wrap .table-wrap thead{position:sticky;top:0;z-index:10;background:var(--surface);}
+#tank-wrap .table-wrap thead th{background:var(--surface);}
+#tank-wrap .table-wrap{overflow:visible;}
 /* Prospects uses clone-header approach; thead stickiness handled via JS, not CSS */
 .pool-table{width:100%;border-collapse:separate;border-spacing:0;min-width:900px}
 .pool-table thead tr{border-bottom:2px solid var(--border2)}
@@ -16038,16 +16045,21 @@ function attachTankScrollHandler(){
   const poolToolbarEl = document.getElementById('tank-toolbar');
   const cachedToolbarH = poolToolbarEl ? poolToolbarEl.offsetHeight : 56;
 
-  buildClone();
-  positionCloneBar();
+  // TANK_STICKY_V1 (May 20, 2026 17:00 ET — PC Walter) — same architectural
+  // pattern as POOL_STICKY_V1 and the Leaders sticky pilot from 5/19 night.
+  // Tank thead is now sticky via CSS (see #tank-wrap .table-wrap thead block
+  // near line 820). The JS clone bar is no longer needed for pinning — force
+  // it permanently hidden and skip buildClone/positionCloneBar entirely. Sort
+  // handlers live on the real thead, not the clone, so this is purely visual.
+  // Header-slide-up animation is preserved below.
+  cloneBar.style.display = 'none';
 
-  let cloneVisible = false;
   tankScrollHandler = function(){
     const scrollTop = scrollEl.scrollTop;
 
     // Slide the main page header up as user scrolls inside the tab so it
     // scrolls away just like on the main Watch 101 view. Expand tank-wrap
-    // upward to fill the space, and move the clone bar with it.
+    // upward to fill the space.
     const mainHeader = document.querySelector('.header');
     const wrap = document.getElementById('tank-wrap');
     if(mainHeader && wrap){
@@ -16056,30 +16068,8 @@ function attachTankScrollHandler(){
       mainHeader.style.transform = 'translateY(-' + slideUp + 'px)';
       const currentTop = headerH - slideUp;
       wrap.style.top = currentTop + 'px';
-      cloneBar.style.top = currentTop + 'px';
     }
-
-    const shouldShow = scrollTop > cachedToolbarH;
-    if(shouldShow && !cloneVisible){
-      // Rebuild just before showing so column widths stay fresh if the table
-      // changed (e.g. stats finished lazy-loading).
-      buildClone();
-      cloneBar.style.display = 'block';
-      cloneVisible = true;
-    } else if(shouldShow && cloneVisible){
-      // POOL_CLONE_REBUILD_FIX_V1 (May 18, 2026) — rebuild on every scroll
-      // tick while the clone is showing. The original code only rebuilt at
-      // show-time; if the real table's column widths changed AFTER that
-      // (data loaded, sort fired, layout settled), the clone stayed frozen
-      // with stale widths. Worst symptom: clone had a truncated set of
-      // columns rendered at 0px width when buildClone first ran before the
-      // table had finished its first paint. Now we re-bake widths every
-      // scroll while visible so the clone always tracks the real table.
-      buildClone();
-    } else if(!shouldShow && cloneVisible){
-      cloneBar.style.display = 'none';
-      cloneVisible = false;
-    }
+    // Clone bar show/hide/rebuild logic intentionally removed — sticky handles pinning.
   };
 
   scrollEl.addEventListener('scroll', tankScrollHandler);
