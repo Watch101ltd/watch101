@@ -3533,6 +3533,17 @@ async function loadData(){
       // backward-compatible so this rename is purely cosmetic.
       applyMLBInjuryStatus(players, envelope);
       if(typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers)) applyMLBInjuryStatus(poolPlayers, envelope);
+      // PROSPECTS_REHAB_FILTER_V1 (May 19, 2026 23:46 ET — PC Walter) — stash the
+      // envelope on a module-level global so loadProspects() can reuse it later
+      // without re-fetching all 30 team rosters. Prospects loads on-demand
+      // (user clicks the Prospects tab), which usually happens AFTER this
+      // page-load fetch has already completed.
+      window._mlbInjuryEnvelope = envelope;
+      // Apply to prospects too if they happen to already be loaded.
+      if(typeof prospectPlayers !== 'undefined' && Array.isArray(prospectPlayers) && prospectPlayers.length > 0){
+        applyMLBInjuryStatus(prospectPlayers, envelope);
+        if(typeof renderProspects === 'function' && typeof prospectsActive !== 'undefined' && prospectsActive) try { renderProspects(); } catch(_re){}
+      }
       if(typeof renderTable === 'function') try { renderTable(); } catch(_re){}
       if(typeof renderPool === 'function' && typeof poolLoaded !== 'undefined' && poolLoaded) try { renderPool(); } catch(_re){}
       if(typeof renderLeaders === 'function') try { renderLeaders(); } catch(_re){}
@@ -12300,6 +12311,28 @@ async function loadProspects(){
     // not-carried prospects (Dude's call — em-dash is more honest than 0).
     if(typeof applyYahoo === 'function') applyYahoo(prospectPlayers);
 
+    // PROSPECTS_REHAB_FILTER_V1 (May 19, 2026 23:46 ET — PC Walter) — stamp
+    // p.on_rehab on every prospect record so renderProspects() can filter out
+    // MLB veterans currently on rehab assignments (Acuña, Suzuki, etc.) who
+    // would otherwise show up as "prospects" because they're on minor-league
+    // rosters during their rehab stint. The envelope is built at page-load by
+    // fetchMLBInjuryStatus(). Usually it's ready by the time the user opens
+    // Prospects (it's a 2-3 second async fetch on initial page load).
+    // Belt-and-suspenders: if the envelope isn't ready yet, re-fetch it here
+    // and apply. Adds at most a few seconds on first-Prospects-open + a 30-team
+    // API call, which is a small cost vs. the alternative (Acuña on prospects).
+    if(window._mlbInjuryEnvelope){
+      applyMLBInjuryStatus(prospectPlayers, window._mlbInjuryEnvelope);
+    } else if(typeof fetchMLBInjuryStatus === 'function'){
+      try {
+        const envelope = await fetchMLBInjuryStatus();
+        if(envelope){
+          window._mlbInjuryEnvelope = envelope;
+          applyMLBInjuryStatus(prospectPlayers, envelope);
+        }
+      } catch(_e){ console.warn('[PROSPECTS_REHAB_FILTER_V1] fallback fetch failed:', _e); }
+    }
+
     prospectsLoaded = true;
     loading.style.display = 'none';
     if(status) status.textContent = prospectPlayers.length + ' prospects loaded (AAA + AA + A) — fetching stats...';
@@ -13243,6 +13276,15 @@ function renderProspects(){
   const isPit = pos => ['SP','RP','P'].includes(pos);
 
   let list = [...prospectPlayers];
+
+  // PROSPECTS_REHAB_FILTER_V1 (May 19, 2026 23:46 ET — PC Walter) — exclude
+  // MLB veterans on rehab assignments. They get stamped p.on_rehab=true by
+  // applyMLBInjuryStatus() inside loadProspects(). Without this filter, guys
+  // like Acuña and Suzuki appear in the Prospects list while rehabbing in the
+  // minors, which is misleading (they're not prospects, they're injured MLB
+  // veterans temporarily playing AAA). The MLB Stats API tags them with code
+  // 'RM' (Rehab Major) on the 40-man fetch, which feeds the rehabMap.
+  list = list.filter(p => p.on_rehab !== true);
 
   // Filter
   if(prosFilterLevel !== 'all') list = list.filter(p => p.level === prosFilterLevel);
