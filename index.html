@@ -13549,16 +13549,18 @@ function attachPoolScrollHandler(){
   const poolToolbarEl = document.getElementById('pool-toolbar');
   const cachedToolbarH = poolToolbarEl ? poolToolbarEl.offsetHeight : 56;
 
-  buildClone();
-  positionCloneBar();
+  // POOL_STICKY_V1 (May 19, 2026 23:04 ET — PC Walter) — Pool thead now sticky
+  // via CSS at #pool-wrap .table-wrap thead (lines ~817-819). The clone bar was
+  // the 100% source of the visible 8px drift (left:0 fixed vs padded table).
+  // Force clone permanently hidden so CSS sticky alone does the visual pinning.
+  // buildClone/positionCloneBar are no longer called during scroll. Header-slide-up
+  // animation preserved. Sort handlers untouched (they live on the real thead).
+  cloneBar.style.display = 'none';
 
-  let cloneVisible = false;
   poolScrollHandler = function(){
     const scrollTop = scrollEl.scrollTop;
 
-    // Slide the main page header up as user scrolls inside the tab so it
-    // scrolls away just like on the main Watch 101 view. Expand pool-wrap
-    // upward to fill the space, and move the clone bar with it.
+    // Slide the main page header up as user scrolls inside the tab.
     const mainHeader = document.querySelector('.header');
     const wrap = document.getElementById('pool-wrap');
     if(mainHeader && wrap){
@@ -13567,30 +13569,8 @@ function attachPoolScrollHandler(){
       mainHeader.style.transform = 'translateY(-' + slideUp + 'px)';
       const currentTop = headerH - slideUp;
       wrap.style.top = currentTop + 'px';
-      cloneBar.style.top = currentTop + 'px';
     }
-
-    const shouldShow = scrollTop > cachedToolbarH;
-    if(shouldShow && !cloneVisible){
-      // Rebuild just before showing so column widths stay fresh if the table
-      // changed (e.g. stats finished lazy-loading).
-      buildClone();
-      cloneBar.style.display = 'block';
-      cloneVisible = true;
-    } else if(shouldShow && cloneVisible){
-      // POOL_CLONE_REBUILD_FIX_V1 (May 18, 2026) — rebuild on every scroll
-      // tick while the clone is showing. The original code only rebuilt at
-      // show-time; if the real table's column widths changed AFTER that
-      // (data loaded, sort fired, layout settled), the clone stayed frozen
-      // with stale widths. Worst symptom: clone had a truncated set of
-      // columns rendered at 0px width when buildClone first ran before the
-      // table had finished its first paint. Now we re-bake widths every
-      // scroll while visible so the clone always tracks the real table.
-      buildClone();
-    } else if(!shouldShow && cloneVisible){
-      cloneBar.style.display = 'none';
-      cloneVisible = false;
-    }
+    // Clone bar show/hide/rebuild logic intentionally removed — sticky handles pinning.
   };
 
   scrollEl.addEventListener('scroll', poolScrollHandler);
