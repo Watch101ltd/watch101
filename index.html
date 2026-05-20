@@ -1475,54 +1475,52 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
    digits), AVG 42. Sum ≈ 478px plus borders ≈ 490-500px. Fits the quadrant
    on any reasonable monitor. Scoped to hitter via :has(td.gl-hit-stat) so
    pitcher gamelog stays full-width until we address it separately. */
-/* GAMELOG_UNSTRETCH_V1 (May 20, 2026 — PC Walter) — override the global
-   .ppo-gamelog-table{width:100%} on hitter tables only. With width:100% the
-   browser stretches the table to fill its container (~1120px), then divides
-   that space across the columns proportionally — making my pinned widths
-   act as MINIMUMS, not exact widths. Switching to width:auto + table-layout:auto
-   lets the table render at its natural summed-column width (~440px without
-   Result), eliminating the dead space. Pitcher table keeps default behavior. */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat){table-layout:auto;width:auto;}
-/* Identifier columns (cells 1-4). td uses class hooks; th uses nth-child since
-   headers don't carry the class. */
+/* GAMELOG_NTH_CHILD_V1 (May 20, 2026 — PC Walter, definitive rewrite) — after
+   multiple class-based-selector attempts failed because cell classes vary
+   per row (gl-dash on em-dash rows, gl-status on SCRATCHED rows, gl-pos on
+   normal rows, etc.), this rewrite uses pure nth-child(N) selectors which
+   target the Nth cell in every row regardless of class. Combined with
+   table-layout:fixed which makes the browser respect the th widths and
+   propagate them to the td cells in the same column.
+
+   Column layout for hitter Last 7 Games:
+   col 1 = Date (56)
+   col 2 = Opp (46)
+   col 3 = Result (HIDDEN — display:none via GAMELOG_HIDE_RESULT_V1, dead column)
+   col 4 = Pos / SCRATCHED chip (when col 3 is hidden, this shifts left visually
+           but is still col 4 in the source) — 50px
+   col 5 = AB cell "X-for-Y" — 50px
+   col 6-11 = R, HR, RBI, SB, BB, K — 28px each (single digits)
+   col 12 = AVG ".266" — 42px
+
+   Sum: 56+46+0+50+50+(28*6)+42 = 412px content + ~24px padding = ~436px total.
+   Fits comfortably inside any reasonable quadrant width. */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat){table-layout:fixed;width:auto;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th,
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td{padding-left:3px;padding-right:3px;}
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(1),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-date{width:56px;padding-left:6px;padding-right:4px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(1){width:56px;padding-left:6px;padding-right:4px;}
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(2),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-opp-home,
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-opp-away{width:46px;padding-left:4px;padding-right:4px;}
-/* GAMELOG_RESULT_TIGHTEN_V1 (May 20, 2026 — PC Walter) — Result column.
-   Width 78px to comfortably hold the "SCRATCHED" red pill (the chip is the
-   widest content this column ever shows). The previous selector targeted
-   td.gl-result only — but the renderer emits gl-dash / gl-status / gl-result
-   on different rows depending on data, so the rule missed most cells. Using
-   nth-child(3) targets the third cell in every row regardless of class.
-   Diagnostic from 01:20 ET showed the Result column was 141px wide before
-   this — that gap was the dead space the Dude flagged. */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(3),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tbody tr td:nth-child(3),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tfoot tr td:nth-child(3){width:78px;padding-left:4px;padding-right:4px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(2){width:46px;padding-left:4px;padding-right:4px;}
+/* col 3 (Result) — hidden by GAMELOG_HIDE_RESULT_V1 above */
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(4),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-pos,
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-status,
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-dash{width:38px;padding-left:4px;padding-right:4px;}
-/* Stat columns (cells 5-12). AB-cell is widest because it holds "X-for-Y"
-   strings; the rest are single-digit numbers or short decimals. */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(5){width:56px;padding-left:3px;padding-right:3px;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-hit-stat:nth-of-type(1){width:56px;padding-left:3px;padding-right:3px;}
-/* R, HR, RBI, SB, BB, K — single-digit stat columns */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(4){width:50px;padding-left:4px;padding-right:4px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(5),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(5){width:50px;padding-left:3px;padding-right:3px;}
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(6),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(6),
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(7),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(7),
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(8),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(8),
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(9),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(9),
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(10),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(11){width:30px;padding-left:3px;padding-right:3px;}
-/* AVG column (last cell) — 3-digit decimal like .266 */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(12){width:42px;padding-left:3px;padding-right:3px;}
-/* Apply the stat-column padding to ALL hit-stat td cells (cheaper than
-   per-position nth-of-type rules). With table-layout:fixed above, the th
-   widths propagate to the matching td columns automatically. */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-hit-stat{padding-left:3px;padding-right:3px;}
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tfoot td.gl-hit-stat{padding-left:3px;padding-right:3px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(10),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(11),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(11){width:28px;padding-left:2px;padding-right:2px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(12),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tr td:nth-child(12){width:42px;padding-left:3px;padding-right:3px;}
 #player-page-overlay .ppo-gamelog-table td.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table tr:last-child td{border-bottom:none;}
 #player-page-overlay .ppo-gamelog-table tr.gl-dnp td{color:var(--text3);}
