@@ -1457,6 +1457,12 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-gamelog-table th{background:var(--surface1,#0c0c0c);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);font-weight:700;padding:8px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
 #player-page-overlay .ppo-gamelog-table th.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+/* GAMELOG_HIDE_RESULT_V1 — RETIRED. The Result column tracks game-scratched
+   status (red SCRATCHED pill in column 3). It renders as em-dash for normal
+   game rows but populates as the SCRATCHED chip when a player is scratched.
+   Hiding the column entirely loses that signal. Reverted ~1 minute after
+   ship. The real fix is column-width tightening (Option A from the 0115 ET
+   exchange), handled below. */
 /* GAMELOG_FIT_QUADRANT_V1 (May 20, 2026 — PC Walter, side-by-side phase 2)
    After GAMELOG_GRID_EQUAL_V1 forced 50/50 grid quadrants, the hitter Last 7
    table still horizontal-scrolled inside its half because its natural widths
@@ -1474,8 +1480,17 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(2),
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-opp-home,
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-opp-away{width:46px;padding-left:4px;padding-right:4px;}
+/* GAMELOG_RESULT_TIGHTEN_V1 (May 20, 2026 — PC Walter) — Result column.
+   Width 78px to comfortably hold the "SCRATCHED" red pill (the chip is the
+   widest content this column ever shows). The previous selector targeted
+   td.gl-result only — but the renderer emits gl-dash / gl-status / gl-result
+   on different rows depending on data, so the rule missed most cells. Using
+   nth-child(3) targets the third cell in every row regardless of class.
+   Diagnostic from 01:20 ET showed the Result column was 141px wide before
+   this — that gap was the dead space the Dude flagged. */
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(3),
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-result{width:60px;padding-left:4px;padding-right:4px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tbody tr td:nth-child(3),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tfoot tr td:nth-child(3){width:78px;padding-left:4px;padding-right:4px;}
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(4),
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-pos,
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-status,
