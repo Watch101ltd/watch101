@@ -11051,10 +11051,15 @@ function attachLeadersScrollHandler(){
   const catsEl    = document.getElementById('leaders-cats');
   const cachedThreshold = (toolbarEl ? toolbarEl.offsetHeight : 50) + (catsEl ? catsEl.offsetHeight : 50);
 
-  buildClone();
-  positionCloneBar();
+  // STICKY_ONLY_PILOT_V1 (May 19, 2026 23:04 ET — PC Walter) — Leaders thead is
+  // sticky via CSS (line ~796). The clone bar duplicated that and painted at
+  // viewport-left=0 while the real table sat inside .pool-wrap padding — the
+  // visible 8px drift was that mismatch. Force the clone permanently hidden so
+  // CSS sticky alone does the visual pinning. buildClone/positionCloneBar are
+  // no longer called during scroll. Header-slide-up animation preserved.
+  // Sort handlers are on the real thead, not the clone — fully untouched.
+  cloneBar.style.display = 'none';
 
-  let cloneVisible = false;
   leadersScrollHandler = function(){
     const scrollTop = scrollEl.scrollTop;
 
@@ -11067,19 +11072,8 @@ function attachLeadersScrollHandler(){
       mainHeader.style.transform = 'translateY(-' + slideUp + 'px)';
       const currentTop = headerH - slideUp;
       wrap.style.top = currentTop + 'px';
-      cloneBar.style.top = currentTop + 'px';
     }
-
-    const shouldShow = scrollTop > cachedThreshold;
-    if(shouldShow && !cloneVisible){
-      // Rebuild just before showing so column widths stay fresh.
-      buildClone();
-      cloneBar.style.display = 'block';
-      cloneVisible = true;
-    } else if(!shouldShow && cloneVisible){
-      cloneBar.style.display = 'none';
-      cloneVisible = false;
-    }
+    // Clone bar show/hide logic intentionally removed — sticky handles pinning.
   };
   scrollEl.addEventListener('scroll', leadersScrollHandler);
 }
