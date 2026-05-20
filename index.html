@@ -1448,6 +1448,26 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-gamelog-table th{background:var(--surface1,#0c0c0c);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);font-weight:700;padding:8px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
 #player-page-overlay .ppo-gamelog-table th.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+/* GAMELOG_TIGHTEN_V1 (May 20, 2026 00:15 ET — PC Walter) — hitters only pilot.
+   The gamelog stat columns (AB/R/HR/RBI/SB/BB/K/AVG) were spread evenly across
+   the full table width — Dude's eye had to track all the way across the monitor
+   to read across a single row. Pin small explicit widths on the hitter stat
+   cells so they cluster together at their natural width. The Date column
+   absorbs the leftover space on the left (which is fine — dates can breathe).
+   Scoped to .gl-hit-stat only so the pitcher table is untouched until the
+   pilot is verified. Reduced horizontal padding from 8px → 4px for further
+   tightening. Counterpart matching th selectors via :nth-child since the
+   header cells don't carry the gl-hit-stat class.
+   Pitcher table (.gl-pit-stat) gets the same treatment in a follow-up edit
+   after the Dude verifies hitters look right. */
+#player-page-overlay .ppo-gamelog-table td.gl-hit-stat{width:42px;min-width:42px;padding-left:4px;padding-right:4px;}
+#player-page-overlay .ppo-gamelog-table tfoot td.gl-hit-stat{width:42px;min-width:42px;padding-left:4px;padding-right:4px;}
+/* Match the th cells to the same widths. Hitter headers are in cells 5-12
+   (AB, R, HR, RBI, SB, BB, K, AVG). The headers don't carry gl-hit-stat
+   so we use :has() to only match the th cells in a TABLE that contains at
+   least one gl-hit-stat cell — that scopes to hitter tables only. Pitcher
+   tables (no gl-hit-stat cells) are completely unaffected. */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(n+5){width:42px;min-width:42px;padding-left:4px;padding-right:4px;}
 #player-page-overlay .ppo-gamelog-table td.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table tr:last-child td{border-bottom:none;}
 #player-page-overlay .ppo-gamelog-table tr.gl-dnp td{color:var(--text3);}
