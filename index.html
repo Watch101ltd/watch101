@@ -1457,12 +1457,15 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-gamelog-table th{background:var(--surface1,#0c0c0c);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);font-weight:700;padding:8px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
 #player-page-overlay .ppo-gamelog-table th.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
-/* GAMELOG_HIDE_RESULT_V1 — RETIRED. The Result column tracks game-scratched
-   status (red SCRATCHED pill in column 3). It renders as em-dash for normal
-   game rows but populates as the SCRATCHED chip when a player is scratched.
-   Hiding the column entirely loses that signal. Reverted ~1 minute after
-   ship. The real fix is column-width tightening (Option A from the 0115 ET
-   exchange), handled below. */
+/* GAMELOG_HIDE_RESULT_V1 (May 20, 2026 — PC Walter, second attempt) — REVIVED.
+   Diagnostic on a scratched-player page (May 16 and May 10 rows) confirmed
+   SCRATCHED pill renders in the POS column (4), NOT the Result column (3).
+   Result column has been pure em-dash on every player tested. It's a dead
+   column. Killing it cleanly with display:none. Scoped to :has(td.gl-hit-stat)
+   so pitcher Dec column at position 3 is untouched. */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(3),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tbody tr td:nth-child(3),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tfoot tr td:nth-child(3){display:none;}
 /* GAMELOG_FIT_QUADRANT_V1 (May 20, 2026 — PC Walter, side-by-side phase 2)
    After GAMELOG_GRID_EQUAL_V1 forced 50/50 grid quadrants, the hitter Last 7
    table still horizontal-scrolled inside its half because its natural widths
@@ -1472,7 +1475,14 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
    digits), AVG 42. Sum ≈ 478px plus borders ≈ 490-500px. Fits the quadrant
    on any reasonable monitor. Scoped to hitter via :has(td.gl-hit-stat) so
    pitcher gamelog stays full-width until we address it separately. */
-#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat){table-layout:fixed;width:100%;}
+/* GAMELOG_UNSTRETCH_V1 (May 20, 2026 — PC Walter) — override the global
+   .ppo-gamelog-table{width:100%} on hitter tables only. With width:100% the
+   browser stretches the table to fill its container (~1120px), then divides
+   that space across the columns proportionally — making my pinned widths
+   act as MINIMUMS, not exact widths. Switching to width:auto + table-layout:auto
+   lets the table render at its natural summed-column width (~440px without
+   Result), eliminating the dead space. Pitcher table keeps default behavior. */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat){table-layout:auto;width:auto;}
 /* Identifier columns (cells 1-4). td uses class hooks; th uses nth-child since
    headers don't carry the class. */
 #player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(1),
