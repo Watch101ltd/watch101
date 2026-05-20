@@ -1457,6 +1457,47 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-gamelog-table th{background:var(--surface1,#0c0c0c);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);font-weight:700;padding:8px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
 #player-page-overlay .ppo-gamelog-table th.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+/* GAMELOG_FIT_QUADRANT_V1 (May 20, 2026 — PC Walter, side-by-side phase 2)
+   After GAMELOG_GRID_EQUAL_V1 forced 50/50 grid quadrants, the hitter Last 7
+   table still horizontal-scrolled inside its half because its natural widths
+   exceeded the quadrant. Pin every column to a tight content-based width
+   and reduce horizontal padding 8px → 3px. Targets: Date 56, Opp 46, Result
+   60, Pos 38, AB-cell 56 (holds "2-for-5"), R/HR/RBI/SB/BB/K 30 each (single
+   digits), AVG 42. Sum ≈ 478px plus borders ≈ 490-500px. Fits the quadrant
+   on any reasonable monitor. Scoped to hitter via :has(td.gl-hit-stat) so
+   pitcher gamelog stays full-width until we address it separately. */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat){table-layout:fixed;width:100%;}
+/* Identifier columns (cells 1-4). td uses class hooks; th uses nth-child since
+   headers don't carry the class. */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(1),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-date{width:56px;padding-left:6px;padding-right:4px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(2),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-opp-home,
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-opp-away{width:46px;padding-left:4px;padding-right:4px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(3),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-result{width:60px;padding-left:4px;padding-right:4px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(4),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-pos,
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-status,
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-dash{width:38px;padding-left:4px;padding-right:4px;}
+/* Stat columns (cells 5-12). AB-cell is widest because it holds "X-for-Y"
+   strings; the rest are single-digit numbers or short decimals. */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(5){width:56px;padding-left:3px;padding-right:3px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-hit-stat:nth-of-type(1){width:56px;padding-left:3px;padding-right:3px;}
+/* R, HR, RBI, SB, BB, K — single-digit stat columns */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(6),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(7),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(8),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(9),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(10),
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(11){width:30px;padding-left:3px;padding-right:3px;}
+/* AVG column (last cell) — 3-digit decimal like .266 */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) th:nth-child(12){width:42px;padding-left:3px;padding-right:3px;}
+/* Apply the stat-column padding to ALL hit-stat td cells (cheaper than
+   per-position nth-of-type rules). With table-layout:fixed above, the th
+   widths propagate to the matching td columns automatically. */
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) td.gl-hit-stat{padding-left:3px;padding-right:3px;}
+#player-page-overlay .ppo-gamelog-table:has(td.gl-hit-stat) tfoot td.gl-hit-stat{padding-left:3px;padding-right:3px;}
 #player-page-overlay .ppo-gamelog-table td.gl-left{text-align:left;}
 #player-page-overlay .ppo-gamelog-table tr:last-child td{border-bottom:none;}
 #player-page-overlay .ppo-gamelog-table tr.gl-dnp td{color:var(--text3);}
