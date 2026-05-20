@@ -793,8 +793,15 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .pool-table-wrap{overflow-x:auto}
 .pool-table-wrap thead{position:relative;z-index:1}
 .pool-table-wrap .pool-table th{background:var(--surface)}
-#leaders-wrap .pool-table-wrap thead{position:sticky;top:var(--leaders-thead-top,0px);z-index:10;}
-#leaders-wrap .pool-table-wrap .pool-table th{background:var(--surface);}
+/* LEADERS_STICKY_SELECTOR_FIX_V1 (May 19, 2026 23:04 ET — PC Walter) — selector
+   previously targeted .pool-table-wrap which DOES NOT exist inside #leaders-wrap
+   (the actual class is .table-wrap, same as the Watch list). The sticky rule has
+   been dead code for who-knows-how-long, meaning the JS clone bar was doing 100%
+   of the visual pinning and its left:0 / fixed positioning vs the padded table
+   was the visible 8px drift. Fixing the selector + adding opaque background to
+   the pinned header. */
+#leaders-wrap .table-wrap thead{position:sticky;top:var(--leaders-thead-top,0px);z-index:10;background:var(--surface);}
+#leaders-wrap .table-wrap thead th{background:var(--surface);}
 /* Prospects uses clone-header approach; thead stickiness handled via JS, not CSS */
 .pool-table{width:100%;border-collapse:separate;border-spacing:0;min-width:900px}
 .pool-table thead tr{border-bottom:2px solid var(--border2)}
