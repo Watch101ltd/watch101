@@ -14565,9 +14565,17 @@ function renderGameLog(mlbId){
   // (Status is represented by the row's DNP chip in the Opp cell area — see below.)
   var headers = ['Date','Opp','Result','Pos','AB','R','HR','RBI','SB','BB','K','AVG'];
   var leftCols = {0:1, 1:1, 2:1}; // Date, Opp, Result align left
+  // GAMELOG_INLINE_WIDTHS_V1 (May 20, 2026 — PC Walter) — bake column widths
+  // directly into the th HTML as both width attribute AND inline style. CSS
+  // selector-based attempts all night failed for one reason or another. Inline
+  // attributes on table cells are the most reliable way to constrain widths.
+  // Sum: 50+40+60+34+50+(26*6)+38 = 428px content. Tight, fits comfortably.
+  var colWidths = [50, 40, 60, 34, 50, 26, 26, 26, 26, 26, 26, 38];
   var thHtml = '';
   for(var i=0;i<headers.length;i++){
-    thHtml += '<th' + (leftCols[i] ? ' class="gl-left"' : '') + '>' + escapeHtml(headers[i]) + '</th>';
+    var w = colWidths[i];
+    var widthAttr = ' width="' + w + '" style="width:' + w + 'px;min-width:' + w + 'px;max-width:' + w + 'px;padding-left:3px;padding-right:3px;"';
+    thHtml += '<th' + (leftCols[i] ? ' class="gl-left"' : '') + widthAttr + '>' + escapeHtml(headers[i]) + '</th>';
   }
 
   function fmtBatOrder(n){
