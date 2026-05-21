@@ -2990,8 +2990,8 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
               <th class="col-lvl" onclick="sortProspects('level')" title="Minor League Level">LVL <span class="sort-arrow" id="sparr-level">↕</span></th>
               <th class="col-age" onclick="sortProspects('age')" title="Age">Age <span class="sort-arrow" id="sparr-age">↕</span></th>
               <th class="col-bt" onclick="sortProspects('bats')" title="Bats (hitters) / Throws (pitchers)">B/T <span class="sort-arrow" id="sparr-bats">↕</span></th>
-              <th class="col-zone-divider" style="width:44px;cursor:default"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK</span></div></th>
-              <th style="width:50px;cursor:default"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED</span></div></th>
+              <th class="col-zone-divider" onclick="sortProspects('yahoo_rank')" title="Yahoo Current In-Season Rank" style="width:44px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>RANK <span class="sort-arrow" id="sparr-yahoo_rank">↕</span></span></div></th>
+              <th onclick="sortProspects('roster_pct')" title="% Owned on Yahoo" style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>OWNED <span class="sort-arrow" id="sparr-roster_pct">↕</span></span></div></th>
               <th onclick="sortProspects('cbs_roster_pct')" title="% Rostered on CBS Sports Fantasy. Updates weekly. CBS tracks ~8,373 players including AAAA-bubble prospects." style="width:50px"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#003C7C;font-size:7px;font-weight:700;letter-spacing:0.1em">CBS</span><span>OWNED <span class="sort-arrow" id="sparr-cbs_roster_pct">↕</span></span></div></th>
               <th class="col-adp-hidden" style="width:44px;cursor:default;display:none"><div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.1;gap:1px"><span style="color:#6001D2;font-size:7px;font-weight:700;letter-spacing:0.1em">Y!</span><span>ADP</span></div></th>
               <th title="AB / IP" style="text-align:right;padding:0"><div style="display:flex;flex-direction:column;line-height:1.1"><span onclick="sortProspects('ab')" style="display:block;color:var(--stat-hitter);cursor:pointer;padding:3px 6px;text-align:right">AB <span class="sort-arrow" id="sparr-ab">↕</span></span><span onclick="sortProspects('ip')" style="display:block;color:var(--stat-pitcher);cursor:pointer;padding:3px 6px;text-align:right;font-size:10px">IP <span class="sort-arrow" id="sparr-ip">↕</span></span></div></th>
@@ -12401,7 +12401,7 @@ function sortProspects(col){
   else {
     prosSortCol = col;
     // Ascending-first columns: text (A→Z), rank/age, ERA/WHIP (low=better).
-    const ascFirst = ['name','team','level','bats','primaryPos','pos','rank','age','era','whip'];
+    const ascFirst = ['name','team','level','bats','primaryPos','pos','rank','age','era','whip','yahoo_rank'];
     prosSortDir = ascFirst.includes(col) ? 1 : -1;
   }
   document.querySelectorAll('[id^="sparr-"]').forEach(a => { a.textContent='↕'; a.closest('th') && a.closest('th').classList.remove('sorted'); });
@@ -13569,6 +13569,31 @@ function renderProspects(){
       if(aOff) return 1;
       if(bOff) return -1;
       const av = a.age||999, bv = b.age||999;
+      return (av-bv)*prosSortDir;
+    }
+    // PROSPECTS_YAHOO_SORT_V1 (5/21 15:30 ET - PC Walter) — yahoo_rank and
+    // roster_pct are stamped flat on p (lines 4437-4438 in applyYahoo), NOT
+    // inside p.stats. Same architectural shape as cbs_roster_pct below. Without
+    // a special-case branch, sort would fall through to p.stats[key] which is
+    // undefined for every prospect, both av and bv come out null, comparator
+    // falls back to name-sort, and clicking the header looks like a no-op (or
+    // a one-time alphabetical re-sort). Push nulls to the bottom regardless of
+    // sort direction so Yahoo-rostered prospects cluster at the top - en-dash
+    // prospects (MiLB-only, not on Yahoo) get pushed down.
+    if(key === 'yahoo_rank'){
+      const av = a.yahoo_rank!=null && a.yahoo_rank!=='' ? parseFloat(a.yahoo_rank) : null;
+      const bv = b.yahoo_rank!=null && b.yahoo_rank!=='' ? parseFloat(b.yahoo_rank) : null;
+      if(av===null && bv===null) return a.name.localeCompare(b.name);
+      if(av===null) return 1;
+      if(bv===null) return -1;
+      return (av-bv)*prosSortDir;
+    }
+    if(key === 'roster_pct'){
+      const av = a.roster_pct!=null && a.roster_pct!=='' ? parseFloat(a.roster_pct) : null;
+      const bv = b.roster_pct!=null && b.roster_pct!=='' ? parseFloat(b.roster_pct) : null;
+      if(av===null && bv===null) return a.name.localeCompare(b.name);
+      if(av===null) return 1;
+      if(bv===null) return -1;
       return (av-bv)*prosSortDir;
     }
     // CBS_PROSPECTS_SORT_FIX_V1 (May 7, 2026 — Laptop Walter) — cbs_roster_pct
