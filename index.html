@@ -161,6 +161,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif
 #quick-edit-popup .ppo-type-tag-row:hover{background:var(--surface2);}
 #quick-edit-popup .ppo-type-tag-row input[type=checkbox]{margin:0;cursor:pointer;}
 #quick-edit-popup .ppo-type-tag-emoji{font-size:14px;line-height:1;width:18px;text-align:center;}
+#quick-edit-popup .qep-chip-list{display:flex;}
+#quick-edit-popup .qep-chip-block{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);}
 .hdr-status-strip{padding:0.4rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--turquoise2);display:flex;align-items:center;gap:14px;font-family:'Nunito Sans',sans-serif;font-size:11px;color:var(--text3);letter-spacing:0.04em}
 /* HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — header for the Tank overlay. Matches main .header
    gradient and padding so it reads as a real page header, not a strip. Logo is injected at
@@ -17062,7 +17064,29 @@ document.addEventListener('keydown', function(e){
       + '<div class="ppo-type-tags-list">' + _typeRowsHtml + '</div>'
       + '</div>';
 
-    return header + '<div class="qep-body">' + flameHtml + priorityHtml + tagsHtml + '</div>';
+    // CHIP_TOGGLE_MANUAL_V1 (QUICK_EDIT_POPUP_V1 extension, 5/20 19:00 ET) — mirror of the
+    // Deep Cut chip-toggle block. Only renders for players with a non-MLB level (would have
+    // shown a chip pre-toggle). For pure MLB-only players the chip never shows, so the toggle
+    // has nothing to control and the whole block is omitted. Uses the global toggleChipVisibility
+    // function — same save path as Deep Cut.
+    var chipHtml = '';
+    if(p.level && p.level !== 'MLB'){
+      var _chipShown = !p.hideChip; // default missing/false → show
+      var _chipCheckedAttr = _chipShown ? ' checked' : '';
+      chipHtml = '<div class="ppo-type-tags-block qep-chip-block">'
+        + '<div class="ppo-type-tags-title">MLB/MiLB chip <span class="ppo-type-tags-tag">uncheck to hide chip for this player</span></div>'
+        + '<div class="ppo-type-tags-list qep-chip-list">'
+        +   '<label class="ppo-type-tag-row">'
+        +     '<input type="checkbox" data-chip-toggle="1"' + _chipCheckedAttr
+        +     ' onchange="toggleChipVisibility(\'' + mlbId + '\', this.checked)">'
+        +     '<span class="ppo-type-tag-emoji">\uD83C\uDFF7\uFE0F</span>'
+        +     '<span class="ppo-type-tag-label">Show MLB/MiLB chip</span>'
+        +   '</label>'
+        + '</div>'
+        + '</div>';
+    }
+
+    return header + '<div class="qep-body">' + flameHtml + priorityHtml + tagsHtml + chipHtml + '</div>';
   }
 
   function showQuickEditPopup(mlbId, x, y){
