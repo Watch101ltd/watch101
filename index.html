@@ -11750,6 +11750,18 @@ function getDisplayStats(p){
       // statsSource is 'MLB' or 'MiLB' on chip-toggle-able players.
       if(p.statsSource === 'MiLB' && _row.milb) return _row.milb;
       if(p.statsSource === 'MLB'  && _row.mlb)  return _row.mlb;
+      // CHIP_AWARE_DATERANGE_V2 (5/21 11:45 ET - PC Walter) - when the user has
+      // EXPLICITLY toggled the chip (i.e. _sampleToggle has an entry for this
+      // player), honor that choice strictly: if the requested sub-object isn't
+      // in the cache for this window, return an empty object so the renderer
+      // shows em-dashes instead of silently falling through to the wrong
+      // sample. Empty object {} keeps `loading` false (so no spinner) while
+      // making `sc.ab` etc evaluate to undefined, which fmt() already renders
+      // as em-dash. Non-toggled players still fall through to the flat fields
+      // below, preserving today's default behavior.
+      var _explicitToggle = (typeof _sampleToggle !== 'undefined') && _sampleToggle[p.mlb_id];
+      if(_explicitToggle && p.statsSource === 'MiLB' && !_row.milb) return {};
+      if(_explicitToggle && p.statsSource === 'MLB'  && !_row.mlb)  return {};
       // Fallback: row's flat fields. Same value the old code returned.
       return _row;
     }
