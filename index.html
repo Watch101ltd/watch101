@@ -602,6 +602,27 @@ body.day-mode .injury-dtd{background:#fef3c7;color:#92400e;border:1px solid #fcd
 body.day-mode .injury-na{background:#e5e7eb;color:#374151;border:1px solid #9ca3af}
 /* /DAYMODE_BADGES_V1 */
 
+/* LEVELCHIP_DAYMODE_V1 (May 20, 2026 19:30 ET — PC Walter) — refactored MLB/MiLB
+   level chips from inline color/background/border (in _renderLevelChip) to CSS
+   classes so day-mode can override them with the same pale-fill / dark-text /
+   matching-border recipe used by DAYMODE_BADGES_V1 above. Original night-mode
+   look preserved exactly via the .level-chip-<level> rules; day-mode swaps to
+   the Tailwind 100/800/300 family per the chip's color identity (green AAA,
+   blue AA, orange A, gold MLB). */
+.level-chip{font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:600;border-radius:4px;padding:2px 6px;display:inline-flex;align-items:center;transition:background 0.15s;margin-right:4px;vertical-align:middle;border-width:1px;border-style:solid;}
+.level-chip-clickable{cursor:pointer;}
+.level-chip-asterisk{font-size:11px;font-weight:700;color:#fbbf24;margin-left:1px;line-height:1;vertical-align:super;}
+.level-chip-swap{margin-left:3px;font-size:9px;opacity:0.75;}
+.level-chip-mlb{color:#fbbf24;background:#fbbf2422;border-color:#fbbf2455;}
+.level-chip-aaa{color:#22c55e;background:#22c55e22;border-color:#22c55e55;}
+.level-chip-aa{color:#3b82f6;background:#3b82f622;border-color:#3b82f655;}
+.level-chip-a{color:#f97316;background:#f9731622;border-color:#f9731655;}
+body.day-mode .level-chip-mlb{color:#92400e;background:#fef3c7;border-color:#fcd34d;}
+body.day-mode .level-chip-aaa{color:#166534;background:#dcfce7;border-color:#86efac;}
+body.day-mode .level-chip-aa{color:#1e40af;background:#dbeafe;border-color:#93c5fd;}
+body.day-mode .level-chip-a{color:#9a3412;background:#ffedd5;border-color:#fdba74;}
+/* /LEVELCHIP_DAYMODE_V1 */
+
 /* DAYMODE_INDICATORS_V1 (April 24, 2026) — mute the bright green/red indicators in day mode.
    Same story as the position badges: these were designed against a black night-mode page,
    so saturated --green (#22c55e) and --red (#ef4444) pop perfectly there. On the gray day
@@ -13240,23 +13261,24 @@ function _renderLevelChip(p, tableName){
   // leaders/context, MiLB for prospects).
   const _activeLabel = _resolveActiveSample(p, tableName);
   const _showingMlb = (_activeLabel === 'MLB');
-  // Color: green AAA, blue AA, orange A, gold MLB.
-  const lvlColor = p.level === 'AAA' ? '#22c55e'
-                 : p.level === 'AA'  ? '#3b82f6'
-                 :                     '#f97316';
-  const _chipColor = _showingMlb ? '#fbbf24' : lvlColor;
-  // CUP_OF_COFFEE_V1 (May 12, 2026 - Dude's idea, finally shipped) - when a
-  // prospect-tab player has both MLB+MiLB samples AND is showing the MLB view,
-  // the chip reads coffee-emoji instead of 'MLB'. Asterisk + swap arrow stay.
+  // LEVELCHIP_DAYMODE_V1 (5/20 19:30 ET — PC Walter) — chip color/background/border
+  // now live in CSS classes (.level-chip-mlb / -aaa / -aa / -a) so day-mode can
+  // override them via body.day-mode selectors. Class is keyed off the LABEL being
+  // shown, not p.level, so MLB-showing-coffee scenarios get the gold class.
   const _chipLabel = _showingMlb ? 'MLB' : p.level;
+  // Map LABEL → class suffix. AAA/AA/A/MLB only — anything else falls back to A.
+  const _chipClassSuffix = _chipLabel === 'MLB' ? 'mlb'
+                         : _chipLabel === 'AAA' ? 'aaa'
+                         : _chipLabel === 'AA'  ? 'aa'
+                         :                        'a';
   // Asterisk persists in both directions when both samples exist —
   // signals "this guy has been up this year" at a glance.
-  const _asterisk = _hasBoth ? `<span style="font-size:11px;font-weight:700;color:#fbbf24;margin-left:1px;line-height:1;vertical-align:super">*</span>` : '';
-  const _swapIcon = _hasBoth ? `<span style="margin-left:3px;font-size:9px;opacity:0.75">↔</span>` : '';
+  const _asterisk = _hasBoth ? `<span class="level-chip-asterisk">*</span>` : '';
+  const _swapIcon = _hasBoth ? `<span class="level-chip-swap">↔</span>` : '';
   const _tooltip  = _hasBoth ? (_showingMlb ? `Showing MLB stats — click to view ${p.level}` : `Showing ${p.level} stats — click to view MLB`) : '';
-  const _cursor   = _hasBoth ? 'cursor:pointer;' : '';
   const _onclick  = _hasBoth ? `onclick="swapSampleForRow(${p.mlb_id}, '${tableName}', event)"` : '';
-  return `<span ${_onclick} title="${_tooltip}" style="${_cursor}font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:600;color:${_chipColor};background:${_chipColor}22;border:1px solid ${_chipColor}55;border-radius:4px;padding:2px 6px;display:inline-flex;align-items:center;transition:background 0.15s;margin-right:4px;vertical-align:middle">${_chipLabel}${_asterisk}${_swapIcon}</span>`;
+  const _clickableClass = _hasBoth ? ' level-chip-clickable' : '';
+  return `<span class="level-chip level-chip-${_chipClassSuffix}${_clickableClass}" ${_onclick} title="${_tooltip}">${_chipLabel}${_asterisk}${_swapIcon}</span>`;
 }
 
 // Universal click handler wired to every chip across the four tables.
