@@ -14540,24 +14540,43 @@ function renderNewsStrip(p){
     }
   }
 
-  // FanGraphs deep link — ALWAYS shown. Uses registry's fg_id when available,
-  // falls back to FanGraphs site search when not. Search fallback works for
-  // any player so this button essentially always has a meaningful destination.
-  var fgLink = document.getElementById('ppo-news-link-fg');
-  if(fgLink){
-    var fgId = null;
+  // ROTOWIRE_LINK_V1 (5/21 14:00 ET - PC Walter, replacing the prior FG link
+  // per Matt's call). RotoWire URL pattern is /<slug>-<rotowire_id>, where
+  // slug is the player's name lowercased with spaces converted to hyphens.
+  // Server-side loadRegistrySlim ships rw (numeric ID) + rwname (RotoWire's
+  // spelling) on every registry row; prefer rwname for slug if present (it
+  // handles their canonical spelling for cases like Jose vs Jose-with-accent).
+  // Falls back to RotoWire site search by name when no rw is available -
+  // works for any player so this button always has a meaningful destination.
+  var rwLink = document.getElementById('ppo-news-link-rw');
+  if(rwLink){
+    var rwId = null;
+    var rwName = null;
     if(typeof registryByMlbam !== 'undefined' && mlbId != null){
       var reg = registryByMlbam[String(mlbId)];
-      if(reg && reg.fg) fgId = reg.fg;
+      if(reg && reg.rw) rwId = reg.rw;
+      if(reg && reg.rwname) rwName = reg.rwname;
     }
-    if(fgId){
-      fgLink.href = 'https://www.fangraphs.com/players/-/' + encodeURIComponent(fgId) + '/stats';
+    // Slug helper - lowercase, strip accents, spaces to hyphens, drop
+    // punctuation, collapse double-hyphens. Mirrors RotoWire's URL recipe.
+    function _rwSlug(s){
+      return String(s || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+    }
+    if(rwId){
+      var slug = _rwSlug(rwName || p.name || '');
+      rwLink.href = 'https://www.rotowire.com/baseball/player/' + slug + '-' + encodeURIComponent(rwId);
     } else {
       var q = (p.name || '').trim();
-      fgLink.href = 'https://www.fangraphs.com/players/search?q=' + encodeURIComponent(q);
+      rwLink.href = 'https://www.rotowire.com/baseball/search.php?term=' + encodeURIComponent(q);
     }
-    fgLink.title = 'Open ' + (p.name || 'player') + ' on FanGraphs';
-    fgLink.style.display = '';
+    rwLink.title = 'Open ' + (p.name || 'player') + ' on RotoWire';
+    rwLink.style.display = '';
   }
 }
 
@@ -16338,7 +16357,7 @@ function attachTankScrollHandler(){
           <div class="ppo-news-meta" id="ppo-news-meta">May 16 vs NYM</div>
           <div class="ppo-news-links" id="ppo-news-links">
             <a class="ppo-news-link" id="ppo-news-link-mlb" href="https://www.mlb.com" target="_blank" rel="noopener" title="Open MLB.com player page">MLB</a>
-            <a class="ppo-news-link" id="ppo-news-link-fg"  href="https://www.fangraphs.com" target="_blank" rel="noopener" title="Open FanGraphs player page">FG</a>
+            <a class="ppo-news-link" id="ppo-news-link-rw" href="https://www.rotowire.com/baseball/" target="_blank" rel="noopener" title="Open RotoWire player page">RW</a>
           </div>
         </div>
       </div>
