@@ -549,16 +549,6 @@ body.day-mode .must-watch-flash{
 }
 /* /MUST_WATCH_FLASH_V1 */
 
-/* TIER_ZINDEX_BUMP_V1 (May 20, 2026 20:45 ET — PC Walter) — paint tier overlay
-   ABOVE the sticky .table-wrap thead (which is z-index:10). The tier label tab
-   sits at row1_top - 18px which puts it inside the thead's visual space when
-   the table is scrolled to the top; without this override the thead covers
-   the tab. Both the bracket box and the label tab need the bump so the full
-   tier renders on top of the header when they overlap. */
-.tier-bracket-box{z-index:20;}
-.tier-bracket-tab{z-index:20;}
-/* /TIER_ZINDEX_BUMP_V1 */
-
 /* TIER_DRAG_V1 (May 17, 2026) — Tier armed-state pulse glow.
    UNIFIED with DROP_INDICATOR_V1 on May 17, 2026 — pulse changed from red to
    gold so the entire drag-and-drop experience uses one consistent color
@@ -6783,9 +6773,33 @@ function renderTiers(){
       tab.className = 'tier-bracket-tab';
       tab.setAttribute('data-tier-id', tier.id);
       tab.textContent = tier.name;
+      // TIER_TAB_FLIP_V1 (May 20, 2026 21:10 ET — PC Walter) — when this tier
+      // starts at the FIRST row of #tbody (i.e. row #1), the normal top-mount
+      // tab gets clipped by the sticky column header (z-index 10 over the
+      // overlay's z-index 5). For just that case, flip the tab to hang BELOW
+      // the bracket's bottom border like an inverted folder tab. Every other
+      // tier keeps the original folder-tab-on-top look that matches Matt's
+      // visual intent.
+      var firstTbodyRow = document.querySelector('#tbody tr');
+      var tierStartsAtRow1 = firstTbodyRow && firstTbodyRow === startRow;
+      var tabTop, tabRadius, tabShadow;
+      if(tierStartsAtRow1){
+        // Hang below the bottom edge of the bracket. bottom = (top + height)
+        // in box-local coords; subtract pad because the box's actual border
+        // sits at (top - pad) to (top - pad + height + pad*2). The bracket's
+        // bottom border is at top + height + pad. Position tab top right at
+        // that bottom border so the tab's body hangs below it.
+        tabTop = (top + height + pad - 2);
+        tabRadius = '0 0 6px 6px';
+        tabShadow = '0 1px 4px ' + hex + '55';
+      } else {
+        tabTop = (top - pad - 14);
+        tabRadius = '6px 6px 0 0';
+        tabShadow = '0 -1px 4px ' + hex + '55';
+      }
       tab.style.cssText =
         'position:absolute;' +
-        'top:' + (top - pad - 14) + 'px;' +
+        'top:' + tabTop + 'px;' +
         'left:' + (boxLeft - pad) + 'px;' +
         'background:' + hex + ';' +
         'color:#fff;' +
@@ -6795,8 +6809,8 @@ function renderTiers(){
         'letter-spacing:0.05em;' +
         'text-transform:uppercase;' +
         'padding:2px 10px;' +
-        'border-radius:6px 6px 0 0;' +
-        'box-shadow:0 -1px 4px ' + hex + '55;' +
+        'border-radius:' + tabRadius + ';' +
+        'box-shadow:' + tabShadow + ';' +
         'pointer-events:auto;' +
         'cursor:pointer;' +
         'white-space:nowrap;';
