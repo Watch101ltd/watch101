@@ -14571,12 +14571,19 @@ function renderNewsStrip(p){
     if(rwId){
       var slug = _rwSlug(rwName || p.name || '');
       rwLink.href = 'https://www.rotowire.com/baseball/player/' + slug + '-' + encodeURIComponent(rwId);
+      rwLink.title = 'Open ' + (p.name || 'player') + ' on RotoWire';
+      rwLink.style.display = '';
     } else {
-      var q = (p.name || '').trim();
-      rwLink.href = 'https://www.rotowire.com/baseball/search.php?term=' + encodeURIComponent(q);
+      // ROTOWIRE_HIDE_UNMAPPED_V1 (5/21 14:30 ET - PC Walter) - no Rotowire
+      // ID for this player (likely a recent callup not yet in SFBB's Player
+      // ID Map). Hide the button entirely rather than send the user to a
+      // broken search URL or a 404 page. Mirrors the MLB-link hide pattern
+      // at lines 14536-14540 ("no mlb_id, hide rather than send to broken
+      // page"). When SFBB updates their map to include more young players,
+      // re-run scripts/sfbb_id_enrichment.py and these buttons reappear
+      // automatically with zero code changes.
+      rwLink.style.display = 'none';
     }
-    rwLink.title = 'Open ' + (p.name || 'player') + ' on RotoWire';
-    rwLink.style.display = '';
   }
 }
 
