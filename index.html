@@ -6800,11 +6800,25 @@ function renderTiers(){
         tabRadius = '6px 6px 0 0';
         tabShadow = '0 -1px 4px ' + hex + '55';
       }
+      // TIER_TAB_TRANSPARENT_V1 (5/21 12:30 ET - PC Walter, per Matt's feedback) -
+      // the opaque tab was blocking the row above/below it (depending on tab
+      // orientation). Convert hex to rgba with 0.5 alpha for the idle state so
+      // the row underneath shows through. Hover handlers below restore full
+      // opacity for click affordance. Text stays solid #fff so the label is sharp.
+      function _hexToRgba(h, alpha){
+        var c = String(h || '').replace('#', '');
+        if(c.length !== 6) return 'rgba(0,0,0,' + alpha + ')';
+        var r = parseInt(c.substring(0, 2), 16);
+        var g = parseInt(c.substring(2, 4), 16);
+        var b = parseInt(c.substring(4, 6), 16);
+        if(isNaN(r) || isNaN(g) || isNaN(b)) return 'rgba(0,0,0,' + alpha + ')';
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+      }
       tab.style.cssText =
         'position:absolute;' +
         'top:' + tabTop + 'px;' +
         'left:' + (boxLeft - pad) + 'px;' +
-        'background:' + hex + ';' +
+        'background:' + _hexToRgba(hex, 0.5) + ';' +
         'color:#fff;' +
         'font-family:"Nunito Sans",sans-serif;' +
         'font-size:11px;' +
@@ -6835,6 +6849,18 @@ function renderTiers(){
           });
         })(tier.id);
       }
+      // TIER_TAB_TRANSPARENT_V1 - hover restores full opacity so the tab feels
+      // armed when the cursor is over it. Both fan and admin tabs get the
+      // hover effect even though only admin tabs are clickable - it's a
+      // visual cue, not a behavior cue. Closure captures hex per-tier.
+      (function(_hex){
+        tab.addEventListener('mouseenter', function(){
+          tab.style.background = _hex;
+        });
+        tab.addEventListener('mouseleave', function(){
+          tab.style.background = _hexToRgba(_hex, 0.5);
+        });
+      })(hex);
 
       layer.appendChild(box);
       layer.appendChild(tab);
