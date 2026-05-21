@@ -16801,6 +16801,7 @@ document.addEventListener('keydown', function(e){
       id: 'pool',
       emoji: '\u26BE', // ⚾
       label: 'Player Pool',
+      adminOnly: true, // RIGHTCLICK_READONLY_GATE_V1 (5/20 19:15 ET) — hidden from fans
       isActive: function(){ return typeof poolActive !== 'undefined' && poolActive; },
       navTo: function(){ if(typeof openPlayerPool === 'function') openPlayerPool(); }
     },
@@ -16822,6 +16823,7 @@ document.addEventListener('keydown', function(e){
       id: 'tank',
       emoji: '\uD83E\uDEA3', // 🪣
       label: 'Holding Tank',
+      adminOnly: true, // RIGHTCLICK_READONLY_GATE_V1 (5/20 19:15 ET) — hidden from fans
       isActive: function(){ return typeof tankActive !== 'undefined' && tankActive; },
       navTo: function(){ if(typeof openHoldingTank === 'function') openHoldingTank(); }
     }
@@ -16830,15 +16832,26 @@ document.addEventListener('keydown', function(e){
   // ----- Rebuild menu items, omitting the active page -----
   function rebuildMenu(){
     var html = '';
+    // RIGHTCLICK_READONLY_GATE_V1 (5/20 19:15 ET — PC Walter) — fan-mode gate.
+    // _isReadOnlyMode() returns true on the public Cloudflare site, false for
+    // admin/backend sessions. Defaults to false (backend) if the function is
+    // missing or errors, so the failure mode is "fans see admin items" — a
+    // visible bug we'd notice immediately — rather than silently locking
+    // admins out of their own menu.
+    var isFan = false;
+    try { isFan = (typeof _isReadOnlyMode === 'function') && !!_isReadOnlyMode(); }
+    catch(e){ isFan = false; }
+
     // QUICK_EDIT_POPUP_V1 — prepend a Quick Edit section when:
-    //   (a) we're on the main Watch 101 page (no overlay active), AND
-    //   (b) the user right-clicked on a player row (currentRowPlayerId set).
+    //   (a) NOT in fan mode (the popup edits backend-only metadata),
+    //   (b) we're on the main Watch 101 page (no overlay active), AND
+    //   (c) the user right-clicked on a player row (currentRowPlayerId set).
     // Otherwise skip — menu just shows the Switch To list as before.
     var mainIsActive = !((typeof poolActive      !== 'undefined' && poolActive)
                        || (typeof leadersActive   !== 'undefined' && leadersActive)
                        || (typeof prospectsActive !== 'undefined' && prospectsActive)
                        || (typeof tankActive      !== 'undefined' && tankActive));
-    if(mainIsActive && currentRowPlayerId){
+    if(!isFan && mainIsActive && currentRowPlayerId){
       // Truncate long names so the menu doesn't explode width-wise
       var nameLabel = currentRowPlayerName || 'Player';
       if(nameLabel.length > 22) nameLabel = nameLabel.slice(0, 21) + '\u2026';
@@ -16853,6 +16866,9 @@ document.addEventListener('keydown', function(e){
     html += '<div class="rc-menu-header">Switch To</div>';
     for(var i=0; i<DESTS.length; i++){
       var d = DESTS[i];
+      // RIGHTCLICK_READONLY_GATE_V1 — skip admin-only destinations (Pool, Tank)
+      // when the user is a fan. They can't navigate to those surfaces anyway.
+      if(isFan && d.adminOnly) continue;
       var isActive = false;
       try { isActive = !!d.isActive(); } catch(e){ isActive = false; }
       if(isActive) continue; // skip current page
@@ -17090,6 +17106,13 @@ document.addEventListener('keydown', function(e){
   }
 
   function showQuickEditPopup(mlbId, x, y){
+    // RIGHTCLICK_READONLY_GATE_V1 (5/20 19:15 ET) — belt-and-suspenders fan gate.
+    // The rebuildMenu() filter already hides the pencil item from fans, but if
+    // anything ever calls this directly (console, future code), bail out silently.
+    try {
+      if(typeof _isReadOnlyMode === 'function' && _isReadOnlyMode()) return;
+    } catch(e){ /* silent — default to allowing the popup */ }
+
     var p = _qepFindPlayer(mlbId);
     if(!p){
       console.warn('[QUICK_EDIT_POPUP_V1] no player found for mlb_id', mlbId);
