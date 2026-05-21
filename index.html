@@ -3114,6 +3114,49 @@ function switchActiveList(newId){
     if(typeof tankLoaded !== 'undefined') tankLoaded = false;
     if(typeof loadHoldingTank === 'function') loadHoldingTank();
   } catch(e){ console.warn('[TANK_MULTILIST_RESET_V1] Tank reset on list switch failed:', e); }
+  // KBB_LIST_SWITCH_REFRESH_V1 (5/21 13:00 ET - PC Walter) - kick a silent
+  // stats refresh after list switch so derived fields like kbb_ratio (which
+  // require bb_pit from the MLB API) get populated. The saved NAS JSON for
+  // amateur lists may pre-date the bb_pit capture path, leaving K/BB stuck
+  // at em-dash. Mirrors the page-load silent refresh block (~line 12022)
+  // but deliberately SKIPS the saveData() at the end - list-switch is a
+  // view operation, not a save event. JP saves explicitly when he means to.
+  setTimeout(async () => {
+    if(typeof players === 'undefined' || !Array.isArray(players)) return;
+    const _targets = players.filter(p => p.mlb_id);
+    if(_targets.length === 0) return;
+    let _kbbUpdated = 0;
+    for(const _p of _targets){
+      try{
+        const _lp = (_p.level==='AAA'||_p.level==='AA'||_p.level==='A') ? '&leagueListId=milb_all' : '';
+        const _res = await fetch(`https://statsapi.mlb.com/api/v1/people/${_p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${_lp}`);
+        const _data = await _res.json();
+        for(const _group of (_data.stats||[])){
+          const _picked = (typeof pickStatSource === 'function') ? pickStatSource(_group) : null;
+          if(!_picked) continue;
+          const _s = _picked.stat;
+          if(_group.group && _group.group.displayName === 'pitching'){
+            if(_s.inningsPitched!==undefined) _p.ip = parseFloat(_s.inningsPitched);
+            if(_s.era) _p.era = parseFloat(_s.era);
+            if(_s.whip) _p.whip = parseFloat(_s.whip);
+            if(_s.strikeOuts!==undefined) _p.k = _s.strikeOuts;
+            if(_s.wins!==undefined) _p.w = _s.wins;
+            if(_s.saves!==undefined) _p.sv = _s.saves;
+            if(_s.holds!==undefined) _p.hld = _s.holds;
+            if(_s.baseOnBalls!==undefined) _p.bb_pit = Number(_s.baseOnBalls);
+            _p.kbb_ratio = (_p.bb_pit > 0 && _p.k != null) ? +(_p.k / _p.bb_pit).toFixed(2) : null;
+            _p.k_per_9   = (_p.ip > 0 && _p.k != null)    ? +((_p.k * 9) / _p.ip).toFixed(2) : null;
+            _kbbUpdated++;
+          }
+        }
+      } catch(e){}
+      await new Promise(r => setTimeout(r, 80));
+    }
+    if(_kbbUpdated > 0){
+      try { if(typeof renderTable === 'function') renderTable(); } catch(e){}
+      console.log('[KBB_LIST_SWITCH_REFRESH_V1] Refreshed pitcher stats for', _kbbUpdated, 'pitchers on list', currentListId);
+    }
+  }, 200);
 }
 function openListInfoOverlay(){
   const overlay = document.getElementById('list-info-overlay');
