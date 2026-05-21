@@ -199,13 +199,6 @@ th.sorted .sort-arrow{opacity:1;color:var(--gold)}
    leftmost columns. Replaces nth-child(N) so future column inserts don't
    require re-indexing every CSS rule. Stat columns 12+ still use nth-child
    for now (they sit beyond the column-insert zone). */
-/* MAIN_TABLE_MARGIN_KILL_V1 (May 20, 2026 20:20 ET — PC Walter) — kill the
-   16px (1rem) top margin the global `table` rule (line 189) puts on every
-   table. That margin pushes the sticky thead 16px below where it could live,
-   which means the tier label tab (drawn at row1_top - 18px) gets clipped by
-   the thead at scrollTop=0. Scoped to #main-table only — Pool/Leaders/Prospects/
-   Tank/gamelog still inherit the global margin and stay visually unchanged. */
-#main-table{margin-top:0;}
 #main-table th.col-drag{width:18px;text-align:center;cursor:default;padding:5px 2px}
 #main-table th.col-rank{width:36px;text-align:center}      /* Rank */
 #main-table th.col-player{width:180px;text-align:left}     /* Player */
@@ -555,6 +548,16 @@ body.day-mode .must-watch-flash{
   animation: must-watch-pulse-daymode 1.5s ease-in-out infinite;
 }
 /* /MUST_WATCH_FLASH_V1 */
+
+/* TIER_ZINDEX_BUMP_V1 (May 20, 2026 20:45 ET — PC Walter) — paint tier overlay
+   ABOVE the sticky .table-wrap thead (which is z-index:10). The tier label tab
+   sits at row1_top - 18px which puts it inside the thead's visual space when
+   the table is scrolled to the top; without this override the thead covers
+   the tab. Both the bracket box and the label tab need the bump so the full
+   tier renders on top of the header when they overlap. */
+.tier-bracket-box{z-index:20;}
+.tier-bracket-tab{z-index:20;}
+/* /TIER_ZINDEX_BUMP_V1 */
 
 /* TIER_DRAG_V1 (May 17, 2026) — Tier armed-state pulse glow.
    UNIFIED with DROP_INDICATOR_V1 on May 17, 2026 — pulse changed from red to
