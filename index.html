@@ -3654,6 +3654,13 @@ async function loadData(){
   } catch(e) {
     // Server/network error — fall back to per-list localStorage cache
     try { const d = localStorage.getItem(lsKey); if(d) players = JSON.parse(d); }catch(e2){}
+    // TIERS_OFFLINE_RESTORE_V1 (May 22, 2026 11:04 ET — PC Walter) — mirror of the
+    // 404-branch tier restore at line 3643. When the fetch THROWS (e.g. GitHub Pages
+    // 404 returns HTML, res.json() throws SyntaxError, we land here instead of the
+    // 404 branch), currentTiers was being left at its initial [] declaration —
+    // making all editorial tiers appear deleted to the user. The data was always
+    // safe in localStorage; this line teaches the catch block to recover it.
+    try { const t = localStorage.getItem(lsKey + '_tiers'); currentTiers = t ? JSON.parse(t) : []; } catch(e3){ currentTiers = []; }
     _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
     const ts = localStorage.getItem(lsTime);
     document.getElementById('last-updated').textContent = ts
