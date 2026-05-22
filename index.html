@@ -3035,6 +3035,13 @@ const MAX_PLAYERS = 101;
 // list's tiers via loadData(). Persisted via the JSON sidecar paired
 // with each Save-to-Excel.
 let currentTiers = [];
+// TIERS_SAVE_GUARD_V1 (May 22, 2026 11:24 ET — PC Walter) — proves at least one
+// load path successfully ran. Stays false until a load path explicitly sets it
+// true (NAS success, 404 fallback, or catch-block localStorage restore). Used
+// by the save guard to distinguish a legitimate "user deleted all tiers" save
+// (flag=true, currentTiers=[]) from a silent-load-failure save (flag=false,
+// currentTiers=[]) — the latter must NOT be allowed to overwrite saved tier data.
+let _tiersLoadedOk = false;
 
 // ===== MULTILIST_V1 — six-list switcher (Apr 22, 2026) =====
 // Day-one design: all 6 lists are in-memory clones of the loaded 101.
@@ -3617,6 +3624,7 @@ async function loadData(){
         // responses (lists saved before tiers existed) — default to []
         // so currentTiers always has a sane value.
         currentTiers = Array.isArray(data.tiers) ? data.tiers : [];
+        _tiersLoadedOk = true; // TIERS_SAVE_GUARD_V1
         _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
         // STAGING_VS_PROD_V1 — different label depending on where the data came from.
         // PUBLISHED_LABEL_V1 (April 26, 2026) — production says "Published:" instead of
@@ -3641,6 +3649,7 @@ async function loadData(){
       // TIERS_V1 (May 14, 2026) — Phase B. Restore tiers from localStorage
       // alongside players when NAS returns 404. Same lsKey + '_tiers' pattern.
       try { const t = localStorage.getItem(lsKey + '_tiers'); currentTiers = t ? JSON.parse(t) : []; } catch(e3){ currentTiers = []; }
+      _tiersLoadedOk = true; // TIERS_SAVE_GUARD_V1
       _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
       const ts = localStorage.getItem(lsTime);
       const envBadge = isStaging ? ' [STAGING]' : '';
@@ -3661,6 +3670,7 @@ async function loadData(){
     // making all editorial tiers appear deleted to the user. The data was always
     // safe in localStorage; this line teaches the catch block to recover it.
     try { const t = localStorage.getItem(lsKey + '_tiers'); currentTiers = t ? JSON.parse(t) : []; } catch(e3){ currentTiers = []; }
+    _tiersLoadedOk = true; // TIERS_SAVE_GUARD_V1
     _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
     const ts = localStorage.getItem(lsTime);
     document.getElementById('last-updated').textContent = ts
@@ -8571,7 +8581,36 @@ async function exportXLSX(opts){
           // ride along in the JSON sidecar. Each tier is {id, name, color,
           // start_mlb_id, end_mlb_id, created_at}. Empty array on lists
           // that have no tiers — never null, never undefined.
-          tiers: (typeof currentTiers !== 'undefined' && Array.isArray(currentTiers)) ? currentTiers : [],
+          // TIERS_SAVE_GUARD_V1 (May 22, 2026 11:24 ET — PC Walter) — Three-case rescue
+          // to prevent silent overwrite of saved tier data. Today's bug (tiers vanishing
+          // from page loads) almost caused permanent data loss because the next save
+          // would have written tiers:[] over the real tier JSON. This guard makes that
+          // impossible.
+          //   (a) currentTiers has data       -> save it (normal case)
+          //   (b) empty + flag true           -> save empty (user legitimately deleted all)
+          //   (c) empty + flag false (BUG!)   -> rescue from localStorage; if also empty, save empty
+          tiers: (function(){
+            try {
+              if(Array.isArray(currentTiers) && currentTiers.length > 0) return currentTiers;
+              if(typeof _tiersLoadedOk !== 'undefined' && _tiersLoadedOk === true) return [];
+              // Flag false (or undefined) AND empty -> load never completed cleanly. Rescue.
+              var _lsKeyGuard = 'fw101_v2_' + ((typeof currentListId !== 'undefined' && currentListId) ? currentListId : 'integrity') + '_tiers';
+              var _rescued = localStorage.getItem(_lsKeyGuard);
+              if(_rescued){
+                try {
+                  var _parsed = JSON.parse(_rescued);
+                  if(Array.isArray(_parsed) && _parsed.length > 0){
+                    console.warn('[TIERS_SAVE_GUARD_V1] currentTiers was empty but localStorage has ' + _parsed.length + ' tier(s) — rescuing from localStorage to prevent data loss');
+                    return _parsed;
+                  }
+                } catch(_pe){ /* fall through */ }
+              }
+              return [];
+            } catch(_ge){
+              console.warn('[TIERS_SAVE_GUARD_V1] guard threw, falling back to empty:', _ge);
+              return [];
+            }
+          })(),
         };
         // TIERS_V1 (May 14, 2026) — also persist tiers to localStorage so
         // they survive page reload even without a successful NAS save.
