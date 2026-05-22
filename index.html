@@ -9333,17 +9333,27 @@ function isPitcherPos(pos){ return POOL_PITCHER_POS.includes(pos); }
 // Refresh stays on whichever tab the user is on (Pool/Leaders/Prospects/Tank).
 // Bookmarking a tab works. fantasywatch101.com/#leaders deep-links to Leaders.
 // Hash format is just '#<tabname>' - no path/player segments in Phase 1.
+//
+// TAB_HASH_HISTORY_V1 (5/21 17:00 ET - PC Walter, Phase 3 extension) - browser
+// back/forward buttons now navigate between tabs. Click Pool -> Leaders -> back
+// button takes you back to Pool. Changes from V1: replaceState became pushState,
+// plus a popstate listener catches back/forward events. The _handlingPopState
+// flag prevents history pollution when popstate triggers an open* function that
+// would otherwise re-push the same tab.
+var _handlingPopState = false;
 function _setActiveTabHash(name){
+  if(_handlingPopState) return;  // Don't push history during back-button handling
   var target = name ? '#' + name : '';
   if(window.location.hash !== target){
     try {
-      history.replaceState(null, '', window.location.pathname + window.location.search + target);
+      history.pushState({tab: name || null}, '', window.location.pathname + window.location.search + target);
     } catch(e){
       window.location.hash = target;
     }
   }
 }
 function _clearActiveTabHashIfMatches(name){
+  if(_handlingPopState) return;  // Don't push history during back-button handling
   if(window.location.hash === '#' + name){
     _setActiveTabHash(null);
   }
@@ -12100,6 +12110,41 @@ setTimeout(function(){
     console.warn('[TAB_HASH_PERSIST_V1] hash restore failed:', e);
   }
 }, 400);
+
+// TAB_HASH_HISTORY_V1 (5/21 17:00 ET - PC Walter, Phase 3) - browser back/forward
+// button handler. When the user clicks back, the hash updates automatically but
+// the page doesn't reload - we have to detect the change and switch tabs.
+// _handlingPopState gate prevents the open*/close* functions from pushing
+// duplicate history entries while we're servicing this event.
+window.addEventListener('popstate', function(evt){
+  _handlingPopState = true;
+  try {
+    var h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+    var isFan = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+    if(isFan) return;
+    if(!h){
+      if(typeof poolActive !== 'undefined' && poolActive && typeof closePlayerPool === 'function') closePlayerPool();
+      else if(typeof leadersActive !== 'undefined' && leadersActive && typeof closeLeagueLeaders === 'function') closeLeagueLeaders();
+      else if(typeof prospectsActive !== 'undefined' && prospectsActive && typeof closeProspects === 'function') closeProspects();
+      else if(typeof tankActive !== 'undefined' && tankActive && typeof closeHoldingTank === 'function') closeHoldingTank();
+      console.log('[TAB_HASH_HISTORY_V1] popstate - returned to Main');
+      return;
+    }
+    var openFn = null;
+    if(h === 'pool')           openFn = typeof openPlayerPool === 'function' ? openPlayerPool : null;
+    else if(h === 'leaders')   openFn = typeof openLeagueLeaders === 'function' ? openLeagueLeaders : null;
+    else if(h === 'prospects') openFn = typeof openProspects === 'function' ? openProspects : null;
+    else if(h === 'tank')      openFn = typeof openHoldingTank === 'function' ? openHoldingTank : null;
+    if(openFn){
+      console.log('[TAB_HASH_HISTORY_V1] popstate - switching to tab:', h);
+      openFn();
+    }
+  } catch(e){
+    console.warn('[TAB_HASH_HISTORY_V1] popstate handler failed:', e);
+  } finally {
+    _handlingPopState = false;
+  }
+});
 
 // CBS_COLUMN_V1 (May 6, 2026) — Load CBS roster % data on page open. Runs in
 // parallel with loadData(); applyCBS re-merges into players[] when both finish.
