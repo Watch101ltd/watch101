@@ -9329,6 +9329,26 @@ const POOL_PITCHER_POS = ['SP','RP','P'];
 
 function isPitcherPos(pos){ return POOL_PITCHER_POS.includes(pos); }
 
+// TAB_HASH_PERSIST_V1 (5/21 16:00 ET - PC Walter) - URL hash tab persistence.
+// Refresh stays on whichever tab the user is on (Pool/Leaders/Prospects/Tank).
+// Bookmarking a tab works. fantasywatch101.com/#leaders deep-links to Leaders.
+// Hash format is just '#<tabname>' - no path/player segments in Phase 1.
+function _setActiveTabHash(name){
+  var target = name ? '#' + name : '';
+  if(window.location.hash !== target){
+    try {
+      history.replaceState(null, '', window.location.pathname + window.location.search + target);
+    } catch(e){
+      window.location.hash = target;
+    }
+  }
+}
+function _clearActiveTabHashIfMatches(name){
+  if(window.location.hash === '#' + name){
+    _setActiveTabHash(null);
+  }
+}
+
 // ---- OPEN / CLOSE POOL ----
 function openPlayerPool(){
   poolActive = true;
@@ -9364,6 +9384,7 @@ function openPlayerPool(){
   setTimeout(setPoolWrapTop, 0);
   // Attach pool scroll handler for the clone fixed header
   setTimeout(attachPoolScrollHandler, 100);
+  _setActiveTabHash('pool'); // TAB_HASH_PERSIST_V1
 }
 
 function closePlayerPool(){
@@ -9385,6 +9406,7 @@ function closePlayerPool(){
   poolSearchFilter = '';
   const poolSearch = document.getElementById('pool-search');
   if(poolSearch) poolSearch.value = '';
+  _clearActiveTabHashIfMatches('pool'); // TAB_HASH_PERSIST_V1
 }
 
 // ---- LOAD FULL ROSTER ----
@@ -10837,6 +10859,7 @@ function openLeagueLeaders(){
   }
   setTimeout(setPoolWrapTop, 0);
   setTimeout(attachLeadersScrollHandler, 100);
+  _setActiveTabHash('leaders'); // TAB_HASH_PERSIST_V1
 }
 
 function closeLeagueLeaders(){
@@ -10854,6 +10877,7 @@ function closeLeagueLeaders(){
   // Reset header transform applied by the tab's scroll handler
   const mh = document.querySelector('.header');
   if(mh) mh.style.transform = '';
+  _clearActiveTabHashIfMatches('leaders'); // TAB_HASH_PERSIST_V1
 }
 
 // ---- RENDER LEADERS TABLE ----
@@ -12048,6 +12072,35 @@ async function fetchTankDateRangeStats(range){
 
 loadData();
 
+// TAB_HASH_PERSIST_V1 (5/21 16:00 ET - PC Walter) - on page load, restore the
+// tab named in window.location.hash. Deferred 400ms so loadData() finishes
+// wiring the players[] array first (each open* function depends on it).
+setTimeout(function(){
+  try {
+    var h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+    if(!h) return;
+    // Fan-mode gate: hash restoration is admin-only.
+    var isFan = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+    if(isFan){
+      console.log('[TAB_HASH_PERSIST_V1] Fan mode - skipping hash restore for:', h);
+      return;
+    }
+    var openFn = null;
+    if(h === 'pool')           openFn = typeof openPlayerPool === 'function' ? openPlayerPool : null;
+    else if(h === 'leaders')   openFn = typeof openLeagueLeaders === 'function' ? openLeagueLeaders : null;
+    else if(h === 'prospects') openFn = typeof openProspects === 'function' ? openProspects : null;
+    else if(h === 'tank')      openFn = typeof openHoldingTank === 'function' ? openHoldingTank : null;
+    if(openFn){
+      console.log('[TAB_HASH_PERSIST_V1] Restoring tab from URL hash:', h);
+      openFn();
+    } else {
+      console.log('[TAB_HASH_PERSIST_V1] Unknown hash:', h, '- falling back to Main');
+    }
+  } catch(e){
+    console.warn('[TAB_HASH_PERSIST_V1] hash restore failed:', e);
+  }
+}, 400);
+
 // CBS_COLUMN_V1 (May 6, 2026) — Load CBS roster % data on page open. Runs in
 // parallel with loadData(); applyCBS re-merges into players[] when both finish.
 // REGISTRY_V1 (May 11 2026) — load registry first so applyYahoo/applyCBS can
@@ -12362,6 +12415,7 @@ function openProspects(){
   else renderProspects();
   setTimeout(setPoolWrapTop, 0);
   setTimeout(attachProspectsScrollHandler, 150);
+  _setActiveTabHash('prospects'); // TAB_HASH_PERSIST_V1
 }
 
 function closeProspects(){
@@ -12379,6 +12433,7 @@ function closeProspects(){
   // Reset header transform applied by the tab's scroll handler
   const mh = document.querySelector('.header');
   if(mh) mh.style.transform = '';
+  _clearActiveTabHashIfMatches('prospects'); // TAB_HASH_PERSIST_V1
 }
 
 function filterProspects(val, el){
@@ -15749,6 +15804,7 @@ function openHoldingTank(){
   setTimeout(setTankWrapTop, 0);
   // Attach pool scroll handler for the clone fixed header
   setTimeout(attachTankScrollHandler, 100);
+  _setActiveTabHash('tank'); // TAB_HASH_PERSIST_V1
 }
 
 // --- Tank twin of closePlayerPool ---
@@ -15771,6 +15827,7 @@ function closeHoldingTank(){
   tankSearchFilter = '';
   const poolSearch = document.getElementById('tank-search');
   if(poolSearch) poolSearch.value = '';
+  _clearActiveTabHashIfMatches('tank'); // TAB_HASH_PERSIST_V1
 }
 
 // --- Tank twin of sortPool ---
