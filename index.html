@@ -8423,42 +8423,46 @@ async function exportXLSX(opts){
     });
   }
 
-  // NOTE_ARCHIVE_V1 (April 25, 2026) — archive the current note for each player
-  // BEFORE writing the file. If p.note has content AND it differs from the most
-  // recent archived entry, push a new {date_time, body} to the front of
-  // p.note_history. This runs on every Save-to-Excel (silent or manual) so
-  // the archived state always matches what's published. Brandt's note_historian
-  // is being retired since this replaces it. See Watch101 To-Do List entry
-  // "Note archiving with timestamps" for the full design.
+  // NOTE_ARCHIVE_RETIRED_V1 (May 22, 2026 11:43 ET — PC Walter, per JP) — the
+  // website-side auto-archive (former NOTE_ARCHIVE_V1) has been retired. Brandt's
+  // _append_history.py is now the SOLE writer to player_notes_history.json,
+  // firing only on approval. Previously, every Save-to-Excel (including silent
+  // auto-saves) was writing notes into p.note_history — including Matt's scratch
+  // edits that he later changed his mind about. That data was polluting Matt's
+  // Take on Deep Cut. JP did a clean wipe (10439-byte master file emptied to {},
+  // 669 entries stripped from 283 saved JSON files) and asked for Brandt to be
+  // the only writer going forward. See walter_memory.md 2026-05-22 entries.
+  //
+  // KEPT: the 📋 fresh-note emoji counter logic. Compared to Brandt's most-recent
+  // published note (PLAYER_NOTES_HISTORY[mlbId][0].note) instead of the now-defunct
+  // p.note_history[0].body. Sets _p.note_publish_count_since_change = 0 when the
+  // live note differs from what was last published, so the Approve tick can graduate
+  // the emoji correctly.
   try {
-    const _now = new Date();
-    const _archiveStamp = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')} ${String(_now.getHours()).padStart(2,'0')}:${String(_now.getMinutes()).padStart(2,'0')}`;
     for(let i = 0; i < players.length; i++){
       const _p = players[i];
       if(!_p) continue;
-      // Initialize note_history if missing.
-      if(!Array.isArray(_p.note_history)) _p.note_history = [];
       const _curr = (_p.note != null) ? String(_p.note).trim() : '';
-      if(!_curr) continue; // empty note → nothing to archive (per Dude's spec)
-      const _last = (_p.note_history.length > 0 && _p.note_history[0])
-        ? String(_p.note_history[0].body || '').trim()
-        : '';
-      if(_curr === _last) continue; // unchanged → don't double-archive
-      _p.note_history.unshift({ date_time: _archiveStamp, body: _curr });
-      // NOTE_EMOJI_V1 (April 25, 2026) — flag the player as "freshly noted"
-      // by setting the counter to 0. The Approve cycle's tick script will
-      // bump this to 1 (emoji visible to fans) on first publish, then graduate
-      // it on the next publish (emoji disappears). Same lifecycle as
-      // publish_count_since_new but tracks note changes rather than player adds.
-      _p.note_publish_count_since_change = 0;
+      if(!_curr) continue; // empty note → nothing to flag
+      // Find last-published note from Brandt's PLAYER_NOTES_HISTORY (the new
+      // single source of truth). Brandt sorts oldest-first, so [-1] is newest.
+      const _mid = String(_p.mlb_id || '');
+      let _last = '';
+      try {
+        if(typeof PLAYER_NOTES_HISTORY !== 'undefined' && PLAYER_NOTES_HISTORY && Array.isArray(PLAYER_NOTES_HISTORY[_mid])){
+          const _hist = PLAYER_NOTES_HISTORY[_mid];
+          if(_hist.length > 0){
+            const _h = _hist[_hist.length - 1];
+            _last = String((_h && (_h.note || _h.body)) || '').trim();
+          }
+        }
+      } catch(_he){}
+      if(_curr === _last) continue; // unchanged since last publish — don't flag fresh
+      _p.note_publish_count_since_change = 0; // mark as freshly changed
     }
-    // NOTE_ARCHIVE_V1 / NOTE_EMOJI_V1 — refresh the main table so the new
-    // 📋 emoji appears immediately on the row whose note just got archived.
-    // Without this, the player object has the field set but the rendered HTML
-    // is stale until something else triggers a renderTable().
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
   } catch(e){
-    console.warn('[NOTE_ARCHIVE_V1] archive step failed (non-fatal):', e);
+    console.warn('[NOTE_ARCHIVE_RETIRED_V1] fresh-emoji flag step failed (non-fatal):', e);
   }
 
   // TIMESTAMPED_SAVES_V1 (April 25, 2026) — filename now includes _HHMM so each
