@@ -15693,6 +15693,24 @@ function stampHoldingTankFromWarehouses(){
             if(!isNaN(n)) p[f] = n;
           }
         });
+        // TANK_GOLD_BLOCK_BACKFILL_V1 (May 22, 2026 01:30 ET — PC Walter) — older Tank
+        // players were saved before GOLD_BLOCK_V1 (May 14) started computing kbb_ratio
+        // and k_per_9 upstream. Their saved records have no kbb_ratio / k_per_9 /
+        // bb_pit, so K/BB and K/9 cells render em-dash on the Dude's list Tank even
+        // though the Integrity Tank (whose players were sent fresh after May 14) shows
+        // them fine. Mirrors the Pool refresh path at line 9731. Backfills bb_pit from
+        // source first (needed for kbb_ratio), then derives both live from raw IP+K+BB
+        // already stamped on the Tank player. Only fills if missing — never overwrites.
+        if((p.bb_pit == null || p.bb_pit === '') && src.bb_pit != null){
+          p.bb_pit = Number(src.bb_pit);
+        }
+        if(p.kbb_ratio == null){
+          p.kbb_ratio = (p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
+        }
+        if(p.k_per_9 == null){
+          const _ipNum = parseFloat(p.ip);
+          p.k_per_9 = (_ipNum > 0 && p.k != null) ? +((p.k * 9) / _ipNum).toFixed(2) : null;
+        }
         // TANK_PRIMARYPOS_BACKFILL_V1 (May 18, 2026) — older Tank players were saved
         // without `primaryPos`, which broke the renderTank pitcher/hitter split
         // (`pit = isPitcherPos(p.primaryPos)`) — pitchers got misclassified as
