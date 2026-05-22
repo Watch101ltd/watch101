@@ -16296,7 +16296,12 @@ function renderTank(){
   // sort (and explicit re-sorts by name) hide the number because rank-by-name
   // is meaningless. The rank is the player's position in the currently visible
   // (filtered + sorted) list — what you see is what gets numbered.
-  const _showPoolRank = tankSortCol && tankSortCol !== 'name';
+  // TANK_RANK_NUM_V1 (May 22, 2026 13:16 ET — PC Walter, per Matt) — Tank rank column
+  // now ALWAYS visible (was: hidden in default/name-sorted state, visible only when sorted by
+  // a stat column). Matt wants 1, 2, 3... always shown, renumbering 1=top with whatever sort
+  // is current. The Holding Tank will never be drag-arranged so there's no "real" rank to
+  // preserve — the visible position IS the rank for display purposes.
+  const _showPoolRank = true;
   tbody.innerHTML = display.map((p, idx) => {
     const isAdded = addedNames.has(p.name.toLowerCase());
     const isInTank = !isAdded && tankNames.has(p.name.toLowerCase());
