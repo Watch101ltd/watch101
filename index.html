@@ -14569,7 +14569,13 @@ function openPlayerPage(p){
     for(var i=0;i<oldHistory.length;i++){
       var h = oldHistory[i];
       // NOTE_HYPERLINK_V1 — same chain-icon treatment for archived notes.
-      var _hSplit = _splitNoteAndUrl(h.body || '');
+      // BRANDT_FIELD_ALIAS_V1 (May 22, 2026 11:43 ET — PC Walter) — Brandt's
+      // _append_history.py writes entries with field name `note` (not `body`)
+      // and date as `date`+`time` (not `date_time`). After the 5/22 wipe and
+      // NOTE_ARCHIVE retirement, Brandt is the sole writer, so this renderer
+      // must read his field names. h.body / h.date_time kept as legacy aliases
+      // in case any pre-wipe data resurfaces from a backup.
+      var _hSplit = _splitNoteAndUrl(h.body || h.note || '');
       var _hBadge = _renderNoteLinkBadge(_hSplit.url);
       // COMMENT_TIMESTAMP_V1 (April 26, 2026) — fix bug Matt flagged in the Sunday meeting:
       // archived note entries store their timestamp as h.date_time (see lines 2207, 4721)
@@ -14577,7 +14583,7 @@ function openPlayerPage(p){
       // rendered empty. Now reads h.date_time with h.date as a legacy fallback in case
       // any older entries used that field name.
       notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date">' + escapeHtml(h.date_time || h.date || '') + '</div>'
-                 + '<div class="ppo-note-body">' + escapeHtml(_hSplit.text || (h.body || '')) + _hBadge + '</div></div>';
+                 + '<div class="ppo-note-body">' + escapeHtml(_hSplit.text || h.body || h.note || '') + _hBadge + '</div></div>';
     }
     notesHtml += '</div>';
     notesHtml += '<div class="ppo-notes-count">' + oldHistory.length + ' prior ' + (oldHistory.length===1?'note':'notes') + ' &middot; loaded by Brandt</div>';
