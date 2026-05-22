@@ -7136,24 +7136,25 @@ function renderTable(){
       <td class="stat-cell type-cell col-type" style="text-align:center" title="Player type tags">${typeBadge(p)}</td>
       <td class="stat-cell col-priority" style="text-align:center">${renderPriorityStars(p)}</td>
       <td class="col-note">${(()=>{
-          // NOTE_ARCHIVE_V1 (April 25, 2026) — Notes column shows p.note if it
-          // has content (the live edit). If p.note is empty but p.note_history
-          // has archived entries, show the most recent archived note instead so
-          // the column never goes blank just because today's session hasn't
-          // overwritten it. Click still edits p.note (the live field).
+          // NOTE_CLEAR_V1 (5/21 17:30 ET - PC Walter) — the 4/25 NOTE_ARCHIVE_V1
+          // fallback (show archived note when live note is empty) was retired
+          // because it made it impossible to intentionally clear a note. The
+          // live notes column now reflects ONLY p.note. Archive history is
+          // available on the Deep Cut page (Matt's Take section reads
+          // note_history exactly as before). Per JP: "Once Brandt runs that
+          // and seizes the note the following morning... it's in the archive,
+          // it's on the deep cut page, it stays there. Now it shouldn't
+          // matter if I delete all the things out of the actual box on the
+          // main page."
           //
           // NOTE_HYPERLINK_V1 (April 25, 2026) — if the displayed note contains
           // an http(s) URL, strip it from the visible text and render a 🔗
           // chain icon to the right that opens the URL in a new tab. Hover
           // shows the full URL. Editing still operates on the FULL original
           // note (URL intact) — only display strips it.
-          const _live = (p.note != null) ? String(p.note) : '';
-          const _arch = (Array.isArray(p.note_history) && p.note_history.length > 0 && p.note_history[0])
-            ? String(p.note_history[0].body || '') : '';
-          const _shown = _live || _arch;
-          const _isLive = !!_live;
+          const _shown = (p.note != null) ? String(p.note) : '';
           const _emptyClass = _shown ? '' : 'empty';
-          const _archivedClass = (!_isLive && _arch) ? ' archived-only' : '';
+          const _archivedClass = '';  // NOTE_CLEAR_V1 - archive fallback retired
           // Split the displayed note (NOT the editable source) into text + url
           const _split = _splitNoteAndUrl(_shown);
           const _displayText = _split.text || (_shown ? '' : 'Add note...');
@@ -7740,14 +7741,12 @@ function editNote(id,el){
   if(!p) return;
   const input=document.createElement('input');
   input.type='text';input.className='note-input';
-  // NOTE_ARCHIVE_V1 (April 25, 2026) — if p.note is empty, seed the input with
-  // the most recent archived note so Matt can decide whether to edit it or
-  // wipe and replace. If p.note has content, use that (live in-progress edit).
-  let _seed = (p.note != null && String(p.note).length > 0) ? String(p.note) : '';
-  if(!_seed && Array.isArray(p.note_history) && p.note_history.length > 0 && p.note_history[0]){
-    _seed = String(p.note_history[0].body || '');
-  }
-  input.value = _seed;
+  // NOTE_CLEAR_V1 (5/21 17:30 ET - PC Walter) — edit input now seeds ONLY from
+  // p.note. The 4/25 archive-seed fallback was retired because it re-injected
+  // the archived note into the input box whenever the user tried to clear
+  // a note, making it impossible to leave the cell blank. Archive history
+  // lives on Deep Cut now, separate from the live edit field.
+  input.value = (p.note != null) ? String(p.note) : '';
   input.placeholder='Why did this player move?';
   el.replaceWith(input);input.focus();
   input.addEventListener('blur', async ()=>{
