@@ -4398,6 +4398,19 @@ async function loadRegistry(){
           }
           p.exp = experienceLabel(p);
         });
+        // POOL_REGISTRY_MERGE_V1 (May 22, 2026 14:16 ET — PC Walter) — handle the
+        // race where Pool loaded BEFORE the registry. loadPoolPlayers already
+        // called this once, but if registryByMlbam was empty at that time the
+        // merge was a no-op. Re-fire now that the registry is populated. Adds
+        // any missing active prospects/vets and re-renders Pool if open.
+        try {
+          if(typeof _mergeRegistryActivesIntoPool === 'function'){
+            var _added = _mergeRegistryActivesIntoPool();
+            if(_added > 0 && typeof renderPool === 'function'){
+              try { renderPool(); } catch(_pre){}
+            }
+          }
+        } catch(_pme){ console.warn('[POOL_REGISTRY_MERGE_V1] late merge failed:', _pme); }
       }
       // PROSPECTS_YAHOO_V1 (May 19, 2026) — re-apply Yahoo merge to prospects
       // too, in case the registry loads AFTER prospects (race-condition safety).
@@ -9534,6 +9547,50 @@ function closePlayerPool(){
 }
 
 // ---- LOAD FULL ROSTER ----
+// POOL_REGISTRY_MERGE_V1 (May 22, 2026 14:16 ET — PC Walter) — helper that
+// appends registry-active players to poolPlayers when they're not already in
+// the MLB StatsAPI feed. Idempotent (safe to call multiple times — uses a Set
+// to skip already-present mlb_ids). Gracefully no-ops if registry isn't loaded
+// yet; loadRegistry() will call this itself when it finishes, closing the
+// load-order race. Marks merged-in players with _fromRegistry:true for debug.
+function _mergeRegistryActivesIntoPool(){
+  try {
+    if(typeof registryByMlbam !== 'object' || !registryByMlbam) return 0;
+    if(!Array.isArray(poolPlayers)) return 0;
+    var existing = new Set(poolPlayers.map(function(p){ return p && p.mlb_id != null ? String(p.mlb_id) : null; }));
+    var added = 0;
+    var keys = Object.keys(registryByMlbam);
+    for(var i = 0; i < keys.length; i++){
+      var r = registryByMlbam[keys[i]];
+      if(!r || !r.active) continue;
+      if(r.mlb == null) continue;
+      var key = String(r.mlb);
+      if(existing.has(key)) continue;
+      poolPlayers.push({
+        mlb_id: r.mlb,
+        name: r.name || '',
+        team: r.team || '',
+        age: null,                      // not in slim registry; will be filled by loadPoolBatsThrows or stays null
+        primaryPos: r.pos || '',
+        bats: '',                       // filled by loadPoolBatsThrows
+        throws: '',                     // filled by loadPoolBatsThrows
+        mlb_played_first: r.mlb_played_first,  // for EXP column
+        mlb_played_last:  r.mlb_played_last,
+        _fromRegistry: true,            // debug/trace flag
+      });
+      existing.add(key);
+      added++;
+    }
+    if(added > 0){
+      console.log('[POOL_REGISTRY_MERGE_V1] added ' + added + ' registry-active players to poolPlayers (MLB API missed them)');
+    }
+    return added;
+  } catch(e){
+    console.warn('[POOL_REGISTRY_MERGE_V1] merge failed (non-fatal):', e);
+    return 0;
+  }
+}
+
 async function loadPoolPlayers(){
   document.getElementById('pool-loading').style.display = 'block';
   document.getElementById('pool-tbody').innerHTML = '';
@@ -9555,6 +9612,17 @@ async function loadPoolPlayers(){
       bats:   (p.batSide   && p.batSide.code)   || '',
       throws: (p.pitchHand && p.pitchHand.code) || '',
     }));
+
+    // POOL_REGISTRY_MERGE_V1 (May 22, 2026 14:16 ET — PC Walter) — merge in
+    // registry actives that the MLB StatsAPI feed misses. MLB's /sports/1/players
+    // endpoint only returns players who've appeared in a 2026 MLB game, which
+    // excludes ~249 active prospects + recently-DFA'd vets (Bryan Torres,
+    // AJ Smith-Shawver, Anthony Rendon, Anthony Santander, Ben Joyce, etc.).
+    // Audit (5/22 14:14 ET) counted 1,117 in MLB feed vs 1,300 registry actives:
+    // 19% of fantasy-relevant players were silently invisible in the Pool.
+    // This merge closes that gap. Mirrored below in loadRegistry() to handle
+    // the load-order race where registry finishes after Pool.
+    _mergeRegistryActivesIntoPool();
 
     // Step 2: If ANY players are missing teams, fetch team rosters to fill in gaps.
     // Pulls both 'active' (26-man) AND '40Man' rosters so IL / optioned / suspended
