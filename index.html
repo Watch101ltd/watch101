@@ -4560,8 +4560,23 @@ const CBS_DATA_URL = NAS_PROXY_URL + '/cbs/rostered-latest';
 // Both sides of the join (loadCBSData and applyCBS) call this so the keys land
 // identically. Add new entries to CBS_NAME_ALIASES as new mismatches surface.
 const CBS_NAME_ALIASES = {
-  'cam schlittler': 'cameron schlittler'
-  // future entries: 'jake fraley': 'jacob fraley', 'matt mclain': 'matthew mclain', etc.
+  'cam schlittler': 'cameron schlittler',
+  // CBS_NICKNAME_ALIASES_V1 (May 22, 2026 13:30 ET — PC Walter, per Matt's Junis flag)
+  // Batch-added after auditing cbs_rostered_latest.json (8,375 players) against
+  // player_registry.json (22,162 players). 68 nickname-mismatch candidates found
+  // total; only the 8 with CBS rostered_pct > 5% shipped here (visible-impact
+  // floor). Low-roster matches deferred — add them as they surface in real use.
+  // CBS-side spelling on the left, registry/MLB spelling on the right.
+  // Both sides are already passed through normalize() so they're lowercase + no accents.
+  'jake junis':       'jakob junis',         // Matt's original flag — note: JAKOB, not Jacob
+  'zachary neto':     'zach neto',           // 99% rostered
+  'michael king':     'mike king',           // 97% rostered
+  'mike soroka':      'michael soroka',      // 91% rostered (reverse direction)
+  'matthew boyd':     'matt boyd',           // 77% rostered
+  'michael burrows':  'mike burrows',        // 30% rostered
+  'nate lowe':        'nathaniel lowe',      // 15% rostered
+  'joshua lowe':      'josh lowe'            // 10% rostered
+  // future entries: add as new mismatches surface in real use.
 };
 function normalizeForCBS(name){
   if(!name) return '';
