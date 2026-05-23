@@ -153,6 +153,10 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif
 #quick-edit-popup .priority-stars{font-size:18px;}
 #quick-edit-popup .priority-stars .pstar-slot{width:18px;height:18px;}
 #quick-edit-popup .ppo-priority-tag{font-size:10px;color:var(--text3);letter-spacing:0.04em;margin-left:auto;}
+/* TIMESTAMP_PRIORITY_V1 (May 22, 2026) — stamp styling inside Quick Edit popup.
+   Sits at the far right, italic for the "informational" tone — distinct from
+   the .ppo-priority-tag which carries the "click to change" affordance text. */
+#quick-edit-popup .ppo-priority-stamp{font-size:9px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;font-style:italic;margin-left:6px;}
 #quick-edit-popup .ppo-type-tags-block{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);}
 #quick-edit-popup .ppo-type-tags-title{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
 #quick-edit-popup .ppo-type-tags-tag{font-size:9px;font-weight:500;color:var(--text3);letter-spacing:0.04em;text-transform:none;}
@@ -1533,6 +1537,20 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-priority-select:hover{border-color:var(--gold);}
 #player-page-overlay .ppo-priority-select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,193,7,0.2);}
 #player-page-overlay .ppo-priority-tag{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
+/* TIMESTAMP_PRIORITY_V1 (May 22, 2026 — PC Walter, per Matt's 5/22 meeting + Jay's spec)
+   Date stamp shown next to the stars on both the backend admin block and
+   the public/fan readonly mirror. Smaller, dim, uppercase to match the
+   "tag" tone already established in this row. */
+#player-page-overlay .ppo-priority-stamp{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-left:auto;font-style:italic;}
+/* Public/fan readonly priority mirror. Same row layout as the admin block,
+   minus the editable affordances. pointer-events:none on the star span
+   means clicks pass through harmlessly even though the click delegator
+   wouldn't act on a context it doesn't know. cursor:default reinforces
+   "this is informational, not interactive". */
+#player-page-overlay .ppo-priority-row-readonly{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);}
+#player-page-overlay .ppo-priority-readonly-stars{pointer-events:none;cursor:default;display:inline-flex;align-items:center;}
+#player-page-overlay .ppo-priority-readonly-stars .priority-stars{cursor:default;}
+#player-page-overlay .ppo-priority-readonly-stars .pstar-slot{cursor:default;}
 /* TYPE_TAGS_V1 (April 27, 2026) — BACKEND_ONLY type tag picker block in the
    Deep Cut overlay. Sits below the Mark-flaming row. Multi-select checkbox
    group, one row per TYPE_TAGS_V1 entry. */
@@ -5934,6 +5952,13 @@ async function setPriority(mlbId, rawValue){
       console.warn('[PRIORITY_V2] player not found in active list for mlb_id:', mlbId);
       return;
     }
+    // TIMESTAMP_PRIORITY_V1 (May 22, 2026 — PC Walter, per Matt's 5/22 meeting)
+    // Capture the previous value BEFORE we mutate it so we can detect real
+    // changes (not no-op clicks). Only stamp p.priority_changed_at when the
+    // value actually differs from what was there before. Stamp covers both
+    // promotion AND demotion AND clears (per Jay's spec: "any change to the
+    // priority value").
+    var _prevPriority = (p.priority != null && p.priority !== '') ? Number(p.priority) : null;
     // Empty / null / 0 means clear the priority.
     if(rawValue === '' || rawValue == null || rawValue === 0 || rawValue === '0'){
       p.priority = null;
@@ -5945,6 +5970,13 @@ async function setPriority(mlbId, rawValue){
       }
       // Snap to the nearest 0.5 just in case.
       p.priority = Math.round(n * 2) / 2;
+    }
+    // TIMESTAMP_PRIORITY_V1 — compare new vs prev and stamp if they differ.
+    // Use ISO so it sorts and survives JSON round-trips cleanly; the display
+    // code formats it for humans.
+    var _newPriority = (p.priority != null && p.priority !== '') ? Number(p.priority) : null;
+    if(_newPriority !== _prevPriority){
+      p.priority_changed_at = new Date().toISOString();
     }
     // Persist so the next Save-to-Excel and any reload keeps the value.
     try { await autoSaveToNAS(); } catch(e){ console.warn('[PRIORITY_V2] autosave failed:', e); }
@@ -5995,6 +6027,11 @@ function _priorityStarsClickHandler(e){
   if(!slot) return;
   var wrap = slot.closest('.priority-stars');
   if(!wrap) return;
+  // TIMESTAMP_PRIORITY_V1 (May 22, 2026) — public/fan readonly mirror uses
+  // context='fan-readonly'. Bail before doing anything so even devtools
+  // bypass of pointer-events can't trigger a write. Defense in depth on
+  // top of the CSS pointer-events:none on the wrapper.
+  if(wrap.getAttribute('data-context') === 'fan-readonly') return;
   var mlbId = wrap.getAttribute('data-mlb-id');
   var clicked = parseInt(slot.getAttribute('data-value'), 10);
   if(!mlbId || !clicked) return;
@@ -8458,12 +8495,17 @@ function _buildXLSXWorkbook(){
   // "xERA" only ranks pitchers; sorting "xBA" only ranks hitters; the other lane
   // shows blanks. New columns appended in groups (hitter Statcast, then pitcher
   // Statcast) so legacy XLSX imports still work column-by-name.
+  // TIMESTAMP_PRIORITY_V1 (May 22, 2026) — added 'Priority Changed' as final
+  // column so the timestamp survives an Excel round-trip for reference. Not
+  // wired on the import side intentionally (autoSaveToNAS preserves the field
+  // through normal use; re-import from XLSX would just leave it blank until
+  // the next priority change).
   const headers = ['Rank','Player','Positions','Team','Age','Bats','Yahoo Rank','Roster %',
     'AB','R','HR','RBI','SB','AVG','OBP','OPS',
     'W','SV','HLD','IP','ERA','WHIP','K','K/BB','K/9',
     'xBA','xwOBA','Brl%','EV','Bat Spd','K%','BB%','Sprint',
     'xERA','xwOBA Against','FB Velo','K-BB%','GB%','Chase%','Whiff%',
-    'Movement','Note','Priority'];
+    'Movement','Note','Priority','Priority Changed'];
   const rows = players.map(p => [
     p.rank||'', p.name||'', (p.positions||[]).join('/'), p.team||'',
     p.age||'', p.bats||'', p.yahoo_rank||'', p.roster_pct||'',
@@ -8478,7 +8520,8 @@ function _buildXLSXWorkbook(){
     // Pitcher Statcast (7) — only populated for pitchers; hitters get blanks
     p.sv_xera??'', p.sv_xwoba_p??'', p.sv_fb_velo??'',
     p.sv_k_minus_bb??'', p.sv_gb_pct??'', p.sv_chase_pct??'', p.sv_whiff_pct??'',
-    p.move||'', p.note||'', (p.priority!=null&&p.priority!=='')?p.priority:''
+    p.move||'', p.note||'', (p.priority!=null&&p.priority!=='')?p.priority:'',
+    p.priority_changed_at || ''
   ]);
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   const range = XLSX.utils.decode_range(ws['!ref']);
@@ -8919,12 +8962,14 @@ function exportCSV(){
   // CSV downloads and Excel downloads show the same data. 15 new Statcast
   // columns + K/9 added. Hitter and pitcher get separate columns; the unused
   // lane shows blank.
+  // TIMESTAMP_PRIORITY_V1 (May 22, 2026) — added 'Priority Changed' as final
+  // column (matching the XLSX export).
   const headers = ['Rank','Player','Position','Team','Age','Yahoo Rank','Roster %',
     'AB','R','HR','RBI','SB','AVG','OBP','OPS',
     'W','SV','HLD','IP','ERA','WHIP','K','K/BB','K/9',
     'xBA','xwOBA','Brl%','EV','Bat Spd','K%','BB%','Sprint',
     'xERA','xwOBA Against','FB Velo','K-BB%','GB%','Chase%','Whiff%',
-    'Movement','Note','Priority'];
+    'Movement','Note','Priority','Priority Changed'];
   const rows = players.map(p => [
     p.rank || '',
     p.name || '',
@@ -8946,7 +8991,8 @@ function exportCSV(){
     p.sv_k_minus_bb ?? '', p.sv_gb_pct ?? '', p.sv_chase_pct ?? '', p.sv_whiff_pct ?? '',
     p.move || '',
     (p.note || '').replace(/,/g, ';'),
-    (p.priority!=null&&p.priority!=='')?p.priority:''
+    (p.priority!=null&&p.priority!=='')?p.priority:'',
+    p.priority_changed_at || ''
   ]);
   const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
@@ -14872,11 +14918,46 @@ function openPlayerPage(p){
   var _priorityTagText = (_currentPriority === 0 || isNaN(_currentPriority))
     ? 'Backend only — click stars to rank Matt\'s add-priority (5 = highest)'
     : 'Currently priority ' + _currentPriority + ' / 5 — click again to change';
+  // TIMESTAMP_PRIORITY_V1 (May 22, 2026 — PC Walter, per Matt's 5/22 meeting)
+  // Format the timestamp for display. ISO -> "Set May 22, 2026" style.
+  // Returns empty string when no timestamp (so the line just doesn't render).
+  function _fmtPriorityStamp(iso){
+    if(!iso) return '';
+    try {
+      var d = new Date(iso);
+      if(isNaN(d.getTime())) return '';
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return 'Set ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    } catch(e){ return ''; }
+  }
+  var _priorityStampText = _fmtPriorityStamp(p.priority_changed_at);
+  var _priorityStampHtml = _priorityStampText
+    ? '<span class="ppo-priority-stamp">' + _priorityStampText + '</span>'
+    : '';
+  // Backend (admin) block — interactive picker + helper text + new timestamp.
   notesHtml += '<div class="ppo-priority-row backend-only">'
     + '<label class="ppo-priority-label">Priority</label>'
     + renderPriorityStars(p, 'overlay')
     + '<span class="ppo-priority-tag">' + _priorityTagText + '</span>'
+    + _priorityStampHtml
     + '</div>';
+  // TIMESTAMP_PRIORITY_V1 — public/fan-visible read-only mirror.
+  // Only renders when there IS a priority (>0) AND a timestamp to show.
+  // Reuses the priority-stars renderer but in a wrapper that strips
+  // interactivity: the click handler bails out when it can't find an mlb-id
+  // wrapper that matches a known context — we use 'fan-readonly' here so it
+  // won't conflict with 'row' or 'overlay', and the global click delegator's
+  // setPriority() call will harmlessly find no matching player + return.
+  // To make it truly inert, we also wrap in pointer-events:none.
+  if(_currentPriority > 0 && _priorityStampText){
+    notesHtml += '<div class="ppo-priority-row ppo-priority-row-readonly">'
+      + '<label class="ppo-priority-label">Priority</label>'
+      + '<span class="ppo-priority-readonly-stars">'
+      +   renderPriorityStars(p, 'fan-readonly')
+      + '</span>'
+      + '<span class="ppo-priority-stamp">' + _priorityStampText + '</span>'
+      + '</div>';
+  }
 
   // TYPE_TAGS_V1 (April 27, 2026) — BACKEND_ONLY type-tag picker.
   // Sibling to MARK_FLAMING_V1 / MARK_NOTE_FRESH_V1. Multi-select: a player
@@ -17712,10 +17793,23 @@ document.addEventListener('keydown', function(e){
     var _priorityTagText = (_currentPriority === 0 || isNaN(_currentPriority))
       ? 'Click stars to rank'
       : 'Priority ' + _currentPriority + ' / 5';
+    // TIMESTAMP_PRIORITY_V1 (May 22, 2026) — also show the stamp inside the
+    // Quick Edit popup (right-click on a row) so admins see it everywhere.
+    var _qepStamp = '';
+    try {
+      if(p.priority_changed_at){
+        var _qd = new Date(p.priority_changed_at);
+        if(!isNaN(_qd.getTime())){
+          var _qmo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          _qepStamp = '<span class="ppo-priority-stamp">Set ' + _qmo[_qd.getMonth()] + ' ' + _qd.getDate() + ', ' + _qd.getFullYear() + '</span>';
+        }
+      }
+    } catch(_qe){}
     var priorityHtml = '<div class="ppo-priority-row">'
       + '<label class="ppo-priority-label">Priority</label>'
       + (typeof renderPriorityStars === 'function' ? renderPriorityStars(p, 'qep') : '')
       + '<span class="ppo-priority-tag">' + _priorityTagText + '</span>'
+      + _qepStamp
       + '</div>';
 
     var _existingTags = Array.isArray(p.type_tags) ? p.type_tags : [];
