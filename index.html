@@ -1538,19 +1538,11 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 #player-page-overlay .ppo-priority-select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,193,7,0.2);}
 #player-page-overlay .ppo-priority-tag{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
 /* TIMESTAMP_PRIORITY_V1 (May 22, 2026 — PC Walter, per Matt's 5/22 meeting + Jay's spec)
-   Date stamp shown next to the stars on both the backend admin block and
-   the public/fan readonly mirror. Smaller, dim, uppercase to match the
-   "tag" tone already established in this row. */
+   FIXED 5/23 ~03:00 ET per Jay: single row only, no readonly mirror. Date
+   stamp shown next to the stars in the unified row that shows for both
+   backend admins and public/fan visitors. Smaller, dim, uppercase to match
+   the "tag" tone already established in this row. */
 #player-page-overlay .ppo-priority-stamp{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-left:auto;font-style:italic;}
-/* Public/fan readonly priority mirror. Same row layout as the admin block,
-   minus the editable affordances. pointer-events:none on the star span
-   means clicks pass through harmlessly even though the click delegator
-   wouldn't act on a context it doesn't know. cursor:default reinforces
-   "this is informational, not interactive". */
-#player-page-overlay .ppo-priority-row-readonly{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);}
-#player-page-overlay .ppo-priority-readonly-stars{pointer-events:none;cursor:default;display:inline-flex;align-items:center;}
-#player-page-overlay .ppo-priority-readonly-stars .priority-stars{cursor:default;}
-#player-page-overlay .ppo-priority-readonly-stars .pstar-slot{cursor:default;}
 /* TYPE_TAGS_V1 (April 27, 2026) — BACKEND_ONLY type tag picker block in the
    Deep Cut overlay. Sits below the Mark-flaming row. Multi-select checkbox
    group, one row per TYPE_TAGS_V1 entry. */
@@ -6027,11 +6019,6 @@ function _priorityStarsClickHandler(e){
   if(!slot) return;
   var wrap = slot.closest('.priority-stars');
   if(!wrap) return;
-  // TIMESTAMP_PRIORITY_V1 (May 22, 2026) — public/fan readonly mirror uses
-  // context='fan-readonly'. Bail before doing anything so even devtools
-  // bypass of pointer-events can't trigger a write. Defense in depth on
-  // top of the CSS pointer-events:none on the wrapper.
-  if(wrap.getAttribute('data-context') === 'fan-readonly') return;
   var mlbId = wrap.getAttribute('data-mlb-id');
   var clicked = parseInt(slot.getAttribute('data-value'), 10);
   if(!mlbId || !clicked) return;
@@ -14919,6 +14906,14 @@ function openPlayerPage(p){
     ? 'Backend only — click stars to rank Matt\'s add-priority (5 = highest)'
     : 'Currently priority ' + _currentPriority + ' / 5 — click again to change';
   // TIMESTAMP_PRIORITY_V1 (May 22, 2026 — PC Walter, per Matt's 5/22 meeting)
+  // FIXED 5/23 ~03:00 ET per Jay: ONE row only. No history stack. The single
+  // priority row shows on BOTH backend and frontend, just with different
+  // helper-text treatment: admins see the "click again to change" affordance
+  // copy, fans see only the stamp. The stars themselves stay rendered with
+  // the existing 'overlay' context — interactivity is already gated by the
+  // global click handler's _blockIfReadOnly check inside setPriority(), so
+  // fans physically cannot move the value even if they click.
+  //
   // Format the timestamp for display. ISO -> "Set May 22, 2026" style.
   // Returns empty string when no timestamp (so the line just doesn't render).
   function _fmtPriorityStamp(iso){
@@ -14934,30 +14929,15 @@ function openPlayerPage(p){
   var _priorityStampHtml = _priorityStampText
     ? '<span class="ppo-priority-stamp">' + _priorityStampText + '</span>'
     : '';
-  // Backend (admin) block — interactive picker + helper text + new timestamp.
-  notesHtml += '<div class="ppo-priority-row backend-only">'
+  // Single unified priority row. The 'backend-only' class is gone — this
+  // row shows for everyone. The helper-text span gets the 'backend-only'
+  // class so it's only visible to admins.
+  notesHtml += '<div class="ppo-priority-row">'
     + '<label class="ppo-priority-label">Priority</label>'
     + renderPriorityStars(p, 'overlay')
-    + '<span class="ppo-priority-tag">' + _priorityTagText + '</span>'
+    + '<span class="ppo-priority-tag backend-only">' + _priorityTagText + '</span>'
     + _priorityStampHtml
     + '</div>';
-  // TIMESTAMP_PRIORITY_V1 — public/fan-visible read-only mirror.
-  // Only renders when there IS a priority (>0) AND a timestamp to show.
-  // Reuses the priority-stars renderer but in a wrapper that strips
-  // interactivity: the click handler bails out when it can't find an mlb-id
-  // wrapper that matches a known context — we use 'fan-readonly' here so it
-  // won't conflict with 'row' or 'overlay', and the global click delegator's
-  // setPriority() call will harmlessly find no matching player + return.
-  // To make it truly inert, we also wrap in pointer-events:none.
-  if(_currentPriority > 0 && _priorityStampText){
-    notesHtml += '<div class="ppo-priority-row ppo-priority-row-readonly">'
-      + '<label class="ppo-priority-label">Priority</label>'
-      + '<span class="ppo-priority-readonly-stars">'
-      +   renderPriorityStars(p, 'fan-readonly')
-      + '</span>'
-      + '<span class="ppo-priority-stamp">' + _priorityStampText + '</span>'
-      + '</div>';
-  }
 
   // TYPE_TAGS_V1 (April 27, 2026) — BACKEND_ONLY type-tag picker.
   // Sibling to MARK_FLAMING_V1 / MARK_NOTE_FRESH_V1. Multi-select: a player
