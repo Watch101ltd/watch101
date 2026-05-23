@@ -6334,8 +6334,12 @@ document.addEventListener('click', function(ev){
   } catch(e){ console.warn('[TYPE_TAG_TOOLTIPS_V1] delegator failed:', e); }
 }, true);  // useCapture=true so we intercept BEFORE row-level listeners fire.
 
-// Dismiss the tooltip on scroll/resize so it doesn't float in a stale spot.
-window.addEventListener('scroll', _hideTypeTagTooltip, true);
+// MENU_KEEP_OPEN_ON_SCROLL_V1 (May 23, 2026 — PC Walter, per Matt's 5/22 meeting + Jay's spec)
+// Removed the scroll-close. Per Jay: "When you click on the emoji, the little
+// popup box that comes up — that box also disappears when you scroll. I don't
+// want that to happen. I only want it to disappear when you click off of it."
+// Tooltip now stays put during scroll; resize-close stays in place because
+// resize can re-flow underlying elements out from under the tooltip anchor.
 window.addEventListener('resize', _hideTypeTagTooltip);
 
 // ADD_CUSTOM_PLAYER_V1 (April 25, 2026) — BACKEND_ONLY admin handlers.
@@ -17680,14 +17684,19 @@ document.addEventListener('keydown', function(e){
     }
   });
 
-  // ----- Click outside / Escape / scroll / resize → close -----
+  // ----- Click outside / Escape / resize → close -----
+  // MENU_KEEP_OPEN_ON_SCROLL_V1 (May 23, 2026 — PC Walter, per Matt's 5/22 meeting + Jay's spec)
+  // Removed the scroll-close listener. Per Jay: "That's fine if it scrolls
+  // away when you scroll, I don't mind that." The menu now stays open during
+  // scroll; user dismisses with click-outside, Escape, or resize. Menu visually
+  // floats at its original screen position while the table scrolls underneath
+  // — acceptable tradeoff for not having the menu vanish out from under you.
   document.addEventListener('mousedown', function(e){
     if(menu.classList.contains('visible') && !menu.contains(e.target)) hideMenu();
   });
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape' && menu.classList.contains('visible')) hideMenu();
   });
-  window.addEventListener('scroll', hideMenu, true);
   window.addEventListener('resize', hideMenu);
 
   // ==========================================================================
@@ -17903,9 +17912,10 @@ document.addEventListener('keydown', function(e){
       hideQuickEditPopup();
     }
   });
-  window.addEventListener('scroll', function(){
-    if(qepPopup.classList.contains('visible')) hideQuickEditPopup();
-  }, true);
+  // MENU_KEEP_OPEN_ON_SCROLL_V1 (May 23, 2026 — PC Walter) — scroll-close
+  // removed for consistency with the right-click menu and emoji tooltip
+  // (same ship). Popup now stays open during scroll; user dismisses via
+  // click-outside, Escape, or resize.
   window.addEventListener('resize', function(){
     if(qepPopup.classList.contains('visible')) hideQuickEditPopup();
   });
