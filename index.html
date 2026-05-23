@@ -135,7 +135,14 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif
    the same way. Styling parallels #rc-menu (right-click nav menu) and the
    #player-page-overlay .ppo-* classes (re-scoped here so they render outside
    the overlay). */
-#quick-edit-popup{position:fixed;display:none;width:380px;max-height:80vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,0.55),0 0 0 1px rgba(255,255,255,0.04);z-index:1001;padding:0;font-family:'Nunito Sans',sans-serif;}
+/* QEP_FOLLOW_SCROLL_V1 (May 23, 2026 — PC Walter, per Jay's 5/23 follow-up on A6)
+   Was position:fixed (anchored to viewport, stays put during scroll). Switched
+   to position:absolute (anchored to document) so the popup scrolls WITH the
+   row it was opened on — matching the emoji tooltip's behavior. Per Jay: "Can
+   we make it so the edit box scrolls up and down with the row when you scroll
+   as well? Build it the same way." Positioning math also updated to use
+   document coordinates (window.scrollX/scrollY added). */
+#quick-edit-popup{position:absolute;display:none;width:380px;max-height:80vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,0.55),0 0 0 1px rgba(255,255,255,0.04);z-index:1001;padding:0;font-family:'Nunito Sans',sans-serif;}
 #quick-edit-popup.visible{display:block;animation:rcAppear 0.12s ease-out;}
 #quick-edit-popup .qep-header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px dashed var(--border);}
 #quick-edit-popup .qep-title{flex:1;font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.02em;line-height:1.2;}
@@ -17864,14 +17871,24 @@ document.addEventListener('keydown', function(e){
     qepPopup.classList.add('visible');
     var rect = qepPopup.getBoundingClientRect();
     var W = window.innerWidth, H = window.innerHeight;
+    // QEP_FOLLOW_SCROLL_V1 (May 23, 2026) — popup is now position:absolute so
+    // its top/left are document coordinates, not viewport coordinates. Clamp
+    // logic still operates in VIEWPORT space (so the popup appears on screen
+    // even when opened near a viewport edge), then we add scrollX/scrollY at
+    // the end to convert to document space. Net effect: same initial placement,
+    // but the popup stays glued to the document position — scrolling moves it
+    // with the row underneath, matching the emoji tooltip's behavior.
     var left = (typeof x === 'number') ? x : Math.max(8, (W - rect.width)/2);
     var top  = (typeof y === 'number') ? y : Math.max(8, (H - rect.height)/2);
     if(left + rect.width  > W - 8) left = W - rect.width  - 8;
     if(top  + rect.height > H - 8) top  = H - rect.height - 8;
     if(left < 8) left = 8;
     if(top  < 8) top  = 8;
-    qepPopup.style.left = left + 'px';
-    qepPopup.style.top  = top  + 'px';
+    // Convert viewport coords → document coords so position:absolute anchors
+    // the popup to where the row IS in the document, not where it APPEARS in
+    // the viewport.
+    qepPopup.style.left = (left + window.scrollX) + 'px';
+    qepPopup.style.top  = (top  + window.scrollY) + 'px';
   }
 
   function hideQuickEditPopup(){
