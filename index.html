@@ -5029,21 +5029,40 @@ async function fetchMLBInjuryStatus(){
           // before any status-code branching. Even Active players go in here.
           const pid = player.person && player.person.id;
           if(pid) fortyManMap[String(pid)] = true;
-          // Map MLB's D-codes to our IL-codes. Skip 'A' (active). Capture 'RM'
-          // (Rehab Major — player rehabbing in minors before being activated)
-          // into rehabMap for the REHAB_FILTER_V1 minors-filter exclusion.
+          // Map MLB's D-codes to our IL-codes. Skip 'A' (active).
+          // REHAB_FILTER_FIX_V1 (May 23, 2026 — PC Walter, per Jay's bug report)
+          // Two corrections to the original REHAB_FILTER_V1 (May 14, 2026) which
+          // shipped on a misread of MLB's status code dictionary:
+          //   1) Removed RM → rehabMap mapping. The original author wrote
+          //      "RM = Rehab Major" — actually RM = "Reassigned to Minors"
+          //      (verified live against MLB API on 5/23). RM is a regular
+          //      40-man-roster minor-leaguer designation, NOT an injury rehab
+          //      assignment. The bug was causing 230 of 287 NA-tagged players
+          //      (Abimelec Ortiz, Adael Amador, Agustín Ramírez, etc.) to be
+          //      stamped on_rehab=true, which let them slip through the INJURED
+          //      filter on the Pool / Leaders / Watch list views as false
+          //      positives. The on_rehab safety net inside renderProspects()
+          //      (line ~14048) is still there but now does nothing useful —
+          //      on_40man already excludes every RM player from Prospects
+          //      (RM players are by definition on a 40-man), which is why
+          //      PROSPECTS_REHAB_FILTER_V2 was shipped 5/20 in the first place.
+          //   2) Added D7 → IL10 mapping. The original code mapped D7+D10 to
+          //      IL10 on a single line but a 5/15 rewrite split D7 off and
+          //      forgot to re-include it. Two players currently on D7 IL
+          //      (Jake Cronenworth, Leo Jiménez verified 5/23) were missing
+          //      from the IL badge until now.
           const rawCode = (player.status && player.status.code) || '';
           const normalized = String(rawCode).toUpperCase().replace(/[^A-Z0-9]/g, '');
           let mappedCode = null;
           if(normalized === 'D7' || normalized === 'D10') mappedCode = 'IL10';
           else if(normalized === 'D15') mappedCode = 'IL15';
           else if(normalized === 'D60') mappedCode = 'IL60';
-          // (Active 'A' falls through — not added to ilMap or rehabMap.)
+          // (Active 'A', Reassigned to Minors 'RM', and Paternity 'PL' fall
+          // through — not added to ilMap or rehabMap. RM players are still
+          // captured in fortyManMap above, which is what excludes them from
+          // the Prospects view.)
           if(mappedCode){
             if(pid) ilMap[String(pid)] = mappedCode;
-          } else if(normalized === 'RM'){
-            // REHAB_FILTER_V1 — flag rehab-assignment players.
-            if(pid) rehabMap[String(pid)] = true;
           }
         }
       } catch(e){
