@@ -15123,6 +15123,26 @@ function renderNewsStrip(p){
     if(metaEl)     metaEl.textContent     = '';
   }
 
+  // VIDEO_EMBED_V1 (May 23, 2026) — render the inline MLB highlight video
+  // when a video_url is present on the blurb. Click-to-play behavior:
+  // preload=metadata loads just enough to know dimensions and show the
+  // first frame; the actual video stream doesn't download until the fan
+  // clicks the play button. Poster image (16:9 1280x720) shows while
+  // waiting. Empty videoEl when no video URL — CSS :empty rule hides it.
+  var videoEl = document.getElementById('ppo-news-video');
+  if(videoEl){
+    if(blurb && blurb.video_url){
+      var posterAttr = blurb.video_thumbnail ? ' poster="' + blurb.video_thumbnail.replace(/"/g, '&quot;') + '"' : '';
+      videoEl.innerHTML =
+        '<video controls preload="metadata" playsinline' + posterAttr + '>' +
+          '<source src="' + blurb.video_url.replace(/"/g, '&quot;') + '" type="video/mp4">' +
+          'Your browser does not support video playback.' +
+        '</video>';
+    } else {
+      videoEl.innerHTML = '';
+    }
+  }
+
   // MLB.com deep link — ALWAYS shown. MLB.com redirects /player/<id> to the
   // canonical slug automatically.
   var mlbLink = document.getElementById('ppo-news-link-mlb');
@@ -17004,6 +17024,10 @@ function attachTankScrollHandler(){
           </div>
         </div>
       </div>
+      <!-- VIDEO_EMBED_V1 (May 23, 2026) — MLB highlight video container. Filled
+           by renderNewsStrip() when blurb.video_url is present; left empty
+           (display:none via :empty CSS rule) when there's no video. -->
+      <div class="ppo-news-video" id="ppo-news-video"></div>
     </section>
     <!-- /NEWS_LINKS_V1 strip (relocated) -->
     <!-- GAME_LOG_CARD_V1 — last-10-games table replaces the old blurb card. -->
@@ -18118,6 +18142,25 @@ document.addEventListener('keydown', function(e){
     align-items: flex-end;
     gap: 8px;
     flex: 0 0 auto;
+  }
+  /* VIDEO_EMBED_V1 (May 23, 2026) — inline MLB highlight video styling.
+     Gold border to match the existing accent on the Latest News card.
+     Empty-state rule hides the container entirely when no video URL is
+     present, so the layout doesn't get a phantom gap. */
+  #player-page-overlay .ppo-news-video {
+    margin-top: 16px;
+    width: 100%;
+  }
+  #player-page-overlay .ppo-news-video:empty {
+    display: none;
+  }
+  #player-page-overlay .ppo-news-video video {
+    width: 100%;
+    max-width: 100%;
+    background: #000;
+    border: 1px solid rgba(245, 197, 24, 0.4);
+    border-radius: 4px;
+    display: block;
   }
   #player-page-overlay .ppo-news-meta {
     font-size: 10px;
