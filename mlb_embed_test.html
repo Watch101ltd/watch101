@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MLB Embed Test</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; background:#111; color:#eee; padding:24px; max-width:900px; margin:0 auto; }
+  h1 { color:#f5c518; }
+  video { width:100%; max-width:800px; background:#000; border:2px solid #444; margin-top:12px; }
+  .label { color:#aaa; margin-top:24px; font-size:14px; }
+  code { background:#222; padding:2px 6px; border-radius:3px; font-size:12px; color:#9fd; }
+  .result { margin-top:24px; padding:16px; background:#1c1c1c; border-left:4px solid #f5c518; }
+</style>
+</head>
+<body>
+  <h1>MLB Video Embed Test</h1>
+  <p>This page tests whether MLB's video CDN allows a cross-origin embedded playback from GitHub Pages.</p>
+  <p class="label">Source URL:</p>
+  <code>https://mlb-cuts-diamond.mlb.com/FORGE/2026/2026-05/16/05010b60-a9586db2-9d9d1667-csvm-diamondgcp-asset_1280x720_59_4000K.mp4</code>
+
+  <video id="testvideo" controls preload="metadata">
+    <source src="https://mlb-cuts-diamond.mlb.com/FORGE/2026/2026-05/16/05010b60-a9586db2-9d9d1667-csvm-diamondgcp-asset_1280x720_59_4000K.mp4" type="video/mp4">
+    Your browser doesn't support the video tag.
+  </video>
+
+  <div class="result">
+    <p><strong>What to check:</strong></p>
+    <ol>
+      <li>Click play on the video above.</li>
+      <li>If it plays — embedding works. Tell Walter "the video played."</li>
+      <li>If it shows a black box, a broken-media icon, or an error — embedding is blocked. Tell Walter "no video, blocked."</li>
+      <li>Open the browser console (F12) and look for any error message about the video — paste it back to Walter if there's one.</li>
+    </ol>
+    <p class="label">Page URL where this test is hosted:</p>
+    <code id="pageurl"></code>
+  </div>
+
+  <script>
+    document.getElementById('pageurl').textContent = window.location.href;
+
+    var v = document.getElementById('testvideo');
+    v.addEventListener('error', function(e) {
+      console.error('[MLB EMBED TEST] video error:', v.error);
+    });
+    v.addEventListener('loadedmetadata', function() {
+      console.log('[MLB EMBED TEST] metadata loaded — duration:', v.duration);
+    });
+    v.addEventListener('playing', function() {
+      console.log('[MLB EMBED TEST] PLAYING — embed works.');
+    });
+  </script>
+</body>
+</html>
