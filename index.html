@@ -597,6 +597,26 @@ body.day-mode .tier-bracket-box.tier-armed {
 }
 /* /TIER_DRAG_V1 */
 
+/* TIER_SPACER_ROW_V1 (May 22, 2026 — PC Walter, per Matt's 5/22 meeting + Jay's spec)
+   Real <tr> injected above each tier's first row so the tier "tab" has its own
+   visual home — no more overlap with player rows. Same approximate height as a
+   normal player row (the tab is ~14px tall + padding, so we use 28px to give
+   the tab clear breathing room above + below). pointer-events:none means the
+   row is visually present but completely inert — sort, drag, click handlers
+   can't see it. The cell intentionally has no content; the tier tab gets
+   painted on top of it by the overlay layer in renderTiers(). */
+.tier-spacer-row {
+  height: 28px;
+  background: transparent;
+  pointer-events: none;
+}
+.tier-spacer-row td {
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+/* /TIER_SPACER_ROW_V1 */
+
 /* DAYMODE_BADGES_V1 (April 24, 2026) — day-mode overrides for position + injury badges.
    Night-mode badges use dark fill + bright text (perfect on black background).
    On the light gray day-mode background they read as heavy dark blobs. This block
@@ -3058,6 +3078,24 @@ let currentTiers = [];
 // (flag=true, currentTiers=[]) from a silent-load-failure save (flag=false,
 // currentTiers=[]) — the latter must NOT be allowed to overwrite saved tier data.
 let _tiersLoadedOk = false;
+// TIERS_SNAPSHOT_GUARD_V1 (May 22, 2026 15:01 ET — PC Walter) — supersedes
+// TIERS_SAVE_GUARD_V1's flag-based logic, which had a real gap: when
+// _tiersLoadedOk=true AND currentTiers=[], the old guard treated that as
+// "user legitimately deleted all tiers" — but in practice unknown code paths
+// (race conditions, stale-state autosaves, double-fired loads) were emptying
+// currentTiers WITHOUT the user clicking any delete UI. Result: tiers got
+// silently overwritten with empty on the next save. This happened twice on
+// 2026-05-22 alone.
+//
+// The new architecture distinguishes by USER ACTION, not by load completion:
+// - _tiersSnapshotAtLoad: what currentTiers looked like immediately after
+//   load. Captured at every load path. Used as the rescue source if needed.
+// - _tiersUserMutated: starts false. Flips to true ONLY when an explicit
+//   user action mutates tiers (createTier, editTier, deleteTier). If save
+//   sees empty currentTiers AND mutated=false → REFUSE to write empty,
+//   rescue from snapshot (preferred) or localStorage (fallback).
+let _tiersSnapshotAtLoad = [];
+let _tiersUserMutated = false;
 
 // ===== MULTILIST_V1 — six-list switcher (Apr 22, 2026) =====
 // Day-one design: all 6 lists are in-memory clones of the loaded 101.
@@ -3641,6 +3679,10 @@ async function loadData(){
         // so currentTiers always has a sane value.
         currentTiers = Array.isArray(data.tiers) ? data.tiers : [];
         _tiersLoadedOk = true; // TIERS_SAVE_GUARD_V1
+        // TIERS_SNAPSHOT_GUARD_V1 — snapshot whatever the server gave us and
+        // reset the user-mutation flag for this fresh load.
+        _tiersSnapshotAtLoad = Array.isArray(currentTiers) ? currentTiers.slice() : [];
+        _tiersUserMutated = false;
         _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
         // STAGING_VS_PROD_V1 — different label depending on where the data came from.
         // PUBLISHED_LABEL_V1 (April 26, 2026) — production says "Published:" instead of
@@ -3666,6 +3708,9 @@ async function loadData(){
       // alongside players when NAS returns 404. Same lsKey + '_tiers' pattern.
       try { const t = localStorage.getItem(lsKey + '_tiers'); currentTiers = t ? JSON.parse(t) : []; } catch(e3){ currentTiers = []; }
       _tiersLoadedOk = true; // TIERS_SAVE_GUARD_V1
+      // TIERS_SNAPSHOT_GUARD_V1 — snapshot what the 404 fallback gave us.
+      _tiersSnapshotAtLoad = Array.isArray(currentTiers) ? currentTiers.slice() : [];
+      _tiersUserMutated = false;
       _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
       const ts = localStorage.getItem(lsTime);
       const envBadge = isStaging ? ' [STAGING]' : '';
@@ -3687,6 +3732,9 @@ async function loadData(){
     // safe in localStorage; this line teaches the catch block to recover it.
     try { const t = localStorage.getItem(lsKey + '_tiers'); currentTiers = t ? JSON.parse(t) : []; } catch(e3){ currentTiers = []; }
     _tiersLoadedOk = true; // TIERS_SAVE_GUARD_V1
+    // TIERS_SNAPSHOT_GUARD_V1 — snapshot what the catch-block restore gave us.
+    _tiersSnapshotAtLoad = Array.isArray(currentTiers) ? currentTiers.slice() : [];
+    _tiersUserMutated = false;
     _seedNoteHistoryFromBrandt(); // NOTE_ARCHIVE_V1 migration
     const ts = localStorage.getItem(lsTime);
     document.getElementById('last-updated').textContent = ts
@@ -6434,6 +6482,7 @@ async function saveTierFromModal(){
       existing.start_mlb_id = String(startId);
       existing.end_mlb_id   = String(endId);
       existing.updated_at = new Date().toISOString();
+      _tiersUserMutated = true; // TIERS_SNAPSHOT_GUARD_V1 — explicit user action
       console.log('[TIERS_V1] tier updated:', existing);
     } else {
       // Create mode — push a brand-new tier object.
@@ -6447,6 +6496,7 @@ async function saveTierFromModal(){
         created_by: 'matt'
       };
       currentTiers.push(tier);
+      _tiersUserMutated = true; // TIERS_SNAPSHOT_GUARD_V1 — explicit user action
       console.log('[TIERS_V1] tier created:', tier, '— total tiers now:', currentTiers.length);
     }
 
@@ -6784,6 +6834,7 @@ async function deleteTierFromModal(){
     if(!ok) return;
 
     currentTiers.splice(idx, 1);
+    _tiersUserMutated = true; // TIERS_SNAPSHOT_GUARD_V1 — explicit user action
     console.log('[TIERS_V1] tier deleted:', doomed.id, '— remaining:', currentTiers.length);
 
     try {
@@ -6837,6 +6888,53 @@ function _tiersClearOverlay(){
   if(layer) layer.innerHTML = '';
 }
 
+// TIER_SPACER_ROW_V1 (May 22, 2026 — PC Walter, per Matt's 5/22 meeting + Jay's spec)
+// Remove any existing spacer rows so re-renders don't pile them up. Called at
+// the top of both _tiersInjectSpacerRows() and _tiersClearOverlay() callers.
+function _tiersClearSpacerRows(){
+  var tbody = document.getElementById('tbody');
+  if(!tbody) return;
+  var spacers = tbody.querySelectorAll('tr.tier-spacer-row');
+  for(var i = 0; i < spacers.length; i++){
+    spacers[i].parentNode.removeChild(spacers[i]);
+  }
+}
+
+// TIER_SPACER_ROW_V1 — inject a blank <tr> above each tier's first player row.
+// The spacer is the size of one row and serves as the visual home for the tier
+// tab (painted on top of it by renderTiers's overlay layer). Skips when tiers
+// shouldn't show (filters on, sort active, etc — same gate renderTiers uses).
+// Main-list only: this function is only ever called from renderTable() so it
+// inherently never touches Holding Tank / Player Pool / Prospect Pool views.
+function _tiersInjectSpacerRows(){
+  _tiersClearSpacerRows();
+  if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
+  if(!_tiersDefaultOrder()) return;  // same hide condition as renderTiers
+  var tbody = document.getElementById('tbody');
+  if(!tbody) return;
+  // Count columns from the first existing player row so the spacer's single
+  // <td> spans the whole table cleanly (no broken layout).
+  var firstRow = tbody.querySelector('tr[data-mlb-id]');
+  if(!firstRow) return;
+  var colCount = firstRow.children.length;
+  currentTiers.forEach(function(tier){
+    try {
+      var startSel = 'tr[data-mlb-id="' + String(tier.start_mlb_id).replace(/"/g,'\\"') + '"]';
+      var startRow = tbody.querySelector(startSel);
+      if(!startRow) return;  // tier's start player not on screen — skip
+      var spacer = document.createElement('tr');
+      spacer.className = 'tier-spacer-row';
+      spacer.setAttribute('data-tier-spacer-for', String(tier.id));
+      var td = document.createElement('td');
+      td.colSpan = colCount;
+      spacer.appendChild(td);
+      tbody.insertBefore(spacer, startRow);
+    } catch(e){
+      console.warn('[TIER_SPACER_ROW_V1] failed to inject spacer for tier:', tier, e);
+    }
+  });
+}
+
 function _tiersGetOrCreateLayer(){
   // Find the table's positioning context. We anchor the overlay layer to
   // the same scroll container the table sits in so overlays line up.
@@ -6865,8 +6963,17 @@ function renderTiers(){
   // Always start by clearing the previous paint so stale brackets don't
   // pile up across renders.
   _tiersClearOverlay();
+  // TIER_SPACER_ROW_V1 (May 22, 2026) — re-inject spacer rows on every
+  // renderTiers() call so external callers (tier save/delete/etc) get the
+  // spacers refreshed too, not just renderTable() paints. Idempotent —
+  // clears existing spacers first.
+  try { if(typeof _tiersInjectSpacerRows === 'function') _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_SPACER_ROW_V1] inject from renderTiers crashed:', e); }
   if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
-  if(!_tiersDefaultOrder()) return;  // hide brackets when filtered/sorted
+  if(!_tiersDefaultOrder()) {
+    // tiers hidden — also clean up any lingering spacers from a prior visible state
+    try { _tiersClearSpacerRows(); } catch(e){}
+    return;
+  }
 
   var ctx = _tiersGetOrCreateLayer();
   if(!ctx) return;
@@ -6930,35 +7037,43 @@ function renderTiers(){
       tab.className = 'tier-bracket-tab';
       tab.setAttribute('data-tier-id', tier.id);
       tab.textContent = tier.name;
-      // TIER_TAB_FLIP_V1 (May 20, 2026 21:10 ET — PC Walter) — when this tier
-      // starts at the FIRST row of #tbody (i.e. row #1), the normal top-mount
-      // tab gets clipped by the sticky column header (z-index 10 over the
-      // overlay's z-index 5). For just that case, flip the tab to hang BELOW
-      // the bracket's bottom border like an inverted folder tab. Every other
-      // tier keeps the original folder-tab-on-top look that matches Matt's
-      // visual intent.
-      var firstTbodyRow = document.querySelector('#tbody tr');
-      var tierStartsAtRow1 = firstTbodyRow && firstTbodyRow === startRow;
+      // TIER_SPACER_ROW_V1 (May 22, 2026 — PC Walter, per Matt's 5/22 meeting + Jay's spec)
+      // The tab now sits INSIDE the blank spacer row above the tier (no more
+      // overlap with player rows). Find that spacer row and position the tab
+      // vertically centered inside it. If for any reason the spacer isn't
+      // present (e.g. render-order race), fall back to the legacy
+      // TIER_TAB_FLIP_V1 behavior so the tab still appears somewhere.
+      var spacerRow = document.querySelector('tr.tier-spacer-row[data-tier-spacer-for="' + String(tier.id).replace(/"/g,'\\"') + '"]');
       var tabTop, tabRadius, tabShadow;
-      if(tierStartsAtRow1){
-        // Hang below the bottom edge of the bracket. bottom = (top + height)
-        // in box-local coords; subtract pad because the box's actual border
-        // sits at (top - pad) to (top - pad + height + pad*2). The bracket's
-        // bottom border is at top + height + pad. Position tab top right at
-        // that bottom border so the tab's body hangs below it.
-        tabTop = (top + height + pad - 2);
-        tabRadius = '0 0 6px 6px';
+      if(spacerRow){
+        // Position the tab inside the spacer row, vertically centered.
+        // Tab is ~18px tall (11px font + 2px*2 padding + ~3px line-height).
+        // Spacer row is 28px (CSS). Center it: (28 - 18) / 2 = ~5px from top of spacer.
+        var spacerRect = spacerRow.getBoundingClientRect();
+        var spacerTop = spacerRect.top - anchorRect.top + anchor.scrollTop;
+        tabTop = spacerTop + 5;
+        tabRadius = '4px 4px 4px 4px';  // all four corners rounded since it sits free
         tabShadow = '0 1px 4px ' + hex + '55';
       } else {
-        tabTop = (top - pad - 14);
-        tabRadius = '6px 6px 0 0';
-        tabShadow = '0 -1px 4px ' + hex + '55';
+        // Legacy fallback — TIER_TAB_FLIP_V1 (May 20, 2026 21:10 ET) row-1 special case.
+        // Keep this so a render-race never leaves a tier without a visible tab.
+        var firstTbodyRow = document.querySelector('#tbody tr[data-mlb-id]');
+        var tierStartsAtRow1 = firstTbodyRow && firstTbodyRow === startRow;
+        if(tierStartsAtRow1){
+          tabTop = (top + height + pad - 2);
+          tabRadius = '0 0 6px 6px';
+          tabShadow = '0 1px 4px ' + hex + '55';
+        } else {
+          tabTop = (top - pad - 14);
+          tabRadius = '6px 6px 0 0';
+          tabShadow = '0 -1px 4px ' + hex + '55';
+        }
       }
-      // TIER_TAB_TRANSPARENT_V1 (5/21 12:30 ET - PC Walter, per Matt's feedback) -
-      // the opaque tab was blocking the row above/below it (depending on tab
-      // orientation). Convert hex to rgba with 0.5 alpha for the idle state so
-      // the row underneath shows through. Hover handlers below restore full
-      // opacity for click affordance. Text stays solid #fff so the label is sharp.
+      // TIER_TAB_TRANSPARENT_V1 (5/21 12:30 ET) — was the workaround for tabs
+      // overlapping player rows. TIER_SPACER_ROW_V1 (5/22) gives the tab its
+      // own row, so we can go back to full opacity. _hexToRgba retained
+      // because the legacy fallback path (no spacer found) still benefits
+      // from the see-through treatment.
       function _hexToRgba(h, alpha){
         var c = String(h || '').replace('#', '');
         if(c.length !== 6) return 'rgba(0,0,0,' + alpha + ')';
@@ -6968,11 +7083,14 @@ function renderTiers(){
         if(isNaN(r) || isNaN(g) || isNaN(b)) return 'rgba(0,0,0,' + alpha + ')';
         return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
       }
+      // Use full opacity when the tab sits in its own spacer row (no overlap
+      // to worry about); fall back to 50% alpha only on the legacy code path.
+      var tabBg = spacerRow ? hex : _hexToRgba(hex, 0.5);
       tab.style.cssText =
         'position:absolute;' +
         'top:' + tabTop + 'px;' +
         'left:' + (boxLeft - pad) + 'px;' +
-        'background:' + _hexToRgba(hex, 0.5) + ';' +
+        'background:' + tabBg + ';' +
         'color:#fff;' +
         'font-family:"Nunito Sans",sans-serif;' +
         'font-size:11px;' +
@@ -7003,18 +7121,17 @@ function renderTiers(){
           });
         })(tier.id);
       }
-      // TIER_TAB_TRANSPARENT_V1 - hover restores full opacity so the tab feels
-      // armed when the cursor is over it. Both fan and admin tabs get the
-      // hover effect even though only admin tabs are clickable - it's a
-      // visual cue, not a behavior cue. Closure captures hex per-tier.
-      (function(_hex){
+      // Hover keeps full opacity. The mouseleave handler reverts to whatever
+      // the idle background was (full hex for spacer-mode tabs, 50% alpha for
+      // legacy-fallback tabs). Closure captures hex AND the idle bg per-tier.
+      (function(_hex, _idleBg){
         tab.addEventListener('mouseenter', function(){
           tab.style.background = _hex;
         });
         tab.addEventListener('mouseleave', function(){
-          tab.style.background = _hexToRgba(_hex, 0.5);
+          tab.style.background = _idleBg;
         });
-      })(hex);
+      })(hex, tabBg);
 
       layer.appendChild(box);
       layer.appendChild(tab);
@@ -7308,7 +7425,13 @@ function renderTable(){
   // TIERS_V1 (May 14, 2026) — Phase D bracket render. Runs after row paint
   // so it can measure row positions. Wrapped in try/catch + typeof guard
   // so a tier-rendering bug can never break the table itself.
-  setTimeout(function(){ try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers crashed:', e); } }, 70);
+  // TIER_SPACER_ROW_V1 (May 22, 2026) — inject the blank tier-tab spacer rows
+  // FIRST so renderTiers() measures positions with the spacers already in the
+  // DOM. Each call is guarded; either failing can never break the table.
+  setTimeout(function(){
+    try { if(typeof _tiersInjectSpacerRows === 'function') _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_SPACER_ROW_V1] inject crashed:', e); }
+    try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers crashed:', e); }
+  }, 70);
 }
 
 // Auto-shrink long player names so they fit inside the Player column width.
@@ -8629,33 +8752,50 @@ async function exportXLSX(opts){
           // ride along in the JSON sidecar. Each tier is {id, name, color,
           // start_mlb_id, end_mlb_id, created_at}. Empty array on lists
           // that have no tiers — never null, never undefined.
-          // TIERS_SAVE_GUARD_V1 (May 22, 2026 11:24 ET — PC Walter) — Three-case rescue
-          // to prevent silent overwrite of saved tier data. Today's bug (tiers vanishing
-          // from page loads) almost caused permanent data loss because the next save
-          // would have written tiers:[] over the real tier JSON. This guard makes that
-          // impossible.
-          //   (a) currentTiers has data       -> save it (normal case)
-          //   (b) empty + flag true           -> save empty (user legitimately deleted all)
-          //   (c) empty + flag false (BUG!)   -> rescue from localStorage; if also empty, save empty
+          // TIERS_SNAPSHOT_GUARD_V1 (May 22, 2026 15:01 ET — PC Walter) — supersedes
+          // TIERS_SAVE_GUARD_V1. Distinguishes legitimate user deletes from
+          // accidental-empty-state by tracking explicit user mutations rather
+          // than relying on the load-OK flag (which was unreliable — load could
+          // complete cleanly and still produce empty tiers from a stale JSON).
+          //
+          // Four cases:
+          //   (a) currentTiers has data           -> save it (normal case)
+          //   (b) empty + user mutated            -> save empty (legit delete-all)
+          //   (c) empty + no mutation + snapshot  -> RESCUE from snapshot
+          //   (d) empty + no mutation + no snap   -> try localStorage; if empty, save empty
+          //
+          // The "no mutation" path is the protection against the bug we've seen
+          // happen twice. It refuses to overwrite real tier data with an
+          // accidentally-empty currentTiers.
           tiers: (function(){
             try {
+              // Case (a): normal save with real data
               if(Array.isArray(currentTiers) && currentTiers.length > 0) return currentTiers;
-              if(typeof _tiersLoadedOk !== 'undefined' && _tiersLoadedOk === true) return [];
-              // Flag false (or undefined) AND empty -> load never completed cleanly. Rescue.
+              // Case (b): user explicitly mutated, ending with empty — let it through
+              if(typeof _tiersUserMutated !== 'undefined' && _tiersUserMutated === true){
+                return [];
+              }
+              // Case (c): empty without user mutation — try the load snapshot first
+              if(typeof _tiersSnapshotAtLoad !== 'undefined' && Array.isArray(_tiersSnapshotAtLoad) && _tiersSnapshotAtLoad.length > 0){
+                console.warn('[TIERS_SNAPSHOT_GUARD_V1] currentTiers was empty without user mutation — rescuing from snapshot (' + _tiersSnapshotAtLoad.length + ' tiers) to prevent data loss');
+                return _tiersSnapshotAtLoad.slice();
+              }
+              // Case (d): snapshot also empty — last resort is localStorage
               var _lsKeyGuard = 'fw101_v2_' + ((typeof currentListId !== 'undefined' && currentListId) ? currentListId : 'integrity') + '_tiers';
               var _rescued = localStorage.getItem(_lsKeyGuard);
               if(_rescued){
                 try {
                   var _parsed = JSON.parse(_rescued);
                   if(Array.isArray(_parsed) && _parsed.length > 0){
-                    console.warn('[TIERS_SAVE_GUARD_V1] currentTiers was empty but localStorage has ' + _parsed.length + ' tier(s) — rescuing from localStorage to prevent data loss');
+                    console.warn('[TIERS_SNAPSHOT_GUARD_V1] currentTiers + snapshot both empty without user mutation — rescuing from localStorage (' + _parsed.length + ' tiers)');
                     return _parsed;
                   }
                 } catch(_pe){ /* fall through */ }
               }
+              // Genuinely nothing anywhere — save empty
               return [];
             } catch(_ge){
-              console.warn('[TIERS_SAVE_GUARD_V1] guard threw, falling back to empty:', _ge);
+              console.warn('[TIERS_SNAPSHOT_GUARD_V1] guard threw, falling back to empty:', _ge);
               return [];
             }
           })(),
