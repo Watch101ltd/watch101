@@ -9263,6 +9263,9 @@ function _computeSinglePlayerDestRank(srcIdx, targetIdx, above){
 function dragStart(e,idx){
   dragSrcIdx=idx;
   e.currentTarget.classList.add('dragging');
+  // DRAG_LAG_FIX_V1 Phase 1 — cache table left edge ONCE so document-level
+  // dragover can early-out without calling getBoundingClientRect per move.
+  try { if(window._drgLagSetTableLeftCache) window._drgLagSetTableLeftCache(); } catch(_){}
   // DROP_INDICATOR_V1 — reset state on a fresh drag. Bar stays hidden until
   // first dragOver fires (which is where we know cursor position).
   _dropAbove = true;
@@ -9348,6 +9351,8 @@ document.addEventListener('dragend',()=>{
   // DROP_INDICATOR_V1 — dragend fires on Escape, drop, mouseup-outside-page,
   // window blur, etc. Universal cleanup hook for the bar+pill.
   _hideDropIndicator();
+  // DRAG_LAG_FIX_V1 Phase 1 — clear the cached table left edge.
+  try { if(window._drgLagClearTableLeftCache) window._drgLagClearTableLeftCache(); } catch(_){}
 });
 
 /* DROP_INDICATOR_V1 Push 5 (May 17, 2026) — LEFT_MARGIN_DRIFT_FIX.
@@ -9365,11 +9370,33 @@ document.addEventListener('dragend',()=>{
 (function _wireLeftMarginDriftFix(){
   var CANCEL_ZONE_PX = 80; // distance above/below the list before we let the cancel through
 
+  // DRAG_LAG_FIX_V1 Phase 1 (May 23, 2026 evening). Cache the table's left edge ONCE
+  // at dragStart so the dragover handler can do a cheap number comparison instead of
+  // calling getBoundingClientRect() ~60x per second (which forces a full-page reflow).
+  // The table doesn't move horizontally during a drag, so the cached value is good
+  // for the lifetime of the drag. Set by _drgLagSetTableLeftCache() in dragStart,
+  // cleared on dragend.
+  var _drgLagTableLeft = null;
+  window._drgLagSetTableLeftCache = function(){
+    var t = document.getElementById('main-table');
+    _drgLagTableLeft = t ? t.getBoundingClientRect().left : null;
+  };
+  window._drgLagClearTableLeftCache = function(){ _drgLagTableLeft = null; };
+  window._drgLagGetTableLeft = function(){ return _drgLagTableLeft; };
+
   document.addEventListener('dragover', function(e){
     // Only act when a main-table drag is actually in progress.
     var isSingle = (typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null);
     var isTier   = (typeof _tierDragPayload !== 'undefined' && _tierDragPayload);
     if(!isSingle && !isTier) return;
+
+    // DRAG_LAG_FIX_V1 Phase 1 — CHEAP early-out FIRST using the cached table
+    // left edge from dragStart. Avoids a getBoundingClientRect read (and the
+    // forced reflow it triggers) on every mouse move during a drag. The cache
+    // is set in dragStart, cleared in dragend. If the cache is missing (e.g.
+    // dragStart never fired for some reason), fall through to the legacy path.
+    var _drgLagCachedLeft = (typeof window._drgLagGetTableLeft === 'function') ? window._drgLagGetTableLeft() : null;
+    if(_drgLagCachedLeft !== null && e.clientX >= _drgLagCachedLeft) return;
 
     var tbl = document.getElementById('main-table');
     if(!tbl) return;
