@@ -6764,6 +6764,12 @@ function _tierIndexInOtherTier(idx, excludeTierId){
         var tgtIdx = parseInt(row.getAttribute('data-idx'), 10);
         if(isNaN(tgtIdx)) return;
         var rect = row.getBoundingClientRect();
+        // TIER_DRAG_LAG_FIX_V1 — stash rect on the event so the row-level
+        // dragOver handler (which fires AFTER us in bubble phase) can reuse it
+        // instead of calling getBoundingClientRect() again. Each rect read forces
+        // a layout reflow when interleaved with style writes — 3 reads/move was
+        // the dominant cost of tier drag lag.
+        try { e._tdlfRowRect = rect; e._tdlfRowEl = row; } catch(_){}
         var midpoint = rect.top + (rect.height / 2);
         var above = (e.clientY < midpoint);
         // The tier's source range comes from _tierDragPayload.startIdx/endIdx.
@@ -9220,10 +9226,13 @@ function _hideDropIndicator(){
    above=true → bar sits at the row's top edge. above=false → bottom edge.
    Uses absolute positioning relative to the document, so we add window.scrollY
    to the bounding-rect top to get the page-absolute y coordinate. */
-function _positionDropIndicatorBar(rowEl, above){
+function _positionDropIndicatorBar(rowEl, above, cachedRect){
   var bar = document.getElementById('drop-indicator-bar');
   if(!bar || !rowEl) return;
-  var rect = rowEl.getBoundingClientRect();
+  // TIER_DRAG_LAG_FIX_V1 — accept a cached rect from upstream so we don't
+  // force a third reflow per mouse move. Fall back to a fresh read if
+  // no cached rect was passed (e.g. callers from older code paths).
+  var rect = cachedRect || rowEl.getBoundingClientRect();
   var y = (above ? rect.top : rect.bottom) + window.scrollY - 2; // -2 centers the 5px bar on the gap
   bar.style.top = y + 'px';
   bar.style.left = (rect.left + window.scrollX) + 'px';
@@ -9281,10 +9290,13 @@ function dragOver(e,idx){
   // Compute top-half vs bottom-half of the row using the cursor's clientY
   // and the row's bounding rect.
   var rowEl = e.currentTarget;
-  var rect = rowEl.getBoundingClientRect();
+  // TIER_DRAG_LAG_FIX_V1 — reuse the rect the tbody capture-phase handler
+  // already measured for this same row (tier drag path). If absent (single-
+  // player drag — no tbody handler fires), fall through to a fresh read.
+  var rect = (e && e._tdlfRowRect) ? e._tdlfRowRect : rowEl.getBoundingClientRect();
   var midpoint = rect.top + (rect.height / 2);
   _dropAbove = (e.clientY < midpoint);
-  _positionDropIndicatorBar(rowEl, _dropAbove);
+  _positionDropIndicatorBar(rowEl, _dropAbove, rect);
   // DROP_INDICATOR_V1 Push 3 — floating rank pill. For tier drags, the tbody
   // interceptor below handles its own pill update (different rank math —
   // it's the tier's first player's rank), so we skip here to avoid double-fire.
