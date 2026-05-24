@@ -7508,6 +7508,22 @@ function renderTable(){
       </td>
     </tr>`;
   }).join('');
+  // SPACER_SYNC_INJECT_V1 (May 24, 2026 1304 ET - PC Walter, per JP's visual
+  // diagnosis after 3 failed theory-based fixes) - inject tier spacer rows
+  // SYNCHRONOUSLY here, before the browser paints, instead of waiting for
+  // the +70ms setTimeout below. The 70ms gap was the bug: tbody.innerHTML
+  // wipes the existing spacer rows along with the player rows, and the
+  // setTimeout didn't re-add them until 70ms later. In that window the
+  // player rows sat 28px higher than they should, then snapped back down
+  // when the spacer popped in. That's the visible up-then-down jump JP
+  // saw on every star click and every page load. Synchronous inject closes
+  // the gap entirely. Guarded with typeof check + try/catch so this can
+  // never break the table render itself. Gated behind _renderSettled to
+  // match the gate the legacy setTimeout used — during the load chaos we
+  // still want to skip this for the same flicker-prevention reason.
+  if(_renderSettled){
+    try { if(typeof _tiersInjectSpacerRows === 'function') _tiersInjectSpacerRows(); } catch(e){ console.warn('[SPACER_SYNC_INJECT_V1] sync inject crashed:', e); }
+  }
   // Re-sync fixed header after render so column widths stay accurate
   setTimeout(syncMainFixedHeader, 50);
   // LOAD_SETTLED_GATE_V1 (May 23, 2026) — gate the font-shrink + tier overlay
@@ -7522,11 +7538,12 @@ function renderTable(){
     // TIERS_V1 (May 14, 2026) — Phase D bracket render. Runs after row paint
     // so it can measure row positions. Wrapped in try/catch + typeof guard
     // so a tier-rendering bug can never break the table itself.
-    // TIER_SPACER_ROW_V1 (May 22, 2026) — inject the blank tier-tab spacer rows
-    // FIRST so renderTiers() measures positions with the spacers already in the
-    // DOM. Each call is guarded; either failing can never break the table.
+    // SPACER_SYNC_INJECT_V1 (May 24, 2026) — the spacer ROW injection moved
+    // up to be synchronous (see block above). This setTimeout now only runs
+    // renderTiers() which paints the visible tier tab/bracket overlay on top
+    // of the already-present spacer. That cosmetic painting can still happen
+    // at +70ms without causing the jump (it doesn't move row positions).
     setTimeout(function(){
-      try { if(typeof _tiersInjectSpacerRows === 'function') _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_SPACER_ROW_V1] inject crashed:', e); }
       try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers crashed:', e); }
     }, 70);
   }
