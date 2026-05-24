@@ -6028,9 +6028,26 @@ async function setPriority(mlbId, rawValue){
     }
     // Persist so the next Save-to-Excel and any reload keeps the value.
     try { await autoSaveToNAS(); } catch(e){ console.warn('[PRIORITY_V2] autosave failed:', e); }
+    // PRIORITY_SCROLL_LOCK_V1 (May 24, 2026 1150 ET - PC Walter) - wipe-and-rebuild
+    // of the entire <tbody> in renderTable() costs the browser its scroll anchor
+    // reference, and any deferred effect (sticky header re-position, tier overlay
+    // re-paint) can fire a second layout pass a frame later. Result: visible
+    // vertical twitch (jump up, come back, jump up, come back, settle) on every
+    // star click on the Dude's main list. Profile confirmed: System time 2%
+    // (forced reflow ruled out), Painting 18%, Rendering 11% - the cost is the
+    // rebuild itself, and the twitch is the browser losing its scroll spot.
+    // Fix: capture scrollY before the rebuild, restore it after. Cheap, surgical,
+    // no behavior change beyond eliminating the twitch.
+    var _pslScrollY = window.scrollY;
+    var _pslScrollEl = document.scrollingElement || document.documentElement;
+    var _pslElScrollTop = _pslScrollEl ? _pslScrollEl.scrollTop : 0;
     // Refresh the main table so the Priority column updates immediately.
     // If currentSort is 'priority', the row will jump to its new sorted spot.
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
+    // Restore scroll position twice - once synchronously (catches most cases),
+    // once after the next animation frame (catches any deferred layout pass).
+    try { window.scrollTo(0, _pslScrollY); if(_pslScrollEl) _pslScrollEl.scrollTop = _pslElScrollTop; } catch(_re){}
+    requestAnimationFrame(function(){ try { window.scrollTo(0, _pslScrollY); if(_pslScrollEl) _pslScrollEl.scrollTop = _pslElScrollTop; } catch(_re){} });
     // PRIORITY_OVERLAY_SYNC_V1 (May 13, 2026) — when the overlay picker is
     // open, renderTable() above only updates the row stars; the overlay stars
     // and the helper-text tag stay frozen. So we surgically swap BOTH here:
