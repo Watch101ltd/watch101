@@ -6030,7 +6030,7 @@ async function setPriority(mlbId, rawValue){
     try { await autoSaveToNAS(); } catch(e){ console.warn('[PRIORITY_V2] autosave failed:', e); }
     // Refresh the main table so the Priority column updates immediately.
     // If currentSort is 'priority', the row will jump to its new sorted spot.
-    try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
+    try { if(typeof renderTable === 'function') renderTable({lite: true}); } catch(_re){}
     // PRIORITY_OVERLAY_SYNC_V1 (May 13, 2026) — when the overlay picker is
     // open, renderTable() above only updates the row stars; the overlay stars
     // and the helper-text tag stay frozen. So we surgically swap BOTH here:
@@ -7382,7 +7382,14 @@ function pickStatSource(group){
   return null;
 }
 
-function renderTable(){
+function renderTable(_opts){
+  // PRIORITY_LITE_RENDER_V1 (May 24, 2026 1248 ET - PC Walter) -
+  // _opts.lite=true skips the 3 post-render setTimeouts (header sync,
+  // font shrink, tier spacer inject). Called by setPriority() so star
+  // clicks don't trigger the spacer remove-and-re-add cycle that was
+  // causing the visible vertical twitch. All other callers pass no
+  // opts and get full behavior unchanged.
+  var _liteRender = !!(_opts && _opts.lite);
   let list = getFiltered();
   const tbody = document.getElementById('tbody');
   document.getElementById('count-badge').textContent = list.length+' player'+(list.length!==1?'s':'');
@@ -7508,27 +7515,36 @@ function renderTable(){
       </td>
     </tr>`;
   }).join('');
-  // Re-sync fixed header after render so column widths stay accurate
-  setTimeout(syncMainFixedHeader, 50);
-  // LOAD_SETTLED_GATE_V1 (May 23, 2026) — gate the font-shrink + tier overlay
-  // behind _renderSettled. While false (during the async load chaos), these
-  // two operations are skipped so they don't flicker on every repaint. When
-  // Statcast load completes, the gate flips and a final renderTable() runs
-  // that paints both cleanly. Until the gate flips, long names show at the
-  // default 14px (may get clipped — acceptable for the 1-2 sec load window).
-  if(_renderSettled){
-    // Auto-shrink long player names to fit the column instead of getting clipped
-    setTimeout(fitPlayerNames, 60);
-    // TIERS_V1 (May 14, 2026) — Phase D bracket render. Runs after row paint
-    // so it can measure row positions. Wrapped in try/catch + typeof guard
-    // so a tier-rendering bug can never break the table itself.
-    // TIER_SPACER_ROW_V1 (May 22, 2026) — inject the blank tier-tab spacer rows
-    // FIRST so renderTiers() measures positions with the spacers already in the
-    // DOM. Each call is guarded; either failing can never break the table.
-    setTimeout(function(){
-      try { if(typeof _tiersInjectSpacerRows === 'function') _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_SPACER_ROW_V1] inject crashed:', e); }
-      try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers crashed:', e); }
-    }, 70);
+  // PRIORITY_LITE_RENDER_V1 (May 24, 2026 1248 ET - PC Walter) - gate the
+  // 3 post-render setTimeouts behind _liteRender. setPriority() passes
+  // {lite:true} so star clicks don't fire the spacer remove-and-re-add
+  // cycle that causes the visible vertical twitch. Star clicks don't
+  // change column widths, name lengths, or tier boundaries, so skipping
+  // all 3 is safe. Every other caller passes no opts and gets full
+  // behavior unchanged.
+  if(!_liteRender){
+    // Re-sync fixed header after render so column widths stay accurate
+    setTimeout(syncMainFixedHeader, 50);
+    // LOAD_SETTLED_GATE_V1 (May 23, 2026) — gate the font-shrink + tier overlay
+    // behind _renderSettled. While false (during the async load chaos), these
+    // two operations are skipped so they don't flicker on every repaint. When
+    // Statcast load completes, the gate flips and a final renderTable() runs
+    // that paints both cleanly. Until the gate flips, long names show at the
+    // default 14px (may get clipped — acceptable for the 1-2 sec load window).
+    if(_renderSettled){
+      // Auto-shrink long player names to fit the column instead of getting clipped
+      setTimeout(fitPlayerNames, 60);
+      // TIERS_V1 (May 14, 2026) — Phase D bracket render. Runs after row paint
+      // so it can measure row positions. Wrapped in try/catch + typeof guard
+      // so a tier-rendering bug can never break the table itself.
+      // TIER_SPACER_ROW_V1 (May 22, 2026) — inject the blank tier-tab spacer rows
+      // FIRST so renderTiers() measures positions with the spacers already in the
+      // DOM. Each call is guarded; either failing can never break the table.
+      setTimeout(function(){
+        try { if(typeof _tiersInjectSpacerRows === 'function') _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_SPACER_ROW_V1] inject crashed:', e); }
+        try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers crashed:', e); }
+      }, 70);
+    }
   }
 }
 
