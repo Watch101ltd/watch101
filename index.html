@@ -1289,6 +1289,11 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 #player-page-overlay .ppo-header-right{font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase}
 #player-page-overlay .ppo-hero{padding:2rem 1.5rem;display:flex;gap:28px;align-items:flex-start;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;}
 #player-page-overlay .ppo-hero-stats{flex:2;min-width:320px;display:flex;flex-direction:column;gap:10px;align-self:flex-end;}
+/* HERO_DEEPLINKS_V1 (May 27, 2026 — PC Walter, per JP) — MLB/RW deep-link
+   buttons now live in the hero top-right. Row is flex with justify-content
+   flex-end so the pills hug the right edge. Margin-bottom adds breathing
+   room between the buttons and the stat box rows underneath. */
+#player-page-overlay .ppo-hero-deeplinks{display:flex;gap:6px;justify-content:flex-end;margin-bottom:6px;}
 #player-page-overlay .ppo-hero-photo{width:180px;height:180px;border-radius:50%;border:3px solid var(--gold);object-fit:contain;object-position:center center;background:var(--surface2);flex-shrink:0;padding:4px;}
 #player-page-overlay .ppo-hero-meta{flex:1;min-width:260px}
 #player-page-overlay .ppo-hero-name{font-family:'Bowlby One',sans-serif;font-size:48px;letter-spacing:0.04em;color:var(--text);line-height:1;}
@@ -15148,76 +15153,20 @@ function openPlayerPage(p){
   document.body.classList.add('pp-open');
 }
 
-// NEWS_LINKS_V1 (May 17, 2026) Push 4c — Deep Cut "Latest" blurb strip renderer.
-// Pulls this player's blurb out of window.PLAYER_HIGHLIGHTS (keyed by mlb_id,
-// populated by loadHighlightsFromNAS at parse time). Builds deep-link buttons
-// to MLB.com (always available — built from mlb_id) and FanGraphs (uses
-// registry's fangraphs_id when available, falls back to FanGraphs search by
-// name when not). If no blurb exists for this player, the entire strip hides
-// itself via the .ppo-news-empty class — see CSS in news-links-v1-styles.
+// NEWS_LINKS_V1 (May 17, 2026) Push 4c — was: Deep Cut "Latest" blurb strip
+//   renderer. Filled headline + description + meta + video + MLB/RW buttons.
+// LATEST_NEWS_REMOVED_V1 (May 27, 2026 — PC Walter, per JP) — the Latest News
+//   strip itself is gone. The MLB / RW buttons were relocated to the hero
+//   top-right (.ppo-hero-deeplinks). This function still runs from
+//   openPlayerPage(p) and is now JUST a deep-link wirer: it sets href + title
+//   on the two relocated buttons (below). The blurb/headline/description/video
+//   logic was deleted — the PLAYER_HIGHLIGHTS data still loads from the NAS
+//   but is no longer rendered anywhere on the page. We left the fetch in
+//   place so we have the option to rebuild a news experience later without
+//   re-doing the scraper. If you decide to kill the scraper too, that's a
+//   separate server-side cleanup.
 function renderNewsStrip(p){
-  var strip = document.getElementById('ppo-news-strip');
-  if(!strip) return;
   var mlbId = p && p.mlb_id;
-  var blurb = (mlbId && window.PLAYER_HIGHLIGHTS) ? window.PLAYER_HIGHLIGHTS[String(mlbId)] : null;
-
-  // NEWS_LINKS_V1 Push 4e (May 17, 2026) — the strip is now ALWAYS visible.
-  // The Dude's call: MLB and FG buttons should appear for every player so Matt
-  // can always jump out to those reference pages. Only the blurb CONTENT
-  // (headline, description, meta) is conditional on data.
-  strip.classList.remove('ppo-news-empty');
-
-  var headlineEl = document.getElementById('ppo-news-headline');
-  var descEl     = document.getElementById('ppo-news-description');
-  var metaEl     = document.getElementById('ppo-news-meta');
-
-  if(blurb){
-    // Real blurb path: fill all three text elements.
-    if(headlineEl) headlineEl.textContent = blurb.headline || '';
-    if(descEl)     descEl.textContent     = blurb.description || '';
-    if(metaEl){
-      var metaParts = [];
-      if(blurb.game_date){
-        try {
-          // game_date is "YYYY-MM-DD"; render as "Mon DD" in local convention.
-          var d = new Date(blurb.game_date + 'T12:00:00');
-          var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          metaParts.push(monthNames[d.getMonth()] + ' ' + d.getDate());
-        } catch(_){ metaParts.push(blurb.game_date); }
-      }
-      if(blurb.opponent_team_name){
-        metaParts.push('vs ' + blurb.opponent_team_name);
-      }
-      metaEl.textContent = metaParts.join(' \u00B7 ');
-    }
-  } else {
-    // Empty-blurb path: friendly placeholder so the strip doesn't look broken.
-    // Player didn't appear in any highlight clip from yesterday's games — could
-    // be IL, bench, off day, or just didn't do anything highlight-worthy.
-    if(headlineEl) headlineEl.textContent = 'No recent highlight';
-    if(descEl)     descEl.textContent     = 'No highlight clip from this player\u2019s most recent game. Use the links \u2192 for full stats and news.';
-    if(metaEl)     metaEl.textContent     = '';
-  }
-
-  // VIDEO_EMBED_V1 (May 23, 2026) — render the inline MLB highlight video
-  // when a video_url is present on the blurb. Click-to-play behavior:
-  // preload=metadata loads just enough to know dimensions and show the
-  // first frame; the actual video stream doesn't download until the fan
-  // clicks the play button. Poster image (16:9 1280x720) shows while
-  // waiting. Empty videoEl when no video URL — CSS :empty rule hides it.
-  var videoEl = document.getElementById('ppo-news-video');
-  if(videoEl){
-    if(blurb && blurb.video_url){
-      var posterAttr = blurb.video_thumbnail ? ' poster="' + blurb.video_thumbnail.replace(/"/g, '&quot;') + '"' : '';
-      videoEl.innerHTML =
-        '<video controls preload="metadata" playsinline' + posterAttr + '>' +
-          '<source src="' + blurb.video_url.replace(/"/g, '&quot;') + '" type="video/mp4">' +
-          'Your browser does not support video playback.' +
-        '</video>';
-    } else {
-      videoEl.innerHTML = '';
-    }
-  }
 
   // MLB.com deep link — ALWAYS shown. MLB.com redirects /player/<id> to the
   // canonical slug automatically.
@@ -17033,6 +16982,17 @@ function attachTankScrollHandler(){
       </div>
     </div>
     <div class="ppo-hero-stats">
+      <!-- HERO_DEEPLINKS_V1 (May 27, 2026 — PC Walter, per JP) — MLB and RW
+           deep-link buttons relocated from the now-removed Latest News strip.
+           Sit at the top of the stats column, which (via .ppo-hero-stats
+           align-self:flex-end) anchors the whole stats column to the bottom —
+           so this row floats at the top-right of the hero. IDs preserved
+           from the old Latest News strip (ppo-news-link-mlb / ppo-news-link-rw)
+           so renderNewsStrip()'s href-setting logic still works unchanged. -->
+      <div class="ppo-hero-deeplinks" id="ppo-hero-deeplinks">
+        <a class="ppo-news-link" id="ppo-news-link-mlb" href="https://www.mlb.com" target="_blank" rel="noopener" title="Open MLB.com player page">MLB</a>
+        <a class="ppo-news-link" id="ppo-news-link-rw" href="https://www.rotowire.com/baseball/" target="_blank" rel="noopener" title="Open RotoWire player page">RW</a>
+      </div>
       <div class="ppo-statbar" id="ppo-statbar"></div>
       <div class="ppo-adv-row ppo-adv-row-compact" id="ppo-adv-row"></div>
     </div>
@@ -17073,39 +17033,19 @@ function attachTankScrollHandler(){
       <div class="ppo-note">Live Statcast percentile rankings &middot; vs. all qualified MLB players &middot; 2026</div>
       <div id="ppo-bars"></div>
     </section>
-    <!-- NEWS_LINKS_V1 (May 17, 2026) Push 3.5 — relocated. Originally lived
-         between header and hero; Dude moved it here so it sits next to the
-         other "recent performance" blocks (Last 7 Games). Wrapped as a full-
-         width ppo-block to match Last 7 / Next 7 grid layout. Push 4 wires
-         the real JSON data from player_highlights.json. -->
-    <section class="ppo-block ppo-news-strip-wrap" id="ppo-news-strip" style="grid-column:1 / -1">
-      <!-- NEWS_LABEL_V2 (May 23, 2026 — PC Walter, per Jay's screenshot spec)
-           Was a small "LATEST" eyebrow. Promoted to a full h2 panel header
-           ("Latest News") so it matches the visual weight of every other
-           panel header on the Deep Cut page (Matt's Take, Podcast Mentions,
-           101 Rank History, etc). Uses the existing .ppo-block h2 styling
-           — Bowlby One, 18px, gold — applied site-wide to all panel
-           headers. -->
-      <h2>Latest News</h2>
-      <div class="ppo-news-strip">
-        <div class="ppo-news-left">
-          <div class="ppo-news-headline" id="ppo-news-headline">Grant Holmes strikes out seven over six innings</div>
-          <div class="ppo-news-description" id="ppo-news-description">Grant Holmes pitches six strong innings of one-run ball with seven strikeouts against the Mets, lowering his ERA to 3.80 on the season.</div>
-        </div>
-        <div class="ppo-news-right">
-          <div class="ppo-news-meta" id="ppo-news-meta">May 16 vs NYM</div>
-          <div class="ppo-news-links" id="ppo-news-links">
-            <a class="ppo-news-link" id="ppo-news-link-mlb" href="https://www.mlb.com" target="_blank" rel="noopener" title="Open MLB.com player page">MLB</a>
-            <a class="ppo-news-link" id="ppo-news-link-rw" href="https://www.rotowire.com/baseball/" target="_blank" rel="noopener" title="Open RotoWire player page">RW</a>
-          </div>
-        </div>
-      </div>
-      <!-- VIDEO_EMBED_V1 (May 23, 2026) — MLB highlight video container. Filled
-           by renderNewsStrip() when blurb.video_url is present; left empty
-           (display:none via :empty CSS rule) when there's no video. -->
-      <div class="ppo-news-video" id="ppo-news-video"></div>
-    </section>
-    <!-- /NEWS_LINKS_V1 strip (relocated) -->
+    <!-- LATEST_NEWS_REMOVED_V1 (May 27, 2026 — PC Walter, per JP). The
+         entire Latest News section (headline + description + meta + video
+         + MLB/RW buttons) was removed. Headline/description/video weren't
+         pulling their weight — most players never had a highlight clip and
+         the "No recent highlight" empty state was eating space for no payoff.
+         The two deep-link buttons (MLB / RW) were the only useful pieces and
+         have been relocated to the hero top-right (see HERO_DEEPLINKS_V1
+         in .ppo-hero-stats above). The renderNewsStrip() function still
+         runs but only sets href on those two buttons now — the rest of its
+         logic is dead code, kept for the time being so the highlight scrape
+         data on the NAS still has somewhere to "land" silently. Scraper
+         cleanup is a separate decision down the road. -->
+    <!-- /LATEST_NEWS_REMOVED_V1 -->
     <!-- GAME_LOG_CARD_V1 — last-10-games table replaces the old blurb card. -->
     <!-- GAMELOG_SIDEBYSIDE_V1 (May 20, 2026 — PC Walter, second attempt, recon-first)
          Removed inline grid-column:1/-1 from both sections so the native
@@ -18308,4 +18248,4 @@ document.addEventListener('keydown', function(e){
 <style id="movement-mode-styles">
 .ppo-block-h2-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
 .ppo-block-h2-row h2 { margin: 0; flex: 1 1 auto; }
-.ppo-movement-mode-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: linear-gradient(180deg, rgba(255,193,7,0.12), rgba(255,193,7,0.06)); border: 1px solid var(--gold, #ffc107); border-radius: 8px; color: var(--gold, #ffc107); font-family: 'Nunito Sans', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: background .15s ease, transform .12s ease, box-shadow .15s 
+.ppo-movement-mode-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; backgro
