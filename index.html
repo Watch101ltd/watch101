@@ -7375,19 +7375,18 @@ function pickStatSource(group){
     const t = sp && sp.team;
     if(!t) return false;
     if(t.sport && t.sport.id != null) return t.sport.id === 1;
-    // MILB_ITALIC_REFRESH_FIX (May 27, 2026 — PC Walter, per Matt's report relayed by JP).
-    // Was: `return true;` ("treat unknown as MLB — safer default for callers"). That default
-    // broke italic styling for prospects whose AAA splits come back from MLB Stats API
-    // without a populated team.sport.id (a quirk for some non-40-man prospects). On every
-    // page-load STAT_FRESHNESS_V1 call, those splits got reclassified as MLB and the
-    // statsSource flag flipped from 'MiLB' to 'MLB', killing the italic row class on the
-    // next render. Treat unknown as NOT-MLB so:
-    //   (a) italic styling fires correctly on the watch list (Matt's reported bug)
-    //   (b) statsSource stays in sync with the actual league level
-    //   (c) real cup-of-coffee guys still classify as MLB because their MLB splits
-    //       reliably DO have team.sport.id === 1 — they fall through the `if(t.sport ...)`
-    //       branch above and never hit this fallback.
-    return false;
+    // MILB_ITALIC_REFRESH_FIX_REVERT_V1 (May 27, 2026 — PC Walter, per JP).
+    // MILB_ITALIC_REFRESH_FIX (earlier today) flipped this fallback from
+    // `return true;` to `return false;` to fix a narrow prospect-italic
+    // regression. Side effect was much bigger than expected: regular MLB
+    // players whose splits ALSO lack a populated team.sport.id (a real and
+    // common MLB Stats API quirk — not just a prospect-only edge case) got
+    // reclassified as MiLB on every page refresh, flipping their statsSource
+    // to 'MiLB' and italicizing every row on the main watch list. Per JP,
+    // option A (full revert) chosen over a smarter league.id fallback —
+    // restores pre-morning behavior. Prospect-italic edge case may return
+    // for a small handful of players; addressed in a future targeted fix.
+    return true;
   };
   const mlbSplits = group.splits.filter(isMlbSplit);
   const milbSplits = group.splits.filter(sp => !isMlbSplit(sp));
