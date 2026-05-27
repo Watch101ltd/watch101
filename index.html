@@ -3237,7 +3237,7 @@ function switchActiveList(newId){
         const _res = await fetch(`https://statsapi.mlb.com/api/v1/people/${_p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${_lp}`);
         const _data = await _res.json();
         for(const _group of (_data.stats||[])){
-          const _picked = (typeof pickStatSource === 'function') ? pickStatSource(_group, _p) : null;
+          const _picked = (typeof pickStatSource === 'function') ? pickStatSource(_group) : null;
           if(!_picked) continue;
           const _s = _picked.stat;
           if(_group.group && _group.group.displayName === 'pitching'){
@@ -3288,7 +3288,7 @@ async function _tankSilentStatsRefresh(_reason){
       const _res = await fetch(`https://statsapi.mlb.com/api/v1/people/${_p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${_lp}`);
       const _data = await _res.json();
       for(const _group of (_data.stats||[])){
-        const _picked = (typeof pickStatSource === 'function') ? pickStatSource(_group, _p) : null;
+        const _picked = (typeof pickStatSource === 'function') ? pickStatSource(_group) : null;
         if(!_picked) continue;
         const _s = _picked.stat;
         if(_group.group && _group.group.displayName === 'pitching'){
@@ -7367,7 +7367,7 @@ function newsBadgeOpen(mlbId){ /* retired */ }
 // contain multiple entries when a player saw time at multiple levels in the same season.
 // Rule: if ANY MLB split exists, use it (majors supersede). Otherwise fall back to MiLB.
 // Returns { stat, source } where source is 'MLB' or 'MiLB', or null if nothing usable.
-function pickStatSource(group, p){
+function pickStatSource(group){
   if(!group || !group.splits || group.splits.length === 0) return null;
   // Sport ID 1 = MLB. 11 = AAA, 12 = AA, 13/14 = A levels, 16 = Rookie, etc.
   // Some splits don't have team.sport populated — fall back to checking for level/league hints.
@@ -7375,22 +7375,17 @@ function pickStatSource(group, p){
     const t = sp && sp.team;
     if(!t) return false;
     if(t.sport && t.sport.id != null) return t.sport.id === 1;
-    // MILB_ITALIC_SMART_INFERENCE_V1 (May 27, 2026 — PC Walter, per JP).
-    // History: MILB_ITALIC_REFRESH_FIX flipped this fallback from `true`
-    // to `false` to fix prospect italic, but that broke MLB regulars (italic
-    // everywhere). MILB_ITALIC_REFRESH_FIX_REVERT_V1 restored `return true;`
-    // — which fixed MLB regulars but reintroduced the prospect bug: after
-    // STAT_FRESHNESS_V1 auto-refreshed (line ~12687, kicked at +2s after
-    // load and slow to finish), AAA splits whose team.sport.id was missing
-    // got reclassified as MLB → prospects rendered upright.
-    //
-    // The smart fix uses the player record's locally-stored p.level to
-    // disambiguate when team.sport.id is missing. p.level is reliably
-    // 'AAA' / 'AA' / 'A' for prospects (set on save, used by the leagueListId
-    // logic already), so it's a safe authority. Fall through to MLB when
-    // no player record is in scope (preserves prior behavior for callers
-    // that don't know who the player is).
-    if(p && p.level && (p.level === 'AAA' || p.level === 'AA' || p.level === 'A')) return false;
+    // MILB_ITALIC_REFRESH_FIX_REVERT_V1 (May 27, 2026 — PC Walter, per JP).
+    // MILB_ITALIC_REFRESH_FIX (earlier today) flipped this fallback from
+    // `return true;` to `return false;` to fix a narrow prospect-italic
+    // regression. Side effect was much bigger than expected: regular MLB
+    // players whose splits ALSO lack a populated team.sport.id (a real and
+    // common MLB Stats API quirk — not just a prospect-only edge case) got
+    // reclassified as MiLB on every page refresh, flipping their statsSource
+    // to 'MiLB' and italicizing every row on the main watch list. Per JP,
+    // option A (full revert) chosen over a smarter league.id fallback —
+    // restores pre-morning behavior. Prospect-italic edge case may return
+    // for a small handful of players; addressed in a future targeted fix.
     return true;
   };
   const mlbSplits = group.splits.filter(isMlbSplit);
@@ -7816,7 +7811,7 @@ async function refreshAllStats(){
       // MAJORS_VS_MINORS_V1 — pick MLB split if any exists, otherwise fall back to MiLB
       let _statsSource = null;
       for(const group of stats){
-        const picked = pickStatSource(group, p);
+        const picked = pickStatSource(group);
         if(!picked) continue;
         const s = picked.stat;
         _statsSource = picked.source; // last group wins, but hitting/pitching are mutually exclusive in practice
@@ -12682,6 +12677,118 @@ window.addEventListener('popstate', function(evt){
 loadRegistry();
 loadCBSData();
 
+// STAT_PROVENANCE_V1 (May 27, 2026 — PC Walter, per JP's architectural
+// redesign call). The single source of truth for refreshing one player's
+// stats from MLB Stats API. Fires TWO separate endpoint calls per player:
+//   - MLB endpoint  (no leagueListId)              → writes p.statsMlb
+//   - MiLB endpoint (leagueListId=milb_all)        → writes p.statsMilb
+// The URL is the authority. Numbers from the MLB call are MLB stats,
+// period. Numbers from the MiLB call are MiLB stats, period. No reading
+// sport.id on splits. No inferring from p.level. No guessing.
+//
+// Both p.statsMlb and p.statsMilb can be populated at the same time
+// (a player rehabbing in AAA after being demoted, a prospect with a cup
+// of coffee, etc.). After the two fetches land, _applyActiveSampleToFlatFields
+// resolves which sample to display (MLB-default-when-both-exist per JP)
+// and stamps the flat fields + p.statsSource. The MLB-vs-MiLB italic
+// styling follows naturally from p.statsSource without any inference.
+//
+// Throws nothing on per-endpoint failure — a missing endpoint just leaves
+// that side of the player's record alone.
+async function _refreshPlayerStatsBothSources(p){
+  if(!p || !p.mlb_id) return false;
+  const mlbUrl  = `https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching`;
+  const milbUrl = `https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching&leagueListId=milb_all`;
+
+  // Helper — extract a hitting + pitching stats object from one API response.
+  // Returns {ab, avg, ...} hitting fields + {ip, era, ...} pitching fields
+  // merged into a single object, or null if no usable splits were returned.
+  // The biggest split (most PA / IP) wins per group when multiple exist.
+  const _extractStats = (data) => {
+    if(!data || !Array.isArray(data.stats)) return null;
+    const out = {};
+    let anyFound = false;
+    for(const group of data.stats){
+      const splits = group && group.splits || [];
+      if(splits.length === 0) continue;
+      // Pick the biggest split by PA (hitter) or IP (pitcher).
+      const best = splits.reduce((acc, sp) => {
+        const s = sp.stat || {};
+        const weight = (s.plateAppearances || s.atBats || 0) + (parseFloat(s.inningsPitched) || 0);
+        return (!acc || weight > acc._w) ? Object.assign({}, sp, { _w: weight }) : acc;
+      }, null);
+      if(!best || !best.stat) continue;
+      const s = best.stat;
+      const gname = group.group && group.group.displayName;
+      if(gname === 'hitting'){
+        if(s.atBats        != null) { out.ab  = Number(s.atBats);        anyFound = true; }
+        if(s.homeRuns      != null) { out.hr  = Number(s.homeRuns);      anyFound = true; }
+        if(s.rbi           != null) { out.rbi = Number(s.rbi);           anyFound = true; }
+        if(s.runs          != null) { out.r   = Number(s.runs);          anyFound = true; }
+        if(s.stolenBases   != null) { out.sb  = Number(s.stolenBases);   anyFound = true; }
+        if(s.avg)                    { out.avg = parseFloat(s.avg);       anyFound = true; }
+        if(s.obp)                    { out.obp = parseFloat(s.obp);       anyFound = true; }
+        if(s.ops)                    { out.ops = parseFloat(s.ops);       anyFound = true; }
+      } else if(gname === 'pitching'){
+        if(s.inningsPitched != null) { out.ip  = parseFloat(s.inningsPitched); anyFound = true; }
+        if(s.strikeOuts     != null) { out.k   = Number(s.strikeOuts);         anyFound = true; }
+        if(s.wins           != null) { out.w   = Number(s.wins);               anyFound = true; }
+        if(s.saves          != null) { out.sv  = Number(s.saves);              anyFound = true; }
+        if(s.holds          != null) { out.hld = Number(s.holds);              anyFound = true; }
+        if(s.era)                    { out.era = parseFloat(s.era);            anyFound = true; }
+        if(s.whip)                   { out.whip = parseFloat(s.whip);          anyFound = true; }
+        if(s.baseOnBalls    != null) { out.bb_pit = Number(s.baseOnBalls);     anyFound = true; }
+      }
+    }
+    return anyFound ? out : null;
+  };
+
+  let touched = false;
+  try {
+    const [mlbRes, milbRes] = await Promise.all([
+      fetch(mlbUrl).then(r => r.json()).catch(() => null),
+      fetch(milbUrl).then(r => r.json()).catch(() => null),
+    ]);
+    // Per JP's architectural rule: the endpoint determines provenance.
+    // MLB endpoint returns whatever MLB stats the player has accumulated
+    // (zero or more). MiLB endpoint returns the same for minor-league play.
+    const mlbStats = _extractStats(mlbRes);
+    const milbStats = _extractStats(milbRes);
+
+    // A key subtlety: the MLB-only endpoint (no leagueListId) sometimes
+    // returns AAA splits too for prospects (MLB Stats API quirk). To stay
+    // strict on provenance, the MiLB endpoint result is the canonical
+    // source for MiLB stats. If we got nothing from the MLB call and the
+    // player is currently in the minors, that's expected. If we got
+    // something from the MLB call that ALSO showed up in the MiLB call,
+    // we trust the MiLB-endpoint version for the MiLB side.
+
+    if(mlbStats){ p.statsMlb = mlbStats; touched = true; }
+    else { p.statsMlb = null; } // explicit null — no MLB sample this season
+    if(milbStats){ p.statsMilb = milbStats; touched = true; }
+    else { p.statsMilb = null; }
+
+    // Now pick the active sample and stamp the flat fields + p.statsSource.
+    // _applyActiveSampleToFlatFields honors any explicit toggle the user
+    // clicked, then falls through to MLB-default-when-both-exist.
+    if(typeof _applyActiveSampleToFlatFields === 'function'){
+      _applyActiveSampleToFlatFields(p, 'watch');
+    }
+    // Derived fields the legacy code used to compute inline.
+    if(typeof p.bb_pit === 'number' && p.bb_pit > 0 && p.k != null){
+      p.kbb_ratio = +(p.k / p.bb_pit).toFixed(2);
+    } else {
+      p.kbb_ratio = null;
+    }
+    if(typeof p.ip === 'number' && p.ip > 0 && p.k != null){
+      p.k_per_9 = +((p.k * 9) / p.ip).toFixed(2);
+    } else {
+      p.k_per_9 = null;
+    }
+  } catch(e){ /* silent — per-player failure shouldn't kill the loop */ }
+  return touched;
+}
+
 // STAT_FRESHNESS_V1 (May 8, 2026) — Refresh ALL players' season stats on every
 // page load, not just players with missing AB. Previously this block filtered
 // for `p.ab === undefined || null`, which meant once a player had any AB number
@@ -12690,48 +12797,18 @@ loadCBSData();
 // re-fetches every player from MLB Stats API, so the saved list always shows
 // current numbers. Throttled at ~80ms between requests so we never hammer MLB.
 setTimeout(async () => {
+  // STAT_PROVENANCE_V1 (May 27, 2026 — PC Walter, per JP). The auto-refresh
+  // now delegates to _refreshPlayerStatsBothSources which fires TWO
+  // endpoint calls per player (MLB + MiLB) and writes results into the
+  // separate p.statsMlb / p.statsMilb objects. _applyActiveSampleToFlatFields
+  // then picks which one to display and stamps the flat fields + p.statsSource.
+  // No more sport.id reading. No more inference. Endpoint is the authority.
   const targets = players.filter(p => p.mlb_id);
   if(targets.length === 0) return;
   let updated = 0;
   for(const p of targets){
-    try{
-      const lp = (p.level==='AAA'||p.level==='AA'||p.level==='A') ? '&leagueListId=milb_all' : '';
-      const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${lp}`);
-      const data = await res.json();
-      let touched = false;
-      // MAJORS_VS_MINORS_V1 — pick MLB split if any exists, otherwise fall back to MiLB
-      for(const group of (data.stats||[])){
-        const picked = pickStatSource(group, p);
-        if(!picked) continue;
-        const s = picked.stat;
-        p.statsSource = picked.source;
-        if(group.group&&group.group.displayName==='hitting'){
-          if(s.atBats!==undefined){ p.ab=s.atBats; touched = true; }
-          if(s.avg) p.avg=parseFloat(s.avg);
-          if(s.obp) p.obp=parseFloat(s.obp);
-          if(s.ops) p.ops=parseFloat(s.ops);
-          if(s.homeRuns!==undefined) p.hr=s.homeRuns;
-          if(s.rbi!==undefined) p.rbi=s.rbi;
-          if(s.runs!==undefined) p.r=s.runs;
-          if(s.stolenBases!==undefined) p.sb=s.stolenBases;
-        }
-        if(group.group&&group.group.displayName==='pitching'){
-          if(s.inningsPitched!==undefined){ p.ip=parseFloat(s.inningsPitched); touched = true; }
-          // BASIC_BLOCK_KBB_V1 (May 14, 2026) — silent auto-refresh now mirrors the full pitcher block so K/BB stays current on page-load auto-refresh too.
-          if(s.era) p.era=parseFloat(s.era);
-          if(s.whip) p.whip=parseFloat(s.whip);
-          if(s.strikeOuts!==undefined) p.k=s.strikeOuts;
-          if(s.wins!==undefined) p.w=s.wins;
-          if(s.saves!==undefined) p.sv=s.saves;
-          if(s.holds!==undefined) p.hld=s.holds;
-          if(s.baseOnBalls!==undefined) p.bb_pit=Number(s.baseOnBalls);
-          p.kbb_ratio = (p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
-          // GOLD_BLOCK_V1 — K/9 derived live for the Gold block col 8 pitcher slot.
-          p.k_per_9 = (p.ip > 0 && p.k != null) ? +((p.k * 9) / p.ip).toFixed(2) : null;
-        }
-      }
-      if(touched){ updated++; }
-    }catch(e){}
+    const touched = await _refreshPlayerStatsBothSources(p);
+    if(touched) updated++;
     await new Promise(r=>setTimeout(r,80));
   }
   // SILENT_SAVE_V1 (April 26, 2026) — background stat refresh, don't overwrite the user-facing header message
@@ -12867,49 +12944,18 @@ async function refreshAllStatsManual(){
     delete p.ab; delete p.avg; delete p.obp; delete p.ops;
     delete p.hr; delete p.rbi; delete p.r; delete p.sb;
     delete p.ip;
+    // STAT_PROVENANCE_V1 — also wipe the source-tagged stat objects so
+    // _refreshPlayerStatsBothSources starts from a clean slate per player.
+    p.statsMlb = null; p.statsMilb = null;
   }
   saveData({silent: true});
   renderTable();
-  // Fire the refresh by re-running the same per-player loop
+  // STAT_PROVENANCE_V1 (May 27, 2026 — PC Walter, per JP). Manual refresh
+  // now mirrors the auto-refresh — delegates to _refreshPlayerStatsBothSources.
   let updated = 0;
   for(const p of players.filter(x => x.mlb_id)){
-    try{
-      const lp = (p.level==='AAA'||p.level==='AA'||p.level==='A') ? '&leagueListId=milb_all' : '';
-      const res = await fetch(`https://statsapi.mlb.com/api/v1/people/${p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${lp}`);
-      const data = await res.json();
-      let touched = false;
-      for(const group of (data.stats||[])){
-        const picked = pickStatSource(group, p);
-        if(!picked) continue;
-        const s = picked.stat;
-        p.statsSource = picked.source;
-        if(group.group&&group.group.displayName==='hitting'){
-          if(s.atBats!==undefined){ p.ab=s.atBats; touched = true; }
-          if(s.avg) p.avg=parseFloat(s.avg);
-          if(s.obp) p.obp=parseFloat(s.obp);
-          if(s.ops) p.ops=parseFloat(s.ops);
-          if(s.homeRuns!==undefined) p.hr=s.homeRuns;
-          if(s.rbi!==undefined) p.rbi=s.rbi;
-          if(s.runs!==undefined) p.r=s.runs;
-          if(s.stolenBases!==undefined) p.sb=s.stolenBases;
-        }
-        if(group.group&&group.group.displayName==='pitching'){
-          if(s.inningsPitched!==undefined){ p.ip=parseFloat(s.inningsPitched); touched = true; }
-          // BASIC_BLOCK_KBB_V1 (May 14, 2026) — refreshAllStatsManual was only stamping IP for pitchers, leaving K/W/SV/HLD/ERA/WHIP frozen from prior loads and never stamping BB at all. Now mirrors refreshAllStats's pitcher block fully so K/BB can derive cleanly on a manual refresh click.
-          if(s.era) p.era=parseFloat(s.era);
-          if(s.whip) p.whip=parseFloat(s.whip);
-          if(s.strikeOuts!==undefined) p.k=s.strikeOuts;
-          if(s.wins!==undefined) p.w=s.wins;
-          if(s.saves!==undefined) p.sv=s.saves;
-          if(s.holds!==undefined) p.hld=s.holds;
-          if(s.baseOnBalls!==undefined) p.bb_pit=Number(s.baseOnBalls);
-          p.kbb_ratio = (p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
-          // GOLD_BLOCK_V1 — K/9 derived live for the Gold block col 8 pitcher slot.
-          p.k_per_9 = (p.ip > 0 && p.k != null) ? +((p.k * 9) / p.ip).toFixed(2) : null;
-        }
-      }
-      if(touched){ updated++; }
-    }catch(e){}
+    const touched = await _refreshPlayerStatsBothSources(p);
+    if(touched) updated++;
     await new Promise(r=>setTimeout(r,80));
   }
   saveData({silent: true});
