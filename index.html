@@ -7365,8 +7365,19 @@ function pickStatSource(group){
     const t = sp && sp.team;
     if(!t) return false;
     if(t.sport && t.sport.id != null) return t.sport.id === 1;
-    // Fallback: if team has a leagueListId-style hint, treat unknown as MLB (safer default for callers)
-    return true;
+    // MILB_ITALIC_REFRESH_FIX (May 27, 2026 — PC Walter, per Matt's report relayed by JP).
+    // Was: `return true;` ("treat unknown as MLB — safer default for callers"). That default
+    // broke italic styling for prospects whose AAA splits come back from MLB Stats API
+    // without a populated team.sport.id (a quirk for some non-40-man prospects). On every
+    // page-load STAT_FRESHNESS_V1 call, those splits got reclassified as MLB and the
+    // statsSource flag flipped from 'MiLB' to 'MLB', killing the italic row class on the
+    // next render. Treat unknown as NOT-MLB so:
+    //   (a) italic styling fires correctly on the watch list (Matt's reported bug)
+    //   (b) statsSource stays in sync with the actual league level
+    //   (c) real cup-of-coffee guys still classify as MLB because their MLB splits
+    //       reliably DO have team.sport.id === 1 — they fall through the `if(t.sport ...)`
+    //       branch above and never hit this fallback.
+    return false;
   };
   const mlbSplits = group.splits.filter(isMlbSplit);
   const milbSplits = group.splits.filter(sp => !isMlbSplit(sp));
