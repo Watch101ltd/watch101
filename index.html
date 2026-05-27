@@ -15481,11 +15481,17 @@ function renderGameLog(mlbId){
   // math easy ("1" next to "4" = "1-for-4" in his head) while letting the
   // column read like a standard MLB box score. Pitcher game log untouched —
   // pitchers keep their own column shape in _renderPitcherGameLog.
+  // HITTER_RESULT_COLUMN_REMOVED_V1 (May 27, 2026 — PC Walter, per JP). The
+  // "Result" column (intended to show "W 4-3" / "L 2-1" team scores) was dead
+  // weight — scraper writes empty strings for every game, renderer fell
+  // through to em-dash for every player. For a fantasy site, the team's
+  // win/loss is noise; only the player's individual stats matter. Pitcher
+  // "Decision" column is separate code and stays.
   //
-  // 13 columns total: Date, Opp, Result, Pos, H, AB, R, HR, RBI, SB, BB, K, AVG
+  // 12 columns total: Date, Opp, Pos, H, AB, R, HR, RBI, SB, BB, K, AVG
   // (Status is represented by the row's DNP chip in the Opp cell area — see below.)
-  var headers = ['Date','Opp','Result','Pos','H','AB','R','HR','RBI','SB','BB','K','AVG'];
-  var leftCols = {0:1, 1:1, 2:1}; // Date, Opp, Result align left
+  var headers = ['Date','Opp','Pos','H','AB','R','HR','RBI','SB','BB','K','AVG'];
+  var leftCols = {0:1, 1:1}; // Date, Opp align left
   // GAMELOG_INLINE_WIDTHS_V1 (May 20, 2026 — PC Walter) — bake column widths
   // directly into the th HTML as both width attribute AND inline style. CSS
   // selector-based attempts all night failed for one reason or another. Inline
@@ -15493,8 +15499,10 @@ function renderGameLog(mlbId){
   // HITTER_H_AB_SPLIT_V1 (May 27, 2026 — PC Walter, per JP/Matt) — added a
   // dedicated 30px column for H (hits) between Pos and AB. AB shrunk from
   // 50px to 30px since it no longer needs to fit "10-for-19" — just the AB
-  // number. Net: same overall width plus a few px for the gap (438px total).
-  var colWidths = [50, 40, 60, 34, 30, 30, 26, 26, 26, 26, 26, 26, 38];
+  // number.
+  // HITTER_RESULT_COLUMN_REMOVED_V1 (May 27, 2026 — PC Walter, per JP) —
+  // removed 60px for the dead Result column. New sum: 378px content.
+  var colWidths = [50, 40, 34, 30, 30, 26, 26, 26, 26, 26, 26, 38];
   var thHtml = '';
   for(var i=0;i<headers.length;i++){
     var w = colWidths[i];
@@ -15540,15 +15548,8 @@ function renderGameLog(mlbId){
     var started2 = r2.status === 'started';
     var rcls2 = started2 ? '' : ' class="gl-dnp"';
 
-    // Result cell - prefer a real "W 4-3"/"L 2-1" string; otherwise em-dash.
-    var resultCell;
-    if(hasResult(r2.result)){
-      var l2 = String(r2.result).charAt(0);
-      var winCls = l2 === 'W' ? 'win' : (l2 === 'L' ? 'loss' : '');
-      resultCell = '<td class="gl-left gl-result ' + winCls + '">' + escapeHtml(r2.result) + '</td>';
-    } else {
-      resultCell = '<td class="gl-left gl-dash">\u2014</td>';
-    }
+    // HITTER_RESULT_COLUMN_REMOVED_V1 (May 27, 2026 — PC Walter, per JP) —
+    // Result cell block deleted. Column doesn't exist on the table anymore.
 
     // Pos cell — for DNP rows, show the status chip here instead of a batting order.
     var posCell;
@@ -15588,11 +15589,10 @@ function renderGameLog(mlbId){
       hC = abC = rC = hrC = rbiC = sbC = bbC = kC = avgCell2 = dash();
     }
 
-    // Row structure: 13 cells — Date, Opp, Result, Pos/Status, H, AB, R, HR, RBI, SB, BB, K, AVG
+    // Row structure: 12 cells — Date, Opp, Pos/Status, H, AB, R, HR, RBI, SB, BB, K, AVG
     rowsHtml += '<tr' + rcls2 + '>'
       + '<td class="gl-left gl-date">' + escapeHtml(r2.date_short || r2.date || '') + '</td>'
       + '<td class="gl-left ' + (r2.home ? 'gl-opp-home' : 'gl-opp-away') + '">' + escapeHtml(String(r2.opp || '\u2014')) + '</td>'
-      + resultCell
       + posCell
       + hC + abC + rC + hrC + rbiC + sbC + bbC + kC
       + avgCell2
@@ -15615,7 +15615,7 @@ function renderGameLog(mlbId){
   // GAMELOG_COLORIZE_V1: tag every totals-row stat cell with gl-hit-stat
   // so the cumulative numbers read in red alongside the per-game cells.
   var footHtml = '<tr class="gl-total-row">'
-    + '<td class="gl-left gl-total-label" colspan="3">L' + (s.window || 7) + ' Totals</td>'
+    + '<td class="gl-left gl-total-label" colspan="2">L' + (s.window || 7) + ' Totals</td>'
     + '<td class="gl-total-starts">' + tot.starts + ' G</td>'
     + '<td class="gl-hit-stat"><strong>' + tot.h   + '</strong></td>'
     + '<td class="gl-hit-stat"><strong>' + tot.ab  + '</strong></td>'
