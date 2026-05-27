@@ -15473,22 +15473,28 @@ function renderGameLog(mlbId){
     + (s.scratches ? sc('scratched', s.scratches, scratchExtra) : '')
     + '</div>';
 
-  // HITTER_LINE_COLLAPSE_V1 (May 19, 2026) — collapsed AB + H into one column.
-  // The AB column now shows "H-for-AB" per game (e.g., "3-for-4" or "0-for-3"),
-  // matching every box score on the planet. Reads more intuitively than two
-  // separate numbers a user has to mentally combine. Pitcher game log NOT
-  // affected — pitchers keep their own column shape in _renderPitcherGameLog.
+  // HITTER_LINE_COLLAPSE_V1 (May 19, 2026) — was: collapsed AB + H into one
+  // "H-for-AB" column.
+  // HITTER_H_AB_SPLIT_V1 (May 27, 2026 — PC Walter, per JP relaying Matt) —
+  // Matt prefers a separate H column AND a separate AB column rather than
+  // the collapsed "1-for-4" cell. Side-by-side placement keeps Matt's mental
+  // math easy ("1" next to "4" = "1-for-4" in his head) while letting the
+  // column read like a standard MLB box score. Pitcher game log untouched —
+  // pitchers keep their own column shape in _renderPitcherGameLog.
   //
-  // 12 columns total: Date, Opp, Result, Pos, AB, R, HR, RBI, SB, BB, K, AVG
+  // 13 columns total: Date, Opp, Result, Pos, H, AB, R, HR, RBI, SB, BB, K, AVG
   // (Status is represented by the row's DNP chip in the Opp cell area — see below.)
-  var headers = ['Date','Opp','Result','Pos','AB','R','HR','RBI','SB','BB','K','AVG'];
+  var headers = ['Date','Opp','Result','Pos','H','AB','R','HR','RBI','SB','BB','K','AVG'];
   var leftCols = {0:1, 1:1, 2:1}; // Date, Opp, Result align left
   // GAMELOG_INLINE_WIDTHS_V1 (May 20, 2026 — PC Walter) — bake column widths
   // directly into the th HTML as both width attribute AND inline style. CSS
   // selector-based attempts all night failed for one reason or another. Inline
   // attributes on table cells are the most reliable way to constrain widths.
-  // Sum: 50+40+60+34+50+(26*6)+38 = 428px content. Tight, fits comfortably.
-  var colWidths = [50, 40, 60, 34, 50, 26, 26, 26, 26, 26, 26, 38];
+  // HITTER_H_AB_SPLIT_V1 (May 27, 2026 — PC Walter, per JP/Matt) — added a
+  // dedicated 30px column for H (hits) between Pos and AB. AB shrunk from
+  // 50px to 30px since it no longer needs to fit "10-for-19" — just the AB
+  // number. Net: same overall width plus a few px for the gap (438px total).
+  var colWidths = [50, 40, 60, 34, 30, 30, 26, 26, 26, 26, 26, 26, 38];
   var thHtml = '';
   for(var i=0;i<headers.length;i++){
     var w = colWidths[i];
@@ -15555,14 +15561,17 @@ function renderGameLog(mlbId){
     }
 
     // Stat cells - em-dash for DNP, real number for started.
-    // HITTER_LINE_COLLAPSE_V1: abC now shows "H-for-AB" instead of just AB.
-    // hC is gone — the H value lives inside abC's text now.
-    var abC, rC, hrC, rbiC, sbC, bbC, kC, avgCell2;
+    // HITTER_H_AB_SPLIT_V1 (May 27, 2026 — PC Walter, per JP/Matt) — restored
+    // separate hC and abC cells. The collapsed "H-for-AB" formatting is gone;
+    // the H value sits in its own column right next to AB so Matt can read
+    // "1" "4" and do "1-for-4" in his head naturally.
+    var hC, abC, rC, hrC, rbiC, sbC, bbC, kC, avgCell2;
     if(started2){
       var _abVal = (r2.ab == null) ? 0 : Number(r2.ab) || 0;
       var _hVal  = (r2.h  == null) ? 0 : Number(r2.h)  || 0;
       // GAMELOG_COLORIZE_V1: tag every stat cell with gl-hit-stat.
-      abC = '<td class="gl-hit-stat">' + escapeHtml(_hVal + '-for-' + _abVal) + '</td>';
+      hC  = '<td class="gl-hit-stat">' + escapeHtml(String(_hVal))  + '</td>';
+      abC = '<td class="gl-hit-stat">' + escapeHtml(String(_abVal)) + '</td>';
       rC = cellNumHit(r2.r); hrC = cellNumHit(r2.hr);
       rbiC = cellNumHit(r2.rbi); sbC = cellNumHit(r2.sb); bbC = cellNumHit(r2.bb); kC = cellNumHit(r2.k);
       avgCell2 = '<td class="gl-hit-stat">' + escapeHtml(String(r2.avg || '.000')) + '</td>';
@@ -15576,16 +15585,16 @@ function renderGameLog(mlbId){
       tot.k   += (r2.k   || 0);
       tot.starts += 1;
     } else {
-      abC = rC = hrC = rbiC = sbC = bbC = kC = avgCell2 = dash();
+      hC = abC = rC = hrC = rbiC = sbC = bbC = kC = avgCell2 = dash();
     }
 
-    // Row structure: 12 cells — Date, Opp, Result, Pos/Status, AB(=H-for-AB), R, HR, RBI, SB, BB, K, AVG
+    // Row structure: 13 cells — Date, Opp, Result, Pos/Status, H, AB, R, HR, RBI, SB, BB, K, AVG
     rowsHtml += '<tr' + rcls2 + '>'
       + '<td class="gl-left gl-date">' + escapeHtml(r2.date_short || r2.date || '') + '</td>'
       + '<td class="gl-left ' + (r2.home ? 'gl-opp-home' : 'gl-opp-away') + '">' + escapeHtml(String(r2.opp || '\u2014')) + '</td>'
       + resultCell
       + posCell
-      + abC + rC + hrC + rbiC + sbC + bbC + kC
+      + hC + abC + rC + hrC + rbiC + sbC + bbC + kC
       + avgCell2
       + '</tr>';
   }
@@ -15600,15 +15609,16 @@ function renderGameLog(mlbId){
   } else {
     totAvg = '.000';
   }
-  // HITTER_LINE_COLLAPSE_V1: totals row collapses AB + H to one cell
-  // showing "10-for-19" style (H-for-AB). Same shape as the per-game cells
-  // above so the column reads consistently top to bottom.
+  // HITTER_H_AB_SPLIT_V1 (May 27, 2026 — PC Walter, per JP/Matt) — totals
+  // row now mirrors the per-game cells: separate H total + separate AB total.
+  // Per-game cells read like a normal box score and the totals match.
   // GAMELOG_COLORIZE_V1: tag every totals-row stat cell with gl-hit-stat
   // so the cumulative numbers read in red alongside the per-game cells.
   var footHtml = '<tr class="gl-total-row">'
     + '<td class="gl-left gl-total-label" colspan="3">L' + (s.window || 7) + ' Totals</td>'
     + '<td class="gl-total-starts">' + tot.starts + ' G</td>'
-    + '<td class="gl-hit-stat"><strong>' + tot.h + '-for-' + tot.ab + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + tot.h   + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + tot.ab  + '</strong></td>'
     + '<td class="gl-hit-stat"><strong>' + tot.r   + '</strong></td>'
     + '<td class="gl-hit-stat"><strong>' + tot.hr  + '</strong></td>'
     + '<td class="gl-hit-stat"><strong>' + tot.rbi + '</strong></td>'
