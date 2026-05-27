@@ -14947,7 +14947,19 @@ function openPlayerPage(p){
 
   var currentNote = (p.note && String(p.note).trim().length > 0) ? String(p.note).trim() : '';
   var history = (PLAYER_NOTES_HISTORY && PLAYER_NOTES_HISTORY[mlbId]) ? PLAYER_NOTES_HISTORY[mlbId] : [];
-  var oldHistory = history.filter(function(h){ return String(h.body||'').trim() !== currentNote; });
+  // BUG_FIX_DUPLICATE_NOTE_V1 (May 27, 2026 — PC Walter, per JP) — was: filter
+  // only checked h.body. Per BRANDT_FIELD_ALIAS_V1 (line 14998), Brandt's
+  // _append_history.py writes entries with field name 'note', not 'body'. So
+  // when Matt's current note text matched a Brandt-archived note exactly, the
+  // filter compared 'undefined'.trim() to currentNote, never matched, and the
+  // note showed twice — once as the "current" entry up top and once as a
+  // same-text "history" entry below. Now reads BOTH field names so the dedupe
+  // works regardless of which writer produced the entry. Mirrors the same
+  // h.body||h.note read pattern used by the renderer at line 15004.
+  var oldHistory = history.filter(function(h){
+    var hText = String(h.body || h.note || '').trim();
+    return hText !== currentNote;
+  });
   var notesHtml = '';
   if(currentNote){
     // NOTE_HYPERLINK_V1 (April 25, 2026) — wire the chain link icon into Matt's Take.
