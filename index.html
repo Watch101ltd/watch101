@@ -3237,7 +3237,7 @@ function switchActiveList(newId){
         const _res = await fetch(`https://statsapi.mlb.com/api/v1/people/${_p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${_lp}`);
         const _data = await _res.json();
         for(const _group of (_data.stats||[])){
-          const _picked = (typeof pickStatSource === 'function') ? pickStatSource(_group) : null;
+          const _picked = (typeof pickStatSource === 'function') ? pickStatSource(_group, _p) : null;
           if(!_picked) continue;
           const _s = _picked.stat;
           if(_group.group && _group.group.displayName === 'pitching'){
@@ -3288,7 +3288,7 @@ async function _tankSilentStatsRefresh(_reason){
       const _res = await fetch(`https://statsapi.mlb.com/api/v1/people/${_p.mlb_id}/stats?stats=season&season=2026&group=hitting,pitching${_lp}`);
       const _data = await _res.json();
       for(const _group of (_data.stats||[])){
-        const _picked = (typeof pickStatSource === 'function') ? pickStatSource(_group) : null;
+        const _picked = (typeof pickStatSource === 'function') ? pickStatSource(_group, _p) : null;
         if(!_picked) continue;
         const _s = _picked.stat;
         if(_group.group && _group.group.displayName === 'pitching'){
@@ -7367,7 +7367,7 @@ function newsBadgeOpen(mlbId){ /* retired */ }
 // contain multiple entries when a player saw time at multiple levels in the same season.
 // Rule: if ANY MLB split exists, use it (majors supersede). Otherwise fall back to MiLB.
 // Returns { stat, source } where source is 'MLB' or 'MiLB', or null if nothing usable.
-function pickStatSource(group){
+function pickStatSource(group, p){
   if(!group || !group.splits || group.splits.length === 0) return null;
   // Sport ID 1 = MLB. 11 = AAA, 12 = AA, 13/14 = A levels, 16 = Rookie, etc.
   // Some splits don't have team.sport populated — fall back to checking for level/league hints.
@@ -7375,17 +7375,22 @@ function pickStatSource(group){
     const t = sp && sp.team;
     if(!t) return false;
     if(t.sport && t.sport.id != null) return t.sport.id === 1;
-    // MILB_ITALIC_REFRESH_FIX_REVERT_V1 (May 27, 2026 — PC Walter, per JP).
-    // MILB_ITALIC_REFRESH_FIX (earlier today) flipped this fallback from
-    // `return true;` to `return false;` to fix a narrow prospect-italic
-    // regression. Side effect was much bigger than expected: regular MLB
-    // players whose splits ALSO lack a populated team.sport.id (a real and
-    // common MLB Stats API quirk — not just a prospect-only edge case) got
-    // reclassified as MiLB on every page refresh, flipping their statsSource
-    // to 'MiLB' and italicizing every row on the main watch list. Per JP,
-    // option A (full revert) chosen over a smarter league.id fallback —
-    // restores pre-morning behavior. Prospect-italic edge case may return
-    // for a small handful of players; addressed in a future targeted fix.
+    // MILB_ITALIC_SMART_INFERENCE_V1 (May 27, 2026 — PC Walter, per JP).
+    // History: MILB_ITALIC_REFRESH_FIX flipped this fallback from `true`
+    // to `false` to fix prospect italic, but that broke MLB regulars (italic
+    // everywhere). MILB_ITALIC_REFRESH_FIX_REVERT_V1 restored `return true;`
+    // — which fixed MLB regulars but reintroduced the prospect bug: after
+    // STAT_FRESHNESS_V1 auto-refreshed (line ~12687, kicked at +2s after
+    // load and slow to finish), AAA splits whose team.sport.id was missing
+    // got reclassified as MLB → prospects rendered upright.
+    //
+    // The smart fix uses the player record's locally-stored p.level to
+    // disambiguate when team.sport.id is missing. p.level is reliably
+    // 'AAA' / 'AA' / 'A' for prospects (set on save, used by the leagueListId
+    // logic already), so it's a safe authority. Fall through to MLB when
+    // no player record is in scope (preserves prior behavior for callers
+    // that don't know who the player is).
+    if(p && p.level && (p.level === 'AAA' || p.level === 'AA' || p.level === 'A')) return false;
     return true;
   };
   const mlbSplits = group.splits.filter(isMlbSplit);
@@ -7811,7 +7816,7 @@ async function refreshAllStats(){
       // MAJORS_VS_MINORS_V1 — pick MLB split if any exists, otherwise fall back to MiLB
       let _statsSource = null;
       for(const group of stats){
-        const picked = pickStatSource(group);
+        const picked = pickStatSource(group, p);
         if(!picked) continue;
         const s = picked.stat;
         _statsSource = picked.source; // last group wins, but hitting/pitching are mutually exclusive in practice
@@ -12696,7 +12701,7 @@ setTimeout(async () => {
       let touched = false;
       // MAJORS_VS_MINORS_V1 — pick MLB split if any exists, otherwise fall back to MiLB
       for(const group of (data.stats||[])){
-        const picked = pickStatSource(group);
+        const picked = pickStatSource(group, p);
         if(!picked) continue;
         const s = picked.stat;
         p.statsSource = picked.source;
@@ -12874,7 +12879,7 @@ async function refreshAllStatsManual(){
       const data = await res.json();
       let touched = false;
       for(const group of (data.stats||[])){
-        const picked = pickStatSource(group);
+        const picked = pickStatSource(group, p);
         if(!picked) continue;
         const s = picked.stat;
         p.statsSource = picked.source;
@@ -18247,20 +18252,4 @@ document.addEventListener('keydown', function(e){
      applied by Push 4's JS. NEWS_LINKS_V1 Push 4d (May 17, 2026) — selector
      fixed to target the outer wrapper .ppo-news-strip-wrap (which is what
      has id="ppo-news-strip" and what JS adds the class to). The old selector
-     targeted the INNER .ppo-news-strip div, which never received the class
-     — causing the strip to stay visible with stale text for any player who
-     didn't have a blurb. */
-  #player-page-overlay .ppo-news-strip-wrap.ppo-news-empty,
-  #player-page-overlay .ppo-news-strip.ppo-news-empty {
-    display: none;
-  }
-</style>
-<!-- /NEWS_LINKS_V1 styles -->
-
-<!-- ===================================================================== -->
-<!-- MOVEMENT_MODE_V1+V1.1 (April 30 2026 build, attached to index May 5 2026) -->
-<!--                                                                         -->
-<!-- Self-contained block: CSS + overlay HTML + IIFE script.                 -->
-<!-- Reads window.PLAYER_NOTES_HISTORY (filled by _append_history.py at      -->
-<!-- Approve time) filtered by currentListId. Same data source as the rank  -->
-<!
+     targeted
