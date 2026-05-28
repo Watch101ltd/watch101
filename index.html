@@ -1058,27 +1058,10 @@ tr.ctx-compare{border-left:3px solid var(--blue)}
 .dual-diff.down{background:#7f1d1d33;color:var(--red);border:1px solid #7f1d1d}
 .dual-diff.same{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
 
-/* ---- MAIN TABLE FIXED HEADER ---- */
-#main-fixed-header{
-  display:none;
-  position:fixed;
-  left:0;right:0;
-  z-index:60;
-  background:var(--bg);
-  border-bottom:2px solid var(--gold2);
-  overflow:hidden;
-  pointer-events:auto;
-}
-#main-fixed-header table{
-  width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;
-}
-#main-fixed-header th{
-  padding:5px 4px;font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:500;
-  letter-spacing:0.05em;text-transform:uppercase;color:var(--text);text-align:right;
-  white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);
-}
-#main-fixed-header th.savant-col{background:rgba(201,168,76,0.06);color:var(--gold);}
-#main-fixed-header th.savant-adv-col{background:rgba(201,168,76,0.06);color:var(--gold);}
+/* MAIN_CLONE_STRIP_V1 (2026-05-28) — removed #main-fixed-header CSS block.
+   Sticky CSS at line 212 (.table-wrap thead{position:sticky;top:0;z-index:10})
+   handles header pinning for #main-table now. Matches the architectural pattern
+   shipped for Pool/Leaders/Prospects/Tank starting May 19. */
 
 /* Pool context fixed header - same clone bar approach as main table */
 #pool-fixed-header{
@@ -1419,8 +1402,7 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
     width: 100% !important;
     min-width: 0 !important;
   }
-  #main-table th:nth-child(3),
-  #main-fixed-table th:nth-child(3) {
+  #main-table th:nth-child(3) {
     width: auto !important;
   }
   #main-table th, #main-table td {
@@ -1498,22 +1480,9 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
     white-space: nowrap !important;
     display: block !important;
   }
-  /* Sticky-clone header that floats over the top of the table */
-  #main-fixed-table { table-layout: auto !important; width: 100% !important; min-width: 0 !important; }
-  #main-fixed-table th { width: auto !important; min-width: 0 !important; padding: 4px 3px !important; font-size: 9px !important; }
-  #main-fixed-table tr > th:nth-child(4),
-  #main-fixed-table tr > th:nth-child(5),
-  #main-fixed-table tr > th:nth-child(8),
-  #main-fixed-table tr > th:nth-child(9),
-  #main-fixed-table tr > th:nth-child(11),
-  #main-fixed-table tr > th:nth-child(12),
-  #main-fixed-table tr > th:nth-child(13),
-  #main-fixed-table tr > th:nth-child(20),
-  #main-fixed-table tr > th:nth-child(21),
-  #main-fixed-table tr > th:nth-child(22),
-  #main-fixed-table tr > th:nth-child(23) {
-    display: none !important;
-  }
+  /* MAIN_CLONE_STRIP_V1 (2026-05-28) — removed #main-fixed-table mobile overrides
+     (table-layout:auto and column hide rules). No longer needed — sticky CSS at line 212
+     pins the real headers and natural column widths flow from #main-table itself. */
 }
 #player-page-overlay .ppo-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;}
 #player-page-overlay .ppo-block h2{font-family:'Bowlby One',sans-serif;font-size:18px;letter-spacing:0.06em;color:var(--gold);margin:0 0 4px;}
@@ -2038,7 +2007,8 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
 </div>
 <!-- /HEADER_REDESIGN_V1 -->
 
-<div id="main-fixed-header"><table id="main-fixed-table"></table></div>
+<!-- MAIN_CLONE_STRIP_V1 (2026-05-28) — removed <div id="main-fixed-header"> here.
+     Sticky CSS at line 212 pins #main-table's real <thead> natively. -->
 
 <div id="daterange-status">
   <span id="daterange-status-text">⟳ Loading stats…</span>
@@ -7585,8 +7555,8 @@ function renderTable(){
   if(_renderSettled){
     try { if(typeof _tiersInjectSpacerRows === 'function') _tiersInjectSpacerRows(); } catch(e){ console.warn('[SPACER_SYNC_INJECT_V1] sync inject crashed:', e); }
   }
-  // Re-sync fixed header after render so column widths stay accurate
-  setTimeout(syncMainFixedHeader, 50);
+  // MAIN_CLONE_STRIP_V1 (2026-05-28) — removed setTimeout(syncMainFixedHeader, 50)
+  // here. The function is gone; sticky CSS handles header positioning natively.
   // LOAD_SETTLED_GATE_V1 (May 23, 2026) — gate the font-shrink + tier overlay
   // behind _renderSettled. While false (during the async load chaos), these
   // two operations are skipped so they don't flicker on every repaint. When
@@ -14701,77 +14671,12 @@ function attachProspectsScrollHandler(){
 function setCtxTheadTop(){ }
 function setLeadersTheadTop(){ } // no-op — clone header approach handles this
 function setProsTheadTop(){ }    // no-op — clone header approach handles this
-// ---- MAIN TABLE FIXED HEADER ----
-function syncMainFixedHeader(){
-  const realThead = document.querySelector('#main-table thead');
-  const fixedBar = document.getElementById('main-fixed-header');
-  const fixedTable = document.getElementById('main-fixed-table');
-  if(!realThead || !fixedBar || !fixedTable) return;
-
-  // Clone thead and wire up sort clicks
-  const clone = realThead.cloneNode(true);
-  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-  fixedTable.innerHTML = '';
-  fixedTable.appendChild(clone);
-
-  // Match column widths exactly from real table
-  const realTable = document.getElementById('main-table');
-  if(realTable){
-    const realCols = realThead.querySelectorAll('th');
-    const fixedCols = fixedTable.querySelectorAll('th');
-    realCols.forEach((th, i) => {
-      if(fixedCols[i]){
-        fixedCols[i].style.width = th.offsetWidth + 'px';
-        fixedCols[i].style.minWidth = th.offsetWidth + 'px';
-        fixedCols[i].style.textAlign = window.getComputedStyle(th).textAlign;
-      }
-    });
-    fixedTable.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.width = realTable.offsetWidth + 'px';
-    fixedBar.style.left = realTable.getBoundingClientRect().left + 'px';
-  }
-
-  // Header no longer sticky — fixed column-header bar pins to top of viewport
-  // when the real thead scrolls off screen.
-  const topOffset = 0;
-  fixedBar.style.top = topOffset + 'px';
-  fixedBar.style.display = 'none';
-
-  // Show when real thead scrolls out of view, hide when it comes back
-  window.addEventListener('scroll', function(){
-    const theadRect = realThead.getBoundingClientRect();
-    if(theadRect.top < topOffset){
-      fixedBar.style.display = 'block';
-    } else {
-      fixedBar.style.display = 'none';
-    }
-  });
-
-  // MOBILE_TIGHTEN_V1 / HEADER_HSCROLL_SYNC_V1 (April 25, 2026) — when the
-  // table's horizontal scroll container scrolls left/right, the position:fixed
-  // header was getting left behind because its `left` was set once at sync
-  // time using getBoundingClientRect(). On mobile (where the table is wider
-  // than the viewport and side-scrolls), this caused the header to desync from
-  // the body. Fix: subscribe to horizontal scroll on the .table-wrap container
-  // that wraps #main-table and offset the fixed header's left to match.
-  const tableWrap = document.querySelector('#main-table') ? document.querySelector('#main-table').closest('.table-wrap') : null;
-  if(tableWrap){
-    let _initialLeft = null;
-    tableWrap.addEventListener('scroll', function(){
-      if(_initialLeft === null){
-        // Capture the table's offset relative to viewport BEFORE any horizontal
-        // scroll has happened. Subsequent calls subtract scrollLeft from this.
-        _initialLeft = realTable.getBoundingClientRect().left + tableWrap.scrollLeft;
-      }
-      fixedBar.style.left = (_initialLeft - tableWrap.scrollLeft) + 'px';
-    });
-  }
-}
-
-// Initialize after page loads
-window.addEventListener('load', function(){
-  setTimeout(syncMainFixedHeader, 300);
-});
+// MAIN_CLONE_STRIP_V1 (2026-05-28) — removed syncMainFixedHeader() function
+// and its window.load 300ms init. Sticky CSS at line 212 pins the real thead;
+// the JS clone was the source of the misalignment bug The Dude flagged this
+// morning (yellow vertical gridlines drifting off the body columns).
+// Architectural pattern matches PROSPECTS_CLONE_STRIP_V1 (5/28), POOL/LEADERS/TANK
+// sticky migrations (5/19), and the "NO MORE CLONE HEADERS" standing rule.
 
 </script>
 
