@@ -15461,7 +15461,7 @@ function renderGameLog(mlbId){
   //
   // 12 columns total: Date, Opp, Pos, H, AB, R, HR, RBI, SB, BB, K, AVG
   // (Status is represented by the row's DNP chip in the Opp cell area — see below.)
-  var headers = ['Date','Opp','Pos','H','AB','R','HR','RBI','SB','BB','K','AVG'];
+  var headers = ['Date','Opp','Pos','AB','H','R','HR','RBI','SB','BB','K','AVG'];
   var leftCols = {0:1, 1:1}; // Date, Opp align left
   // GAMELOG_INLINE_WIDTHS_V1 (May 20, 2026 — PC Walter) — bake column widths
   // directly into the th HTML as both width attribute AND inline style. CSS
@@ -15560,12 +15560,13 @@ function renderGameLog(mlbId){
       hC = abC = rC = hrC = rbiC = sbC = bbC = kC = avgCell2 = dash();
     }
 
-    // Row structure: 12 cells — Date, Opp, Pos/Status, H, AB, R, HR, RBI, SB, BB, K, AVG
+    // Row structure: 12 cells — Date, Opp, Pos/Status, AB, H, R, HR, RBI, SB, BB, K, AVG
+    // (H_AB_REORDER_V1, 2026-05-28 — AB now leads H to match standard box-score order)
     rowsHtml += '<tr' + rcls2 + '>'
       + '<td class="gl-left gl-date">' + escapeHtml(r2.date_short || r2.date || '') + '</td>'
       + '<td class="gl-left ' + (r2.home ? 'gl-opp-home' : 'gl-opp-away') + '">' + escapeHtml(String(r2.opp || '\u2014')) + '</td>'
       + posCell
-      + hC + abC + rC + hrC + rbiC + sbC + bbC + kC
+      + abC + hC + rC + hrC + rbiC + sbC + bbC + kC
       + avgCell2
       + '</tr>';
   }
@@ -15588,8 +15589,8 @@ function renderGameLog(mlbId){
   var footHtml = '<tr class="gl-total-row">'
     + '<td class="gl-left gl-total-label" colspan="2">L' + (s.window || 7) + ' Totals</td>'
     + '<td class="gl-total-starts">' + tot.starts + ' G</td>'
-    + '<td class="gl-hit-stat"><strong>' + tot.h   + '</strong></td>'
     + '<td class="gl-hit-stat"><strong>' + tot.ab  + '</strong></td>'
+    + '<td class="gl-hit-stat"><strong>' + tot.h   + '</strong></td>'
     + '<td class="gl-hit-stat"><strong>' + tot.r   + '</strong></td>'
     + '<td class="gl-hit-stat"><strong>' + tot.hr  + '</strong></td>'
     + '<td class="gl-hit-stat"><strong>' + tot.rbi + '</strong></td>'
