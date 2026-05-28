@@ -944,7 +944,10 @@ tr.drag-over{border-top:2px solid var(--gold)}
 #tank-wrap .table-wrap thead{position:sticky;top:0;z-index:10;background:var(--surface);}
 #tank-wrap .table-wrap thead th{background:var(--surface);}
 #tank-wrap .table-wrap{overflow:visible;}
-/* Prospects uses clone-header approach; thead stickiness handled via JS, not CSS */
+/* PROSPECTS_CLONE_STRIP_V1 (May 28, 2026) — old comment said "Prospects uses
+   clone-header approach." That stopped being true on 5/19 when sticky CSS was
+   added at line ~1018 (#pros-table-wrap thead). Today removed the dead clone
+   machinery entirely. Prospects uses native position:sticky like every other tab. */
 .pool-table{width:100%;border-collapse:separate;border-spacing:0;min-width:900px}
 .pool-table thead tr{border-bottom:2px solid var(--border2)}
 .pool-table th{padding:6px 8px;font-family:'Nunito Sans',sans-serif;font-size:10px;color:var(--text3);text-align:left;background:var(--surface);white-space:nowrap;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;user-select:none}
@@ -995,9 +998,11 @@ tr.drag-over{border-top:2px solid var(--gold)}
 .context-table-wrap{overflow-x:auto;padding:0 0 2rem}
 .context-table-wrap .pool-table thead th{background:var(--surface);}
 /* Pool clone fixed header - appears when pool thead scrolls off screen */
-#pool-clone-header,#leaders-clone-header,#pros-clone-header,#tank-clone-header{display:none;position:fixed;left:0;right:0;z-index:62;background:var(--bg);border-bottom:2px solid var(--gold2);overflow:hidden;pointer-events:auto;}
-#pool-clone-header table,#leaders-clone-header table,#pros-clone-header table,#tank-clone-header table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
-#pool-clone-header th,#leaders-clone-header th,#pros-clone-header th,#tank-clone-header th{padding:5px 4px;font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--text);text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);}
+/* PROSPECTS_CLONE_STRIP_V1 (May 28, 2026) — removed #pros-clone-header from
+   the three combined selectors below. Prospects now uses CSS position:sticky. */
+#pool-clone-header,#leaders-clone-header,#tank-clone-header{display:none;position:fixed;left:0;right:0;z-index:62;background:var(--bg);border-bottom:2px solid var(--gold2);overflow:hidden;pointer-events:auto;}
+#pool-clone-header table,#leaders-clone-header table,#tank-clone-header table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;}
+#pool-clone-header th,#leaders-clone-header th,#tank-clone-header th{padding:5px 4px;font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--text);text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--bg);}
 /* Prospects table: auto layout so global nth-child widths don't corrupt the different column set */
 #pros-main-table{table-layout:auto;}
 /* POOL_LEADERS_AUTO_LAYOUT_V1 (May 12, 2026 — PC Walter) — extended the same
@@ -3015,8 +3020,9 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
 <!-- ============================================================ -->
 <!-- PROSPECTS PANEL -->
 <!-- ============================================================ -->
-<!-- PROSPECTS CLONE FIXED HEADER — appears when stat thead scrolls off screen -->
-<div id="pros-clone-header"><table id="pros-clone-table" style="width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;"></table></div>
+<!-- PROSPECTS_CLONE_STRIP_V1 (May 28, 2026) — removed the empty
+     `<div id="pros-clone-header">` here. Header pinning is now handled
+     entirely by CSS position:sticky on `#pros-table-wrap thead th`. -->
 
 <div class="pool-wrap" id="prospects-wrap">
   <!-- Everything scrolls together: secondary header slides under main header, stat row sticks via clone -->
@@ -14654,88 +14660,40 @@ function destroyLeadersFixedHeader(){
 }
 function syncProspectsFixedHeader(){ attachProspectsScrollHandler(); }
 function destroyProspectsFixedHeader(){
+  // PROSPECTS_CLONE_STRIP_V1 — removed the `cloneBar.style.display = 'none'`
+  // line. The clone bar no longer exists in the DOM, so calling getElementById
+  // on it would return null and the line was a no-op. Keep the listener detach.
   const scrollEl = document.getElementById('pros-rows-scroll');
   if(scrollEl && prosScrollHandler) scrollEl.removeEventListener('scroll', prosScrollHandler);
   prosScrollHandler = null;
-  const cloneBar = document.getElementById('pros-clone-header');
-  if(cloneBar) cloneBar.style.display = 'none';
 }
 var prosScrollHandler = null;
+// PROSPECTS_CLONE_STRIP_V1 (May 28, 2026 — PC Walter, per The Dude) — function
+// gutted from ~80 lines down to ~22. The old version built a cloned thead,
+// measured column widths, wired up onclick handlers, then immediately hid the
+// clone because Prospects switched to CSS position:sticky on 5/19. Pure dead
+// weight every time Prospects opened. Today removed all of it. What's left:
+// the header-slide-up animation, which is the only thing this scroll handler
+// is now responsible for. Function name + variable name preserved so the four
+// call sites elsewhere in the file (openProspects, closeProspects, loadProspects,
+// syncProspectsFixedHeader) don't need to change.
 function attachProspectsScrollHandler(){
-  const scrollEl  = document.getElementById('pros-rows-scroll');
-  const cloneBar   = document.getElementById('pros-clone-header');
-  const cloneTable = document.getElementById('pros-clone-table');
-  if(!scrollEl || !cloneBar || !cloneTable) return;
+  const scrollEl = document.getElementById('pros-rows-scroll');
+  if(!scrollEl) return;
 
   if(prosScrollHandler) scrollEl.removeEventListener('scroll', prosScrollHandler);
 
-  function buildClone(){
-    const realThead = document.getElementById('pros-main-thead');
-    if(!realThead) return;
-    const clone = realThead.cloneNode(true);
-    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-    // CLONE_HEADER_SELECTOR_FIX_V1 (May 18, 2026) — must use 'th' (not 'th[onclick]') so the
-    // clone's index matches the real thead's index. The previous selector skipped THs without
-    // onclick (like Pos), making clone[N] receive realThead[N+1]'s onclick — every sort header
-    // was offset when clicked via the sticky clone bar shown after the user scrolled.
-    clone.querySelectorAll('th').forEach((th, i) => {
-      const realTh = realThead.querySelectorAll('th')[i];
-      if(realTh && realTh.getAttribute('onclick')) th.setAttribute('onclick', realTh.getAttribute('onclick'));
-    });
-    cloneTable.innerHTML = '';
-    cloneTable.appendChild(clone);
-    // Read actual rendered widths from the real thead (works with table-layout:auto)
-    const realTable = realThead.closest('table');
-    if(realTable){
-      const realCols = realThead.querySelectorAll('th');
-      const fixedCols = cloneTable.querySelectorAll('th');
-      realCols.forEach((th, i) => {
-        if(fixedCols[i]){
-          fixedCols[i].style.width = th.offsetWidth + 'px';
-          fixedCols[i].style.minWidth = th.offsetWidth + 'px';
-        }
-      });
-      cloneTable.style.width = realTable.offsetWidth + 'px';
-    }
-  }
-
-  function positionCloneBar(){
-    const prosWrap = document.getElementById('prospects-wrap');
-    const wrapTop = prosWrap ? prosWrap.getBoundingClientRect().top : 0;
-    cloneBar.style.top = wrapTop + 'px';
-    cloneBar.style.left = '0';
-    cloneBar.style.right = '0';
-  }
-
-  // Threshold = toolbar height. Once scrollTop exceeds it, clone bar appears.
-  const toolbarEl = document.getElementById('pros-toolbar');
-  const cachedThreshold = toolbarEl ? toolbarEl.offsetHeight : 56;
-
-  buildClone();
-  positionCloneBar();
-
-  let cloneVisible = false;
   prosScrollHandler = function(){
-    const scrollTop = scrollEl.scrollTop;
-
-    // Slide the main page header up as user scrolls inside the tab.
+    // Slide the main page header up as user scrolls inside the tab — same
+    // visual pattern as Pool / Leaders / Tank. Matt likes this. Keep.
     const mainHeader = document.querySelector('.header');
     const wrap = document.getElementById('prospects-wrap');
     if(mainHeader && wrap){
+      const scrollTop = scrollEl.scrollTop;
       const headerH = mainHeader.offsetHeight;
       const slideUp = Math.min(scrollTop, headerH);
       mainHeader.style.transform = 'translateY(-' + slideUp + 'px)';
-      const currentTop = headerH - slideUp;
-      wrap.style.top = currentTop + 'px';
-      cloneBar.style.top = currentTop + 'px';
-    }
-
-    // Prospects clone bar disabled — the real #pros-main-thead is now
-    // position:sticky, which handles the table-layout:auto column-width
-    // problem natively (no snapshot, so no stale widths).
-    if(cloneVisible){
-      cloneBar.style.display = 'none';
-      cloneVisible = false;
+      wrap.style.top = (headerH - slideUp) + 'px';
     }
   };
   scrollEl.addEventListener('scroll', prosScrollHandler);
