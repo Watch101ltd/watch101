@@ -14025,8 +14025,14 @@ function _applyActiveSampleToFlatFields(p, tableName){
   if(!sample || sample === p) return;
   // Stat fields that show up on the rendered tables. Same list as the
   // counting + rate stats the prospect bulk-fetch builds.
+  // KBB_BB_PIT_RESTORE_V1 (2026-05-28) — bb_pit was missing from KEYS, which
+  // caused _applyActiveSampleToFlatFields to NULL p.bb_pit on every refresh
+  // (line 14037 else branch). Stale bb_pit values from earlier code paths then
+  // produced astronomical kbb_ratio values for low-walk pitchers (Montero K=39,
+  // bb_pit stale at 1 → kbb_ratio=39 instead of real ~2.6). Pairs with the
+  // _normalizeMlbStatSplit fix below — both holes need closing.
   const KEYS = ['ab','r','hr','rbi','sb','avg','obp','ops',
-                'ip','k','w','sv','hld','era','whip'];
+                'ip','k','w','sv','hld','era','whip','bb_pit'];
   KEYS.forEach(k => {
     if(sample[k] !== undefined && sample[k] !== null){
       p[k] = sample[k];
@@ -14078,6 +14084,11 @@ function _normalizeMlbStatSplit(rawStat, group){
     out.hld  = s.holds          != null ? Number(s.holds)              : null;
     out.era  = s.era            != null ? parseFloat(s.era)            : null;
     out.whip = s.whip           != null ? parseFloat(s.whip)           : null;
+    // KBB_BB_PIT_RESTORE_V1 (2026-05-28) — extract baseOnBalls into bb_pit so
+    // the sample object has the walks count downstream code (kbb_ratio formula,
+    // k_per_9 if needed) needs to compute correctly. Missing this was half of
+    // the K/BB-displays-astronomical-values bug Matt flagged.
+    out.bb_pit = s.baseOnBalls  != null ? Number(s.baseOnBalls)        : null;
   }
   return out;
 }
