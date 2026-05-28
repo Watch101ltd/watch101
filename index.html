@@ -13496,6 +13496,14 @@ async function fetchSampleBackfillForListPlayers(targetArray, surfaceName){
       // _applyActiveSampleToFlatFields uses the active surface default (MLB for
       // watch/pool/leaders/context; MiLB only on prospects which has its own bulk).
       _applyActiveSampleToFlatFields(p, _surface);
+      // KBB_BACKFILL_RECOMPUTE_V1 (2026-05-28) — SAMPLE_BACKFILL was overwriting
+      // statsMlb/bb_pit but never recomputing kbb_ratio or k_per_9. The auto-refresh
+      // path at line 12836 already does this; SAMPLE_BACKFILL was missing it.
+      // Without these two lines, the renderTable at line 13504 paints with whatever
+      // kbb_ratio was on the player from the saved NAS record, which doesn't match
+      // the freshly-applied bb_pit. Matt saw 39.00 for low-walk pitchers as a result.
+      p.kbb_ratio = (typeof p.bb_pit === 'number' && p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
+      p.k_per_9 = (typeof p.ip === 'number' && p.ip > 0 && p.k != null) ? +((p.k * 9) / p.ip).toFixed(2) : null;
     }
   });
   console.log('[SAMPLE_BACKFILL]', _surface, '— resolved samples for', _hitCount, '/', targets.length, 'players.');
