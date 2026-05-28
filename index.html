@@ -944,6 +944,19 @@ tr.drag-over{border-top:2px solid var(--gold)}
 #tank-wrap .table-wrap thead{position:sticky;top:0;z-index:10;background:var(--surface);}
 #tank-wrap .table-wrap thead th{background:var(--surface);}
 #tank-wrap .table-wrap{overflow:visible;}
+/* MAIN_STICKY_ENABLE_V1 (May 28, 2026) — same architectural fix as POOL_STICKY_V1
+   / LEADERS_STICKY_* / TANK_STICKY_V1. Main page's .table-wrap (#main-wrap, the
+   one wrapping #main-table) is the LAST tab that wasn't getting this treatment.
+   Without these three rules: (a) the sticky thead has no solid background, so
+   scrolling rows show through it — looks invisible; (b) the wrapper's default
+   overflow:auto traps sticky inside itself instead of letting it pin to the
+   viewport. MAIN_CLONE_STRIP_V1 stripped the JS clone bar that was masking
+   these missing rules — once the clone was gone, the bare sticky rule at line 212
+   couldn't do the job alone. Adding both pieces here mirrors what every other
+   tab already has. */
+#main-wrap.table-wrap thead{position:sticky;top:0;z-index:10;background:var(--surface);}
+#main-wrap.table-wrap thead th{background:var(--surface);}
+#main-wrap.table-wrap{overflow:visible;}
 /* PROSPECTS_CLONE_STRIP_V1 (May 28, 2026) — old comment said "Prospects uses
    clone-header approach." That stopped being true on 5/19 when sticky CSS was
    added at line ~1018 (#pros-table-wrap thead). Today removed the dead clone
@@ -2016,7 +2029,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
   <span id="daterange-status-count"></span>
 </div>
 
-<div class="table-wrap">
+<div class="table-wrap" id="main-wrap">
   <table id="main-table">
     <thead>
       <tr>
