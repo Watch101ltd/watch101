@@ -15993,9 +15993,21 @@ function renderSchedule7D(mlbId){
       // rotation around this pitcher and reconstruct when his next start
       // is likely. Falls back to "Team game" when own_pp_name is null,
       // which happens past the ~3-day MLB API horizon.
+      // OWN_ROTATION_V1 POLISH (2026-05-29) — on this pitcher's PROBABLE
+      // START day, append the opposing pitcher inside the gold pill so
+      // Matt sees the duel matchup at a glance. Shows "vs TBD" when MLB
+      // hasn't announced the other side yet (keeps layout consistent).
       if(startsSet[d.date]){
+        var oppBit = '';
+        if(d.opp_pp_name){
+          oppBit = ' vs ' + esc(d.opp_pp_name);
+          if(d.opp_pp_hand) oppBit += '<span class="hand">('+esc(d.opp_pp_hand)+')</span>';
+          if(typeof d.opp_pp_era === 'number') oppBit += '<span class="era">'+d.opp_pp_era.toFixed(2)+' ERA</span>';
+        } else {
+          oppBit = ' vs <span class="hand">TBD</span>';
+        }
         pp = '<span class="ppo-sched-prob-pill">PROBABLE START <span class="pill-loc">'
-           + (d.at_home ? 'Home' : 'Road') + '</span></span>';
+           + (d.at_home ? 'Home' : 'Road') + '</span>' + oppBit + '</span>';
       } else if(d.own_pp_name){
         pp = esc(d.own_pp_name);
         if(d.own_pp_hand) pp += '<span class="hand">('+esc(d.own_pp_hand)+')</span>';
@@ -17285,7 +17297,7 @@ function attachTankScrollHandler(){
     </section>
     <section class="ppo-block">
       <h2>Upcoming Games</h2>
-      <div class="ppo-note backend-only">Upcoming schedule &middot; Hitters show opposing probable pitcher (hand, ERA) &middot; Pitchers show their probable starts only &middot; Green = favorable matchup, Red = tough</div>
+      <div class="ppo-note backend-only">Upcoming schedule &middot; All pages show this team's rotation (own probable pitchers) &middot; Hitter rows colored by opposing pitcher matchup &middot; Pitcher start days show the opposing-pitcher duel &middot; Green = favorable matchup, Red = tough</div>
       <div id="ppo-schedule"></div>
     </section>
   </div>
