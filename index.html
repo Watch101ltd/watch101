@@ -7560,13 +7560,6 @@ function pickStatSource(group){
 }
 
 function renderTable(){
-  // DRAGLAG-LOG (temporary) — log every renderTable call, with drag state + caller.
-  try{
-    var _rtDrag = (typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null) || (typeof _tierDragPayload !== 'undefined' && _tierDragPayload);
-    var _rtCaller = (new Error()).stack.split('\n')[2] || '';
-    _rtCaller = _rtCaller.trim().replace(/^at\s+/,'').split(' ')[0];
-    console.log('%c[DRAGLAG-LOG] renderTable() called — dragActive='+(!!_rtDrag)+'  caller='+_rtCaller, 'color:#06c;font-weight:bold');
-  }catch(e){}
   let list = getFiltered();
   const tbody = document.getElementById('tbody');
   document.getElementById('count-badge').textContent = list.length+' player'+(list.length!==1?'s':'');
@@ -7748,12 +7741,8 @@ function fitPlayerNames(){
   // renderTable() runs it once after dragend, so names still fit correctly.
   if((typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null) ||
      (typeof _tierDragPayload !== 'undefined' && _tierDragPayload)){
-    try{ console.log('%c[DRAGLAG-LOG] fitPlayerNames SKIPPED (drag active)','color:#0a0'); }catch(e){}
     return;
   }
-  // DRAGLAG-LOG (temporary) — time how long the name-fit pass takes and how
-  // many names it processes, so we can see it landing during/after an add.
-  var _dlT0 = (performance && performance.now) ? performance.now() : Date.now();
   var nameEls = document.querySelectorAll('#tbody .player-name');
   for(var i=0;i<nameEls.length;i++){
     var nameEl = nameEls[i];
@@ -7768,12 +7757,6 @@ function fitPlayerNames(){
       nameEl.style.fontSize = size + 'px';
     }
   }
-  // DRAGLAG-LOG (temporary)
-  try{
-    var _dlMs = ((performance && performance.now) ? performance.now() : Date.now()) - _dlT0;
-    var _dragNow = (typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null) || (typeof _tierDragPayload !== 'undefined' && _tierDragPayload);
-    console.log('%c[DRAGLAG-LOG] fitPlayerNames RAN — '+nameEls.length+' names, '+_dlMs.toFixed(1)+'ms, dragActive='+(!!_dragNow), 'color:#c00;font-weight:bold');
-  }catch(e){}
 }
 
 // MLB API SEARCH
@@ -8871,7 +8854,48 @@ function activeListAddLabel(prefix){
   const p = prefix || '+ Add to ';
   return p + activeListName();
 }
-async function autoSaveToNAS(){
+// DRAG_LAG_FIX_V5 (2026-05-29) — DEBOUNCED AUTOSAVE. ROOT CAUSE of the lag
+// that survived V2/V3/V4: timing logs proved the freeze is NOT the drag — it's
+// a ~2-second `click` handler (logged "click handler took 1896ms / 2035ms").
+// Every add/drop/promote called autoSaveToNAS() which calls exportXLSX() — a
+// FULL .xlsx spreadsheet build + JSON sidecar write to disk, synchronously.
+// Doing remove→add→drag stacks three of those ~2s writes; the page is frozen
+// underneath, which FEELS like drag lag. Fix: every existing call site still
+// calls autoSaveToNAS() (no call-site edits — there are ~18 of them), but it's
+// now a DEBOUNCED wrapper. It schedules the real save ~1.5s after your LAST
+// action and coalesces a burst into ONE write. The heavy original is renamed
+// autoSaveToNAS_now(). saveData() (localStorage) still runs immediately at
+// every call site, so nothing is at risk in the moment — only the heavy NAS/
+// Excel write is deferred. A pagehide/visibilitychange flush guarantees a
+// pending save fires before the tab closes, so debouncing can never lose work.
+let _autoSaveTimer = null;
+let _autoSavePending = false;
+const _AUTOSAVE_DEBOUNCE_MS = 1500;
+function autoSaveToNAS(){
+  // Returns a resolved promise immediately so `await autoSaveToNAS()` at the
+  // ~18 call sites doesn't block the UI. The real write happens on the timer.
+  _autoSavePending = true;
+  if(_autoSaveTimer) clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(function(){
+    _autoSaveTimer = null;
+    _autoSavePending = false;
+    autoSaveToNAS_now().catch(function(e){ console.warn('[DRAG_LAG_FIX_V5] debounced autosave failed:', e); });
+  }, _AUTOSAVE_DEBOUNCE_MS);
+  return Promise.resolve();
+}
+// Flush a pending save immediately if the tab is being hidden/closed, so a
+// debounced-but-not-yet-written change can never be lost.
+function _flushAutoSaveNow(){
+  if(_autoSavePending){
+    if(_autoSaveTimer){ clearTimeout(_autoSaveTimer); _autoSaveTimer = null; }
+    _autoSavePending = false;
+    try { autoSaveToNAS_now(); } catch(e){ console.warn('[DRAG_LAG_FIX_V5] flush autosave failed:', e); }
+  }
+}
+window.addEventListener('pagehide', _flushAutoSaveNow);
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') _flushAutoSaveNow(); });
+
+async function autoSaveToNAS_now(){
   // Silent companion to exportXLSX(). Called from the four quick-add handlers so every
   // + Add click commits the updated player list to the NAS as well as localStorage.
   try {
