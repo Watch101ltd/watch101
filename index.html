@@ -9435,6 +9435,10 @@ function _hideDropIndicator(){
   // Pill toggling lives in Push 3, but pre-hide here too for safety.
   var pill = document.getElementById('drop-indicator-pill');
   if(pill) pill.style.display = 'none';
+  // DRAG_LAG_FIX_V4 (2026-05-29) — reset the pill text/visibility cache so the
+  // next drag re-writes the text on its first move (and re-shows the pill).
+  _lastPillRank = null;
+  _pillShown = false;
 }
 
 /* Position the insertion bar in the gap above OR below the given row.
@@ -9460,13 +9464,30 @@ function _positionDropIndicatorBar(rowEl, above, cachedRect){
    The pill is position:fixed so we don't need to add scroll offsets.
    Offset 14px right and 18px down so it sits just below the cursor and
    doesn't block what the cursor is hovering. */
+// DRAG_LAG_FIX_V4 (2026-05-29) \u2014 only rewrite the pill's TEXT when the rank
+// number actually changes. ROOT CAUSE of the lag that survived V2+V3: the
+// 4th DevTools trace fingerprinted 1,353 `set textContent` samples and ALL of
+// them traced (via call stack) to THIS function. It was rewriting
+// pill.textContent on every dragover (~60/sec) \u2014 usually to the identical
+// string ("\u2192 Rank 57" \u2192 "\u2192 Rank 57" \u2026). Each textContent write on a
+// position:fixed element forces layout work; hundreds per drag = the storm.
+// The rank only changes when the cursor crosses into a new drop slot (a dozen
+// times in a drag, not 1,353). Cache the last value; skip the write when
+// unchanged. Position (left/top) still updates every move so the pill tracks
+// the cursor \u2014 those style writes are cheap relative to the text reflow.
+// display is also only flipped once. Reset cache in _hideDropIndicator.
+var _lastPillRank = null;
+var _pillShown = false;
 function _showDropIndicatorPill(clientX, clientY, rankNum){
   var pill = document.getElementById('drop-indicator-pill');
   if(!pill) return;
-  pill.textContent = '\u2192 Rank ' + rankNum;
+  if(rankNum !== _lastPillRank){
+    pill.textContent = '\u2192 Rank ' + rankNum;
+    _lastPillRank = rankNum;
+  }
   pill.style.left = (clientX + 14) + 'px';
   pill.style.top  = (clientY + 18) + 'px';
-  pill.style.display = 'block';
+  if(!_pillShown){ pill.style.display = 'block'; _pillShown = true; }
 }
 
 /* Compute the destination rank for a single-player drag landing above-or-below
