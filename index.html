@@ -4518,8 +4518,14 @@ function renderDelta(p){
   }
   // State 2: BLUE — baselined but flagged 'new' until next Approve clears it.
   // Also fires when publish_count_since_new <= 1 (pre-existing NEW_EMOJI lifecycle).
+  // NEW_BADGE_RDELTA_V1_REV2 (2026-05-29) — extra guard: badge only fires if the
+  // player hasn't moved since baseline (prev_rank === rank). The moment Matt
+  // drags a "new" player, the integer takes over so Matt sees real movement.
+  // Without this guard, a counter-reset would freeze every player on BLUE until
+  // two more publish cycles tick by — even players Matt actively re-ranked.
   var pc = parseInt(p.publish_count_since_new, 10);
-  if(p.move === 'new' || (!isNaN(pc) && pc <= 1)){
+  var unmovedSinceBaseline = (p.prev_rank != null && p.prev_rank === p.rank);
+  if(unmovedSinceBaseline && (p.move === 'new' || (!isNaN(pc) && pc <= 1))){
     var pinnedAt = (p.prev_rank != null) ? p.prev_rank : p.rank;
     return '<span class="rdelta-new-badge rdelta-new-blue" title="New since last publish — baseline at rank #' + pinnedAt + '">🆕 NEW</span>';
   }
