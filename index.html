@@ -7730,31 +7730,50 @@ function renderTable(){
 // Default font is 14px; we step down by 0.5px until the name fits or we hit 9px floor.
 function fitPlayerNames(){
   // DRAG_LAG_FIX_V3 (2026-05-29) — SKIP entirely while a drag is in progress.
-  // ROOT CAUSE of the "lag comes back after you ADD a player" case JP found:
-  // adding a player calls renderTable(), which schedules this via setTimeout;
-  // drop() also calls renderTable() and re-schedules it. This function reads
-  // cell.scrollWidth + cell.clientWidth in a while-loop over EVERY name —
-  // each read forces a layout reflow. During a drag that measure-storm lands
-  // on every render and tanks the frame rate (JP's 3rd trace: 259 janky
-  // frames >50ms, `get scrollWidth` + `fitPlayerNames` near the top). Name
-  // widths don't change mid-drag, so skipping is free. The post-drag
-  // renderTable() runs it once after dragend, so names still fit correctly.
   if((typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null) ||
      (typeof _tierDragPayload !== 'undefined' && _tierDragPayload)){
     return;
   }
+  // DRAG_LAG_FIX_V6 (2026-05-29) — MEASURE-ONCE, BATCHED. ROOT CAUSE the deep
+  // traces kept surfacing: this was the #1 cost on every drop (376 `get
+  // scrollWidth` samples, all from here). The OLD version shrank the font 0.5px
+  // at a time in a while-loop, RE-MEASURING scrollWidth after every step —
+  // up to 12 layout-forcing reflows PER name × 70 names. And it interleaved
+  // reads (scrollWidth) with writes (style.fontSize), the classic layout-thrash
+  // pattern that forces a fresh reflow on every single iteration.
+  //
+  // NEW approach: two clean phases, no interleaving.
+  //   Phase 1 (READ): reset every name to 14px, then read each cell's
+  //     scrollWidth + clientWidth ONCE. All reads batched together so the
+  //     browser does at most one reflow for the whole group.
+  //   Phase 2 (WRITE): compute the exact font size from the overflow ratio
+  //     (one calculation, no loop) and write it. Writes batched, no reads
+  //     in between, so no forced reflow per name.
+  // Same visual result (long names scaled down to fit, floor 9px) at a tiny
+  // fraction of the layout cost. See DRAG_LAG_FIX_V6 feature file for the
+  // full saga (V2 observer, V3 guard, V4 pill, V5 autosave debounce, V6 this).
   var nameEls = document.querySelectorAll('#tbody .player-name');
+  if(!nameEls.length) return;
+  var BASE = 14, FLOOR = 9;
+  var measures = []; // {el, target}
+  // Phase 1 — reset + batch READ
   for(var i=0;i<nameEls.length;i++){
     var nameEl = nameEls[i];
-    var cell = nameEl.parentElement; // .name-cell
-    if(!cell) continue;
-    nameEl.style.fontSize = ''; // reset to default 14px each render
-    var size = 14;
-    // Use a generous overflow tolerance (1px) to avoid bouncing on subpixel rounding
-    var safety = 12; // max iterations to prevent runaway loops
-    while(cell.scrollWidth > cell.clientWidth + 1 && size > 9 && safety-- > 0){
-      size -= 0.5;
-      nameEl.style.fontSize = size + 'px';
+    var cell = nameEl.parentElement;
+    if(!cell){ continue; }
+    nameEl.style.fontSize = ''; // back to default before measuring
+    measures.push({ el: nameEl, scroll: cell.scrollWidth, client: cell.clientWidth });
+  }
+  // Phase 2 — compute + batch WRITE (no reads here, so no reflow per item)
+  for(var j=0;j<measures.length;j++){
+    var m = measures[j];
+    if(m.scroll > m.client + 1 && m.client > 0){
+      // Scale font down by the width ratio so the text fits in one shot.
+      // Multiply by 0.98 for a small safety margin against subpixel rounding.
+      var size = BASE * (m.client / m.scroll) * 0.98;
+      if(size < FLOOR) size = FLOOR;
+      if(size > BASE) size = BASE;
+      m.el.style.fontSize = size.toFixed(1) + 'px';
     }
   }
 }
