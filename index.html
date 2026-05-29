@@ -639,6 +639,23 @@ tr td .name-cell:has(.must-watch-flash){
 body.day-mode .must-watch-flash{
   animation: must-watch-pulse-daymode 1.5s ease-in-out infinite;
 }
+/* DRAG_LAG_FIX_V8 (2026-05-29) — THE ROOT CAUSE, found via JP's A/B traces.
+   A clean "before add" vs "after add" recording showed the JavaScript was
+   IDENTICAL between smooth and laggy — but Paint cost DOUBLED (0.125 →
+   0.290ms per dragover). The lag was never in our JS; it's in PAINT. Culprit:
+   this must-watch-pulse glow is a 4-layer text-shadow on `animation: infinite`
+   with `will-change: text-shadow` — it repaints ~60×/sec forever. When a Must
+   Watch player is promoted back from the Tank (JP's exact repro: remove → add
+   → drag), the glow switches on and from then on every drag frame pays double
+   paint, tanking the frame rate. The glow is an idle attention-getter — it does
+   NOT need to animate while the fan is actively dragging. Suspend it for the
+   duration of a drag (body.dragging-active set in dragStart, cleared in the
+   dragend listener). Zero change to the glow's normal idle behavior. */
+body.dragging-active .must-watch-flash{
+  animation: none !important;
+  text-shadow: none !important;
+  will-change: auto !important;
+}
 /* /MUST_WATCH_FLASH_V1 */
 
 /* TIER_DRAG_V1 (May 17, 2026) — Tier armed-state pulse glow.
@@ -9568,6 +9585,9 @@ function _computeSinglePlayerDestRank(srcIdx, targetIdx, above){
 function dragStart(e,idx){
   dragSrcIdx=idx;
   e.currentTarget.classList.add('dragging');
+  // DRAG_LAG_FIX_V8 (2026-05-29) — flag the body so CSS suspends the expensive
+  // must-watch glow animation (4-layer text-shadow, infinite) for the drag.
+  try { document.body.classList.add('dragging-active'); } catch(_){}
   // DRAG_LAG_FIX_V2 (2026-05-29) — silence the MiLB-legend MutationObserver for
   // the duration of the drag. See setupMilbLegendObserver for the why. Resumed
   // in the global dragend listener.
@@ -9687,6 +9707,8 @@ document.addEventListener('dragend',()=>{
   // DRAG_LAG_FIX_V7 (2026-05-29) — clear the filtered-list cache so the next
   // render/drag recomputes fresh (the list may have changed on the drop).
   window._dragFilteredCache = null;
+  // DRAG_LAG_FIX_V8 (2026-05-29) — drag over; let the must-watch glow resume.
+  try { document.body.classList.remove('dragging-active'); } catch(_){}
 });
 
 /* DROP_INDICATOR_V1 Push 5 (May 17, 2026) — LEFT_MARGIN_DRIFT_FIX.
