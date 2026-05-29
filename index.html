@@ -9530,9 +9530,26 @@ function _positionDropIndicatorBar(rowEl, above, cachedRect){
   // no cached rect was passed (e.g. callers from older code paths).
   var rect = cachedRect || rowEl.getBoundingClientRect();
   var y = (above ? rect.top : rect.bottom) + window.scrollY - 2; // -2 centers the 5px bar on the gap
-  bar.style.top = y + 'px';
-  bar.style.left = (rect.left + window.scrollX) + 'px';
-  bar.style.width = rect.width + 'px';
+  var x = rect.left + window.scrollX;
+  // DRAG_LAG_FIX_V9 (2026-05-29) — THE ROOT CAUSE, named by JP with paint
+  // flashing: this full-table-width bar was flashing green on EVERY mouse-move.
+  // Cause: we set top/left/width every dragover — those are LAYOUT+PAINT
+  // properties, so the browser re-painted the entire wide bar ~60×/sec. After
+  // an add the table grows slightly, the bar's paint area grows with it, and the
+  // per-frame paint cost tips into visible jank (A/B traces: Paint was the only
+  // thing that differed; the per-event averages hid it because the freeze was a
+  // pile of paint work between dragover deliveries). FIX: pin the bar at 0,0
+  // once and MOVE it with transform:translate3d() — transforms are composited on
+  // the GPU and do NOT trigger a repaint, they just slide already-painted pixels.
+  // width still changes only when it actually differs (rows are uniform width,
+  // so this is rare). will-change keeps the bar on its own layer. This is the
+  // standard fix for a wide cursor-following element that repaints.
+  bar.style.left = '0px';
+  bar.style.top = '0px';
+  bar.style.willChange = 'transform';
+  var w = Math.round(rect.width);
+  if(bar._dlfLastW !== w){ bar.style.width = w + 'px'; bar._dlfLastW = w; }
+  bar.style.transform = 'translate3d(' + Math.round(x) + 'px,' + Math.round(y) + 'px,0)';
   bar.style.display = 'block';
 }
 
