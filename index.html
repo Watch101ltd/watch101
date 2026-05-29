@@ -9572,6 +9572,19 @@ function dragStart(e,idx){
   // the duration of the drag. See setupMilbLegendObserver for the why. Resumed
   // in the global dragend listener.
   try { if(window._milbLegendObserverPause) window._milbLegendObserverPause(); } catch(_){}
+  // DRAG_LAG_FIX_V7 (2026-05-29) — THE BIG ONE. JP's clue cracked it: drag is
+  // smooth on fresh load, but lags permanently once you ADD a player. The deep
+  // trace showed dragOver() calling getFiltered() on EVERY mouse-move (~60/sec).
+  // getFiltered() does `[...players]` (full array copy) + a chain of filters +
+  // a sort with per-player isPitcher()/getVal() lookups. A freshly-promoted
+  // player (with yesterday's new baseline_set/blue-badge fields) makes the sort
+  // comparator heavier per call, so post-add the per-move cost jumps and the
+  // drag tanks. But the filtered list DOES NOT CHANGE during a drag — no
+  // filtering or sorting happens while you hold a player. So we compute it ONCE
+  // here at dragStart, cache it, and serve every dragover from the cache.
+  // Cleared in the dragend listener. This is the cache Walter planned back in
+  // May but the flame chart deferred — the trace now confirms it's the cost.
+  try { window._dragFilteredCache = (typeof getFiltered === 'function') ? getFiltered() : null; } catch(_){ window._dragFilteredCache = null; }
   // DRAG_LAG_FIX_V1 Phase 1 — cache table left edge ONCE so document-level
   // dragover can early-out without calling getBoundingClientRect per move.
   try { if(window._drgLagSetTableLeftCache) window._drgLagSetTableLeftCache(); } catch(_){}
@@ -9602,7 +9615,10 @@ function dragOver(e,idx){
   // it's the tier's first player's rank), so we skip here to avoid double-fire.
   if(typeof _tierDragPayload === 'undefined' || !_tierDragPayload){
     if(dragSrcIdx !== null && dragSrcIdx !== undefined){
-      var list = getFiltered();
+      // DRAG_LAG_FIX_V7 — serve from the drag-start cache instead of rebuilding
+      // the filtered+sorted list on every mouse-move. Falls back to a live call
+      // if the cache is somehow absent (defensive).
+      var list = window._dragFilteredCache || getFiltered();
       if(list && list[dragSrcIdx] && list[idx]){
         var srcId = list[dragSrcIdx].id;
         var tgtId = list[idx].id;
@@ -9668,6 +9684,9 @@ document.addEventListener('dragend',()=>{
   // DRAG_LAG_FIX_V2 (2026-05-29) — re-arm the MiLB-legend observer now the drag
   // is over, and run one update so the chip reflects the final table state.
   try { if(window._milbLegendObserverResume) window._milbLegendObserverResume(); } catch(_){}
+  // DRAG_LAG_FIX_V7 (2026-05-29) — clear the filtered-list cache so the next
+  // render/drag recomputes fresh (the list may have changed on the drop).
+  window._dragFilteredCache = null;
 });
 
 /* DROP_INDICATOR_V1 Push 5 (May 17, 2026) — LEFT_MARGIN_DRIFT_FIX.
