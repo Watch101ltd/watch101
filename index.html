@@ -15998,13 +15998,19 @@ function renderSchedule7D(mlbId){
       // Matt sees the duel matchup at a glance. Shows "vs TBD" when MLB
       // hasn't announced the other side yet (keeps layout consistent).
       if(startsSet[d.date]){
+        // OWN_ROTATION_V1 POLISH v2 (2026-05-29) — wrap the entire vs-opposing
+        // chunk in .pill-loc so it inherits the existing 10px white Nunito Sans
+        // styling (same as 'Road'/'Home') instead of the pill's default bold
+        // gold Bowlby One. Without this, long opposing-pitcher names like
+        // "Chris Paddack" overflow the pill on the right edge.
         var oppBit = '';
         if(d.opp_pp_name){
-          oppBit = ' vs ' + esc(d.opp_pp_name);
+          oppBit = ' <span class="pill-loc">vs ' + esc(d.opp_pp_name);
           if(d.opp_pp_hand) oppBit += '<span class="hand">('+esc(d.opp_pp_hand)+')</span>';
           if(typeof d.opp_pp_era === 'number') oppBit += '<span class="era">'+d.opp_pp_era.toFixed(2)+' ERA</span>';
+          oppBit += '</span>';
         } else {
-          oppBit = ' vs <span class="hand">TBD</span>';
+          oppBit = ' <span class="pill-loc">vs <span class="hand">TBD</span></span>';
         }
         pp = '<span class="ppo-sched-prob-pill">PROBABLE START <span class="pill-loc">'
            + (d.at_home ? 'Home' : 'Road') + '</span>' + oppBit + '</span>';
