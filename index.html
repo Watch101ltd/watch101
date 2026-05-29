@@ -571,12 +571,9 @@ body.day-mode .flame-warm{
   background:rgba(239,68,68,0.15);
   color:#ef4444;
   border:1px solid rgba(239,68,68,0.45);
-  cursor:pointer;
   user-select:none;
-}
-.rdelta-new-badge.rdelta-new-red:hover{
-  background:rgba(239,68,68,0.28);
-  border-color:rgba(239,68,68,0.7);
+  /* NEW_BADGE_RDELTA_V1_REV3 — cursor:pointer + :hover removed. Red badge is
+     non-clickable; the only way out of the red state is the approval batch. */
 }
 .rdelta-new-badge.rdelta-new-blue{
   background:rgba(59,130,246,0.18);
@@ -4514,7 +4511,13 @@ function pctShadeStyle(pct, higherIsBetter){
 function renderDelta(p){
   // State 1: RED — baseline not yet pinned for this newly-added player.
   if(p.baseline_set === false){
-    return '<span class="rdelta-new-badge rdelta-new-red" onclick="event.stopPropagation(); commitNewBaseline(\'' + p.id + '\')" title="Click to baseline this player at rank #' + p.rank + '">🆕 NEW</span>';
+    // NEW_BADGE_RDELTA_V1_REV3 (2026-05-29) — red badge is now NON-CLICKABLE and
+    // IMMUNE to math. It stays red regardless of any drag/bump until the
+    // approval batch file (_stamp_baseline.py) flips baseline_set to true,
+    // which graduates it to the blue state. Per The Dude\'s spec: red badges
+    // do not show integers, do not get clicked, and do not affect other
+    // players' deltas. The only red->blue transition is approval.
+    return '<span class="rdelta-new-badge rdelta-new-red" title="New since last publish — locked until approval">🆕 NEW</span>';
   }
   // State 2: BLUE — baselined but flagged 'new' until next Approve clears it.
   // Also fires when publish_count_since_new <= 1 (pre-existing NEW_EMOJI lifecycle).
@@ -4554,39 +4557,15 @@ function renderDelta(p){
 // autoSaveToNAS) so the pin survives a page reload AND Matt sees the change
 // reflected in his next session.
 async function commitNewBaseline(playerId){
-  if(typeof _blockIfReadOnly === 'function' && _blockIfReadOnly('commitNewBaseline')) return;
-  if(typeof players === 'undefined' || !Array.isArray(players)){
-    console.warn('[NEW_BADGE_RDELTA_V1] commitNewBaseline: players array not available');
-    return;
-  }
-  var p = players.find(function(x){ return x && x.id === playerId; });
-  if(!p){
-    console.warn('[NEW_BADGE_RDELTA_V1] commitNewBaseline: no player found for id', playerId);
-    return;
-  }
-  if(p.baseline_set === true){
-    // Already pinned. One-way toggle. No-op.
-    return;
-  }
-  if(p.rank == null || p.rank < 1){
-    console.warn('[NEW_BADGE_RDELTA_V1] commitNewBaseline: player has no rank, refusing to baseline', p.name);
-    return;
-  }
-  // Drive the pin into the floor at the player's CURRENT rank.
-  p.prev_rank = p.rank;
-  p.baseline_set = true;
-  // p.move stays as 'new' on purpose — it's the signal for the BLUE badge state
-  // until the next Approve cycle clears it.
-  console.log('[NEW_BADGE_RDELTA_V1] baselined', p.name, 'at rank', p.rank);
-  // Persist to localStorage
-  try { if(typeof saveData === 'function') saveData(); }
-  catch(e){ console.warn('[NEW_BADGE_RDELTA_V1] saveData failed:', e); }
-  // Persist to NAS staging
-  try { if(typeof autoSaveToNAS === 'function') await autoSaveToNAS(); }
-  catch(e){ console.warn('[NEW_BADGE_RDELTA_V1] autoSaveToNAS failed:', e); }
-  // Re-render so the badge visibly flips RED -> BLUE
-  try { if(typeof renderTable === 'function') renderTable(); }
-  catch(e){ console.warn('[NEW_BADGE_RDELTA_V1] renderTable failed:', e); }
+  // NEW_BADGE_RDELTA_V1_REV3 (2026-05-29) — RETIRED.
+  // The Dude removed the red->blue manual toggle after a multi-add bug where
+  // clicking one player's badge then dragging another caused spurious integers
+  // on the clicked player. New behavior: red badges are non-clickable AND
+  // immune to math; the only red->blue transition is the approval batch file.
+  // Function preserved as a no-op so any stray console calls or old onclick
+  // attributes can't crash anything.
+  console.warn('[NEW_BADGE_RDELTA_V1_REV3] commitNewBaseline is retired. Red badges only graduate via the approval batch.');
+  return;
 }
 
 function fmtSavant(val, dec=3){
