@@ -8237,6 +8237,37 @@ async function deletePlayer(id){
     try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
     catch(e){ console.warn('[TANK_NAS_SAVE_V1] deletePlayer→Tank auto-save failed:', e); }
   }
+  // STICKY_PREV_RANK_ON_REMOVE_V1 (2026-05-29) — When a player is removed, every
+  // remaining player whose rank is greater than the removed player's rank will
+  // be passively bumped up by one when reorderRanks() runs downstream. Without
+  // this fix, their prev_rank stays put and the +/- column shows a false +1
+  // integer next render (because prev_rank - new_rank = 1). That's a lie — the
+  // customer didn't editorially move them, the remove did. Slide their pin up
+  // with them so the integer stays honest.
+  //
+  // Red-badge players (baseline_set === false) are NOT touched. Their badge is
+  // math-immune by design and the renderer (renderDelta State 1) doesn't even
+  // read prev_rank for them. Skipping them keeps the data clean.
+  //
+  // The dragged/removed player is no longer in players[] at this point, so
+  // there's no exemption needed inside the loop.
+  if(_removed && typeof _removed.rank === 'number'){
+    var _removedRank = _removed.rank;
+    var _stickyShifts = 0;
+    players.forEach(function(p){
+      if(p.baseline_set === false) return;          // red badge — immune
+      if(typeof p.rank !== 'number') return;        // defensive
+      if(typeof p.prev_rank !== 'number') return;   // no baseline yet
+      if(p.rank > _removedRank){
+        p.prev_rank -= 1;
+        _stickyShifts += 1;
+      }
+    });
+    if(_stickyShifts > 0){
+      try { console.log('[STICKY_PREV_RANK_ON_REMOVE_V1] shifted prev_rank on', _stickyShifts, 'players after removing', _removed.name, 'from rank', _removedRank); }
+      catch(e){}
+    }
+  }
   players=players.filter(x=>x.id!==id);
   saveData();renderTable();
   // MUTATION_AUTOSAVE_V1 (2026-04-24) — persist removal to NAS too, not just localStorage.
