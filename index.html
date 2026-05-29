@@ -15987,9 +15987,19 @@ function renderSchedule7D(mlbId){
     } else {
       // PITCHER_SCHEDULE_EXPAND_V1 — gold pill on probable-start days, neutral
       // text on team-game-only days.
+      // OWN_ROTATION_V1 (2026-05-29) — on non-start days, if we know THIS
+      // team's own probable starter (own_pp_name), render it the same way
+      // hitter rows render their opposing pitcher. Lets viewers see the
+      // rotation around this pitcher and reconstruct when his next start
+      // is likely. Falls back to "Team game" when own_pp_name is null,
+      // which happens past the ~3-day MLB API horizon.
       if(startsSet[d.date]){
         pp = '<span class="ppo-sched-prob-pill">PROBABLE START <span class="pill-loc">'
            + (d.at_home ? 'Home' : 'Road') + '</span></span>';
+      } else if(d.own_pp_name){
+        pp = esc(d.own_pp_name);
+        if(d.own_pp_hand) pp += '<span class="hand">('+esc(d.own_pp_hand)+')</span>';
+        if(typeof d.own_pp_era === 'number') pp += '<span class="era">'+d.own_pp_era.toFixed(2)+' ERA</span>';
       } else {
         pp = '<span class="hand">Team game</span>';
       }
