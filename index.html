@@ -614,8 +614,20 @@ body.day-mode .rdelta-new-badge.rdelta-new-blue{
          color: inherit; }
 }
 .must-watch-flash{
-  animation: must-watch-pulse 1.5s ease-in-out infinite;
-  will-change: text-shadow, color;
+  /* DRAG_LAG_FIX_V10 (2026-05-29) — GLOW REMOVED. JP's paint-flashing screenshot
+     showed this 4-layer blurred text-shadow halo on the top rows repainting
+     nonstop (a solid green block over rows 1-3), even when idle. A multi-layer
+     blurred text-shadow on a live element is a known browser performance killer,
+     and `will-change: text-shadow` kept it permanently layer-promoted. V8 paused
+     the ANIMATION during drag but the blurred shadow itself was still the cost —
+     this was the lag that survived V2-V9. Per The Dude: remove the glow entirely.
+     The 🚨 Must Watch emoji tag still renders in the player's type tags; only the
+     pulsing halo is gone. JS (_isMustWatchActive, _dismissMustWatch, the class
+     application) is untouched and reversible — restore the keyframe animation
+     here to bring the glow back if a cheaper version is ever designed. */
+  animation: none;
+  text-shadow: none;
+  will-change: auto;
 }
 /* Let the glow halo escape the .name-cell clipping box (mirrors DAYMODE_FLAME_V2 trick) */
 tr td .name-cell:has(.must-watch-flash){
@@ -637,7 +649,10 @@ tr td .name-cell:has(.must-watch-flash){
          color: inherit; }
 }
 body.day-mode .must-watch-flash{
-  animation: must-watch-pulse-daymode 1.5s ease-in-out infinite;
+  /* DRAG_LAG_FIX_V10 (2026-05-29) — glow removed (see night-mode rule above). */
+  animation: none;
+  text-shadow: none;
+  will-change: auto;
 }
 /* DRAG_LAG_FIX_V8 (2026-05-29) — THE ROOT CAUSE, found via JP's A/B traces.
    A clean "before add" vs "after add" recording showed the JavaScript was
