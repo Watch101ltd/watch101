@@ -9473,6 +9473,10 @@ function _computeSinglePlayerDestRank(srcIdx, targetIdx, above){
 function dragStart(e,idx){
   dragSrcIdx=idx;
   e.currentTarget.classList.add('dragging');
+  // DRAG_LAG_FIX_V2 (2026-05-29) — silence the MiLB-legend MutationObserver for
+  // the duration of the drag. See setupMilbLegendObserver for the why. Resumed
+  // in the global dragend listener.
+  try { if(window._milbLegendObserverPause) window._milbLegendObserverPause(); } catch(_){}
   // DRAG_LAG_FIX_V1 Phase 1 — cache table left edge ONCE so document-level
   // dragover can early-out without calling getBoundingClientRect per move.
   try { if(window._drgLagSetTableLeftCache) window._drgLagSetTableLeftCache(); } catch(_){}
@@ -9566,6 +9570,9 @@ document.addEventListener('dragend',()=>{
   _hideDropIndicator();
   // DRAG_LAG_FIX_V1 Phase 1 — clear the cached table left edge.
   try { if(window._drgLagClearTableLeftCache) window._drgLagClearTableLeftCache(); } catch(_){}
+  // DRAG_LAG_FIX_V2 (2026-05-29) — re-arm the MiLB-legend observer now the drag
+  // is over, and run one update so the chip reflects the final table state.
+  try { if(window._milbLegendObserverResume) window._milbLegendObserverResume(); } catch(_){}
 });
 
 /* DROP_INDICATOR_V1 Push 5 (May 17, 2026) — LEFT_MARGIN_DRIFT_FIX.
@@ -13193,6 +13200,25 @@ function updateMilbLegendVisibility(){
   // Observe the whole body subtree but only for tbody changes (cheap because
   // the callback just queries one selector).
   obs.observe(document.body, { childList: true, subtree: true });
+  // DRAG_LAG_FIX_V2 (2026-05-29) — expose pause/resume so drag handlers can
+  // silence this observer for the duration of a drag. ROOT CAUSE of the
+  // returned drag lag: the floating rank pill + gold drop-bar reposition on
+  // every dragover (~60/sec). Each reposition is a DOM mutation that wakes
+  // THIS observer (it watches document.body subtree), which churns
+  // setTimeout/clearTimeout + a querySelector scan on every move. The CPU
+  // trace from JP's 2026-05-29 recording fingerprinted it: `set textContent`
+  // 3.7% + setTimeout/clearTimeout 3.6% were the two tallest poles of our own
+  // JS. The legend chip never needs updating mid-drag (no minors/majors change
+  // while reordering), so pausing during a drag is free. Resumed + re-run once
+  // on dragend so the chip stays correct.
+  window._milbLegendObserverPause  = function(){ try { obs.disconnect(); } catch(_){} };
+  window._milbLegendObserverResume = function(){
+    try {
+      obs.observe(document.body, { childList: true, subtree: true });
+      if(pending) clearTimeout(pending);
+      pending = setTimeout(updateMilbLegendVisibility, 80);
+    } catch(_){}
+  };
 })();
 // =============================================================================
 
