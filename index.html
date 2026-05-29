@@ -1775,6 +1775,17 @@ body.day-mode #player-page-overlay .ppo-sched-row.yellow{background:rgba(255,184
    which day is THE start. */
 #player-page-overlay .ppo-sched-prob-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(240,165,0,0.18);border:1px solid rgba(240,165,0,0.55);color:var(--gold);font-family:'Bowlby One',sans-serif;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;padding:2px 8px;border-radius:4px;font-weight:700;}  /* OWN_ROTATION_V1 POLISH v3 (2026-05-29): 9px -> 8px to give long opposing-pitcher names room inside the pill */
 #player-page-overlay .ppo-sched-prob-pill .pill-loc{color:var(--text2);font-family:'Nunito Sans',sans-serif;font-size:9px;letter-spacing:0.04em;text-transform:none;font-weight:600;}  /* OWN_ROTATION_V1 POLISH v3 (2026-05-29): 10px -> 9px, paired with the parent pill shrink so long opposing-pitcher names fit */
+/* OWN_ROTATION_V1 POLISH v4 (2026-05-29) — surgical overflow fix.
+   The .ppo-sched-matchup wrapper uses overflow:hidden + text-overflow:ellipsis
+   to keep hitter rows tidy. That's correct for hitter rows. But the gold pill
+   is a single fixed-content element, never wraps, and would never need an
+   ellipsis. Letting the pill ITSELF escape the matchup wrapper's overflow
+   constraint with overflow:visible + max-content sizing means the pill can
+   extend its right edge into the empty column-gap area toward the time
+   column, where the user saw clipping. Hitter rows are not affected because
+   they don't render a .ppo-sched-prob-pill at all. */
+#player-page-overlay .ppo-sched-matchup:has(> .ppo-sched-prob-pill){overflow:visible;}
+#player-page-overlay .ppo-sched-prob-pill{overflow:visible;flex-shrink:0;width:max-content;}
 #player-page-overlay .ppo-sched-disclaimer{margin-top:10px;padding:8px 12px;font-size:11px;color:var(--text3);font-style:italic;letter-spacing:0.02em;line-height:1.45;border-top:1px dashed var(--border);}
 body.day-mode #player-page-overlay .ppo-sched-prob-pill{background:rgba(161,98,7,0.18);border-color:rgba(161,98,7,0.5);color:var(--gold);}
 /* ---- Player overlay: main-page-style stat bar + Advanced Stats toggle ---- */
@@ -16012,8 +16023,11 @@ function renderSchedule7D(mlbId){
         } else {
           oppBit = ' <span class="pill-loc">vs <span class="hand">TBD</span></span>';
         }
-        pp = '<span class="ppo-sched-prob-pill">PROBABLE START <span class="pill-loc">'
-           + (d.at_home ? 'Home' : 'Road') + '</span>' + oppBit + '</span>';
+        // OWN_ROTATION_V1 POLISH v5 (2026-05-29) — Home/Road label removed.
+        // Per The Dude: redundant with the @ / vs indicator in the opponent
+        // column to the left. Stripping the label buys ~50px of horizontal
+        // room inside the pill so long pitcher names + ERA fit comfortably.
+        pp = '<span class="ppo-sched-prob-pill">PROBABLE START' + oppBit + '</span>';
       } else if(d.own_pp_name){
         pp = esc(d.own_pp_name);
         if(d.own_pp_hand) pp += '<span class="hand">('+esc(d.own_pp_hand)+')</span>';
