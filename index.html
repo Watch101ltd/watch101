@@ -15969,7 +15969,21 @@ function renderSchedule7D(mlbId){
   // only (pitcher view is never filtered to empty by NEXT_GAMES_FILTER_V1).
   if(role === 'hitter' && sched.length === 0){
     container.innerHTML = '<div class="ppo-sched-empty">No probables announced yet \u2014 check back closer to game time.</div>';
+    var _emptyDisc = document.getElementById('ppo-schedule-disclaimer');
+    if(_emptyDisc) _emptyDisc.innerHTML = 'Upcoming schedule &middot; Opposing probable pitchers shown (hand, ERA)';
     return;
+  }
+
+  // DYNAMIC_DISCLAIMER_V1 (2026-05-29) — disclaimer copy differs between hitter
+  // and pitcher pages. Hitters see opposing pitchers; pitchers see their own
+  // probable starts highlighted in gold plus the team rotation on other days.
+  var _disc = document.getElementById('ppo-schedule-disclaimer');
+  if(_disc){
+    if(role === 'pitcher'){
+      _disc.innerHTML = 'Upcoming schedule &middot; This pitcher\'s probable starts highlighted in gold &middot; Other rows show team rotation';
+    } else {
+      _disc.innerHTML = 'Upcoming schedule &middot; Opposing probable pitchers shown (hand, ERA)';
+    }
   }
 
   var html = '<div class="ppo-sched-list">' + sched.map(function(d){
@@ -17312,7 +17326,7 @@ function attachTankScrollHandler(){
     </section>
     <section class="ppo-block">
       <h2>Upcoming Games</h2>
-      <div class="ppo-note backend-only">Upcoming schedule &middot; All pages show this team's rotation (own probable pitchers) &middot; Pitcher start days show the opposing-pitcher duel</div>
+      <div id="ppo-schedule-disclaimer" class="ppo-note backend-only"></div>
       <div id="ppo-schedule"></div>
     </section>
   </div>
