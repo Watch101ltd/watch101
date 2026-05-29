@@ -16628,6 +16628,29 @@ async function loadHoldingTankFromNAS(){
   }
 }
 
+// DRAG_LAG_FIX_V11 (2026-05-29) — Guarded + debounced scheduler for the heavy
+// tank sample backfill (see the call site below for the full root-cause story).
+// Waits until no drag is active, and coalesces rapid Tank ops into one run.
+let _tankBackfillTimer = null;
+function _scheduleTankBackfill(){
+  if(_tankBackfillTimer) clearTimeout(_tankBackfillTimer);
+  _tankBackfillTimer = setTimeout(function run(){
+    _tankBackfillTimer = null;
+    // If a drag is in progress, don't storm the main thread now — try again
+    // shortly once the drag is over.
+    var dragging = (typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null) ||
+                   (typeof _tierDragPayload !== 'undefined' && _tierDragPayload) ||
+                   (document.body && document.body.classList.contains('dragging-active'));
+    if(dragging){ _tankBackfillTimer = setTimeout(run, 800); return; }
+    try {
+      if(typeof fetchSampleBackfillForListPlayers === 'function' && Array.isArray(_holdingTank) && _holdingTank.length){
+        fetchSampleBackfillForListPlayers(_holdingTank, 'tank')
+          .catch(e => console.warn('[CHIP_BACKFILL_FIX_V3] tank backfill failed:', e));
+      }
+    } catch(e){ console.warn('[DRAG_LAG_FIX_V11] tank backfill run failed:', e); }
+  }, 1500);
+}
+
 function stampHoldingTankFromWarehouses(){
   try {
     if(typeof applyYahoo === 'function' && Array.isArray(_holdingTank))   applyYahoo(_holdingTank);
@@ -16642,8 +16665,20 @@ function stampHoldingTankFromWarehouses(){
     // loadPoolPlayers hook from CHIP_BACKFILL_FIX_V2.
     try {
       if(typeof fetchSampleBackfillForListPlayers === 'function' && Array.isArray(_holdingTank) && _holdingTank.length){
-        fetchSampleBackfillForListPlayers(_holdingTank, 'tank')
-          .catch(e => console.warn('[CHIP_BACKFILL_FIX_V3] tank backfill failed:', e));
+        // DRAG_LAG_FIX_V11 (2026-05-29) — THE ROOT CAUSE, after 10 prior fixes
+        // peeled away the noise. This tank backfill downloads 8 MLB stat feeds
+        // (~5000 players each) and parses thousands of records to build maps —
+        // a huge object-allocation storm that triggers garbage collection (the
+        // CppGC.ConcurrentMark spike in JP's trace). It fired on EVERY Tank op
+        // (open Tank, promote, remove), so JP's remove→add→drag kicked it off
+        // and the GC storm was still churning when he grabbed the drag → every
+        // dragover stuttered. EXACTLY matches all the clues: lag only after a
+        // Tank add, and a reload "fixes" it (the storm has finished by the time
+        // you drag post-reload). Fix: route through a guarded debouncer that
+        // (a) NEVER runs while a drag is active, and (b) coalesces rapid Tank
+        // ops into ONE backfill ~1.5s after activity settles. The green AAA chip
+        // feature still works — it just stops storming during a drag.
+        _scheduleTankBackfill();
       }
     } catch(e){ console.warn('[CHIP_BACKFILL_FIX_V3] tank backfill kickoff failed:', e); }
     // TANK_AB_BACKFILL_V1 (May 18, 2026) — older Tank players were saved before
