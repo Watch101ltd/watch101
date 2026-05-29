@@ -8228,15 +8228,6 @@ async function deletePlayer(id){
   // the original delete behavior. Avoid pushing duplicates: if the player
   // is already in the Tank, just remove from main without re-adding.
   const _removed = players.find(x => x.id === id) || null;
-  // STICKY_PREV_RANK_ON_REMOVE_V1 REV2 (2026-05-29) — capture the player's MAIN-LIST
-  // rank BEFORE the Tank promote logic below overwrites _removed.rank to a
-  // Tank-end position. Without this capture, the sticky loop downstream sees
-  // the Tank-end rank (small number) and incorrectly slides prev_rank on
-  // every player with a higher rank — which is everyone above the Tank size.
-  // First-pass bug discovered by The Dude: removing Tony Santillan from rank 101
-  // caused players at ranks 26-100 to all show false -1 integers because the
-  // Tank reset rewrote 101 → 26 mid-flight.
-  var _originalRemovedRank = (_removed && typeof _removed.rank === 'number') ? _removed.rank : null;
   if(_removed && !_holdingTank.some(t => t.id === _removed.id)){
     // Reset rank since they're starting fresh in the Tank. New rank = end of Tank.
     _removed.rank = _holdingTank.length + 1;
@@ -8246,37 +8237,10 @@ async function deletePlayer(id){
     try { if(typeof saveHoldingTankToNAS === 'function') saveHoldingTankToNAS({silent:true}); }
     catch(e){ console.warn('[TANK_NAS_SAVE_V1] deletePlayer→Tank auto-save failed:', e); }
   }
-  // STICKY_PREV_RANK_ON_REMOVE_V1 (2026-05-29) — When a player is removed, every
-  // remaining player whose rank is greater than the removed player's rank will
-  // be passively bumped up by one when reorderRanks() runs downstream. Without
-  // this fix, their prev_rank stays put and the +/- column shows a false +1
-  // integer next render (because prev_rank - new_rank = 1). That's a lie — the
-  // customer didn't editorially move them, the remove did. Slide their pin up
-  // with them so the integer stays honest.
-  //
-  // Red-badge players (baseline_set === false) are NOT touched. Their badge is
-  // math-immune by design and the renderer (renderDelta State 1) doesn't even
-  // read prev_rank for them. Skipping them keeps the data clean.
-  //
-  // The dragged/removed player is no longer in players[] at this point, so
-  // there's no exemption needed inside the loop.
-  if(_removed && typeof _originalRemovedRank === 'number'){
-    var _removedRank = _originalRemovedRank;       // REV2 — use captured pre-Tank rank
-    var _stickyShifts = 0;
-    players.forEach(function(p){
-      if(p.baseline_set === false) return;          // red badge — immune
-      if(typeof p.rank !== 'number') return;        // defensive
-      if(typeof p.prev_rank !== 'number') return;   // no baseline yet
-      if(p.rank > _removedRank){
-        p.prev_rank -= 1;
-        _stickyShifts += 1;
-      }
-    });
-    if(_stickyShifts > 0){
-      try { console.log('[STICKY_PREV_RANK_ON_REMOVE_V1 REV2] shifted prev_rank on', _stickyShifts, 'players after removing', _removed.name, 'from rank', _removedRank); }
-      catch(e){}
-    }
-  }
+  // STICKY_PREV_RANK_ON_REMOVE_V1 REVERTED (2026-05-29) — Initial sticky logic
+  // produced false -1 integers on the wrong rows in two separate testing rounds.
+  // Reverted to pre-sticky behavior. Phase 6 (proper sticky on remove + drag)
+  // is deferred for a fresh-head morning session. See START_HERE_TOMORROW.md.
   players=players.filter(x=>x.id!==id);
   saveData();renderTable();
   // MUTATION_AUTOSAVE_V1 (2026-04-24) — persist removal to NAS too, not just localStorage.
