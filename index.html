@@ -541,6 +541,61 @@ body.day-mode .flame-warm{
   /* intentionally empty */
 }
 /* /DAYMODE_FLAME_V2 */
+/* NEW_BADGE_RDELTA_V1 (2026-05-28) — Red/Blue NEW badge that lives in the +/-
+   column (col-rdelta) instead of next to the player name. Replaces the older
+   FLAME_TEXT / NEW_EMOJI prefix on the name for newly-added players on the
+   main list. Two states driven by p.baseline_set:
+     baseline_set === false  -> RED badge, clickable, backend-only (Matt sees it
+                                on the GitHub Pages editor; the Approve batch
+                                clears the red state before customers see it).
+                                Clicking it calls commitNewBaseline(p.id) which
+                                pins prev_rank at the current rank.
+     baseline_set === true   -> BLUE badge, non-clickable, shown until the next
+        AND move === 'new'      Approve clears p.move. Customers see this on
+                                Cloudflare.
+   Full plan: Memory (Claude)\01 Active Projects\rank_delta_and_replace_modal_plan.md */
+.rdelta-new-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  padding:2px 5px;
+  border-radius:4px;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:0.04em;
+  line-height:1;
+  white-space:nowrap;
+  font-family:'Nunito Sans',sans-serif;
+}
+.rdelta-new-badge.rdelta-new-red{
+  background:rgba(239,68,68,0.15);
+  color:#ef4444;
+  border:1px solid rgba(239,68,68,0.45);
+  cursor:pointer;
+  user-select:none;
+}
+.rdelta-new-badge.rdelta-new-red:hover{
+  background:rgba(239,68,68,0.28);
+  border-color:rgba(239,68,68,0.7);
+}
+.rdelta-new-badge.rdelta-new-blue{
+  background:rgba(59,130,246,0.18);
+  color:#60a5fa;
+  border:1px solid rgba(59,130,246,0.45);
+}
+/* Day mode tweaks — same hues but darker so they read on light background */
+body.day-mode .rdelta-new-badge.rdelta-new-red{
+  background:rgba(239,68,68,0.18);
+  color:#b91c1c;
+  border-color:rgba(185,28,28,0.55);
+}
+body.day-mode .rdelta-new-badge.rdelta-new-blue{
+  background:rgba(59,130,246,0.22);
+  color:#1d4ed8;
+  border-color:rgba(29,78,216,0.55);
+}
+/* /NEW_BADGE_RDELTA_V1 */
+
 
 /* MUST_WATCH_FLASH_V1 (May 16, 2026 night) — Pulse glow on player name when the
    🚨 Must Watch type tag is checked AND the fan hasn't acknowledged this player
@@ -4439,12 +4494,93 @@ function pctShadeStyle(pct, higherIsBetter){
   return `background:rgba(${r},${g},${b},${a.toFixed(2)});`;
 }
 
+// NEW_BADGE_RDELTA_V1 (2026-05-28) — Three-state renderer.
+//
+//   State 1: baseline_set === false
+//     -> RED NEW badge. Clickable. Backend-only (Approve batch flips it before
+//        customers see it). Click calls commitNewBaseline(p.id) which pins
+//        prev_rank at the player's current rank.
+//   State 2: baseline_set === true AND move === 'new' (or publish_count_since_new <= 1)
+//     -> BLUE NEW badge. Not clickable. Shown on Cloudflare for one publish cycle.
+//   State 3: veteran behavior
+//     -> dash (no movement) or +N green / -N red.
+//
+//   Defensive: if baseline_set is missing entirely (legacy player from before
+//   Phase 1.4b stamp), we fall through to the veteran math path — same behavior
+//   as the previous renderDelta. The Approve batch will fix baseline_set on the
+//   next publish. Console-warn so future Walter knows it happened.
+//
+// Full plan: Memory (Claude)\01 Active Projects\rank_delta_and_replace_modal_plan.md
 function renderDelta(p){
+  // State 1: RED — baseline not yet pinned for this newly-added player.
+  if(p.baseline_set === false){
+    return '<span class="rdelta-new-badge rdelta-new-red" onclick="event.stopPropagation(); commitNewBaseline(\'' + p.id + '\')" title="Click to baseline this player at rank #' + p.rank + '">🆕 NEW</span>';
+  }
+  // State 2: BLUE — baselined but flagged 'new' until next Approve clears it.
+  // Also fires when publish_count_since_new <= 1 (pre-existing NEW_EMOJI lifecycle).
+  var pc = parseInt(p.publish_count_since_new, 10);
+  if(p.move === 'new' || (!isNaN(pc) && pc <= 1)){
+    var pinnedAt = (p.prev_rank != null) ? p.prev_rank : p.rank;
+    return '<span class="rdelta-new-badge rdelta-new-blue" title="New since last publish — baseline at rank #' + pinnedAt + '">🆕 NEW</span>';
+  }
+  // State 3: veteran math. Defensive console warn if baseline_set is missing.
+  if(p.baseline_set === undefined){
+    try { console.warn('[NEW_BADGE_RDELTA_V1] player missing baseline_set flag (legacy data):', p.name, '— will resolve on next Approve.'); } catch(e){}
+  }
   if(p.prev_rank === undefined || p.prev_rank === null || p.rank === undefined) return '<span class="stat-na">—</span>';
   const delta = p.prev_rank - p.rank; // positive = moved up
   if(delta === 0) return '<span style="color:var(--text3)">—</span>';
-  if(delta > 0) return `<span style="color:var(--green);font-weight:600">+${delta}</span>`;
-  return `<span style="color:var(--red);font-weight:600">${delta}</span>`;
+  if(delta > 0) return '<span style="color:var(--green);font-weight:600">+' + delta + '</span>';
+  return '<span style="color:var(--red);font-weight:600">' + delta + '</span>';
+}
+
+// NEW_BADGE_RDELTA_V1 (2026-05-28) — Toggle handler for the RED NEW badge.
+// Wired via the inline onclick in renderDelta's State 1 branch.
+//
+// What it does: stamps prev_rank = current rank on the player ("the pin goes
+// in the floor"), flips baseline_set to true, and persists. The badge will
+// then re-render as BLUE on the next renderTable() call.
+//
+// One-way only: blue badges aren't clickable. To prevent accidental re-pins,
+// this function bails out if baseline_set is already true.
+//
+// Persists to BOTH localStorage (via saveData) AND the NAS staging JSON (via
+// autoSaveToNAS) so the pin survives a page reload AND Matt sees the change
+// reflected in his next session.
+async function commitNewBaseline(playerId){
+  if(typeof _blockIfReadOnly === 'function' && _blockIfReadOnly('commitNewBaseline')) return;
+  if(typeof players === 'undefined' || !Array.isArray(players)){
+    console.warn('[NEW_BADGE_RDELTA_V1] commitNewBaseline: players array not available');
+    return;
+  }
+  var p = players.find(function(x){ return x && x.id === playerId; });
+  if(!p){
+    console.warn('[NEW_BADGE_RDELTA_V1] commitNewBaseline: no player found for id', playerId);
+    return;
+  }
+  if(p.baseline_set === true){
+    // Already pinned. One-way toggle. No-op.
+    return;
+  }
+  if(p.rank == null || p.rank < 1){
+    console.warn('[NEW_BADGE_RDELTA_V1] commitNewBaseline: player has no rank, refusing to baseline', p.name);
+    return;
+  }
+  // Drive the pin into the floor at the player's CURRENT rank.
+  p.prev_rank = p.rank;
+  p.baseline_set = true;
+  // p.move stays as 'new' on purpose — it's the signal for the BLUE badge state
+  // until the next Approve cycle clears it.
+  console.log('[NEW_BADGE_RDELTA_V1] baselined', p.name, 'at rank', p.rank);
+  // Persist to localStorage
+  try { if(typeof saveData === 'function') saveData(); }
+  catch(e){ console.warn('[NEW_BADGE_RDELTA_V1] saveData failed:', e); }
+  // Persist to NAS staging
+  try { if(typeof autoSaveToNAS === 'function') await autoSaveToNAS(); }
+  catch(e){ console.warn('[NEW_BADGE_RDELTA_V1] autoSaveToNAS failed:', e); }
+  // Re-render so the badge visibly flips RED -> BLUE
+  try { if(typeof renderTable === 'function') renderTable(); }
+  catch(e){ console.warn('[NEW_BADGE_RDELTA_V1] renderTable failed:', e); }
 }
 
 function fmtSavant(val, dec=3){
@@ -7334,7 +7470,8 @@ async function submitAddCustomPlayer(){
       birthDate: null,
       rank: (typeof players !== 'undefined' && Array.isArray(players)) ? (players.length + 1) : 1,
       move: 'new',
-      prev_rank: null,
+      prev_rank: (typeof players !== 'undefined' && Array.isArray(players)) ? (players.length + 1) : 1, // NEW_BADGE_RDELTA_V1 — matches rank so the red badge tooltip reads sensibly
+      baseline_set: false, // NEW_BADGE_RDELTA_V1 — red badge until Matt clicks to commit
       publish_count_since_new: 0,  // FLAME_TEXT_V1 — kicks off the hot flame lifecycle
       note: note,
       bats: bats || null,
@@ -7489,7 +7626,7 @@ function renderTable(){
       <td class="col-drag"><span class="drag-handle backend-only">⠿</span></td>
       <td class="col-rank"><div class="rank-cell"><span class="rank-num ${rankClass}">${p.rank||'—'}</span>${moveBadge(p.move)}</div></td>
       <td class="pos-cell col-pos">${posBadgesColumn(p.positions)}</td>
-      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}${_mustWatchFlashClass(p)}">${_renderLevelChip(p, 'watch')}${flameEmoji(p)}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
+      <td class="player-col col-player"><div class="name-cell"><span class="player-name${_mustWatchFlashClass(p)}">${_renderLevelChip(p, 'watch')}${p.name}</span>${p.injury_status ? injuryBadge(p.injury_status) : ''}${noteBadge(p)}</div></td>
       <td class="stat-cell team-cell col-team">${p.team||na}</td>
       <td class="stat-cell col-age">${decimalAge(p)}</td>
       <td class="stat-cell col-exp" style="text-align:right">${experienceLabel(p)}</td>
@@ -7946,6 +8083,7 @@ function savePlayer(){
   else{
     if(!p.rank) p.rank = players.length + 1;
     p.prev_rank = p.rank;
+    p.baseline_set = false; // NEW_BADGE_RDELTA_V1 — new players get red badge until Matt commits
     mergeSavant(p);
     players.push(p);
   }
@@ -8227,6 +8365,7 @@ function processCSVText(text){
       move: get('movement')||'',
       note: get('note')||'',
       prev_rank: parseInt(get('rank'))||null,
+      baseline_set: true, // NEW_BADGE_RDELTA_V1 — bulk imports come from a known ranking; don't flood Matt with red badges
     };
     players.push(p);
     imported++;
@@ -8295,6 +8434,7 @@ function handleImport(e){
           hld: parseInt(hld)||null, ip: parseFloat(ip)||null,
           kbb: parseFloat(kbb)||null, move: move||'',
           note: note||'', prev_rank: parseInt(rank)||null,
+          baseline_set: true, // NEW_BADGE_RDELTA_V1 — bulk imports come from a known ranking
           priority: _parsedPriority
         });
         existingNames.add(name.toLowerCase().trim());
@@ -11301,7 +11441,7 @@ function addAnchorToList(){
       : (contextAnchor.primaryPos ? [contextAnchor.primaryPos] : []),
     age:contextAnchor.age||null,
     birthDate: (poolP && poolP.birthDate) || contextAnchor.birthDate || null,
-    rank:players.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'',
+    rank:players.length+1, move:'new', prev_rank:players.length+1, baseline_set:false, publish_count_since_new:0, note:'', // NEW_BADGE_RDELTA_V1
     avg:s.avg||null, obp:s.obp||null, ops:s.ops||null, hr:s.hr??null,
     rbi:s.rbi??null, r:s.r??null, sb:s.sb??null,
     era:s.era||null, whip:s.whip||null, k:s.k??null, w:s.w??null,
@@ -11346,7 +11486,7 @@ async function quickAddFromPool(mlbId, name, team, primaryPos, age, btnEl){
     id:uid(), mlb_id:mlbId, name, team:finalTeam,
     positions: p.eligible_positions && p.eligible_positions.length > 0 ? p.eligible_positions : (primaryPos?[primaryPos]:[]),
     age:finalAge, birthDate: p.birthDate || null,
-    rank:players.length+1, move:'new', prev_rank:null, publish_count_since_new:0, note:'',
+    rank:players.length+1, move:'new', prev_rank:players.length+1, baseline_set:false, publish_count_since_new:0, note:'', // NEW_BADGE_RDELTA_V1
     avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'),
     rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'),
     era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'),
@@ -12219,7 +12359,7 @@ async function quickAddLeader(mlbId, name, team, primaryPos, btnEl){
   const newPlayer = {
     id: uid(), mlb_id: mlbId, name, team: finalTeam,
     positions: primaryPos ? [primaryPos] : [],
-    age: finalAge, rank: players.length+1, move:'new', prev_rank: null, publish_count_since_new: 0, note:'',
+    age: finalAge, rank: players.length+1, move:'new', prev_rank: players.length+1, baseline_set: false, publish_count_since_new: 0, note:'', // NEW_BADGE_RDELTA_V1
     avg:_readStatFloat(p,'avg'), obp:_readStatFloat(p,'obp'), ops:_readStatFloat(p,'ops'), hr:_readStat(p,'hr'),
     rbi:_readStat(p,'rbi'), r:_readStat(p,'r'), sb:_readStat(p,'sb'),
     era:_readStatFloat(p,'era'), whip:_readStatFloat(p,'whip'), k:_readStat(p,'k'), w:_readStat(p,'w'),
@@ -14522,7 +14662,7 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
   const newPlayer = {
     id: uid(), mlb_id: mlbId, name, team: finalTeam,
     positions: primaryPos ? [primaryPos] : [], age: p.age || parseInt(age) || null,
-    rank: players.length + 1, move: 'new', prev_rank: null, publish_count_since_new: 0, note: '',
+    rank: players.length + 1, move: 'new', prev_rank: players.length + 1, baseline_set: false, publish_count_since_new: 0, note: '', // NEW_BADGE_RDELTA_V1
     avg: _readStatFloat(p,'avg'), obp: _readStatFloat(p,'obp'), ops: _readStatFloat(p,'ops'), hr: _readStat(p,'hr'),
     rbi: _readStat(p,'rbi'), r: _readStat(p,'r'), sb: _readStat(p,'sb'),
     era: _readStatFloat(p,'era'), whip: _readStatFloat(p,'whip'), k: _readStat(p,'k'), w: _readStat(p,'w'),
@@ -16355,7 +16495,7 @@ function onTankPromote(mlbId){
   // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — stamp a fresh uid() so the X-delete button and any
   // other id-based handlers work on promoted players. Without this the promoted player has no .id
   // and clicking the X is a silent no-op (the filter never matches).
-  const promoted = Object.assign({}, p, { id: uid(), rank: newRank, move: 'new', prev_rank: null });
+  const promoted = Object.assign({}, p, { id: uid(), rank: newRank, move: 'new', prev_rank: newRank, baseline_set: false }); // NEW_BADGE_RDELTA_V1 — promoted players start as red badge
   players.push(promoted);
   saveData();
 
@@ -18287,5 +18427,4 @@ document.addEventListener('keydown', function(e){
      the strip can hide itself entirely via the .ppo-news-empty class —
      applied by Push 4's JS. NEWS_LINKS_V1 Push 4d (May 17, 2026) — selector
      fixed to target the outer wrapper .ppo-news-strip-wrap (which is what
-     has id="ppo-news-strip" and what JS adds the class to). The old selector
-     targeted
+ 
