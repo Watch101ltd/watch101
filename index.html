@@ -15905,6 +15905,22 @@ function renderSchedule7D(mlbId){
   var role = info.role || 'hitter';
   var sched = schedAll[info.team].slice();
 
+  // NEXT_GAMES_FILTER_V1 (2026-05-29) — On the HITTER deep cut page, the
+  // "Upcoming Games" section used to show all 7 days, with TBD on rows where
+  // MLB hadn't published a probable starter yet. Matt's feedback (5/29 night):
+  // most rows ended up TBD which made the section look broken. New behavior:
+  // filter the hitter schedule down to rows that actually have a probable
+  // pitcher (opp_pp_name present). OFF days are dropped too since "TBD vs an
+  // off-day" carries no info. Pitcher view is unchanged — full team schedule
+  // with the gold "PROBABLE START" pill stays as-is.
+  if(role === 'hitter'){
+    sched = sched.filter(function(d){
+      if(d.off) return false;                                  // drop OFF days from upcoming view
+      if(!d.opp_pp_name) return false;                         // drop TBD-probable rows
+      return true;
+    });
+  }
+
   // PITCHER_SCHEDULE_EXPAND_V1 (May 19, 2026) — Matt's ask from the 5/18
   // meeting: show ALL team games for pitchers (not just the day they're the
   // probable starter). Mark probable-start day(s) with a gold pill instead
@@ -15940,6 +15956,14 @@ function renderSchedule7D(mlbId){
     if(day.at_home && era >= 4.50) return 'green';
     if(!day.at_home && era <= 3.00) return 'red';
     return 'yellow';
+  }
+
+  // NEXT_GAMES_FILTER_V1 (2026-05-29) — empty-state when MLB hasn't released
+  // any probable pitchers for the upcoming stretch yet. Shows on hitter pages
+  // only (pitcher view is never filtered to empty by NEXT_GAMES_FILTER_V1).
+  if(role === 'hitter' && sched.length === 0){
+    container.innerHTML = '<div class="ppo-sched-empty">No probables announced yet \u2014 check back closer to game time.</div>';
+    return;
   }
 
   var html = '<div class="ppo-sched-list">' + sched.map(function(d){
@@ -17245,12 +17269,12 @@ function attachTankScrollHandler(){
          first before adding any further CSS. Internal stat tightening is a
          separate concern handled in a follow-up if needed. -->
     <section class="ppo-block">
-      <h2>Last 7 Games</h2>
+      <h2>Previous Games</h2>
       <div class="ppo-note backend-only">Per-game box scores &middot; Newest first &middot; Source: MLB Stats API</div>
       <div id="ppo-gamelog-wrap"></div>
     </section>
     <section class="ppo-block">
-      <h2>Next 7 Games</h2>
+      <h2>Upcoming Games</h2>
       <div class="ppo-note backend-only">Upcoming schedule &middot; Hitters show opposing probable pitcher (hand, ERA) &middot; Pitchers show their probable starts only &middot; Green = favorable matchup, Red = tough</div>
       <div id="ppo-schedule"></div>
     </section>
