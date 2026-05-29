@@ -9491,15 +9491,45 @@ function dragStart(e,idx){
   _hideDropIndicator();
 }
 
+// DRAG_LAG_RAF_THROTTLE_V1 (2026-05-29) — the row-level dragover handler was
+// reading rowEl.getBoundingClientRect() (a layout READ) and then writing the
+// drop-indicator bar's styles (a layout WRITE) on EVERY dragover event. The
+// Performance trace showed 3,738 dragover events in one drag driving ~3,939
+// scheduled layout recalcs — classic read-after-write layout thrash. We now
+// throttle the real work to one run per animation frame (~60/sec): dragOver()
+// just stashes the latest event + target and schedules a single rAF. The
+// browser batches the visual update to its natural paint cycle, and the
+// thousands of redundant mid-frame reflows collapse to one per frame.
+var _dragOverRafPending = false;
+var _dragOverLastEvt = null;
+var _dragOverLastIdx = null;
+var _dragOverLastRowEl = null;
 function dragOver(e,idx){
   e.preventDefault();
-  e.currentTarget.classList.add('drag-over');
+  // Keep the hover class update synchronous so the row highlight feels instant.
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('drag-over');
+  // Stash the most recent event + index. dragover fires far faster than the
+  // screen refreshes, so we only need the latest one when the frame runs.
+  _dragOverLastEvt = e;
+  _dragOverLastIdx = idx;
+  _dragOverLastRowEl = e.currentTarget; // capture now — currentTarget is null by next frame
+  if(_dragOverRafPending) return;
+  _dragOverRafPending = true;
+  requestAnimationFrame(function(){
+    _dragOverRafPending = false;
+    var ev = _dragOverLastEvt, ix = _dragOverLastIdx;
+    if(ev == null) return;
+    _dragOverApply(ev, ix);
+  });
+}
+function _dragOverApply(e,idx){
   // DROP_INDICATOR_V1 unified (May 17, 2026) — early-return for armed tiers
   // REMOVED. The Dude wants the gold drop bar to fire for tier drags too so
   // the visual language is identical for single-player and tier moves.
   // Compute top-half vs bottom-half of the row using the cursor's clientY
   // and the row's bounding rect.
-  var rowEl = e.currentTarget;
+  var rowEl = (typeof _dragOverLastRowEl !== 'undefined' && _dragOverLastRowEl) ? _dragOverLastRowEl : (e && e.currentTarget);
+  if(!rowEl) return; // row gone (deferred frame) — bail safely
   // TIER_DRAG_LAG_FIX_V1 — reuse the rect the tbody capture-phase handler
   // already measured for this same row (tier drag path). If absent (single-
   // player drag — no tbody handler fires), fall through to a fresh read.
