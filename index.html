@@ -7560,6 +7560,13 @@ function pickStatSource(group){
 }
 
 function renderTable(){
+  // DRAGLAG-LOG (temporary) — log every renderTable call, with drag state + caller.
+  try{
+    var _rtDrag = (typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null) || (typeof _tierDragPayload !== 'undefined' && _tierDragPayload);
+    var _rtCaller = (new Error()).stack.split('\n')[2] || '';
+    _rtCaller = _rtCaller.trim().replace(/^at\s+/,'').split(' ')[0];
+    console.log('%c[DRAGLAG-LOG] renderTable() called — dragActive='+(!!_rtDrag)+'  caller='+_rtCaller, 'color:#06c;font-weight:bold');
+  }catch(e){}
   let list = getFiltered();
   const tbody = document.getElementById('tbody');
   document.getElementById('count-badge').textContent = list.length+' player'+(list.length!==1?'s':'');
@@ -7741,8 +7748,12 @@ function fitPlayerNames(){
   // renderTable() runs it once after dragend, so names still fit correctly.
   if((typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null) ||
      (typeof _tierDragPayload !== 'undefined' && _tierDragPayload)){
+    try{ console.log('%c[DRAGLAG-LOG] fitPlayerNames SKIPPED (drag active)','color:#0a0'); }catch(e){}
     return;
   }
+  // DRAGLAG-LOG (temporary) — time how long the name-fit pass takes and how
+  // many names it processes, so we can see it landing during/after an add.
+  var _dlT0 = (performance && performance.now) ? performance.now() : Date.now();
   var nameEls = document.querySelectorAll('#tbody .player-name');
   for(var i=0;i<nameEls.length;i++){
     var nameEl = nameEls[i];
@@ -7757,6 +7768,12 @@ function fitPlayerNames(){
       nameEl.style.fontSize = size + 'px';
     }
   }
+  // DRAGLAG-LOG (temporary)
+  try{
+    var _dlMs = ((performance && performance.now) ? performance.now() : Date.now()) - _dlT0;
+    var _dragNow = (typeof dragSrcIdx !== 'undefined' && dragSrcIdx !== null) || (typeof _tierDragPayload !== 'undefined' && _tierDragPayload);
+    console.log('%c[DRAGLAG-LOG] fitPlayerNames RAN — '+nameEls.length+' names, '+_dlMs.toFixed(1)+'ms, dragActive='+(!!_dragNow), 'color:#c00;font-weight:bold');
+  }catch(e){}
 }
 
 // MLB API SEARCH
