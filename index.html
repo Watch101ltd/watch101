@@ -15954,19 +15954,14 @@ function renderSchedule7D(mlbId){
   }
 
   function colorFor(day){
-    if(day.off) return '';
-    if(role === 'pitcher'){
-      // PITCHER_SCHEDULE_EXPAND_V1 — color only fires on probable-start days.
-      // Other days render neutral so the actual start day pops visually.
-      if(!startsSet[day.date]) return '';
-      if(day.at_home) return 'green';
-      return 'yellow';
-    }
-    var era = (typeof day.opp_pp_era === 'number') ? day.opp_pp_era : null;
-    if(era === null){ return 'yellow'; }
-    if(day.at_home && era >= 4.50) return 'green';
-    if(!day.at_home && era <= 3.00) return 'red';
-    return 'yellow';
+    // ROW_COLOR_RETIRED_V1 (2026-05-29) — per The Dude: the green/red/yellow
+    // matchup coloring was an opinion the site shouldn't editorialize. The raw
+    // numbers (ERA, hand) tell the customer everything they need to know — let
+    // them form their own read. Function gutted to a no-op so the existing
+    // call site at the row-build line still works without modification. The
+    // CSS rules for .ppo-sched-row.green/.red/.yellow are preserved (unused)
+    // in case we ever want to restore color signaling under a different rule.
+    return '';
   }
 
   // NEXT_GAMES_FILTER_V1 (2026-05-29) — empty-state when MLB hasn't released
@@ -17317,7 +17312,7 @@ function attachTankScrollHandler(){
     </section>
     <section class="ppo-block">
       <h2>Upcoming Games</h2>
-      <div class="ppo-note backend-only">Upcoming schedule &middot; All pages show this team's rotation (own probable pitchers) &middot; Hitter rows colored by opposing pitcher matchup &middot; Pitcher start days show the opposing-pitcher duel &middot; Green = favorable matchup, Red = tough</div>
+      <div class="ppo-note backend-only">Upcoming schedule &middot; All pages show this team's rotation (own probable pitchers) &middot; Pitcher start days show the opposing-pitcher duel</div>
       <div id="ppo-schedule"></div>
     </section>
   </div>
