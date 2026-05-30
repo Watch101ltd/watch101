@@ -10080,6 +10080,14 @@ function closePlayerPool(){
   document.querySelectorAll('#main-table thead .sort-arrow').forEach(a => { a.textContent = '↕'; });
   renderTable();
   poolActive = false;
+  // HEAVYDOM_TABLECLEAR_V1 (2026-05-30 — PC Walter, per The Dude) — empty the Player
+  // Pool's ~1,384 hidden rows (~75k DOM nodes) when leaving the tab. Those nodes stay
+  // in the (display:none) DOM until reload and force the browser to recompute layout
+  // across the whole oversized tree on every drag frame on the main list — the
+  // CONFIRMED cause of the baseline drag hitch (frame meter: clearing dropped p95 jank
+  // 183ms→33ms, jank 23%→6%). renderPool() rebuilds these rows on next open, so this is
+  // safe. Tagged for easy revert.
+  try { var _pt = document.getElementById('pool-tbody'); if(_pt) _pt.innerHTML = ''; } catch(e){}
   document.getElementById('pool-wrap').classList.remove('active');
   document.querySelector('.toolbar').style.display = '';
   document.querySelector('.table-wrap').style.display = '';
@@ -11630,6 +11638,9 @@ function closeLeagueLeaders(){
   renderTable();
   destroyLeadersFixedHeader();
   leadersActive = false;
+  // HEAVYDOM_TABLECLEAR_V1 (2026-05-30) — empty Leaders' ~200 hidden rows on tab-close
+  // (see closePlayerPool for full rationale). renderLeaders() rebuilds on next open.
+  try { var _lt = document.getElementById('leaders-tbody'); if(_lt) _lt.innerHTML = ''; } catch(e){}
   document.getElementById('leaders-wrap').classList.remove('active');
   document.querySelector('.toolbar').style.display = '';
   document.querySelector('.table-wrap').style.display = '';
@@ -13295,6 +13306,9 @@ function closeProspects(){
   renderTable();
   destroyProspectsFixedHeader();
   prospectsActive = false;
+  // HEAVYDOM_TABLECLEAR_V1 (2026-05-30) — empty Prospects' hidden rows on tab-close
+  // (see closePlayerPool for full rationale). renderProspects() rebuilds on next open.
+  try { var _prt = document.getElementById('pros-tbody'); if(_prt) _prt.innerHTML = ''; } catch(e){}
   document.getElementById('prospects-wrap').classList.remove('active');
   document.querySelector('.toolbar').style.display = '';
   document.querySelector('.table-wrap').style.display = '';
@@ -16710,6 +16724,9 @@ function closeHoldingTank(){
   document.querySelectorAll('#main-table thead .sort-arrow').forEach(a => { a.textContent = '↕'; });
   renderTable();
   tankActive = false;
+  // HEAVYDOM_TABLECLEAR_V1 (2026-05-30) — empty Tank's hidden rows on tab-close
+  // (see closePlayerPool for full rationale). renderTank() rebuilds on next open.
+  try { var _tt = document.getElementById('tank-tbody'); if(_tt) _tt.innerHTML = ''; } catch(e){}
   document.getElementById('tank-wrap').classList.remove('active');
   document.querySelector('.toolbar').style.display = '';
   document.querySelector('.table-wrap').style.display = '';
