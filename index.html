@@ -614,8 +614,17 @@ body.day-mode .rdelta-new-badge.rdelta-new-blue{
          color: inherit; }
 }
 .must-watch-flash{
-  animation: must-watch-pulse 1.5s ease-in-out infinite;
-  will-change: text-shadow, color;
+  /* MUSTWATCH_GLOW_REMOVAL_V1 (2026-05-30 — PC Walter, per The Dude) — the infinite
+     4-layer blurred text-shadow pulse was the CONFIRMED cause of the post-right-click-nav
+     drag lag. It repaints on every animation frame; during a drag (continuous compositing)
+     that paint dominated and dragged frames from 16.7ms to 50-100ms (100% jank). Verified
+     live with a frame meter: removing this animation restored 16.7ms / smooth. The
+     @keyframes blocks are left in place (now unused) for easy revert. Was:
+       animation: must-watch-pulse 1.5s ease-in-out infinite;
+       will-change: text-shadow, color; */
+  animation: none;
+  will-change: auto;
+  text-shadow: none;
 }
 /* Let the glow halo escape the .name-cell clipping box (mirrors DAYMODE_FLAME_V2 trick) */
 tr td .name-cell:has(.must-watch-flash){
@@ -637,7 +646,10 @@ tr td .name-cell:has(.must-watch-flash){
          color: inherit; }
 }
 body.day-mode .must-watch-flash{
-  animation: must-watch-pulse-daymode 1.5s ease-in-out infinite;
+  /* MUSTWATCH_GLOW_REMOVAL_V1 (2026-05-30) — day-mode twin of the removal above.
+     Was: animation: must-watch-pulse-daymode 1.5s ease-in-out infinite; */
+  animation: none;
+  text-shadow: none;
 }
 /* /MUST_WATCH_FLASH_V1 */
 
