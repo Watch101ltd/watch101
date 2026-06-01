@@ -17625,6 +17625,136 @@ function attachTankScrollHandler(){
 <!-- the Escape key. z-index 10002 sits above #movement-mode-overlay (10001) -->
 <!-- so the popup always renders on top.                                     -->
 <!-- ===================================================================== -->
+<!-- MOVEMENT_MODE_V2 (2026-06-01 — PC Walter, per The Dude). The accurate-     -->
+<!-- background replay. Focal player (gold) slides through his last 5 published -->
+<!-- ranks while the REAL surrounding players reshuffle around him. Slow pacing -->
+<!-- (2s slide + 1s hold), speed toggle. Data from /list/:listId/history (the   -->
+<!-- MOVEMENT_MODE_HISTORY_V1 server endpoint), reachable via the Worker proxy. -->
+<!-- Replaces the never-shipped openMovementMode() that threw a ReferenceError. -->
+<!-- z-index 10001 (career popup sits above at 10002). -->
+<style id="movement-mode-styles">
+#movement-mode-overlay{display:none;position:fixed;inset:0;z-index:10001;background:var(--bg,#0b0f14);flex-direction:column;}
+#movement-mode-overlay.mm-open{display:flex;}
+#movement-mode-overlay .mm-bar{display:flex;align-items:center;gap:14px;padding:12px 20px;background:rgba(0,0,0,0.3);border-bottom:1px solid var(--border,#2a3645);flex:0 0 auto;}
+#movement-mode-overlay .mm-title{font-family:'Bowlby One',sans-serif;font-size:16px;letter-spacing:.04em;color:var(--gold,#f5c518);flex:0 0 auto;}
+#movement-mode-overlay .mm-date{font-size:12px;color:var(--text2,#9fb0c0);letter-spacing:.05em;text-transform:uppercase;flex:1 1 auto;text-align:center;}
+#movement-mode-overlay .mm-fname{font-size:14px;font-weight:800;color:#fff;}
+#movement-mode-overlay .mm-rank{font-size:24px;font-weight:800;color:var(--gold,#f5c518);font-variant-numeric:tabular-nums;min-width:54px;text-align:right;}
+#movement-mode-overlay .mm-ctrls{display:flex;gap:6px;align-items:center;flex:0 0 auto;}
+#movement-mode-overlay .mm-btn{background:transparent;border:1px solid var(--border,#2a3645);border-radius:8px;color:var(--text2,#9fb0c0);padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+#movement-mode-overlay .mm-btn:hover{border-color:var(--gold,#f5c518);color:var(--gold,#f5c518);}
+#movement-mode-overlay .mm-btn.mm-active{border-color:var(--gold,#f5c518);color:var(--gold,#f5c518);}
+#movement-mode-overlay .mm-board-wrap{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;position:relative;padding:12px 24px;}
+#movement-mode-overlay .mm-board{position:relative;max-width:760px;margin:0 auto;}
+#movement-mode-overlay .mm-row{position:absolute;left:0;right:0;height:34px;display:grid;grid-template-columns:54px 1fr 74px 70px;align-items:center;gap:10px;padding:4px 12px;border-radius:7px;transition:transform var(--mm-step,2000ms) cubic-bezier(.4,0,.2,1),opacity 700ms ease;will-change:transform,opacity;}
+#movement-mode-overlay .mm-rk{font-weight:800;color:var(--text3,#6b7c8c);font-variant-numeric:tabular-nums;text-align:right;font-size:13px;}
+#movement-mode-overlay .mm-nm{color:var(--text,#e8e8e8);font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#movement-mode-overlay .mm-tm{color:var(--text2,#9fb0c0);font-size:12px;text-align:right;}
+#movement-mode-overlay .mm-ps{color:var(--text3,#6b7c8c);font-size:11px;text-transform:uppercase;text-align:right;}
+#movement-mode-overlay .mm-row.mm-bg{opacity:.92;background:var(--surface2,#1a2330);border:1px solid var(--border,#2a3645);}
+#movement-mode-overlay .mm-row.mm-focal{opacity:1;background:linear-gradient(90deg,rgba(245,197,24,.14),rgba(245,197,24,.03));border:1.5px solid var(--gold,#f5c518);box-shadow:0 0 10px rgba(245,197,24,.18);z-index:5;}
+#movement-mode-overlay .mm-row.mm-focal .mm-rk{color:var(--gold,#f5c518);font-size:15px;}
+#movement-mode-overlay .mm-row.mm-focal .mm-nm{color:#fff;font-weight:800;}
+#movement-mode-overlay .mm-row.mm-focal .mm-tm{color:var(--gold,#f5c518);font-weight:700;}
+#movement-mode-overlay .mm-msg{padding:40px;text-align:center;color:var(--text2,#9fb0c0);font-size:14px;}
+</style>
+<div id="movement-mode-overlay" role="dialog" aria-modal="true" aria-label="Movement Mode replay">
+  <div class="mm-bar">
+    <span class="mm-title">&#9654; Movement Mode</span>
+    <span class="mm-date" id="mm-date">&mdash;</span>
+    <span class="mm-fname" id="mm-fname">&mdash;</span>
+    <span class="mm-rank" id="mm-rank">#&mdash;</span>
+    <span class="mm-ctrls">
+      <button class="mm-btn" id="mm-spd-3000" type="button" onclick="mmSetSpeed(3000)">Slowest</button>
+      <button class="mm-btn mm-active" id="mm-spd-2000" type="button" onclick="mmSetSpeed(2000)">Slow</button>
+      <button class="mm-btn" id="mm-spd-1200" type="button" onclick="mmSetSpeed(1200)">Faster</button>
+      <button class="mm-btn" type="button" onclick="mmReplay()">&#9654; Replay</button>
+      <button class="mm-btn" type="button" onclick="closeMovementMode()">&times; Close</button>
+    </span>
+  </div>
+  <div class="mm-board-wrap" id="mm-wrap"><div class="mm-board" id="mm-board"></div></div>
+</div>
+<script>
+// MOVEMENT_MODE_V2 engine. Proven in the standalone test page 2026-06-01, then
+// inserted here with a live fetch replacing the embedded test data.
+(function(){
+  var MM_ROW_H = 38, MM_MAX = 101, MM_HOLD = 1000;
+  var mmStep = 2000, mmSnaps = [], mmFocal = null, mmTimers = [];
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function yFor(r){r=Number(r);if(!isFinite(r)||r<1)r=1;if(r>MM_MAX)r=MM_MAX;return (r-1)*MM_ROW_H;}
+  function clearTimers(){mmTimers.forEach(clearTimeout);mmTimers=[];}
+  function posOf(p){if(!p)return '';var x=p.pos!=null?p.pos:(p.positions||'');if(Array.isArray(x))x=x[0]||'';return String(x).split(/[ ,/]/)[0].trim();}
+  function buildRows(){
+    var board=document.getElementById('mm-board');if(!board)return;
+    var seen={};mmSnaps.forEach(function(s){(s.players||[]).forEach(function(p){if(p&&p.mlb_id!=null)seen[String(p.mlb_id)]=p;});});
+    var html='';
+    Object.keys(seen).forEach(function(mid){
+      var p=seen[mid],isF=(mid===String(mmFocal));
+      html+='<div class="mm-row '+(isF?'mm-focal':'mm-bg')+'" id="mmr-'+esc(mid)+'" style="transform:translateY('+yFor(p.rank)+'px);opacity:0;">'
+        +'<span class="mm-rk" id="mmrk-'+esc(mid)+'">#'+esc(p.rank)+'</span>'
+        +'<span class="mm-nm">'+esc(p.name)+'</span>'
+        +'<span class="mm-tm">'+esc(p.team)+'</span>'
+        +'<span class="mm-ps">'+esc(posOf(p))+'</span></div>';
+    });
+    board.style.height=(MM_MAX*MM_ROW_H)+'px';board.innerHTML=html;
+  }
+  function applySnap(i,animate){
+    var s=mmSnaps[i];if(!s)return;var present={};(s.players||[]).forEach(function(p){if(p&&p.mlb_id!=null)present[String(p.mlb_id)]=p;});
+    document.querySelectorAll('#movement-mode-overlay .mm-row').forEach(function(row){
+      var mid=row.id.replace('mmr-','');var p=present[mid];
+      if(p){row.style.opacity=(mid===String(mmFocal))?'1':'0.92';row.style.transform='translateY('+yFor(p.rank)+'px)';var rk=document.getElementById('mmrk-'+mid);if(rk)rk.textContent='#'+p.rank;}
+      else{row.style.opacity='0';}
+    });
+    var fp=present[String(mmFocal)];
+    var dEl=document.getElementById('mm-date'),rEl=document.getElementById('mm-rank'),nEl=document.getElementById('mm-fname');
+    if(dEl)dEl.textContent=s.label||'';if(rEl)rEl.textContent=fp?('#'+fp.rank):'#—';if(nEl)nEl.textContent=fp?fp.name:'—';
+    var wrap=document.getElementById('mm-wrap');
+    if(fp&&wrap){var y=yFor(fp.rank)-(wrap.clientHeight/2)+(MM_ROW_H/2);wrap.scrollTo({top:y<0?0:y,behavior:animate?'smooth':'auto'});}
+  }
+  function run(){
+    clearTimers();
+    document.documentElement.style.setProperty('--mm-step',mmStep+'ms');
+    if(!mmSnaps.length){return;}
+    var rows=document.querySelectorAll('#movement-mode-overlay .mm-row');
+    rows.forEach(function(r){r.style.transition='none';});
+    applySnap(0,false);
+    var b=document.getElementById('mm-board');if(b)void b.offsetHeight;
+    rows.forEach(function(r){r.style.transition='';});
+    var delay=MM_HOLD;
+    for(var i=1;i<mmSnaps.length;i++){(function(idx){mmTimers.push(setTimeout(function(){applySnap(idx,true);},delay));})(i);delay+=mmStep+MM_HOLD;}
+  }
+  window.mmSetSpeed=function(ms){mmStep=ms;['3000','2000','1200'].forEach(function(v){var el=document.getElementById('mm-spd-'+v);if(el)el.classList.toggle('mm-active',String(ms)===v);});run();};
+  window.mmReplay=function(){run();};
+  window.closeMovementMode=function(){clearTimers();var ov=document.getElementById('movement-mode-overlay');if(ov)ov.classList.remove('mm-open');document.body.style.overflow='';};
+  window.openMovementMode=async function(){
+    var btn=document.getElementById('ppo-movement-mode-btn');
+    var mid=btn&&btn.dataset?btn.dataset.mlbId:null;
+    if(!mid){return;}
+    mmFocal=String(mid);
+    var listId=(typeof currentListId!=='undefined'&&currentListId)?currentListId:'amateur';
+    var ov=document.getElementById('movement-mode-overlay');
+    var board=document.getElementById('mm-board');
+    if(board)board.innerHTML='<div class="mm-msg">Loading rank history…</div>';
+    if(ov){ov.classList.add('mm-open');document.body.style.overflow='hidden';}
+    try{
+      var res=await fetch(NAS_PROXY_URL+'/list/'+encodeURIComponent(listId)+'/history?limit=5&player='+encodeURIComponent(mmFocal),{cache:'no-cache'});
+      if(!res.ok)throw new Error('history fetch '+res.status);
+      var data=await res.json();
+      mmSnaps=(data.snapshots||[]).map(function(s){
+        return {label:(s.label||s.saved_at||''),players:(s.players||[]).map(function(p){return {mlb_id:String(p.mlb_id),name:p.name,team:p.team,rank:p.rank,pos:posOf(p)};})};
+      });
+    }catch(e){
+      if(board)board.innerHTML='<div class="mm-msg">Replay unavailable — could not load history.<br><span style="font-size:12px;opacity:.7">'+esc(e.message)+'</span></div>';
+      return;
+    }
+    if(mmSnaps.length<2){if(board)board.innerHTML='<div class="mm-msg">Not enough published history yet for this player.</div>';return;}
+    buildRows();
+    requestAnimationFrame(function(){requestAnimationFrame(run);});
+  };
+  document.addEventListener('keydown',function(e){if((e.key==='Escape'||e.keyCode===27)){var ov=document.getElementById('movement-mode-overlay');if(ov&&ov.classList.contains('mm-open'))closeMovementMode();}});
+})();
+</script>
+<!-- ===================================================================== -->
 <style id="career-popup-styles">
 #career-popup-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 10002; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
 #career-popup-backdrop.cp-open { display: block; }
