@@ -630,6 +630,11 @@ body.day-mode .rdelta-new-badge.rdelta-new-blue{
   animation: none;
   will-change: auto;
   text-shadow: none;
+  /* MUSTWATCH_RED_V1 (2026-06-01 0044 — PC Walter, per The Dude) — replaces the
+     removed glow with a STATIC red name color (night mode). Paints once on render,
+     zero per-frame cost, so it cannot reintroduce the drag lag the glow caused.
+     The 🚨 Must Watch emoji alone wasn't drawing enough attention. */
+  color: #f87171 !important;
 }
 /* Let the glow halo escape the .name-cell clipping box (mirrors DAYMODE_FLAME_V2 trick) */
 tr td .name-cell:has(.must-watch-flash){
@@ -655,8 +660,91 @@ body.day-mode .must-watch-flash{
      Was: animation: must-watch-pulse-daymode 1.5s ease-in-out infinite; */
   animation: none;
   text-shadow: none;
+  /* MUSTWATCH_RED_V1 (2026-06-01 0044) — day-mode twin. Darker brand red #b91c1c
+     stays readable on the light cool-gray day background. Static, no animation. */
+  color: #b91c1c !important;
 }
 /* /MUST_WATCH_FLASH_V1 */
+
+/* ============================================================================
+   LEGEND_KEY_V1 (2026-06-01 0044 — PC Walter, per The Dude) — public-facing Key.
+   The ⓘ button (#legend-btn) sits beside the day/night toggle. Clicking it opens
+   #legend-modal, a scrollable panel explaining every symbol a first-time fan sees.
+   Palette: red/white/blue + gold (the locked brand). No animation anywhere in here
+   — static paint only, so it can never affect drag performance.
+   ============================================================================ */
+#legend-btn{
+  background:transparent;border:none;cursor:pointer;font-size:18px;line-height:1;
+  padding:2px 4px;color:var(--text);opacity:0.85;transition:opacity .15s;
+}
+#legend-btn:hover{opacity:1;}
+/* Modal overlay (dim the page behind) */
+#legend-modal{
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,0.66);
+  align-items:flex-start;justify-content:center;
+  padding:40px 16px;overflow-y:auto;
+}
+#legend-modal.open{display:flex;}
+/* The panel itself */
+.legend-panel{
+  background:#0f1420;color:#f4f6fb;
+  width:100%;max-width:680px;margin:auto;
+  border:1px solid #2a3346;border-top:4px solid #d7263d; /* brand red top edge */
+  border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,0.5);
+  padding:0 0 18px;
+}
+body.day-mode .legend-panel{background:#f7f8fb;color:#1a1f2b;border-color:#d4d9e3;border-top-color:#b91c1c;}
+.legend-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px 12px;border-bottom:1px solid #222c3f;
+  position:sticky;top:0;background:inherit;border-radius:12px 12px 0 0;
+}
+body.day-mode .legend-head{border-bottom-color:#e2e6ee;}
+.legend-head h2{
+  margin:0;font-size:20px;font-weight:800;letter-spacing:.3px;
+  color:#fff;display:flex;align-items:center;gap:9px;
+}
+body.day-mode .legend-head h2{color:#101626;}
+.legend-head h2 .lg-gold{color:#f5b301;} /* gold accent */
+#legend-close{
+  background:transparent;border:none;color:inherit;font-size:26px;line-height:1;
+  cursor:pointer;opacity:.7;padding:0 4px;
+}
+#legend-close:hover{opacity:1;}
+.legend-body{padding:6px 20px 0;}
+.legend-section{margin-top:18px;}
+.legend-section h3{
+  font-size:13px;text-transform:uppercase;letter-spacing:1.2px;font-weight:800;
+  color:#5b9bff;margin:0 0 9px;
+}
+body.day-mode .legend-section h3{color:#1d4ed8;}
+.legend-intro{font-size:13.5px;line-height:1.5;color:#aab4c6;margin:2px 0 14px;}
+body.day-mode .legend-intro{color:#5a6577;}
+/* Emoji/symbol rows */
+.lg-row{display:flex;gap:11px;align-items:flex-start;padding:5px 0;}
+.lg-key{flex:0 0 auto;min-width:30px;text-align:center;font-size:16px;line-height:1.4;}
+.lg-def{font-size:13.5px;line-height:1.45;}
+.lg-def b{color:#fff;font-weight:700;}
+body.day-mode .lg-def b{color:#101626;}
+.lg-def .lg-sub{color:#9aa6ba;}
+body.day-mode .lg-def .lg-sub{color:#65718a;}
+/* Two-column emoji grid for the type tags (so 19 tags don't run forever) */
+.lg-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;}
+@media(max-width:560px){.lg-grid{grid-template-columns:1fr;}}
+/* Color chips for the stat-color explainer */
+.lg-chip{display:inline-block;font-weight:800;padding:0 2px;}
+.lg-chip.hit{color:#86efac;}  /* night hitter green */
+.lg-chip.pit{color:#38bdf8;}  /* night pitcher blue */
+body.day-mode .lg-chip.hit{color:#b91c1c;}
+body.day-mode .lg-chip.pit{color:#1d4ed8;}
+.lg-redname{color:#f87171;font-weight:800;}
+body.day-mode .lg-redname{color:#b91c1c;}
+.lg-badge{display:inline-block;font-weight:800;font-size:11px;padding:1px 7px;border-radius:999px;background:#1d4ed8;color:#fff;}
+.lg-plus{color:#22c55e;font-weight:800;}
+.lg-minus{color:#ef4444;font-weight:800;}
+.lg-star{color:#fbbf24;}
+/* /LEGEND_KEY_V1 css */
 
 /* TIER_DRAG_V1 (May 17, 2026) — Tier armed-state pulse glow.
    UNIFIED with DROP_INDICATOR_V1 on May 17, 2026 — pulse changed from red to
@@ -2085,9 +2173,95 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
          restore the button, just remove the style="display:none" attribute below.
          The confirmClear() function in JS is left intact so nothing else breaks. -->
     <button class="btn btn-red" onclick="confirmClear()" style="display:none">Clear All</button>
+    <!-- LEGEND_KEY_V1 (2026-06-01 0044 — PC Walter, per The Dude) — public-facing info/key button. Opens the Legend modal that explains every emoji, the +/- column, priority stars, stat colors, Statcast columns, and the Must Watch red name. -->
+    <button id="legend-btn" onclick="openLegend()" title="What do the symbols mean? (Key)" aria-label="Open the Key">â</button>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
   </div>
 </div>
+
+<!-- LEGEND_KEY_V1 (2026-06-01 0044 — PC Walter, per The Dude) — the public Key modal.
+     Opened by #legend-btn (openLegend), closed by openLegend/closeLegend/Esc/backdrop.
+     Every symbol below is sourced code-first from TYPE_TAGS_V1, renderDelta,
+     PRIORITY_STARS_V1, the stat-color vars, and MUSTWATCH_RED_V1. No invented symbols. -->
+<div id="legend-modal" onclick="if(event.target===this)closeLegend()">
+  <div class="legend-panel" role="dialog" aria-modal="true" aria-labelledby="legend-title">
+    <div class="legend-head">
+      <h2 id="legend-title"><span class="lg-gold">&#9432;</span> The Key &mdash; what it all means</h2>
+      <button id="legend-close" onclick="closeLegend()" aria-label="Close">&times;</button>
+    </div>
+    <div class="legend-body">
+      <p class="legend-intro">New here? This is your decoder ring. Every emoji, color, and symbol on the list is explained below &mdash; so you always know what we&rsquo;re telling you about a player.</p>
+
+      <div class="legend-section">
+        <h3>Player Tags (the emoji)</h3>
+        <div class="lg-grid">
+          <div class="lg-row"><span class="lg-key">&#128680;</span><span class="lg-def"><b>Must Watch</b> <span class="lg-sub">&mdash; drop everything, read his notes first. His name also shows in <span class="lg-redname">red</span>.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#127939;</span><span class="lg-def"><b>Steal Specialist</b> <span class="lg-sub">&mdash; speed and steals are his game.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#127919;</span><span class="lg-def"><b>Contact Specialist</b> <span class="lg-sub">&mdash; average and OBP, low strikeouts.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#9749;</span><span class="lg-def"><b>Cup of Coffee</b> <span class="lg-sub">&mdash; brief MLB look, story still being written.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#128657;</span><span class="lg-def"><b>Injury Promotion</b> <span class="lg-sub">&mdash; the starter went down, he got the call.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#128170;</span><span class="lg-def"><b>IL Return</b> <span class="lg-sub">&mdash; healthy and back, his value&rsquo;s back.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#128738;&#65039;</span><span class="lg-def"><b>Power Bat</b> <span class="lg-sub">&mdash; home runs and RBIs.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#9824;&#65039;</span><span class="lg-def"><b>Rotation Ace</b> <span class="lg-sub">&mdash; top of the rotation, start him every time.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#129336;</span><span class="lg-def"><b>Stretching Out</b> <span class="lg-sub">&mdash; reliever building toward starting, innings rising.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#128274;</span><span class="lg-def"><b>Ninth Inning</b> <span class="lg-sub">&mdash; saves and holds, he&rsquo;s getting the 9th.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#128275;</span><span class="lg-def"><b>Possible Closer</b> <span class="lg-sub">&mdash; might get the 9th, stash him cheap.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#127798;&#65039;</span><span class="lg-def"><b>Hot Streak</b> <span class="lg-sub">&mdash; cooking the last 7&ndash;14 days, ride it.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#10052;&#65039;</span><span class="lg-def"><b>Cold Streak</b> <span class="lg-sub">&mdash; frozen the last 7&ndash;14 days, bench or sell.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#128260;</span><span class="lg-def"><b>Position Gain</b> <span class="lg-sub">&mdash; picked up a new position, more roster flexibility.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#129482;</span><span class="lg-def"><b>Cold Park</b> <span class="lg-sub">&mdash; bad matchup, bad park, sit him this week.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#128533;</span><span class="lg-def"><b>Probably Owned</b> <span class="lg-sub">&mdash; likely already rostered in your league, still worth watching.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#128269;</span><span class="lg-def"><b>Undervalued</b> <span class="lg-sub">&mdash; the public has him too low. We saw him first.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#128201;</span><span class="lg-def"><b>Sell High</b> <span class="lg-sub">&mdash; public has him too high, trade before the regression.</span></span></div>
+          <div class="lg-row"><span class="lg-key">&#127974;</span><span class="lg-def"><b>Future Stash</b> <span class="lg-sub">&mdash; not paying off now, will later. Bank him.</span></span></div>
+        </div>
+      </div>
+
+      <div class="legend-section">
+        <h3>The +/&minus; Column</h3>
+        <div class="lg-row"><span class="lg-key"><span class="lg-badge">&#127381; NEW</span></span><span class="lg-def"><b>New</b> <span class="lg-sub">&mdash; just added to the list.</span></span></div>
+        <div class="lg-row"><span class="lg-key"><span class="lg-plus">+5</span></span><span class="lg-def"><b>Moved up</b> <span class="lg-sub">&mdash; climbed 5 spots since our last update.</span></span></div>
+        <div class="lg-row"><span class="lg-key"><span class="lg-minus">&minus;3</span></span><span class="lg-def"><b>Moved down</b> <span class="lg-sub">&mdash; dropped 3 spots since our last update.</span></span></div>
+        <div class="lg-row"><span class="lg-key">&mdash;</span><span class="lg-def"><b>No change</b> <span class="lg-sub">&mdash; held his spot.</span></span></div>
+      </div>
+
+      <div class="legend-section">
+        <h3>Priority (the stars)</h3>
+        <div class="lg-row"><span class="lg-key"><span class="lg-star">&#9733;&#9733;&#9733;&#9733;&#9733;</span></span><span class="lg-def"><b>How hard we&rsquo;re pounding the table.</b> <span class="lg-sub">More gold stars = higher priority. Half-stars count.</span></span></div>
+      </div>
+
+      <div class="legend-section">
+        <h3>Stat Colors &amp; Italics</h3>
+        <div class="lg-row"><span class="lg-key"><span class="lg-chip hit">.312</span></span><span class="lg-def"><b>Green/red numbers</b> <span class="lg-sub">are <b>hitter</b> stats.</span></span></div>
+        <div class="lg-row"><span class="lg-key"><span class="lg-chip pit">2.84</span></span><span class="lg-def"><b>Blue numbers</b> <span class="lg-sub">are <b>pitcher</b> stats.</span></span></div>
+        <div class="lg-row"><span class="lg-key"><i>.298</i></span><span class="lg-def"><b>Italic numbers</b> <span class="lg-sub">come from the <b>minor leagues</b>, not the majors yet.</span></span></div>
+      </div>
+
+      <div class="legend-section">
+        <h3>The Advanced (Statcast) Columns</h3>
+        <p class="legend-intro" style="margin-top:0">These are the &ldquo;why&rdquo; behind the numbers &mdash; what the ball and the swing actually did, straight from MLB&rsquo;s tracking cameras.</p>
+        <div class="lg-grid">
+          <div class="lg-row"><span class="lg-key">xBA</span><span class="lg-def"><span class="lg-sub">Expected batting average &mdash; what he <i>should</i> be hitting based on contact quality.</span></span></div>
+          <div class="lg-row"><span class="lg-key">xERA</span><span class="lg-def"><span class="lg-sub">Expected ERA &mdash; what a pitcher <i>should</i> have allowed.</span></span></div>
+          <div class="lg-row"><span class="lg-key">xwOBA</span><span class="lg-def"><span class="lg-sub">Expected overall offensive value &mdash; the best one-number bat (or pitcher-against) gauge.</span></span></div>
+          <div class="lg-row"><span class="lg-key">Brl%</span><span class="lg-def"><span class="lg-sub">Barrel rate &mdash; how often he makes the perfect, do-the-most-damage contact.</span></span></div>
+          <div class="lg-row"><span class="lg-key">FB&nbsp;Velo</span><span class="lg-def"><span class="lg-sub">Fastball velocity &mdash; how hard a pitcher throws.</span></span></div>
+          <div class="lg-row"><span class="lg-key">EV</span><span class="lg-def"><span class="lg-sub">Exit velocity &mdash; how hard he hits the ball, on average.</span></span></div>
+          <div class="lg-row"><span class="lg-key">Bat&nbsp;Spd</span><span class="lg-def"><span class="lg-sub">Bat speed &mdash; how fast he swings.</span></span></div>
+          <div class="lg-row"><span class="lg-key">Sprint</span><span class="lg-def"><span class="lg-sub">Sprint speed &mdash; his raw foot speed.</span></span></div>
+          <div class="lg-row"><span class="lg-key">K%</span><span class="lg-def"><span class="lg-sub">Strikeout rate (lower is better for a hitter).</span></span></div>
+          <div class="lg-row"><span class="lg-key">BB%</span><span class="lg-def"><span class="lg-sub">Walk rate (higher is better for a hitter).</span></span></div>
+          <div class="lg-row"><span class="lg-key">K-BB%</span><span class="lg-def"><span class="lg-sub">Strikeouts minus walks &mdash; a pitcher&rsquo;s command in one number (higher is better).</span></span></div>
+          <div class="lg-row"><span class="lg-key">Chase%</span><span class="lg-def"><span class="lg-sub">How often a hitter swings at pitches out of the zone (lower is better).</span></span></div>
+          <div class="lg-row"><span class="lg-key">Whiff%</span><span class="lg-def"><span class="lg-sub">How often a swing misses (for a pitcher, higher is better).</span></span></div>
+          <div class="lg-row"><span class="lg-key">GB%</span><span class="lg-def"><span class="lg-sub">Ground-ball rate &mdash; how often contact stays on the ground.</span></span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- /LEGEND_KEY_V1 modal -->
 
 <!-- HEADER_REDESIGN_V1 — quiet status strip. Info chips (player count, Statcast, Yahoo)
      moved out of the action toolbar so the header reads quieter. -->
@@ -5015,6 +5189,22 @@ function updateYahooBtn(){
 /* ============ DAY/NIGHT MODE TOGGLE ============
    toggleTheme() flips the body.day-mode class, saves the choice
    to localStorage, and updates the sun/moon icon on the button. */
+// LEGEND_KEY_V1 (2026-06-01 0044 — PC Walter, per The Dude) — open/close the public Key.
+// Pure show/hide of #legend-modal. No animation, no data calls — cannot affect drag perf.
+function openLegend(){
+  var m=document.getElementById('legend-modal');
+  if(m){ m.classList.add('open'); document.body.style.overflow='hidden'; }
+}
+function closeLegend(){
+  var m=document.getElementById('legend-modal');
+  if(m){ m.classList.remove('open'); document.body.style.overflow=''; }
+}
+// Esc closes it.
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape'){ var m=document.getElementById('legend-modal'); if(m && m.classList.contains('open')) closeLegend(); }
+});
+// /LEGEND_KEY_V1 js
+
 function toggleTheme(){
   var isDay = document.body.classList.toggle('day-mode');
   try { localStorage.setItem('watch101-theme', isDay ? 'day' : 'night'); } catch(e){}
@@ -18489,79 +18679,4 @@ document.addEventListener('keydown', function(e){
   }
   #player-page-overlay .ppo-news-description {
     font-family: 'Nunito Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--text2, #b8b8b8);
-    line-height: 1.5;
-  }
-  #player-page-overlay .ppo-news-right {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-    flex: 0 0 auto;
-  }
-  /* VIDEO_EMBED_V1 (May 23, 2026) — inline MLB highlight video styling.
-     Gold border to match the existing accent on the Latest News card.
-     Empty-state rule hides the container entirely when no video URL is
-     present, so the layout doesn't get a phantom gap.
-     VIDEO_EMBED_SHRINK_V1 (May 27, 2026 — PC Walter, per JP) — capped at
-     480px max-width and right-aligned inside the Latest News card so the
-     video no longer dominates the deep cut page. Headline + description
-     flow on the left, video pins to the right edge. Matt's feedback:
-     prior full-width embed was way too big. */
-  #player-page-overlay .ppo-news-video {
-    margin-top: 16px;
-    width: 100%;
-    display: flex;
-    justify-content: flex-end;
-  }
-  #player-page-overlay .ppo-news-video:empty {
-    display: none;
-  }
-  #player-page-overlay .ppo-news-video video {
-    width: 100%;
-    max-width: 480px;
-    background: #000;
-    border: 1px solid rgba(245, 197, 24, 0.4);
-    border-radius: 4px;
-    display: block;
-  }
-  #player-page-overlay .ppo-news-meta {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.10em;
-    text-transform: uppercase;
-    color: var(--text3, #888);
-  }
-  #player-page-overlay .ppo-news-links {
-    display: flex;
-    gap: 6px;
-  }
-  #player-page-overlay .ppo-news-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    padding: 5px 12px;
-    background: transparent;
-    border: 1px solid var(--gold, #ffc107);
-    border-radius: 14px;
-    font-family: 'Nunito Sans', sans-serif;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    color: var(--gold, #ffc107);
-    text-decoration: none;
-    cursor: pointer;
-    transition: background 0.12s ease, color 0.12s ease;
-  }
-  #player-page-overlay .ppo-news-link:hover {
-    background: var(--gold, #ffc107);
-    color: #000;
-  }
-  /* When the blurb is empty (no clip available for this player yet),
-     the strip can hide itself entirely via the .ppo-news-empty class —
-     applied by Push 4's JS. NEWS_LINKS_V1 Push 4d (May 17, 2026) — selector
-     fixed to target the outer wrapper .ppo-news-strip-wrap (which is what
- 
+   
