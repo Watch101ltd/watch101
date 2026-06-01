@@ -8464,6 +8464,15 @@ async function deletePlayer(id){
   // Reverted to pre-sticky behavior. Phase 6 (proper sticky on remove + drag)
   // is deferred for a fresh-head morning session. See START_HERE_TOMORROW.md.
   players=players.filter(x=>x.id!==id);
+  // DELETE_RENUMBER_FIX_V1 (2026-06-01 — PC Walter, per The Dude / Matt). Removing
+  // a player used to leave a GAP in the ranking (cut #3 -> ranks read 1,2,4,5...).
+  // The old reason to skip renumbering (keep +/- column a dash) is obsolete since
+  // NEW_BADGE_VS_PREVIOUS_V2: +/- now compares to the previous PUBLISH, not live
+  // rank, so renumbering here correctly closes the gap AND shows real movement
+  // (a player who slides 4->3 shows +1 vs his prev-publish baseline). reorderRanks
+  // only touches the live `rank` field; prev_rank / is_new_this_publish are set
+  // only at approval, so this does not disturb the +/- baseline.
+  if(typeof reorderRanks === 'function') reorderRanks();
   saveData();renderTable();
   // MUTATION_AUTOSAVE_V1 (2026-04-24) — persist removal to NAS too, not just localStorage.
   // Without this, a close-and-reopen would bring the removed player back from the server copy.
