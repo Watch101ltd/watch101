@@ -4704,26 +4704,26 @@ function pctShadeStyle(pct, higherIsBetter){
 // was retired because the counter was jammed by an approve-batch script-order conflict.
 // See the function body below for the full rationale.
 function renderDelta(p){
-  // NEW_BADGE_NOCOUNTER_V1 (2026-06-01) — counter-free rewrite. The Dude's spec:
-  //   - A player shows the blue 🆕 NEW badge whenever he is sitting AT his
-  //     baseline (prev_rank === rank) — i.e. Matt has not moved him since the
-  //     last publish pinned him there.
-  //   - The MOMENT Matt moves him off baseline (prev_rank !== rank), the
-  //     green +N / red -N integer takes over.
-  //   No publish_count_since_new dependency. No red/blue split. The old counter
-  //   (publish_count_since_new) is now IGNORED by this column entirely — it was
-  //   jammed by a script-order conflict (the baseline stamp wiped the move:new
-  //   flag the counter needed). Manual override lives in the Deep Cut: Mark/Clear
-  //   NEW drives prev_rank directly (see markNameAsFlaming, NEW_BADGE_NOCOUNTER_V1).
+  // NEW_BADGE_VS_PREVIOUS_V2 (2026-06-01) — The Dude's final spec. The +/- column
+  // answers "how far has Matt moved this player since the LAST published list."
+  // The approval script (_stamp_baseline.py, BASELINE_VS_PREVIOUS_PUBLISH_V2) sets,
+  // at each publish: is_new_this_publish (was NOT on the previous published list)
+  // and prev_rank (the player's rank ON the previous published list). So here:
+  //   - is_new_this_publish === true  -> blue 🆕 NEW badge (shows for exactly
+  //     one publish; the next approve clears it because he WILL be on that list).
+  //   - prev_rank === rank             -> dash (returning, no movement).
+  //   - else                           -> +N green / -N red integer.
+  // The baseline slides forward every publish (this file becomes the next
+  // publish's comparison point). The old publish_count_since_new counter is dead.
+  // Manual override: the Deep Cut "Show as NEW" button sets is_new_this_publish.
+  if(p.is_new_this_publish === true){
+    return '<span class="rdelta-new-badge rdelta-new-blue" title="New on this published list">🆕 NEW</span>';
+  }
   if(p.prev_rank === undefined || p.prev_rank === null || p.rank === undefined || p.rank === null){
     return '<span class="stat-na">\u2014</span>';
   }
-  // At baseline = NEW badge.
-  if(p.prev_rank === p.rank){
-    return '<span class="rdelta-new-badge rdelta-new-blue" title="New since last publish \u2014 baseline at rank #' + p.prev_rank + '">🆕 NEW</span>';
-  }
-  // Moved off baseline = real integer.
   const delta = p.prev_rank - p.rank; // positive = moved up
+  if(delta === 0) return '<span style="color:var(--text3)">\u2014</span>';
   if(delta > 0) return '<span style="color:var(--green);font-weight:600">+' + delta + '</span>';
   return '<span style="color:var(--red);font-weight:600">' + delta + '</span>';
 }
@@ -6258,8 +6258,10 @@ async function markNameAsFlaming(mlbId){
       console.warn('[NEW_BADGE_NOCOUNTER_V1] player not found in active list for mlb_id:', mlbId);
       return;
     }
-    // Pin the baseline at the current rank => renderDelta shows the NEW badge.
-    p.prev_rank = p.rank;
+    // NEW_BADGE_VS_PREVIOUS_V2 — flag this player NEW so renderDelta shows the
+    // badge immediately on staging. Cleared automatically on the next approve
+    // (he WILL be on the previous list then) — The Dude's "one publish" rule.
+    p.is_new_this_publish = true;
     p.baseline_set = true;
     try { await autoSaveToNAS(); } catch(e){ console.warn('[NEW_BADGE_NOCOUNTER_V1] autosave failed:', e); }
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
@@ -15447,11 +15449,10 @@ function openPlayerPage(p){
   // about the player's name visual, not the note. Lives at the bottom of
   // Matt's Take so all the "freshness" controls are clustered.
   // **Hide when Read-Only Mode ships.** Until then, always visible.
-  // NEW_BADGE_NOCOUNTER_V1 (2026-06-01) — button now reads the real +/- state,
-  // not the dead publish_count_since_new. If the player is already at baseline
-  // (prev_rank === rank) the NEW badge is already showing, so the button is
-  // disabled. Otherwise it offers to surface him as NEW.
-  var _flameDisabled = (p.prev_rank != null && p.prev_rank === p.rank);
+  // NEW_BADGE_VS_PREVIOUS_V2 (2026-06-01) — button reads the real NEW flag.
+  // If the player is already flagged NEW this publish, the badge is showing and
+  // the button is disabled. Otherwise it offers to surface him as NEW.
+  var _flameDisabled = (p.is_new_this_publish === true);
   var _flameBtnLabel = _flameDisabled ? '✓ Showing as NEW' : '🆕 Show as NEW';
   var _flameTagText = _flameDisabled
     ? 'Backend only — already at baseline, 🆕 NEW is showing'
@@ -18381,8 +18382,8 @@ document.addEventListener('keydown', function(e){
       + '<button class="qep-close" aria-label="Close" title="Close">\u00D7</button>'
       + '</div>';
 
-    // NEW_BADGE_NOCOUNTER_V1 (2026-06-01) — reads real +/- state, not the dead counter.
-    var _flameDisabled = (p.prev_rank != null && p.prev_rank === p.rank);
+    // NEW_BADGE_VS_PREVIOUS_V2 (2026-06-01) — reads the real NEW flag.
+    var _flameDisabled = (p.is_new_this_publish === true);
     var _flameBtnLabel = _flameDisabled ? '\u2713 Showing as NEW' : '\uD83C\uDD95 Show as NEW';
     var _flameTagText = _flameDisabled
       ? 'Backend only \u2014 already at baseline, \uD83C\uDD95 NEW is showing'
