@@ -6278,6 +6278,12 @@ async function markNameAsFlaming(mlbId){
     // badge immediately on staging. Cleared automatically on the next approve
     // (he WILL be on the previous list then) — The Dude's "one publish" rule.
     p.is_new_this_publish = true;
+    // MANUAL_NEW_PENDING_V1 (2026-06-02) — companion marker the publish script
+    // (_stamp_baseline.py) reads to HONOR this manual NEW for exactly one publish.
+    // Without it the script recomputes is_new_this_publish from scratch every
+    // approve and wipes the manual badge (the Pinango bug). The script keeps the
+    // badge this publish, then retires this marker so the NEXT publish clears it.
+    p.manual_new_pending = true;
     p.baseline_set = true;
     try { await autoSaveToNAS(); } catch(e){ console.warn('[NEW_BADGE_NOCOUNTER_V1] autosave failed:', e); }
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
