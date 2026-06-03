@@ -3314,15 +3314,46 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <div class="filter-tab" id="pros-tab-a" onclick="filterProspects('A',this)">A</div>
         <div class="filter-tab" id="pros-tab-hit" onclick="filterProspects('hit',this)">Hitters</div>
         <div class="filter-tab" id="pros-tab-pit" onclick="filterProspects('pit',this)">Pitchers</div>
-        <!-- PROSPECTS_FILTERS_V1 (2026-06-03 — PC Walter, per the Dude) — stat dropdown matching Pool/Leaders. Only the filters that make sense for prospects: Speedsters (flat 5+ SB), Low Roster, Under 25. SP/RP/Save Threats/Qualified/Injured/NA intentionally excluded — see three_sport notes / daily log. -->
-        <select id="pros-player-filter" onchange="prosPlayerFilter=this.value;renderProspects()" title="Filters" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
-          <option value="ALL">Filters: All Players</option>
-          <option value="SPEEDSTER">Speedsters (5+ SB)</option>
-          <option value="SLEEPER">Low Roster (Under 20%)</option>
-          <option value="UNDER25">Under 25</option>
-        </select>
         <input id="pros-search" type="text" placeholder="Search prospects..." oninput="renderProspects()"
           style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:13px;color:var(--text);font-family:'Nunito Sans',sans-serif;outline:none;width:200px">
+      </div>
+      <!-- PROSPECTS_FILTER_TABLE_V1 (2026-06-03 — PC Walter, per the Dude + Matt) — replaces the
+           single dropdown with a set-your-own filter panel (FanGraphs-style, simplified). Prototype
+           for porting the same table to Watch list / Pool / Leaders / Holding Tank later. Min AB only
+           constrains hitters; Min IP only constrains pitchers (so one doesn't wipe the other role).
+           AB/IP read via getProspectDisplayStats (nested, date-range-aware); age/roster_pct flat on p. -->
+      <div id="pros-filter-panel" style="margin-top:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+        <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN AB <span style="color:var(--stat-hitter)">(hitters)</span></div>
+            <input id="prosf-ab" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN IP <span style="color:var(--stat-pitcher)">(pitchers)</span></div>
+            <input id="prosf-ip" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
+            <div style="display:flex;align-items:center;gap:5px">
+              <input id="prosf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+              <span style="font-size:11px;color:var(--text3)">to</span>
+              <input id="prosf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN SB</div>
+            <input id="prosf-sb" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
+            <input id="prosf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+            <button onclick="applyProsFilters()" style="background:var(--stat-hitter,#1d9e75);color:#04342c;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
+            <button onclick="resetProsFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
+          </div>
+        </div>
+        <div id="prosf-count" style="font-size:11px;color:var(--text3);margin-top:10px"></div>
       </div>
       <!-- HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — ⚡ Advanced button removed; gold Statcast
            columns render by default on Prospects. toggleProspectsAdvancedMode() left as orphaned JS. -->
@@ -6541,15 +6572,24 @@ async function setPriority(mlbId, rawValue){
     //      with the stars.
     // No re-render of the entire overlay panel — that would lose scroll
     // position and any other in-flight UI state. Just swap the two pieces.
+    // PRIORITY_QEP_SYNC_V1 (June 3, 2026 — PC Walter, per the Dude's find) —
+    // The original PRIORITY_OVERLAY_SYNC_V1 only repainted the big Deep Cut
+    // overlay (data-context="overlay"). The Quick Edit popup is a SEPARATE
+    // surface that renders its stars with context "qep" (line ~18895), so its
+    // stars stayed frozen after a click — the value changed under the hood and
+    // the row updated, but the popup gave zero visual feedback. Fix: repaint
+    // BOTH contexts' star widgets, and update the matching .ppo-priority-tag
+    // text in each open popup. Surgical swap only (no full popup re-render, to
+    // preserve scroll + in-flight UI state), same as the proven overlay path.
     try {
-      var overlayStars = document.querySelector('.priority-stars[data-mlb-id="' + mlbId + '"][data-context="overlay"]');
-      if(overlayStars){
-        overlayStars.outerHTML = renderPriorityStars(p, 'overlay');
-      }
-      // Tag-text update — query the row again because the overlayStars node
-      // we had a moment ago was just replaced (its sibling reference would
-      // be stale). Walk the parent to find the .ppo-priority-tag inside the
-      // same .ppo-priority-row.
+      // 1) Repaint the star widgets for every open context that shows them.
+      ['overlay', 'qep'].forEach(function(_ctx){
+        var _stars = document.querySelector('.priority-stars[data-mlb-id="' + mlbId + '"][data-context="' + _ctx + '"]');
+        if(_stars){
+          _stars.outerHTML = renderPriorityStars(p, _ctx);
+        }
+      });
+      // 2) Update the helper-text tag in the Deep Cut overlay (its own wording).
       var overlayRow = document.querySelector('#player-page-overlay .ppo-priority-row');
       if(overlayRow){
         var tagEl = overlayRow.querySelector('.ppo-priority-tag');
@@ -6557,6 +6597,17 @@ async function setPriority(mlbId, rawValue){
           tagEl.textContent = (p.priority == null)
             ? 'Backend only — click stars to rank Matt\'s add-priority (5 = highest)'
             : 'Currently priority ' + p.priority + ' / 5 — click again to change';
+        }
+      }
+      // 3) Update the helper-text tag in the Quick Edit popup (matches the
+      //    wording that popup builds at render time: "Priority N / 5" or "Not set").
+      var qepRow = document.querySelector('#quick-edit-popup .ppo-priority-row');
+      if(qepRow){
+        var qepTagEl = qepRow.querySelector('.ppo-priority-tag');
+        if(qepTagEl){
+          qepTagEl.textContent = (p.priority == null)
+            ? 'Not set'
+            : 'Priority ' + p.priority + ' / 5';
         }
       }
     } catch(_re){}
@@ -13631,7 +13682,9 @@ let prosSortCol = 'ops';
 let prosSortDir = -1;
 let prosFilterLevel = 'all';
 let prosFilterGroup = 'all';
-let prosPlayerFilter = 'ALL';  // PROSPECTS_FILTERS_V1 (2026-06-03) — stat dropdown state (ALL / SPEEDSTER / SLEEPER / UNDER25)
+// PROSPECTS_FILTER_TABLE_V1 (2026-06-03) — replaces the single-string prosPlayerFilter with a
+// set-your-own filter object. null = that control is unset (ignored). Applied in renderProspects().
+let prosFilters = { ab:null, ip:null, ageMin:null, ageMax:null, sb:null, ownedMax:null };
 let prosClusterByPos = null;   // Prospects cluster state (independent of other tabs)
 
 function openProspects(){
@@ -13680,6 +13733,23 @@ function closeProspects(){
   const mh = document.querySelector('.header');
   if(mh) mh.style.transform = '';
   _clearActiveTabHashIfMatches('prospects'); // TAB_HASH_PERSIST_V1
+}
+
+// PROSPECTS_FILTER_TABLE_V1 (2026-06-03) — read the panel inputs into prosFilters, re-render.
+// Empty box => null => that control is ignored.
+function _prosNum(id){ const el = document.getElementById(id); if(!el) return null; const v = el.value.trim(); if(v === '') return null; const n = parseFloat(v); return isNaN(n) ? null : n; }
+function applyProsFilters(){
+  prosFilters = {
+    ab: _prosNum('prosf-ab'), ip: _prosNum('prosf-ip'),
+    ageMin: _prosNum('prosf-agemin'), ageMax: _prosNum('prosf-agemax'),
+    sb: _prosNum('prosf-sb'), ownedMax: _prosNum('prosf-owned')
+  };
+  renderProspects();
+}
+function resetProsFilters(){
+  ['prosf-ab','prosf-ip','prosf-agemin','prosf-agemax','prosf-sb','prosf-owned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  prosFilters = { ab:null, ip:null, ageMin:null, ageMax:null, sb:null, ownedMax:null };
+  renderProspects();
 }
 
 function filterProspects(val, el){
@@ -14952,22 +15022,19 @@ function renderProspects(){
   if(prosFilterLevel !== 'all') list = list.filter(p => p.level === prosFilterLevel);
   if(prosFilterGroup === 'hit') list = list.filter(p => !isPit(p.primaryPos));
   if(prosFilterGroup === 'pit') list = list.filter(p => isPit(p.primaryPos));
-  // PROSPECTS_FILTERS_V1 (2026-06-03 — PC Walter, per the Dude) — stat dropdown filters.
-  // Fields read flat off p (p.sb, p.roster_pct, p.age) exactly like the Pool — prospect
-  // stats are stamped flat on the record, NOT under p.stats (see PROSPECTS_YAHOO_SORT_V1
-  // comment in the sort block). Speedsters uses a FLAT 5+ SB for prospects (the Dude's
-  // call) rather than the auto-scaling speedstersThreshold() the MLB tabs use, because
-  // minor-league steal totals run differently.
-  if(prosPlayerFilter === 'SPEEDSTER'){
-    // PROSPECTS_FILTERS_V1 BUGFIX (2026-06-03) — SB is NESTED under p.stats and must
-    // respect the date-range dropdown, so read it via getProspectDisplayStats(p).sb
-    // exactly like the SB render cell does (s.sb where s = getProspectDisplayStats(p)).
-    // The original p.sb was flat-undefined on every prospect, emptying the table.
-    list = list.filter(p => { const s = getProspectDisplayStats(p); return s && s.sb != null && s.sb >= 5; });
-  } else if(prosPlayerFilter === 'SLEEPER'){
-    list = list.filter(p => p.roster_pct != null && p.roster_pct < 20);
-  } else if(prosPlayerFilter === 'UNDER25'){
-    list = list.filter(p => p.age != null && p.age < 25);
+  // PROSPECTS_FILTER_TABLE_V1 (2026-06-03 — PC Walter, per the Dude + Matt) — set-your-own filters.
+  // Each control is ignored when null. AB/IP read via getProspectDisplayStats (nested, date-range-
+  // aware) like the render cells; age/roster_pct read flat off p. Min AB ONLY constrains hitters and
+  // Min IP ONLY constrains pitchers, so setting one doesn't nuke the other role.
+  {
+    const F = prosFilters;
+    const roleIsPit = p => isPit(p.primaryPos);
+    if(F.ab != null)       list = list.filter(p => { if(roleIsPit(p)) return true; const s = getProspectDisplayStats(p); return s && s.ab != null && s.ab >= F.ab; });
+    if(F.ip != null)       list = list.filter(p => { if(!roleIsPit(p)) return true; const s = getProspectDisplayStats(p); return s && s.ip != null && parseFloat(s.ip) >= F.ip; });
+    if(F.sb != null)       list = list.filter(p => { const s = getProspectDisplayStats(p); return s && s.sb != null && s.sb >= F.sb; });
+    if(F.ageMin != null)   list = list.filter(p => p.age != null && p.age !== '' && parseFloat(p.age) >= F.ageMin);
+    if(F.ageMax != null)   list = list.filter(p => p.age != null && p.age !== '' && parseFloat(p.age) <= F.ageMax);
+    if(F.ownedMax != null) list = list.filter(p => p.roster_pct != null && p.roster_pct !== '' && parseFloat(p.roster_pct) <= F.ownedMax);
   }
   if(q) list = list.filter(p => normalize(p.name).includes(q) || normalize(p.org||'').includes(q) || normalize(p.team||'').includes(q));
 
@@ -15099,6 +15166,17 @@ function renderProspects(){
 
   // Limit display to 200 unless searching
   const display = q ? list : list.slice(0, 200);
+  // PROSPECTS_FILTER_TABLE_V1 (2026-06-03) — update the filter panel count line. list is the
+  // full filtered set; prospectPlayers is the loaded total. Shows the active-filter narrowing.
+  {
+    const cEl = document.getElementById('prosf-count');
+    if(cEl){
+      const total = (typeof prospectPlayers !== 'undefined' && Array.isArray(prospectPlayers)) ? prospectPlayers.length : list.length;
+      const F = prosFilters;
+      const anyFilter = F && (F.ab!=null||F.ip!=null||F.ageMin!=null||F.ageMax!=null||F.sb!=null||F.ownedMax!=null);
+      cEl.textContent = anyFilter ? ('Showing ' + list.length.toLocaleString() + ' of ' + total.toLocaleString() + ' prospects') : '';
+    }
+  }
 
   const na = '<span style="color:var(--text3)">—</span>';
   // LEADZERO_STRIP_V1 (May 19, 2026) — Prospects sv() now routes decimal
