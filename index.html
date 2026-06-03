@@ -6250,6 +6250,19 @@ function decimalAge(p){
   return '<span class="stat-na">—</span>';
 }
 
+// AGE_FILTER_DECIMAL_V1 (2026-06-03 — PC Walter, per the Dude) — numeric form of the age the AGE
+// column displays (decimalAge). Filters MUST compare against THIS, not the rounded p.age, or a
+// 25.3-year-old slips through a "max 25" filter (his p.age rounds to integer 25). Returns Number|null.
+function decimalAgeNum(p){
+  if(p.birthDate){
+    const birth = new Date(p.birthDate);
+    const now = new Date();
+    return (now - birth) / (365.25 * 24 * 3600 * 1000);
+  }
+  if(p.age != null && p.age !== '') { const n = parseFloat(p.age); return isNaN(n) ? null : n; }
+  return null;
+}
+
 function injuryBadge(status){
   if(!status) return '';
   const s = status.toUpperCase();
@@ -11015,8 +11028,8 @@ function renderPool(){
     const F = poolFilters;
     if(F.ab != null)          list = list.filter(p => isPitcher(p) ? true : ((parseFloat(p.ab)||0) >= F.ab));
     if(F.ip != null)          list = list.filter(p => !isPitcher(p) ? true : ((parseFloat(p.ip)||0) >= F.ip));
-    if(F.ageMin != null)      list = list.filter(p => p.age != null && p.age !== '' && parseFloat(p.age) >= F.ageMin);
-    if(F.ageMax != null)      list = list.filter(p => p.age != null && p.age !== '' && parseFloat(p.age) <= F.ageMax);
+    if(F.ageMin != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a >= F.ageMin; });
+    if(F.ageMax != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a <= F.ageMax; });
     if(F.ownedMax != null)    list = list.filter(p => p.roster_pct != null && p.roster_pct !== '' && parseFloat(p.roster_pct) <= F.ownedMax);
     if(F.cbsOwnedMax != null) list = list.filter(p => p.cbs_roster_pct != null && p.cbs_roster_pct !== '' && parseFloat(p.cbs_roster_pct) <= F.cbsOwnedMax);
   }
@@ -15031,8 +15044,8 @@ function renderProspects(){
     const roleIsPit = p => isPit(p.primaryPos);
     if(F.ab != null)       list = list.filter(p => { if(roleIsPit(p)) return true; const s = getProspectDisplayStats(p); return s && s.ab != null && s.ab >= F.ab; });
     if(F.ip != null)       list = list.filter(p => { if(!roleIsPit(p)) return true; const s = getProspectDisplayStats(p); return s && s.ip != null && parseFloat(s.ip) >= F.ip; });
-    if(F.ageMin != null)      list = list.filter(p => p.age != null && p.age !== '' && parseFloat(p.age) >= F.ageMin);
-    if(F.ageMax != null)      list = list.filter(p => p.age != null && p.age !== '' && parseFloat(p.age) <= F.ageMax);
+    if(F.ageMin != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a >= F.ageMin; });
+    if(F.ageMax != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a <= F.ageMax; });
     if(F.ownedMax != null)    list = list.filter(p => p.roster_pct != null && p.roster_pct !== '' && parseFloat(p.roster_pct) <= F.ownedMax);
     if(F.cbsOwnedMax != null) list = list.filter(p => p.cbs_roster_pct != null && p.cbs_roster_pct !== '' && parseFloat(p.cbs_roster_pct) <= F.cbsOwnedMax);
   }
