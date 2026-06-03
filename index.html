@@ -14193,7 +14193,7 @@ function getProspectDisplayStats(p){
   // with a .milb sub-object. This makes date-range flips on the Prospects tab
   // instant instead of firing ~3300 live fetches. Lookup order: pre-bake .milb
   // sub-object -> pre-bake flat row -> live prospectsDateRangeCache (new call-ups
-  // not yet baked) -> season totals so the row never goes blank.
+  // not yet baked) -> THEN the honesty dash (see V2 below).
   if(dateRange !== 'live' && typeof PLAYER_DATERANGE_CACHE !== 'undefined'){
     const pre = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
     if(pre && pre[dateRange]){
@@ -14204,6 +14204,18 @@ function getProspectDisplayStats(p){
   }
   const cached = prospectsDateRangeCache[p.mlb_id + '_' + dateRange];
   if(cached && Object.keys(cached).length > 0) return cached;
+  // PROSPECTS_DASH_HONESTY_V2 (2026-06-03, PC Walter, per The Dude) — when a real
+  // date-range window is selected (yesterday / 7 / 14 / 30) and this prospect has
+  // NO data for that window, return an EMPTY object so the row renders em-dashes,
+  // NOT his season totals. Short windows (esp. 'yesterday', single-day) are sparse
+  // for the minors because the bake's bulk pull only returns players who played in
+  // the window and the /people backfill is MLB-only. Showing season totals there
+  // made it look like the date range was being ignored. A dash is honest: "this
+  // player has no stats for the selected window." 'live' still falls through to
+  // season totals below (it has its own runtime fetch path).
+  if(dateRange !== 'live' && dateRange !== 'season'){
+    return {};
+  }
   return p.stats || {};
 }
 
