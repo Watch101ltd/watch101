@@ -14416,9 +14416,36 @@ var _prospectFrozenOrder = null;  // legacy, not used by V2 code path
 function _activeSampleFor(p, tableName){
   if(!p) return null;
   const label = _resolveActiveSample(p, tableName || 'watch');
-  if(label === 'MLB')  return p.statsMlb  || p.statsMilb || (p.stats || p);
-  if(label === 'MiLB') return p.statsMilb || p.statsMlb  || (p.stats || p);
-  return p.stats || p;
+  let _sample;
+  if(label === 'MLB')       _sample = p.statsMlb  || p.statsMilb || (p.stats || p);
+  else if(label === 'MiLB') _sample = p.statsMilb || p.statsMlb  || (p.stats || p);
+  else                      _sample = p.stats || p;
+  // QS_APPLY_V2 (June 3, 2026) — the render cells read sc.hld where sc is THIS
+  // returned sample object, not the flat player record. QS_APPLY_V1 stamped
+  // p.hld (the flat field) which the cell never reads, so QS never showed.
+  // Fix: stamp the season Quality Starts onto the sample object the cell
+  // actually reads, AND onto p.hld so sort/import/export (which read the flat
+  // field) stay consistent. Only pitchers present in window.QS_CACHE are
+  // stamped; everyone else keeps holds/null and renders an em-dash.
+  try {
+    var _isPit = (typeof isPitcher === 'function') ? isPitcher(p) : false;
+    if(window.QS_CACHE && _isPit){
+      var _qs = (p.mlb_id != null) ? window.QS_CACHE[String(p.mlb_id)] : undefined;
+      if(_qs !== undefined && _qs !== null){
+        // pitcher has a QS value -> show it in the hld slot
+        if(_sample && typeof _sample === 'object') _sample.hld = _qs;
+        p.hld = _qs;
+      } else {
+        // pitcher NOT in the QS cache (e.g. a reliever who never started) ->
+        // clear the hld slot so the cell renders an em-dash instead of his
+        // old holds value. Only pitchers are cleared; hitters keep this slot
+        // for stolen bases, so we never touch a hitter's field here.
+        if(_sample && typeof _sample === 'object') _sample.hld = null;
+        p.hld = null;
+      }
+    }
+  } catch(_qsErr){}
+  return _sample;
 }
 
 // Helper — resolves which source label is currently active. The italic
@@ -14558,19 +14585,6 @@ function _applyActiveSampleToFlatFields(p, tableName){
       p[k] = null;
     }
   });
-  // QS_APPLY_V1 (June 3, 2026) — overwrite the pitcher hld field with this
-  // pitcher's season Quality Starts from window.QS_CACHE (loaded by
-  // QS_NAS_FETCH_V1). Runs here, the one per-player choke point every table
-  // funnels through before render, so QS always wins over a holds value no
-  // matter which season-stats path last touched hld. Only pitchers in the
-  // cache are stamped; everyone else keeps null/holds and renders an em-dash.
-  // Does NOT touch bb_pit / kbb_ratio, so the K/BB fixes above are undisturbed.
-  try {
-    if(window.QS_CACHE && p && p.mlb_id != null){
-      var _qs = window.QS_CACHE[String(p.mlb_id)];
-      if(_qs !== undefined && _qs !== null) p.hld = _qs;
-    }
-  } catch(_qsErr){}
   p.statsSource = _activeSourceFor(p, tableName || 'watch');
 }
 
