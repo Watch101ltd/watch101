@@ -14959,7 +14959,11 @@ function renderProspects(){
   // call) rather than the auto-scaling speedstersThreshold() the MLB tabs use, because
   // minor-league steal totals run differently.
   if(prosPlayerFilter === 'SPEEDSTER'){
-    list = list.filter(p => p.sb != null && p.sb >= 5);
+    // PROSPECTS_FILTERS_V1 BUGFIX (2026-06-03) — SB is NESTED under p.stats and must
+    // respect the date-range dropdown, so read it via getProspectDisplayStats(p).sb
+    // exactly like the SB render cell does (s.sb where s = getProspectDisplayStats(p)).
+    // The original p.sb was flat-undefined on every prospect, emptying the table.
+    list = list.filter(p => { const s = getProspectDisplayStats(p); return s && s.sb != null && s.sb >= 5; });
   } else if(prosPlayerFilter === 'SLEEPER'){
     list = list.filter(p => p.roster_pct != null && p.roster_pct < 20);
   } else if(prosPlayerFilter === 'UNDER25'){
