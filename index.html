@@ -3532,7 +3532,7 @@ function switchActiveList(newId){
             if(_s.strikeOuts!==undefined) _p.k = _s.strikeOuts;
             if(_s.wins!==undefined) _p.w = _s.wins;
             if(_s.saves!==undefined) _p.sv = _s.saves;
-            if(_s.holds!==undefined) _p.hld = _s.holds;
+            /* QS_KILL_HOLDS_V1: holds no longer copied; QS fills hld */ _p.hld = null;
             if(_s.baseOnBalls!==undefined) _p.bb_pit = Number(_s.baseOnBalls);
             _p.kbb_ratio = (_p.bb_pit > 0 && _p.k != null) ? +(_p.k / _p.bb_pit).toFixed(2) : null;
             _p.k_per_9   = (_p.ip > 0 && _p.k != null)    ? +((_p.k * 9) / _p.ip).toFixed(2) : null;
@@ -3583,7 +3583,7 @@ async function _tankSilentStatsRefresh(_reason){
           if(_s.strikeOuts!==undefined) _p.k = _s.strikeOuts;
           if(_s.wins!==undefined) _p.w = _s.wins;
           if(_s.saves!==undefined) _p.sv = _s.saves;
-          if(_s.holds!==undefined) _p.hld = _s.holds;
+          /* QS_KILL_HOLDS_V1: holds no longer copied; QS fills hld */ _p.hld = null;
           if(_s.baseOnBalls!==undefined) _p.bb_pit = Number(_s.baseOnBalls);
           _p.kbb_ratio = (_p.bb_pit > 0 && _p.k != null) ? +(_p.k / _p.bb_pit).toFixed(2) : null;
           _p.k_per_9   = (_p.ip > 0 && _p.k != null)    ? +((_p.k * 9) / _p.ip).toFixed(2) : null;
@@ -3841,6 +3841,7 @@ async function loadDateRangeCacheFromNAS(){
     const data = await res.json();
     if(data && typeof data === 'object' && data.player_daterange_cache && typeof data.player_daterange_cache === 'object'){
       window.PLAYER_DATERANGE_CACHE = data.player_daterange_cache;
+      if(typeof applyQSToAllCaches === 'function') applyQSToAllCaches();
       window.PLAYER_DATERANGE_CACHE_META = data.meta || null;
       var _count = Object.keys(data.player_daterange_cache).length;
       var _ts = (data.meta && data.meta.generated_at) ? data.meta.generated_at : 'unknown';
@@ -3871,6 +3872,86 @@ loadDateRangeCacheFromNAS();
 // instead of being overwritten back to holds. Keyed by mlb_id (string) -> int.
 // Silent-fail: if the NAS is offline, hld just keeps showing holds.
 window.QS_CACHE = window.QS_CACHE || {};
+// QS_SOURCE_OVERWRITE_V1 (June 3, 2026) — the permanent fix for holds ghosting
+// through in date-range views. Instead of patching every render/sort site that
+// reads hld (there are many: main, Pool, Tank, Leaders, Prospects, plus runtime
+// caches), we overwrite hld AT THE SOURCE once the QS cache is loaded:
+//   (a) every window row in PLAYER_DATERANGE_CACHE (keyed by mlb_id), and
+//   (b) every season player record in `players`.
+// In the date-range cache, hld and sb are SEPARATE fields, so overwriting hld
+// never touches a hitter's stolen bases. A pitcher in QS_CACHE gets that
+// window's QS; a pitcher absent (reliever) gets null -> em-dash; the season
+// fallback covers windows the QS bake didn't emit a key for.
+// Called after BOTH the QS fetch and the daterange fetch so QS always wins
+// regardless of which network response lands last.
+function _qsWindowValue(entry, win){
+  // entry: a QS_CACHE value (number=season-only v1, or object=v2 windows).
+  if(entry === undefined || entry === null) return undefined;
+  if(typeof entry === 'number') return entry; // v1 season-only
+  if(typeof entry !== 'object') return undefined;
+  if(win === 'season' || win === 'live'){
+    return (entry.season !== undefined) ? entry.season : undefined;
+  }
+  return (entry[win] !== undefined) ? entry[win] : undefined;
+}
+function applyQSToAllCaches(){
+  try {
+    if(!window.QS_CACHE) return;
+    var QS = window.QS_CACHE;
+    // (a) date-range cache: overwrite hld in every window row for pitchers.
+    if(typeof PLAYER_DATERANGE_CACHE !== 'undefined' && PLAYER_DATERANGE_CACHE){
+      var WINS = ['yesterday','7','14','30'];
+      for(var mid in PLAYER_DATERANGE_CACHE){
+        var entry = QS[String(mid)];
+        // Only pitchers are in QS. To know if a non-QS row is a PITCHER row we
+        // can't tell from the daterange row alone — but hld is a pitcher-only
+        // field there (hitters' value is meaningless), and sb is separate, so
+        // clearing hld for a hitter is harmless. We therefore clear hld to null
+        // for any row whose pitcher isn't in QS, and set the QS value for those
+        // who are. Hitters' sb is untouched (different field).
+        var rows = PLAYER_DATERANGE_CACHE[mid];
+        if(!rows) continue;
+        for(var wi=0; wi<WINS.length; wi++){
+          var w = WINS[wi];
+          var row = rows[w];
+          if(!row) continue;
+          var val;
+          if(entry !== undefined){
+            var qv = _qsWindowValue(entry, w);
+            val = (qv !== undefined && qv !== null) ? qv : null;
+          } else {
+            val = null; // not a tracked starter -> em-dash
+          }
+          // Only overwrite when this looks like a pitcher row (has pitcher
+          // fields) OR the pitcher is in QS. A row with sb/ab but no ip is a
+          // hitter; leave its hld alone to be safe.
+          var looksPitcher = (entry !== undefined) || (row.ip !== undefined && row.ip !== null) || (row.era !== undefined && row.era !== null);
+          if(looksPitcher){
+            row.hld = val;
+            if(row.mlb && typeof row.mlb === 'object') row.mlb.hld = val;
+          }
+        }
+      }
+    }
+    // (b) season player records.
+    if(typeof players !== 'undefined' && Array.isArray(players)){
+      for(var pi=0; pi<players.length; pi++){
+        var pl = players[pi];
+        if(!pl || pl.mlb_id == null) continue;
+        var e = QS[String(pl.mlb_id)];
+        var isPit = ((typeof isPitcher === 'function') && isPitcher(pl)) || ((typeof isPitcherPos === 'function') && isPitcherPos(pl.primaryPos));
+        if(!isPit) continue;
+        var sv = (e !== undefined) ? _qsWindowValue(e, 'season') : undefined;
+        var sval = (sv !== undefined && sv !== null) ? sv : null;
+        pl.hld = sval;
+        if(pl.statsMlb && typeof pl.statsMlb === 'object') pl.statsMlb.hld = sval;
+        if(pl.statsMilb && typeof pl.statsMilb === 'object') pl.statsMilb.hld = sval;
+        if(pl.stats && typeof pl.stats === 'object') pl.stats.hld = sval;
+      }
+    }
+  } catch(_qsAllErr){ try{ console.warn('[QS_SOURCE_OVERWRITE_V1] error:', _qsAllErr && _qsAllErr.message); }catch(__){} }
+}
+
 async function loadQSCacheFromNAS(){
   try {
     const res = await fetch(`${NAS_PROXY_URL}/qs-cache`, {
@@ -3881,6 +3962,7 @@ async function loadQSCacheFromNAS(){
     const data = await res.json();
     if(data && typeof data === 'object' && data.qs && typeof data.qs === 'object'){
       window.QS_CACHE = data.qs;
+      applyQSToAllCaches();
       var _c = Object.keys(data.qs).length;
       var _ts = (data.meta && data.meta.generated_at) ? data.meta.generated_at : 'unknown';
       console.log('[QS_NAS_FETCH_V1] loaded ' + _c + ' pitchers from NAS (generated: ' + _ts + ')');
@@ -8254,7 +8336,7 @@ async function refreshAllStats(){
           if(s.strikeOuts!==undefined) p.k=s.strikeOuts;
           if(s.wins!==undefined) p.w=s.wins;
           if(s.saves!==undefined) p.sv=s.saves;
-          if(s.holds!==undefined) p.hld=s.holds;
+          /* QS_KILL_HOLDS_V1: holds no longer copied; QS fills hld */ p.hld=null;
           if(s.inningsPitched!==undefined) p.ip=parseFloat(s.inningsPitched);
           // BASIC_BLOCK_KBB_V1 (May 14, 2026) — capture pitcher walks for K/BB ratio.
           if(s.baseOnBalls!==undefined) p.bb_pit=Number(s.baseOnBalls);
@@ -13267,7 +13349,7 @@ async function _refreshPlayerStatsBothSources(p){
         if(s.strikeOuts     != null) { out.k   = Number(s.strikeOuts);         anyFound = true; }
         if(s.wins           != null) { out.w   = Number(s.wins);               anyFound = true; }
         if(s.saves          != null) { out.sv  = Number(s.saves);              anyFound = true; }
-        if(s.holds          != null) { out.hld = Number(s.holds);              anyFound = true; }
+        /* QS_KILL_HOLDS_V1: holds no longer copied; QS fills hld */ out.hld = null;
         if(s.era)                    { out.era = parseFloat(s.era);            anyFound = true; }
         if(s.whip)                   { out.whip = parseFloat(s.whip);          anyFound = true; }
         if(s.baseOnBalls    != null) { out.bb_pit = Number(s.baseOnBalls);     anyFound = true; }
@@ -13911,7 +13993,7 @@ async function fetchSampleBackfillForListPlayers(targetArray, surfaceName){
         if(s.strikeOuts != null) target.k   = (Number(target.k)   || 0) + Number(s.strikeOuts);
         if(s.wins       != null) target.w   = (Number(target.w)   || 0) + Number(s.wins);
         if(s.saves      != null) target.sv  = (Number(target.sv)  || 0) + Number(s.saves);
-        if(s.holds      != null) target.hld = (Number(target.hld) || 0) + Number(s.holds);
+        /* QS_KILL_HOLDS_V1: holds no longer accumulated; QS fills hld */
         target.ip = +pt.ip.toFixed(1);
         target.bb_pit = pt.bb; // SAMPLE_BACKFILL_BBPIT_FIX_V1 (2026-06-01) — store walks for on-load K/BB
         if(pt.ip > 0){
@@ -13945,7 +14027,7 @@ async function fetchSampleBackfillForListPlayers(targetArray, surfaceName){
         if(s.strikeOuts     != null) target.k    = Number(s.strikeOuts);
         if(s.wins           != null) target.w    = Number(s.wins);
         if(s.saves          != null) target.sv   = Number(s.saves);
-        if(s.holds          != null) target.hld  = Number(s.holds);
+        /* QS_KILL_HOLDS_V1: holds no longer copied; QS fills hld */
         if(s.era)                    target.era  = parseFloat(s.era);
         if(s.whip)                   target.whip = parseFloat(s.whip);
         if(s.baseOnBalls    != null) target.bb_pit = Number(s.baseOnBalls); // SAMPLE_BACKFILL_BBPIT_FIX_V1
@@ -14095,7 +14177,7 @@ async function fetchProspectStatsBulk(){
         if(s.strikeOuts != null) target.k   = (Number(target.k)   || 0) + Number(s.strikeOuts);
         if(s.wins       != null) target.w   = (Number(target.w)   || 0) + Number(s.wins);
         if(s.saves      != null) target.sv  = (Number(target.sv)  || 0) + Number(s.saves);
-        if(s.holds      != null) target.hld = (Number(target.hld) || 0) + Number(s.holds);
+        /* QS_KILL_HOLDS_V1: holds no longer accumulated; QS fills hld */
         target.ip = +pt.ip.toFixed(1);
         target.bb_pit = pt.bb; // SAMPLE_BACKFILL_BBPIT_FIX_V1 (2026-06-01) — store walks for on-load K/BB
         // Rate stats — recompute from running totals
@@ -14133,7 +14215,7 @@ async function fetchProspectStatsBulk(){
         if(s.strikeOuts     != null) target.k    = Number(s.strikeOuts);
         if(s.wins           != null) target.w    = Number(s.wins);
         if(s.saves          != null) target.sv   = Number(s.saves);
-        if(s.holds          != null) target.hld  = Number(s.holds);
+        /* QS_KILL_HOLDS_V1: holds no longer copied; QS fills hld */
         if(s.era)                    target.era  = parseFloat(s.era);
         if(s.whip)                   target.whip = parseFloat(s.whip);
         if(s.baseOnBalls    != null) target.bb_pit = Number(s.baseOnBalls); // SAMPLE_BACKFILL_BBPIT_FIX_V1
@@ -14663,7 +14745,7 @@ function _normalizeMlbStatSplit(rawStat, group){
     out.k    = s.strikeOuts     != null ? Number(s.strikeOuts)         : null;
     out.w    = s.wins           != null ? Number(s.wins)               : null;
     out.sv   = s.saves          != null ? Number(s.saves)              : null;
-    out.hld  = s.holds          != null ? Number(s.holds)              : null;
+    out.hld  = null; /* QS_KILL_HOLDS_V1: holds no longer copied; QS fills hld */
     out.era  = s.era            != null ? parseFloat(s.era)            : null;
     out.whip = s.whip           != null ? parseFloat(s.whip)           : null;
     // KBB_BB_PIT_RESTORE_V1 (2026-05-28) — extract baseOnBalls into bb_pit so
