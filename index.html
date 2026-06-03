@@ -14140,8 +14140,19 @@ async function fetchProspectsDateRangeStats(range){
   if(!prospectPlayers || prospectPlayers.length === 0) return;
   prospectsDateRangeFetching = true;
   try {
+    // PROSPECTS_PREBAKE_READ_V1 (2026-06-03, PC Walter) — only LIVE-fetch players
+    // who are NOT already in the server-side pre-bake. With --include-minors on,
+    // the pre-bake covers ~all prospects, so this list is now just the handful of
+    // fresh call-ups added since the last bake (instead of all ~3300). The bake
+    // does not cover the 'live' range, so for 'live' we still fetch everyone.
+    const inPrebake = (mlbId) => {
+      if(range === 'live') return false;
+      if(typeof PLAYER_DATERANGE_CACHE === 'undefined') return false;
+      const pre = PLAYER_DATERANGE_CACHE[String(mlbId)];
+      return !!(pre && pre[range]);
+    };
     const allIds = prospectPlayers
-      .filter(p => p.mlb_id && !prospectsDateRangeCache[p.mlb_id + '_' + range])
+      .filter(p => p.mlb_id && !prospectsDateRangeCache[p.mlb_id + '_' + range] && !inPrebake(p.mlb_id))
       .map(p => p.mlb_id);
     if(allIds.length === 0){
       prospectsDateRangeFetching = false;
@@ -14159,7 +14170,8 @@ async function fetchProspectsDateRangeStats(range){
         const stats = bundle[mlbId] || {};
         prospectsDateRangeCache[mlbId + '_' + range] = stats;
       });
-      if(prospectsActive) renderProspects();
+      // PROSPECTS_PREBAKE_READ_V1 — repaint ONCE after the loop (below), not after
+      // every chunk. Repainting a ~3300-row table 17x was a big part of the old wait.
     }
   } catch(e) {
     // On failure, leave cache as-is so a later switch can retry
@@ -14175,6 +14187,21 @@ async function fetchProspectsDateRangeStats(range){
 function getProspectDisplayStats(p){
   if(dateRange === 'season') return p.stats || {};
   if(!p || !p.mlb_id) return p.stats || {};
+  // PROSPECTS_PREBAKE_READ_V1 (2026-06-03, PC Walter) — read the server-side
+  // pre-baked PLAYER_DATERANGE_CACHE first, same as the main page. The daily
+  // bake now runs with --include-minors, so AAA/AA/A+/A players are baked in
+  // with a .milb sub-object. This makes date-range flips on the Prospects tab
+  // instant instead of firing ~3300 live fetches. Lookup order: pre-bake .milb
+  // sub-object -> pre-bake flat row -> live prospectsDateRangeCache (new call-ups
+  // not yet baked) -> season totals so the row never goes blank.
+  if(dateRange !== 'live' && typeof PLAYER_DATERANGE_CACHE !== 'undefined'){
+    const pre = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
+    if(pre && pre[dateRange]){
+      const row = pre[dateRange];
+      if(row.milb && Object.keys(row.milb).length > 0) return row.milb;
+      return row;
+    }
+  }
   const cached = prospectsDateRangeCache[p.mlb_id + '_' + dateRange];
   if(cached && Object.keys(cached).length > 0) return cached;
   return p.stats || {};
