@@ -12906,6 +12906,21 @@ function getDisplayStats(p){
     var pre = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
     if(pre && pre[dateRange]){
       var _row = pre[dateRange];
+      // QS_WINDOW_DR_V1 (June 3, 2026) — overlay this pitcher's windowed Quality
+      // Starts onto the date-range row's hld so the QS column shows the count for
+      // the selected window (holds is fully replaced by QS sitewide, so stamping
+      // hld here is consistent, not a leak). Pitchers only (isPitcher guard) so a
+      // hitter's SB in the shared slot is never touched. A pitcher with no QS
+      // value for this window gets hld=null -> em-dash. Mirrors QS_APPLY_V2.
+      try {
+        var _drIsPit = (typeof isPitcher === 'function') ? isPitcher(p) : false;
+        if(_drIsPit){
+          var _drQs = _qsForCurrentWindow(p.mlb_id);
+          var _drVal = (_drQs !== undefined && _drQs !== null) ? _drQs : null;
+          if(_row && typeof _row === 'object') _row.hld = _drVal;
+          if(_row && _row.mlb && typeof _row.mlb === 'object') _row.mlb.hld = _drVal;
+        }
+      } catch(_drErr){}
       // Pre-V3 the row carried .mlb / .milb sub-objects for chip awareness.
       // Under V3, MiLB is short-circuited above so we only need the MLB side.
       if(_row.mlb) return _row.mlb;
@@ -14413,6 +14428,30 @@ var _prospectFrozenOrder = null;  // legacy, not used by V2 code path
 // then table default. tableName is optional and only matters when no
 // explicit toggle has been set; defaults to 'watch' so non-table-aware
 // callers (e.g. save flow) get the watch-list semantics.
+// QS_WINDOW_READER_V1 (June 3, 2026) — returns the Quality Starts value for a
+// pitcher for the CURRENTLY SELECTED dateRange, tolerant of both cache shapes:
+//   v1 (old): window.QS_CACHE[id] === <number>  (season only)
+//   v2 (new): window.QS_CACHE[id] === { season, "30","14","7","yesterday" }
+// Returns a number, or undefined if there is no QS value for this window
+// (e.g. the pitcher made no start in that window -> caller renders em-dash).
+// 'live' has no pre-baked QS window, so it falls back to the season number.
+function _qsForCurrentWindow(mlbId){
+  try {
+    if(!window.QS_CACHE || mlbId == null) return undefined;
+    var entry = window.QS_CACHE[String(mlbId)];
+    if(entry === undefined || entry === null) return undefined;
+    // v1 plain-number shape -> that's the season total.
+    if(typeof entry === 'number') return entry;
+    if(typeof entry !== 'object') return undefined;
+    var dr = (typeof dateRange !== 'undefined') ? dateRange : 'season';
+    if(dr === 'season' || dr === 'live'){
+      return (entry.season !== undefined) ? entry.season : undefined;
+    }
+    // windowed: yesterday / 7 / 14 / 30 — present only if he started in it.
+    return (entry[dr] !== undefined) ? entry[dr] : undefined;
+  } catch(_e){ return undefined; }
+}
+
 function _activeSampleFor(p, tableName){
   if(!p) return null;
   const label = _resolveActiveSample(p, tableName || 'watch');
@@ -14430,9 +14469,10 @@ function _activeSampleFor(p, tableName){
   try {
     var _isPit = (typeof isPitcher === 'function') ? isPitcher(p) : false;
     if(window.QS_CACHE && _isPit){
-      var _qs = (p.mlb_id != null) ? window.QS_CACHE[String(p.mlb_id)] : undefined;
+      // QS_WINDOW_V1: read the value for the current dateRange (season or window).
+      var _qs = _qsForCurrentWindow(p.mlb_id);
       if(_qs !== undefined && _qs !== null){
-        // pitcher has a QS value -> show it in the hld slot
+        // pitcher has a QS value for this window -> show it in the hld slot
         if(_sample && typeof _sample === 'object') _sample.hld = _qs;
         p.hld = _qs;
       } else {
