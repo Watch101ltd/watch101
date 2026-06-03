@@ -3314,6 +3314,13 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <div class="filter-tab" id="pros-tab-a" onclick="filterProspects('A',this)">A</div>
         <div class="filter-tab" id="pros-tab-hit" onclick="filterProspects('hit',this)">Hitters</div>
         <div class="filter-tab" id="pros-tab-pit" onclick="filterProspects('pit',this)">Pitchers</div>
+        <!-- PROSPECTS_FILTERS_V1 (2026-06-03 — PC Walter, per the Dude) — stat dropdown matching Pool/Leaders. Only the filters that make sense for prospects: Speedsters (flat 5+ SB), Low Roster, Under 25. SP/RP/Save Threats/Qualified/Injured/NA intentionally excluded — see three_sport notes / daily log. -->
+        <select id="pros-player-filter" onchange="prosPlayerFilter=this.value;renderProspects()" title="Filters" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
+          <option value="ALL">Filters: All Players</option>
+          <option value="SPEEDSTER">Speedsters (5+ SB)</option>
+          <option value="SLEEPER">Low Roster (Under 20%)</option>
+          <option value="UNDER25">Under 25</option>
+        </select>
         <input id="pros-search" type="text" placeholder="Search prospects..." oninput="renderProspects()"
           style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:13px;color:var(--text);font-family:'Nunito Sans',sans-serif;outline:none;width:200px">
       </div>
@@ -13624,6 +13631,7 @@ let prosSortCol = 'ops';
 let prosSortDir = -1;
 let prosFilterLevel = 'all';
 let prosFilterGroup = 'all';
+let prosPlayerFilter = 'ALL';  // PROSPECTS_FILTERS_V1 (2026-06-03) — stat dropdown state (ALL / SPEEDSTER / SLEEPER / UNDER25)
 let prosClusterByPos = null;   // Prospects cluster state (independent of other tabs)
 
 function openProspects(){
@@ -14944,6 +14952,19 @@ function renderProspects(){
   if(prosFilterLevel !== 'all') list = list.filter(p => p.level === prosFilterLevel);
   if(prosFilterGroup === 'hit') list = list.filter(p => !isPit(p.primaryPos));
   if(prosFilterGroup === 'pit') list = list.filter(p => isPit(p.primaryPos));
+  // PROSPECTS_FILTERS_V1 (2026-06-03 — PC Walter, per the Dude) — stat dropdown filters.
+  // Fields read flat off p (p.sb, p.roster_pct, p.age) exactly like the Pool — prospect
+  // stats are stamped flat on the record, NOT under p.stats (see PROSPECTS_YAHOO_SORT_V1
+  // comment in the sort block). Speedsters uses a FLAT 5+ SB for prospects (the Dude's
+  // call) rather than the auto-scaling speedstersThreshold() the MLB tabs use, because
+  // minor-league steal totals run differently.
+  if(prosPlayerFilter === 'SPEEDSTER'){
+    list = list.filter(p => p.sb != null && p.sb >= 5);
+  } else if(prosPlayerFilter === 'SLEEPER'){
+    list = list.filter(p => p.roster_pct != null && p.roster_pct < 20);
+  } else if(prosPlayerFilter === 'UNDER25'){
+    list = list.filter(p => p.age != null && p.age < 25);
+  }
   if(q) list = list.filter(p => normalize(p.name).includes(q) || normalize(p.org||'').includes(q) || normalize(p.team||'').includes(q));
 
   // Sort
