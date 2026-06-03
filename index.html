@@ -2033,49 +2033,55 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
 </script>
 
 <div class="toolbar">
-  <div class="search-wrap">
-    <span class="search-icon">⌕</span>
-    <input type="text" id="search" placeholder="Filter watch list..." oninput="renderTable()">
+  <!-- INSTANT_FILTER_GROUP_V1 (2026-06-03 — PC Walter, per the Dude) — search (instant) + the four
+       instant position/group buttons, grouped under an INSTANT FILTER title. These act immediately on
+       click/type. The Apply-gated equivalents (team, date, stat boxes, position checkboxes) live in the
+       PREFILTER box below. Instant and Prefilter are independent — last action wins. -->
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em">INSTANT FILTER</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="search" placeholder="Instant search..." oninput="renderTable()">
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" id="instant-all" onclick="setFilter('ALL',this)">All</button>
+        <button class="filter-tab" id="instant-hit" onclick="setFilter('HITTER',this)">Hitters</button>
+        <button class="filter-tab" id="instant-pit" onclick="setFilter('PITCHER',this)">Pitchers</button>
+        <button class="filter-tab" id="instant-top25" onclick="setFilter('TOP25',this)">Top 25</button>
+        <button class="filter-tab" id="instant-movers" onclick="setFilter('MOVERS',this)">Movers</button>
+      </div>
+    </div>
   </div>
-  <select id="team-filter" onchange="teamFilter=this.value;renderTable()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
-    <option value="ALL">All Teams</option>
-    <option value="ARI">ARI — D-backs</option>
-    <option value="ATL">ATL — Braves</option>
-    <option value="BAL">BAL — Orioles</option>
-    <option value="BOS">BOS — Red Sox</option>
-    <option value="CHC">CHC — Cubs</option>
-    <option value="CWS">CWS — White Sox</option>
-    <option value="CIN">CIN — Reds</option>
-    <option value="CLE">CLE — Guardians</option>
-    <option value="COL">COL — Rockies</option>
-    <option value="DET">DET — Tigers</option>
-    <option value="HOU">HOU — Astros</option>
-    <option value="KC">KC — Royals</option>
-    <option value="LAA">LAA — Angels</option>
-    <option value="LAD">LAD — Dodgers</option>
-    <option value="MIA">MIA — Marlins</option>
-    <option value="MIL">MIL — Brewers</option>
-    <option value="MIN">MIN — Twins</option>
-    <option value="NYM">NYM — Mets</option>
-    <option value="NYY">NYY — Yankees</option>
-    <option value="ATH">ATH — Athletics</option>
-    <option value="PHI">PHI — Phillies</option>
-    <option value="PIT">PIT — Pirates</option>
-    <option value="SD">SD — Padres</option>
-    <option value="SF">SF — Giants</option>
-    <option value="SEA">SEA — Mariners</option>
-    <option value="STL">STL — Cardinals</option>
-    <option value="TB">TB — Rays</option>
-    <option value="TEX">TEX — Rangers</option>
-    <option value="TOR">TOR — Blue Jays</option>
-    <option value="WSH">WSH — Nationals</option>
-  </select>
+
   <!-- PLAYER_FILTER_V1 (April 26, 2026) — Matt's request: single-select dropdown with curated filter buckets. Combines with team filter (AND logic). Defaults to ALL. -->
   <!-- FILTER_TABLE_PORT_V1 (2026-06-03 — PC Walter, per the Dude) — main Watch list dropdown replaced
        by the STAT FILTERING panel. Flat fields; age via decimalAgeNum to match the displayed column. -->
   <div id="wl-filter-panel" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
-    <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
+    <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">PREFILTER</div>
     <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">TEAM</div>
+        <select id="wlf-team" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none">
+          <option value="ALL">All Teams</option>
+          <option value="ARI">ARI — D-backs</option><option value="ATL">ATL — Braves</option><option value="BAL">BAL — Orioles</option><option value="BOS">BOS — Red Sox</option><option value="CHC">CHC — Cubs</option><option value="CWS">CWS — White Sox</option><option value="CIN">CIN — Reds</option><option value="CLE">CLE — Guardians</option><option value="COL">COL — Rockies</option><option value="DET">DET — Tigers</option><option value="HOU">HOU — Astros</option><option value="KC">KC — Royals</option><option value="LAA">LAA — Angels</option><option value="LAD">LAD — Dodgers</option><option value="MIA">MIA — Marlins</option><option value="MIL">MIL — Brewers</option><option value="MIN">MIN — Twins</option><option value="NYM">NYM — Mets</option><option value="NYY">NYY — Yankees</option><option value="ATH">ATH — Athletics</option><option value="PHI">PHI — Phillies</option><option value="PIT">PIT — Pirates</option><option value="SD">SD — Padres</option><option value="SF">SF — Giants</option><option value="SEA">SEA — Mariners</option><option value="STL">STL — Cardinals</option><option value="TB">TB — Rays</option><option value="TEX">TEX — Rangers</option><option value="TOR">TOR — Blue Jays</option><option value="WSH">WSH — Nationals</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
+        <select id="wlf-daterange" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none">
+          <option value="live">🔴 Live</option><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">POSITION / GROUP</div>
+        <div style="display:flex;align-items:center;gap:12px;height:32px">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="wlf-hitters" style="cursor:pointer"> Hitters</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="wlf-pitchers" style="cursor:pointer"> Pitchers</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="wlf-top25" style="cursor:pointer"> Top 25</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="wlf-movers" style="cursor:pointer"> Movers</label>
+        </div>
+      </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN AB <span style="color:var(--stat-hitter)">(hitters)</span></div>
         <input id="wlf-ab" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
@@ -2116,28 +2122,10 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
   <button class="filter-tab frontend-only" onclick="openLeagueLeaders()" title="View MLB league leaders by category" style="white-space:nowrap">🏆 League Leaders</button>
   <button class="filter-tab frontend-only" onclick="openProspects()" title="Browse minor-league prospects (AAA / AA / A)" style="white-space:nowrap">🍼 Prospects</button>
   <!-- MULTILIST_V1 — list switcher + info button MOVED to header (LIST_PICKER_HEADER_V2, May 12, 2026) -->
-  <select id="daterange-select" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
-    <option value="live">🔴 Live</option>
-    <option value="yesterday">Yesterday</option>
-    <option value="season" selected>Season Stats</option>
-    <option value="7">Last 7 Days</option>
-    <option value="14">Last 14 Days</option>
-    <option value="30">Last 30 Days</option>
-  </select>
-  <div style="display:flex;flex-direction:column;gap:6px">
-    <div class="filter-tabs">
-      <button class="filter-tab active" onclick="setFilter('ALL',this)">All</button>
-      <button class="filter-tab" onclick="setFilter('HITTER',this)">Hitters</button>
-      <button class="filter-tab" onclick="setFilter('PITCHER',this)">Pitchers</button>
-      <button class="filter-tab" onclick="setFilter('TOP25',this)">Top 25</button>
-      <button class="filter-tab" onclick="setFilter('MOVERS',this)">Movers</button>
-      <!-- HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — ⚡ Advanced button removed. Was a column-show
-           toggle, but the gold Statcast columns now render unconditionally so the button was
-           dead UI. JS function toggleAdvancedMode() is intentionally left in place as an
-           orphan — harmless and easy to wire back up if needed. -->
-      <span id="cluster-chip" onclick="sortByPos(clusterByPos, event)" title="Click to exit position-cluster sort"></span>
-    </div>
-  </div>
+
+  <!-- INSTANT_FILTER_GROUP_V1 (2026-06-03) — the All/Hitters/Pitchers/Top25/Movers buttons moved UP into
+       the INSTANT FILTER group near search. Only the cluster-chip stays here (position-cluster sort UI). -->
+  <span id="cluster-chip" onclick="sortByPos(clusterByPos, event)" title="Click to exit position-cluster sort"></span>
   <!-- HEADER_REDESIGN_V1 (April 24, 2026) — toolbar-right consolidated into three dropdowns.
        Add Player = Player Pool / League Leaders / Prospects.
        Save = Save to Excel / Forget Folder.
@@ -3776,7 +3764,7 @@ let clusterByPos = null;   // When set to 'C'|'1B'|'2B'|... main list clusters b
 let filter = 'ALL';
 let teamFilter = 'ALL';
 // FILTER_TABLE_PORT_V1 (2026-06-03) — main Watch list set-your-own filter object (replaces playerFilter).
-let watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
+let watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null, posBuckets:[] };
 
 // AUTO_SCALE_FILTERS_V1 (May 11, 2026) — auto-scaling thresholds for filters
 // that depend on counting stats. The Dude flagged that hardcoded numbers like
@@ -5922,6 +5910,9 @@ function toggleLeadersAdvancedMode(el){
 
 function setFilter(f, el){
   filter = f;
+  // PREFILTER_V1 — instant top-row button is now the "last action": clear the Apply-gated position
+  // checkboxes + buckets so the two systems don't fight.
+  if(typeof watchFilters !== 'undefined' && watchFilters){ watchFilters.posBuckets = []; ['wlf-hitters','wlf-pitchers','wlf-top25','wlf-movers'].forEach(id=>{var c=document.getElementById(id); if(c) c.checked=false;}); }
   // Turn off advanced mode when switching tabs
   if(advancedMode){
     advancedMode = false;
@@ -6046,6 +6037,13 @@ function getFiltered(){
     if(F.ageMax != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a <= F.ageMax; });
     if(F.ownedMax != null)    list = list.filter(p => p.roster_pct != null && p.roster_pct !== '' && parseFloat(p.roster_pct) <= F.ownedMax);
     if(F.cbsOwnedMax != null) list = list.filter(p => p.cbs_roster_pct != null && p.cbs_roster_pct !== '' && parseFloat(p.cbs_roster_pct) <= F.cbsOwnedMax);
+    // PREFILTER_V1 — position/group checkboxes (combine with AND). Apply-gated.
+    if(F.posBuckets && F.posBuckets.length){
+      if(F.posBuckets.includes('HITTER'))  list = list.filter(p => !isPitcher(p));
+      if(F.posBuckets.includes('PITCHER')) list = list.filter(p => isPitcher(p));
+      if(F.posBuckets.includes('TOP25'))   list = list.filter(p => p.rank && p.rank<=25);
+      if(F.posBuckets.includes('MOVERS'))  list = list.filter(p => p.move && p.move!=='');
+    }
   }
 
   // --- Position-cluster mode (Matt's position-sort feature) ---
@@ -8046,16 +8044,33 @@ function pickStatSource(group){
 // FILTER_TABLE_PORT_V1 (2026-06-03) — main Watch list filter-panel handlers. Empty box => null => ignored.
 function _wlNum(id){ const el = document.getElementById(id); if(!el) return null; const v = el.value.trim(); if(v === '') return null; const n = parseFloat(v); return isNaN(n) ? null : n; }
 function applyWatchFilters(){
+  // PREFILTER_V1 (2026-06-03) — Apply reads ALL in-box controls together: stat boxes, team, date range,
+  // and the position/group checkboxes (combine with AND, in watchFilters.posBuckets). Using the box is the
+  // "last action" — it neutralizes the instant top-row buttons so the two don't double-apply.
+  const buckets = [];
+  if(document.getElementById('wlf-hitters') && document.getElementById('wlf-hitters').checked) buckets.push('HITTER');
+  if(document.getElementById('wlf-pitchers') && document.getElementById('wlf-pitchers').checked) buckets.push('PITCHER');
+  if(document.getElementById('wlf-top25') && document.getElementById('wlf-top25').checked) buckets.push('TOP25');
+  if(document.getElementById('wlf-movers') && document.getElementById('wlf-movers').checked) buckets.push('MOVERS');
   watchFilters = {
     ab: _wlNum('wlf-ab'), ip: _wlNum('wlf-ip'),
     ageMin: _wlNum('wlf-agemin'), ageMax: _wlNum('wlf-agemax'),
-    ownedMax: _wlNum('wlf-owned'), cbsOwnedMax: _wlNum('wlf-cbsowned')
+    ownedMax: _wlNum('wlf-owned'), cbsOwnedMax: _wlNum('wlf-cbsowned'),
+    posBuckets: buckets
   };
+  var teamSel = document.getElementById('wlf-team');
+  if(teamSel) teamFilter = teamSel.value;
+  if(buckets.length){ filter = 'ALL'; document.querySelectorAll('.filter-tabs .filter-tab').forEach(t=>t.classList.remove('active')); var ia=document.getElementById('instant-all'); if(ia) ia.classList.add('active'); }
+  var drSel = document.getElementById('wlf-daterange');
+  if(drSel && typeof setDateRange === 'function'){ setDateRange(drSel.value); }
   renderTable();
 }
 function resetWatchFilters(){
   ['wlf-ab','wlf-ip','wlf-agemin','wlf-agemax','wlf-owned','wlf-cbsowned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
+  ['wlf-hitters','wlf-pitchers','wlf-top25','wlf-movers'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+  var teamSel = document.getElementById('wlf-team'); if(teamSel) teamSel.value = 'ALL';
+  teamFilter = 'ALL';
+  watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null, posBuckets:[] };
   renderTable();
 }
 
@@ -12981,16 +12996,19 @@ function setDateRange(val){
   // AUTO_SCALE_FILTERS_V1 — refresh the dropdown labels so "Qualified Hitters"
   // shows the "— Season only" hint when a non-season range is active.
   if(typeof _wireAutoScaleFilterLabels === 'function') _wireAutoScaleFilterLabels();
+  // PREFILTER_V1 (2026-06-03) — the old #daterange-select was removed from the Watch list toolbar (the
+  // date range now lives in the PREFILTER box as #wlf-daterange). This legacy var may be null now, so
+  // every sel.classList call below is null-guarded. The in-box dropdown is kept in sync at the end.
   const sel = document.getElementById('daterange-select');
   if(val === 'season'){
-    sel.classList.remove('daterange-active');
+    if(sel) sel.classList.remove('daterange-active');
     renderTable();
     if(poolActive) renderPool();
     if(typeof leadersActive !== 'undefined' && leadersActive && typeof renderLeaders === 'function') renderLeaders();
     // TANK_DATERANGE_FIX_V1 (May 18, 2026) — also re-render the Tank when switching back to season.
     if(typeof tankActive !== 'undefined' && tankActive && typeof renderTank === 'function') renderTank();
   } else {
-    sel.classList.add('daterange-active');
+    if(sel) sel.classList.add('daterange-active');
     if(val === 'live'){
       Object.keys(dateRangeCache).forEach(k => { if(k.endsWith('_live')) delete dateRangeCache[k]; });
       Object.keys(poolDateRangeCache).forEach(k => { if(k.endsWith('_live')) delete poolDateRangeCache[k]; });
@@ -13033,7 +13051,7 @@ function setPoolWrapTop(){
 
 function syncDateRangeDropdowns(val){
   // Keep all three dropdowns in sync visually
-  ['daterange-select','daterange-select-pool','daterange-select-leaders','daterange-select-pros','ppo-daterange-select'].forEach(id => {
+  ['daterange-select','wlf-daterange','daterange-select-pool','daterange-select-leaders','daterange-select-pros','ppo-daterange-select'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.value = val;
     if(el) el.classList.toggle('daterange-active', val !== 'season');
