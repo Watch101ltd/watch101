@@ -12913,7 +12913,7 @@ function getDisplayStats(p){
       // hitter's SB in the shared slot is never touched. A pitcher with no QS
       // value for this window gets hld=null -> em-dash. Mirrors QS_APPLY_V2.
       try {
-        var _drIsPit = (typeof isPitcher === 'function') ? isPitcher(p) : false;
+        var _drIsPit = ((typeof isPitcher === 'function') && isPitcher(p)) || ((typeof isPitcherPos === 'function') && isPitcherPos(p.primaryPos));
         if(_drIsPit){
           var _drQs = _qsForCurrentWindow(p.mlb_id);
           var _drVal = (_drQs !== undefined && _drQs !== null) ? _drQs : null;
@@ -14467,7 +14467,7 @@ function _activeSampleFor(p, tableName){
   // field) stay consistent. Only pitchers present in window.QS_CACHE are
   // stamped; everyone else keeps holds/null and renders an em-dash.
   try {
-    var _isPit = (typeof isPitcher === 'function') ? isPitcher(p) : false;
+    var _isPit = ((typeof isPitcher === 'function') && isPitcher(p)) || ((typeof isPitcherPos === 'function') && isPitcherPos(p.primaryPos));
     if(window.QS_CACHE && _isPit){
       // QS_WINDOW_V1: read the value for the current dateRange (season or window).
       var _qs = _qsForCurrentWindow(p.mlb_id);
