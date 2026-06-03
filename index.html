@@ -2765,19 +2765,42 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       <!-- AUTO_SCALE_FILTERS_V1 — Speedsters and Qualified Hitters get their
            dropdown labels rewritten on page load by _wireAutoScaleFilterLabels()
            so the live threshold is always visible. -->
-      <select id="tank-player-filter" onchange="tankPlayerFilter=this.value;renderTank()" title="Filters" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
-        <option value="ALL">Filters: All Players</option>
-        <option value="INJURED">Injured</option>
-        <option value="NA">NA Players</option>
-        <option value="SP">Starting Pitcher</option>
-        <option value="RP">Relief Pitcher</option>
-        <option value="SAVE_THREAT">Save Threats</option>
-        <option value="SPEEDSTER">Speedsters</option>
-        <option value="SLEEPER">Low Roster (Under 20%)</option>
-        <option value="UNDER25">Under 25</option>
-        <option value="QUALIFIED">Qualified Hitters</option>
-        <option value="QUALIFIED_P">Qualified Pitchers</option>
-      </select>
+      <!-- FILTER_TABLE_PORT_V1 (2026-06-03 — PC Walter, per the Dude) — Holding Tank dropdown replaced by
+           the STAT FILTERING panel. Flat fields; age via decimalAgeNum to match the displayed column. -->
+      <div id="tank-filter-panel" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN AB <span style="color:var(--stat-hitter)">(hitters)</span></div>
+            <input id="tankf-ab" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN IP <span style="color:var(--stat-pitcher)">(pitchers)</span></div>
+            <input id="tankf-ip" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
+            <div style="display:flex;align-items:center;gap:5px">
+              <input id="tankf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+              <span style="font-size:11px;color:var(--text3)">to</span>
+              <input id="tankf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
+            <input id="tankf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
+            <input id="tankf-cbsowned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+            <button onclick="applyTankFilters()" style="background:var(--stat-hitter,#1d9e75);color:#04342c;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
+            <button onclick="resetTankFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
+          </div>
+        </div>
+        <div id="tankf-count" style="font-size:11px;color:var(--text3);margin-top:10px"></div>
+      </div>
       <!-- HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — ⚡ Advanced button removed; gold Statcast
            columns render by default on Tank. toggleTankAdvancedMode() left as orphaned JS. -->
       <span id="tank-cluster-chip" onclick="sortTankByPos(tankClusterByPos, event)" title="Click to exit position-cluster sort"></span>
@@ -17035,7 +17058,8 @@ let tankLoaded       = false;
 let tankSortCol      = 'name';
 let tankSortDir      = 1;
 let tankPosFilter    = 'ALL';
-let tankPlayerFilter = 'ALL';
+// FILTER_TABLE_PORT_V1 (2026-06-03) — Holding Tank set-your-own filter object (replaces tankPlayerFilter).
+let tankFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
 let tankTeamFilter   = 'ALL';
 let tankClusterByPos = null;
 let tankSearchFilter = '';
@@ -17384,6 +17408,22 @@ function setTankPos(pos, el){
 }
 
 // --- Tank twin of renderPool ---
+// FILTER_TABLE_PORT_V1 (2026-06-03) — Holding Tank filter-panel handlers. Empty box => null => ignored.
+function _tankNum(id){ const el = document.getElementById(id); if(!el) return null; const v = el.value.trim(); if(v === '') return null; const n = parseFloat(v); return isNaN(n) ? null : n; }
+function applyTankFilters(){
+  tankFilters = {
+    ab: _tankNum('tankf-ab'), ip: _tankNum('tankf-ip'),
+    ageMin: _tankNum('tankf-agemin'), ageMax: _tankNum('tankf-agemax'),
+    ownedMax: _tankNum('tankf-owned'), cbsOwnedMax: _tankNum('tankf-cbsowned')
+  };
+  renderTank();
+}
+function resetTankFilters(){
+  ['tankf-ab','tankf-ip','tankf-agemin','tankf-agemax','tankf-owned','tankf-cbsowned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  tankFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
+  renderTank();
+}
+
 function renderTank(){
   const tbody = document.getElementById('tank-tbody');
   // POOL_GATE_BY_ID_V1 (May 28, 2026 — PC Walter, per The Dude) — gate by mlb_id
@@ -17402,68 +17442,17 @@ function renderTank(){
   if(tankTeamFilter !== 'ALL') list = list.filter(p => (p.team||'').toUpperCase() === tankTeamFilter);
 
   // PLAYER_FILTER_V1 — Pool — Matt's curated filter dropdown (single-select, AND logic with tankPosFilter)
-  if(tankPlayerFilter !== 'ALL'){
-    if(tankPlayerFilter === 'INJURED'){
-      // REHAB_FILTER_V1 — also includes rehab-assignment major-leaguers (on_rehab=true).
-      list = list.filter(p => {
-        if(p.on_rehab === true) return true;  // REHAB_FILTER_V1
-        const s = (p.injury_status || '').toUpperCase();
-        if(!s) return false;
-        if(s === 'NA') return false;
-        return true;
-      });
-    } else if(tankPlayerFilter === 'NA'){
-      // REHAB_FILTER_V1 — exclude rehab-assignment major-leaguers (they show as
-      // Yahoo 'NA' but belong in INJURED, not the minors-owned bucket).
-      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA' && p.on_rehab !== true);
-    } else if(tankPlayerFilter === 'SP'){
-      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
-    } else if(tankPlayerFilter === 'RP'){
-      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'RP');
-    } else if(tankPlayerFilter === 'SAVE_THREAT'){
-      // SAVE_THREATS_V1 — see comment in the Watch list filter (renderTable).
-      list = list.filter(p => p.sv != null && p.sv >= 1);
-    } else if(tankPlayerFilter === 'SPEEDSTER'){
-      // SPEEDSTERS_V1 + AUTO_SCALE_FILTERS_V1 — threshold scales by date.
-      // Today (~40 team-games in) it's 3 SB, matching the previous hardcoded
-      // value. By season's end it grows to ~13 SB so the filter still
-      // surfaces actual speed threats and not part-time burglars.
-      var _spMin = speedstersThreshold();
-      list = list.filter(p => p.sb != null && p.sb >= _spMin);
-    } else if(tankPlayerFilter === 'SLEEPER'){
-      // LOW_ROSTER_RENAME_V1 (May 12, 2026) — was "Sleepers (under 25%)".
-      list = list.filter(p => p.roster_pct != null && p.roster_pct < 20);
-    } else if(tankPlayerFilter === 'QUALIFIED_P'){
-      // QUALIFIED_PITCHERS_V1 (May 12, 2026) — Matt's request. Dynamic
-      // threshold: 0.33 IP per team game played so far. Floor of 5 IP keeps
-      // it meaningful in early April. Filters out hitters entirely.
-      if(typeof dateRange !== 'undefined' && dateRange === 'season'){
-        var _qpMin = qualifiedPitchersThreshold();
-        list = list.filter(p => isPitcher(p) && (parseFloat(p.ip)||0) >= _qpMin);
-      } else {
-        list = list.filter(p => isPitcher(p));
-      }
-    } else if(tankPlayerFilter === 'UNDER25'){
-      list = list.filter(p => p.age != null && p.age < 25);
-    } else if(tankPlayerFilter === 'QUALIFIED'){
-      // QUALIFIED_HITTERS_V1 (AUTO_SCALE_FILTERS_V1) — only meaningful on
-      // season-totals view (date ranges have too few AB to qualify anyone).
-      // Filters out pitchers entirely. Threshold auto-scales: ~40 today,
-      // ~80 by July, ~162 by season's end. When dateRange is not 'season'
-      // the filter falls back to "all hitters" so the dropdown doesn't
-      // silently nuke the table; the dropdown label shows "— Season only"
-      // as a hint in that state.
-      if(typeof dateRange !== 'undefined' && dateRange === 'season'){
-        var _qhMin = qualifiedHittersThreshold();
-        // QUALIFIED_HITTERS_V1 BUGFIX (May 11, 2026) — Pool players store AB
-        // at the top level (p.ab), not nested under p.stats.ab. The original
-        // version checked p.stats first, which evaluated to false on every
-        // pool player (no .stats key), filtering out 100% of the table.
-        list = list.filter(p => !isPitcher(p) && (p.ab||0) >= _qhMin);
-      } else {
-        list = list.filter(p => !isPitcher(p));
-      }
-    }
+  // FILTER_TABLE_PORT_V1 (2026-06-03 — PC Walter, per the Dude) — Holding Tank set-your-own filters,
+  // replacing the old dropdown. Flat fields. Min AB only constrains hitters; Min IP only pitchers;
+  // age via decimalAgeNum (matches displayed decimal age).
+  {
+    const F = tankFilters;
+    if(F.ab != null)          list = list.filter(p => isPitcher(p) ? true : ((parseFloat(p.ab)||0) >= F.ab));
+    if(F.ip != null)          list = list.filter(p => !isPitcher(p) ? true : ((parseFloat(p.ip)||0) >= F.ip));
+    if(F.ageMin != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a >= F.ageMin; });
+    if(F.ageMax != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a <= F.ageMax; });
+    if(F.ownedMax != null)    list = list.filter(p => p.roster_pct != null && p.roster_pct !== '' && parseFloat(p.roster_pct) <= F.ownedMax);
+    if(F.cbsOwnedMax != null) list = list.filter(p => p.cbs_roster_pct != null && p.cbs_roster_pct !== '' && parseFloat(p.cbs_roster_pct) <= F.cbsOwnedMax);
   }
 
   // Apply search text filter
@@ -17592,6 +17581,15 @@ function renderTank(){
   // Show the FULL filtered roster — earlier 300-row cap was hiding everyone after
   // roughly the G's when sorted alphabetically. Modern browsers render ~1500 rows fine.
   const display = list;
+  // FILTER_TABLE_PORT_V1 (2026-06-03) — STAT FILTERING count line (only shows when a filter is active).
+  {
+    const cEl = document.getElementById('tankf-count');
+    if(cEl){
+      const F = tankFilters;
+      const anyFilter = F && (F.ab!=null||F.ip!=null||F.ageMin!=null||F.ageMax!=null||F.ownedMax!=null||F.cbsOwnedMax!=null);
+      cEl.textContent = anyFilter ? ('Showing ' + list.length.toLocaleString() + ' player' + (list.length!==1?'s':'')) : '';
+    }
+  }
   document.getElementById('tank-empty').style.display = list.length===0?'block':'none';
   // Build Yahoo lookup from the FULL global Yahoo cache (not just watch list).
   // The watch-list-only lookup meant pool players not on the watch list got blank
