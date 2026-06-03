@@ -3609,10 +3609,11 @@ function openListInfoOverlay(){
   try {
     const body = document.getElementById('list-info-body');
     if(body && Array.isArray(WATCH_LISTS)){
-      // LIST_REBRAND_V1 (2026-06-02) — on the PUBLIC site (readonly-mode) skip
-      // any list tagged backendOnly (The Dude's List). On the backend, show all.
-      var _public = document.body.classList.contains('readonly-mode');
-      body.innerHTML = WATCH_LISTS.filter(function(l){ return !(_public && l.backendOnly); }).map(function(l){
+      // LIST_REBRAND_V1 (2026-06-02) — the info box is the public "here are our
+      // lists" explainer, so skip any backendOnly list (The Dude's List) ALWAYS,
+      // on both public and backend. It stays selectable in the dropdown for Jay's
+      // private use; it just isn't described in this box anymore.
+      body.innerHTML = WATCH_LISTS.filter(function(l){ return !l.backendOnly; }).map(function(l){
         return '<div style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px">'
           +    '<div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:2px">' + (l.name || l.id) + '</div>'
           +    (l.subtitle ? '<div style="font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">' + l.subtitle + '</div>' : '')
