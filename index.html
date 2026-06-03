@@ -3862,6 +3862,42 @@ async function loadDateRangeCacheFromNAS(){
 loadDateRangeCacheFromNAS();
 // ── /DATERANGE_NAS_FETCH_V1 ──────────────────────────────────────────────────
 
+// ── QS_NAS_FETCH_V1 (June 3, 2026) ───────────────────────────────────────────
+// Fetch the season Quality Starts cache from the NAS (/qs-cache endpoint,
+// QS_NAS_ENDPOINT_V1 in server.js) and hold it in window.QS_CACHE. The actual
+// stamping of qs onto each pitcher's hld field happens in
+// _applyActiveSampleToFlatFields (QS_APPLY_V1), which every table funnels each
+// player through right before render — so QS survives every season-stats reload
+// instead of being overwritten back to holds. Keyed by mlb_id (string) -> int.
+// Silent-fail: if the NAS is offline, hld just keeps showing holds.
+window.QS_CACHE = window.QS_CACHE || {};
+async function loadQSCacheFromNAS(){
+  try {
+    const res = await fetch(`${NAS_PROXY_URL}/qs-cache`, {
+      headers: {'ngrok-skip-browser-warning': 'true'},
+      cache: 'no-store'
+    });
+    if(!res.ok) return; // silent fail — column keeps showing holds as fallback
+    const data = await res.json();
+    if(data && typeof data === 'object' && data.qs && typeof data.qs === 'object'){
+      window.QS_CACHE = data.qs;
+      var _c = Object.keys(data.qs).length;
+      var _ts = (data.meta && data.meta.generated_at) ? data.meta.generated_at : 'unknown';
+      console.log('[QS_NAS_FETCH_V1] loaded ' + _c + ' pitchers from NAS (generated: ' + _ts + ')');
+      // Re-render visible tables so QS lands immediately once the cache arrives.
+      try { if(typeof renderTable === 'function') renderTable(); } catch(_e){}
+      try { if(typeof renderPool === 'function' && typeof poolActive !== 'undefined' && poolActive) renderPool(); } catch(_e){}
+      try { if(typeof renderLeaders === 'function' && typeof leadersActive !== 'undefined' && leadersActive) renderLeaders(); } catch(_e){}
+      try { if(typeof renderTank === 'function' && typeof tankActive !== 'undefined' && tankActive) renderTank(); } catch(_e){}
+      try { if(typeof renderProspects === 'function' && typeof prospectsActive !== 'undefined' && prospectsActive) renderProspects(); } catch(_e){}
+    }
+  } catch(e){
+    console.warn('[QS_NAS_FETCH_V1] fetch failed:', e && e.message);
+  }
+}
+loadQSCacheFromNAS();
+// ── /QS_NAS_FETCH_V1 ─────────────────────────────────────────────────────────
+
 // STAGING_VS_PROD_V1 — pick the right endpoint based on what domain we're on (Apr 22, 2026).
 // GitHub = staging environment (reads from _Staging\<List>\ — sees works-in-progress)
 // Anything else (Cloudflare prod, custom domain, file://) = production
@@ -14522,6 +14558,19 @@ function _applyActiveSampleToFlatFields(p, tableName){
       p[k] = null;
     }
   });
+  // QS_APPLY_V1 (June 3, 2026) — overwrite the pitcher hld field with this
+  // pitcher's season Quality Starts from window.QS_CACHE (loaded by
+  // QS_NAS_FETCH_V1). Runs here, the one per-player choke point every table
+  // funnels through before render, so QS always wins over a holds value no
+  // matter which season-stats path last touched hld. Only pitchers in the
+  // cache are stamped; everyone else keeps null/holds and renders an em-dash.
+  // Does NOT touch bb_pit / kbb_ratio, so the K/BB fixes above are undisturbed.
+  try {
+    if(window.QS_CACHE && p && p.mlb_id != null){
+      var _qs = window.QS_CACHE[String(p.mlb_id)];
+      if(_qs !== undefined && _qs !== null) p.hld = _qs;
+    }
+  } catch(_qsErr){}
   p.statsSource = _activeSourceFor(p, tableName || 'watch');
 }
 
