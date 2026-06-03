@@ -2071,17 +2071,42 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     <option value="WSH">WSH — Nationals</option>
   </select>
   <!-- PLAYER_FILTER_V1 (April 26, 2026) — Matt's request: single-select dropdown with curated filter buckets. Combines with team filter (AND logic). Defaults to ALL. -->
-  <select id="player-filter" onchange="playerFilter=this.value;renderTable()" title="Filters" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
-    <option value="ALL">Filters: All Players</option>
-    <option value="INJURED">Injured</option>
-    <option value="NA">NA Players</option>
-    <option value="SP">Starting Pitcher</option>
-    <option value="RP">Relief Pitcher</option>
-    <option value="SAVE_THREAT">Save Threats</option>
-    <option value="SPEEDSTER">Speedsters</option>
-    <option value="SLEEPER">Low Roster (Under 20%)</option>
-    <option value="UNDER25">Under 25</option>
-  </select>
+  <!-- FILTER_TABLE_PORT_V1 (2026-06-03 — PC Walter, per the Dude) — main Watch list dropdown replaced
+       by the STAT FILTERING panel. Flat fields; age via decimalAgeNum to match the displayed column. -->
+  <div id="wl-filter-panel" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+    <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN AB <span style="color:var(--stat-hitter)">(hitters)</span></div>
+        <input id="wlf-ab" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN IP <span style="color:var(--stat-pitcher)">(pitchers)</span></div>
+        <input id="wlf-ip" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <input id="wlf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          <span style="font-size:11px;color:var(--text3)">to</span>
+          <input id="wlf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
+        <input id="wlf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
+        <input id="wlf-cbsowned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <button onclick="applyWatchFilters()" style="background:var(--stat-hitter,#1d9e75);color:#04342c;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
+        <button onclick="resetWatchFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
+      </div>
+    </div>
+    <div id="wlf-count" style="font-size:11px;color:var(--text3);margin-top:10px"></div>
+  </div>
   <!-- FAN_NAV_BUTTONS_V1 (May 12, 2026 — PC Walter) — public-facing buttons for the
        fan view (Cloudflare prod / non-github hosts). Sit next to the Filters dropdown.
        Tagged .frontend-only so they appear ONLY in read-only mode and stay hidden
@@ -2925,19 +2950,43 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       <!-- AUTO_SCALE_FILTERS_V1 — Speedsters and Qualified Hitters get their
            dropdown labels rewritten on page load by _wireAutoScaleFilterLabels()
            so the live threshold is always visible. -->
-      <select id="leaders-player-filter" onchange="leadersPlayerFilter=this.value;renderLeaders()" title="Filters" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
-        <option value="ALL">Filters: All Players</option>
-        <option value="INJURED">Injured</option>
-        <option value="NA">NA Players</option>
-        <option value="SP">Starting Pitcher</option>
-        <option value="RP">Relief Pitcher</option>
-        <option value="SAVE_THREAT">Save Threats</option>
-        <option value="SPEEDSTER">Speedsters</option>
-        <option value="SLEEPER">Low Roster (Under 20%)</option>
-        <option value="UNDER25">Under 25</option>
-        <option value="QUALIFIED">Qualified Hitters</option>
-        <option value="QUALIFIED_P">Qualified Pitchers</option>
-      </select>
+      <!-- FILTER_TABLE_PORT_V1 (2026-06-03 — PC Walter, per the Dude) — Leaders dropdown replaced by
+           the STAT FILTERING panel. Leaders reads all fields FLAT off p (sources from poolPlayers —
+           see QUALIFIED_HITTERS note). Age compared via decimalAgeNum to match the displayed column. -->
+      <div id="leaders-filter-panel" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN AB <span style="color:var(--stat-hitter)">(hitters)</span></div>
+            <input id="ldrf-ab" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN IP <span style="color:var(--stat-pitcher)">(pitchers)</span></div>
+            <input id="ldrf-ip" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
+            <div style="display:flex;align-items:center;gap:5px">
+              <input id="ldrf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+              <span style="font-size:11px;color:var(--text3)">to</span>
+              <input id="ldrf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
+            <input id="ldrf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
+            <input id="ldrf-cbsowned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+            <button onclick="applyLeadersFilters()" style="background:var(--stat-hitter,#1d9e75);color:#04342c;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
+            <button onclick="resetLeadersFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
+          </div>
+        </div>
+        <div id="ldrf-count" style="font-size:11px;color:var(--text3);margin-top:10px"></div>
+      </div>
       <span id="leaders-cluster-chip" onclick="sortLeadersByPos(leadersClusterByPos, event)" title="Click to exit position-cluster sort"></span>
       <div class="pool-status" id="leaders-status">Loading players...</div>
     </div>
@@ -3703,7 +3752,8 @@ let sortDir = 1;
 let clusterByPos = null;   // When set to 'C'|'1B'|'2B'|... main list clusters by that position. null = normal sort.
 let filter = 'ALL';
 let teamFilter = 'ALL';
-let playerFilter = 'ALL';   // PLAYER_FILTER_V1 — Matt's filter dropdown (Injured / NA / SP / RP / CL / Sleepers / Under 25)
+// FILTER_TABLE_PORT_V1 (2026-06-03) — main Watch list set-your-own filter object (replaces playerFilter).
+let watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
 
 // AUTO_SCALE_FILTERS_V1 (May 11, 2026) — auto-scaling thresholds for filters
 // that depend on counting stats. The Dude flagged that hardcoded numbers like
@@ -5962,48 +6012,17 @@ function getFiltered(){
   if(teamFilter !== 'ALL') list = list.filter(p => (p.team||'').toUpperCase() === teamFilter);
 
   // PLAYER_FILTER_V1 — Matt's curated filter dropdown (single-select, AND logic with teamFilter)
-  if(playerFilter !== 'ALL'){
-    if(playerFilter === 'INJURED'){
-      // Anyone with an injury status EXCEPT NA (NA gets its own bucket — those are minor-leaguers, not injuries)
-      // REHAB_FILTER_V1 — also includes rehab-assignment major-leaguers (on_rehab=true).
-      // Yahoo tags them as 'NA' so the legacy filter missed them; we catch them here.
-      list = list.filter(p => {
-        if(p.on_rehab === true) return true;  // REHAB_FILTER_V1
-        const s = (p.injury_status || '').toUpperCase();
-        if(!s) return false;
-        if(s === 'NA') return false;
-        return true;
-      });
-    } else if(playerFilter === 'NA'){
-      // REHAB_FILTER_V1 — exclude rehab-assignment major-leaguers. They show
-      // as Yahoo 'NA' but they're not true minor-leaguers (they belong in INJURED).
-      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA' && p.on_rehab !== true);
-    } else if(playerFilter === 'SP'){
-      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
-    } else if(playerFilter === 'RP'){
-      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'RP');
-    } else if(playerFilter === 'SAVE_THREAT'){
-      // SAVE_THREATS_V1 (April 26, 2026) — replaces the old "Closer" filter, which
-      // never matched anything because Yahoo only classifies pitchers as SP or RP
-      // (no CL). "Save Threats" = anyone with at least 1 save this year. Captures
-      // true closers AND setup men who've vultured saves. Threshold may bump
-      // mid-season once roles settle and one-off saves stop polluting results.
-      list = list.filter(p => p.sv != null && p.sv >= 1);
-    } else if(playerFilter === 'SPEEDSTER'){
-      // SPEEDSTERS_V1 (April 26, 2026) — anyone with 3+ stolen bases. Captures
-      // the real category-runners (Trea Turner, Elly De La Cruz, Chandler Simpson,
-      // Jose Caballero, etc.) without too much noise. Threshold will bump as the
-      // season progresses — 3 is right for late April.
-      list = list.filter(p => p.sb != null && p.sb >= 3);
-    } else if(playerFilter === 'SLEEPER'){
-      // LOW_ROSTER_RENAME_V1 (May 12, 2026) — was "Sleepers (under 25%)" before
-      // Matt's request to drop the word "sleeper" and tighten to 20%. The state
-      // value 'SLEEPER' stays so existing IndexedDB-stored user preferences keep
-      // working — only the label and the threshold changed.
-      list = list.filter(p => p.roster_pct != null && p.roster_pct < 20);
-    } else if(playerFilter === 'UNDER25'){
-      list = list.filter(p => p.age != null && p.age < 25);
-    }
+  // FILTER_TABLE_PORT_V1 (2026-06-03 — PC Walter, per the Dude) — main Watch list set-your-own filters,
+  // replacing the old dropdown. Flat fields; Min AB only constrains hitters, Min IP only pitchers;
+  // age via decimalAgeNum (matches the displayed decimal age, not the rounded p.age).
+  {
+    const F = watchFilters;
+    if(F.ab != null)          list = list.filter(p => isPitcher(p) ? true : ((parseFloat(p.ab)||0) >= F.ab));
+    if(F.ip != null)          list = list.filter(p => !isPitcher(p) ? true : ((parseFloat(p.ip)||0) >= F.ip));
+    if(F.ageMin != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a >= F.ageMin; });
+    if(F.ageMax != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a <= F.ageMax; });
+    if(F.ownedMax != null)    list = list.filter(p => p.roster_pct != null && p.roster_pct !== '' && parseFloat(p.roster_pct) <= F.ownedMax);
+    if(F.cbsOwnedMax != null) list = list.filter(p => p.cbs_roster_pct != null && p.cbs_roster_pct !== '' && parseFloat(p.cbs_roster_pct) <= F.cbsOwnedMax);
   }
 
   // --- Position-cluster mode (Matt's position-sort feature) ---
@@ -7573,7 +7592,9 @@ function _tiersDefaultOrder(){
     if(search && search.value && search.value.trim() !== '') return false;
     if(typeof filter !== 'undefined' && filter && filter !== 'ALL') return false;
     if(typeof teamFilter !== 'undefined' && teamFilter && teamFilter !== 'ALL') return false;
-    if(typeof playerFilter !== 'undefined' && playerFilter && playerFilter !== 'ALL') return false;
+    // FILTER_TABLE_PORT_V1 (2026-06-03) — playerFilter (single string) was replaced by the watchFilters
+    // object. "Default order" now means no stat filter is set. Any active box => not default => hide brackets.
+    if(typeof watchFilters !== 'undefined' && watchFilters && (watchFilters.ab!=null||watchFilters.ip!=null||watchFilters.ageMin!=null||watchFilters.ageMax!=null||watchFilters.ownedMax!=null||watchFilters.cbsOwnedMax!=null)) return false;
     if(typeof clusterByPos !== 'undefined' && clusterByPos) return false;
     return true;
   } catch(e){ return false; }
@@ -7999,10 +8020,35 @@ function pickStatSource(group){
   return null;
 }
 
+// FILTER_TABLE_PORT_V1 (2026-06-03) — main Watch list filter-panel handlers. Empty box => null => ignored.
+function _wlNum(id){ const el = document.getElementById(id); if(!el) return null; const v = el.value.trim(); if(v === '') return null; const n = parseFloat(v); return isNaN(n) ? null : n; }
+function applyWatchFilters(){
+  watchFilters = {
+    ab: _wlNum('wlf-ab'), ip: _wlNum('wlf-ip'),
+    ageMin: _wlNum('wlf-agemin'), ageMax: _wlNum('wlf-agemax'),
+    ownedMax: _wlNum('wlf-owned'), cbsOwnedMax: _wlNum('wlf-cbsowned')
+  };
+  renderTable();
+}
+function resetWatchFilters(){
+  ['wlf-ab','wlf-ip','wlf-agemin','wlf-agemax','wlf-owned','wlf-cbsowned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
+  renderTable();
+}
+
 function renderTable(){
   let list = getFiltered();
   const tbody = document.getElementById('tbody');
   document.getElementById('count-badge').textContent = list.length+' player'+(list.length!==1?'s':'');
+  // FILTER_TABLE_PORT_V1 (2026-06-03) — STAT FILTERING panel count line (only shows when a filter is active).
+  {
+    const cEl = document.getElementById('wlf-count');
+    if(cEl){
+      const F = watchFilters;
+      const anyFilter = F && (F.ab!=null||F.ip!=null||F.ageMin!=null||F.ageMax!=null||F.ownedMax!=null||F.cbsOwnedMax!=null);
+      cEl.textContent = anyFilter ? ('Showing ' + list.length.toLocaleString() + ' player' + (list.length!==1?'s':'')) : '';
+    }
+  }
   document.getElementById('empty-state').style.display = players.length===0?'block':'none';
   if(players.length===0){tbody.innerHTML='';return;}
   // MAJORS_VS_MINORS_TOGGLE_V2 (May 9, 2026) — Honor frozen order on the
@@ -12001,7 +12047,8 @@ let leadersActive = false;
 let leadersSortCol = 'hr';
 let leadersSortDir = -1;
 let leadersPosFilter = 'ALL'; // 'ALL' | 'HITTER' | 'PITCHER'
-let leadersPlayerFilter = 'ALL';   // PLAYER_FILTER_V1 — Leaders — Matt's filter dropdown (Injured / NA / SP / RP / CL / Sleepers / Under 25)
+// FILTER_TABLE_PORT_V1 (2026-06-03) — Leaders set-your-own filter object (replaces leadersPlayerFilter).
+let leadersFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
 let leadersTeamFilter = 'ALL';     // TEAM_FILTER_LEADERS_V1 — Leaders — MLB team picker (mirrors the Watch list team filter)
 let leadersClusterByPos = null;   // League Leaders cluster state (independent of main/pool)
 var leadersScrollHandler = null;
@@ -12065,6 +12112,22 @@ function closeLeagueLeaders(){
 // ---- RENDER LEADERS TABLE ----
 // Uses the same poolPlayers data as the Player Pool.
 // leadersPosFilter, leadersSortCol, leadersSortDir control what/how is shown.
+// FILTER_TABLE_PORT_V1 (2026-06-03) — Leaders filter-panel handlers. Empty box => null => ignored.
+function _ldrNum(id){ const el = document.getElementById(id); if(!el) return null; const v = el.value.trim(); if(v === '') return null; const n = parseFloat(v); return isNaN(n) ? null : n; }
+function applyLeadersFilters(){
+  leadersFilters = {
+    ab: _ldrNum('ldrf-ab'), ip: _ldrNum('ldrf-ip'),
+    ageMin: _ldrNum('ldrf-agemin'), ageMax: _ldrNum('ldrf-agemax'),
+    ownedMax: _ldrNum('ldrf-owned'), cbsOwnedMax: _ldrNum('ldrf-cbsowned')
+  };
+  renderLeaders();
+}
+function resetLeadersFilters(){
+  ['ldrf-ab','ldrf-ip','ldrf-agemin','ldrf-agemax','ldrf-owned','ldrf-cbsowned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  leadersFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
+  renderLeaders();
+}
+
 function renderLeaders(){
   const tbody = document.getElementById('leaders-tbody');
   if(!tbody) return;
@@ -12095,66 +12158,17 @@ function renderLeaders(){
   if(leadersTeamFilter !== 'ALL') list = list.filter(p => (p.team||'').toUpperCase() === leadersTeamFilter);
 
   // PLAYER_FILTER_V1 — Leaders — Matt's curated filter dropdown (single-select, AND logic with leadersPosFilter)
-  if(leadersPlayerFilter !== 'ALL'){
-    if(leadersPlayerFilter === 'INJURED'){
-      // REHAB_FILTER_V1 — also includes rehab-assignment major-leaguers (on_rehab=true).
-      list = list.filter(p => {
-        if(p.on_rehab === true) return true;  // REHAB_FILTER_V1
-        const s = (p.injury_status || '').toUpperCase();
-        if(!s) return false;
-        if(s === 'NA') return false;
-        return true;
-      });
-    } else if(leadersPlayerFilter === 'NA'){
-      // REHAB_FILTER_V1 — exclude rehab-assignment major-leaguers (they show as
-      // Yahoo 'NA' but belong in INJURED, not the minors-owned bucket).
-      list = list.filter(p => (p.injury_status || '').toUpperCase() === 'NA' && p.on_rehab !== true);
-    } else if(leadersPlayerFilter === 'SP'){
-      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'SP');
-    } else if(leadersPlayerFilter === 'RP'){
-      list = list.filter(p => (p.pitcher_type || '').toUpperCase() === 'RP');
-    } else if(leadersPlayerFilter === 'SAVE_THREAT'){
-      // SAVE_THREATS_V1 — see comment in the Watch list filter (renderTable).
-      list = list.filter(p => p.sv != null && p.sv >= 1);
-    } else if(leadersPlayerFilter === 'SPEEDSTER'){
-      // SPEEDSTERS_V1 + AUTO_SCALE_FILTERS_V1 — threshold scales by date.
-      // Today (~40 team-games in) it's 3 SB, matching the previous hardcoded
-      // value. By season's end it grows to ~13 SB so the filter still
-      // surfaces actual speed threats and not part-time burglars.
-      var _spMinL = speedstersThreshold();
-      list = list.filter(p => p.sb != null && p.sb >= _spMinL);
-    } else if(leadersPlayerFilter === 'SLEEPER'){
-      // LOW_ROSTER_RENAME_V1 (May 12, 2026) — was "Sleepers (under 25%)".
-      list = list.filter(p => p.roster_pct != null && p.roster_pct < 20);
-    } else if(leadersPlayerFilter === 'QUALIFIED_P'){
-      // QUALIFIED_PITCHERS_V1 (May 12, 2026) — Matt's request. Dynamic
-      // threshold: 0.33 IP per team game played so far. Floor of 5 IP.
-      if(typeof dateRange !== 'undefined' && dateRange === 'season'){
-        var _qpMinL = qualifiedPitchersThreshold();
-        list = list.filter(p => isPitcher(p) && (parseFloat(p.ip)||0) >= _qpMinL);
-      } else {
-        list = list.filter(p => isPitcher(p));
-      }
-    } else if(leadersPlayerFilter === 'UNDER25'){
-      list = list.filter(p => p.age != null && p.age < 25);
-    } else if(leadersPlayerFilter === 'QUALIFIED'){
-      // QUALIFIED_HITTERS_V1 (AUTO_SCALE_FILTERS_V1) — only meaningful on
-      // season-totals view (date ranges have too few AB to qualify anyone).
-      // Filters out pitchers entirely. Threshold auto-scales: ~40 today,
-      // ~80 by July, ~162 by season's end. When dateRange is not 'season'
-      // the filter falls back to "all hitters" so the dropdown doesn't
-      // silently nuke the table; the dropdown label shows "— Season only"
-      // as a hint in that state.
-      if(typeof dateRange !== 'undefined' && dateRange === 'season'){
-        var _qhMinL = qualifiedHittersThreshold();
-        // QUALIFIED_HITTERS_V1 BUGFIX (May 11, 2026) — Leaders uses
-        // poolPlayers as its source (see line ~7365), so AB lives at p.ab
-        // (top level), not p.stats.ab. Same fix as the Pool filter above.
-        list = list.filter(p => !isPitcher(p) && (p.ab||0) >= _qhMinL);
-      } else {
-        list = list.filter(p => !isPitcher(p));
-      }
-    }
+  // FILTER_TABLE_PORT_V1 (2026-06-03 — PC Walter, per the Dude) — Leaders set-your-own filters,
+  // replacing the old dropdown. Flat fields (Leaders sources from poolPlayers). Min AB only constrains
+  // hitters; Min IP only constrains pitchers. Age via decimalAgeNum (matches displayed decimal age).
+  {
+    const F = leadersFilters;
+    if(F.ab != null)          list = list.filter(p => isPitcher(p) ? true : ((parseFloat(p.ab)||0) >= F.ab));
+    if(F.ip != null)          list = list.filter(p => !isPitcher(p) ? true : ((parseFloat(p.ip)||0) >= F.ip));
+    if(F.ageMin != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a >= F.ageMin; });
+    if(F.ageMax != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a <= F.ageMax; });
+    if(F.ownedMax != null)    list = list.filter(p => p.roster_pct != null && p.roster_pct !== '' && parseFloat(p.roster_pct) <= F.ownedMax);
+    if(F.cbsOwnedMax != null) list = list.filter(p => p.cbs_roster_pct != null && p.cbs_roster_pct !== '' && parseFloat(p.cbs_roster_pct) <= F.cbsOwnedMax);
   }
 
   // Once stats are loaded, only keep players who have a value for the active stat column.
@@ -12275,6 +12289,15 @@ function renderLeaders(){
   }
 
   const display = list.slice(0, 200);
+  // FILTER_TABLE_PORT_V1 (2026-06-03) — update STAT FILTERING count line when any filter active.
+  {
+    const cEl = document.getElementById('ldrf-count');
+    if(cEl){
+      const F = leadersFilters;
+      const anyFilter = F && (F.ab!=null||F.ip!=null||F.ageMin!=null||F.ageMax!=null||F.ownedMax!=null||F.cbsOwnedMax!=null);
+      cEl.textContent = anyFilter ? ('Showing ' + list.length.toLocaleString() + ' players') : '';
+    }
+  }
 
   // Build Yahoo lookup from the FULL global Yahoo cache (not just watch list),
   // same fix as Player Pool. Without this, leaders who aren't on the watch list
