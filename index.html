@@ -3323,6 +3323,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
            constrains hitters; Min IP only constrains pitchers (so one doesn't wipe the other role).
            AB/IP read via getProspectDisplayStats (nested, date-range-aware); age/roster_pct flat on p. -->
       <div id="pros-filter-panel" style="margin-top:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
         <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
           <div>
             <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN AB <span style="color:var(--stat-hitter)">(hitters)</span></div>
@@ -3341,12 +3342,12 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
             </div>
           </div>
           <div>
-            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN SB</div>
-            <input id="prosf-sb" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
-          </div>
-          <div>
             <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
             <input id="prosf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
+            <input id="prosf-cbsowned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
             <button onclick="applyProsFilters()" style="background:var(--stat-hitter,#1d9e75);color:#04342c;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
@@ -13684,7 +13685,7 @@ let prosFilterLevel = 'all';
 let prosFilterGroup = 'all';
 // PROSPECTS_FILTER_TABLE_V1 (2026-06-03) — replaces the single-string prosPlayerFilter with a
 // set-your-own filter object. null = that control is unset (ignored). Applied in renderProspects().
-let prosFilters = { ab:null, ip:null, ageMin:null, ageMax:null, sb:null, ownedMax:null };
+let prosFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
 let prosClusterByPos = null;   // Prospects cluster state (independent of other tabs)
 
 function openProspects(){
@@ -13742,13 +13743,13 @@ function applyProsFilters(){
   prosFilters = {
     ab: _prosNum('prosf-ab'), ip: _prosNum('prosf-ip'),
     ageMin: _prosNum('prosf-agemin'), ageMax: _prosNum('prosf-agemax'),
-    sb: _prosNum('prosf-sb'), ownedMax: _prosNum('prosf-owned')
+    ownedMax: _prosNum('prosf-owned'), cbsOwnedMax: _prosNum('prosf-cbsowned')
   };
   renderProspects();
 }
 function resetProsFilters(){
-  ['prosf-ab','prosf-ip','prosf-agemin','prosf-agemax','prosf-sb','prosf-owned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  prosFilters = { ab:null, ip:null, ageMin:null, ageMax:null, sb:null, ownedMax:null };
+  ['prosf-ab','prosf-ip','prosf-agemin','prosf-agemax','prosf-owned','prosf-cbsowned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  prosFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
   renderProspects();
 }
 
@@ -15031,10 +15032,10 @@ function renderProspects(){
     const roleIsPit = p => isPit(p.primaryPos);
     if(F.ab != null)       list = list.filter(p => { if(roleIsPit(p)) return true; const s = getProspectDisplayStats(p); return s && s.ab != null && s.ab >= F.ab; });
     if(F.ip != null)       list = list.filter(p => { if(!roleIsPit(p)) return true; const s = getProspectDisplayStats(p); return s && s.ip != null && parseFloat(s.ip) >= F.ip; });
-    if(F.sb != null)       list = list.filter(p => { const s = getProspectDisplayStats(p); return s && s.sb != null && s.sb >= F.sb; });
-    if(F.ageMin != null)   list = list.filter(p => p.age != null && p.age !== '' && parseFloat(p.age) >= F.ageMin);
-    if(F.ageMax != null)   list = list.filter(p => p.age != null && p.age !== '' && parseFloat(p.age) <= F.ageMax);
-    if(F.ownedMax != null) list = list.filter(p => p.roster_pct != null && p.roster_pct !== '' && parseFloat(p.roster_pct) <= F.ownedMax);
+    if(F.ageMin != null)      list = list.filter(p => p.age != null && p.age !== '' && parseFloat(p.age) >= F.ageMin);
+    if(F.ageMax != null)      list = list.filter(p => p.age != null && p.age !== '' && parseFloat(p.age) <= F.ageMax);
+    if(F.ownedMax != null)    list = list.filter(p => p.roster_pct != null && p.roster_pct !== '' && parseFloat(p.roster_pct) <= F.ownedMax);
+    if(F.cbsOwnedMax != null) list = list.filter(p => p.cbs_roster_pct != null && p.cbs_roster_pct !== '' && parseFloat(p.cbs_roster_pct) <= F.cbsOwnedMax);
   }
   if(q) list = list.filter(p => normalize(p.name).includes(q) || normalize(p.org||'').includes(q) || normalize(p.team||'').includes(q));
 
@@ -15173,7 +15174,7 @@ function renderProspects(){
     if(cEl){
       const total = (typeof prospectPlayers !== 'undefined' && Array.isArray(prospectPlayers)) ? prospectPlayers.length : list.length;
       const F = prosFilters;
-      const anyFilter = F && (F.ab!=null||F.ip!=null||F.ageMin!=null||F.ageMax!=null||F.sb!=null||F.ownedMax!=null);
+      const anyFilter = F && (F.ab!=null||F.ip!=null||F.ageMin!=null||F.ageMax!=null||F.ownedMax!=null||F.cbsOwnedMax!=null);
       cEl.textContent = anyFilter ? ('Showing ' + list.length.toLocaleString() + ' of ' + total.toLocaleString() + ' prospects') : '';
     }
   }
