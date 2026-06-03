@@ -2048,7 +2048,6 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="filter-tab active" id="instant-all" onclick="setFilter('ALL',this)">All</button>
         <button class="filter-tab" id="instant-hit" onclick="setFilter('HITTER',this)">Hitters</button>
         <button class="filter-tab" id="instant-pit" onclick="setFilter('PITCHER',this)">Pitchers</button>
-        <button class="filter-tab" id="instant-top25" onclick="setFilter('TOP25',this)">Top 25</button>
         <button class="filter-tab" id="instant-movers" onclick="setFilter('MOVERS',this)">Movers</button>
       </div>
     </div>
@@ -2078,7 +2077,6 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <div style="display:flex;align-items:center;gap:12px;height:32px">
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="wlf-hitters" style="cursor:pointer"> Hitters</label>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="wlf-pitchers" style="cursor:pointer"> Pitchers</label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="wlf-top25" style="cursor:pointer"> Top 25</label>
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="wlf-movers" style="cursor:pointer"> Movers</label>
         </div>
       </div>
@@ -5912,7 +5910,7 @@ function setFilter(f, el){
   filter = f;
   // PREFILTER_V1 — instant top-row button is now the "last action": clear the Apply-gated position
   // checkboxes + buckets so the two systems don't fight.
-  if(typeof watchFilters !== 'undefined' && watchFilters){ watchFilters.posBuckets = []; ['wlf-hitters','wlf-pitchers','wlf-top25','wlf-movers'].forEach(id=>{var c=document.getElementById(id); if(c) c.checked=false;}); }
+  if(typeof watchFilters !== 'undefined' && watchFilters){ watchFilters.posBuckets = []; ['wlf-hitters','wlf-pitchers','wlf-movers'].forEach(id=>{var c=document.getElementById(id); if(c) c.checked=false;}); }
   // Turn off advanced mode when switching tabs
   if(advancedMode){
     advancedMode = false;
@@ -6021,7 +6019,6 @@ function getFiltered(){
   if(q) list = list.filter(p => p.name.toLowerCase().includes(q)||(p.team||'').toLowerCase().includes(q));
   if(filter==='HITTER') list = list.filter(p => !isPitcher(p));
   if(filter==='PITCHER') list = list.filter(p => isPitcher(p));
-  if(filter==='TOP25') list = list.filter(p => p.rank && p.rank<=25);
   if(filter==='MOVERS') list = list.filter(p => p.move && p.move!=='');
   if(teamFilter !== 'ALL') list = list.filter(p => (p.team||'').toUpperCase() === teamFilter);
 
@@ -6041,7 +6038,6 @@ function getFiltered(){
     if(F.posBuckets && F.posBuckets.length){
       if(F.posBuckets.includes('HITTER'))  list = list.filter(p => !isPitcher(p));
       if(F.posBuckets.includes('PITCHER')) list = list.filter(p => isPitcher(p));
-      if(F.posBuckets.includes('TOP25'))   list = list.filter(p => p.rank && p.rank<=25);
       if(F.posBuckets.includes('MOVERS'))  list = list.filter(p => p.move && p.move!=='');
     }
   }
@@ -8050,7 +8046,6 @@ function applyWatchFilters(){
   const buckets = [];
   if(document.getElementById('wlf-hitters') && document.getElementById('wlf-hitters').checked) buckets.push('HITTER');
   if(document.getElementById('wlf-pitchers') && document.getElementById('wlf-pitchers').checked) buckets.push('PITCHER');
-  if(document.getElementById('wlf-top25') && document.getElementById('wlf-top25').checked) buckets.push('TOP25');
   if(document.getElementById('wlf-movers') && document.getElementById('wlf-movers').checked) buckets.push('MOVERS');
   watchFilters = {
     ab: _wlNum('wlf-ab'), ip: _wlNum('wlf-ip'),
@@ -8067,7 +8062,7 @@ function applyWatchFilters(){
 }
 function resetWatchFilters(){
   ['wlf-ab','wlf-ip','wlf-agemin','wlf-agemax','wlf-owned','wlf-cbsowned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  ['wlf-hitters','wlf-pitchers','wlf-top25','wlf-movers'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+  ['wlf-hitters','wlf-pitchers','wlf-movers'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
   var teamSel = document.getElementById('wlf-team'); if(teamSel) teamSel.value = 'ALL';
   teamFilter = 'ALL';
   watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null, posBuckets:[] };
