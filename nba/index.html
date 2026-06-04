@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Watch101 NBA — Watch List</title>
+<!--
+  ============================================================================
+  WATCH101 NBA — WATCH LIST SHELL V1 (2026-06-04)
+  ============================================================================
+  Cloned from the football watch list (Fantasy Football/Cloudflare Deploy/
+  watch-list/index.html), which is itself a baseball-pattern clone. This is the
+  basketball page SHELL — the foundation, stats-only at launch.
+
+  SWAPPED FROM FOOTBALL:
+    - Theme: ORANGE (basketball) instead of green (turf). --court / --court-deep.
+    - Logo wordmark: "Watch [101] NBA", basketball logo.
+    - SERVER_URL → https://nba-nas.fantasywatch101.com (the live NBA server).
+    - List id → integrity-nba; localStorage key → watch101_nba_watch_list_v0.
+    - Stat columns → 9-cat fantasy basketball: PTS REB AST STL BLK 3PM FG% FT% TO.
+      FG% and FT% are COMPUTED in-page from the makes/attempts the server sends
+      (fgm/fga, ftm/fta). Every stat column is clickable to sort (the Dude's rule).
+    - Search runs against the live Sleeper NBA player DB.
+
+  DELIBERATELY NOT INCLUDED YET (planned follow-on, see three_sport_clone_plan.md):
+    - Yahoo ownership/rank layer (needs the basketball Worker; stats-only first).
+    - CBS ownership (its own scrape + ID-match project).
+    - Priority-star sync into popups, Deep Cut, tiers, Movement Mode, etc.
+    The Y!Rank / Y!Owned / CBS columns exist as em-dash placeholders so the table
+    shape is ready for them, exactly like football did before its Yahoo layer.
+  ============================================================================
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=Bowlby+One&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ── COLOR TOKENS ──────────────────────────────────────────────────────────
+   Same dark surface palette as baseball + football (so all three sports feel
+   like one product), but the sport accent is BASKETBALL ORANGE:
+     --court        = basketball orange (the wordmark accent + headings)
+     --court-deep   = darker orange for borders/hover
+     --court-bright = brighter orange for filled stars / active sort arrow
+     --leather      = deeper burnt-orange/brown for the "NBA" wordmark half
+*/
+:root{
+  --bg:#080c10;--surface:#0d1117;--surface2:#131920;--surface3:#1a2330;
+  --border:#1e2d3d;--border2:#253545;
+  --gold:#f0a500;--gold2:#c47f00;
+  --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --turquoise:#06b6d4;--turquoise2:#0891b2;
+  --text:#ffffff;--text2:#e2e8f0;--text3:#94a3b8;
+  /* NBA sport tokens (replaces football's --turf / --pigskin) */
+  --court:#ea580c;          /* basketball orange — for "Watch" in the wordmark */
+  --court-deep:#c2410c;     /* darker orange — borders, hovers */
+  --court-bright:#fb923c;   /* brighter orange — filled stars, active sort */
+  --leather:#9a3412;        /* burnt orange/brown — for "NBA" in the wordmark */
+  --leather-light:#c2410c;  /* lighter accent */
+  --header-grad-1:#080c10;--header-grad-2:#0d1520;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Nunito Sans',sans-serif;
+  font-size:14px;
+  font-weight:700;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── HEADER ─────────────────────────────────────────────────────────────── */
+.header{
+  background:linear-gradient(135deg,var(--header-grad-1) 0%,var(--header-grad-2) 50%,var(--header-grad-1) 100%);
+  border-bottom:1px solid var(--court-deep);
+  padding:1.25rem 1.5rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  z-index:100;
+}
+.logo-wrap{display:flex;align-items:baseline;gap:12px}
+.logo{
+  font-family:'Bowlby One',sans-serif;
+  font-size:64px;
+  letter-spacing:0.08em;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  gap:0.05em;
+}
+.logo-img{height:1.8em;width:auto;display:block;flex-shrink:0}
+.logo .logo-watch{color:var(--court)}
+.logo .logo-basketball{color:var(--leather-light)}
+.logo-sub{
+  font-family:'Nunito Sans',sans-serif;
+  font-size:10px;
+  letter-spacing:0.2em;
+  color:var(--court);
+  text-transform:uppercase;
+}
+.header-right{display:flex;align-items:center;gap:14px}
+.last-updated{
+  font-family:'Nunito Sans',sans-serif;
+  font-size:11px;
+  color:var(--court);
+}
+
+/* MULTISPORT_BANNERS — sport mini-logos in the header to navigate to the other
+   sports. On the NBA page we show baseball + football (no NBA — the wordmark
+   already says NBA). */
+.logo-mini{font-family:'Bowlby One',sans-serif;font-size:26px;letter-spacing:0.04em;line-height:1;display:flex;align-items:center;gap:0.1em;opacity:0.9;cursor:default;}
+a.logo-mini{cursor:pointer;text-decoration:none;}
+a.logo-mini:hover{opacity:1;}
+.logo-mini .logo-mini-img{height:1.6em;width:auto;display:block;flex-shrink:0;}
+.logo-mini .logo-mini-sport{font-weight:800;letter-spacing:0.06em;}
+.logo-mini.mlb .logo-mini-sport{color:#dc2626;} /* baseball red */
+.logo-mini.nfl .logo-mini-sport{color:#16a34a;} /* football green */
+
+/* ── BUTTONS ────────────────────────────────────────────────────────────── */
+.btn{
+  padding:7px 14px;
+  border-radius:6px;
+  font-size:12px;
+  font-family:'Nunito Sans',sans-serif;
+  cursor:pointer;
+  border:1px solid;
+  transition:all 0.15s;
+  letter-spacing:0.05em;
+}
+.btn-gold{background:var(--gold);color:#000;border-color:var(--gold);font-weight:500}
+.btn-gold:hover{background:#fbbf24;border-color:#fbbf24}
+.btn-outline{background:transparent;color:var(--text2);border-color:var(--border2)}
+.btn-outline:hover{background:var(--surface2);color:var(--text);border-color:var(--text3)}
+
+/* ── STATUS BAR ─────────────────────────────────────────────────────────── */
+.status-bar{font-size:11px;color:var(--text3);margin-top:0.75rem;font-style:italic;}
+.status-bar.error{color:var(--red);font-weight:700;font-style:normal}
+.status-bar.ok{color:var(--court)}
+
+/* ── FOOTER ─────────────────────────────────────────────────────────────── */
+.footer{
+  text-align:center;padding:2rem 1rem;color:var(--text3);
+  font-size:11px;border-top:1px solid var(--border);margin-top:2rem;
+}
+.footer a{color:var(--court);text-decoration:none}
+.footer a:hover{text-decoration:underline}
+
+/* ── WATCH LIST page-specific styles ─────────────────────────────── */
+.toolbar-watchlist{
+  padding:0.75rem 1.5rem;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.search-wrap{position:relative;flex:1;min-width:280px;max-width:480px}
+.search-input{
+  width:100%;background:var(--surface2);
+  border:1px solid var(--border);border-radius:6px;
+  padding:9px 14px 9px 36px;font-size:14px;color:var(--text);
+  font-family:'Nunito Sans',sans-serif;outline:none;
+}
+.search-input:focus{border-color:var(--court)}
+.search-input::placeholder{color:var(--text3)}
+.search-icon{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  color:var(--text3);font-size:14px;pointer-events:none;
+}
+.search-results{
+  position:absolute;top:100%;left:0;right:0;background:var(--surface2);
+  border:1px solid var(--border);border-radius:6px;margin-top:4px;z-index:50;
+  max-height:300px;overflow-y:auto;display:none;
+  box-shadow:0 8px 24px rgba(0,0,0,0.5);
+}
+.search-results.open{display:block}
+.search-result-item{
+  padding:10px 14px;cursor:pointer;
+  border-bottom:1px solid var(--border);
+  transition:background 0.1s;
+  display:flex;align-items:center;gap:8px;
+}
+.search-result-item:hover{background:var(--surface3)}
+.search-result-item:last-child{border-bottom:none}
+.search-result-item.already-on-list{opacity:0.4;cursor:not-allowed}
+.sri-name{font-size:14px;font-weight:700;color:var(--text);flex:1}
+.sri-meta{font-size:11px;color:var(--text3);font-weight:600}
+.toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.count-badge{
+  font-size:12px;color:var(--text3);background:var(--surface2);
+  border:1px solid var(--border);padding:6px 12px;border-radius:5px;
+  font-weight:700;letter-spacing:0.05em;
+}
+.btn-court{background:var(--court);color:#0d1117;border-color:var(--court);font-weight:800}
+.btn-court:hover{background:var(--court-bright);filter:brightness(1.05)}
+.btn-red{background:transparent;color:#dc2626;border-color:#7f1d1d}
+.btn-red:hover{background:#7f1d1d22;border-color:#dc2626}
+
+.status-bar-wl{
+  padding:0.6rem 1.5rem;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  font-size:12px;color:var(--text3);font-weight:600;
+}
+
+.table-wrap{padding:0.5rem 0.75rem 3rem;overflow-x:auto}
+table.watch-list{
+  width:100%;border-collapse:separate;border-spacing:0;
+  min-width:1050px;table-layout:fixed;background:var(--surface);
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+table.watch-list thead th{
+  padding:5px 3px;text-align:right;
+  font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:800;
+  letter-spacing:0.04em;text-transform:uppercase;
+  color:var(--text3);background:var(--surface2);
+  border-bottom:2px solid var(--court);
+  white-space:nowrap;
+}
+table.watch-list thead th.left{text-align:left}
+table.watch-list tbody td{padding:4px 3px;font-size:11px;white-space:nowrap;overflow:hidden;text-align:right;border-bottom:1px solid var(--border);vertical-align:middle;}
+/* Column widths */
+table.watch-list thead th.col-handle,table.watch-list tbody td.col-handle{width:20px;text-align:center;color:var(--text3);font-size:11px;padding:4px 1px}
+table.watch-list thead th.col-rank,table.watch-list tbody td.col-rank{width:32px;text-align:right;font-weight:800;color:var(--text2)}
+table.watch-list thead th.col-pos{width:46px;text-align:center}
+table.watch-list tbody td .pos-badge{font-size:9px;padding:2px 5px;letter-spacing:0.04em}
+table.watch-list thead th.col-player,table.watch-list tbody td.col-player{width:180px;text-align:left}
+table.watch-list tbody .player-name{font-size:12px;font-weight:800}
+table.watch-list thead th.col-team{width:40px;text-align:right}
+table.watch-list thead th.col-age{width:32px;text-align:right}
+table.watch-list thead th.col-delta{width:36px;text-align:right}
+table.watch-list thead th.col-type{width:42px;text-align:right}
+table.watch-list thead th.col-priority{width:52px;text-align:right}
+table.watch-list thead th.col-note{width:56px;text-align:left}
+table.watch-list thead th.col-yrank{width:42px;text-align:right}
+table.watch-list thead th.col-yowned{width:46px;text-align:right}
+table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
+table.watch-list thead th.col-stat{width:40px;text-align:right}
+table.watch-list thead th.col-action,table.watch-list tbody td.col-action{width:62px;text-align:center}
+table.watch-list tbody td.placeholder{color:var(--text3)}
+table.watch-list tbody .remove-btn{padding:2px 6px;font-size:9px}
+/* Yahoo/CBS header accent prefixes */
+table.watch-list thead th .y-prefix{color:#6001D2;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
+table.watch-list thead th .cbs-prefix{color:#3b82f6;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
+table.watch-list thead th .sort-arrow{opacity:0.4;font-size:8px;margin-left:1px}
+table.watch-list thead th[data-sort]{cursor:pointer;user-select:none}
+table.watch-list thead th[data-sort]:hover{color:var(--text)}
+table.watch-list thead th[data-sort]:hover .sort-arrow{opacity:0.9}
+table.watch-list tbody td.center{text-align:center}
+table.watch-list tbody td.left{text-align:left}
+table.watch-list tbody tr:hover{background:var(--surface2)}
+table.watch-list tbody tr:last-child td{border-bottom:none}
+.player-name{font-weight:800;color:var(--text)}
+.stat-cell{font-weight:700;color:#fb923c;font-family:'Nunito Sans',sans-serif}
+.stat-zero{color:var(--text3);font-weight:400}
+
+/* POS_BADGE — basketball positions: PG/SG/SF/PF/C, plus G/F fallbacks. */
+.pos-badge{display:inline-block;padding:3px 7px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:0.05em;}
+.pos-PG{background:#1e40af33;color:#60a5fa;border:1px solid #1e40af}
+.pos-SG{background:#0891b233;color:#22d3ee;border:1px solid #0e7490}
+.pos-SF{background:#15803d33;color:#4ade80;border:1px solid #15803d}
+.pos-PF{background:#c2410c33;color:#fb923c;border:1px solid #c2410c}
+.pos-C{background:#7c3aed33;color:#c4b5fd;border:1px solid #7c3aed}
+.pos-G{background:#1e40af22;color:#93c5fd;border:1px solid #1e3a8a}
+.pos-F{background:#15803d22;color:#86efac;border:1px solid #166534}
+.pos-other{background:#37415133;color:#9ca3af;border:1px solid #374151}
+
+.empty-state{padding:3rem 1rem;text-align:center;color:var(--text3);font-size:14px;font-weight:600;}
+.empty-state strong{display:block;color:var(--text2);font-size:16px;margin-bottom:0.5rem}
+
+.remove-btn{
+  background:transparent;border:1px solid #7f1d1d;color:#dc2626;
+  border-radius:4px;padding:4px 10px;font-size:11px;font-weight:800;
+  cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;
+}
+.remove-btn:hover{background:#7f1d1d22;border-color:#dc2626}
+
+/* PRIORITY_STARS — clickable 1-5 stars in the Priority column */
+.priority-stars{display:inline-flex;gap:1px;font-size:11px;line-height:1;cursor:pointer;user-select:none}
+.priority-stars .pstar{color:var(--text3);transition:color 0.1s;padding:0 1px;}
+.priority-stars .pstar:hover{color:var(--court-bright)}
+.priority-stars .pstar.filled{color:var(--court-bright)}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────── -->
+<div class="header">
+  <div class="logo-wrap">
+    <div class="logo">
+      <span class="logo-watch">Watch</span><img class="logo-img" src="images/watch101_basketball_logo.png" alt="Watch101 NBA"><span class="logo-basketball">NBA</span>
+    </div>
+    <div class="logo-sub" id="logo-sub">Watch List · Loading…</div>
+  </div>
+  <div class="header-right">
+    <a class="logo-mini mlb" href="https://fantasywatch101.com/" title="Watch101 MLB — open the baseball site"><img class="logo-mini-img" src="images/watch101_baseball_logo.png" alt="101"><span class="logo-mini-sport">MLB</span></a><a class="logo-mini nfl" href="https://fantasywatch101.com/nfl/watch-list/" title="Watch101 NFL — open the football site"><img class="logo-mini-img" src="images/watch101_football_logo.png" alt="101"><span class="logo-mini-sport">NFL</span></a>
+    <span id="last-updated" class="last-updated">Loading…</span>
+    <button class="btn btn-outline" onclick="reloadWatchList()">Refresh</button>
+  </div>
+</div>
+
+<!-- ── TOOLBAR ─────── -->
+<div class="toolbar-watchlist">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input id="player-search" class="search-input" type="text" placeholder="Search for a player to add (e.g. 'Jokic', 'Edwards')..." autocomplete="off">
+    <div id="search-results" class="search-results"></div>
+  </div>
+  <div class="toolbar-right">
+    <div class="count-badge" id="count-badge">0 players</div>
+    <button class="btn btn-court" id="save-btn" onclick="saveList()">💾 Save</button>
+    <button class="btn btn-red" onclick="clearList()">Clear All</button>
+  </div>
+</div>
+
+<!-- ── STATUS BAR ─────── -->
+<div class="status-bar-wl" id="status-bar">Loading…</div>
+
+<!-- ── WATCH LIST TABLE ─────── -->
+<div class="table-wrap">
+  <table class="watch-list">
+    <thead>
+      <tr>
+        <th class="col-handle">☰</th>
+        <th class="col-rank" data-sort="rank">Rank <span class="sort-arrow">↕</span></th>
+        <th class="col-pos" data-sort="pos">Pos <span class="sort-arrow">↕</span></th>
+        <th class="left col-player" data-sort="name">Player <span class="sort-arrow">↕</span></th>
+        <th class="col-team" data-sort="team">Team <span class="sort-arrow">↕</span></th>
+        <th class="col-age" data-sort="age">Age <span class="sort-arrow">↕</span></th>
+        <th class="col-delta" data-sort="delta">+/– <span class="sort-arrow">↕</span></th>
+        <th class="col-type" data-sort="type">Type <span class="sort-arrow">↕</span></th>
+        <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
+        <th class="left col-note">Note</th>
+        <th class="col-yrank" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
+        <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
+        <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="pts">PTS <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="reb">REB <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="ast">AST <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="stl">STL <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="blk">BLK <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="tpm">3PM <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="fgpct">FG% <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="ftpct">FT% <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="to">TO <span class="sort-arrow">↕</span></th>
+        <th class="col-action">Action</th>
+      </tr>
+    </thead>
+    <tbody id="watch-list-body">
+      <tr><td colspan="23" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  Watch101 NBA · Stats via Sleeper · <a href="https://nba-nas.fantasywatch101.com/health" target="_blank">server status</a>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────────────────────
+// CONFIG
+// ──────────────────────────────────────────────────────────────────────────
+// The live NBA server, deployed June 4 2026 behind Cloudflare. Sleeper stats
+// go straight here (Sleeper isn't ban-prone, no Worker needed). When the Yahoo
+// layer lands, a YAHOO_CACHE_URL Worker gets added — NOT in this shell.
+const SERVER_URL = 'https://nba-nas.fantasywatch101.com';
+
+// DYNAMIC_STATS_YEAR — derive the right season from Sleeper's NBA state. During
+// regular/postseason show this year's stats-so-far; during off/preseason show
+// last completed season. Failsafe defaults to 2025.
+let STATS_YEAR = '2025';
+const LIST_STORAGE_KEY = 'watch101_nba_watch_list_v0';
+const MAX_SEARCH_RESULTS = 12;
+const LIST_ID = 'integrity-nba';
+
+// STATE
+let _playerDB = null;
+let _seasonStats = null;
+let _watchList = [];
+
+function setLastUpdated(text){
+  const el = document.getElementById('last-updated');
+  if(el) el.textContent = text;
+}
+
+async function reloadWatchList(){
+  _playerDB = null;
+  _seasonStats = null;
+  await bootstrap();
+}
+
+function _updateYearLabels(){
+  const sub = document.getElementById('logo-sub');
+  if(sub) sub.textContent = 'Watch List · ' + STATS_YEAR + ' Stats';
+}
+
+async function _deriveStatsYear(){
+  try {
+    const res = await fetch(SERVER_URL + '/sleeper/state');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const state = await res.json();
+    const season = parseInt(state.season, 10);
+    const sType = String(state.season_type || '').toLowerCase();
+    if(!season || isNaN(season)){
+      console.warn('[stats-year] /sleeper/state returned no usable season; falling back to 2025');
+      return '2025';
+    }
+    const year = (sType === 'regular' || sType === 'post') ? season : (season - 1);
+    console.log('[stats-year] Sleeper NBA state: season=' + season + ', type=' + sType + ' -> STATS_YEAR=' + year);
+    return String(year);
+  } catch(e){
+    console.warn('[stats-year] /sleeper/state fetch failed (' + e.message + '); falling back to 2025');
+    return '2025';
+  }
+}
+
+async function bootstrap(){
+  const statusEl = document.getElementById('status-bar');
+  try {
+    statusEl.textContent = 'Checking season state…';
+    STATS_YEAR = await _deriveStatsYear();
+    _updateYearLabels();
+
+    statusEl.textContent = 'Loading Sleeper NBA player DB + ' + STATS_YEAR + ' stats…';
+    setLastUpdated('Loading…');
+    const [playersRes, statsRes] = await Promise.all([
+      fetch(SERVER_URL + '/sleeper/players'),
+      fetch(SERVER_URL + '/sleeper/stats/season/' + STATS_YEAR)
+    ]);
+    if(!playersRes.ok) throw new Error('Player DB fetch failed: HTTP ' + playersRes.status);
+    if(!statsRes.ok) throw new Error('Stats fetch failed: HTTP ' + statsRes.status);
+    _playerDB = await playersRes.json();
+    const statsPayload = await statsRes.json();
+    _seasonStats = statsPayload.stats || {};
+
+    const playerCount = Object.keys(_playerDB).length;
+    const statCount = Object.keys(_seasonStats).length;
+    statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' players with ' + STATS_YEAR + ' stats.';
+    setLastUpdated(new Date().toLocaleTimeString());
+
+    await loadListFromStorage();
+    _normalizeWatchList();
+    renderWatchList();
+  } catch(e){
+    console.error('[bootstrap]', e);
+    statusEl.textContent = '⚠ Could not load data: ' + e.message;
+    setLastUpdated('Error');
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// SEARCH AUTOCOMPLETE (against the live Sleeper NBA player DB)
+// ──────────────────────────────────────────────────────────────────────────
+const searchEl  = document.getElementById('player-search');
+const resultsEl = document.getElementById('search-results');
+let _searchDebounce = null;
+
+searchEl.addEventListener('input', (e) => {
+  clearTimeout(_searchDebounce);
+  _searchDebounce = setTimeout(() => renderSearchResults(e.target.value), 80);
+});
+searchEl.addEventListener('blur', () => {
+  setTimeout(() => resultsEl.classList.remove('open'), 150);
+});
+searchEl.addEventListener('focus', () => {
+  if(searchEl.value.trim()) renderSearchResults(searchEl.value);
+});
+
+function renderSearchResults(term){
+  const t = (term || '').trim().toLowerCase();
+  if(!t || !_playerDB){
+    resultsEl.classList.remove('open');
+    return;
+  }
+  const matches = [];
+  for(const id in _playerDB){
+    const p = _playerDB[id];
+    if(!p || !p.position) continue;
+    if(!p.team) continue;  // skip free agents / inactive with no team
+    const name = (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
+    if(!name.includes(t)) continue;
+    matches.push({id, p});
+    if(matches.length >= MAX_SEARCH_RESULTS) break;
+  }
+  if(matches.length === 0){
+    resultsEl.innerHTML = '<div class="search-result-item"><span class="sri-meta">No matches.</span></div>';
+    resultsEl.classList.add('open');
+    return;
+  }
+  resultsEl.innerHTML = matches.map(({id, p}) => {
+    const onList = _wlIndexOf(id) >= 0;
+    const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
+    const pos  = p.position || '?';
+    const team = p.team || '—';
+    const age  = (p.age != null) ? String(p.age) : '—';
+    const posClass = posClassFor(pos);
+    return '<div class="search-result-item' + (onList ? ' already-on-list' : '') + '" data-player-id="' + id + '">' +
+      '<span class="pos-badge ' + posClass + '">' + pos + '</span>' +
+      '<span class="sri-name">' + escapeHtml(name) + '</span>' +
+      '<span class="sri-meta">' + team + ' · Age ' + age + (onList ? ' · already on list' : '') + '</span>' +
+    '</div>';
+  }).join('');
+  resultsEl.classList.add('open');
+}
+
+resultsEl.addEventListener('mousedown', (e) => {
+  const item = e.target.closest('.search-result-item');
+  if(!item || !item.dataset.playerId) return;
+  if(item.classList.contains('already-on-list')) return;
+  addPlayerToList(item.dataset.playerId);
+  searchEl.value = '';
+  resultsEl.classList.remove('open');
+  searchEl.focus();
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// WATCH LIST OPERATIONS
+// ──────────────────────────────────────────────────────────────────────────
+function addPlayerToList(playerId){
+  if(_wlIndexOf(playerId) >= 0) return;
+  _watchList.push({pid: playerId, priority: 0});
+  renderWatchList();
+}
+function removePlayerFromList(playerId){
+  _watchList = _watchList.filter(item => _wlPid(item) !== playerId);
+  renderWatchList();
+}
+function clearList(){
+  if(_watchList.length === 0) return;
+  if(!confirm('Remove all ' + _watchList.length + ' players from your watch list?')) return;
+  _watchList = [];
+  renderWatchList();
+}
+
+// FG% / FT% computed from makes/attempts. Returns a number 0-100 or null.
+function pctOrNull(makes, attempts){
+  const m = Number(makes), a = Number(attempts);
+  if(!isFinite(m) || !isFinite(a) || a <= 0) return null;
+  return (m / a) * 100;
+}
+
+function renderWatchList(){
+  const tbody = document.getElementById('watch-list-body');
+  const countEl = document.getElementById('count-badge');
+  countEl.textContent = _watchList.length + (_watchList.length === 1 ? ' player' : ' players');
+  if(_watchList.length === 0){
+    tbody.innerHTML = '<tr><td colspan="23" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
+    return;
+  }
+  const sortedIds = getSortedWatchList();
+  tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
+    const p = (_playerDB && _playerDB[pid]) || null;
+    const s = (_seasonStats && _seasonStats[pid]) || {};
+    const originalIdx = _wlIndexOf(pid);
+    const rank = (originalIdx >= 0) ? (originalIdx + 1) : (displayIdx + 1);
+    const priority = (originalIdx >= 0) ? _wlPriority(_watchList[originalIdx]) : 0;
+    if(!p){
+      return '<tr>' +
+        '<td colspan="22" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
+        '<td class="center col-action"><button class="remove-btn" onclick="removePlayerFromList(' + JSON.stringify(pid) + ')">Remove</button></td>' +
+      '</tr>';
+    }
+    const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
+    const pos  = p.position || '?';
+    const team = p.team || '—';
+    const age  = (p.age != null) ? String(p.age) : '—';
+    const fgPct = pctOrNull(s.fgm, s.fga);
+    const ftPct = pctOrNull(s.ftm, s.fta);
+    return '<tr>' +
+      '<td class="center col-handle">☰</td>' +
+      '<td class="col-rank">' + rank + '</td>' +
+      '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
+      '<td class="left col-player"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
+      '<td>' + team + '</td>' +
+      '<td>' + age + '</td>' +
+      '<td class="placeholder">—</td>' +   // +/- (planned)
+      '<td class="left placeholder">—</td>' + // Type (planned)
+      '<td>' + renderPriorityStars(pid, priority) + '</td>' +
+      '<td class="left placeholder">—</td>' + // Note (planned)
+      '<td class="placeholder">—</td>' +   // Y!Rank (planned — Yahoo layer)
+      '<td class="placeholder">—</td>' +   // Y!Owned (planned — Yahoo layer)
+      '<td class="placeholder">—</td>' +   // CBS Owned (planned — CBS layer)
+      '<td>' + statCellOrDash(s.pts, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.reb, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.ast, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.stl, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.blk, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.tpm, 0) + '</td>' +
+      '<td>' + pctCellOrDash(fgPct) + '</td>' +
+      '<td>' + pctCellOrDash(ftPct) + '</td>' +
+      '<td>' + statCellOrDash(s.to, 1) + '</td>' +
+      '<td class="center col-action"><button class="remove-btn" onclick="removePlayerFromList(' + JSON.stringify(pid) + ')">Remove</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+// LIST_PERSISTENCE — server-first load with localStorage fallback; save via
+// showDirectoryPicker to the Synology-synced _Staging/Integrity folder.
+async function saveList(){
+  const statusEl = document.getElementById('status-bar');
+  try { localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList)); }
+  catch(e){ console.warn('[saveList] localStorage save failed:', e); }
+
+  if(!window.showDirectoryPicker){
+    statusEl.textContent = '⚠️ Your browser does not support folder save. Saved to localStorage only.';
+    return;
+  }
+  try {
+    const nowIso = new Date().toISOString();
+    const fileSafeTimestamp = nowIso.replace(/[:.]/g, '-').slice(0, 19);
+    const fileName = 'Watch101_NBA_Integrity_' + fileSafeTimestamp + '.json';
+    const payload = {
+      list_id: LIST_ID,
+      list_name: 'Watch101 NBA - List of Integrity',
+      saved_at: nowIso,
+      saved_at_local: new Date().toLocaleString(),
+      source: 'NBA watch list shell v1',
+      player_count: _watchList.length,
+      players: _watchList,
+    };
+    statusEl.textContent = 'Pick your Synology-synced _Staging/Integrity folder...';
+    const dirHandle = await window.showDirectoryPicker({ id: 'watch101-nba-save-integrity', mode: 'readwrite', startIn: 'documents' });
+    const fileHandle = await dirHandle.getFileHandle(fileName, {create: true});
+    const writable = await fileHandle.createWritable();
+    await writable.write(new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'}));
+    await writable.close();
+    statusEl.textContent = '✓ Saved ' + _watchList.length + ' players as ' + fileName + ' (Synology Drive Client will sync it up).';
+  } catch(e){
+    if(e.name === 'AbortError'){
+      statusEl.textContent = 'Save cancelled. Watch list still saved to browser localStorage.';
+    } else {
+      console.error('[saveList]', e);
+      statusEl.textContent = '⚠️ Save failed: ' + e.message + ' (still saved to browser).';
+    }
+  }
+}
+
+async function loadListFromStorage(){
+  for(const env of ['list', 'list-staging']){
+    try {
+      const res = await fetch(SERVER_URL + '/' + env + '/' + LIST_ID, {cache: 'no-cache'});
+      if(!res.ok) continue;
+      const body = await res.json();
+      const players = body && body.data && body.data.players;
+      if(Array.isArray(players) && players.length > 0){
+        _watchList = players;
+        console.log('[loadList] loaded ' + players.length + ' players from ' + env);
+        return;
+      }
+    } catch(e){
+      console.warn('[loadList] ' + env + ' fetch failed:', e.message);
+    }
+  }
+  try {
+    const raw = localStorage.getItem(LIST_STORAGE_KEY);
+    if(!raw) return;
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr)) _watchList = arr;
+  } catch(e){
+    console.warn('[loadListFromStorage] localStorage fallback failed:', e);
+  }
+}
+
+// HELPERS
+function posClassFor(pos){
+  const known = ['PG','SG','SF','PF','C','G','F'];
+  return known.includes(pos) ? ('pos-' + pos) : 'pos-other';
+}
+function statCellOrDash(val, decimals){
+  if(val == null || val === 0) return '<span class="stat-zero">—</span>';
+  const n = Number(val);
+  if(!isFinite(n)) return '<span class="stat-zero">—</span>';
+  const formatted = (decimals != null) ? n.toFixed(decimals) : Math.round(n).toLocaleString();
+  return '<span class="stat-cell">' + formatted + '</span>';
+}
+function pctCellOrDash(pct){
+  if(pct == null || !isFinite(pct)) return '<span class="stat-zero">—</span>';
+  return '<span class="stat-cell">' + pct.toFixed(1) + '</span>';
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// PRIORITY_STARS — per-player 1-5 priority rating, stored on each list item.
+function _wlPid(item){ return (typeof item === 'string') ? item : (item && item.pid); }
+function _wlPriority(item){
+  if(typeof item === 'string') return 0;
+  const v = item && item.priority;
+  return (typeof v === 'number' && v >= 0 && v <= 5) ? v : 0;
+}
+function _wlIndexOf(pid){
+  for(let i = 0; i < _watchList.length; i++){ if(_wlPid(_watchList[i]) === pid) return i; }
+  return -1;
+}
+function _normalizeWatchList(){
+  if(!Array.isArray(_watchList)) return;
+  _watchList = _watchList.map(item => {
+    if(typeof item === 'string') return {pid: item, priority: 0};
+    if(item && typeof item === 'object' && item.pid){ return {pid: item.pid, priority: _wlPriority(item)}; }
+    return null;
+  }).filter(Boolean);
+}
+function setPriority(pid, newPriority){
+  const idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  const current = _wlPriority(_watchList[idx]);
+  const finalValue = (current === newPriority) ? 0 : newPriority;
+  _watchList[idx] = {pid: pid, priority: finalValue};
+  renderWatchList();
+}
+function renderPriorityStars(pid, currentPriority){
+  let html = '<span class="priority-stars" data-pid="' + escapeHtml(pid) + '">';
+  for(let n = 1; n <= 5; n++){
+    const filled = (n <= currentPriority) ? ' filled' : '';
+    html += '<span class="pstar' + filled + '" data-value="' + n + '">★</span>';
+  }
+  html += '</span>';
+  return html;
+}
+document.addEventListener('click', function(e){
+  const star = e.target.closest('.priority-stars .pstar');
+  if(!star) return;
+  const wrap = star.closest('.priority-stars');
+  if(!wrap) return;
+  const pid = wrap.dataset.pid;
+  const value = parseInt(star.dataset.value, 10);
+  if(!pid || !value) return;
+  setPriority(pid, value);
+});
+
+// SORTABLE_COLUMNS — click headers to sort. First click desc, second asc.
+// Rank header returns to insertion order. Missing/zero sinks to the bottom.
+// EVERY stat column is sortable (the Dude's standing rule).
+let _sortField = null;
+let _sortDir   = 'desc';
+
+function sortValueFor(field, p, s, pid){
+  switch(field){
+    case 'rank':     return null;
+    case 'name':     return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
+    case 'pos':      return p.position || 'zzz';
+    case 'team':     return p.team || 'zzz';
+    case 'age':      return (p.age != null) ? Number(p.age) : null;
+    case 'pts':      return (s.pts || 0);
+    case 'reb':      return (s.reb || 0);
+    case 'ast':      return (s.ast || 0);
+    case 'stl':      return (s.stl || 0);
+    case 'blk':      return (s.blk || 0);
+    case 'tpm':      return (s.tpm || 0);
+    case 'fgpct':    return pctOrNull(s.fgm, s.fga);
+    case 'ftpct':    return pctOrNull(s.ftm, s.fta);
+    case 'to':       return (s.to || 0);
+    case 'priority': {
+      const idx = _wlIndexOf(pid || '');
+      return (idx >= 0) ? _wlPriority(_watchList[idx]) : 0;
+    }
+    // Planned columns — no data yet, always sort to bottom.
+    case 'delta':
+    case 'type':
+    case 'yrank':
+    case 'yowned':
+    case 'cbsowned':
+      return null;
+    default: return null;
+  }
+}
+
+function sortBy(field){
+  if(!field) return;
+  if(field === 'rank'){ _sortField = null; _sortDir = 'desc'; updateSortArrows(); renderWatchList(); return; }
+  if(_sortField === field){ _sortDir = (_sortDir === 'desc') ? 'asc' : 'desc'; }
+  else { _sortField = field; _sortDir = 'desc'; }
+  updateSortArrows();
+  renderWatchList();
+}
+
+function updateSortArrows(){
+  document.querySelectorAll('table.watch-list thead th[data-sort]').forEach(th => {
+    const arrow = th.querySelector('.sort-arrow');
+    if(!arrow) return;
+    const field = th.dataset.sort;
+    if(field === _sortField){
+      arrow.textContent = (_sortDir === 'desc') ? '↓' : '↑';
+      arrow.style.opacity = '1';
+      arrow.style.color = 'var(--court-bright)';
+    } else {
+      arrow.textContent = '↕';
+      arrow.style.opacity = '0.4';
+      arrow.style.color = '';
+    }
+  });
+}
+
+function getSortedWatchList(){
+  const pids = _watchList.map(_wlPid);
+  if(!_sortField || !_playerDB){ return pids; }
+  const indexed = _watchList.map((item, idx) => {
+    const pid = _wlPid(item);
+    const p = _playerDB[pid] || null;
+    const s = (_seasonStats && _seasonStats[pid]) || {};
+    return {pid: pid, idx: idx, value: p ? sortValueFor(_sortField, p, s, pid) : null};
+  });
+  indexed.sort((a, b) => {
+    const av = a.value, bv = b.value;
+    const aMissing = (av == null), bMissing = (bv == null);
+    if(aMissing && bMissing) return a.idx - b.idx;
+    if(aMissing) return 1;
+    if(bMissing) return -1;
+    let cmp = 0;
+    if(typeof av === 'number' && typeof bv === 'number'){ cmp = av - bv; }
+    else { cmp = String(av).localeCompare(String(bv)); }
+    if(_sortDir === 'desc') cmp = -cmp;
+    if(cmp === 0) return a.idx - b.idx;
+    return cmp;
+  });
+  return indexed.map(x => x.pid);
+}
+
+function initSortHandlers(){
+  document.querySelectorAll('table.watch-list thead th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => sortBy(th.dataset.sort));
+  });
+  updateSortArrows();
+}
+initSortHandlers();
+
+bootstrap();
+</script>
+</body>
+</html>
