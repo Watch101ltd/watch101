@@ -13094,14 +13094,22 @@ function getDisplayStats(p){
     // will add the MLB/MiLB chip toggle to the Deep Cut page for both-level players (Augustin
     // Ramirez use-case) — see the parked task. This fix is the MiLB-only slice only.
     var _bothSamples = (typeof _hasBothSamples === 'function') ? _hasBothSamples(p) : !!(p.statsMilb && p.statsMlb);
-    if(!_bothSamples && dateRange !== 'season' && dateRange !== 'live' && p.mlb_id && typeof PLAYER_DATERANGE_CACHE !== 'undefined'){
+    // Two cases want a date-ranged MiLB read here:
+    //  (1) MiLB-ONLY player (Yohandy Morales) — date-sorting his only stats is the point.
+    //  (2) BOTH-sample player the Dude EXPLICITLY toggled to MiLB on the DEEP CUT page
+    //      (Augustin Ramirez call-up watch). Deep Cut has its OWN toggle (_ppoSampleToggle),
+    //      checked only while the Deep Cut stat bar is rendering (window._ppoRendering). Matt's
+    //      V3 "season totals" rule still applies to a both-sample player NOT on the Deep Cut page.
+    var _deepCutMilb = (typeof window !== 'undefined') && window._ppoRendering && window._ppoSampleToggle === 'MiLB';
+    var _wantWindowedMilb = (!_bothSamples || _deepCutMilb);
+    if(_wantWindowedMilb && dateRange !== 'season' && dateRange !== 'live' && p.mlb_id && typeof PLAYER_DATERANGE_CACHE !== 'undefined'){
       var _preMilb = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
       if(_preMilb && _preMilb[dateRange]){
         var _rowMilb = _preMilb[dateRange];
         if(_rowMilb.milb && Object.keys(_rowMilb.milb).length > 0) return _rowMilb.milb;
         return _rowMilb;
       }
-      // No windowed data for this MiLB-only player → empty so the bar shows dashes (honest),
+      // No windowed data for this window → empty so the bar shows dashes (honest),
       // matching PROSPECTS_DASH_HONESTY_V2 rather than misleading season totals.
       return {};
     }
@@ -13132,6 +13140,15 @@ function getDisplayStats(p){
       } catch(_drErr){}
       // Pre-V3 the row carried .mlb / .milb sub-objects for chip awareness.
       // Under V3, MiLB is short-circuited above so we only need the MLB side.
+      // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05) — EXCEPT when the Dude has toggled a both-sample player
+      // to MiLB ON THE DEEP CUT PAGE. Deep Cut uses its OWN toggle (_ppoSampleToggle), checked only
+      // while the Deep Cut stat bar is rendering (window._ppoRendering) so the main list is never
+      // affected. No Deep Cut MiLB toggle => MLB side as before (Matt's default unchanged).
+      try {
+        if(typeof window !== 'undefined' && window._ppoRendering && window._ppoSampleToggle === 'MiLB' && _row.milb && Object.keys(_row.milb).length > 0){
+          return _row.milb;
+        }
+      } catch(_tgErr){}
       if(_row.mlb) return _row.mlb;
       return _row;
     }
@@ -14944,6 +14961,25 @@ function _renderLevelChip(p, tableName){
   return `<span class="level-chip level-chip-${_chipClassSuffix}${_clickableClass}" ${_onclick} title="${_tooltip}">${_chipLabel}${_asterisk}${_swapIcon}</span>`;
 }
 
+// DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05, PC Walter, per the Dude) — dedicated chip renderer for the
+// Deep Cut player page. Unlike _renderLevelChip (which reads the SHARED _sampleToggle via
+// _resolveActiveSample), this reads Deep Cut's OWN independent toggle window._ppoSampleToggle so the
+// two pages never fight. No chip for single-sample players (e.g. Yohandy Morales) — only when the
+// player has BOTH an MLB and a MiLB sample this year (e.g. Augustin Ramirez). Always defaults to MLB
+// on open (set in openPlayerPage). Clicking calls swapSampleForRow(mlbId,'deepcut') which flips
+// _ppoSampleToggle and refreshes the stat bar.
+function _renderDeepCutChip(p){
+  if(!p) return '';
+  if(!(typeof _hasBothSamples === 'function' ? _hasBothSamples(p) : (p.statsMilb && p.statsMlb))) return '';
+  if(p.hideChip) return '';
+  var showingMlb = (window._ppoSampleToggle !== 'MiLB');
+  var label = showingMlb ? 'MLB' : (p.level || 'AAA');
+  var suffix = label === 'MLB' ? 'mlb' : label === 'AAA' ? 'aaa' : label === 'AA' ? 'aa' : 'a';
+  var tip = showingMlb ? ('Showing MLB stats — click to view ' + (p.level || 'MiLB'))
+                       : ('Showing ' + (p.level || 'MiLB') + ' stats — click to view MLB');
+  return '<span class="level-chip level-chip-' + suffix + ' level-chip-clickable" onclick="swapSampleForRow(' + p.mlb_id + ", 'deepcut', event)\" title=\"" + tip + '">' + label + '<span class="level-chip-asterisk">*</span><span class="level-chip-swap">↔</span></span>';
+}
+
 // Universal click handler wired to every chip across the four tables.
 // Flips the active sample for THIS row only. Captures current row order
 // from the DOM so the row stays put on the post-flip re-render.
@@ -15050,6 +15086,24 @@ function swapSampleForRow(mlbId, tableName, evt){
   if(tableName === 'leaders'   && typeof renderLeaders   === 'function')   renderLeaders();
   if(tableName === 'context'   && typeof renderContext   === 'function')   renderContext();
   if(tableName === 'tank'      && typeof renderTank      === 'function')   renderTank();   // HOLDING_TANK_AS_TAB_V1
+  // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05) — the Deep Cut player page isn't a table; refresh its stat
+  // bar instead. _sampleToggle was already flipped above; getDisplayStats reads it for the new side,
+  // and re-running _renderLevelChip updates the chip label/arrow so it shows the now-active level.
+  if(tableName === 'deepcut'){
+    var _dcp = window._ppoCurrentPlayer;
+    if(_dcp){
+      // DEEPCUT_CHIP_TOGGLE_V1 — Deep Cut uses its OWN independent toggle (_ppoSampleToggle),
+      // NOT the shared _sampleToggle, so flipping here never disturbs the main list's state for
+      // this player (the Dude's call). swapSampleForRow already flipped the SHARED toggle above for
+      // the 'deepcut' case as a side effect; undo that so the main list is untouched, and drive the
+      // Deep Cut's own toggle instead.
+      if(typeof _sampleToggle !== 'undefined'){ delete _sampleToggle[mlbId]; }
+      window._ppoSampleToggle = (window._ppoSampleToggle === 'MiLB') ? 'MLB' : 'MiLB';
+      if(typeof renderPlayerStatBar === 'function') renderPlayerStatBar(_dcp);
+      var _ch = document.getElementById('ppo-level-chip');
+      if(_ch && typeof _renderDeepCutChip === 'function') _ch.innerHTML = _renderDeepCutChip(_dcp);
+    }
+  }
 }
 
 // Legacy entry point — old code in renderProspects still calls this name.
@@ -15752,6 +15806,19 @@ function openPlayerPage(p){
   if(hand) subParts.push(hand);
   var sub = subParts.join('<span class="sep">|</span>');
   document.getElementById('ppo-sub').innerHTML = sub;
+  // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05, PC Walter, per the Dude) — for a player with BOTH an MLB
+  // and a MiLB sample this season (e.g. Augustin Ramirez: opened as MIA catcher, sent down), show
+  // the same MLB/MiLB swap chip the tables use, in the hero. Clicking it flips which sample the
+  // Deep Cut stat bar shows; the date range then applies to whichever side is selected. A player
+  // with only one sample (e.g. Yohandy Morales, MiLB-only) gets NO chip — _renderLevelChip returns
+  // a non-clickable/empty chip when _hasBothSamples is false, exactly the behavior the Dude wants.
+  // DEEPCUT_CHIP_TOGGLE_V1 — always start on MLB when the Deep Cut page opens (the Dude's spec),
+  // regardless of any main-list toggle state. Deep Cut's own independent toggle.
+  window._ppoSampleToggle = 'MLB';
+  var _chipHost = document.getElementById('ppo-level-chip');
+  if(_chipHost){
+    _chipHost.innerHTML = (typeof _renderDeepCutChip === 'function') ? _renderDeepCutChip(p) : '';
+  }
 
   var rankEl = document.getElementById('ppo-rank');
   if(p.rank){
@@ -16769,7 +16836,11 @@ function renderPlayerStatBar(p){
   var usingDateRange = (typeof dateRange !== 'undefined') && dateRange !== 'season';
   var sc;
   if(usingDateRange && typeof getDisplayStats === 'function'){
-    sc = getDisplayStats(p);
+    // DEEPCUT_CHIP_TOGGLE_V1 — flag the Deep Cut render so getDisplayStats reads Deep Cut's OWN
+    // toggle (_ppoSampleToggle) instead of the shared one. Cleared immediately after so no other
+    // render path is affected.
+    window._ppoRendering = true;
+    try { sc = getDisplayStats(p); } finally { window._ppoRendering = false; }
   } else {
     sc = p;
   }
@@ -17887,6 +17958,9 @@ function attachTankScrollHandler(){
       <div class="ppo-hero-sub" id="ppo-sub"></div>
       <div class="ppo-hero-rank" id="ppo-rank" style="display:none">Watch 101 Rank <span class="num" id="ppo-rank-num"></span></div>
       <div class="ppo-daterange-wrap">
+        <!-- DEEPCUT_CHIP_TOGGLE_V1 — MLB/MiLB swap chip (populated by openPlayerPage via _renderLevelChip;
+             empty for single-sample players). Lets the Dude pick which level the date range applies to. -->
+        <span id="ppo-level-chip"></span>
         <span class="ppo-daterange-label">Stats for:</span>
         <select id="ppo-daterange-select" class="ppo-daterange-select" onchange="onOverlayDateRangeChange(this.value)">
           <option value="live">&#128308; Live</option>
