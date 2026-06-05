@@ -16835,14 +16835,25 @@ function renderPlayerStatBar(p){
   // - otherwise use getDisplayStats(p) which returns cached byDateRange stats or null (loading)
   var usingDateRange = (typeof dateRange !== 'undefined') && dateRange !== 'season';
   var sc;
+  // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05, PC Walter, per the Dude) — does this render want the MiLB
+  // side? True when the player is MiLB-only OR the Dude flipped the Deep Cut chip to MiLB.
+  var _dcBoth = (typeof _hasBothSamples === 'function') ? _hasBothSamples(p) : !!(p && p.statsMilb && p.statsMlb);
+  var _dcWantMilb = (_dcBoth && window._ppoSampleToggle === 'MiLB') || (!_dcBoth && p && p.statsSource === 'MiLB');
   if(usingDateRange && typeof getDisplayStats === 'function'){
-    // DEEPCUT_CHIP_TOGGLE_V1 — flag the Deep Cut render so getDisplayStats reads Deep Cut's OWN
-    // toggle (_ppoSampleToggle) instead of the shared one. Cleared immediately after so no other
-    // render path is affected.
+    // Date-range path: flag the Deep Cut render so getDisplayStats reads Deep Cut's OWN toggle
+    // (_ppoSampleToggle) and returns the windowed .milb side when MiLB is selected. Cleared right
+    // after so no other render path is affected.
     window._ppoRendering = true;
     try { sc = getDisplayStats(p); } finally { window._ppoRendering = false; }
   } else {
-    sc = p;
+    // Season path: getDisplayStats returns p (MLB season fields) immediately for 'season', so it
+    // can't honor the toggle. Pull the MiLB season sample directly via _activeSampleFor when the
+    // Deep Cut chip is on MiLB; otherwise use the player's MLB season fields (p).
+    if(_dcWantMilb && typeof _activeSampleFor === 'function'){
+      sc = (p.statsMilb || _activeSampleFor(p, 'prospects') || p);
+    } else {
+      sc = p;
+    }
   }
   var loading = usingDateRange && sc === null;
 
@@ -16911,16 +16922,9 @@ function renderPlayerStatBar(p){
   }).join('');
 
   // DEEPCUT_MILB_ITALIC_V1 (2026-06-05, PC Walter, per the Dude) — italicize the Deep Cut stat
-  // values when the numbers being shown are MINOR-league, matching the main page's italic tell.
-  // "Showing MiLB" = the player is MiLB-only (statsSource MiLB and no MLB sample) OR the Dude has
-  // flipped the Deep Cut chip to MiLB for a both-sample player.
-  var _showingMilb = false;
-  try {
-    var _bothS = (typeof _hasBothSamples === 'function') ? _hasBothSamples(p) : !!(p && p.statsMilb && p.statsMlb);
-    if(_bothS){ _showingMilb = (window._ppoSampleToggle === 'MiLB'); }
-    else { _showingMilb = (p && p.statsSource === 'MiLB'); }
-  } catch(_miErr){}
-  container.classList.toggle('ppo-showing-milb', !!_showingMilb);
+  // values when MINOR-league numbers are showing, matching the main page's italic tell. Reuses
+  // _dcWantMilb computed above so the italic state and the data shown can never disagree.
+  container.classList.toggle('ppo-showing-milb', !!_dcWantMilb);
 
   // Advanced row — Statcast numbers. These are season-only on the player object (no date-range variant exists upstream).
   // GOLD_BLOCK_V1 (May 14, 2026 PM) — Pass 2: replaced the legacy 7-stat indigo/blue block with Matt's 8 gold-block stats per role. Helpers now take a role tag so each value renders with `hit` or `pit` class — the new .ppo-adv-row.gold CSS rule colors hit=gold, pit=white. Order matches the gold block in the main table and the percentile-bars chart below (PCT_CHART_STATS_HITTER / PCT_CHART_STATS_PITCHER).
