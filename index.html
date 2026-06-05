@@ -13180,26 +13180,31 @@ function getDisplayStats(p){
       // to MiLB ON THE DEEP CUT PAGE. Deep Cut uses its OWN toggle (_ppoSampleToggle), checked only
       // while the Deep Cut stat bar is rendering (window._ppoRendering) so the main list is never
       // affected. No Deep Cut MiLB toggle => MLB side as before (Matt's default unchanged).
+      // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05, PC Walter, per the Dude) — on the DEEP CUT page the chip
+      // is authoritative: return EXACTLY the requested level's windowed sub-object, or em-dashes if
+      // that level has no stats in this window. NEVER fall back to the flat row, because the flat row
+      // mirrors whichever level the player actually played (e.g. Agustin Ramirez is in the minors, so
+      // his flat last-7 row IS his MiLB line — returning it for the MLB side wrongly showed MiLB
+      // numbers under "MLB"). Correct behavior: AAA → .milb (real), MLB → dashes (he hasn't played
+      // in the bigs this window). _ppoRendering scopes this to the Deep Cut render only.
       try {
-        if(typeof window !== 'undefined' && window._ppoRendering && window._ppoSampleToggle === 'MiLB'){
-          // 1) Best: this window's MiLB sub-object in the main pre-bake.
-          if(_row.milb && Object.keys(_row.milb).length > 0) return _row.milb;
-          // 2) Fallback: the Prospects MiLB date-range cache (fetched with level=milb). The main
-          //    bake is MLB-centric for ROSTERED players, so a both-sample guy like Agustin Ramirez
-          //    often has .mlb here but no .milb — his windowed MiLB lives in prospectsDateRangeCache.
-          if(typeof prospectsDateRangeCache !== 'undefined'){
-            var _pdr = prospectsDateRangeCache[p.mlb_id + '_' + dateRange];
-            if(_pdr && Object.keys(_pdr).length > 0) return _pdr;
+        if(typeof window !== 'undefined' && window._ppoRendering){
+          var _want = (window._ppoSampleToggle === 'MiLB') ? 'milb' : 'mlb';
+          var _side = _row[_want];
+          if(_side && Object.keys(_side).length > 0) return _side;
+          // Requested side absent. For MiLB, the prospects level=milb cache / a direct fetch may have
+          // it (rostered both-sample players aren't always in the main bake's .milb). For MLB, dashes.
+          if(_want === 'milb'){
+            if(typeof prospectsDateRangeCache !== 'undefined'){
+              var _pdr = prospectsDateRangeCache[p.mlb_id + '_' + dateRange];
+              if(_pdr && Object.keys(_pdr).length > 0) return _pdr;
+            }
+            if(typeof _fetchDeepCutMilbWindow === 'function'){ _fetchDeepCutMilbWindow(p.mlb_id, dateRange); }
           }
-          // 3) Last resort: fetch THIS one player's windowed MiLB stats directly from the same
-          //    level=milb worker the Prospects tab uses, cache it, and repaint. Show dashes until it
-          //    lands (honest) rather than the misleading MLB numbers. (fetchProspectsDateRangeStats
-          //    can't help here — it bails unless the Prospects tab is open and the player is in
-          //    prospectPlayers; a Deep Cut player from the Dude's List is neither.)
-          if(typeof _fetchDeepCutMilbWindow === 'function'){ _fetchDeepCutMilbWindow(p.mlb_id, dateRange); }
-          return {};
+          return {}; // honest em-dashes for the requested side
         }
       } catch(_tgErr){}
+      // Off the Deep Cut page — original behavior unchanged (MLB side, then flat row).
       if(_row.mlb) return _row.mlb;
       return _row;
     }
