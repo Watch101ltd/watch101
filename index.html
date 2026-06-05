@@ -2914,14 +2914,6 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="tab-nav-btn backend-only" onclick="openHoldingTank()">🪣 Holding Tank</button>
       </div>
       <div style="font-family:'Nunito Sans',sans-serif;font-size:20px;color:var(--gold);letter-spacing:0.05em;white-space:nowrap">🏆 League Leaders — 2026</div>
-      <select id="daterange-select-leaders" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
-        <option value="live">🔴 Live</option>
-    <option value="yesterday">Yesterday</option>
-        <option value="season" selected>Season Stats</option>
-        <option value="7">Last 7 Days</option>
-        <option value="14">Last 14 Days</option>
-        <option value="30">Last 30 Days</option>
-      </select>
       <!-- HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — ⚡ Advanced button removed; gold Statcast
            columns render by default on Leaders. toggleLeadersAdvancedMode() left as orphaned JS. -->
       <!-- TEAM_FILTER_LEADERS_V1 (April 26, 2026) — same MLB team picker as the Watch list -->
@@ -2968,6 +2960,17 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       <div id="leaders-filter-panel" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
         <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
         <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
+            <select id="ldrf-daterange" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none">
+              <option value="live">🔴 Live</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="season" selected>Season Stats</option>
+              <option value="7">Last 7 Days</option>
+              <option value="14">Last 14 Days</option>
+              <option value="30">Last 30 Days</option>
+            </select>
+          </div>
           <div>
             <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN AB <span style="color:var(--stat-hitter)">(hitters)</span></div>
             <input id="ldrf-ab" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
@@ -12179,11 +12182,18 @@ function applyLeadersFilters(){
     ageMin: _ldrNum('ldrf-agemin'), ageMax: _ldrNum('ldrf-agemax'),
     ownedMax: _ldrNum('ldrf-owned'), cbsOwnedMax: _ldrNum('ldrf-cbsowned')
   };
+  // LEADERS_DATERANGE_IN_BOX_V1 (2026-06-05, PC Walter, per the Dude) — date range now inside the
+  // STAT FILTERING box, Apply-gated (matches Pool + the main page).
+  var ldrDR = document.getElementById('ldrf-daterange');
+  if(ldrDR && typeof setDateRange === 'function'){ setDateRange(ldrDR.value); if(typeof syncDateRangeDropdowns==='function') syncDateRangeDropdowns(ldrDR.value); }
   renderLeaders();
 }
 function resetLeadersFilters(){
   ['ldrf-ab','ldrf-ip','ldrf-agemin','ldrf-agemax','ldrf-owned','ldrf-cbsowned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   leadersFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
+  // LEADERS_DATERANGE_IN_BOX_V1 — reset the in-box date range to Season too.
+  var ldrDR = document.getElementById('ldrf-daterange');
+  if(ldrDR){ ldrDR.value = 'season'; if(typeof setDateRange === 'function'){ setDateRange('season'); if(typeof syncDateRangeDropdowns==='function') syncDateRangeDropdowns('season'); } }
   renderLeaders();
 }
 
@@ -13072,7 +13082,7 @@ function setPoolWrapTop(){
 
 function syncDateRangeDropdowns(val){
   // Keep all three dropdowns in sync visually
-  ['daterange-select','wlf-daterange','poolf-daterange','daterange-select-tank','daterange-select-leaders','daterange-select-pros','ppo-daterange-select'].forEach(id => {
+  ['daterange-select','wlf-daterange','poolf-daterange','daterange-select-tank','ldrf-daterange','daterange-select-pros','ppo-daterange-select'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.value = val;
     if(el) el.classList.toggle('daterange-active', val !== 'season');
