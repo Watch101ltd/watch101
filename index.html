@@ -2459,14 +2459,6 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <!-- HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — Tank quick-nav button (backend-only). -->
         <button class="tab-nav-btn backend-only" onclick="openHoldingTank()">🪣 Holding Tank</button>
       </div>
-      <select id="daterange-select-pool" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
-        <option value="live">🔴 Live</option>
-    <option value="yesterday">Yesterday</option>
-        <option value="season" selected>Season Stats</option>
-        <option value="7">Last 7 Days</option>
-        <option value="14">Last 14 Days</option>
-        <option value="30">Last 30 Days</option>
-      </select>
       <div class="pool-search-wrap">
         <span class="pool-search-icon">⌕</span>
         <input type="text" id="pool-search" placeholder="Jump to player..." oninput="poolSearchInput(this.value)" autocomplete="off">
@@ -2521,6 +2513,17 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       <div id="pool-filter-panel" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
         <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
         <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+          <div>
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
+            <select id="poolf-daterange" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none">
+              <option value="live">🔴 Live</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="season" selected>Season Stats</option>
+              <option value="7">Last 7 Days</option>
+              <option value="14">Last 14 Days</option>
+              <option value="30">Last 30 Days</option>
+            </select>
+          </div>
           <div>
             <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN AB <span style="color:var(--stat-hitter)">(hitters)</span></div>
             <input id="poolf-ab" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
@@ -2695,7 +2698,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
              will also fire saveHoldingTankToNAS on every Tank mutation. -->
         <button class="tab-nav-btn backend-only" onclick="saveHoldingTankToNAS()" title="Save the Holding Tank to your Synology — first save on a new list auto-creates the _HoldingTank folder">💾 Save Tank</button>
       </div>
-      <select id="daterange-select-pool" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
+      <select id="daterange-select-tank" onchange="setDateRange(this.value);syncDateRangeDropdowns(this.value)" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em">
         <option value="live">🔴 Live</option>
     <option value="yesterday">Yesterday</option>
         <option value="season" selected>Season Stats</option>
@@ -11074,11 +11077,18 @@ function applyPoolFilters(){
     ageMin: _poolNum('poolf-agemin'), ageMax: _poolNum('poolf-agemax'),
     ownedMax: _poolNum('poolf-owned'), cbsOwnedMax: _poolNum('poolf-cbsowned')
   };
+  // POOL_DATERANGE_IN_BOX_V1 (2026-06-05, PC Walter, per the Dude) — the date range now lives
+  // inside the STAT FILTERING box and is Apply-gated (matches the main page's wlf-daterange).
+  var poolDR = document.getElementById('poolf-daterange');
+  if(poolDR && typeof setDateRange === 'function'){ setDateRange(poolDR.value); if(typeof syncDateRangeDropdowns==='function') syncDateRangeDropdowns(poolDR.value); }
   renderPool();
 }
 function resetPoolFilters(){
   ['poolf-ab','poolf-ip','poolf-agemin','poolf-agemax','poolf-owned','poolf-cbsowned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   poolFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
+  // POOL_DATERANGE_IN_BOX_V1 — reset the in-box date range to Season too.
+  var poolDR = document.getElementById('poolf-daterange');
+  if(poolDR){ poolDR.value = 'season'; if(typeof setDateRange === 'function'){ setDateRange('season'); if(typeof syncDateRangeDropdowns==='function') syncDateRangeDropdowns('season'); } }
   renderPool();
 }
 
@@ -13062,7 +13072,7 @@ function setPoolWrapTop(){
 
 function syncDateRangeDropdowns(val){
   // Keep all three dropdowns in sync visually
-  ['daterange-select','wlf-daterange','daterange-select-pool','daterange-select-leaders','daterange-select-pros','ppo-daterange-select'].forEach(id => {
+  ['daterange-select','wlf-daterange','poolf-daterange','daterange-select-tank','daterange-select-leaders','daterange-select-pros','ppo-daterange-select'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.value = val;
     if(el) el.classList.toggle('daterange-active', val !== 'season');
