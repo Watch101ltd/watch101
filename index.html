@@ -1924,6 +1924,10 @@ body.day-mode #player-page-overlay .ppo-sched-prob-pill{background:rgba(161,98,7
 #player-page-overlay .ppo-statbar-val.hit{color:var(--stat-hitter);}
 #player-page-overlay .ppo-statbar-val.pit{color:var(--stat-pitcher);}
 #player-page-overlay .ppo-statbar-val.na{color:var(--text3);font-weight:500;}
+/* DEEPCUT_MILB_ITALIC_V1 (2026-06-05) — when the Deep Cut stat bar is showing MINOR-league numbers
+   (MiLB-only player, or both-sample player flipped to MiLB via the chip), italicize the values so
+   it reads as minor-league at a glance — same tell the main page uses with row-minor-stats. */
+#player-page-overlay .ppo-statbar.ppo-showing-milb .ppo-statbar-val{font-style:italic;}
 #player-page-overlay .ppo-adv-row{display:flex;flex-wrap:wrap;margin-top:10px;border:1px solid var(--indigo2);border-radius:8px;overflow:hidden;background:rgba(67,56,202,0.06);}
 /* GOLD_BLOCK_V1 (May 14, 2026 PM) — Gold-treatment override for the Player Page advanced-stats row. Used when the row is showing the new 8-stat gold block (replaces the legacy 7-stat blue/indigo treatment). Border and background use the same gold tints as the main-table gold zone for visual consistency. Hitter values render gold, pitcher values render light-white. */
 #player-page-overlay .ppo-adv-row.gold{border:1px solid rgba(201,168,76,0.5);background:rgba(201,168,76,0.06);}
@@ -14990,6 +14994,20 @@ function _renderDeepCutChip(p){
 // to whichever sample is NOT currently showing in this table.
 function swapSampleForRow(mlbId, tableName, evt){
   if(evt){ evt.stopPropagation(); evt.preventDefault(); }
+  // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05, PC Walter, per the Dude) — Deep Cut is fully self-contained:
+  // it uses its OWN toggle (window._ppoSampleToggle) and must NOT run the shared-toggle machinery
+  // below (that's what made it flip only once — the shared logic recomputed state and fought this).
+  // Handle it here and RETURN before any shared _sampleToggle code executes.
+  if(tableName === 'deepcut'){
+    var _dcp = window._ppoCurrentPlayer;
+    if(_dcp){
+      window._ppoSampleToggle = (window._ppoSampleToggle === 'MiLB') ? 'MLB' : 'MiLB';
+      if(typeof renderPlayerStatBar === 'function') renderPlayerStatBar(_dcp);
+      var _ch = document.getElementById('ppo-level-chip');
+      if(_ch && typeof _renderDeepCutChip === 'function') _ch.innerHTML = _renderDeepCutChip(_dcp);
+    }
+    return;
+  }
   // Resolve "what's the player record" so we can ask the resolver
   // what's currently showing — needs the player to know which samples
   // exist. Look it up in whichever array this table uses.
@@ -15086,24 +15104,6 @@ function swapSampleForRow(mlbId, tableName, evt){
   if(tableName === 'leaders'   && typeof renderLeaders   === 'function')   renderLeaders();
   if(tableName === 'context'   && typeof renderContext   === 'function')   renderContext();
   if(tableName === 'tank'      && typeof renderTank      === 'function')   renderTank();   // HOLDING_TANK_AS_TAB_V1
-  // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05) — the Deep Cut player page isn't a table; refresh its stat
-  // bar instead. _sampleToggle was already flipped above; getDisplayStats reads it for the new side,
-  // and re-running _renderLevelChip updates the chip label/arrow so it shows the now-active level.
-  if(tableName === 'deepcut'){
-    var _dcp = window._ppoCurrentPlayer;
-    if(_dcp){
-      // DEEPCUT_CHIP_TOGGLE_V1 — Deep Cut uses its OWN independent toggle (_ppoSampleToggle),
-      // NOT the shared _sampleToggle, so flipping here never disturbs the main list's state for
-      // this player (the Dude's call). swapSampleForRow already flipped the SHARED toggle above for
-      // the 'deepcut' case as a side effect; undo that so the main list is untouched, and drive the
-      // Deep Cut's own toggle instead.
-      if(typeof _sampleToggle !== 'undefined'){ delete _sampleToggle[mlbId]; }
-      window._ppoSampleToggle = (window._ppoSampleToggle === 'MiLB') ? 'MLB' : 'MiLB';
-      if(typeof renderPlayerStatBar === 'function') renderPlayerStatBar(_dcp);
-      var _ch = document.getElementById('ppo-level-chip');
-      if(_ch && typeof _renderDeepCutChip === 'function') _ch.innerHTML = _renderDeepCutChip(_dcp);
-    }
-  }
 }
 
 // Legacy entry point — old code in renderProspects still calls this name.
@@ -16909,6 +16909,18 @@ function renderPlayerStatBar(p){
   container.innerHTML = cells.map(function(c){
     return '<div class="ppo-statbar-cell"><div class="ppo-statbar-label">'+c.label+'</div>'+c.val+'</div>';
   }).join('');
+
+  // DEEPCUT_MILB_ITALIC_V1 (2026-06-05, PC Walter, per the Dude) — italicize the Deep Cut stat
+  // values when the numbers being shown are MINOR-league, matching the main page's italic tell.
+  // "Showing MiLB" = the player is MiLB-only (statsSource MiLB and no MLB sample) OR the Dude has
+  // flipped the Deep Cut chip to MiLB for a both-sample player.
+  var _showingMilb = false;
+  try {
+    var _bothS = (typeof _hasBothSamples === 'function') ? _hasBothSamples(p) : !!(p && p.statsMilb && p.statsMlb);
+    if(_bothS){ _showingMilb = (window._ppoSampleToggle === 'MiLB'); }
+    else { _showingMilb = (p && p.statsSource === 'MiLB'); }
+  } catch(_miErr){}
+  container.classList.toggle('ppo-showing-milb', !!_showingMilb);
 
   // Advanced row — Statcast numbers. These are season-only on the player object (no date-range variant exists upstream).
   // GOLD_BLOCK_V1 (May 14, 2026 PM) — Pass 2: replaced the legacy 7-stat indigo/blue block with Matt's 8 gold-block stats per role. Helpers now take a role tag so each value renders with `hit` or `pit` class — the new .ppo-adv-row.gold CSS rule colors hit=gold, pit=white. Order matches the gold block in the main table and the percentile-bars chart below (PCT_CHART_STATS_HITTER / PCT_CHART_STATS_PITCHER).
