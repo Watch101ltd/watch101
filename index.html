@@ -13084,6 +13084,27 @@ function getDisplayStats(p){
   // range at all. MLB-state behavior is unchanged - it still reads the date-
   // range cache normally.
   if(p && p.statsSource === 'MiLB'){
+    // DEEPCUT_MILB_ONLY_DATERANGE_V1 (2026-06-05, PC Walter, per the Dude) — edge-case fix.
+    // Matt's V3 rule (ignore date range for MiLB, show season totals) was meant for players who
+    // have BOTH levels: when viewing their MiLB side, don't break it down by date range. But a
+    // MiLB-ONLY player (never called up this season, e.g. Yohandy Morales) has NOTHING BUT minor-
+    // league stats, so date-sorting them is exactly what's wanted. For those players, read the
+    // windowed .milb stats from the pre-bake the same way getProspectDisplayStats does. Players
+    // with both samples still hit Matt's original behavior below (unchanged). NOTE: a future phase
+    // will add the MLB/MiLB chip toggle to the Deep Cut page for both-level players (Augustin
+    // Ramirez use-case) — see the parked task. This fix is the MiLB-only slice only.
+    var _bothSamples = (typeof _hasBothSamples === 'function') ? _hasBothSamples(p) : !!(p.statsMilb && p.statsMlb);
+    if(!_bothSamples && dateRange !== 'season' && dateRange !== 'live' && p.mlb_id && typeof PLAYER_DATERANGE_CACHE !== 'undefined'){
+      var _preMilb = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
+      if(_preMilb && _preMilb[dateRange]){
+        var _rowMilb = _preMilb[dateRange];
+        if(_rowMilb.milb && Object.keys(_rowMilb.milb).length > 0) return _rowMilb.milb;
+        return _rowMilb;
+      }
+      // No windowed data for this MiLB-only player → empty so the bar shows dashes (honest),
+      // matching PROSPECTS_DASH_HONESTY_V2 rather than misleading season totals.
+      return {};
+    }
     if(typeof _activeSampleFor === 'function'){
       var _milbSample = _activeSampleFor(p, 'watch');
       if(_milbSample) return _milbSample;
