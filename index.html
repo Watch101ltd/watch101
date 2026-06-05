@@ -2954,28 +2954,6 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       <div class="pool-status" id="leaders-status">Loading players...</div>
     </div>
 
-    <!-- STAT CATEGORY BUTTONS — also scroll with secondary header -->
-    <div id="leaders-cats" style="display:flex;gap:24px;padding:0.5rem 1.5rem 0.75rem;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap">
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-        <div style="font-family:'Nunito Sans',sans-serif;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;width:100%;padding-top:4px">Hitting</div>
-        <button class="filter-tab" onclick="sortLeadersByStat('r',false,this)">R</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('hr',false,this)">HR</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('rbi',false,this)">RBI</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('sb',false,this)">SB</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('avg',false,this)">AVG</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('obp',false,this)">OBP</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('ops',false,this)">OPS</button>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-        <div style="font-family:'Nunito Sans',sans-serif;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;width:100%;padding-top:4px">Pitching</div>
-        <button class="filter-tab" onclick="sortLeadersByStat('era',true,this)">ERA</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('whip',true,this)">WHIP</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('k',false,this)">K</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('w',false,this)">W</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('sv',false,this)">SV</button>
-        <button class="filter-tab" onclick="sortLeadersByStat('ip',false,this)">IP</button>
-      </div>
-    </div>
 
     <!-- MAIN PLAYER TABLE — same structure/columns as Watch 101 and Player Pool -->
     <div id="leaders-table-section">
@@ -12502,22 +12480,10 @@ function updateLeadersClusterChip(){
 
 // ---- SORT LEADERS BY CATEGORY BUTTON (R, HR, ERA, etc.) ----
 // Category buttons also set the position filter: hitting stats → show hitters, pitching → show pitchers
-function sortLeadersByStat(col, isLower, el){
-  const hitStats = ['r','hr','rbi','sb','avg','obp','ops','ab'];
-  const pitStats  = ['era','whip','k','w','sv','ip'];
-  leadersSortCol = col;
-  leadersSortDir = isLower ? 1 : -1; // ERA/WHIP: lower=better → sort ascending; everything else → descending
-  if(hitStats.includes(col)) leadersPosFilter = 'HITTER';
-  if(pitStats.includes(col)) leadersPosFilter = 'PITCHER';
-  // Highlight active category button
-  document.querySelectorAll('#leaders-cats .filter-tab').forEach(t => t.classList.remove('active'));
-  if(el) el.classList.add('active');
-  // Sync sort arrow on the column header too
-  document.querySelectorAll('[id^="larr-"]').forEach(a => { a.textContent='↕'; a.closest('th') && a.closest('th').classList.remove('sorted'); });
-  const arr = document.getElementById('larr-' + col);
-  if(arr){ arr.textContent = leadersSortDir===1?'↑':'↓'; arr.closest('th').classList.add('sorted'); }
-  renderLeaders();
-}
+// LEADERS_STATBUTTONS_REMOVED_V1 (2026-06-05, PC Walter, per the Dude) — the HITTING/PITCHING
+// quick-sort button row (#leaders-cats) was removed as redundant: clicking a column header sorts
+// by that stat already. sortLeadersByStat() was only ever called by those buttons, so it's retired.
+// Column-header sorting (sortLeaders) and the default leadersSortCol='hr' are unaffected.
 
 // ---- LEADERS SCROLL HANDLER — clone sticky header ----
 // Same approach as attachPoolScrollHandler: toolbar+cat-buttons scroll away,
