@@ -13065,6 +13065,38 @@ function hasPrebakedStats(p, range){
   return !!(pre && pre[range]);
 }
 
+// DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05, PC Walter, per the Dude) — fetch ONE player's windowed MiLB
+// stats directly from the level=milb worker (same source the Prospects tab uses), for a both-sample
+// Deep Cut player whose minor-league window isn't in the main pre-bake (e.g. Agustin Ramirez). Stores
+// the result in prospectsDateRangeCache so the next getDisplayStats read finds it, then repaints the
+// stat bar. Guarded against duplicate in-flight fetches per id+range.
+window._deepCutMilbFetching = window._deepCutMilbFetching || {};
+async function _fetchDeepCutMilbWindow(mlbId, range){
+  if(!mlbId || !range || range === 'season' || range === 'live') return;
+  var key = mlbId + '_' + range;
+  if(typeof prospectsDateRangeCache !== 'undefined' && prospectsDateRangeCache[key] && Object.keys(prospectsDateRangeCache[key]).length > 0) return;
+  if(window._deepCutMilbFetching[key]) return;
+  window._deepCutMilbFetching[key] = true;
+  try {
+    var url = 'https://watch101-cache.wild-fog-21df.workers.dev/mlb/player-stats-bundle?ids=' + mlbId + '&range=' + range + '&level=milb';
+    var res = await fetch(url);
+    var bundle = await res.json();
+    var stats = bundle[mlbId] || bundle[String(mlbId)] || {};
+    if(typeof prospectsDateRangeCache !== 'undefined'){ prospectsDateRangeCache[key] = stats; }
+    // Repaint the Deep Cut bar if this player is still showing and still on this range/MiLB side.
+    if(window._ppoCurrentPlayer && window._ppoCurrentPlayer.mlb_id === mlbId
+       && typeof dateRange !== 'undefined' && dateRange === range
+       && window._ppoSampleToggle === 'MiLB'
+       && typeof renderPlayerStatBar === 'function'){
+      renderPlayerStatBar(window._ppoCurrentPlayer);
+    }
+  } catch(_e){
+    // leave uncached so a later toggle can retry
+  } finally {
+    window._deepCutMilbFetching[key] = false;
+  }
+}
+
 function getDisplayStats(p){
   // Returns the stat object to display for the current dateRange:
   //  - 'season' -> the player record itself (season totals already live on p)
@@ -13149,8 +13181,23 @@ function getDisplayStats(p){
       // while the Deep Cut stat bar is rendering (window._ppoRendering) so the main list is never
       // affected. No Deep Cut MiLB toggle => MLB side as before (Matt's default unchanged).
       try {
-        if(typeof window !== 'undefined' && window._ppoRendering && window._ppoSampleToggle === 'MiLB' && _row.milb && Object.keys(_row.milb).length > 0){
-          return _row.milb;
+        if(typeof window !== 'undefined' && window._ppoRendering && window._ppoSampleToggle === 'MiLB'){
+          // 1) Best: this window's MiLB sub-object in the main pre-bake.
+          if(_row.milb && Object.keys(_row.milb).length > 0) return _row.milb;
+          // 2) Fallback: the Prospects MiLB date-range cache (fetched with level=milb). The main
+          //    bake is MLB-centric for ROSTERED players, so a both-sample guy like Agustin Ramirez
+          //    often has .mlb here but no .milb — his windowed MiLB lives in prospectsDateRangeCache.
+          if(typeof prospectsDateRangeCache !== 'undefined'){
+            var _pdr = prospectsDateRangeCache[p.mlb_id + '_' + dateRange];
+            if(_pdr && Object.keys(_pdr).length > 0) return _pdr;
+          }
+          // 3) Last resort: fetch THIS one player's windowed MiLB stats directly from the same
+          //    level=milb worker the Prospects tab uses, cache it, and repaint. Show dashes until it
+          //    lands (honest) rather than the misleading MLB numbers. (fetchProspectsDateRangeStats
+          //    can't help here — it bails unless the Prospects tab is open and the player is in
+          //    prospectPlayers; a Deep Cut player from the Dude's List is neither.)
+          if(typeof _fetchDeepCutMilbWindow === 'function'){ _fetchDeepCutMilbWindow(p.mlb_id, dateRange); }
+          return {};
         }
       } catch(_tgErr){}
       if(_row.mlb) return _row.mlb;
