@@ -2888,6 +2888,12 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="tab-nav-btn backend-only" onclick="openHoldingTank()">🪣 Holding Tank</button>
       </div>
       <div style="font-family:'Nunito Sans',sans-serif;font-size:20px;color:var(--gold);letter-spacing:0.05em;white-space:nowrap">🏆 League Leaders — 2026</div>
+      <!-- LEADERS_NAME_SEARCH_V1 (2026-06-05, PC Walter, per the Dude) — every page gets name search.
+           Mirrors Pool's simple search-filter (name OR team substring), instant on input. -->
+      <div class="pool-search-wrap">
+        <span class="pool-search-icon">⌕</span>
+        <input type="text" id="leaders-search" placeholder="Jump to player..." oninput="leadersSearchInput(this.value)" autocomplete="off">
+      </div>
       <!-- HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — ⚡ Advanced button removed; gold Statcast
            columns render by default on Leaders. toggleLeadersAdvancedMode() left as orphaned JS. -->
       <!-- TEAM_FILTER_LEADERS_V1 (April 26, 2026) — same MLB team picker as the Watch list -->
@@ -12044,6 +12050,8 @@ let leadersPosFilter = 'ALL'; // 'ALL' | 'HITTER' | 'PITCHER'
 // FILTER_TABLE_PORT_V1 (2026-06-03) — Leaders set-your-own filter object (replaces leadersPlayerFilter).
 let leadersFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null };
 let leadersTeamFilter = 'ALL';     // TEAM_FILTER_LEADERS_V1 — Leaders — MLB team picker (mirrors the Watch list team filter)
+let leadersSearchFilter = '';      // LEADERS_NAME_SEARCH_V1 — Leaders name/team search (instant)
+function leadersSearchInput(val){ leadersSearchFilter = val || ''; if(typeof renderLeaders === 'function') renderLeaders(); }
 let leadersClusterByPos = null;   // League Leaders cluster state (independent of main/pool)
 var leadersScrollHandler = null;
 
@@ -12163,6 +12171,12 @@ function renderLeaders(){
 
   // TEAM_FILTER_LEADERS_V1 — MLB team picker (mirrors Watch list)
   if(leadersTeamFilter !== 'ALL') list = list.filter(p => (p.team||'').toUpperCase() === leadersTeamFilter);
+
+  // LEADERS_NAME_SEARCH_V1 — instant name/team search (mirrors Pool's search filter).
+  if(leadersSearchFilter){
+    const q = normalize(leadersSearchFilter);
+    list = list.filter(p => normalize(p.name).includes(q) || (p.team||'').toLowerCase().includes(leadersSearchFilter.toLowerCase()));
+  }
 
   // PLAYER_FILTER_V1 — Leaders — Matt's curated filter dropdown (single-select, AND logic with leadersPosFilter)
   // FILTER_TABLE_PORT_V1 (2026-06-03 — PC Walter, per the Dude) — Leaders set-your-own filters,
