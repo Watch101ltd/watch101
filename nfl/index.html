@@ -508,6 +508,51 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 <!-- ══════════ NFL PLAYERS VIEW (feeder pool, hidden by default — NFL_PLAYERS_PAGE_V1) ══════════ -->
 <div id="nflplayers-view" style="display:none">
   <div class="status-bar-wl" id="nflplayers-status">NFL Players — loading the full league pool…</div>
+  <!-- NFL_POOL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — STAT FILTERING box modeled on
+       the NBA pool box + baseball. Functional on football: Team / Min FPts / Age / Max %Owned (Y!)
+       (football HAS the Yahoo pipeline, unlike NBA). Date Range + Max %Owned (CBS) are present for
+       visual consistency but inert (no date-range pipeline + no CBS data on NFL yet). Apply-gated. -->
+  <div id="nflp-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+    <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">TEAM</div>
+        <select id="nflpf-team" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="ALL">All Teams</option></select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
+        <select id="nflpf-daterange" disabled title="Season stats only — NFL has no date-range pipeline yet" style="background:var(--surface);color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:not-allowed;outline:none;opacity:0.6"><option value="season" selected>Season Stats</option></select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN FPTS</div>
+        <input id="nflpf-fpts" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN GAMES</div>
+        <input id="nflpf-games" type="number" min="0" placeholder="0" title="Filters by games played (s.gp). Inert in the offseason until Sleeper provides games-played for the new season." style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <input id="nflpf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          <span style="font-size:11px;color:var(--text3)">to</span>
+          <input id="nflpf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
+        <input id="nflpf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
+        <input id="nflpf-cbsowned" type="number" min="0" max="100" placeholder="any" disabled title="No NFL CBS data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <button onclick="applyNflPoolFilters()" style="background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
+        <button onclick="resetNflPoolFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
+      </div>
+    </div>
+  </div>
   <div class="table-wrap">
     <table class="watch-list" id="nfl-players-table">
       <thead>
@@ -636,6 +681,39 @@ let _npSortField = 'yrank';
 let _npSortDir   = 'asc';
 let _npBuilt     = false;
 
+// NFL_POOL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — pool filter state. Functional on
+// football: team / minFpts / minGames / ageMin / ageMax / maxOwned (Yahoo — football HAS the Yahoo
+// pipeline). MIN GAMES reads s.gp (Sleeper games-played) — INERT in the offseason until Sleeper
+// populates it for the new season, then live automatically (no rebuild needed). Date Range + CBS are
+// inert (no pipeline / no data). All Apply-gated.
+let _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
+let _npTeamSelectBuilt = false;
+function _npfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
+function applyNflPoolFilters(){
+  _npFilters.team     = (document.getElementById('nflpf-team')||{}).value || 'ALL';
+  _npFilters.minFpts  = _npfNum('nflpf-fpts');
+  _npFilters.minGames = _npfNum('nflpf-games');
+  _npFilters.ageMin   = _npfNum('nflpf-agemin');
+  _npFilters.ageMax   = _npfNum('nflpf-agemax');
+  _npFilters.maxOwned = _npfNum('nflpf-owned');
+  renderNflPlayers();
+}
+function resetNflPoolFilters(){
+  ['nflpf-fpts','nflpf-games','nflpf-agemin','nflpf-agemax','nflpf-owned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const t=document.getElementById('nflpf-team'); if(t) t.value='ALL';
+  _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
+  renderNflPlayers();
+}
+function _npBuildTeamSelect(){
+  if(_npTeamSelectBuilt || !_playerDB) return;
+  const sel=document.getElementById('nflpf-team'); if(!sel) return;
+  const teams=new Set();
+  for(const id in _playerDB){ const p=_playerDB[id]; if(p && p.position && p.team) teams.add(p.team); }
+  const sorted=Array.from(teams).sort();
+  sel.innerHTML='<option value="ALL">All Teams</option>'+sorted.map(t=>'<option value="'+t+'">'+t+'</option>').join('');
+  _npTeamSelectBuilt=true;
+}
+
 function _npStatValue(field, p, s, pid){
   switch(field){
     case 'name': return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
@@ -658,11 +736,26 @@ function _npStatValue(field, p, s, pid){
 
 function _npSortedIds(){
   if(!_playerDB) return [];
+  // NFL_POOL_STATFILTER_V1 — apply the STAT FILTERING box (team / min FPts / min games / age / max %owned).
+  const F = _npFilters || {};
   const ids = [];
   for(const id in _playerDB){
     const p = _playerDB[id];
     if(!p || !p.position) continue;
     if(!p.team) continue;   // same "real NFL player" filter the search uses
+    if(F.team && F.team !== 'ALL' && p.team !== F.team) continue;
+    const s = (_seasonStats && _seasonStats[id]) || {};
+    if(F.minFpts != null && (Number(s.pts_half_ppr)||0) < F.minFpts) continue;
+    if(F.minGames != null && (Number(s.gp)||0) < F.minGames) continue;   // s.gp inert in offseason
+    if(F.ageMin != null || F.ageMax != null){
+      const a = nflDecimalAgeNum(p);
+      if(F.ageMin != null && (a == null || a < F.ageMin)) continue;
+      if(F.ageMax != null && (a == null || a > F.ageMax)) continue;
+    }
+    if(F.maxOwned != null){
+      const ow = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(id, 'roster_pct') : null;
+      if(ow == null || ow > F.maxOwned) continue;   // no Yahoo owned => excluded from a max-owned filter
+    }
     ids.push(id);
   }
   const f = _npSortField;
@@ -693,6 +786,7 @@ function renderNflPlayers(){
     tbody.innerHTML = '<tr><td colspan="13" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
     return;
   }
+  if(typeof _npBuildTeamSelect === 'function') _npBuildTeamSelect();  // NFL_POOL_STATFILTER_V1
   const allIds = _npSortedIds();
   // NFL_POOL_RENDER_CAP_V1 (2026-06-06 — PC Walter, per the Dude). CRITICAL PERF FIX.
   // Football has ~3,152 pool players (vs NBA's ~560). Rendering ALL of them as live DOM
