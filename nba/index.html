@@ -381,6 +381,47 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 <!-- Stage 1: container + placeholder only. Stage 2 fills #nba-players-body with the full-league table. -->
 <div id="nbaplayers-view" style="display:none">
   <div class="status-bar-wl" id="nbaplayers-status">NBA Players — loading the full league pool…</div>
+  <!-- NBA_POOL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — STAT FILTERING box modeled on
+       baseball's pool box. Functional where NBA has data: Team / Min PTS / Age / Max %Owned (Y!).
+       Date Range + Max %Owned (CBS) are present for VISUAL consistency with baseball but inert
+       (NBA has no date-range stat pipeline + no CBS data yet). Apply-gated. -->
+  <div id="nbap-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+    <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">TEAM</div>
+        <select id="nbapf-team" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="ALL">All Teams</option></select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
+        <select id="nbapf-daterange" disabled title="Season stats only — NBA has no date-range pipeline yet" style="background:var(--surface);color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:not-allowed;outline:none;opacity:0.6"><option value="season" selected>Season Stats</option></select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN PTS</div>
+        <input id="nbapf-pts" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <input id="nbapf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          <span style="font-size:11px;color:var(--text3)">to</span>
+          <input id="nbapf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
+        <input id="nbapf-owned" type="number" min="0" max="100" placeholder="any" disabled title="No NBA Yahoo data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
+        <input id="nbapf-cbsowned" type="number" min="0" max="100" placeholder="any" disabled title="No NBA CBS data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <button onclick="applyNbaPoolFilters()" style="background:var(--court,#ea580c);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
+        <button onclick="resetNbaPoolFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
+      </div>
+    </div>
+  </div>
   <div class="table-wrap">
     <table class="watch-list" id="nba-players-table">
       <thead>
@@ -490,6 +531,40 @@ let _npSortField = 'pts';   // default sort column = points
 let _npSortDir   = 'desc';  // default direction = highest first
 let _npBuilt     = false;   // first-open guard so we only header-wire once
 
+// NBA_POOL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — pool filter state. Only the
+// fields NBA actually has data for FILTER: team, minPts, ageMin, ageMax. The box ALSO shows
+// Date Range + Max %Owned (Y!) + Max %Owned (CBS) for visual consistency with baseball, but
+// those are inert (no date-range pipeline, no Yahoo/CBS data on NBA yet) — their inputs are
+// disabled in the HTML so nothing pretends to filter on absent data.
+let _npFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null };
+let _npTeamSelectBuilt = false;
+
+function _npfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
+
+function applyNbaPoolFilters(){
+  _npFilters.team   = (document.getElementById('nbapf-team')||{}).value || 'ALL';
+  _npFilters.minPts = _npfNum('nbapf-pts');
+  _npFilters.ageMin = _npfNum('nbapf-agemin');
+  _npFilters.ageMax = _npfNum('nbapf-agemax');
+  renderNbaPlayers();
+}
+function resetNbaPoolFilters(){
+  ['nbapf-pts','nbapf-agemin','nbapf-agemax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const t=document.getElementById('nbapf-team'); if(t) t.value='ALL';
+  _npFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null };
+  renderNbaPlayers();
+}
+// Populate the TEAM dropdown from the real teams present in _playerDB (no abbr guessing).
+function _npBuildTeamSelect(){
+  if(_npTeamSelectBuilt || !_playerDB) return;
+  const sel=document.getElementById('nbapf-team'); if(!sel) return;
+  const teams=new Set();
+  for(const id in _playerDB){ const p=_playerDB[id]; if(p && p.position && p.team) teams.add(p.team); }
+  const sorted=Array.from(teams).sort();
+  sel.innerHTML='<option value="ALL">All Teams</option>'+sorted.map(t=>'<option value="'+t+'">'+t+'</option>').join('');
+  _npTeamSelectBuilt=true;
+}
+
 function _npStatValue(field, p, s){
   switch(field){
     case 'name': return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
@@ -512,11 +587,21 @@ function _npStatValue(field, p, s){
 function _npSortedIds(){
   if(!_playerDB) return [];
   // Same "real NBA player" filter the search uses: must have a position AND a team.
+  // NBA_POOL_STATFILTER_V1 — then apply the STAT FILTERING box (team / min PTS / age range).
+  const F = _npFilters || {};
   const ids = [];
   for(const id in _playerDB){
     const p = _playerDB[id];
     if(!p || !p.position) continue;
     if(!p.team) continue;
+    if(F.team && F.team !== 'ALL' && p.team !== F.team) continue;
+    const s = (_seasonStats && _seasonStats[id]) || {};
+    if(F.minPts != null && (Number(s.pts)||0) < F.minPts) continue;
+    if(F.ageMin != null || F.ageMax != null){
+      const a = nbaDecimalAgeNum(p);
+      if(F.ageMin != null && (a == null || a < F.ageMin)) continue;
+      if(F.ageMax != null && (a == null || a > F.ageMax)) continue;
+    }
     ids.push(id);
   }
   const f = _npSortField;
@@ -547,8 +632,11 @@ function renderNbaPlayers(){
     tbody.innerHTML = '<tr><td colspan="14" class="empty-state"><strong>NBA Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
     return;
   }
+  if(typeof _npBuildTeamSelect === 'function') _npBuildTeamSelect();  // NBA_POOL_STATFILTER_V1
   const ids = _npSortedIds();
-  if(statusEl) statusEl.textContent = ids.length.toLocaleString() + ' NBA players · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='pts'?' (default)':'');
+  // NBA_POOL_STATFILTER_V1 — show filtered-vs-total when any functional filter is active.
+  const _fActive = _npFilters && (_npFilters.team!=='ALL' || _npFilters.minPts!=null || _npFilters.ageMin!=null || _npFilters.ageMax!=null);
+  if(statusEl) statusEl.textContent = (_fActive ? ('Showing ' + ids.length.toLocaleString() + ' filtered') : (ids.length.toLocaleString() + ' NBA players')) + ' · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='pts'?' (default)':'');
   tbody.innerHTML = ids.map(pid => {
     const p = _playerDB[pid];
     const s = (_seasonStats && _seasonStats[pid]) || {};
