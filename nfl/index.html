@@ -330,6 +330,12 @@ table.watch-list thead th{padding:5px 3px;font-size:9px;letter-spacing:0.04em}
 table.watch-list tbody td{padding:4px 3px;font-size:11px;white-space:nowrap;overflow:hidden}
 /* Column widths */
 table.watch-list thead th.col-handle,table.watch-list tbody td.col-handle{width:20px;text-align:center;color:var(--text3);font-size:11px;padding:4px 1px}
+/* NFL_DRAG_RANK_V1 — drag handle + drop feedback. Handle grabbable only in rank view. */
+table.watch-list tbody td.nfl-drag-handle{cursor:grab;color:var(--text2);user-select:none}
+table.watch-list tbody td.nfl-drag-handle:active{cursor:grabbing}
+table.watch-list tbody td.nfl-drag-handle.disabled{cursor:not-allowed;color:var(--text3);opacity:0.35}
+table.watch-list tbody tr.nfl-dragging{opacity:0.45}
+table.watch-list tbody tr.nfl-drag-over{box-shadow:inset 0 2px 0 0 var(--turf,#16a34a)}
 table.watch-list thead th.col-rank,table.watch-list tbody td.col-rank{width:32px;text-align:right;font-weight:800;color:var(--text2)}
 table.watch-list thead th.col-pos{width:38px;text-align:center}
 table.watch-list tbody td .pos-badge{font-size:9px;padding:2px 5px;letter-spacing:0.04em}
@@ -660,7 +666,7 @@ function renderSearchResults(term){
     const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
     const pos  = p.position || '?';
     const team = p.team || '—';
-    const age  = (p.age != null) ? String(p.age) : '—';
+    const age  = nflDecimalAge(p);  // NFL_DECIMAL_AGE_V1
     const posClass = posClassFor(pos);
     return '<div class="search-result-item' + (onList ? ' already-on-list' : '') + '" data-player-id="' + id + '">' +
       '<span class="pos-badge ' + posClass + '">' + pos + '</span>' +
@@ -699,6 +705,36 @@ function clearList(){
   _watchList = [];
   renderWatchList();
 }
+
+// NFL_DECIMAL_AGE_V1 (2026-06-06 — PC Walter, per the Dude). Same as the NBA build.
+// Sleeper's NFL player records carry birth_date (e.g. "1995-02-12") alongside the
+// rounded integer age (which is SOMETIMES blank for NFL), and the server passes the
+// raw Sleeper payload straight through, so p.birth_date is already on the page. We
+// compute exact age to one decimal from the birthdate; if a record has no birth_date
+// we fall back to the rounded p.age; '—' if neither. nflDecimalAge -> display string;
+// nflDecimalAgeNum -> Number|null for sorting (so the age sort matches the column).
+function nflDecimalAge(p){
+  if(p && p.birth_date){
+    const birth = new Date(p.birth_date);
+    if(!isNaN(birth.getTime())){
+      const years = (Date.now() - birth) / (365.25 * 24 * 3600 * 1000);
+      return years.toFixed(1);
+    }
+  }
+  if(p && p.age != null && p.age !== '') return String(parseInt(p.age, 10));
+  return '—';
+}
+function nflDecimalAgeNum(p){
+  if(p && p.birth_date){
+    const birth = new Date(p.birth_date);
+    if(!isNaN(birth.getTime())){
+      return (Date.now() - birth) / (365.25 * 24 * 3600 * 1000);
+    }
+  }
+  if(p && p.age != null && p.age !== ''){ const n = parseFloat(p.age); return isNaN(n) ? null : n; }
+  return null;
+}
+
 function renderWatchList(){
   const tbody = document.getElementById('watch-list-body');
   const countEl = document.getElementById('count-badge');
@@ -708,6 +744,10 @@ function renderWatchList(){
     return;
   }
   const sortedIds = getSortedWatchList();
+  // NFL_DRAG_RANK_V1 — drag-to-rank is only live in the home/rank view (no stat sort
+  // active). When a stat column sort is on, dragging is disabled so a hand-built
+  // ranking can never be reordered against a sort. _sortField === null == rank view.
+  const dragEnabled = (_sortField === null);
   tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
     const s = (_seasonStats && _seasonStats[pid]) || {};
@@ -723,9 +763,21 @@ function renderWatchList(){
     const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
     const pos  = p.position || '?';
     const team = p.team || '—';
-    const age  = (p.age != null) ? String(p.age) : '—';
-    return '<tr>' +
-      '<td class="center col-handle">☰</td>' +
+    const age  = nflDecimalAge(p);  // NFL_DECIMAL_AGE_V1 — exact decimal age from birth_date
+    const _pidJson = escapeHtml(JSON.stringify(pid));
+    const _trOpen = dragEnabled
+      ? '<tr draggable="true" data-nfl-pid="' + escapeHtml(pid) + '"' +
+          ' ondragstart="nflDragStart(event,' + _pidJson + ')"' +
+          ' ondragover="nflDragOver(event,' + _pidJson + ')"' +
+          ' ondrop="nflDrop(event,' + _pidJson + ')"' +
+          ' ondragleave="this.classList.remove(\'nfl-drag-over\')"' +
+          ' ondragend="nflDragEnd(event)">'
+      : '<tr data-nfl-pid="' + escapeHtml(pid) + '">';
+    const _handleCell = dragEnabled
+      ? '<td class="center col-handle nfl-drag-handle" title="Drag to re-rank">☰</td>'
+      : '<td class="center col-handle nfl-drag-handle disabled" title="Clear the column sort (click Rank) to drag-rank">☰</td>';
+    return _trOpen +
+      _handleCell +
       '<td class="col-rank">' + rank + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
@@ -923,6 +975,58 @@ document.addEventListener('click', function(e){
   setPriority(pid, value);
 });
 // /PRIORITY_STARS_V1
+// NFL_DRAG_RANK_V1 (2026-06-06 — PC Walter, per the Dude). Ported from the NBA build
+// (itself from baseball's personalDrag model). Drag a row by its ☰ handle to re-rank;
+// the underlying _watchList array is the source of truth (rank = array position). On
+// drop we splice the dragged player out, re-insert at the target slot, save to the
+// browser, and re-render (rank re-derived from index). Only active in the home/rank
+// view (_sortField === null) — renderWatchList only emits the drag attributes when
+// dragEnabled; these handlers also re-check as a backstop.
+let _nflDragSrcPid = null;
+function nflDragStart(e, pid){
+  if(_sortField !== null){ e.preventDefault(); return; }
+  _nflDragSrcPid = pid;
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nfl-dragging');
+  try { e.dataTransfer.effectAllowed = 'move'; } catch(_){}
+}
+function nflDragOver(e, pid){
+  if(_sortField !== null) return;
+  e.preventDefault();
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nfl-drag-over');
+  try { e.dataTransfer.dropEffect = 'move'; } catch(_){}
+}
+function nflDrop(e, pid){
+  e.preventDefault();
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.remove('nfl-drag-over');
+  if(_sortField !== null) return;                 // never reorder while a stat sort is active
+  if(_nflDragSrcPid == null || _nflDragSrcPid === pid) return;
+  const si = _watchList.findIndex(item => _wlPid(item) === _nflDragSrcPid);
+  const ti = _watchList.findIndex(item => _wlPid(item) === pid);
+  if(si < 0 || ti < 0) return;
+  const [moved] = _watchList.splice(si, 1);
+  _watchList.splice(ti, 0, moved);
+  _nflDragSrcPid = null;
+  _nflSaveLocal();     // silent browser save on every drop; NAS push is the manual Save button
+  renderWatchList();   // rank is re-derived from array position on render
+}
+function nflDragEnd(e){
+  _nflDragSrcPid = null;
+  document.querySelectorAll('tr.nfl-dragging, tr.nfl-drag-over').forEach(tr => {
+    tr.classList.remove('nfl-dragging'); tr.classList.remove('nfl-drag-over');
+  });
+}
+// NFL_DRAG_RANK_V1 — silent browser-only save used on every drag-reorder. The full
+// saveList() opens a folder picker (a deliberate manual NAS push that can't be silent),
+// so firing it on every drop would pop a window on each nudge. Each drop saves instantly
+// to localStorage (a reload keeps the order, nothing lost mid-session); the Dude clicks
+// Save once when the ranking is done to push it to the Synology-synced staging folder.
+function _nflSaveLocal(){
+  try { localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList)); }
+  catch(e){ console.warn('[_nflSaveLocal] localStorage save failed:', e); }
+  const statusEl = document.getElementById('status-bar');
+  if(statusEl) statusEl.textContent = 'Re-ranked — saved to this browser. Click Save to push to the NAS when you’re done.';
+}
+
 // SORTABLE_COLUMNS_V1 (2026-05-13) - click column headers to sort the watch list
 // ----------------------------------------------------------------
 // First click on a column = sort descending by that field
@@ -939,7 +1043,7 @@ function sortValueFor(field, p, s, pid){
     case 'name':     return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
     case 'pos':      return p.position || 'zzz';
     case 'team':     return p.team || 'zzz';
-    case 'age':      return (p.age != null) ? Number(p.age) : null;
+    case 'age':      return nflDecimalAgeNum(p);  // NFL_DECIMAL_AGE_V1 — sort by precise age, matching the column
     case 'fpts':     return (s.pts_half_ppr || 0);
     case 'payd':     return (s.pass_yd || 0);
     case 'patd':     return (s.pass_td || 0);
