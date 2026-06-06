@@ -340,6 +340,48 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 <!-- ── STATUS BAR ─────── -->
 <div class="status-bar-wl" id="status-bar">Loading…</div>
 
+<!-- NBA_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — STAT FILTERING box on the NBA
+     Watch101 list, matching the NBA Players pool + baseball. Functional: Team / Min PTS / Age.
+     Date Range + %Owned (Y!/CBS) present for visual consistency but inert (no NBA data). When any
+     filter is active, drag-to-rank is disabled (like an active sort) so the hand-built order is safe. -->
+<div id="nbawl-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+  <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
+  <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">TEAM</div>
+      <select id="wlpf-team" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="ALL">All Teams</option></select>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
+      <select id="wlpf-daterange" disabled title="Season stats only — NBA has no date-range pipeline yet" style="background:var(--surface);color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:not-allowed;outline:none;opacity:0.6"><option value="season" selected>Season Stats</option></select>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN PTS</div>
+      <input id="wlpf-pts" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <input id="wlpf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        <span style="font-size:11px;color:var(--text3)">to</span>
+        <input id="wlpf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
+      <input id="wlpf-owned" type="number" min="0" max="100" placeholder="any" disabled title="No NBA Yahoo data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
+      <input id="wlpf-cbsowned" type="number" min="0" max="100" placeholder="any" disabled title="No NBA CBS data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button onclick="applyNbaWlFilters()" style="background:var(--court,#ea580c);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
+      <button onclick="resetNbaWlFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── WATCH LIST TABLE ─────── -->
 <div class="table-wrap">
   <table class="watch-list">
@@ -474,6 +516,50 @@ const LIST_ID = 'integrity-nba';
 let _playerDB = null;
 let _seasonStats = null;
 let _watchList = [];
+
+// NBA_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
+// Functional: team / minPts / age (NBA has that data). %Owned + date range are inert (no data).
+let _wlFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null };
+let _wlTeamSelectBuilt = false;
+function _wlfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
+function _wlFilterActive(){ return _wlFilters && (_wlFilters.team!=='ALL' || _wlFilters.minPts!=null || _wlFilters.ageMin!=null || _wlFilters.ageMax!=null); }
+function applyNbaWlFilters(){
+  _wlFilters.team   = (document.getElementById('wlpf-team')||{}).value || 'ALL';
+  _wlFilters.minPts = _wlfNum('wlpf-pts');
+  _wlFilters.ageMin = _wlfNum('wlpf-agemin');
+  _wlFilters.ageMax = _wlfNum('wlpf-agemax');
+  renderWatchList();
+}
+function resetNbaWlFilters(){
+  ['wlpf-pts','wlpf-agemin','wlpf-agemax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const t=document.getElementById('wlpf-team'); if(t) t.value='ALL';
+  _wlFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null };
+  renderWatchList();
+}
+// Build the TEAM dropdown from the teams actually present on the watch list (no abbr guessing).
+function _wlBuildTeamSelect(){
+  if(_wlTeamSelectBuilt || !_playerDB) return;
+  const sel=document.getElementById('wlpf-team'); if(!sel) return;
+  const teams=new Set();
+  (_watchList||[]).forEach(item=>{ const pid=_wlPid(item); const p=_playerDB[pid]; if(p && p.team) teams.add(p.team); });
+  const sorted=Array.from(teams).sort();
+  sel.innerHTML='<option value="ALL">All Teams</option>'+sorted.map(t=>'<option value="'+t+'">'+t+'</option>').join('');
+  _wlTeamSelectBuilt=true;
+}
+// Does a watch-list pid pass the active filters? (team / minPts / age)
+function _wlPassesFilter(pid){
+  const F=_wlFilters; if(!F) return true;
+  const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
+  if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
+  const s=(_seasonStats && _seasonStats[pid])||{};
+  if(F.minPts!=null && (Number(s.pts)||0) < F.minPts) return false;
+  if(F.ageMin!=null || F.ageMax!=null){
+    const a=nbaDecimalAgeNum(p);
+    if(F.ageMin!=null && (a==null || a<F.ageMin)) return false;
+    if(F.ageMax!=null && (a==null || a>F.ageMax)) return false;
+  }
+  return true;
+}
 
 function setLastUpdated(text){
   const el = document.getElementById('last-updated');
@@ -909,11 +995,18 @@ function renderWatchList(){
     tbody.innerHTML = '<tr><td colspan="23" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
     return;
   }
-  const sortedIds = getSortedWatchList();
+  if(typeof _wlBuildTeamSelect === 'function') _wlBuildTeamSelect();  // NBA_WL_STATFILTER_V1
+  let sortedIds = getSortedWatchList();
+  // NBA_WL_STATFILTER_V1 — apply the STAT FILTERING box (team / min PTS / age) to the display.
+  if(typeof _wlFilterActive === 'function' && _wlFilterActive()){
+    sortedIds = sortedIds.filter(pid => _wlPassesFilter(pid));
+  }
   // NBA_DRAG_RANK_V1 — drag-to-rank is only live in the home/rank view (no stat sort
   // active). When a stat column sort is on, dragging is disabled so a hand-built
   // ranking can never be reordered against a sort. _sortField === null == rank view.
-  const dragEnabled = (_sortField === null);
+  // NBA_WL_STATFILTER_V1 — also disable dragging when a FILTER is active (you can't
+  // safely reorder a filtered subset against the full hand-built ranking).
+  const dragEnabled = (_sortField === null) && !(typeof _wlFilterActive === 'function' && _wlFilterActive());
   tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
     const s = (_seasonStats && _seasonStats[pid]) || {};
