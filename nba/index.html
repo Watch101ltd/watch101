@@ -217,6 +217,12 @@ table.watch-list thead th.left{text-align:left}
 table.watch-list tbody td{padding:4px 3px;font-size:11px;white-space:nowrap;overflow:hidden;text-align:right;border-bottom:1px solid var(--border);vertical-align:middle;}
 /* Column widths */
 table.watch-list thead th.col-handle,table.watch-list tbody td.col-handle{width:20px;text-align:center;color:var(--text3);font-size:11px;padding:4px 1px}
+/* NBA_DRAG_RANK_V1 — drag handle + drop feedback. Handle grabbable only in rank view. */
+table.watch-list tbody td.nba-drag-handle{cursor:grab;color:var(--text2);user-select:none}
+table.watch-list tbody td.nba-drag-handle:active{cursor:grabbing}
+table.watch-list tbody td.nba-drag-handle.disabled{cursor:not-allowed;color:var(--text3);opacity:0.35}
+table.watch-list tbody tr.nba-dragging{opacity:0.45}
+table.watch-list tbody tr.nba-drag-over{box-shadow:inset 0 2px 0 0 var(--court-bright,#ea580c)}
 table.watch-list thead th.col-rank,table.watch-list tbody td.col-rank{width:32px;text-align:right;font-weight:800;color:var(--text2)}
 table.watch-list thead th.col-pos{width:46px;text-align:center}
 table.watch-list tbody td .pos-badge{font-size:9px;padding:2px 5px;letter-spacing:0.04em}
@@ -488,7 +494,7 @@ function renderSearchResults(term){
     const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
     const pos  = p.position || '?';
     const team = p.team || '—';
-    const age  = (p.age != null) ? String(p.age) : '—';
+    const age  = nbaDecimalAge(p);  // NBA_DECIMAL_AGE_V1
     const posClass = posClassFor(pos);
     return '<div class="search-result-item' + (onList ? ' already-on-list' : '') + '" data-player-id="' + id + '">' +
       '<span class="pos-badge ' + posClass + '">' + pos + '</span>' +
@@ -535,6 +541,35 @@ function pctOrNull(makes, attempts){
   return (m / a) * 100;
 }
 
+// NBA_DECIMAL_AGE_V1 (2026-06-05 — PC Walter, per the Dude). Ported from baseball's
+// proven decimalAge formula. Sleeper's NBA player records carry birth_date (e.g.
+// "1996-04-09") alongside the rounded integer age, and the server passes the raw
+// Sleeper payload straight through, so p.birth_date is already on the page. We
+// compute exact age to one decimal from the birthdate; if a record has no
+// birth_date we fall back to the rounded p.age (no fake ".0" decimal on a guess).
+// nbaDecimalAge -> display string; nbaDecimalAgeNum -> Number|null for sorting.
+function nbaDecimalAge(p){
+  if(p && p.birth_date){
+    const birth = new Date(p.birth_date);
+    if(!isNaN(birth.getTime())){
+      const years = (Date.now() - birth) / (365.25 * 24 * 3600 * 1000);
+      return years.toFixed(1);
+    }
+  }
+  if(p && p.age != null && p.age !== '') return String(parseInt(p.age, 10));
+  return '—';
+}
+function nbaDecimalAgeNum(p){
+  if(p && p.birth_date){
+    const birth = new Date(p.birth_date);
+    if(!isNaN(birth.getTime())){
+      return (Date.now() - birth) / (365.25 * 24 * 3600 * 1000);
+    }
+  }
+  if(p && p.age != null && p.age !== ''){ const n = parseFloat(p.age); return isNaN(n) ? null : n; }
+  return null;
+}
+
 function renderWatchList(){
   const tbody = document.getElementById('watch-list-body');
   const countEl = document.getElementById('count-badge');
@@ -544,6 +579,10 @@ function renderWatchList(){
     return;
   }
   const sortedIds = getSortedWatchList();
+  // NBA_DRAG_RANK_V1 — drag-to-rank is only live in the home/rank view (no stat sort
+  // active). When a stat column sort is on, dragging is disabled so a hand-built
+  // ranking can never be reordered against a sort. _sortField === null == rank view.
+  const dragEnabled = (_sortField === null);
   tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
     const s = (_seasonStats && _seasonStats[pid]) || {};
@@ -559,11 +598,23 @@ function renderWatchList(){
     const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
     const pos  = p.position || '?';
     const team = p.team || '—';
-    const age  = (p.age != null) ? String(p.age) : '—';
+    const age  = nbaDecimalAge(p);  // NBA_DECIMAL_AGE_V1 — exact decimal age from birth_date
     const fgPct = pctOrNull(s.fgm, s.fga);
     const ftPct = pctOrNull(s.ftm, s.fta);
-    return '<tr>' +
-      '<td class="center col-handle">☰</td>' +
+    const _pidJson = escapeHtml(JSON.stringify(pid));
+    const _trOpen = dragEnabled
+      ? '<tr draggable="true" data-nba-pid="' + escapeHtml(pid) + '"' +
+          ' ondragstart="nbaDragStart(event,' + _pidJson + ')"' +
+          ' ondragover="nbaDragOver(event,' + _pidJson + ')"' +
+          ' ondrop="nbaDrop(event,' + _pidJson + ')"' +
+          ' ondragleave="this.classList.remove(\'nba-drag-over\')"' +
+          ' ondragend="nbaDragEnd(event)">'
+      : '<tr data-nba-pid="' + escapeHtml(pid) + '">';
+    const _handleCell = dragEnabled
+      ? '<td class="center col-handle nba-drag-handle" title="Drag to re-rank">☰</td>'
+      : '<td class="center col-handle nba-drag-handle disabled" title="Clear the column sort (click Rank) to drag-rank">☰</td>';
+    return _trOpen +
+      _handleCell +
       '<td class="col-rank">' + rank + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
@@ -629,6 +680,20 @@ async function saveList(){
       statusEl.textContent = '⚠️ Save failed: ' + e.message + ' (still saved to browser).';
     }
   }
+}
+
+// NBA_DRAG_RANK_V1 — silent browser-only save used on every drag-reorder. The full
+// saveList() opens a folder picker (a deliberate manual NAS push that can't be
+// silent — browsers require a click to open showDirectoryPicker), so firing it on
+// every drop would pop a window on each nudge. Instead each drop saves instantly to
+// localStorage (so a reload keeps the order and nothing is lost mid-session), and the
+// Dude clicks Save once when the ranking is done to push it to the Synology-synced
+// staging folder. Same build-then-save rhythm as the baseball + football lists.
+function _nbaSaveLocal(){
+  try { localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList)); }
+  catch(e){ console.warn('[_nbaSaveLocal] localStorage save failed:', e); }
+  const statusEl = document.getElementById('status-bar');
+  if(statusEl) statusEl.textContent = 'Re-ranked — saved to this browser. Click Save to push to the NAS when you’re done.';
 }
 
 async function loadListFromStorage(){
@@ -724,6 +789,47 @@ document.addEventListener('click', function(e){
   setPriority(pid, value);
 });
 
+// NBA_DRAG_RANK_V1 (2026-06-05 — PC Walter, per the Dude). Ported from the baseball
+// page's personalDrag model. Drag a row by its ☰ handle to re-rank; the underlying
+// _watchList array is the source of truth (rank = array position). On drop we splice
+// the dragged player out and re-insert at the target slot, renumber implicitly (rank
+// is derived from index on every render), persist via saveList(), and re-render.
+// Only active in the home/rank view (_sortField === null) — enforced by renderWatchList
+// only emitting the drag attributes when dragEnabled. These handlers also re-check.
+let _nbaDragSrcPid = null;
+function nbaDragStart(e, pid){
+  if(_sortField !== null){ e.preventDefault(); return; }
+  _nbaDragSrcPid = pid;
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nba-dragging');
+  try { e.dataTransfer.effectAllowed = 'move'; } catch(_){}
+}
+function nbaDragOver(e, pid){
+  if(_sortField !== null) return;
+  e.preventDefault();
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nba-drag-over');
+  try { e.dataTransfer.dropEffect = 'move'; } catch(_){}
+}
+function nbaDrop(e, pid){
+  e.preventDefault();
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.remove('nba-drag-over');
+  if(_sortField !== null) return;                 // never reorder while a stat sort is active
+  if(_nbaDragSrcPid == null || _nbaDragSrcPid === pid) return;
+  const si = _watchList.findIndex(item => _wlPid(item) === _nbaDragSrcPid);
+  const ti = _watchList.findIndex(item => _wlPid(item) === pid);
+  if(si < 0 || ti < 0) return;
+  const [moved] = _watchList.splice(si, 1);
+  _watchList.splice(ti, 0, moved);
+  _nbaDragSrcPid = null;
+  _nbaSaveLocal();     // silent browser save on every drop; NAS push is the manual Save button
+  renderWatchList();   // rank is re-derived from array position on render
+}
+function nbaDragEnd(e){
+  _nbaDragSrcPid = null;
+  document.querySelectorAll('tr.nba-dragging, tr.nba-drag-over').forEach(tr => {
+    tr.classList.remove('nba-dragging'); tr.classList.remove('nba-drag-over');
+  });
+}
+
 // SORTABLE_COLUMNS — click headers to sort. First click desc, second asc.
 // Rank header returns to insertion order. Missing/zero sinks to the bottom.
 // EVERY stat column is sortable (the Dude's standing rule).
@@ -736,7 +842,7 @@ function sortValueFor(field, p, s, pid){
     case 'name':     return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
     case 'pos':      return p.position || 'zzz';
     case 'team':     return p.team || 'zzz';
-    case 'age':      return (p.age != null) ? Number(p.age) : null;
+    case 'age':      return nbaDecimalAgeNum(p);  // NBA_DECIMAL_AGE_V1 — sort by precise age, matching the column
     case 'pts':      return (s.pts || 0);
     case 'reb':      return (s.reb || 0);
     case 'ast':      return (s.ast || 0);
