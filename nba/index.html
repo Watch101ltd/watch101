@@ -593,8 +593,7 @@ function renderNbaPlayers(){
 // in place (no full pool re-render, so the Dude's scroll position + sort are kept).
 function npAddToList(pid, btnEl){
   if(_wlIndexOf(pid) >= 0) return;            // already on the list — no-op
-  addPlayerToList(pid);                        // adds + re-renders the watch list
-  if(typeof _nbaSaveLocal === 'function') _nbaSaveLocal();  // persist to browser
+  addPlayerToList(pid);                        // adds + re-renders + auto-saves to NAS (NBA_AUTOSAVE_NAS_V1)
   if(btnEl){
     btnEl.textContent = '✓ Added';
     btnEl.classList.add('added');
@@ -763,16 +762,19 @@ function addPlayerToList(playerId){
   if(_wlIndexOf(playerId) >= 0) return;
   _watchList.push({pid: playerId, priority: 0});
   renderWatchList();
+  autoSaveToNbaNAS();   // NBA_AUTOSAVE_NAS_V1 — persist to NAS on every add (baseball parity)
 }
 function removePlayerFromList(playerId){
   _watchList = _watchList.filter(item => _wlPid(item) !== playerId);
   renderWatchList();
+  autoSaveToNbaNAS();   // NBA_AUTOSAVE_NAS_V1 — persist the removal so it sticks across a refresh
 }
 function clearList(){
   if(_watchList.length === 0) return;
   if(!confirm('Remove all ' + _watchList.length + ' players from your watch list?')) return;
   _watchList = [];
   renderWatchList();
+  autoSaveToNbaNAS();   // NBA_AUTOSAVE_NAS_V1 — persist the clear
 }
 
 // FG% / FT% computed from makes/attempts. Returns a number 0-100 or null.
@@ -933,8 +935,42 @@ async function saveList(){
 function _nbaSaveLocal(){
   try { localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList)); }
   catch(e){ console.warn('[_nbaSaveLocal] localStorage save failed:', e); }
+}
+
+// NBA_AUTOSAVE_NAS_V1 (2026-06-06 — PC Walter, per the Dude) — baseball parity.
+// Baseball calls autoSaveToNAS() on every mutation (add/remove/drag/clear) so the
+// list auto-commits to the NAS _Staging JSON and survives a hard refresh (loadData
+// reads the NAS first). NBA now matches: this POSTs the whole _watchList to the new
+// server endpoint POST /list-staging/:listId (NBA_SAVE_ENDPOINT_V1, added to the NBA
+// server.js + live after the June 6 Docker rebuild). Always writes localStorage too
+// (offline fallback, like baseball). Silent + non-blocking — a NAS hiccup never
+// breaks the UI; the local copy still holds. The manual Save button (folder picker)
+// stays as a belt-and-suspenders manual push. The Dude approves _Staging→Production
+// via his approval flow, same as baseball.
+let _nbaNasSaving = false;
+async function autoSaveToNbaNAS(){
+  _nbaSaveLocal();  // local copy first — always succeeds, instant
+  if(_nbaNasSaving) return;  // coalesce rapid mutations; the latest list is what posts
+  _nbaNasSaving = true;
   const statusEl = document.getElementById('status-bar');
-  if(statusEl) statusEl.textContent = 'Re-ranked — saved to this browser. Click Save to push to the NAS when you’re done.';
+  try {
+    const res = await fetch(SERVER_URL + '/list-staging/' + LIST_ID, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ players: _watchList }),
+    });
+    if(res.ok){
+      const now = new Date().toLocaleTimeString();
+      if(statusEl) statusEl.textContent = '✓ Auto-saved to the NAS at ' + now + ' (' + _watchList.length + ' players).';
+    } else {
+      if(statusEl) statusEl.textContent = '⚠ NAS auto-save returned HTTP ' + res.status + ' — saved to this browser. (Click Save to retry.)';
+    }
+  } catch(e){
+    console.warn('[NBA_AUTOSAVE_NAS_V1] auto-save failed:', e);
+    if(statusEl) statusEl.textContent = '⚠ NAS auto-save failed (saved to this browser). ' + (e && e.message ? e.message : '');
+  } finally {
+    _nbaNasSaving = false;
+  }
 }
 
 async function loadListFromStorage(){
@@ -1066,8 +1102,8 @@ function nbaDrop(e, pid){
   const [moved] = _watchList.splice(si, 1);
   _watchList.splice(ti, 0, moved);
   _nbaDragSrcPid = null;
-  _nbaSaveLocal();     // silent browser save on every drop; NAS push is the manual Save button
-  renderWatchList();   // rank is re-derived from array position on render
+  renderWatchList();        // rank is re-derived from array position on render
+  autoSaveToNbaNAS();       // NBA_AUTOSAVE_NAS_V1 — persist the new order to the NAS
 }
 function nbaDragEnd(e){
   _nbaDragSrcPid = null;
