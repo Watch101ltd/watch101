@@ -330,6 +330,15 @@ table.watch-list thead th{padding:5px 3px;font-size:9px;letter-spacing:0.04em}
 table.watch-list tbody td{padding:4px 3px;font-size:11px;white-space:nowrap;overflow:hidden}
 /* Column widths */
 table.watch-list thead th.col-handle,table.watch-list tbody td.col-handle{width:20px;text-align:center;color:var(--text3);font-size:11px;padding:4px 1px}
+/* NFL_PLAYERS_PAGE_V1 — page nav tabs + pool Add button (turf accent) */
+.page-nav{display:flex;gap:8px;padding:10px 16px 0 16px;flex-wrap:wrap}
+.page-nav-btn{background:var(--surface2,#161b22);color:var(--text2,#9aa4b2);border:1px solid var(--border2,#2a3240);border-radius:8px 8px 0 0;padding:8px 16px;font-size:13px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s}
+.page-nav-btn:hover{color:var(--turf,#16a34a);border-color:var(--turf,#16a34a)}
+.page-nav-btn.active{background:var(--turf,#16a34a);color:#fff;border-color:var(--turf,#16a34a)}
+.np-add-btn{background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.np-add-btn:hover{filter:brightness(1.1)}
+.np-add-btn.added{background:transparent;color:var(--turf,#16a34a);border:1px solid var(--turf,#16a34a);cursor:default;font-weight:800}
+.np-add-btn:disabled{cursor:default}
 /* NFL_DRAG_RANK_V1 — drag handle + drop feedback. Handle grabbable only in rank view. */
 table.watch-list tbody td.nfl-drag-handle{cursor:grab;color:var(--text2);user-select:none}
 table.watch-list tbody td.nfl-drag-handle:active{cursor:grabbing}
@@ -431,6 +440,17 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- ── PAGE NAV (NFL_PLAYERS_PAGE_V1) ─────── -->
+<!-- Tab row to switch between the Watch List view and the NFL Players (feeder pool)
+     view. Direct port of NBA_PLAYERS_PAGE_V1. Watch List is the default view. -->
+<div class="page-nav" id="page-nav">
+  <button class="page-nav-btn active" id="nav-watchlist" onclick="showWatchListView()">🏠 Watch List</button>
+  <button class="page-nav-btn" id="nav-nflplayers" onclick="showNflPlayersView()">🏈 NFL Players</button>
+</div>
+
+<!-- ══════════ WATCH LIST VIEW (default) ══════════ -->
+<div id="watchlist-view">
+
 <!-- ── TOOLBAR ─────────────────────────────────────────────── -->
 <div class="toolbar-watchlist">
   <div class="search-wrap">
@@ -482,6 +502,36 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       <tr><td colspan="23" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
     </tbody>
   </table>
+</div>
+</div><!-- /#watchlist-view -->
+
+<!-- ══════════ NFL PLAYERS VIEW (feeder pool, hidden by default — NFL_PLAYERS_PAGE_V1) ══════════ -->
+<div id="nflplayers-view" style="display:none">
+  <div class="status-bar-wl" id="nflplayers-status">NFL Players — loading the full league pool…</div>
+  <div class="table-wrap">
+    <table class="watch-list" id="nfl-players-table">
+      <thead>
+        <tr>
+          <th class="col-pos" data-npsort="pos">Pos <span class="sort-arrow">↕</span></th>
+          <th class="left col-player" data-npsort="name">Player <span class="sort-arrow">↕</span></th>
+          <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
+          <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="fpts">FPts <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="payd">PaYd <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="patd">PaTD <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="ruyd">RuYd <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="rutd">RuTD <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="rec">Rec <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="reyd">ReYd <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="retd">ReTD <span class="sort-arrow">↕</span></th>
+          <th class="center col-action">Add</th>
+        </tr>
+      </thead>
+      <tbody id="nfl-players-body">
+        <tr><td colspan="13" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script>
@@ -543,6 +593,175 @@ async function reloadWatchList(){
   _playerDB = null;
   _seasonStats = null;
   await bootstrap();
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// NFL_PLAYERS_PAGE_V1 (2026-06-06 — PC Walter, per the Dude) — direct port of
+// NBA_PLAYERS_PAGE_V1. Two in-page views in one file: the Watch List (default)
+// and the NFL Players feeder pool. Toggle which is visible + which nav button
+// is active. showNflPlayersView builds/refreshes the pool table.
+// ──────────────────────────────────────────────────────────────────────────
+function showWatchListView(){
+  const wl = document.getElementById('watchlist-view');
+  const np = document.getElementById('nflplayers-view');
+  if(wl) wl.style.display = '';
+  if(np) np.style.display = 'none';
+  const bWl = document.getElementById('nav-watchlist');
+  const bNp = document.getElementById('nav-nflplayers');
+  if(bWl) bWl.classList.add('active');
+  if(bNp) bNp.classList.remove('active');
+}
+function showNflPlayersView(){
+  const wl = document.getElementById('watchlist-view');
+  const np = document.getElementById('nflplayers-view');
+  if(wl) wl.style.display = 'none';
+  if(np) np.style.display = '';
+  const bWl = document.getElementById('nav-watchlist');
+  const bNp = document.getElementById('nav-nflplayers');
+  if(bWl) bWl.classList.remove('active');
+  if(bNp) bNp.classList.add('active');
+  if(typeof renderNflPlayers === 'function') renderNflPlayers();
+}
+
+// Pool sort state — independent of the watch list's _sortField (data-npsort, not
+// data-sort). Default = Yahoo rank ASCENDING (rank #1 = best player at the top; the
+// Dude's pick, June 6). Yahoo data loads in the BACKGROUND (loadYahooData), so the
+// pool re-renders when it finishes (hook added at the end of loadYahooData) — until
+// then unranked players just sort to the bottom. FPts is still one click away.
+// NOTE: 'yrank' is the only pool default that wants 'asc' (lower rank = better); every
+// stat column defaults to 'desc' (higher = better) via _npSortBy.
+let _npSortField = 'yrank';
+let _npSortDir   = 'asc';
+let _npBuilt     = false;
+
+function _npStatValue(field, p, s, pid){
+  switch(field){
+    case 'name': return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
+    case 'pos':  return p.position || 'zzz';
+    case 'team': return p.team || 'zzz';
+    case 'age':  return nflDecimalAgeNum(p);
+    case 'fpts': return (s.pts_half_ppr || 0);
+    case 'payd': return (s.pass_yd || 0);
+    case 'patd': return (s.pass_td || 0);
+    case 'ruyd': return (s.rush_yd || 0);
+    case 'rutd': return (s.rush_td || 0);
+    case 'rec':  return (s.rec || 0);
+    case 'reyd': return (s.rec_yd || 0);
+    case 'retd': return (s.rec_td || 0);
+    case 'yrank':  return (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(pid, 'yahoo_rank') : null;
+    case 'yowned': return (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(pid, 'roster_pct') : null;
+    default: return null;
+  }
+}
+
+function _npSortedIds(){
+  if(!_playerDB) return [];
+  const ids = [];
+  for(const id in _playerDB){
+    const p = _playerDB[id];
+    if(!p || !p.position) continue;
+    if(!p.team) continue;   // same "real NFL player" filter the search uses
+    ids.push(id);
+  }
+  const f = _npSortField;
+  ids.sort((a, b) => {
+    const pa = _playerDB[a], pb = _playerDB[b];
+    const sa = (_seasonStats && _seasonStats[a]) || {};
+    const sb = (_seasonStats && _seasonStats[b]) || {};
+    let av = _npStatValue(f, pa, sa, a);
+    let bv = _npStatValue(f, pb, sb, b);
+    const aMissing = (av == null), bMissing = (bv == null);
+    if(aMissing && bMissing) return 0;
+    if(aMissing) return 1;
+    if(bMissing) return -1;
+    let cmp;
+    if(typeof av === 'number' && typeof bv === 'number') cmp = av - bv;
+    else cmp = String(av).localeCompare(String(bv));
+    if(_npSortDir === 'desc') cmp = -cmp;
+    return cmp;
+  });
+  return ids;
+}
+
+function renderNflPlayers(){
+  const tbody = document.getElementById('nfl-players-body');
+  const statusEl = document.getElementById('nflplayers-status');
+  if(!tbody) return;
+  if(!_playerDB){
+    tbody.innerHTML = '<tr><td colspan="13" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
+    return;
+  }
+  const ids = _npSortedIds();
+  if(statusEl) statusEl.textContent = ids.length.toLocaleString() + ' NFL players · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='fpts'?' (default)':'');
+  tbody.innerHTML = ids.map(pid => {
+    const p = _playerDB[pid];
+    const s = (_seasonStats && _seasonStats[pid]) || {};
+    const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
+    const pos  = p.position || '?';
+    const team = p.team || '—';
+    const age  = nflDecimalAge(p);
+    const onList = (_wlIndexOf(pid) >= 0);
+    const _pidJson = escapeHtml(JSON.stringify(pid));
+    return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
+      '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
+      '<td class="left col-player"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
+      '<td>' + team + '</td>' +
+      '<td>' + age + '</td>' +
+      '<td>' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.pass_yd) + '</td>' +
+      '<td>' + statCellOrDash(s.pass_td) + '</td>' +
+      '<td>' + statCellOrDash(s.rush_yd) + '</td>' +
+      '<td>' + statCellOrDash(s.rush_td) + '</td>' +
+      '<td>' + statCellOrDash(s.rec) + '</td>' +
+      '<td>' + statCellOrDash(s.rec_yd) + '</td>' +
+      '<td>' + statCellOrDash(s.rec_td) + '</td>' +
+      '<td class="center col-action">' + (onList
+          ? '<button class="np-add-btn added" disabled>✓ Added</button>'
+          : '<button class="np-add-btn" onclick="npAddToList(' + _pidJson + ', this)">+ Add</button>') + '</td>' +
+    '</tr>';
+  }).join('');
+  if(!_npBuilt){ _npWireSortHeaders(); _npBuilt = true; }
+  _npUpdateSortArrows();
+}
+
+function npAddToList(pid, btnEl){
+  if(_wlIndexOf(pid) >= 0) return;
+  addPlayerToList(pid);   // adds + re-renders the watch list + auto-saves to NAS
+  if(btnEl){
+    btnEl.textContent = '✓ Added';
+    btnEl.classList.add('added');
+    btnEl.disabled = true;
+  }
+}
+
+function _npSortBy(field){
+  if(!field) return;
+  if(_npSortField === field){ _npSortDir = (_npSortDir === 'desc') ? 'asc' : 'desc'; }
+  else { _npSortField = field; _npSortDir = 'desc'; }
+  renderNflPlayers();
+}
+
+function _npWireSortHeaders(){
+  document.querySelectorAll('#nfl-players-table thead th[data-npsort]').forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => _npSortBy(th.dataset.npsort));
+  });
+}
+
+function _npUpdateSortArrows(){
+  document.querySelectorAll('#nfl-players-table thead th[data-npsort]').forEach(th => {
+    const arrow = th.querySelector('.sort-arrow');
+    if(!arrow) return;
+    if(th.dataset.npsort === _npSortField){
+      arrow.textContent = (_npSortDir === 'desc') ? '↓' : '↑';
+      arrow.style.opacity = '1';
+      arrow.style.color = 'var(--turf-bright, var(--turf))';
+    } else {
+      arrow.textContent = '↕';
+      arrow.style.opacity = '0.4';
+      arrow.style.color = '';
+    }
+  });
 }
 
 // DYNAMIC_STATS_YEAR_V1 — once STATS_YEAR is set, refresh the static labels
@@ -694,16 +913,19 @@ function addPlayerToList(playerId){
   if(_wlIndexOf(playerId) >= 0) return;
   _watchList.push({pid: playerId, priority: 0});
   renderWatchList();
+  autoSaveToNflNAS();   // NFL_AUTOSAVE_NAS_V1 — persist to NAS on every add (baseball/NBA parity)
 }
 function removePlayerFromList(playerId){
   _watchList = _watchList.filter(item => _wlPid(item) !== playerId);
   renderWatchList();
+  autoSaveToNflNAS();   // NFL_AUTOSAVE_NAS_V1 — persist the removal so it sticks across a refresh
 }
 function clearList(){
   if(_watchList.length === 0) return;
   if(!confirm('Remove all ' + _watchList.length + ' players from your watch list?')) return;
   _watchList = [];
   renderWatchList();
+  autoSaveToNflNAS();   // NFL_AUTOSAVE_NAS_V1 — persist the clear
 }
 
 // NFL_DECIMAL_AGE_V1 (2026-06-06 — PC Walter, per the Dude). Same as the NBA build.
@@ -757,7 +979,7 @@ function renderWatchList(){
     if(!p){
       return '<tr>' +
         '<td colspan="22" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
-        '<td class="center"><button class="remove-btn" onclick="removePlayerFromList(' + JSON.stringify(pid) + ')">Remove</button></td>' +
+        '<td class="center"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
       '</tr>';
     }
     const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
@@ -800,7 +1022,7 @@ function renderWatchList(){
       '<td>' + statCellOrDash(s.rec) + '</td>' +
       '<td>' + statCellOrDash(s.rec_yd) + '</td>' +
       '<td>' + statCellOrDash(s.rec_td) + '</td>' +
-      '<td class="center"><button class="remove-btn" onclick="removePlayerFromList(' + JSON.stringify(pid) + ')">Remove</button></td>' +
+      '<td class="center"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
     '</tr>';
   }).join('');
 }
@@ -1011,8 +1233,8 @@ function nflDrop(e, pid){
   const [moved] = _watchList.splice(si, 1);
   _watchList.splice(ti, 0, moved);
   _nflDragSrcPid = null;
-  _nflSaveLocal();     // silent browser save on every drop; NAS push is the manual Save button
-  renderWatchList();   // rank is re-derived from array position on render
+  renderWatchList();        // rank is re-derived from array position on render
+  autoSaveToNflNAS();       // NFL_AUTOSAVE_NAS_V1 — persist the new order to the NAS
 }
 function nflDragEnd(e){
   _nflDragSrcPid = null;
@@ -1028,8 +1250,38 @@ function nflDragEnd(e){
 function _nflSaveLocal(){
   try { localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList)); }
   catch(e){ console.warn('[_nflSaveLocal] localStorage save failed:', e); }
+}
+
+// NFL_AUTOSAVE_NAS_V1 (2026-06-06 — PC Walter, per the Dude) — direct port of
+// NBA_AUTOSAVE_NAS_V1 (baseball parity). POSTs the whole _watchList to the new NFL
+// server endpoint POST /list-staging/:listId (NFL_SAVE_ENDPOINT_V1, added to the NFL
+// server.js + live after the Docker rebuild). Always writes localStorage too (offline
+// fallback). Silent + non-blocking — a NAS hiccup never breaks the UI. The manual Save
+// button (folder picker) stays as a belt-and-suspenders manual push.
+let _nflNasSaving = false;
+async function autoSaveToNflNAS(){
+  _nflSaveLocal();  // local copy first — always succeeds, instant
+  if(_nflNasSaving) return;  // coalesce rapid mutations; the latest list is what posts
+  _nflNasSaving = true;
   const statusEl = document.getElementById('status-bar');
-  if(statusEl) statusEl.textContent = 'Re-ranked — saved to this browser. Click Save to push to the NAS when you’re done.';
+  try {
+    const res = await fetch(SERVER_URL + '/list-staging/' + LIST_ID, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ players: _watchList }),
+    });
+    if(res.ok){
+      const now = new Date().toLocaleTimeString();
+      if(statusEl) statusEl.textContent = '✓ Auto-saved to the NAS at ' + now + ' (' + _watchList.length + ' players).';
+    } else {
+      if(statusEl) statusEl.textContent = '⚠ NAS auto-save returned HTTP ' + res.status + ' — saved to this browser. (Click Save to retry.)';
+    }
+  } catch(e){
+    console.warn('[NFL_AUTOSAVE_NAS_V1] auto-save failed:', e);
+    if(statusEl) statusEl.textContent = '⚠ NAS auto-save failed (saved to this browser). ' + (e && e.message ? e.message : '');
+  } finally {
+    _nflNasSaving = false;
+  }
 }
 
 // SORTABLE_COLUMNS_V1 (2026-05-13) - click column headers to sort the watch list
@@ -1471,6 +1723,12 @@ async function loadYahooData(){
     statusEl.textContent = 'Ready. ' + playerCount.toLocaleString() + ' players in DB, ' + statCount.toLocaleString() + ' with ' + STATS_YEAR + ' stats. Yahoo data: ' + matched + ' matched (' + matchedByNameTeam + ' via name fallback).';
   }
   renderWatchList();
+  // NFL_PLAYERS_PAGE_V1 — Yahoo data just landed; if the NFL Players pool defaults to
+  // Yahoo-rank sort, re-render it so it sorts correctly even if the Dude opened the tab
+  // before Yahoo finished loading in the background.
+  if(typeof renderNflPlayers === 'function' && document.getElementById('nflplayers-view') && document.getElementById('nflplayers-view').style.display !== 'none'){
+    renderNflPlayers();
+  }
 }
 
 // YAHOO_NAME_FALLBACK_V1 (May 15, 2026) — normalize a player name for
