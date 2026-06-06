@@ -1629,6 +1629,28 @@ async function _yahooFetchLeagueRanks(leagueKey){
   return await res.json();
 }
 
+// YAHOO_TEAM_FULLNAME_MAP_V1 (2026-06-06 — PC Walter). Yahoo's league-ranks payload
+// emits team as the FULL name ("Buffalo Bills"); Sleeper + our match index use the
+// ABBREVIATION ("BUF"). This maps full -> abbr. 32 NFL teams, fixed/known. Returns the
+// abbr uppercased; if the input is already an abbr or unmapped, returns it uppercased
+// (so a future server change to emit abbrs directly still works).
+const _NFL_FULLNAME_TO_ABBR = {
+  'arizona cardinals':'ARI','atlanta falcons':'ATL','baltimore ravens':'BAL','buffalo bills':'BUF',
+  'carolina panthers':'CAR','chicago bears':'CHI','cincinnati bengals':'CIN','cleveland browns':'CLE',
+  'dallas cowboys':'DAL','denver broncos':'DEN','detroit lions':'DET','green bay packers':'GB',
+  'houston texans':'HOU','indianapolis colts':'IND','jacksonville jaguars':'JAX','kansas city chiefs':'KC',
+  'las vegas raiders':'LV','los angeles chargers':'LAC','los angeles rams':'LAR','miami dolphins':'MIA',
+  'minnesota vikings':'MIN','new england patriots':'NE','new orleans saints':'NO','new york giants':'NYG',
+  'new york jets':'NYJ','philadelphia eagles':'PHI','pittsburgh steelers':'PIT','san francisco 49ers':'SF',
+  'seattle seahawks':'SEA','tampa bay buccaneers':'TB','tennessee titans':'TEN','washington commanders':'WAS'
+};
+function _nflTeamToAbbr(team){
+  if(!team) return '';
+  const key = String(team).trim().toLowerCase();
+  if(_NFL_FULLNAME_TO_ABBR[key]) return _NFL_FULLNAME_TO_ABBR[key];
+  return String(team).toUpperCase();   // already an abbr, or unmapped — pass through
+}
+
 // Top-level orchestrator. Runs once on page load (fire-and-forget) and again
 // whenever the user clicks the Sign-in badge after signing in.
 async function loadYahooData(){
@@ -1701,22 +1723,27 @@ async function loadYahooData(){
     }
     // Fallback lookup: by normalized name+team. Only fires when primary missed.
     if(!sleeperPid){
-      // Yahoo's payload has player.name (full string) and... we need the team
-      // separately. The NAS doesn't currently emit team in the league-ranks
-      // payload. So derive team from the player_key prefix? No — player_key is
-      // like "406.p.30977" with no team in it. For now, name-only match — and
-      // if the same name shows up in multiple teams (rare in NFL — duplicate
-      // names like "Mike Williams" exist), the LAST team wins. Acceptable
-      // gap for the stop-gap. Future Option C registry will solve this cleanly.
+      // YAHOO_NAME_TEAM_MATCH_V2 (2026-06-06 — PC Walter, per the Dude). The server
+      // now emits the player's team (YAHOO_TEAM_FIELD_V1), so we can do a PRECISE
+      // name+team lookup — which rescues the players the old name-ONLY walk dropped
+      // (the missing-rank gaps: #3, #13, #15…). When yp.team is present we build the
+      // exact 'name|TEAM' key the index is keyed on. If team is somehow missing, we
+      // fall back to the old name-prefix walk so we never regress.
       const ypNameKey = _yahooNormalizeName(yp.name);
       if(ypNameKey){
-        // Walk the nameTeamToSleeperPid index for any key that starts with this name
-        // (since we don't have the team to fully qualify the lookup).
-        const prefix = ypNameKey + '|';
-        for(const k in nameTeamToSleeperPid){
-          if(k.indexOf(prefix) === 0){
-            sleeperPid = nameTeamToSleeperPid[k];
-            break;
+        // YAHOO_TEAM_FULLNAME_MAP_V1 (2026-06-06 — PC Walter). VERIFIED via live data:
+        // the server emits yp.team as the FULL team name ("Buffalo Bills"), but Sleeper
+        // (and our match index) keys on the ABBREVIATION ("BUF"). Map full name -> abbr
+        // before matching. 32 NFL teams = a fixed, known mapping (not a guess). If yp.team
+        // is already an abbr or unmapped, we pass it through uppercased.
+        const ypTeam = _nflTeamToAbbr(yp.team);
+        if(ypTeam && nameTeamToSleeperPid[ypNameKey + '|' + ypTeam]){
+          sleeperPid = nameTeamToSleeperPid[ypNameKey + '|' + ypTeam];   // precise match
+        } else {
+          // No team (or no exact hit) — old name-prefix walk as a safety net.
+          const prefix = ypNameKey + '|';
+          for(const k in nameTeamToSleeperPid){
+            if(k.indexOf(prefix) === 0){ sleeperPid = nameTeamToSleeperPid[k]; break; }
           }
         }
         if(sleeperPid) matchedByNameTeam++;
