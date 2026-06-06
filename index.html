@@ -3522,6 +3522,36 @@ const WATCH_LISTS = [
 let currentListId = 'integrity';
 const _multilistData = {}; // id -> player array (populated on first load)
 function getCurrentList(){ return WATCH_LISTS.find(l => l.id === currentListId) || WATCH_LISTS[0]; }
+
+// HIDE_DUDES_LIST_ON_FAN_VIEW_V1 (2026-06-06, per the Dude) — The Dude's List
+// (id 'amateur', backendOnly:true) is private. The dropdown option is hardcoded
+// in the HTML, so it showed on the PUBLIC Cloudflare site. This removes any
+// backendOnly list's <option> from the switcher when the page is in read-only
+// (fan) mode — i.e. on Cloudflare, NOT on the github admin/staging view where
+// Jay keeps using it. Safety net: if a fan somehow lands ON a backendOnly list,
+// bump them to the first public list so they never see it.
+(function hideBackendListsOnFanView(){
+  function run(){
+    try {
+      var isFan = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+      if(!isFan) return;  // admin/staging keeps every list, including The Dude's List
+      var sel = document.getElementById('list-switcher');
+      if(sel && typeof WATCH_LISTS !== 'undefined'){
+        var hide = WATCH_LISTS.filter(function(l){ return l.backendOnly; }).map(function(l){ return l.id; });
+        Array.prototype.slice.call(sel.options).forEach(function(opt){
+          if(hide.indexOf(opt.value) !== -1) opt.remove();
+        });
+        // Safety net: if the current/selected list is backend-only, switch to the first public one.
+        if(hide.indexOf(sel.value) !== -1){
+          var firstPublic = WATCH_LISTS.find(function(l){ return !l.backendOnly; });
+          if(firstPublic && typeof switchActiveList === 'function'){ switchActiveList(firstPublic.id); }
+        }
+      }
+    } catch(e){ /* never break the page over this */ }
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', run); }
+  else { run(); }
+})();
 function syncMultilistFromPlayers(){
   // Called after loadData/save — keeps all 6 in-memory clones aligned with `players`.
   // Day one: every list points at the same data. Phase 2 will load each from its own source.
