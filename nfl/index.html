@@ -693,8 +693,19 @@ function renderNflPlayers(){
     tbody.innerHTML = '<tr><td colspan="13" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
     return;
   }
-  const ids = _npSortedIds();
-  if(statusEl) statusEl.textContent = ids.length.toLocaleString() + ' NFL players · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='fpts'?' (default)':'');
+  const allIds = _npSortedIds();
+  // NFL_POOL_RENDER_CAP_V1 (2026-06-06 — PC Walter, per the Dude). CRITICAL PERF FIX.
+  // Football has ~3,152 pool players (vs NBA's ~560). Rendering ALL of them as live DOM
+  // rows built a 138,000px-tall table; a SINGLE forced layout of it measured 2,092ms, and
+  // every click/scroll/repaint re-triggered that — freezing the browser AND the whole
+  // machine for minutes. Baseball never hit this because its pool render is CAPPED at 200
+  // rows (index.html line 15338: `const display = q ? list : list.slice(0,200)`). Match
+  // baseball: render the top 200 (the pool is Yahoo-rank sorted, so the top 200 = the most
+  // relevant players). The count line shows the full total so nothing feels hidden. A
+  // future in-pool search can render all matches (like baseball's `q ? list : slice`).
+  const POOL_CAP = 200;
+  const ids = allIds.slice(0, POOL_CAP);
+  if(statusEl) statusEl.textContent = 'Showing top ' + ids.length + ' of ' + allIds.length.toLocaleString() + ' NFL players · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='yrank'?' (Yahoo rank)':'');
   tbody.innerHTML = ids.map(pid => {
     const p = _playerDB[pid];
     const s = (_seasonStats && _seasonStats[pid]) || {};
