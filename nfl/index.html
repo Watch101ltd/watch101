@@ -909,7 +909,12 @@ function statCellOrDash(val, decimals){
   if(val == null || val === 0) return '<span class="stat-zero">—</span>';
   const n = Number(val);
   if(!isFinite(n)) return '<span class="stat-zero">—</span>';
-  const formatted = (decimals != null) ? n.toFixed(decimals) : Math.round(n).toLocaleString();
+  let formatted = (decimals != null) ? n.toFixed(decimals) : Math.round(n).toLocaleString();
+  // STRIP_TRAILING_ZERO_V1 (2026-06-06 — PC Walter, per the Dude). Mirrors the NBA
+  // change. A whole-number stat formatted with toFixed(1) showed a useless ".0"; drop
+  // a trailing ".0" only — a real fraction like 12.5 is left untouched. Matches
+  // baseball's no-junk-zero style. (On NFL this mainly cleans the half-PPR points col.)
+  if(decimals != null) formatted = formatted.replace(/\.0+$/, '');
   return '<span class="stat-cell">' + formatted + '</span>';
 }
 function escapeHtml(s){
