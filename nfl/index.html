@@ -516,6 +516,8 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <th class="left col-player" data-npsort="name">Player <span class="sort-arrow">↕</span></th>
           <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
+          <th class="col-yrank" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
+          <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat" data-npsort="fpts">FPts <span class="sort-arrow">↕</span></th>
           <th class="col-stat" data-npsort="payd">PaYd <span class="sort-arrow">↕</span></th>
           <th class="col-stat" data-npsort="patd">PaTD <span class="sort-arrow">↕</span></th>
@@ -528,7 +530,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         </tr>
       </thead>
       <tbody id="nfl-players-body">
-        <tr><td colspan="13" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
+        <tr><td colspan="15" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -707,6 +709,10 @@ function renderNflPlayers(){
       '<td class="left col-player"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
+      // NFL_PLAYERS_PAGE_V1 — Yahoo rank + ownership (football HAS the Yahoo pipeline,
+      // unlike NBA). Same lookup the watch list uses; placeholder class when no value.
+      '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
+      '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       '<td>' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
       '<td>' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td>' + statCellOrDash(s.pass_td) + '</td>' +
