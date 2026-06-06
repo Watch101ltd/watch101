@@ -1557,14 +1557,22 @@ async function _yahooFirstNflLeagueKey(){
       console.warn('[yahoo] user has zero leagues');
       return null;
     }
-    // /yahoo/leagues on the NFL container returns NFL leagues only — first one wins.
-    const first = leagues[0];
+    // YAHOO_CURRENT_SEASON_LEAGUE_V1 (2026-06-06 — PC Walter, per the Dude). CRITICAL FIX:
+    // the old code took leagues[0], which is the OLDEST league (the Dude has NFL leagues
+    // from 2021→2026, and Yahoo returns them oldest-first). That made the whole ranking
+    // pull 2021 data — Tom Brady ranked #3, retired/teamless players near the top, gaps
+    // in the rank-sorted pool. The league key drives the game key the server ranks
+    // against (buildLeagueRanksPayload: gameKey = leagueKey.split('.l.')[0]), so picking
+    // an old league = old-season rankings. FIX: pick the league with the HIGHEST season
+    // (most recent) so we always rank against the CURRENT NFL season.
+    const sorted = leagues.slice().sort((a, b) => (parseInt(b.season,10)||0) - (parseInt(a.season,10)||0));
+    const first = sorted[0];
     const key = first.league_key || first.key || null;
     if(!key){
-      console.warn('[yahoo] first league had no league_key field:', first);
+      console.warn('[yahoo] most-recent league had no league_key field:', first);
       return null;
     }
-    console.log('[yahoo] using NFL league:', key, '(' + (first.name || 'unnamed') + ')');
+    console.log('[yahoo] using CURRENT NFL league:', key, '(' + (first.name || 'unnamed') + ', season ' + first.season + ')');
     return key;
   } catch(e){
     console.warn('[yahoo] _yahooFirstNflLeagueKey error:', e.message);
