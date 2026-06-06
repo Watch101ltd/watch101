@@ -353,7 +353,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     </div>
     <div>
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
-      <select id="wlpf-daterange" disabled title="Season stats only — NBA has no date-range pipeline yet" style="background:var(--surface);color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:not-allowed;outline:none;opacity:0.6"><option value="season" selected>Season Stats</option></select>
+      <select id="wlpf-daterange" title="Stat window: season or trailing weeks (applies on Apply)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select>
     </div>
     <div>
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN PTS</div>
@@ -436,7 +436,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
-        <select id="nbapf-daterange" disabled title="Season stats only — NBA has no date-range pipeline yet" style="background:var(--surface);color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:not-allowed;outline:none;opacity:0.6"><option value="season" selected>Season Stats</option></select>
+        <select id="nbapf-daterange" title="Stat window: season or trailing weeks (applies on Apply)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select>
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN PTS</div>
@@ -517,22 +517,79 @@ let _playerDB = null;
 let _seasonStats = null;
 let _watchList = [];
 
+// NBA_DATERANGE_DROPDOWN_V1 (2026-06-06 — PC Walter, per the Dude) — date-range plumbing.
+// Ported from the football pipeline (NFL_DATERANGE_PIPELINE_V1). Football could not
+// port its DATA path (NBA's all-players weekly feed is broken), so the server bakes
+// per-player weekly data into windows; the front-end side is the SAME pattern as football.
+//   _dateRange = 'season' | '1' | '2' | '4'  (Season / Last Week / Last 2 / Last 4)
+let _dateRangeStats = null;       // payload from /sleeper/stats/daterange/:year
+let _dateRange = 'season';        // current selection, shared by both surfaces
+
+// _statsRow(pid) — single source of truth for "what stats show now." Reads the active
+// window so every cell, sort, and filter follows the date-range dropdown. Falls back to
+// {} like the old (_seasonStats && _seasonStats[pid]) pattern it replaces.
+function _statsRow(pid){
+  if(_dateRange === 'season'){
+    return (_seasonStats && _seasonStats[pid]) || {};
+  }
+  const w = _dateRangeStats && _dateRangeStats.windows && _dateRangeStats.windows[_dateRange];
+  return (w && w[pid]) || {};
+}
+
+// Lazy one-time fetch of the baked date-range windows from the NAS.
+let _dateRangeFetchPromise = null;
+async function _ensureDateRangeStats(){
+  if(_dateRangeStats) return _dateRangeStats;
+  if(_dateRangeFetchPromise) return _dateRangeFetchPromise;
+  _dateRangeFetchPromise = (async () => {
+    try{
+      const res = await fetch(SERVER_URL + '/sleeper/stats/daterange/' + STATS_YEAR);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      _dateRangeStats = await res.json();
+    }catch(e){
+      console.warn('[daterange] fetch failed:', e.message);
+      _dateRangeStats = { windows: {} };  // empty → _statsRow falls back to {}
+    }
+    return _dateRangeStats;
+  })();
+  return _dateRangeFetchPromise;
+}
+
+// _applyDateRangeFrom(selectId) — read a dropdown's window and make it active.
+// Called by the Apply buttons (NOT onchange) so the date range is Apply-gated like
+// the rest of the STAT FILTERING box. Syncs both dropdowns, loads data on demand.
+async function _applyDateRangeFrom(selectId){
+  const sel = document.getElementById(selectId);
+  _dateRange = (sel && sel.value) || 'season';
+  const a = document.getElementById('wlpf-daterange');
+  const b = document.getElementById('nbapf-daterange');
+  if(a && a.value !== _dateRange) a.value = _dateRange;
+  if(b && b.value !== _dateRange) b.value = _dateRange;
+  if(_dateRange !== 'season'){
+    await _ensureDateRangeStats();
+  }
+}
+
 // NBA_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
 // Functional: team / minPts / age (NBA has that data). %Owned + date range are inert (no data).
 let _wlFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null };
 let _wlTeamSelectBuilt = false;
 function _wlfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
 function _wlFilterActive(){ return _wlFilters && (_wlFilters.team!=='ALL' || _wlFilters.minPts!=null || _wlFilters.ageMin!=null || _wlFilters.ageMax!=null); }
-function applyNbaWlFilters(){
+async function applyNbaWlFilters(){
   _wlFilters.team   = (document.getElementById('wlpf-team')||{}).value || 'ALL';
   _wlFilters.minPts = _wlfNum('wlpf-pts');
   _wlFilters.ageMin = _wlfNum('wlpf-agemin');
   _wlFilters.ageMax = _wlfNum('wlpf-agemax');
+  await _applyDateRangeFrom('wlpf-daterange');   // date range is Apply-gated too
   renderWatchList();
 }
 function resetNbaWlFilters(){
   ['wlpf-pts','wlpf-agemin','wlpf-agemax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const t=document.getElementById('wlpf-team'); if(t) t.value='ALL';
+  const dr=document.getElementById('wlpf-daterange'); if(dr) dr.value='season';
+  const dr2=document.getElementById('nbapf-daterange'); if(dr2) dr2.value='season';
+  _dateRange = 'season';
   _wlFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null };
   renderWatchList();
 }
@@ -551,7 +608,7 @@ function _wlPassesFilter(pid){
   const F=_wlFilters; if(!F) return true;
   const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
   if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
-  const s=(_seasonStats && _seasonStats[pid])||{};
+  const s=_statsRow(pid);
   if(F.minPts!=null && (Number(s.pts)||0) < F.minPts) return false;
   if(F.ageMin!=null || F.ageMax!=null){
     const a=nbaDecimalAgeNum(p);
@@ -627,16 +684,20 @@ let _npTeamSelectBuilt = false;
 
 function _npfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
 
-function applyNbaPoolFilters(){
+async function applyNbaPoolFilters(){
   _npFilters.team   = (document.getElementById('nbapf-team')||{}).value || 'ALL';
   _npFilters.minPts = _npfNum('nbapf-pts');
   _npFilters.ageMin = _npfNum('nbapf-agemin');
   _npFilters.ageMax = _npfNum('nbapf-agemax');
+  await _applyDateRangeFrom('nbapf-daterange');   // date range is Apply-gated too
   renderNbaPlayers();
 }
 function resetNbaPoolFilters(){
   ['nbapf-pts','nbapf-agemin','nbapf-agemax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const t=document.getElementById('nbapf-team'); if(t) t.value='ALL';
+  const dr=document.getElementById('nbapf-daterange'); if(dr) dr.value='season';
+  const dr2=document.getElementById('wlpf-daterange'); if(dr2) dr2.value='season';
+  _dateRange = 'season';
   _npFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null };
   renderNbaPlayers();
 }
@@ -681,7 +742,7 @@ function _npSortedIds(){
     if(!p || !p.position) continue;
     if(!p.team) continue;
     if(F.team && F.team !== 'ALL' && p.team !== F.team) continue;
-    const s = (_seasonStats && _seasonStats[id]) || {};
+    const s = _statsRow(id);
     if(F.minPts != null && (Number(s.pts)||0) < F.minPts) continue;
     if(F.ageMin != null || F.ageMax != null){
       const a = nbaDecimalAgeNum(p);
@@ -693,8 +754,8 @@ function _npSortedIds(){
   const f = _npSortField;
   ids.sort((a, b) => {
     const pa = _playerDB[a], pb = _playerDB[b];
-    const sa = (_seasonStats && _seasonStats[a]) || {};
-    const sb = (_seasonStats && _seasonStats[b]) || {};
+    const sa = _statsRow(a);
+    const sb = _statsRow(b);
     let av = _npStatValue(f, pa, sa);
     let bv = _npStatValue(f, pb, sb);
     const aMissing = (av == null), bMissing = (bv == null);
@@ -725,7 +786,7 @@ function renderNbaPlayers(){
   if(statusEl) statusEl.textContent = (_fActive ? ('Showing ' + ids.length.toLocaleString() + ' filtered') : (ids.length.toLocaleString() + ' NBA players')) + ' · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='pts'?' (default)':'');
   tbody.innerHTML = ids.map(pid => {
     const p = _playerDB[pid];
-    const s = (_seasonStats && _seasonStats[pid]) || {};
+    const s = _statsRow(pid);
     const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
     const pos  = p.position || '?';
     const team = p.team || '—';
@@ -1009,7 +1070,7 @@ function renderWatchList(){
   const dragEnabled = (_sortField === null) && !(typeof _wlFilterActive === 'function' && _wlFilterActive());
   tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
-    const s = (_seasonStats && _seasonStats[pid]) || {};
+    const s = _statsRow(pid);
     const originalIdx = _wlIndexOf(pid);
     const rank = (originalIdx >= 0) ? (originalIdx + 1) : (displayIdx + 1);
     const priority = (originalIdx >= 0) ? _wlPriority(_watchList[originalIdx]) : 0;
@@ -1362,7 +1423,7 @@ function getSortedWatchList(){
   const indexed = _watchList.map((item, idx) => {
     const pid = _wlPid(item);
     const p = _playerDB[pid] || null;
-    const s = (_seasonStats && _seasonStats[pid]) || {};
+    const s = _statsRow(pid);
     return {pid: pid, idx: idx, value: p ? sortValueFor(_sortField, p, s, pid) : null};
   });
   indexed.sort((a, b) => {
