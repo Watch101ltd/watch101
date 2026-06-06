@@ -481,7 +481,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     </div>
     <div>
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
-      <select id="nflwlpf-daterange" onchange="setNflDateRange(this.value)" title="Stat window: season or trailing weeks" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select>
+      <select id="nflwlpf-daterange" title="Stat window: season or trailing weeks (applies on Apply)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select>
     </div>
     <div>
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN FPTS</div>
@@ -567,7 +567,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
-        <select id="nflpf-daterange" onchange="setNflDateRange(this.value)" title="Stat window: season or trailing weeks" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select>
+        <select id="nflpf-daterange" title="Stat window: season or trailing weeks (applies on Apply)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select>
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN FPTS</div>
@@ -718,24 +718,23 @@ async function _ensureDateRangeStats(){
   return _dateRangeFetchPromise;
 }
 
-// setNflDateRange(value) — the dropdown change handler, shared by both surfaces
-// (Players pool + Watch101 list). Keeps the two dropdowns in sync, loads the
-// window data on demand, then re-renders both tables. Every stat column stays
-// sortable because the sort reads _statsRow() too.
-async function setNflDateRange(value){
-  _dateRange = value || 'season';
+// _applyDateRangeFrom(selectId) — read a dropdown's selected window and make it
+// the active one. Called by the Apply buttons (NOT on dropdown change) so the
+// date range is Apply-gated like every other control in the STAT FILTERING box.
+// Keeps both dropdowns in sync and loads the window data on demand. Returns a
+// promise so the caller can await the (possibly async) data load before rendering.
+async function _applyDateRangeFrom(selectId){
+  const sel = document.getElementById(selectId);
+  _dateRange = (sel && sel.value) || 'season';
   // keep both dropdowns showing the same selection
   const a = document.getElementById('nflwlpf-daterange');
   const b = document.getElementById('nflpf-daterange');
   if(a && a.value !== _dateRange) a.value = _dateRange;
   if(b && b.value !== _dateRange) b.value = _dateRange;
-  // load window data if we're leaving season for the first time
+  // load window data if we're leaving season (first time only; cached after)
   if(_dateRange !== 'season'){
     await _ensureDateRangeStats();
   }
-  // re-render whatever is on screen
-  if(typeof renderWatchList === 'function') renderWatchList();
-  if(typeof renderNflPlayers === 'function') renderNflPlayers();
 }
 
 // NFL_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
@@ -744,18 +743,22 @@ let _wlFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:
 let _wlTeamSelectBuilt = false;
 function _wlfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
 function _wlFilterActive(){ return _wlFilters && (_wlFilters.team!=='ALL' || _wlFilters.minFpts!=null || _wlFilters.minGames!=null || _wlFilters.ageMin!=null || _wlFilters.ageMax!=null || _wlFilters.maxOwned!=null); }
-function applyNflWlFilters(){
+async function applyNflWlFilters(){
   _wlFilters.team     = (document.getElementById('nflwlpf-team')||{}).value || 'ALL';
   _wlFilters.minFpts  = _wlfNum('nflwlpf-fpts');
   _wlFilters.minGames = _wlfNum('nflwlpf-games');
   _wlFilters.ageMin   = _wlfNum('nflwlpf-agemin');
   _wlFilters.ageMax   = _wlfNum('nflwlpf-agemax');
   _wlFilters.maxOwned = _wlfNum('nflwlpf-owned');
+  await _applyDateRangeFrom('nflwlpf-daterange');   // date range is Apply-gated too
   renderWatchList();
 }
 function resetNflWlFilters(){
   ['nflwlpf-fpts','nflwlpf-games','nflwlpf-agemin','nflwlpf-agemax','nflwlpf-owned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const t=document.getElementById('nflwlpf-team'); if(t) t.value='ALL';
+  const dr=document.getElementById('nflwlpf-daterange'); if(dr) dr.value='season';
+  const dr2=document.getElementById('nflpf-daterange'); if(dr2) dr2.value='season';
+  _dateRange = 'season';
   _wlFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
   renderWatchList();
 }
@@ -846,18 +849,22 @@ let _npBuilt     = false;
 let _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
 let _npTeamSelectBuilt = false;
 function _npfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
-function applyNflPoolFilters(){
+async function applyNflPoolFilters(){
   _npFilters.team     = (document.getElementById('nflpf-team')||{}).value || 'ALL';
   _npFilters.minFpts  = _npfNum('nflpf-fpts');
   _npFilters.minGames = _npfNum('nflpf-games');
   _npFilters.ageMin   = _npfNum('nflpf-agemin');
   _npFilters.ageMax   = _npfNum('nflpf-agemax');
   _npFilters.maxOwned = _npfNum('nflpf-owned');
+  await _applyDateRangeFrom('nflpf-daterange');   // date range is Apply-gated too
   renderNflPlayers();
 }
 function resetNflPoolFilters(){
   ['nflpf-fpts','nflpf-games','nflpf-agemin','nflpf-agemax','nflpf-owned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const t=document.getElementById('nflpf-team'); if(t) t.value='ALL';
+  const dr=document.getElementById('nflpf-daterange'); if(dr) dr.value='season';
+  const dr2=document.getElementById('nflwlpf-daterange'); if(dr2) dr2.value='season';
+  _dateRange = 'season';
   _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
   renderNflPlayers();
 }
