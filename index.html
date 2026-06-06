@@ -3680,9 +3680,14 @@ function openListInfoOverlay(){
       // lists" explainer, so skip any backendOnly list (The Dude's List) ALWAYS,
       // on both public and backend. It stays selectable in the dropdown for Jay's
       // private use; it just isn't described in this box anymore.
+      // ROSTER_NUM_IN_TITLE_V1 (2026-06-06 — PC Walter, per the Dude) — append each format's
+      // roster-spot number to the title in this popup, matching the dropdown. Prospects has no
+      // roster number (not a "next 101" format list), so it stays clean.
+      var _rosterNum = { integrity:330, deeper15:450, weekly12:360, h2h12:420 };
       body.innerHTML = WATCH_LISTS.filter(function(l){ return !l.backendOnly; }).map(function(l){
+        var _ttl = (l.name || l.id) + (_rosterNum[l.id] ? ' · ' + _rosterNum[l.id] : '');
         return '<div style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:6px">'
-          +    '<div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:2px">' + (l.name || l.id) + '</div>'
+          +    '<div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:2px">' + _ttl + '</div>'
           +    (l.subtitle ? '<div style="font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">' + l.subtitle + '</div>' : '')
           +    '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + (l.desc || '') + '</div>'
           +  '</div>';
