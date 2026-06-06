@@ -481,7 +481,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     </div>
     <div>
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
-      <select id="nflwlpf-daterange" disabled title="Season stats only — NFL has no date-range pipeline yet" style="background:var(--surface);color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:not-allowed;outline:none;opacity:0.6"><option value="season" selected>Season Stats</option></select>
+      <select id="nflwlpf-daterange" onchange="setNflDateRange(this.value)" title="Stat window: season or trailing weeks" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select>
     </div>
     <div>
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN FPTS</div>
@@ -567,7 +567,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
-        <select id="nflpf-daterange" disabled title="Season stats only — NFL has no date-range pipeline yet" style="background:var(--surface);color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:not-allowed;outline:none;opacity:0.6"><option value="season" selected>Season Stats</option></select>
+        <select id="nflpf-daterange" onchange="setNflDateRange(this.value)" title="Stat window: season or trailing weeks" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select>
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN FPTS</div>
@@ -676,6 +676,68 @@ let _playerDB = null;
 let _seasonStats = null;
 let _watchList = [];
 
+// NFL_DATERANGE_DROPDOWN_V1 (2026-06-06 — PC Walter, per the Dude) — date-range plumbing.
+// Mirrors baseball's date-range model in football (WEEKLY) terms. The server
+// endpoint /sleeper/stats/daterange/:year returns trailing-week windows
+// (1 / 2 / 4 weeks). We fetch it once at load into _dateRangeStats.windows and
+// switch which stats map the table reads/sorts based on the dropdown selection.
+//   _dateRange = 'season' | '1' | '2' | '4'
+// 'season' uses the existing _seasonStats; the others use _dateRangeStats.windows[N].
+let _dateRangeStats = null;       // full payload from /sleeper/stats/daterange/:year
+let _dateRange = 'season';        // current selection, shared by both surfaces
+
+// _statsRow(pid) — the single source of truth for "what stats do we show for this
+// player right now." Reads the active window so every table cell, sort, and filter
+// follows the date-range dropdown automatically. Falls back to {} like the old
+// (_seasonStats && _seasonStats[pid]) pattern it replaces.
+function _statsRow(pid){
+  if(_dateRange === 'season'){
+    return (_seasonStats && _seasonStats[pid]) || {};
+  }
+  const w = _dateRangeStats && _dateRangeStats.windows && _dateRangeStats.windows[_dateRange];
+  return (w && w[pid]) || {};
+}
+
+// Fetch the trailing-week windows from the NAS once, on first non-season pick.
+// Mirrors how the season stats load: one fetch, cached in memory for the session.
+let _dateRangeFetchPromise = null;
+async function _ensureDateRangeStats(){
+  if(_dateRangeStats) return _dateRangeStats;
+  if(_dateRangeFetchPromise) return _dateRangeFetchPromise;
+  _dateRangeFetchPromise = (async () => {
+    try{
+      const res = await fetch(SERVER_URL + '/sleeper/stats/daterange/' + STATS_YEAR);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      _dateRangeStats = await res.json();
+    }catch(e){
+      console.warn('[daterange] fetch failed:', e.message);
+      _dateRangeStats = { windows: {} };  // empty shape → _statsRow falls back to {}
+    }
+    return _dateRangeStats;
+  })();
+  return _dateRangeFetchPromise;
+}
+
+// setNflDateRange(value) — the dropdown change handler, shared by both surfaces
+// (Players pool + Watch101 list). Keeps the two dropdowns in sync, loads the
+// window data on demand, then re-renders both tables. Every stat column stays
+// sortable because the sort reads _statsRow() too.
+async function setNflDateRange(value){
+  _dateRange = value || 'season';
+  // keep both dropdowns showing the same selection
+  const a = document.getElementById('nflwlpf-daterange');
+  const b = document.getElementById('nflpf-daterange');
+  if(a && a.value !== _dateRange) a.value = _dateRange;
+  if(b && b.value !== _dateRange) b.value = _dateRange;
+  // load window data if we're leaving season for the first time
+  if(_dateRange !== 'season'){
+    await _ensureDateRangeStats();
+  }
+  // re-render whatever is on screen
+  if(typeof renderWatchList === 'function') renderWatchList();
+  if(typeof renderNflPlayers === 'function') renderNflPlayers();
+}
+
 // NFL_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
 // Functional: team / minFpts / minGames(s.gp) / age / maxOwned(Yahoo). Date Range + CBS inert.
 let _wlFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
@@ -710,7 +772,7 @@ function _wlPassesFilter(pid){
   const F=_wlFilters; if(!F) return true;
   const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
   if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
-  const s=(_seasonStats && _seasonStats[pid])||{};
+  const s=_statsRow(pid);
   if(F.minFpts!=null && (Number(s.pts_half_ppr)||0) < F.minFpts) return false;
   if(F.minGames!=null && (Number(s.gp)||0) < F.minGames) return false;
   if(F.ageMin!=null || F.ageMax!=null){
@@ -839,7 +901,7 @@ function _npSortedIds(){
     if(!p || !p.position) continue;
     if(!p.team) continue;   // same "real NFL player" filter the search uses
     if(F.team && F.team !== 'ALL' && p.team !== F.team) continue;
-    const s = (_seasonStats && _seasonStats[id]) || {};
+    const s = _statsRow(id);
     if(F.minFpts != null && (Number(s.pts_half_ppr)||0) < F.minFpts) continue;
     if(F.minGames != null && (Number(s.gp)||0) < F.minGames) continue;   // s.gp inert in offseason
     if(F.ageMin != null || F.ageMax != null){
@@ -856,8 +918,8 @@ function _npSortedIds(){
   const f = _npSortField;
   ids.sort((a, b) => {
     const pa = _playerDB[a], pb = _playerDB[b];
-    const sa = (_seasonStats && _seasonStats[a]) || {};
-    const sb = (_seasonStats && _seasonStats[b]) || {};
+    const sa = _statsRow(a);
+    const sb = _statsRow(b);
     let av = _npStatValue(f, pa, sa, a);
     let bv = _npStatValue(f, pb, sb, b);
     const aMissing = (av == null), bMissing = (bv == null);
@@ -897,7 +959,7 @@ function renderNflPlayers(){
   if(statusEl) statusEl.textContent = 'Showing top ' + ids.length + ' of ' + allIds.length.toLocaleString() + ' NFL players · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='yrank'?' (Yahoo rank)':'');
   tbody.innerHTML = ids.map(pid => {
     const p = _playerDB[pid];
-    const s = (_seasonStats && _seasonStats[pid]) || {};
+    const s = _statsRow(pid);
     const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
     const pos  = p.position || '?';
     const team = p.team || '—';
@@ -1184,7 +1246,7 @@ function renderWatchList(){
   const dragEnabled = (_sortField === null) && !(typeof _wlFilterActive === 'function' && _wlFilterActive());
   tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
-    const s = (_seasonStats && _seasonStats[pid]) || {};
+    const s = _statsRow(pid);
     const originalIdx = _wlIndexOf(pid);
     const rank = (originalIdx >= 0) ? (originalIdx + 1) : (displayIdx + 1);
     const priority = (originalIdx >= 0) ? _wlPriority(_watchList[originalIdx]) : 0;
@@ -1584,7 +1646,7 @@ function getSortedWatchList(){
   const indexed = _watchList.map((item, idx) => {
     const pid = _wlPid(item);
     const p = _playerDB[pid] || null;
-    const s = (_seasonStats && _seasonStats[pid]) || {};
+    const s = _statsRow(pid);
     // Pass pid as third helper arg so sortValueFor can look up priority by pid (not p.player_id which Sleeper doesn't have)
     return {pid: pid, idx: idx, value: p ? sortValueFor(_sortField, p, s, pid) : null};
   });
