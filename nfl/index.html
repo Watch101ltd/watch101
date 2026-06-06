@@ -507,6 +507,10 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
       <input id="nflwlpf-cbsowned" type="number" min="0" max="100" placeholder="any" disabled title="No NFL CBS data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
     </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">POSITION <span style="color:var(--text3);font-weight:400">(any checked)</span></div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;min-height:32px;max-width:300px"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflwlpf-pos" value="QB" style="cursor:pointer"> QB</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflwlpf-pos" value="RB" style="cursor:pointer"> RB</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflwlpf-pos" value="WR" style="cursor:pointer"> WR</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflwlpf-pos" value="TE" style="cursor:pointer"> TE</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflwlpf-pos" value="DEF" style="cursor:pointer"> DEF</label></div>
+    </div>
     <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
       <button onclick="applyNflWlFilters()" style="background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
       <button onclick="resetNflWlFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
@@ -592,6 +596,10 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
         <input id="nflpf-cbsowned" type="number" min="0" max="100" placeholder="any" disabled title="No NFL CBS data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">POSITION <span style="color:var(--text3);font-weight:400">(any checked)</span></div>
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;min-height:32px;max-width:300px"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="QB" style="cursor:pointer"> QB</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="RB" style="cursor:pointer"> RB</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="WR" style="cursor:pointer"> WR</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="TE" style="cursor:pointer"> TE</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="DEF" style="cursor:pointer"> DEF</label></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
         <button onclick="applyNflPoolFilters()" style="background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
@@ -739,10 +747,10 @@ async function _applyDateRangeFrom(selectId){
 
 // NFL_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
 // Functional: team / minFpts / minGames(s.gp) / age / maxOwned(Yahoo). Date Range + CBS inert.
-let _wlFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
+let _wlFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, posPositions:[] };
 let _wlTeamSelectBuilt = false;
 function _wlfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
-function _wlFilterActive(){ return _wlFilters && (_wlFilters.team!=='ALL' || _wlFilters.minFpts!=null || _wlFilters.minGames!=null || _wlFilters.ageMin!=null || _wlFilters.ageMax!=null || _wlFilters.maxOwned!=null); }
+function _wlFilterActive(){ return _wlFilters && (_wlFilters.team!=='ALL' || _wlFilters.minFpts!=null || _wlFilters.minGames!=null || _wlFilters.ageMin!=null || _wlFilters.ageMax!=null || _wlFilters.maxOwned!=null || (_wlFilters.posPositions && _wlFilters.posPositions.length)); }
 async function applyNflWlFilters(){
   _wlFilters.team     = (document.getElementById('nflwlpf-team')||{}).value || 'ALL';
   _wlFilters.minFpts  = _wlfNum('nflwlpf-fpts');
@@ -750,6 +758,7 @@ async function applyNflWlFilters(){
   _wlFilters.ageMin   = _wlfNum('nflwlpf-agemin');
   _wlFilters.ageMax   = _wlfNum('nflwlpf-agemax');
   _wlFilters.maxOwned = _wlfNum('nflwlpf-owned');
+  _wlFilters.posPositions = Array.from(document.querySelectorAll('.nflwlpf-pos:checked')).map(cb => cb.value);
   await _applyDateRangeFrom('nflwlpf-daterange');   // date range is Apply-gated too
   renderWatchList();
 }
@@ -758,8 +767,9 @@ function resetNflWlFilters(){
   const t=document.getElementById('nflwlpf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('nflwlpf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('nflpf-daterange'); if(dr2) dr2.value='season';
+  document.querySelectorAll('.nflwlpf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
-  _wlFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
+  _wlFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, posPositions:[] };
   renderWatchList();
 }
 function _wlBuildTeamSelect(){
@@ -778,6 +788,8 @@ function _wlPassesFilter(pid){
   const s=_statsRow(pid);
   if(F.minFpts!=null && (Number(s.pts_half_ppr)||0) < F.minFpts) return false;
   if(F.minGames!=null && (Number(s.gp)||0) < F.minGames) return false;
+  // POSITION_FILTER_V1 (2026-06-06) — single NFL position, match ANY checked. (Kickers intentionally have no box.)
+  if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) return false;
   if(F.ageMin!=null || F.ageMax!=null){
     const a=nflDecimalAgeNum(p);
     if(F.ageMin!=null && (a==null || a<F.ageMin)) return false;
@@ -846,7 +858,7 @@ let _npBuilt     = false;
 // pipeline). MIN GAMES reads s.gp (Sleeper games-played) — INERT in the offseason until Sleeper
 // populates it for the new season, then live automatically (no rebuild needed). Date Range + CBS are
 // inert (no pipeline / no data). All Apply-gated.
-let _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
+let _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, posPositions:[] };
 let _npTeamSelectBuilt = false;
 function _npfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
 async function applyNflPoolFilters(){
@@ -856,6 +868,7 @@ async function applyNflPoolFilters(){
   _npFilters.ageMin   = _npfNum('nflpf-agemin');
   _npFilters.ageMax   = _npfNum('nflpf-agemax');
   _npFilters.maxOwned = _npfNum('nflpf-owned');
+  _npFilters.posPositions = Array.from(document.querySelectorAll('.nflpf-pos:checked')).map(cb => cb.value);
   await _applyDateRangeFrom('nflpf-daterange');   // date range is Apply-gated too
   renderNflPlayers();
 }
@@ -864,8 +877,9 @@ function resetNflPoolFilters(){
   const t=document.getElementById('nflpf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('nflpf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('nflwlpf-daterange'); if(dr2) dr2.value='season';
+  document.querySelectorAll('.nflpf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
-  _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
+  _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, posPositions:[] };
   renderNflPlayers();
 }
 function _npBuildTeamSelect(){
@@ -908,6 +922,7 @@ function _npSortedIds(){
     if(!p || !p.position) continue;
     if(!p.team) continue;   // same "real NFL player" filter the search uses
     if(F.team && F.team !== 'ALL' && p.team !== F.team) continue;
+    if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) continue;  // POSITION_FILTER_V1
     const s = _statsRow(id);
     if(F.minFpts != null && (Number(s.pts_half_ppr)||0) < F.minFpts) continue;
     if(F.minGames != null && (Number(s.gp)||0) < F.minGames) continue;   // s.gp inert in offseason
