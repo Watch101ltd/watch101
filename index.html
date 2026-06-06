@@ -2096,6 +2096,19 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         </div>
       </div>
       <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">POSITION <span style="color:var(--text3);font-weight:400">(any checked)</span></div>
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;min-height:32px;max-width:340px">
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="wlf-pos" value="C" style="cursor:pointer"> C</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="wlf-pos" value="1B" style="cursor:pointer"> 1B</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="wlf-pos" value="2B" style="cursor:pointer"> 2B</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="wlf-pos" value="3B" style="cursor:pointer"> 3B</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="wlf-pos" value="SS" style="cursor:pointer"> SS</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="wlf-pos" value="OF" style="cursor:pointer"> OF</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="wlf-pos" value="DH" style="cursor:pointer"> DH</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="wlf-pos" value="P" style="cursor:pointer"> P</label>
+        </div>
+      </div>
+      <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN AB <span style="color:var(--stat-hitter)">(hitters)</span></div>
         <input id="wlf-ab" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
       </div>
@@ -3713,7 +3726,7 @@ let clusterByPos = null;   // When set to 'C'|'1B'|'2B'|... main list clusters b
 let filter = 'ALL';
 let teamFilter = 'ALL';
 // FILTER_TABLE_PORT_V1 (2026-06-03) — main Watch list set-your-own filter object (replaces playerFilter).
-let watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null, posBuckets:[] };
+let watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null, posBuckets:[], posPositions:[] };
 
 // AUTO_SCALE_FILTERS_V1 (May 11, 2026) — auto-scaling thresholds for filters
 // that depend on counting stats. The Dude flagged that hardcoded numbers like
@@ -5996,6 +6009,15 @@ function getFiltered(){
       if(F.posBuckets.includes('PITCHER')) list = list.filter(p => isPitcher(p));
       if(F.posBuckets.includes('MOVERS'))  list = list.filter(p => p.move && p.move!=='');
     }
+    // POSITION_FILTER_V1 (2026-06-06) — specific-position checkboxes, match ANY checked, full eligibility.
+    // Uses normalizePositions() so eligibility maps to the same vocabulary as the Pos badges (C/1B/2B/3B/SS/OF/P/DH).
+    if(F.posPositions && F.posPositions.length){
+      const want = F.posPositions;
+      list = list.filter(p => {
+        const elig = normalizePositions(p.positions || []);
+        return want.some(pos => elig.includes(pos));
+      });
+    }
   }
 
   // --- Position-cluster mode (Matt's position-sort feature) ---
@@ -8003,15 +8025,18 @@ function applyWatchFilters(){
   if(document.getElementById('wlf-hitters') && document.getElementById('wlf-hitters').checked) buckets.push('HITTER');
   if(document.getElementById('wlf-pitchers') && document.getElementById('wlf-pitchers').checked) buckets.push('PITCHER');
   if(document.getElementById('wlf-movers') && document.getElementById('wlf-movers').checked) buckets.push('MOVERS');
+  // POSITION_FILTER_V1 (2026-06-06) — specific-position checkboxes (match ANY checked, full eligibility).
+  const posPositions = Array.from(document.querySelectorAll('.wlf-pos:checked')).map(cb => cb.value);
   watchFilters = {
     ab: _wlNum('wlf-ab'), ip: _wlNum('wlf-ip'),
     ageMin: _wlNum('wlf-agemin'), ageMax: _wlNum('wlf-agemax'),
     ownedMax: _wlNum('wlf-owned'), cbsOwnedMax: _wlNum('wlf-cbsowned'),
-    posBuckets: buckets
+    posBuckets: buckets,
+    posPositions: posPositions
   };
   var teamSel = document.getElementById('wlf-team');
   if(teamSel) teamFilter = teamSel.value;
-  if(buckets.length){ filter = 'ALL'; document.querySelectorAll('.filter-tabs .filter-tab').forEach(t=>t.classList.remove('active')); var ia=document.getElementById('instant-all'); if(ia) ia.classList.add('active'); }
+  if(buckets.length || posPositions.length){ filter = 'ALL'; document.querySelectorAll('.filter-tabs .filter-tab').forEach(t=>t.classList.remove('active')); var ia=document.getElementById('instant-all'); if(ia) ia.classList.add('active'); }
   var drSel = document.getElementById('wlf-daterange');
   if(drSel && typeof setDateRange === 'function'){ setDateRange(drSel.value); }
   renderTable();
@@ -8019,9 +8044,10 @@ function applyWatchFilters(){
 function resetWatchFilters(){
   ['wlf-ab','wlf-ip','wlf-agemin','wlf-agemax','wlf-owned','wlf-cbsowned'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   ['wlf-hitters','wlf-pitchers','wlf-movers'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+  document.querySelectorAll('.wlf-pos').forEach(cb => { cb.checked = false; });
   var teamSel = document.getElementById('wlf-team'); if(teamSel) teamSel.value = 'ALL';
   teamFilter = 'ALL';
-  watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null, posBuckets:[] };
+  watchFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null, posBuckets:[], posPositions:[] };
   renderTable();
 }
 
@@ -16990,7 +17016,7 @@ function renderPlayerStatBar(p){
     cells.push({label:'K',    val: num(sc && sc.k)});
     cells.push({label:'W',    val: num(sc && sc.w)});
     cells.push({label:'SV',   val: num(sc && sc.sv)});
-    cells.push({label:'HLD',  val: num(sc && sc.hld)});
+    cells.push({label:'QS',   val: num(sc && sc.hld)});
     cells.push({label:'ERA',  val: num(sc && sc.era, 2)});
     cells.push({label:'WHIP', val: num(sc && sc.whip, 2)});
     cells.push({label:'xERA', val: num(p.sv_xera, 2)});
@@ -19384,19 +19410,3 @@ document.addEventListener('keydown', function(e){
   #player-page-overlay .ppo-news-eyebrow {
     font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--gold, #ffc107);
-    margin-bottom: 4px;
-  }
-  #player-page-overlay .ppo-news-headline {
-    font-family: 'Nunito Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 800;
-    color: var(--text, #e8e8e8);
-    line-height: 1.3;
-    margin-bottom: 4px;
-  }
-  #player-page-overlay .ppo-news-description {
-    font-family: 'Nunito Sans', sans-serif;
-   
