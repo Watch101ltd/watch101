@@ -287,6 +287,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 .page-nav-btn{background:var(--surface2,#161b22);color:var(--text2,#9aa4b2);border:1px solid var(--border2,#2a3240);border-radius:8px 8px 0 0;padding:8px 16px;font-size:13px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s}
 .page-nav-btn:hover{color:var(--court-bright,#fb923c);border-color:var(--court-bright,#fb923c)}
 .page-nav-btn.active{background:var(--court,#ea580c);color:#fff;border-color:var(--court,#ea580c)}
+.np-on-list{color:var(--court,#ea580c);font-weight:800}
 </style>
 </head>
 <body>
@@ -374,11 +375,29 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 <!-- ══════════ NBA PLAYERS VIEW (feeder pool, hidden by default — NBA_PLAYERS_PAGE_V1) ══════════ -->
 <!-- Stage 1: container + placeholder only. Stage 2 fills #nba-players-body with the full-league table. -->
 <div id="nbaplayers-view" style="display:none">
-  <div class="status-bar-wl" id="nbaplayers-status">NBA Players — the full league pool. (Table coming in Stage 2.)</div>
+  <div class="status-bar-wl" id="nbaplayers-status">NBA Players — loading the full league pool…</div>
   <div class="table-wrap">
     <table class="watch-list" id="nba-players-table">
+      <thead>
+        <tr>
+          <th class="col-pos" data-npsort="pos">Pos <span class="sort-arrow">↕</span></th>
+          <th class="left col-player" data-npsort="name">Player <span class="sort-arrow">↕</span></th>
+          <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
+          <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="pts">PTS <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="reb">REB <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="ast">AST <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="stl">STL <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="blk">BLK <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="tpm">3PM <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="fgpct">FG% <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="ftpct">FT% <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="to">TO <span class="sort-arrow">↕</span></th>
+          <th class="center col-action">Add</th>
+        </tr>
+      </thead>
       <tbody id="nba-players-body">
-        <tr><td colspan="23" class="empty-state"><strong>NBA Players pool</strong>The browsable full-league table will load here.</td></tr>
+        <tr><td colspan="14" class="empty-state"><strong>NBA Players pool</strong>Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -448,6 +467,144 @@ function showNbaPlayersView(){
   if(bNp) bNp.classList.add('active');
   // Stage 2 will call renderNbaPlayers() here to build/refresh the pool table.
   if(typeof renderNbaPlayers === 'function') renderNbaPlayers();
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// NBA_PLAYERS_PAGE_V1 (2026-06-06) — Stage 2: the full-league feeder table.
+// Renders ALL real NBA players (same "has position AND team" filter the search
+// uses) from _playerDB + _seasonStats into the 9-cat table. Default sort = PTS
+// desc (the Dude's pick; Yahoo rank becomes default later when wired). Every
+// column sortable (the Dude's standing rule). Reuses the watch-list stat-cell
+// helpers (statCellOrDash, pctCellOrDash, pctOrNull, nbaDecimalAge, posClassFor)
+// so formatting (decimal age, strip-trailing-zero) is inherited identically.
+// NOTE: the pool has its OWN sort state (_npSortField/_npSortDir), independent of
+// the watch list's _sortField, so sorting the pool never disturbs the watch list.
+// Stage 3 adds the per-row "+ Add" button (the Add column is a placeholder now).
+// ──────────────────────────────────────────────────────────────────────────
+let _npSortField = 'pts';   // default sort column = points
+let _npSortDir   = 'desc';  // default direction = highest first
+let _npBuilt     = false;   // first-open guard so we only header-wire once
+
+function _npStatValue(field, p, s){
+  switch(field){
+    case 'name': return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
+    case 'pos':  return p.position || 'zzz';
+    case 'team': return p.team || 'zzz';
+    case 'age':  return nbaDecimalAgeNum(p);
+    case 'pts':  return (s.pts || 0);
+    case 'reb':  return (s.reb || 0);
+    case 'ast':  return (s.ast || 0);
+    case 'stl':  return (s.stl || 0);
+    case 'blk':  return (s.blk || 0);
+    case 'tpm':  return (s.tpm || 0);
+    case 'fgpct': return pctOrNull(s.fgm, s.fga);
+    case 'ftpct': return pctOrNull(s.ftm, s.fta);
+    case 'to':   return (s.to || 0);
+    default: return null;
+  }
+}
+
+function _npSortedIds(){
+  if(!_playerDB) return [];
+  // Same "real NBA player" filter the search uses: must have a position AND a team.
+  const ids = [];
+  for(const id in _playerDB){
+    const p = _playerDB[id];
+    if(!p || !p.position) continue;
+    if(!p.team) continue;
+    ids.push(id);
+  }
+  const f = _npSortField;
+  ids.sort((a, b) => {
+    const pa = _playerDB[a], pb = _playerDB[b];
+    const sa = (_seasonStats && _seasonStats[a]) || {};
+    const sb = (_seasonStats && _seasonStats[b]) || {};
+    let av = _npStatValue(f, pa, sa);
+    let bv = _npStatValue(f, pb, sb);
+    const aMissing = (av == null), bMissing = (bv == null);
+    if(aMissing && bMissing) return 0;
+    if(aMissing) return 1;     // missing always sinks
+    if(bMissing) return -1;
+    let cmp;
+    if(typeof av === 'number' && typeof bv === 'number') cmp = av - bv;
+    else cmp = String(av).localeCompare(String(bv));
+    if(_npSortDir === 'desc') cmp = -cmp;
+    return cmp;
+  });
+  return ids;
+}
+
+function renderNbaPlayers(){
+  const tbody = document.getElementById('nba-players-body');
+  const statusEl = document.getElementById('nbaplayers-status');
+  if(!tbody) return;
+  if(!_playerDB){
+    tbody.innerHTML = '<tr><td colspan="14" class="empty-state"><strong>NBA Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
+    return;
+  }
+  const ids = _npSortedIds();
+  if(statusEl) statusEl.textContent = ids.length.toLocaleString() + ' NBA players · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='pts'?' (default)':'');
+  tbody.innerHTML = ids.map(pid => {
+    const p = _playerDB[pid];
+    const s = (_seasonStats && _seasonStats[pid]) || {};
+    const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
+    const pos  = p.position || '?';
+    const team = p.team || '—';
+    const age  = nbaDecimalAge(p);
+    const fgPct = pctOrNull(s.fgm, s.fga);
+    const ftPct = pctOrNull(s.ftm, s.fta);
+    const onList = (_wlIndexOf(pid) >= 0);
+    return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
+      '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
+      '<td class="left col-player"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
+      '<td>' + team + '</td>' +
+      '<td>' + age + '</td>' +
+      '<td>' + statCellOrDash(s.pts, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.reb, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.ast, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.stl, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.blk, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.tpm, 0) + '</td>' +
+      '<td>' + pctCellOrDash(fgPct) + '</td>' +
+      '<td>' + pctCellOrDash(ftPct) + '</td>' +
+      '<td>' + statCellOrDash(s.to, 1) + '</td>' +
+      // Stage 3 wires this Add cell to a "+ Add" button. Placeholder for now;
+      // already-on-list players show a muted "✓" so the Stage 3 swap is obvious.
+      '<td class="center col-action">' + (onList ? '<span class="np-on-list">✓</span>' : '—') + '</td>' +
+    '</tr>';
+  }).join('');
+  if(!_npBuilt){ _npWireSortHeaders(); _npBuilt = true; }
+  _npUpdateSortArrows();
+}
+
+function _npSortBy(field){
+  if(!field) return;
+  if(_npSortField === field){ _npSortDir = (_npSortDir === 'desc') ? 'asc' : 'desc'; }
+  else { _npSortField = field; _npSortDir = 'desc'; }
+  renderNbaPlayers();
+}
+
+function _npWireSortHeaders(){
+  document.querySelectorAll('#nba-players-table thead th[data-npsort]').forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => _npSortBy(th.dataset.npsort));
+  });
+}
+
+function _npUpdateSortArrows(){
+  document.querySelectorAll('#nba-players-table thead th[data-npsort]').forEach(th => {
+    const arrow = th.querySelector('.sort-arrow');
+    if(!arrow) return;
+    if(th.dataset.npsort === _npSortField){
+      arrow.textContent = (_npSortDir === 'desc') ? '↓' : '↑';
+      arrow.style.opacity = '1';
+      arrow.style.color = 'var(--court-bright)';
+    } else {
+      arrow.textContent = '↕';
+      arrow.style.opacity = '0.4';
+      arrow.style.color = '';
+    }
+  });
 }
 
 function _updateYearLabels(){
