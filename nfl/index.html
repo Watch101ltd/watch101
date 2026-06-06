@@ -468,6 +468,52 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 <!-- ── STATUS BAR ─────────────────────────────────────── -->
 <div class="status-bar-wl" id="status-bar">Loading…</div>
 
+<!-- NFL_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — STAT FILTERING box on the NFL
+     Watch101 list, matching the NFL Players pool. Functional: Team / Min FPts / Min Games / Age /
+     Max %Owned (Y!). Date Range + CBS inert. When any filter is active, drag-to-rank is disabled so
+     the hand-built order is safe. MIN GAMES reads s.gp (inert in offseason, live once Sleeper fills it). -->
+<div id="nflwl-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+  <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
+  <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">TEAM</div>
+      <select id="nflwlpf-team" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="ALL">All Teams</option></select>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
+      <select id="nflwlpf-daterange" disabled title="Season stats only — NFL has no date-range pipeline yet" style="background:var(--surface);color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:not-allowed;outline:none;opacity:0.6"><option value="season" selected>Season Stats</option></select>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN FPTS</div>
+      <input id="nflwlpf-fpts" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN GAMES</div>
+      <input id="nflwlpf-games" type="number" min="0" placeholder="0" title="Filters by games played (s.gp). Inert in the offseason until Sleeper provides games-played." style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <input id="nflwlpf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        <span style="font-size:11px;color:var(--text3)">to</span>
+        <input id="nflwlpf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
+      <input id="nflwlpf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
+      <input id="nflwlpf-cbsowned" type="number" min="0" max="100" placeholder="any" disabled title="No NFL CBS data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button onclick="applyNflWlFilters()" style="background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
+      <button onclick="resetNflWlFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── WATCH LIST TABLE ──────────────────────────────── -->
 <div class="table-wrap">
   <table class="watch-list">
@@ -629,6 +675,55 @@ function loadAll(){ reloadWatchList(); }
 let _playerDB = null;
 let _seasonStats = null;
 let _watchList = [];
+
+// NFL_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
+// Functional: team / minFpts / minGames(s.gp) / age / maxOwned(Yahoo). Date Range + CBS inert.
+let _wlFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
+let _wlTeamSelectBuilt = false;
+function _wlfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
+function _wlFilterActive(){ return _wlFilters && (_wlFilters.team!=='ALL' || _wlFilters.minFpts!=null || _wlFilters.minGames!=null || _wlFilters.ageMin!=null || _wlFilters.ageMax!=null || _wlFilters.maxOwned!=null); }
+function applyNflWlFilters(){
+  _wlFilters.team     = (document.getElementById('nflwlpf-team')||{}).value || 'ALL';
+  _wlFilters.minFpts  = _wlfNum('nflwlpf-fpts');
+  _wlFilters.minGames = _wlfNum('nflwlpf-games');
+  _wlFilters.ageMin   = _wlfNum('nflwlpf-agemin');
+  _wlFilters.ageMax   = _wlfNum('nflwlpf-agemax');
+  _wlFilters.maxOwned = _wlfNum('nflwlpf-owned');
+  renderWatchList();
+}
+function resetNflWlFilters(){
+  ['nflwlpf-fpts','nflwlpf-games','nflwlpf-agemin','nflwlpf-agemax','nflwlpf-owned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const t=document.getElementById('nflwlpf-team'); if(t) t.value='ALL';
+  _wlFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null };
+  renderWatchList();
+}
+function _wlBuildTeamSelect(){
+  if(_wlTeamSelectBuilt || !_playerDB) return;
+  const sel=document.getElementById('nflwlpf-team'); if(!sel) return;
+  const teams=new Set();
+  (_watchList||[]).forEach(item=>{ const pid=_wlPid(item); const p=_playerDB[pid]; if(p && p.team) teams.add(p.team); });
+  const sorted=Array.from(teams).sort();
+  sel.innerHTML='<option value="ALL">All Teams</option>'+sorted.map(t=>'<option value="'+t+'">'+t+'</option>').join('');
+  _wlTeamSelectBuilt=true;
+}
+function _wlPassesFilter(pid){
+  const F=_wlFilters; if(!F) return true;
+  const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
+  if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
+  const s=(_seasonStats && _seasonStats[pid])||{};
+  if(F.minFpts!=null && (Number(s.pts_half_ppr)||0) < F.minFpts) return false;
+  if(F.minGames!=null && (Number(s.gp)||0) < F.minGames) return false;
+  if(F.ageMin!=null || F.ageMax!=null){
+    const a=nflDecimalAgeNum(p);
+    if(F.ageMin!=null && (a==null || a<F.ageMin)) return false;
+    if(F.ageMax!=null && (a==null || a>F.ageMax)) return false;
+  }
+  if(F.maxOwned!=null){
+    const ow=(typeof _yahooLookupNum==='function') ? _yahooLookupNum(pid,'roster_pct') : null;
+    if(ow==null || ow>F.maxOwned) return false;
+  }
+  return true;
+}
 
 // Update the "last-updated" stamp the cloned header shows
 function setLastUpdated(text){
@@ -1076,11 +1171,17 @@ function renderWatchList(){
     tbody.innerHTML = '<tr><td colspan="23" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
     return;
   }
-  const sortedIds = getSortedWatchList();
+  if(typeof _wlBuildTeamSelect === 'function') _wlBuildTeamSelect();  // NFL_WL_STATFILTER_V1
+  let sortedIds = getSortedWatchList();
+  // NFL_WL_STATFILTER_V1 — apply the STAT FILTERING box to the displayed list.
+  if(typeof _wlFilterActive === 'function' && _wlFilterActive()){
+    sortedIds = sortedIds.filter(pid => _wlPassesFilter(pid));
+  }
   // NFL_DRAG_RANK_V1 — drag-to-rank is only live in the home/rank view (no stat sort
   // active). When a stat column sort is on, dragging is disabled so a hand-built
   // ranking can never be reordered against a sort. _sortField === null == rank view.
-  const dragEnabled = (_sortField === null);
+  // NFL_WL_STATFILTER_V1 — also disable dragging when a FILTER is active.
+  const dragEnabled = (_sortField === null) && !(typeof _wlFilterActive === 'function' && _wlFilterActive());
   tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
     const s = (_seasonStats && _seasonStats[pid]) || {};
