@@ -17602,8 +17602,24 @@ function renderTank(){
   // age via decimalAgeNum (matches displayed decimal age).
   {
     const F = tankFilters;
-    if(F.ab != null)          list = list.filter(p => isPitcher(p) ? true : ((parseFloat(p.ab)||0) >= F.ab));
-    if(F.ip != null)          list = list.filter(p => !isPitcher(p) ? true : ((parseFloat(p.ip)||0) >= F.ip));
+    // TANK_FILTER_DATERANGE_V1 (2026-06-05, PC Walter, per the Dude) — same family as
+    // POOL_FILTER_DATERANGE_V1. Min AB / Min IP must test the SAME number the column shows
+    // and the sort uses. When a non-season date range is active, read AB/IP from the
+    // date-range cache exactly the way the Tank render cell (~line 17825) and sort getVal
+    // (~line 17692) do: pre-baked PLAYER_DATERANGE_CACHE[mlb_id][range] first, runtime
+    // tankDateRangeCache fallback. No window data => 0 (drops below any positive minimum,
+    // matching the dash the column shows). Season range => flat p.ab/p.ip.
+    const _drStatFor = (p, key) => {
+      const useDR = (typeof dateRange !== 'undefined' && dateRange !== 'season');
+      if(useDR && p.mlb_id){
+        const _pre = (typeof PLAYER_DATERANGE_CACHE !== 'undefined') ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
+        const _dr = (_pre && _pre[dateRange]) || (typeof tankDateRangeCache !== 'undefined' ? tankDateRangeCache[p.mlb_id + '_' + dateRange] : null);
+        return _dr ? (parseFloat(_dr[key])||0) : 0;
+      }
+      return parseFloat(p[key])||0;
+    };
+    if(F.ab != null)          list = list.filter(p => isPitcher(p) ? true : (_drStatFor(p,'ab') >= F.ab));
+    if(F.ip != null)          list = list.filter(p => !isPitcher(p) ? true : (_drStatFor(p,'ip') >= F.ip));
     if(F.ageMin != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a >= F.ageMin; });
     if(F.ageMax != null)      list = list.filter(p => { const a = decimalAgeNum(p); return a != null && a <= F.ageMax; });
     if(F.ownedMax != null)    list = list.filter(p => p.roster_pct != null && p.roster_pct !== '' && parseFloat(p.roster_pct) <= F.ownedMax);
