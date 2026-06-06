@@ -282,6 +282,11 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 .priority-stars .pstar{color:var(--text3);transition:color 0.1s;padding:0 1px;}
 .priority-stars .pstar:hover{color:var(--court-bright)}
 .priority-stars .pstar.filled{color:var(--court-bright)}
+/* NBA_PLAYERS_PAGE_V1 (Stage 1) — page nav tabs (Watch List / NBA Players) */
+.page-nav{display:flex;gap:8px;padding:10px 16px 0 16px;flex-wrap:wrap}
+.page-nav-btn{background:var(--surface2,#161b22);color:var(--text2,#9aa4b2);border:1px solid var(--border2,#2a3240);border-radius:8px 8px 0 0;padding:8px 16px;font-size:13px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s}
+.page-nav-btn:hover{color:var(--court-bright,#fb923c);border-color:var(--court-bright,#fb923c)}
+.page-nav-btn.active{background:var(--court,#ea580c);color:#fff;border-color:var(--court,#ea580c)}
 </style>
 </head>
 <body>
@@ -300,6 +305,17 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <button class="btn btn-outline" onclick="reloadWatchList()">Refresh</button>
   </div>
 </div>
+
+<!-- ── PAGE NAV (NBA_PLAYERS_PAGE_V1, Stage 1) ─────── -->
+<!-- Tab row to switch between the Watch List view and the NBA Players (feeder pool) view.
+     Mirrors baseball's tab-nav-group. Watch List is the default view. -->
+<div class="page-nav" id="page-nav">
+  <button class="page-nav-btn active" id="nav-watchlist" onclick="showWatchListView()">🏠 Watch List</button>
+  <button class="page-nav-btn" id="nav-nbaplayers" onclick="showNbaPlayersView()">🏀 NBA Players</button>
+</div>
+
+<!-- ══════════ WATCH LIST VIEW (default) ══════════ -->
+<div id="watchlist-view">
 
 <!-- ── TOOLBAR ─────── -->
 <div class="toolbar-watchlist">
@@ -353,6 +369,20 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     </tbody>
   </table>
 </div>
+</div><!-- /#watchlist-view -->
+
+<!-- ══════════ NBA PLAYERS VIEW (feeder pool, hidden by default — NBA_PLAYERS_PAGE_V1) ══════════ -->
+<!-- Stage 1: container + placeholder only. Stage 2 fills #nba-players-body with the full-league table. -->
+<div id="nbaplayers-view" style="display:none">
+  <div class="status-bar-wl" id="nbaplayers-status">NBA Players — the full league pool. (Table coming in Stage 2.)</div>
+  <div class="table-wrap">
+    <table class="watch-list" id="nba-players-table">
+      <tbody id="nba-players-body">
+        <tr><td colspan="23" class="empty-state"><strong>NBA Players pool</strong>The browsable full-league table will load here.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <div class="footer">
   Watch101 NBA · Stats via Sleeper · <a href="https://nba-nas.fantasywatch101.com/health" target="_blank">server status</a>
@@ -389,6 +419,35 @@ async function reloadWatchList(){
   _playerDB = null;
   _seasonStats = null;
   await bootstrap();
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// NBA_PLAYERS_PAGE_V1 (2026-06-06 — PC Walter, per the Dude) — Stage 1: view toggle.
+// Two in-page views in one file (matches baseball's tab model): the Watch List
+// (default) and the NBA Players feeder pool. These fns flip which is visible and
+// which nav button is active. Stage 2 wires renderNbaPlayers() into showNbaPlayersView.
+// ──────────────────────────────────────────────────────────────────────────
+function showWatchListView(){
+  const wl = document.getElementById('watchlist-view');
+  const np = document.getElementById('nbaplayers-view');
+  if(wl) wl.style.display = '';
+  if(np) np.style.display = 'none';
+  const bWl = document.getElementById('nav-watchlist');
+  const bNp = document.getElementById('nav-nbaplayers');
+  if(bWl) bWl.classList.add('active');
+  if(bNp) bNp.classList.remove('active');
+}
+function showNbaPlayersView(){
+  const wl = document.getElementById('watchlist-view');
+  const np = document.getElementById('nbaplayers-view');
+  if(wl) wl.style.display = 'none';
+  if(np) np.style.display = '';
+  const bWl = document.getElementById('nav-watchlist');
+  const bNp = document.getElementById('nav-nbaplayers');
+  if(bWl) bWl.classList.remove('active');
+  if(bNp) bNp.classList.add('active');
+  // Stage 2 will call renderNbaPlayers() here to build/refresh the pool table.
+  if(typeof renderNbaPlayers === 'function') renderNbaPlayers();
 }
 
 function _updateYearLabels(){
