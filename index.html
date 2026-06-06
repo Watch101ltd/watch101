@@ -3524,10 +3524,25 @@ function goHome(){
   try { if(typeof closePlayerPool === 'function') closePlayerPool(); } catch(e){}
   try { if(typeof closeLeagueLeaders === 'function') closeLeagueLeaders(); } catch(e){}
   try { if(typeof closeProspects === 'function') closeProspects(); } catch(e){}
+  try { if(typeof closeHoldingTank === 'function') closeHoldingTank(); } catch(e){}
   try { if(typeof closeContext === 'function') closeContext(); } catch(e){}
   try { if(typeof closeModal === 'function') closeModal(); } catch(e){}
+  // PAGE_NAV_TABS_V1 — highlight the Watch101 tab as the active page.
+  _setActiveNavTab('home');
   // Scroll to the very top so the user sees the header + start of the list cleanly.
   try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e){ window.scrollTo(0, 0); }
+}
+
+// PAGE_NAV_TABS_V1 (2026-06-06 — PC Walter, per the Dude) — highlight the current page's
+// nav tab. `which` is 'home' | 'pool' | 'prospects' | 'tank'. Clears .active from all four,
+// sets it on the current one. Called from goHome + each open/close view fn.
+function _setActiveNavTab(which){
+  try {
+    const ids = { home:'nav-tab-home', pool:'nav-tab-pool', prospects:'nav-tab-prospects', tank:'nav-tab-tank' };
+    Object.values(ids).forEach(id => { const el = document.getElementById(id); if(el) el.classList.remove('active'); });
+    const cur = document.getElementById(ids[which]);
+    if(cur) cur.classList.add('active');
+  } catch(e){ /* nav tabs may not exist on every host — fail silent */ }
 }
 
 function switchActiveList(newId){
@@ -5489,6 +5504,11 @@ document.addEventListener('DOMContentLoaded', function(){
   var isDay = document.body.classList.contains('day-mode');
   btn.textContent = isDay ? '☀️' : '🌙';
   btn.title = isDay ? 'Switch to night mode' : 'Switch to day mode';
+});
+
+// PAGE_NAV_TABS_V1 — on load the page shows the Watch101 home view, so highlight that tab.
+document.addEventListener('DOMContentLoaded', function(){
+  try { if(typeof _setActiveNavTab === 'function') _setActiveNavTab('home'); } catch(e){}
 });
 
 function yahooButtonClick(){
@@ -10501,6 +10521,7 @@ function _clearActiveTabHashIfMatches(name){
 // ---- OPEN / CLOSE POOL ----
 function openPlayerPool(){
   poolActive = true;
+  _setActiveNavTab('pool');
   if(typeof leadersActive !== 'undefined' && leadersActive) closeLeagueLeaders();
   if(typeof prospectsActive !== 'undefined' && prospectsActive) closeProspects();
   // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — close Tank if it's open, so overlays don't stack.
@@ -13836,6 +13857,7 @@ let prosClusterByPos = null;   // Prospects cluster state (independent of other 
 
 function openProspects(){
   prospectsActive = true;
+  _setActiveNavTab('prospects');
   poolActive = false;
   if(typeof leadersActive !== 'undefined' && leadersActive) closeLeagueLeaders();
   closePlayerPool();
@@ -17430,6 +17452,7 @@ function onTankRemove(mlbId){
 // --- Tank twin of openPlayerPool ---
 function openHoldingTank(){
   tankActive = true;
+  _setActiveNavTab('tank');
   if(typeof leadersActive !== 'undefined' && leadersActive) closeLeagueLeaders();
   if(typeof prospectsActive !== 'undefined' && prospectsActive) closeProspects();
   // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — close Pool if it's open, so overlays don't stack.
