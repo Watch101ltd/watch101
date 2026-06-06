@@ -1997,16 +1997,29 @@ async function loadYahooData(){
   }
 
   const merged = {};
+  // DUPENAME_RANK_CLOBBER_FIX_V1 (2026-06-06 — PC Walter, per the Dude). Tracks which
+  // Sleeper pids were claimed by a PRIMARY yahoo_id match, so a later NAME-fallback
+  // match can never overwrite them. Bug it fixes: ~36 fantasy-relevant duplicate names
+  // exist in Sleeper (an active star + a retired/defensive namesake — e.g. Justin
+  // Jefferson WR/MIN vs Justin Jefferson LB/CLE). Yahoo lists BOTH (the star at rank 11,
+  // the namesake ~rank 714). The star matched correctly by yahoo_id (32692 -> 6794), but
+  // the namesake had no yahoo_id, fell to the name fallback, which resolved "justin
+  // jefferson" back to the SAME pid 6794 and overwrote rank 11 with rank 714. Result: the
+  // star sorted to ~634th and fell off the top-200 render = "missing #11". Guarding by-id
+  // claims fixes every duplicate-name case at once.
+  const claimedByYahooId = new Set();
   let matchedById = 0;
   let matchedByNameTeam = 0;
   let unmatched = 0;
+  let nameClobberBlocked = 0;
   for(const yp of yahooPlayers){
     let sleeperPid = null;
+    let matchSource = null;
     // Primary lookup: by Yahoo player_id (works for all records where Sleeper has yahoo_id stamped)
     const yid = yp.yahoo_player_id;
     if(yid){
       sleeperPid = yahooIdToSleeperPid[String(yid)];
-      if(sleeperPid) matchedById++;
+      if(sleeperPid){ matchedById++; matchSource = 'id'; }
     }
     // Fallback lookup: by normalized name+team. Only fires when primary missed.
     if(!sleeperPid){
@@ -2033,10 +2046,18 @@ async function loadYahooData(){
             if(k.indexOf(prefix) === 0){ sleeperPid = nameTeamToSleeperPid[k]; break; }
           }
         }
-        if(sleeperPid) matchedByNameTeam++;
+        if(sleeperPid){ matchedByNameTeam++; matchSource = 'name'; }
       }
     }
     if(!sleeperPid){ unmatched++; continue; }
+    // DUPENAME_RANK_CLOBBER_FIX_V1 — record by-id claims; never let a name-fallback
+    // match overwrite a pid that a primary yahoo_id match already claimed.
+    if(matchSource === 'id'){
+      claimedByYahooId.add(sleeperPid);
+    } else if(matchSource === 'name' && claimedByYahooId.has(sleeperPid)){
+      nameClobberBlocked++;
+      continue;  // skip — the correct (by-id) data is already in merged[sleeperPid]
+    }
     merged[sleeperPid] = {
       yahoo_rank: (typeof yp.yahoo_rank === 'number') ? yp.yahoo_rank : null,
       roster_pct: (typeof yp.roster_pct === 'number') ? yp.roster_pct : null
@@ -2046,7 +2067,7 @@ async function loadYahooData(){
   const matched = matchedById + matchedByNameTeam;
   _yahooDataByPid = merged;
   _yahooDataLoaded = true;
-  console.log('[yahoo] matched ' + matched + ' / ' + yahooPlayers.length + ' Yahoo players (primary id: ' + matchedById + ', name fallback: ' + matchedByNameTeam + ', unmatched: ' + unmatched + ')');
+  console.log('[yahoo] matched ' + matched + ' / ' + yahooPlayers.length + ' Yahoo players (primary id: ' + matchedById + ', name fallback: ' + matchedByNameTeam + ', unmatched: ' + unmatched + ', dupe-name clobbers blocked: ' + nameClobberBlocked + ')');
 
   if(statusEl) {
     const playerCount = _playerDB ? Object.keys(_playerDB).length : 0;
