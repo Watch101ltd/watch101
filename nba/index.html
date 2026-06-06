@@ -288,6 +288,11 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 .page-nav-btn:hover{color:var(--court-bright,#fb923c);border-color:var(--court-bright,#fb923c)}
 .page-nav-btn.active{background:var(--court,#ea580c);color:#fff;border-color:var(--court,#ea580c)}
 .np-on-list{color:var(--court,#ea580c);font-weight:800}
+/* NBA_PLAYERS_PAGE_V1 Stage 3 — pool "+ Add" button + added state */
+.np-add-btn{background:var(--court,#ea580c);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.np-add-btn:hover{filter:brightness(1.1)}
+.np-add-btn.added{background:transparent;color:var(--court,#ea580c);border:1px solid var(--court,#ea580c);cursor:default;font-weight:800}
+.np-add-btn:disabled{cursor:default}
 </style>
 </head>
 <body>
@@ -554,6 +559,7 @@ function renderNbaPlayers(){
     const fgPct = pctOrNull(s.fgm, s.fga);
     const ftPct = pctOrNull(s.ftm, s.fta);
     const onList = (_wlIndexOf(pid) >= 0);
+    const _pidJson = escapeHtml(JSON.stringify(pid));  // safe for the onclick arg
     return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
@@ -568,13 +574,32 @@ function renderNbaPlayers(){
       '<td>' + pctCellOrDash(fgPct) + '</td>' +
       '<td>' + pctCellOrDash(ftPct) + '</td>' +
       '<td>' + statCellOrDash(s.to, 1) + '</td>' +
-      // Stage 3 wires this Add cell to a "+ Add" button. Placeholder for now;
-      // already-on-list players show a muted "✓" so the Stage 3 swap is obvious.
-      '<td class="center col-action">' + (onList ? '<span class="np-on-list">✓</span>' : '—') + '</td>' +
+      // NBA_PLAYERS_PAGE_V1 Stage 3 — Add button. Already-on-list players show a
+      // disabled "✓ Added" pill; others show a clickable "+ Add" that calls
+      // npAddToList(pid, btn), which adds to the watch list + flips this button.
+      '<td class="center col-action">' + (onList
+          ? '<button class="np-add-btn added" disabled>✓ Added</button>'
+          : '<button class="np-add-btn" onclick="npAddToList(' + _pidJson + ', this)">+ Add</button>') + '</td>' +
     '</tr>';
   }).join('');
   if(!_npBuilt){ _npWireSortHeaders(); _npBuilt = true; }
   _npUpdateSortArrows();
+}
+
+// NBA_PLAYERS_PAGE_V1 Stage 3 — add a player to the watch list FROM the pool.
+// Reuses the existing addPlayerToList() (dupe-guarded, re-renders the watch list),
+// then saves to the browser so the add survives a reload (matches the drag save —
+// the NAS push stays on the Save button), and flips THIS row's button to "✓ Added"
+// in place (no full pool re-render, so the Dude's scroll position + sort are kept).
+function npAddToList(pid, btnEl){
+  if(_wlIndexOf(pid) >= 0) return;            // already on the list — no-op
+  addPlayerToList(pid);                        // adds + re-renders the watch list
+  if(typeof _nbaSaveLocal === 'function') _nbaSaveLocal();  // persist to browser
+  if(btnEl){
+    btnEl.textContent = '✓ Added';
+    btnEl.classList.add('added');
+    btnEl.disabled = true;
+  }
 }
 
 function _npSortBy(field){
