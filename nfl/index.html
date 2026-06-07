@@ -382,8 +382,42 @@ table.watch-list tbody td.left{text-align:left}
 table.watch-list tbody tr:hover{background:var(--surface2)}
 table.watch-list tbody tr:last-child td{border-bottom:none}
 .player-name{font-weight:800;color:var(--text);font-size:14px}
+/* FROM_THE_LOGO_V1 — names clickable to open the player detail overlay */
+.player-name.ftl-clickable{cursor:pointer;}
+.player-name.ftl-clickable:hover{color:var(--turf);text-decoration:underline;}
 .stat-cell{font-weight:700;color:#22c55e;font-family:'Nunito Sans',sans-serif}
 .stat-zero{color:var(--text3);font-weight:400}
+
+/* ══════════ FROM THE LOGO — player detail overlay (FROM_THE_LOGO_V1, 2026-06-07) ══════════
+   Ported from the NBA From the Logo (which came from baseball's Deep Cut). FOOTBALL theme (turf green).
+   v1 = shell + photo (sleepercdn nfl player_id) + the season-total stats the football table shows. Games deferred. */
+#ftl-backdrop{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.55);backdrop-filter:blur(2px);display:none;}
+#ftl-backdrop.visible{display:block}
+#ftl-overlay{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:80vw;height:80vh;max-width:1100px;z-index:1000;background:var(--bg);overflow-y:auto;display:none;font-family:'Nunito Sans',sans-serif;line-height:1.4;border-radius:12px;border:1px solid var(--border2);box-shadow:0 24px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.04);}
+#ftl-overlay.visible{display:block}
+#ftl-overlay .ftl-close{position:absolute;top:14px;right:16px;z-index:1010;width:40px;height:40px;border-radius:50%;background:rgba(13,17,23,0.85);border:1px solid var(--border2);color:var(--text2);font-size:22px;font-weight:300;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;backdrop-filter:blur(6px);}
+#ftl-overlay .ftl-close:hover{background:var(--turf);border-color:var(--turf);color:#fff;transform:scale(1.05);}
+#ftl-overlay .ftl-header{background:linear-gradient(135deg,#080c10 0%,#0d1520 50%,#080c10 100%);border-bottom:1px solid var(--turf);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+#ftl-overlay .ftl-logo{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:26px;letter-spacing:0.04em;line-height:1;color:var(--turf);text-transform:uppercase;}
+#ftl-overlay .ftl-logo-sub{font-size:10px;letter-spacing:0.25em;color:#4ade80;text-transform:uppercase;margin-top:4px}
+#ftl-overlay .ftl-header-right{font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase}
+#ftl-overlay .ftl-hero{padding:2rem 1.5rem;display:flex;gap:28px;align-items:flex-start;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;}
+#ftl-overlay .ftl-photo{width:180px;height:180px;border-radius:50%;border:3px solid var(--turf);object-fit:cover;object-position:center top;background:var(--surface2);flex-shrink:0;}
+#ftl-overlay .ftl-meta{flex:1;min-width:260px}
+#ftl-overlay .ftl-name{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:44px;letter-spacing:0.03em;color:var(--text);line-height:1;}
+#ftl-overlay .ftl-sub{font-size:14px;color:var(--text2);margin-top:10px;letter-spacing:0.04em;}
+#ftl-overlay .ftl-sub .sep{color:var(--border2);margin:0 8px}
+#ftl-overlay .ftl-rank{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:6px 14px;background:#16a34a33;border:1px solid var(--turf);border-radius:6px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4ade80;font-weight:700;}
+#ftl-overlay .ftl-rank .num{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:16px;letter-spacing:0.04em}
+#ftl-overlay .ftl-statwrap{padding:1.5rem;}
+#ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin:0 0 10px 2px;}
+#ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:22px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
+#ftl-overlay .ftl-statcell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;min-width:66px;flex:1;border-right:1px solid var(--border);text-align:center;}
+#ftl-overlay .ftl-statcell:last-child{border-right:none;}
+#ftl-overlay .ftl-statlabel{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:9px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
+#ftl-overlay .ftl-statval{font-size:18px;font-weight:700;color:#22c55e;line-height:1;}
+#ftl-overlay .ftl-statval.na{color:var(--text3);font-weight:500;}
+@media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:34px}#ftl-overlay .ftl-photo{width:130px;height:130px}}
 .pos-badge{
   display:inline-block;padding:3px 7px;border-radius:4px;
   font-size:10px;font-weight:800;letter-spacing:0.05em;
@@ -990,7 +1024,7 @@ function renderNflPlayers(){
     const _pidJson = escapeHtml(JSON.stringify(pid));
     return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left col-player"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       // NFL_PLAYERS_PAGE_V1 — Yahoo rank + ownership (football HAS the Yahoo pipeline,
@@ -1298,7 +1332,7 @@ function renderWatchList(){
       _handleCell +
       '<td class="col-rank">' + rank + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
+      '<td class="left"><span class="player-name ftl-clickable" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       '<td class="placeholder">—</td>' +
@@ -1701,6 +1735,82 @@ function initSortHandlers(){
 }
 initSortHandlers();
 // /SORTABLE_COLUMNS_V1
+
+// ══════════ FROM THE LOGO — player detail overlay (FROM_THE_LOGO_V1, 2026-06-07) ══════════
+// Football cousin of the NBA From the Logo card. v1 fills photo + name + sub (team/pos/age/exp) +
+// the SEASON-TOTAL stats the football table shows (football table is totals, not per-game). Games deferred.
+// Photo: Sleeper hosts NFL headshots at sleepercdn.com/content/nfl/players/<player_id>.jpg
+// (confirmed live in-browser 2026-06-07, Joe Flacco pid 19). onerror -> Sleeper default silhouette.
+function _ftlStatCell(label, val){
+  const na = (val == null);
+  return '<div class="ftl-statcell"><div class="ftl-statlabel">' + label +
+         '</div><div class="ftl-statval' + (na ? ' na' : '') + '">' + (na ? '—' : val) + '</div></div>';
+}
+// season total -> shown as-is (em-dash when null/0, matching statCellOrDash behavior on the table)
+function _ftlNum(v, dec){
+  const n = Number(v);
+  if(v == null || !isFinite(n) || n === 0) return null;
+  return (dec != null) ? n.toFixed(dec).replace(/\.0$/, '') : Math.round(n).toLocaleString();
+}
+
+function openFromTheLogo(pid){
+  const p = _playerDB && _playerDB[pid];
+  if(!p) return;
+  const s = _statsRow(pid) || {};
+
+  const photoEl = document.getElementById('ftl-photo');
+  photoEl.src = 'https://sleepercdn.com/content/nfl/players/' + encodeURIComponent(p.player_id || pid) + '.jpg';
+  const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
+  photoEl.alt = name;
+
+  document.getElementById('ftl-name').textContent = name;
+  const subParts = [ (p.team || '—'), (p.position || '—'), 'Age ' + nflDecimalAge(p) ];
+  if(p.years_exp != null && p.years_exp !== '') subParts.push((Number(p.years_exp) === 0 ? 'Rookie' : (p.years_exp + ' yr exp')));
+  document.getElementById('ftl-sub').innerHTML = subParts.join('<span class="sep">|</span>');
+
+  // Watch101 rank pill — only when the player is on the watch list (his hand-ranked slot).
+  const idx = _wlIndexOf(pid);
+  const rankEl = document.getElementById('ftl-rank');
+  if(idx >= 0){
+    document.getElementById('ftl-rank-num').textContent = '#' + (idx + 1);
+    rankEl.style.display = 'inline-flex';
+  } else {
+    rankEl.style.display = 'none';
+  }
+
+  // Stat boxes — match the football table (season totals): fantasy points, then passing,
+  // rushing, receiving. Empty stat -> em-dash.
+  const fantasy = _ftlStatCell('FPTS', _ftlNum(s.pts_half_ppr, 1));
+  const passing = _ftlStatCell('PA YD', _ftlNum(s.pass_yd)) + _ftlStatCell('PA TD', _ftlNum(s.pass_td));
+  const rushing = _ftlStatCell('RU YD', _ftlNum(s.rush_yd)) + _ftlStatCell('RU TD', _ftlNum(s.rush_td));
+  const receiving = _ftlStatCell('REC', _ftlNum(s.rec)) + _ftlStatCell('RE YD', _ftlNum(s.rec_yd)) + _ftlStatCell('RE TD', _ftlNum(s.rec_td));
+  document.getElementById('ftl-statwrap').innerHTML =
+    '<div class="ftl-statgroup-label">Fantasy</div><div class="ftl-statbar">' + fantasy + '</div>' +
+    '<div class="ftl-statgroup-label">Passing</div><div class="ftl-statbar">' + passing + '</div>' +
+    '<div class="ftl-statgroup-label">Rushing</div><div class="ftl-statbar">' + rushing + '</div>' +
+    '<div class="ftl-statgroup-label">Receiving</div><div class="ftl-statbar">' + receiving + '</div>';
+
+  // Header note reflects the year the page is showing (offseason shows last season).
+  const hr = document.getElementById('ftl-header-right');
+  if(hr && typeof STATS_YEAR !== 'undefined') hr.textContent = STATS_YEAR + ' Season Stats';
+
+  document.getElementById('ftl-backdrop').classList.add('visible');
+  document.getElementById('ftl-overlay').classList.add('visible');
+  document.body.classList.add('ftl-open');
+}
+function closeFromTheLogo(){
+  const ov = document.getElementById('ftl-overlay');
+  if(ov) ov.classList.remove('visible');
+  const bd = document.getElementById('ftl-backdrop');
+  if(bd) bd.classList.remove('visible');
+  document.body.classList.remove('ftl-open');
+}
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' || e.keyCode === 27){
+    const ov = document.getElementById('ftl-overlay');
+    if(ov && ov.classList.contains('visible')){ e.preventDefault(); closeFromTheLogo(); }
+  }
+});
 
 bootstrap();
 </script>
@@ -2127,6 +2237,31 @@ function _yahooLookupFmt(pid, field, isPercent){
 }
 // /YAHOO_DATA_V1
 </script>
+
+<!-- ══════════ FROM THE LOGO — player detail overlay (FROM_THE_LOGO_V1, 2026-06-07) ══════════
+     Football cousin of the NBA From the Logo card. Opens on a player-name click.
+     v1 = shell + photo + the season-total stats the football table shows. Games deferred. -->
+<div id="ftl-backdrop" onclick="closeFromTheLogo()"></div>
+<div id="ftl-overlay" role="dialog" aria-modal="true" aria-label="Player detail">
+  <button class="ftl-close" onclick="closeFromTheLogo()" aria-label="Close">&times;</button>
+  <div class="ftl-header">
+    <div>
+      <div class="ftl-logo">From the Logo</div>
+      <div class="ftl-logo-sub">Watch101 NFL Player Card</div>
+    </div>
+    <div class="ftl-header-right" id="ftl-header-right">Season Stats</div>
+  </div>
+  <section class="ftl-hero">
+    <img class="ftl-photo" id="ftl-photo" src="" alt=""
+         onerror="this.onerror=null;this.src='https://sleepercdn.com/images/v2/icons/player_default.webp'">
+    <div class="ftl-meta">
+      <div class="ftl-name" id="ftl-name"></div>
+      <div class="ftl-sub" id="ftl-sub"></div>
+      <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num"></span></div>
+    </div>
+  </section>
+  <div class="ftl-statwrap" id="ftl-statwrap"></div>
+</div>
 
 </body>
 </html>
