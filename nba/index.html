@@ -360,6 +360,10 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       <input id="wlpf-pts" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
     </div>
     <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN GAMES</div>
+      <input id="wlpf-games" type="number" min="0" placeholder="0" title="Minimum games played" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
       <div style="display:flex;align-items:center;gap:5px">
         <input id="wlpf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
@@ -405,6 +409,8 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
         <th class="col-stat" data-sort="pts">PTS <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
+        <th class="col-stat" data-sort="ppg" title="Points Per Game (PTS ÷ GP)">PPG <span class="sort-arrow">↕</span></th>
         <th class="col-stat" data-sort="reb">REB <span class="sort-arrow">↕</span></th>
         <th class="col-stat" data-sort="ast">AST <span class="sort-arrow">↕</span></th>
         <th class="col-stat" data-sort="stl">STL <span class="sort-arrow">↕</span></th>
@@ -417,7 +423,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       </tr>
     </thead>
     <tbody id="watch-list-body">
-      <tr><td colspan="23" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
+      <tr><td colspan="25" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
     </tbody>
   </table>
 </div>
@@ -445,6 +451,10 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN PTS</div>
         <input id="nbapf-pts" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN GAMES</div>
+        <input id="nbapf-games" type="number" min="0" placeholder="0" title="Minimum games played" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
@@ -481,6 +491,8 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
           <th class="col-stat" data-npsort="pts">PTS <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
+          <th class="col-stat" data-npsort="ppg" title="Points Per Game (PTS ÷ GP)">PPG <span class="sort-arrow">↕</span></th>
           <th class="col-stat" data-npsort="reb">REB <span class="sort-arrow">↕</span></th>
           <th class="col-stat" data-npsort="ast">AST <span class="sort-arrow">↕</span></th>
           <th class="col-stat" data-npsort="stl">STL <span class="sort-arrow">↕</span></th>
@@ -493,7 +505,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         </tr>
       </thead>
       <tbody id="nba-players-body">
-        <tr><td colspan="14" class="empty-state"><strong>NBA Players pool</strong>Loading…</td></tr>
+        <tr><td colspan="16" class="empty-state"><strong>NBA Players pool</strong>Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -580,13 +592,17 @@ async function _applyDateRangeFrom(selectId){
 
 // NBA_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
 // Functional: team / minPts / age (NBA has that data). %Owned + date range are inert (no data).
-let _wlFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null, posPositions:[] };
+let _wlFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, posPositions:[] };
 let _wlTeamSelectBuilt = false;
 function _wlfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
-function _wlFilterActive(){ return _wlFilters && (_wlFilters.team!=='ALL' || _wlFilters.minPts!=null || _wlFilters.ageMin!=null || _wlFilters.ageMax!=null || (_wlFilters.posPositions && _wlFilters.posPositions.length)); }
+// NBA_MIN_GAMES_FILTER_V1 — minGames added to the gate. A "games-only" Apply must
+// register as an active filter or renderWatchList would skip the filter pass entirely
+// (the exact bug the position filter hit on 2026-06-06 — see POSITION_FILTER_V1).
+function _wlFilterActive(){ return _wlFilters && (_wlFilters.team!=='ALL' || _wlFilters.minPts!=null || _wlFilters.minGames!=null || _wlFilters.ageMin!=null || _wlFilters.ageMax!=null || (_wlFilters.posPositions && _wlFilters.posPositions.length)); }
 async function applyNbaWlFilters(){
   _wlFilters.team   = (document.getElementById('wlpf-team')||{}).value || 'ALL';
   _wlFilters.minPts = _wlfNum('wlpf-pts');
+  _wlFilters.minGames = _wlfNum('wlpf-games');   // NBA_MIN_GAMES_FILTER_V1
   _wlFilters.ageMin = _wlfNum('wlpf-agemin');
   _wlFilters.ageMax = _wlfNum('wlpf-agemax');
   _wlFilters.posPositions = Array.from(document.querySelectorAll('.wlpf-pos:checked')).map(cb => cb.value);
@@ -594,13 +610,13 @@ async function applyNbaWlFilters(){
   renderWatchList();
 }
 function resetNbaWlFilters(){
-  ['wlpf-pts','wlpf-agemin','wlpf-agemax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['wlpf-pts','wlpf-games','wlpf-agemin','wlpf-agemax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const t=document.getElementById('wlpf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('wlpf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('nbapf-daterange'); if(dr2) dr2.value='season';
   document.querySelectorAll('.wlpf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
-  _wlFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null, posPositions:[] };
+  _wlFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, posPositions:[] };
   renderWatchList();
 }
 // Build the TEAM dropdown from the teams actually present on the watch list (no abbr guessing).
@@ -620,6 +636,7 @@ function _wlPassesFilter(pid){
   if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
   const s=_statsRow(pid);
   if(F.minPts!=null && (Number(s.pts)||0) < F.minPts) return false;
+  if(F.minGames!=null && (Number(s.gp)||0) < F.minGames) return false;  // NBA_MIN_GAMES_FILTER_V1
   // POSITION_FILTER_V1 (2026-06-06) — single NBA position, match ANY checked.
   if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) return false;
   if(F.ageMin!=null || F.ageMax!=null){
@@ -691,7 +708,7 @@ let _npBuilt     = false;   // first-open guard so we only header-wire once
 // Date Range + Max %Owned (Y!) + Max %Owned (CBS) for visual consistency with baseball, but
 // those are inert (no date-range pipeline, no Yahoo/CBS data on NBA yet) — their inputs are
 // disabled in the HTML so nothing pretends to filter on absent data.
-let _npFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null, posPositions:[] };
+let _npFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, posPositions:[] };
 let _npTeamSelectBuilt = false;
 
 function _npfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
@@ -699,6 +716,7 @@ function _npfNum(id){ const el=document.getElementById(id); if(!el) return null;
 async function applyNbaPoolFilters(){
   _npFilters.team   = (document.getElementById('nbapf-team')||{}).value || 'ALL';
   _npFilters.minPts = _npfNum('nbapf-pts');
+  _npFilters.minGames = _npfNum('nbapf-games');   // NBA_MIN_GAMES_FILTER_V1
   _npFilters.ageMin = _npfNum('nbapf-agemin');
   _npFilters.ageMax = _npfNum('nbapf-agemax');
   _npFilters.posPositions = Array.from(document.querySelectorAll('.nbapf-pos:checked')).map(cb => cb.value);
@@ -706,13 +724,13 @@ async function applyNbaPoolFilters(){
   renderNbaPlayers();
 }
 function resetNbaPoolFilters(){
-  ['nbapf-pts','nbapf-agemin','nbapf-agemax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['nbapf-pts','nbapf-games','nbapf-agemin','nbapf-agemax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const t=document.getElementById('nbapf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('nbapf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('wlpf-daterange'); if(dr2) dr2.value='season';
   document.querySelectorAll('.nbapf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
-  _npFilters = { team:'ALL', minPts:null, ageMin:null, ageMax:null, posPositions:[] };
+  _npFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, posPositions:[] };
   renderNbaPlayers();
 }
 // Populate the TEAM dropdown from the real teams present in _playerDB (no abbr guessing).
@@ -733,6 +751,8 @@ function _npStatValue(field, p, s){
     case 'team': return p.team || 'zzz';
     case 'age':  return nbaDecimalAgeNum(p);
     case 'pts':  return (s.pts || 0);
+    case 'gp':   return (s.gp || 0);            // NBA_PPG_GAMES_V1
+    case 'ppg':  return nbaPpg(s);              // NBA_PPG_GAMES_V1 — null sinks to bottom
     case 'reb':  return (s.reb || 0);
     case 'ast':  return (s.ast || 0);
     case 'stl':  return (s.stl || 0);
@@ -759,6 +779,7 @@ function _npSortedIds(){
     if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) continue;  // POSITION_FILTER_V1
     const s = _statsRow(id);
     if(F.minPts != null && (Number(s.pts)||0) < F.minPts) continue;
+    if(F.minGames != null && (Number(s.gp)||0) < F.minGames) continue;  // NBA_MIN_GAMES_FILTER_V1
     if(F.ageMin != null || F.ageMax != null){
       const a = nbaDecimalAgeNum(p);
       if(F.ageMin != null && (a == null || a < F.ageMin)) continue;
@@ -797,7 +818,7 @@ function renderNbaPlayers(){
   if(typeof _npBuildTeamSelect === 'function') _npBuildTeamSelect();  // NBA_POOL_STATFILTER_V1
   const ids = _npSortedIds();
   // NBA_POOL_STATFILTER_V1 — show filtered-vs-total when any functional filter is active.
-  const _fActive = _npFilters && (_npFilters.team!=='ALL' || _npFilters.minPts!=null || _npFilters.ageMin!=null || _npFilters.ageMax!=null);
+  const _fActive = _npFilters && (_npFilters.team!=='ALL' || _npFilters.minPts!=null || _npFilters.minGames!=null || _npFilters.ageMin!=null || _npFilters.ageMax!=null);
   if(statusEl) statusEl.textContent = (_fActive ? ('Showing ' + ids.length.toLocaleString() + ' filtered') : (ids.length.toLocaleString() + ' NBA players')) + ' · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='pts'?' (default)':'');
   tbody.innerHTML = ids.map(pid => {
     const p = _playerDB[pid];
@@ -808,6 +829,7 @@ function renderNbaPlayers(){
     const age  = nbaDecimalAge(p);
     const fgPct = pctOrNull(s.fgm, s.fga);
     const ftPct = pctOrNull(s.ftm, s.fta);
+    const ppg   = nbaPpg(s);  // NBA_PPG_GAMES_V1 — pts/gp, null when gp missing/0
     const onList = (_wlIndexOf(pid) >= 0);
     const _pidJson = escapeHtml(JSON.stringify(pid));  // safe for the onclick arg
     return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
@@ -816,6 +838,8 @@ function renderNbaPlayers(){
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       '<td>' + statCellOrDash(s.pts, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.gp, 0) + '</td>' +
+      '<td>' + statCellOrDash(ppg, 1) + '</td>' +
       '<td>' + statCellOrDash(s.reb, 1) + '</td>' +
       '<td>' + statCellOrDash(s.ast, 1) + '</td>' +
       '<td>' + statCellOrDash(s.stl, 1) + '</td>' +
@@ -1034,6 +1058,16 @@ function pctOrNull(makes, attempts){
   return (m / a) * 100;
 }
 
+// NBA_PPG_GAMES_V1 (2026-06-07 — PC Walter, per the Dude). Sleeper gives season
+// TOTALS only (s.pts), plus games played (s.gp). PPG is derived = pts / gp, guarded
+// against divide-by-zero (gp missing or 0 -> null -> the column shows an em-dash,
+// same as any other missing stat). Same derive-from-totals trick as FG%/FT%.
+function nbaPpg(s){
+  const pts = Number(s && s.pts), gp = Number(s && s.gp);
+  if(!isFinite(pts) || !isFinite(gp) || gp <= 0) return null;
+  return pts / gp;
+}
+
 // NBA_DECIMAL_AGE_V1 (2026-06-05 — PC Walter, per the Dude). Ported from baseball's
 // proven decimalAge formula. Sleeper's NBA player records carry birth_date (e.g.
 // "1996-04-09") alongside the rounded integer age, and the server passes the raw
@@ -1068,7 +1102,7 @@ function renderWatchList(){
   const countEl = document.getElementById('count-badge');
   countEl.textContent = _watchList.length + (_watchList.length === 1 ? ' player' : ' players');
   if(_watchList.length === 0){
-    tbody.innerHTML = '<tr><td colspan="23" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="25" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
     return;
   }
   if(typeof _wlBuildTeamSelect === 'function') _wlBuildTeamSelect();  // NBA_WL_STATFILTER_V1
@@ -1091,7 +1125,7 @@ function renderWatchList(){
     const priority = (originalIdx >= 0) ? _wlPriority(_watchList[originalIdx]) : 0;
     if(!p){
       return '<tr>' +
-        '<td colspan="22" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
+        '<td colspan="24" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
         '<td class="center col-action"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
       '</tr>';
     }
@@ -1101,6 +1135,7 @@ function renderWatchList(){
     const age  = nbaDecimalAge(p);  // NBA_DECIMAL_AGE_V1 — exact decimal age from birth_date
     const fgPct = pctOrNull(s.fgm, s.fga);
     const ftPct = pctOrNull(s.ftm, s.fta);
+    const ppg   = nbaPpg(s);  // NBA_PPG_GAMES_V1 — pts/gp, null when gp missing/0
     const _pidJson = escapeHtml(JSON.stringify(pid));
     const _trOpen = dragEnabled
       ? '<tr draggable="true" data-nba-pid="' + escapeHtml(pid) + '"' +
@@ -1128,6 +1163,8 @@ function renderWatchList(){
       '<td class="placeholder">—</td>' +   // Y!Owned (planned — Yahoo layer)
       '<td class="placeholder">—</td>' +   // CBS Owned (planned — CBS layer)
       '<td>' + statCellOrDash(s.pts, 1) + '</td>' +
+      '<td>' + statCellOrDash(s.gp, 0) + '</td>' +
+      '<td>' + statCellOrDash(ppg, 1) + '</td>' +
       '<td>' + statCellOrDash(s.reb, 1) + '</td>' +
       '<td>' + statCellOrDash(s.ast, 1) + '</td>' +
       '<td>' + statCellOrDash(s.stl, 1) + '</td>' +
@@ -1383,6 +1420,8 @@ function sortValueFor(field, p, s, pid){
     case 'team':     return p.team || 'zzz';
     case 'age':      return nbaDecimalAgeNum(p);  // NBA_DECIMAL_AGE_V1 — sort by precise age, matching the column
     case 'pts':      return (s.pts || 0);
+    case 'gp':       return (s.gp || 0);          // NBA_PPG_GAMES_V1
+    case 'ppg':      return nbaPpg(s);            // NBA_PPG_GAMES_V1 — null sinks to bottom
     case 'reb':      return (s.reb || 0);
     case 'ast':      return (s.ast || 0);
     case 'stl':      return (s.stl || 0);
