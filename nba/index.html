@@ -253,8 +253,42 @@ table.watch-list tbody td.left{text-align:left}
 table.watch-list tbody tr:hover{background:var(--surface2)}
 table.watch-list tbody tr:last-child td{border-bottom:none}
 .player-name{font-weight:800;color:var(--text)}
+/* FROM_THE_LOGO_V1 — names are clickable to open the player detail overlay */
+.player-name.ftl-clickable{cursor:pointer;}
+.player-name.ftl-clickable:hover{color:var(--court-bright);text-decoration:underline;}
 .stat-cell{font-weight:700;color:#fb923c;font-family:'Nunito Sans',sans-serif}
 .stat-zero{color:var(--text3);font-weight:400}
+
+/* ══════════ FROM THE LOGO — player detail overlay (FROM_THE_LOGO_V1, 2026-06-07) ══════════
+   Ported from the baseball Deep Cut (#player-page-overlay / .ppo-* pattern). NBA orange theme.
+   v1 = shell + photo (from sleepercdn player_id) + the per-game stats we have. Games cards deferred. */
+#ftl-backdrop{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.55);backdrop-filter:blur(2px);display:none;}
+#ftl-backdrop.visible{display:block}
+#ftl-overlay{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:80vw;height:80vh;max-width:1100px;z-index:1000;background:var(--bg);overflow-y:auto;display:none;font-family:'Nunito Sans',sans-serif;line-height:1.4;border-radius:12px;border:1px solid var(--border2);box-shadow:0 24px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.04);}
+#ftl-overlay.visible{display:block}
+#ftl-overlay .ftl-close{position:absolute;top:14px;right:16px;z-index:1010;width:40px;height:40px;border-radius:50%;background:rgba(13,17,23,0.85);border:1px solid var(--border2);color:var(--text2);font-size:22px;font-weight:300;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;backdrop-filter:blur(6px);}
+#ftl-overlay .ftl-close:hover{background:var(--court);border-color:var(--court);color:#fff;transform:scale(1.05);}
+#ftl-overlay .ftl-header{background:linear-gradient(135deg,#080c10 0%,#0d1520 50%,#080c10 100%);border-bottom:1px solid var(--court-deep);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+#ftl-overlay .ftl-logo{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:26px;letter-spacing:0.04em;line-height:1;color:var(--court);text-transform:uppercase;}
+#ftl-overlay .ftl-logo-sub{font-size:10px;letter-spacing:0.25em;color:var(--court-bright);text-transform:uppercase;margin-top:4px}
+#ftl-overlay .ftl-header-right{font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase}
+#ftl-overlay .ftl-hero{padding:2rem 1.5rem;display:flex;gap:28px;align-items:flex-start;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;}
+#ftl-overlay .ftl-photo{width:180px;height:180px;border-radius:50%;border:3px solid var(--court);object-fit:cover;object-position:center top;background:var(--surface2);flex-shrink:0;}
+#ftl-overlay .ftl-meta{flex:1;min-width:260px}
+#ftl-overlay .ftl-name{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:44px;letter-spacing:0.03em;color:var(--text);line-height:1;}
+#ftl-overlay .ftl-sub{font-size:14px;color:var(--text2);margin-top:10px;letter-spacing:0.04em;}
+#ftl-overlay .ftl-sub .sep{color:var(--border2);margin:0 8px}
+#ftl-overlay .ftl-rank{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:6px 14px;background:#c2410c33;border:1px solid var(--court-deep);border-radius:6px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--court-bright);font-weight:700;}
+#ftl-overlay .ftl-rank .num{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:16px;letter-spacing:0.04em}
+#ftl-overlay .ftl-statwrap{padding:1.5rem;}
+#ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin:0 0 10px 2px;}
+#ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:22px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
+#ftl-overlay .ftl-statcell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;min-width:62px;flex:1;border-right:1px solid var(--border);text-align:center;}
+#ftl-overlay .ftl-statcell:last-child{border-right:none;}
+#ftl-overlay .ftl-statlabel{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:9px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
+#ftl-overlay .ftl-statval{font-size:18px;font-weight:700;color:#fb923c;line-height:1;}
+#ftl-overlay .ftl-statval.na{color:var(--text3);font-weight:500;}
+@media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:34px}#ftl-overlay .ftl-photo{width:130px;height:130px}}
 
 /* POS_BADGE — basketball positions: PG/SG/SF/PF/C, plus G/F fallbacks. */
 .pos-badge{display:inline-block;padding:3px 7px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:0.05em;}
@@ -864,7 +898,7 @@ function renderNbaPlayers(){
     // then percentages (FG% 3P% FT%).
     return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left col-player"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       '<td>' + statCellOrDash(s.gp, 0) + '</td>' +
@@ -1202,7 +1236,7 @@ function renderWatchList(){
       _handleCell +
       '<td class="col-rank">' + rank + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left col-player"><span class="player-name">' + escapeHtml(name) + '</span></td>' +
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       '<td class="placeholder">—</td>' +   // +/- (planned)
@@ -1571,7 +1605,108 @@ function initSortHandlers(){
 }
 initSortHandlers();
 
+// ══════════ FROM THE LOGO — player detail overlay (FROM_THE_LOGO_V1, 2026-06-07) ══════════
+// Ported from the baseball Deep Cut (openPlayerPage/closePlayerPage). v1 fills photo + name +
+// sub (team/pos/age) + per-game stats we already have, grouped like the table. Games cards deferred.
+// Photo: Sleeper hosts headshots at sleepercdn.com/content/nba/players/<player_id>.jpg (confirmed
+// live 2026-06-07). onerror falls back to Sleeper's default player silhouette.
+function _ftlStatCell(label, val){
+  const na = (val == null);
+  const shown = na ? '—' : val;
+  return '<div class="ftl-statcell"><div class="ftl-statlabel">' + label +
+         '</div><div class="ftl-statval' + (na ? ' na' : '') + '">' + shown + '</div></div>';
+}
+// Format a per-game number to 1 decimal, strip a trailing .0, em-dash when null.
+function _ftlPG(total, gp){ const v = perGame(total, gp); return (v == null) ? null : v.toFixed(1).replace(/\.0$/, ''); }
+function _ftlPct(makes, att){ const v = pctOrNull(makes, att); return (v == null) ? null : v.toFixed(1); }
+
+function openFromTheLogo(pid){
+  const p = _playerDB && _playerDB[pid];
+  if(!p) return;
+  const s = _statsRow(pid) || {};
+  const gp = Number(s.gp) || 0;
+
+  // Photo from the Sleeper CDN, built from player_id (confirmed working 2026-06-07).
+  const photoEl = document.getElementById('ftl-photo');
+  photoEl.src = 'https://sleepercdn.com/content/nba/players/' + encodeURIComponent(p.player_id || pid) + '.jpg';
+  const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
+  photoEl.alt = name;
+
+  document.getElementById('ftl-name').textContent = name;
+  const subParts = [ (p.team || '—'), (p.position || '—'), 'Age ' + nbaDecimalAge(p) ];
+  document.getElementById('ftl-sub').innerHTML = subParts.join('<span class="sep">|</span>');
+
+  // Watch101 rank — only if this player is ON the watch list (his hand-ranked slot).
+  const idx = _wlIndexOf(pid);
+  const rankEl = document.getElementById('ftl-rank');
+  if(idx >= 0){
+    document.getElementById('ftl-rank-num').textContent = '#' + (idx + 1);
+    rankEl.style.display = 'inline-flex';
+  } else {
+    rankEl.style.display = 'none';
+  }
+
+  // Stat boxes — grouped like the table: counting (per game), then shooting (per game), then percentages.
+  const counting = _ftlStatCell('GP', (s.gp != null ? s.gp : null)) +
+    _ftlStatCell('PTS', _ftlPG(s.pts, gp)) + _ftlStatCell('REB', _ftlPG(s.reb, gp)) +
+    _ftlStatCell('ORB', _ftlPG(s.oreb, gp)) + _ftlStatCell('DRB', _ftlPG(s.dreb, gp)) +
+    _ftlStatCell('AST', _ftlPG(s.ast, gp)) + _ftlStatCell('STL', _ftlPG(s.stl, gp)) +
+    _ftlStatCell('BLK', _ftlPG(s.blk, gp)) + _ftlStatCell('TOV', _ftlPG(s.to, gp)) +
+    _ftlStatCell('PF', _ftlPG(s.pf, gp));
+  const shooting = _ftlStatCell('FGA', _ftlPG(s.fga, gp)) + _ftlStatCell('FG', _ftlPG(s.fgm, gp)) +
+    _ftlStatCell('FG%', _ftlPct(s.fgm, s.fga)) +
+    _ftlStatCell('3PA', _ftlPG(s.tpa, gp)) + _ftlStatCell('3P', _ftlPG(s.tpm, gp)) +
+    _ftlStatCell('3P%', _ftlPct(s.tpm, s.tpa)) +
+    _ftlStatCell('FTA', _ftlPG(s.fta, gp)) + _ftlStatCell('FT', _ftlPG(s.ftm, gp)) +
+    _ftlStatCell('FT%', _ftlPct(s.ftm, s.fta));
+  document.getElementById('ftl-statwrap').innerHTML =
+    '<div class="ftl-statgroup-label">Per Game</div><div class="ftl-statbar">' + counting + '</div>' +
+    '<div class="ftl-statgroup-label">Shooting</div><div class="ftl-statbar">' + shooting + '</div>';
+
+  document.getElementById('ftl-backdrop').classList.add('visible');
+  document.getElementById('ftl-overlay').classList.add('visible');
+  document.body.classList.add('ftl-open');
+}
+function closeFromTheLogo(){
+  const ov = document.getElementById('ftl-overlay');
+  if(ov) ov.classList.remove('visible');
+  const bd = document.getElementById('ftl-backdrop');
+  if(bd) bd.classList.remove('visible');
+  document.body.classList.remove('ftl-open');
+}
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' || e.keyCode === 27){
+    const ov = document.getElementById('ftl-overlay');
+    if(ov && ov.classList.contains('visible')){ e.preventDefault(); closeFromTheLogo(); }
+  }
+});
+
 bootstrap();
 </script>
+
+<!-- ══════════ FROM THE LOGO — player detail overlay (FROM_THE_LOGO_V1, 2026-06-07) ══════════
+     The basketball cousin of the baseball Deep Cut. Opens when a player name is clicked.
+     v1 = shell + photo + the per-game stats we have. Upcoming/Previous games deferred. -->
+<div id="ftl-backdrop" onclick="closeFromTheLogo()"></div>
+<div id="ftl-overlay" role="dialog" aria-modal="true" aria-label="Player detail">
+  <button class="ftl-close" onclick="closeFromTheLogo()" aria-label="Close">&times;</button>
+  <div class="ftl-header">
+    <div>
+      <div class="ftl-logo">From the Logo</div>
+      <div class="ftl-logo-sub">Watch101 NBA Player Card</div>
+    </div>
+    <div class="ftl-header-right">2025 Per-Game Stats</div>
+  </div>
+  <section class="ftl-hero">
+    <img class="ftl-photo" id="ftl-photo" src="" alt=""
+         onerror="this.onerror=null;this.src='https://sleepercdn.com/images/v2/icons/player_default.webp'">
+    <div class="ftl-meta">
+      <div class="ftl-name" id="ftl-name"></div>
+      <div class="ftl-sub" id="ftl-sub"></div>
+      <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num"></span></div>
+    </div>
+  </section>
+  <div class="ftl-statwrap" id="ftl-statwrap"></div>
+</div>
 </body>
 </html>
