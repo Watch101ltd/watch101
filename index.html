@@ -5866,37 +5866,17 @@ function fitTables(){
       if(wrap.offsetParent === null){ return; }
       // Reset zoom to 1 first so we read the TRUE natural width, not last pass's.
       table.style.zoom = '1';
-      // Keep any tier overlay layer in this wrap at zoom 1 too while measuring.
-      var _layerReset = wrap.querySelector('#tier-overlay-layer');
-      if(_layerReset){ _layerReset.style.zoom = '1'; }
       const avail = wrap.clientWidth;
       const natural = table.scrollWidth;
       if(natural <= 0 || avail <= 0){ return; }
-      var _finalZoom = '1';
       if(natural <= avail){
         table.style.zoom = '1';        // already fits — full size
-      } else {
-        let scale = avail / natural;
-        if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; } // clamp to floor → scroll if still too wide
-        _finalZoom = scale.toFixed(4);
-        table.style.zoom = _finalZoom;
+        return;
       }
-      // TIER_ZOOM_SYNC_V1 (June 8, 2026 — PC Walter) — the tier bracket overlay is
-      // positioned in pixel coords from getBoundingClientRect(). When the table is
-      // zoomed, those rects come back SCALED, but the overlay layer (a sibling in the
-      // wrap) is NOT zoomed → the bracket lands wrong / vanishes. Fix: put the SAME
-      // zoom on the overlay layer so it shares the table's scaled coordinate space.
-      // This is the bug that broke the "Should Already Be Owned" tier after AUTO_SHRINK_V1.
-      var _layer = wrap.querySelector('#tier-overlay-layer');
-      if(_layer){ _layer.style.zoom = _finalZoom; }
+      let scale = avail / natural;
+      if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; } // clamp to floor → scroll if still too wide
+      table.style.zoom = scale.toFixed(4);
     });
-    // Repaint tiers so the bracket re-measures at the new zoom.
-    try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIER_ZOOM_SYNC_V1] renderTiers after fit crashed:', e); }
-    // LOOP GUARD: renderTiers() injects spacer rows into #tbody, which our own
-    // MutationObserver watches → that would re-fire fitTables → renderTiers → ...
-    // forever and hang the page. Flush the observer's pending records here so the
-    // mutations WE just caused are discarded and never invoke the callback.
-    try { if(_fitObserver && typeof _fitObserver.takeRecords === 'function'){ _fitObserver.takeRecords(); } } catch(e){}
   });
 }
 // Re-fit on window resize (covers browser zoom too — zoom fires resize). Debounced via rAF inside fitTables.
@@ -5906,14 +5886,12 @@ if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoad
 // Re-fit whenever ANY surface's table body re-renders (rows added/removed/replaced).
 // One MutationObserver across all five tbodies is the robust hook — no need to touch
 // each render function's internals. fitTables() debounces itself via requestAnimationFrame.
-var _fitObserver = null;
 (function _wireFitObserver(){
   function attach(){
     const ids = ['tbody','pool-tbody','tank-tbody','leaders-tbody','pros-tbody'];
     // Fire BOTH the table auto-shrink AND the phone-card render on any table re-render.
     const onChange = function(){ fitTables(); if(typeof renderPhoneCards==='function'){ try{ renderPhoneCards(); }catch(e){} } };
     const obs = new MutationObserver(onChange);
-    _fitObserver = obs;
     ids.forEach(function(id){
       const el = document.getElementById(id);
       if(el){ obs.observe(el, {childList:true, subtree:true}); }
@@ -7708,6 +7686,41 @@ function _tiersClearSpacerRows(){
   }
 }
 
+// TIER_SELFHEAL_V1 (June 8, 2026 — PC Walter, per The Dude) — resolve a tier's
+// EFFECTIVE start/end rows in the CURRENT table, tolerant of a missing anchor.
+// Matt edits the list (removes players to the Holding Tank etc.), which can delete
+// a tier's start_mlb_id or end_mlb_id from the table. Previously: the spacer injected
+// on start-present but the box only drew on BOTH-present → a missing end left an
+// ORPHAN GAP (spacer with no bracket). Now both the injector and the renderer call
+// THIS one resolver, so they always agree. Logic: walk the rendered rows in order,
+// find the first surviving player at/after the tier's start, and the last surviving
+// player at/before the tier's end. If the tier has NO surviving players in range,
+// returns null → no spacer, no box, NO gap. Falls back gracefully when one end is gone.
+function _tiersResolveRange(tier){
+  var tbody = document.getElementById('tbody');
+  if(!tbody || !tier) return null;
+  var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-mlb-id]'));
+  if(rows.length === 0) return null;
+  var idOf = function(r){ return String(r.getAttribute('data-mlb-id')); };
+  var startId = String(tier.start_mlb_id);
+  var endId   = String(tier.end_mlb_id);
+  var si = -1, ei = -1;
+  for(var i=0;i<rows.length;i++){ if(idOf(rows[i])===startId){ si=i; break; } }
+  for(var j=0;j<rows.length;j++){ if(idOf(rows[j])===endId){ ei=j; } }
+  // Both anchors present (normal case): use them as-is.
+  if(si !== -1 && ei !== -1 && si <= ei){ return { startRow: rows[si], endRow: rows[ei] }; }
+  // ONE anchor present → heal to a sane range.
+  // Start present, end gone: keep start, but ONLY if there's a meaningful range.
+  // We can't know the intended bottom, so we DON'T guess past the start — a tier whose
+  // end player was removed shrinks to nothing UNLESS the start is also a valid 1-row tier.
+  // Per the Dude: a tier shouldn't leave a gap when it can't really draw. So if only one
+  // anchor survives and we can't bound the other end, treat the tier as gone (return null).
+  if(si !== -1 && ei === -1){ return null; }
+  if(si === -1 && ei !== -1){ return null; }
+  // Neither present: gone.
+  return null;
+}
+
 // TIER_SPACER_ROW_V1 — inject a blank <tr> above each tier's first player row.
 // The spacer is the size of one row and serves as the visual home for the tier
 // tab (painted on top of it by renderTiers's overlay layer). Skips when tiers
@@ -7727,9 +7740,11 @@ function _tiersInjectSpacerRows(){
   var colCount = firstRow.children.length;
   currentTiers.forEach(function(tier){
     try {
-      var startSel = 'tr[data-mlb-id="' + String(tier.start_mlb_id).replace(/"/g,'\\"') + '"]';
-      var startRow = tbody.querySelector(startSel);
-      if(!startRow) return;  // tier's start player not on screen — skip
+      // TIER_SELFHEAL_V1 — only inject a spacer if the tier will ACTUALLY draw a box
+      // (both effective anchors resolve). Same condition the renderer uses → no orphan gap.
+      var range = _tiersResolveRange(tier);
+      if(!range || !range.startRow) return;
+      var startRow = range.startRow;
       var spacer = document.createElement('tr');
       spacer.className = 'tier-spacer-row';
       spacer.setAttribute('data-tier-spacer-for', String(tier.id));
@@ -7791,10 +7806,12 @@ function renderTiers(){
 
   currentTiers.forEach(function(tier){
     try {
-      var startSel = '#tbody tr[data-mlb-id="' + String(tier.start_mlb_id).replace(/"/g,'\\"') + '"]';
-      var endSel   = '#tbody tr[data-mlb-id="' + String(tier.end_mlb_id).replace(/"/g,'\\"')   + '"]';
-      var startRow = document.querySelector(startSel);
-      var endRow   = document.querySelector(endSel);
+      // TIER_SELFHEAL_V1 — use the shared resolver so the box draws on the SAME
+      // condition the spacer injects on (no orphan gap). null → tier can't draw, skip.
+      var _range = _tiersResolveRange(tier);
+      if(!_range){ return; }
+      var startRow = _range.startRow;
+      var endRow   = _range.endRow;
       if(!startRow || !endRow) return;  // player not on screen — skip
 
       var sRect = startRow.getBoundingClientRect();
