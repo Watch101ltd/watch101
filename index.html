@@ -5914,7 +5914,67 @@ function startYahooAutoSync(){
 function toggleCompactMode(el){
   const on = document.body.classList.toggle('compact-mode');
   if(el){ el.classList.toggle('active', on); }
+  fitTables();
 }
+
+// AUTO_SHRINK_V1 (June 7, 2026 — PC Walter, per The Dude) — the real squish fix.
+// The Dude's insight: when he ZOOMS the browser down, the table fits and looks
+// fine — but browser zoom shrinks the whole window, not just the table. This makes
+// the TABLE zoom itself: measure each visible .table-wrap, compare the table's
+// natural width to the room available, and set CSS `zoom` so it fits — columns
+// shrink together in proportion (NO smear), no side-scroll. A readability FLOOR
+// (AUTOSHRINK_MIN) stops it from going too small; only if even the floor overflows
+// does the wrapper's overflow-x:auto provide a last-resort scroll. We use `zoom`
+// and NOT `transform:scale` on purpose: transform creates a containing block that
+// breaks position:sticky theads (the May sticky-header fix). `zoom` shrinks the
+// real layout box, so sticky keeps pinning. Runs on load, resize, and after renders.
+const AUTOSHRINK_MIN = 0.70; // never shrink below 70% — readability floor
+let _fitRaf = null;
+function fitTables(){
+  // Batch into one animation frame so we measure AFTER layout settles.
+  if(_fitRaf) cancelAnimationFrame(_fitRaf);
+  _fitRaf = requestAnimationFrame(function(){
+    _fitRaf = null;
+    const wraps = document.querySelectorAll('.table-wrap');
+    wraps.forEach(function(wrap){
+      const table = wrap.querySelector('table');
+      if(!table) return;
+      // Skip hidden surfaces (offsetParent null = not displayed).
+      if(wrap.offsetParent === null){ return; }
+      // Reset zoom to 1 first so we read the TRUE natural width, not last pass's.
+      table.style.zoom = '1';
+      const avail = wrap.clientWidth;
+      const natural = table.scrollWidth;
+      if(natural <= 0 || avail <= 0){ return; }
+      if(natural <= avail){
+        table.style.zoom = '1';        // already fits — full size
+        return;
+      }
+      let scale = avail / natural;
+      if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; } // clamp to floor → scroll if still too wide
+      table.style.zoom = scale.toFixed(4);
+    });
+  });
+}
+// Re-fit on window resize (covers browser zoom too — zoom fires resize). Debounced via rAF inside fitTables.
+window.addEventListener('resize', fitTables);
+// Initial fit once the DOM + data are up.
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fitTables); } else { fitTables(); }
+// Re-fit whenever ANY surface's table body re-renders (rows added/removed/replaced).
+// One MutationObserver across all five tbodies is the robust hook — no need to touch
+// each render function's internals. fitTables() debounces itself via requestAnimationFrame.
+(function _wireFitObserver(){
+  function attach(){
+    const ids = ['tbody','pool-tbody','tank-tbody','leaders-tbody','pros-tbody'];
+    const obs = new MutationObserver(function(){ fitTables(); });
+    ids.forEach(function(id){
+      const el = document.getElementById(id);
+      if(el){ obs.observe(el, {childList:true, subtree:true}); }
+    });
+    fitTables();
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', attach); } else { attach(); }
+})();
 
 let advancedMode = false;
 
