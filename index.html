@@ -884,6 +884,32 @@ td.savant-adv-col{font-size:10px;padding:3px 2px;width:48px;min-width:48px;max-w
 .advanced-mode td.savant-adv-col{display:table-cell;}
 .advanced-mode .col-note{display:none;}
 .advanced-mode td.col-note{display:none;}
+/* COMPACT_MODE_V1 (June 7, 2026 — PC Walter, per The Dude) — the squish fix.
+   A toolbar 'Compact' button toggles body.compact-mode, which hides the WHOLE
+   gold Statcast block (the col-gold-* dual-stat columns) so the core 5x5 roto
+   stats fit a laptop with NO side-scroll. Default (page load) shows everything;
+   side-scroll is the allowed fallback in full mode. The advanced stats still
+   live on the Deep Cut page, so nothing is lost. No localStorage — resets to
+   full on every load. One class on <body> hides the shared col-gold-* classes
+   across ALL surfaces (Watch List / Pool / Leaders) at once, no re-render. */
+body.compact-mode .col-gold-xba-xera,
+body.compact-mode td.col-gold-xba-xera,
+body.compact-mode .col-gold-xwoba,
+body.compact-mode td.col-gold-xwoba,
+body.compact-mode .col-gold-brl-fbvelo,
+body.compact-mode td.col-gold-brl-fbvelo,
+body.compact-mode .col-gold-ev-kbbpct,
+body.compact-mode td.col-gold-ev-kbbpct,
+body.compact-mode .col-gold-batspd-gbpct,
+body.compact-mode td.col-gold-batspd-gbpct,
+body.compact-mode .col-gold-kpct-chase,
+body.compact-mode td.col-gold-kpct-chase,
+body.compact-mode .col-gold-bbpct-whiff,
+body.compact-mode td.col-gold-bbpct-whiff,
+body.compact-mode .col-gold-sprint-k9,
+body.compact-mode td.col-gold-sprint-k9 { display:none !important; }
+/* Compact toolbar button — matches the btn-outline family; turns gold when active. */
+#compact-toggle-btn.active{ background:var(--gold); color:#1a1a1a; border-color:var(--gold); }
 /* LEADERS_ADVANCED_DEFAULT_V1 (May 12, 2026 — PC Walter) — on the public fan
    view (Cloudflare prod / non-github hosts), the League Leaders table shows
    the advanced Statcast columns by DEFAULT. There's plenty of horizontal
@@ -2192,6 +2218,8 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       </div>
     </div>
     <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" title="Undo last change — drag or removal (Ctrl+Z)" disabled style="opacity:0.4;cursor:not-allowed">↶ Undo</button>
+    <!-- COMPACT_MODE_V1 (June 7, 2026) — hides the gold Statcast block so the core stats fit a laptop. Visible to everyone (no backend-only) — the squish hits fans/Matt too. -->
+    <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view — hide the advanced Statcast columns so the core stats fit without side-scrolling">↔ Compact</button>
     <div class="hdr-dd" id="dd-more">
       <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-more', event)" title="More actions">⋯ More <span class="hdr-dd-caret">▾</span></button>
       <div class="hdr-dd-menu">
@@ -5878,6 +5906,14 @@ function startYahooAutoSync(){
     // See comment in checkYahooStatus() for rationale.
     if(yahooConnected) syncYahooData();
   }, 10 * 60 * 1000);
+}
+
+// COMPACT_MODE_V1 (June 7, 2026 — PC Walter, per The Dude) — toggles the gold
+// Statcast block off/on by flipping body.compact-mode. No re-render needed (pure
+// CSS display toggle), no persistence — every page load starts in full mode.
+function toggleCompactMode(el){
+  const on = document.body.classList.toggle('compact-mode');
+  if(el){ el.classList.toggle('active', on); }
 }
 
 let advancedMode = false;
@@ -19476,18 +19512,4 @@ document.addEventListener('keydown', function(e){
     align-items: flex-start;
     justify-content: space-between;
     gap: 24px;
-    flex-wrap: wrap;
-  }
-  /* Gold left-edge accent on the outer wrapper to mark this block as
-     "live news" and visually echo the gold drop indicator theme. */
-  #player-page-overlay .ppo-news-strip-wrap {
-    border-left: 3px solid var(--gold, #ffc107);
-    background: linear-gradient(90deg, rgba(255,193,7,0.05) 0%, var(--surface) 100%);
-  }
-  #player-page-overlay .ppo-news-left {
-    flex: 1 1 auto;
-    min-width: 320px;
-  }
-  #player-page-overlay .ppo-news-eyebrow {
-    font-size: 10px;
-    font-weight: 800;
+    fl
