@@ -8383,7 +8383,11 @@ function renderPhoneCards(){
   var na = '<span class="stat-na">—</span>';
   function sv(p, key){
     var s = null;
-    try { s = (typeof usingDateRange !== 'undefined' && usingDateRange) ? getDisplayStats(p) : (_activeSampleFor(p,'watch') || p); } catch(e){ s = p; }
+    // PHONE_CARDS_DATERANGE_FIX_V1 (June 8, 2026) — usingDateRange is a LOCAL const inside
+    // renderTable(), invisible here, so cards always read season stats. Use the GLOBAL dateRange
+    // signal the rest of the app uses (dateRange !== 'season') so cards follow the date-range dropdown.
+    var _udr = (typeof dateRange !== 'undefined') && dateRange !== 'season';
+    try { s = (_udr && typeof getDisplayStats==='function') ? getDisplayStats(p) : (_activeSampleFor(p,'watch') || p); } catch(e){ s = p; }
     return s ? s[key] : null;
   }
   function num(v, dec){ try { return (typeof fmt==='function') ? fmt(v, dec||0) : (v==null?na:v); } catch(e){ return v==null?na:v; } }
