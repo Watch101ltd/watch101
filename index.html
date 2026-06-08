@@ -1602,142 +1602,40 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
   #player-page-backdrop{display:none !important;}
 }
 
-/* MOBILE_TIGHTEN_V1 (April 25, 2026) — On phone-sized screens, hide the
-   deep-dive columns from the main list table so the initial load shows
-   useful stats (HR/RBI/SB/AVG) alongside identity columns without forcing
-   a side-scroll. The hidden columns are still accessible via side-scroll
-   for users who want them. Targets:
-     .type-cell      — placeholder TYPE column (no data yet anyway)
-     .col-obp        — OBP / WHIP
-     .col-ops        — OPS / xERA
-     .savant-col     — xBA, xwOBA
-     .savant-adv-col — already display:none by default unless advanced mode
-   Threshold 768px = covers all common phone widths in portrait.
-   POINTER_COARSE_GUARD_V1 (May 7, 2026 — Laptop Walter) — added `(pointer:coarse)`
-   to the media query so this mobile-only block ONLY fires on touch devices.
-   Without it, JP's laptop at 100% browser zoom + high Windows display scaling
-   was reporting CSS viewport ≤768px, which fired this whole block on the
-   laptop, collapsed many stat columns to 0px width, and visually bled cell
-   contents sideways into neighboring columns. `pointer:coarse` is true only
-   on phones/tablets and false on every laptop/desktop, so the rule now stays
-   in its lane. Safe across any future Windows scaling change. */
-@media(max-width:768px) and (pointer:coarse){
-  /* MOBILE_TIGHTEN_V3 (April 25, 2026) — Hide non-critical columns AND let
-     the table shrink-to-fit so the remaining columns actually fit on screen.
-     The previous attempts hid columns but the kept columns just stretched
-     to fill the freed-up width, leaving stats still off-screen behind a side-scroll.
-     V3 forces table-layout:auto and removes fixed widths on mobile so the
-     core columns Rank|Player|Pos|Team and the dual-stat columns (HR/RBI/SB/AVG)
-     can actually fit in the viewport without scrolling. Side-scroll still
-     reveals the few remaining stats columns we keep. */
-  /* MOBILE_TIGHTEN_V3.4 (April 25, 2026) - the global rule
-     "table{min-width:1120px}" on line 108 was creating a 1120px floor that
-     prevented pinch-zoom from shrinking the page below 1120px. Override
-     min-width to 0 on ALL tables (not just main-table) on mobile so the
-     viewport can collapse cleanly when the user pinches out. Same goes for
-     the Player column (#main-table th:nth-child(3) hardcodes width:180px). */
-  table {
-    min-width: 0 !important;
-  }
-  /* MOBILE_TIGHTEN_V3.5 - shrink the giant 64px header logo on phone so the
-     header doesn't force a wide content floor. Also wrap if needed. */
-  .logo {
-    font-size: 36px !important;
-    flex-wrap: wrap !important;
-  }
-  .header {
-    padding: 0.75rem 0.75rem !important;
-    flex-wrap: wrap !important;
-  }
-  .toolbar {
-    padding: 0.5rem 0.75rem !important;
-  }
-  #main-table {
-    table-layout: auto !important;
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-  #main-table th:nth-child(3) {
-    width: auto !important;
-  }
-  #main-table th, #main-table td {
-    width: auto !important;
-    min-width: 0 !important;
-    padding: 4px 3px !important;
-    font-size: 11px !important;
-  }
-  /* MOBILE_TIGHTEN_V3.3 - cap the Player name column on mobile so long names
-     ("Simeon Woods Richardson") don't push stats off-screen. Player is column 3.
-     CRITICAL: the inner badges (injury, news 📰, note 📋) must NEVER get clipped
-     by the ellipsis. Layout: cell is a flex container, .player-name shrinks
-     with ellipsis, badges keep their natural size. The full name is visible
-     by tapping the name to open Deep Cut. */
-  #main-table tr > td:nth-child(3),
-  #main-table tr > th:nth-child(3) {
-    max-width: 130px !important;
-  }
-  #main-table tr > td:nth-child(3) .name-cell {
-    display: flex !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    overflow: hidden !important;
-    max-width: 100% !important;
-  }
-  #main-table tr > td:nth-child(3) .name-cell .player-name {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    display: inline-block !important;
-  }
-  /* Badges keep their natural size - never shrink, never clip */
-  #main-table tr > td:nth-child(3) .name-cell .injury-badge,
-  #main-table tr > td:nth-child(3) .name-cell .note-badge,
-  #main-table tr > td:nth-child(3) .name-cell .level-badge {
-    flex: 0 0 auto !important;
-  }
-  /* Hide non-critical columns. Order in HTML (after PRIORITY_COL_V1 May 5 2026):
-     1=☰ 2=Rank 3=Player 4=+/- 5=Type 6=Priority 7=Pos 8=Team 9=Age 10=B/T 11=Note
-     12=OWNED 13=Y!Rank 14=ADP 15=AB/IP 16=R/K 17=HR/W 18=RBI/SV 19=SB/QS
-     20=AVG/ERA 21=OBP/WHIP 22=OPS/xERA 23=xBA 24=xwOBA 25+=action/savant-adv
-     NOTE: The mobile-hide nth-child(N) rules below have NOT been re-indexed for
-     the Priority insert — Dude deferred mobile formfactoring to a later project.
-     What used to hide column 8 (Age) now hides column 9 (Age) etc. — the
-     visual outcome on phone is slightly off but acceptable until phone work. */
-  #main-table tr > th:nth-child(4), #main-table tr > td:nth-child(4),     /* +/- */
-  #main-table tr > th:nth-child(5), #main-table tr > td:nth-child(5),     /* Type */
-  #main-table tr > th:nth-child(8), #main-table tr > td:nth-child(8),     /* Age */
-  #main-table tr > th:nth-child(9), #main-table tr > td:nth-child(9),     /* B/T */
-  #main-table tr > th:nth-child(11), #main-table tr > td:nth-child(11),   /* OWNED */
-  #main-table tr > th:nth-child(12), #main-table tr > td:nth-child(12),   /* Y!Rank */
-  #main-table tr > th:nth-child(13), #main-table tr > td:nth-child(13),   /* ADP */
-  #main-table tr > th:nth-child(20), #main-table tr > td:nth-child(20),   /* OBP */
-  #main-table tr > th:nth-child(21), #main-table tr > td:nth-child(21),   /* OPS */
-  #main-table tr > th:nth-child(22), #main-table tr > td:nth-child(22),   /* xBA */
-  #main-table tr > th:nth-child(23), #main-table tr > td:nth-child(23) {  /* xwOBA */
-    display: none !important;
-  }
-  /* MOBILE_TIGHTEN_V3.2 - Bring Note column back into the visible flow on
-     mobile so Matt's takes are at-a-glance readable. Cap width so long notes
-     truncate with ellipsis. Tapping the note still opens the editor. */
-  #main-table tr > td:nth-child(10),
-  #main-table tr > th:nth-child(10) {
-    max-width: 120px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-  }
-  #main-table tr > td:nth-child(10) .note-display {
-    max-width: 100% !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    display: block !important;
-  }
-  /* MAIN_CLONE_STRIP_V1 (2026-05-28) — removed #main-fixed-table mobile overrides
-     (table-layout:auto and column hide rules). No longer needed — sticky CSS at line 212
-     pins the real headers and natural column widths flow from #main-table itself. */
+/* MOBILE_TIGHTEN block REMOVED June 7, 2026 (PHONE_CARDS_V1, PC Walter) — the old
+   'squeeze the table' phone approach (V1-V3.5) is superseded by the card layout below.
+   Its own comments admitted it never fully fit (kept columns just stretched to refill
+   freed width). LESSON KEPT: it needed (pointer:coarse) on its media query because JP's
+   LAPTOP at 100% zoom + Windows display scaling falsely reported viewport <=768px and
+   fired the mobile rules, collapsing columns to 0px ON THE LAPTOP. The new card media
+   query below ALSO uses (pointer:coarse) for exactly that reason — do not remove it. */
+/* PHONE_CARDS_V1 (June 7, 2026 — PC Walter, per The Dude) — the approved Option A card layout.
+   Default: cards hidden, table shows (desktop unchanged). Only under a phone-width screen AND a
+   touch device (pointer:coarse — the laptop-ambush guard, see the removed MOBILE_TIGHTEN note above)
+   do we hide the table and show the cards. Cards render from the SAME getFiltered() data + the same
+   helpers (renderDelta, renderPriorityStars, decimalAge, posBadgesColumn, _activeSampleFor, isPitcher)
+   the table row uses, so they can never drift from the table. */
+#phone-card-list{display:none;}
+@media(max-width:600px) and (pointer:coarse){
+  #main-wrap > table{display:none !important;}      /* hide the spreadsheet on phones */
+  #phone-card-list{display:block;padding:8px 8px 24px;}
+  .pcard{background:var(--surface,#fff);border:1px solid var(--border,#e2dcc8);border-radius:12px;padding:10px 12px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .pcard-r1{display:flex;align-items:flex-start;gap:8px;}
+  .pcard-rank{font-size:20px;font-weight:900;color:var(--gold);min-width:30px;line-height:1.1;}
+  .pcard-id{flex:1;min-width:0;}
+  .pcard-name{font-size:16px;font-weight:800;color:var(--text,#1a1a1a);}
+  .pcard-name .player-name{font-weight:800;}
+  .pcard-meta{font-size:11px;color:var(--text3,#6b6450);font-weight:700;text-align:right;white-space:nowrap;line-height:1.3;}
+  .pcard-sub{margin-top:4px;}
+  .pcard-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 4px;margin-top:9px;border-top:1px solid var(--border,#e2dcc8);padding-top:8px;}
+  .pcard-stat{text-align:center;}
+  .pcard-stat .v{font-size:14px;font-weight:800;color:var(--text,#1a1a1a);}
+  .pcard-stat .k{font-size:9px;color:var(--text3,#6b6450);font-weight:700;letter-spacing:.03em;margin-top:1px;}
+  .pcard-own{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:11px;color:var(--text3,#6b6450);font-weight:600;}
+  .pcard-own b{color:var(--text,#1a1a1a);}
+  /* On phone, let the STAT FILTERING box + toolbar breathe and stack. */
+  .header,.toolbar{flex-wrap:wrap !important;}
+  .logo{font-size:34px !important;flex-wrap:wrap !important;}
 }
 #player-page-overlay .ppo-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;}
 #player-page-overlay .ppo-block h2{font-family:'Bowlby One',sans-serif;font-size:18px;letter-spacing:0.06em;color:var(--gold);margin:0 0 4px;}
@@ -2436,6 +2334,9 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     </thead>
     <tbody id="tbody"></tbody>
   </table>
+  <!-- PHONE_CARDS_V1 (June 7, 2026) — per-player card list for phones. Hidden on desktop;
+       shown only under the phone breakpoint + (pointer:coarse). Filled by renderPhoneCards(). -->
+  <div id="phone-card-list" aria-hidden="true"></div>
   <div class="empty-state" id="empty-state" style="display:none">
     <h3>The Watch List Awaits</h3>
     <p>Use the Add Player dropdown above to start building this list — MLB Players or MiLB Prospects.</p>
@@ -5988,12 +5889,14 @@ if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoad
 (function _wireFitObserver(){
   function attach(){
     const ids = ['tbody','pool-tbody','tank-tbody','leaders-tbody','pros-tbody'];
-    const obs = new MutationObserver(function(){ fitTables(); });
+    // Fire BOTH the table auto-shrink AND the phone-card render on any table re-render.
+    const onChange = function(){ fitTables(); if(typeof renderPhoneCards==='function'){ try{ renderPhoneCards(); }catch(e){} } };
+    const obs = new MutationObserver(onChange);
     ids.forEach(function(id){
       const el = document.getElementById(id);
       if(el){ obs.observe(el, {childList:true, subtree:true}); }
     });
-    fitTables();
+    onChange();
   }
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', attach); } else { attach(); }
 })();
@@ -8424,6 +8327,77 @@ function fitPlayerNames(){
       nameEl.style.fontSize = size + 'px';
     }
   }
+}
+
+// PHONE_CARDS_V1 (June 7, 2026 — PC Walter, per The Dude) — renders the per-player
+// card list for phones. Built from the SAME getFiltered() list + the SAME helpers the
+// table row uses (renderDelta, renderPriorityStars, decimalAge, posBadgesColumn,
+// _activeSampleFor, isPitcher, fmt/fmtAvg), so cards can never drift from the table.
+// Hidden on desktop via CSS; only painted into #phone-card-list which shows under the
+// phone breakpoint + (pointer:coarse). Tapping a card opens Deep Cut, same as a name click.
+function renderPhoneCards(){
+  var host = document.getElementById('phone-card-list');
+  if(!host) return;
+  var list;
+  try { list = (typeof getFiltered === 'function') ? getFiltered() : []; } catch(e){ return; }
+  if(!list){ host.innerHTML=''; return; }
+  var na = '<span class="stat-na">—</span>';
+  function sv(p, key){
+    var s = null;
+    try { s = (typeof usingDateRange !== 'undefined' && usingDateRange) ? getDisplayStats(p) : (_activeSampleFor(p,'watch') || p); } catch(e){ s = p; }
+    return s ? s[key] : null;
+  }
+  function num(v, dec){ try { return (typeof fmt==='function') ? fmt(v, dec||0) : (v==null?na:v); } catch(e){ return v==null?na:v; } }
+  function avg(v){ try { return (typeof fmtAvg==='function') ? fmtAvg(v) : (v==null?na:v); } catch(e){ return v==null?na:v; } }
+  function cell(label, val){ return '<div class="pcard-stat"><div class="v">'+val+'</div><div class="k">'+label+'</div></div>'; }
+
+  host.innerHTML = list.map(function(p){
+    var pit = false; try { pit = (typeof isPitcher==='function') && isPitcher(p); } catch(e){}
+    var pos = ''; try { pos = (typeof posBadgesColumn==='function') ? posBadgesColumn(p.positions) : ''; } catch(e){}
+    var stars=''; try { stars = (typeof renderPriorityStars==='function') ? renderPriorityStars(p) : ''; } catch(e){}
+    var delta=''; try { delta = (typeof renderDelta==='function') ? renderDelta(p) : ''; } catch(e){}
+    var age=''; try { age = (typeof decimalAge==='function') ? decimalAge(p) : (p.age||''); } catch(e){ age=p.age||''; }
+    var bt = pit ? (p.throws||p.bats||'') : (p.bats||'');
+    var mustFlash=''; try { mustFlash = (typeof _mustWatchFlashClass==='function') ? _mustWatchFlashClass(p) : ''; } catch(e){}
+
+    // Core 8 stats — hitter vs pitcher, mirroring the table row exactly.
+    var stats;
+    if(!pit){
+      stats = cell('AB', num(sv(p,'ab'))) + cell('R', num(sv(p,'r'))) + cell('HR', num(sv(p,'hr'))) + cell('RBI', num(sv(p,'rbi')))
+            + cell('SB', num(sv(p,'sb'))) + cell('AVG', avg(sv(p,'avg'))) + cell('OBP', avg(sv(p,'obp'))) + cell('OPS', num(sv(p,'ops'),3));
+    } else {
+      var kbb = (p.kbb_ratio!=null) ? p.kbb_ratio.toFixed(2) : na;
+      stats = cell('IP', num(sv(p,'ip'),1)) + cell('K', num(sv(p,'k'))) + cell('W', num(sv(p,'w'))) + cell('SV', num(sv(p,'sv')))
+            + cell('HLD', num(sv(p,'hld'))) + cell('ERA', num(sv(p,'era'),2)) + cell('WHIP', num(sv(p,'whip'),2)) + cell('K/BB', kbb);
+    }
+
+    var yOwn = (p.roster_pct!=null && p.roster_pct!=='') ? parseFloat(p.roster_pct).toFixed(0)+'%' : '0%';
+    var cOwn = (p.cbs_roster_pct!=null && p.cbs_roster_pct!=='') ? parseFloat(p.cbs_roster_pct).toFixed(0)+'%' : '0%';
+    var yRank = (typeof fmt==='function') ? fmt(p.yahoo_rank) : (p.yahoo_rank||na);
+
+    return '<div class="pcard" data-id="'+(p.id||'')+'" onclick="_phoneCardTap(\''+(p.id||'')+'\')">'
+      + '<div class="pcard-r1">'
+        + '<span class="pcard-rank">'+(p.rank||'—')+'</span>'
+        + '<div class="pcard-id">'
+          + '<span class="pcard-name">'+pos+' <span class="player-name'+mustFlash+'">'+(p.name||'')+'</span> '+delta+'</span>'
+          + '<div class="pcard-sub">'+stars+'</div>'
+        + '</div>'
+        + '<div class="pcard-meta">'+(p.team||'')+'<br>'+age+(bt?(' · '+bt):'')+'</div>'
+      + '</div>'
+      + '<div class="pcard-stats">'+stats+'</div>'
+      + '<div class="pcard-own">Y! owned <b>'+yOwn+'</b> · CBS owned <b>'+cOwn+'</b> · Y!Rank <b>'+yRank+'</b></div>'
+    + '</div>';
+  }).join('');
+}
+
+// Tap a card → open the Deep Cut page, exactly like clicking a name in the table.
+function _phoneCardTap(id){
+  try {
+    var p = players.find(function(x){ return String(x.id)===String(id); });
+    if(!p) p = players.find(function(x){ return String(x.mlb_id)===String(id); });
+    if(!p) return;
+    if(typeof openPlayerCard==='function') openPlayerCard({target:document.body}, p);
+  } catch(e){ console.warn('[PHONE_CARDS_V1] tap failed', e); }
 }
 
 // MLB API SEARCH
