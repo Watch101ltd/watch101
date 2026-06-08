@@ -8910,6 +8910,65 @@ async function saveHoldingTankToNAS(opts){
 loadHoldingTank();
 // /HOLDING_TANK_V1 helpers
 
+// TIER_REMOVAL_SELFREPAIR_V1 (June 8, 2026 — PC Walter, per The Dude). The root-cause
+// cure for orphan-gap tiers. Tiers stay glued to their players (start_mlb_id/end_mlb_id)
+// so they FOLLOW their group when the list reshuffles — but when a player is REMOVED from
+// inside a tier, the old code left the tier pointing at a player who no longer exists,
+// which produced an orphan GAP (a blank band with no bracket). This helper runs RIGHT
+// BEFORE the removal: if the departing player is a tier's start or end anchor, it re-points
+// that anchor to the nearest SURVIVING player still inside the tier; if he was the tier's
+// only member, the tier is deleted. After this, every tier anchor is guaranteed to be a
+// player who still exists, so renderTiers can never hit a dangling anchor -> no gap.
+// FIELD NOTE: tiers key off mlb_id (NOT the internal uid `id`), so callers pass mlb_id.
+function _tierRepairOnRemoval(removedMlbId){
+  try {
+    if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
+    if(removedMlbId == null) return;
+    var remId = String(removedMlbId);
+    // Current rank order = players array order. Build an mlb_id -> index map (pre-removal).
+    var idxOf = {};
+    for(var i=0;i<players.length;i++){
+      if(players[i] && players[i].mlb_id != null) idxOf[String(players[i].mlb_id)] = i;
+    }
+    var remIdx = idxOf[remId];
+    if(remIdx == null) return; // removed player not on the list — nothing to repair
+    var changed = false;
+    var survivors = []; // tiers to keep
+    for(var t=0;t<currentTiers.length;t++){
+      var tier = currentTiers[t];
+      if(!tier){ continue; }
+      var sIdx = idxOf[String(tier.start_mlb_id)];
+      var eIdx = idxOf[String(tier.end_mlb_id)];
+      // If either anchor is already missing, just keep the tier as-is (render guard handles it);
+      // we only act when the REMOVED player is one of THIS tier's live anchors or inside it.
+      if(sIdx == null || eIdx == null){ survivors.push(tier); continue; }
+      if(remIdx < sIdx || remIdx > eIdx){ survivors.push(tier); continue; } // removal outside this tier
+      // Removal is inside [sIdx, eIdx].
+      if(remIdx === sIdx && remIdx === eIdx){
+        // Tier had exactly one member and it's being removed -> tier is empty -> drop it.
+        changed = true;
+        continue; // do not push -> deleted
+      }
+      if(remIdx === sIdx){
+        // Removing the TOP anchor: new start = next surviving player DOWN (players[sIdx+1]).
+        var ns = players[sIdx+1];
+        if(ns && ns.mlb_id != null){ tier.start_mlb_id = String(ns.mlb_id); tier.updated_at = new Date().toISOString(); changed = true; }
+      } else if(remIdx === eIdx){
+        // Removing the BOTTOM anchor: new end = next surviving player UP (players[eIdx-1]).
+        var ne = players[eIdx-1];
+        if(ne && ne.mlb_id != null){ tier.end_mlb_id = String(ne.mlb_id); tier.updated_at = new Date().toISOString(); changed = true; }
+      }
+      // remIdx strictly between sIdx and eIdx: anchors unchanged, group just closes up. No-op.
+      survivors.push(tier);
+    }
+    if(changed){
+      currentTiers = survivors;
+      _tiersUserMutated = true; // TIERS_SNAPSHOT_GUARD_V1 — this is a legit user-driven edit
+      console.log('[TIER_REMOVAL_SELFREPAIR_V1] repaired tiers after removing mlb_id', remId, '— tiers now:', currentTiers.length);
+    }
+  } catch(e){ console.warn('[TIER_REMOVAL_SELFREPAIR_V1] repair failed:', e); }
+}
+
 async function deletePlayer(id){
   if(_blockIfReadOnly('deletePlayer')) return;
   if(!confirm('Remove this player from the Watch List?\n\nThey will be moved to the Holding Tank (your editorial bench) instead of disappearing.')) return;
@@ -8939,6 +8998,10 @@ async function deletePlayer(id){
   // produced false -1 integers on the wrong rows in two separate testing rounds.
   // Reverted to pre-sticky behavior. Phase 6 (proper sticky on remove + drag)
   // is deferred for a fresh-head morning session. See START_HERE_TOMORROW.md.
+  // TIER_REMOVAL_SELFREPAIR_V1 — re-point any tier anchored on this player to a
+  // surviving player BEFORE the removal, so no orphan gap can form. Tiers key off
+  // mlb_id, so pass the removed player's mlb_id (not the internal uid `id`).
+  try { if(_removed) _tierRepairOnRemoval(_removed.mlb_id); } catch(e){ console.warn('[TIER_REMOVAL_SELFREPAIR_V1] call failed:', e); }
   players=players.filter(x=>x.id!==id);
   // DELETE_RENUMBER_FIX_V1 (2026-06-01 — PC Walter, per The Dude / Matt). Removing
   // a player used to leave a GAP in the ranking (cut #3 -> ranks read 1,2,4,5...).
