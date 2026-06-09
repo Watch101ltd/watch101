@@ -335,6 +335,16 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 .np-add-btn:hover{filter:brightness(1.1)}
 .np-add-btn.added{background:transparent;color:var(--court,#ea580c);border:1px solid var(--court,#ea580c);cursor:default;font-weight:800}
 .np-add-btn:disabled{cursor:default}
+
+/* COLLAPSIBLE_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude). Ported from baseball/football. The two
+   NBA STAT FILTERING panels (#nbawl-filter-panel watch list, #nbap-filter-panel pool) collapse to just
+   their gold title row + a +/- caret. Collapsed (hidden) by default, resets each load. Click to toggle.
+   Pure presentation — filter handlers + Apply gating untouched. */
+.filt-title{cursor:pointer;user-select:none;display:flex;align-items:center;gap:7px;}
+.filt-caret{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;
+  border:1px solid var(--gold);border-radius:3px;font-size:12px;font-weight:700;line-height:1;color:var(--gold);}
+.filt-collapsed > *:not(:first-child){display:none !important;}
+.filt-collapsed > .filt-title{margin-bottom:0 !important;}
 </style>
 </head>
 <body>
@@ -369,7 +379,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 <div class="toolbar-watchlist">
   <div class="search-wrap">
     <span class="search-icon">⌕</span>
-    <input id="player-search" class="search-input" type="text" placeholder="Search for a player to add (e.g. 'Jokic', 'Edwards')..." autocomplete="off">
+    <input id="player-search" class="search-input" type="text" placeholder="Search your watch list by name..." autocomplete="off">
     <div id="search-results" class="search-results"></div>
   </div>
   <div class="toolbar-right">
@@ -386,6 +396,8 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
      Watch101 list, matching the NBA Players pool + baseball. Functional: Team / Min PTS / Age.
      Date Range + %Owned (Y!/CBS) present for visual consistency but inert (no NBA data). When any
      filter is active, drag-to-rank is disabled (like an active sort) so the hand-built order is safe. -->
+<!-- INSTANT_DATERANGE_V1 (June 9, 2026 — PC Walter) — instant date-range OUTSIDE the box (watch list). -->
+<div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbawl-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select></div>
 <div id="nbawl-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
   <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
   <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
@@ -483,10 +495,15 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 <!-- Stage 1: container + placeholder only. Stage 2 fills #nba-players-body with the full-league table. -->
 <div id="nbaplayers-view" style="display:none">
   <div class="status-bar-wl" id="nbaplayers-status">NBA Players — loading the full league pool…</div>
+  <!-- NBAP_POOL_SEARCH_V1 (June 9, 2026 — PC Walter, per the Dude + Matt). In-place name search for the
+       pool. Instant (oninput). NBA pool has no row cap (~560 players) so it searches the whole pool. -->
+  <div style="margin:8px 16px 0 16px"><div class="search-wrap" style="max-width:420px"><span class="search-icon">⌕</span><input id="nbap-search" class="search-input" type="text" placeholder="Search the player pool by name..." autocomplete="off" oninput="renderNbaPlayers()"></div></div>
   <!-- NBA_POOL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — STAT FILTERING box modeled on
        baseball's pool box. Functional where NBA has data: Team / Min PTS / Age / Max %Owned (Y!).
        Date Range + Max %Owned (CBS) are present for VISUAL consistency with baseball but inert
        (NBA has no date-range stat pipeline + no CBS data yet). Apply-gated. -->
+  <!-- INSTANT_DATERANGE_V1 (June 9, 2026 — PC Walter) — instant date-range OUTSIDE the box (pool). -->
+  <div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbap-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select></div>
   <div id="nbap-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
     <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
     <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
@@ -574,6 +591,36 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 </div>
 
 <script>
+// COLLAPSIBLE_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude). Make the two NBA STAT FILTERING panels
+// collapsible. First child of each panel is the gold title row; make it clickable, prepend a +/- caret,
+// start collapsed. Click toggles .filt-collapsed (CSS hides the body). Resets each load. Pure presentation.
+function toggleFilterPanel(titleEl){
+  var panel = titleEl.parentElement;
+  if(!panel) return;
+  var collapsed = panel.classList.toggle('filt-collapsed');
+  var caret = titleEl.querySelector('.filt-caret');
+  if(caret) caret.textContent = collapsed ? '+' : '\u2212';
+}
+(function _wireCollapsibleFilters(){
+  function attach(){
+    ['nbawl-filter-panel','nbap-filter-panel'].forEach(function(id){
+      var panel = document.getElementById(id);
+      if(!panel) return;
+      var title = panel.firstElementChild;
+      if(!title || title.dataset.filtWired) return;
+      title.dataset.filtWired = '1';
+      title.classList.add('filt-title');
+      var caret = document.createElement('span');
+      caret.className = 'filt-caret';
+      caret.textContent = '+';
+      title.insertBefore(caret, title.firstChild);
+      title.addEventListener('click', function(){ toggleFilterPanel(title); });
+      panel.classList.add('filt-collapsed');
+    });
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', attach); } else { attach(); }
+})();
+
 // ──────────────────────────────────────────────────────────────────────────
 // AUTO_SHRINK + GROW_TO_FILL (ported from baseball June 9, 2026 — PC Walter, per
 // The Dude). Same fitTables() pattern as the baseball flagship: measure each visible
@@ -695,9 +742,27 @@ async function _applyDateRangeFrom(selectId){
   const b = document.getElementById('nbapf-daterange');
   if(a && a.value !== _dateRange) a.value = _dateRange;
   if(b && b.value !== _dateRange) b.value = _dateRange;
+  // INSTANT_DATERANGE_V1 — keep the two outside-the-box instant dropdowns matched too.
+  const ia = document.getElementById('nbawl-instant-daterange');
+  const ib = document.getElementById('nbap-instant-daterange');
+  if(ia && ia.value !== _dateRange) ia.value = _dateRange;
+  if(ib && ib.value !== _dateRange) ib.value = _dateRange;
   if(_dateRange !== 'season'){
     await _ensureDateRangeStats();
   }
+}
+
+// INSTANT_DATERANGE_V1 (June 9, 2026 — PC Walter, per the Dude). The two instant date-range dropdowns
+// (#nbawl-instant-daterange / #nbap-instant-daterange) outside the STAT FILTERING box fire immediately
+// (no Apply). Reuses _applyDateRangeFrom, matches both instant dropdowns, then re-renders both surfaces.
+async function _applyInstantDateRange(selectId){
+  await _applyDateRangeFrom(selectId);
+  var a = document.getElementById('nbawl-instant-daterange');
+  var b = document.getElementById('nbap-instant-daterange');
+  if(a && a.value !== _dateRange) a.value = _dateRange;
+  if(b && b.value !== _dateRange) b.value = _dateRange;
+  if(typeof renderWatchList === 'function') renderWatchList();
+  if(typeof renderNbaPlayers === 'function') renderNbaPlayers();
 }
 
 // NBA_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
@@ -884,8 +949,12 @@ function _npStatValue(field, p, s){
   }
 }
 
+var _npSearchQ = '';
 function _npSortedIds(){
   if(!_playerDB) return [];
+  // NBAP_POOL_SEARCH_V1 — refresh the search query from the box each pass.
+  var _se = document.getElementById('nbap-search');
+  _npSearchQ = _se ? (_se.value||'').trim().toLowerCase() : '';
   // Same "real NBA player" filter the search uses: must have a position AND a team.
   // NBA_POOL_STATFILTER_V1 — then apply the STAT FILTERING box (team / min PTS / age range).
   const F = _npFilters || {};
@@ -894,6 +963,11 @@ function _npSortedIds(){
     const p = _playerDB[id];
     if(!p || !p.position) continue;
     if(!p.team) continue;
+    // NBAP_POOL_SEARCH_V1 — instant name search (whole pool). Empty box => no constraint.
+    if(typeof _npSearchQ === 'string' && _npSearchQ){
+      var _nm = (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '').toLowerCase();
+      if(_nm.indexOf(_npSearchQ) === -1) continue;
+    }
     if(F.team && F.team !== 'ALL' && p.team !== F.team) continue;
     if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) continue;  // POSITION_FILTER_V1
     const s = _statsRow(id);
@@ -1103,15 +1177,12 @@ const searchEl  = document.getElementById('player-search');
 const resultsEl = document.getElementById('search-results');
 let _searchDebounce = null;
 
-searchEl.addEventListener('input', (e) => {
-  clearTimeout(_searchDebounce);
-  _searchDebounce = setTimeout(() => renderSearchResults(e.target.value), 80);
-});
-searchEl.addEventListener('blur', () => {
-  setTimeout(() => resultsEl.classList.remove('open'), 150);
-});
-searchEl.addEventListener('focus', () => {
-  if(searchEl.value.trim()) renderSearchResults(searchEl.value);
+// NBAMAIN_SEARCH_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude). The main-page search now FILTERS
+// the already-built watch list by name (matching baseball + football), instead of the old add-player
+// autocomplete. Adding is done from the NBA Players pool's "+ Add" buttons. Old add-search retired.
+searchEl.addEventListener('input', () => {
+  if(resultsEl) resultsEl.classList.remove('open');
+  if(typeof renderWatchList === 'function') renderWatchList();
 });
 
 function renderSearchResults(term){
@@ -1253,6 +1324,16 @@ function renderWatchList(){
   // NBA_WL_STATFILTER_V1 — apply the STAT FILTERING box (team / min PTS / age) to the display.
   if(typeof _wlFilterActive === 'function' && _wlFilterActive()){
     sortedIds = sortedIds.filter(pid => _wlPassesFilter(pid));
+  }
+  // NBAMAIN_SEARCH_FILTER_V1 — instant name filter from the main search box (filters MY list).
+  var _wlSearchEl = document.getElementById('player-search');
+  var _wlSearchQ = _wlSearchEl ? (_wlSearchEl.value||'').trim().toLowerCase() : '';
+  if(_wlSearchQ){
+    sortedIds = sortedIds.filter(function(pid){
+      var pp = (_playerDB && _playerDB[pid]) || null;
+      var nm = pp ? (pp.full_name || ((pp.first_name||'') + ' ' + (pp.last_name||'')).trim() || '').toLowerCase() : '';
+      return nm.indexOf(_wlSearchQ) !== -1;
+    });
   }
   // NBA_DRAG_RANK_V1 — drag-to-rank is only live in the home/rank view (no stat sort
   // active). When a stat column sort is on, dragging is disabled so a hand-built
