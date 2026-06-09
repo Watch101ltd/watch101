@@ -875,6 +875,16 @@ body.day-mode .level-chip-aa{color:#1e40af;background:#dbeafe;border-color:#93c5
 body.day-mode .level-chip-a{color:#9a3412;background:#ffedd5;border-color:#fdba74;}
 /* /LEVELCHIP_DAYMODE_V1 */
 
+/* COLLAPSIBLE_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude + Matt's meeting). The STAT
+   FILTERING panels (#wl-/#pool-/#tank-/#leaders-/#pros-filter-panel) collapse to just their title
+   row. Default = collapsed (hidden), resets each load like Compact mode. Click the title to toggle.
+   A panel with .filt-collapsed hides every direct child EXCEPT the first (the title row). */
+.filt-title{cursor:pointer;user-select:none;display:flex;align-items:center;gap:7px;}
+.filt-caret{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;
+  border:1px solid var(--gold);border-radius:3px;font-size:12px;font-weight:700;line-height:1;color:var(--gold);}
+.filt-collapsed > *:not(:first-child){display:none !important;}
+.filt-collapsed > .filt-title{margin-bottom:0 !important;}
+
 /* DAYMODE_INDICATORS_V1 (April 24, 2026) — mute the bright green/red indicators in day mode.
    Same story as the position badges: these were designed against a black night-mode page,
    so saturated --green (#22c55e) and --red (#ef4444) pop perfectly there. On the gray day
@@ -5902,6 +5912,40 @@ if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoad
       if(el){ obs.observe(el, {childList:true, subtree:true}); }
     });
     onChange();
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', attach); } else { attach(); }
+})();
+
+// COLLAPSIBLE_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude + Matt). Make all five STAT FILTERING
+// panels collapsible. The first child div of each panel is the gold "STAT FILTERING" title row; we
+// make it clickable, prepend a +/- caret, and start every panel collapsed (hidden by default, Matt's
+// call). Click toggles .filt-collapsed (CSS hides the body). Resets to collapsed each load — no
+// storage, matching Compact mode. Pure presentation: the filter handlers + Apply gating are untouched.
+function toggleFilterPanel(titleEl){
+  var panel = titleEl.parentElement;
+  if(!panel) return;
+  var collapsed = panel.classList.toggle('filt-collapsed');
+  var caret = titleEl.querySelector('.filt-caret');
+  if(caret) caret.textContent = collapsed ? '+' : '\u2212'; // + when collapsed, minus when open
+}
+(function _wireCollapsibleFilters(){
+  function attach(){
+    var ids = ['wl-filter-panel','pool-filter-panel','tank-filter-panel','leaders-filter-panel','pros-filter-panel'];
+    ids.forEach(function(id){
+      var panel = document.getElementById(id);
+      if(!panel) return;
+      var title = panel.firstElementChild;          // the gold "STAT FILTERING" div
+      if(!title || title.dataset.filtWired) return; // idempotent
+      title.dataset.filtWired = '1';
+      title.classList.add('filt-title');
+      // Prepend the caret (starts '+', panel starts collapsed).
+      var caret = document.createElement('span');
+      caret.className = 'filt-caret';
+      caret.textContent = '+';
+      title.insertBefore(caret, title.firstChild);
+      title.addEventListener('click', function(){ toggleFilterPanel(title); });
+      panel.classList.add('filt-collapsed');         // hidden by default
+    });
   }
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', attach); } else { attach(); }
 })();
