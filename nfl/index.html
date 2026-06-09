@@ -335,6 +335,11 @@ table.watch-list thead th.col-handle,table.watch-list tbody td.col-handle{width:
 .page-nav-btn{background:var(--surface2,#161b22);color:var(--text2,#9aa4b2);border:1px solid var(--border2,#2a3240);border-radius:8px 8px 0 0;padding:8px 16px;font-size:13px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s}
 .page-nav-btn:hover{color:var(--turf,#16a34a);border-color:var(--turf,#16a34a)}
 .page-nav-btn.active{background:var(--turf,#16a34a);color:#fff;border-color:var(--turf,#16a34a)}
+/* RANKINGS_PAGE_V1 — the position sub-tab row under the top tabs. */
+.rank-subnav{display:flex;gap:6px;padding:10px 16px 0 16px;flex-wrap:wrap}
+.rank-subnav-btn{background:var(--surface2,#161b22);color:var(--text2,#9aa4b2);border:1px solid var(--border2,#2a3240);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s}
+.rank-subnav-btn:hover{color:var(--turf,#16a34a);border-color:var(--turf,#16a34a)}
+.rank-subnav-btn.active{background:var(--turf,#16a34a);color:#fff;border-color:var(--turf,#16a34a)}
 .np-add-btn{background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s;white-space:nowrap}
 .np-add-btn:hover{filter:brightness(1.1)}
 .np-add-btn.added{background:transparent;color:var(--turf,#16a34a);border:1px solid var(--turf,#16a34a);cursor:default;font-weight:800}
@@ -498,6 +503,8 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 <div class="page-nav" id="page-nav">
   <button class="page-nav-btn active" id="nav-watchlist" onclick="showWatchListView()">🏠 Watch List</button>
   <button class="page-nav-btn" id="nav-nflplayers" onclick="showNflPlayersView()">🏈 NFL Players</button>
+  <!-- RANKINGS_PAGE_V1 (June 9, 2026 — PC Walter, per the Dude) — 3rd tab: positional rankings, separate from the watch list. -->
+  <button class="page-nav-btn" id="nav-rankings" onclick="showRankingsView()">📋 Rankings</button>
 </div>
 
 <!-- ══════════ WATCH LIST VIEW (default) ══════════ -->
@@ -693,6 +700,39 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     </table>
   </div>
 </div>
+
+<!-- ══════════ RANKINGS VIEW (RANKINGS_PAGE_V1, hidden by default) ══════════ -->
+<!-- Positional rankings Matt maintains, SEPARATE from the watch list. Sub-tabs per position (QB default).
+     Phase 1 = shell (tabs + table + empty state). Phase 2 = real rows + add + drag-rank + NAS save. -->
+<div id="rankings-view" style="display:none">
+  <div class="status-bar-wl" id="rankings-status">Rankings — positional rankings, separate from the Watch 101 list.</div>
+  <div class="rank-subnav" id="rank-subnav">
+    <button class="rank-subnav-btn active" data-rankpos="QB" onclick="switchRankPos('QB', this)">QB</button>
+    <button class="rank-subnav-btn" data-rankpos="RB" onclick="switchRankPos('RB', this)">RB</button>
+    <button class="rank-subnav-btn" data-rankpos="WR" onclick="switchRankPos('WR', this)">WR</button>
+    <button class="rank-subnav-btn" data-rankpos="TE" onclick="switchRankPos('TE', this)">TE</button>
+    <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
+  </div>
+  <div class="table-wrap">
+    <table class="watch-list" id="rankings-table">
+      <thead>
+        <tr>
+          <th class="col-handle">☰</th>
+          <th class="col-rank">Rank</th>
+          <th class="col-pos">Pos</th>
+          <th class="left col-player">Player</th>
+          <th class="col-team">Team</th>
+          <th class="col-age">Age</th>
+          <th class="col-stat col-stat-a">FPts</th>
+          <th class="col-action">Action</th>
+        </tr>
+      </thead>
+      <tbody id="rankings-body">
+        <tr><td colspan="8" class="empty-state"><strong>QB rankings are empty</strong>Phase 2 will add players + drag-to-rank here.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div><!-- /#rankings-view -->
 
 <script>
 // COLLAPSIBLE_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude). Make the two NFL STAT FILTERING
@@ -935,26 +975,50 @@ async function reloadWatchList(){
 // and the NFL Players feeder pool. Toggle which is visible + which nav button
 // is active. showNflPlayersView builds/refreshes the pool table.
 // ──────────────────────────────────────────────────────────────────────────
+// RANKINGS_PAGE_V1 (June 9, 2026 — PC Walter, per the Dude). Three views now share the page; every
+// show*View() hides the other TWO (Rule #9 — or two render at once). _rankPos = active position tab.
+function _hideAllViews(){
+  ['watchlist-view','nflplayers-view','rankings-view'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
+  ['nav-watchlist','nav-nflplayers','nav-rankings'].forEach(function(id){ var b=document.getElementById(id); if(b) b.classList.remove('active'); });
+}
 function showWatchListView(){
-  const wl = document.getElementById('watchlist-view');
-  const np = document.getElementById('nflplayers-view');
-  if(wl) wl.style.display = '';
-  if(np) np.style.display = 'none';
-  const bWl = document.getElementById('nav-watchlist');
-  const bNp = document.getElementById('nav-nflplayers');
-  if(bWl) bWl.classList.add('active');
-  if(bNp) bNp.classList.remove('active');
+  _hideAllViews();
+  var wl = document.getElementById('watchlist-view'); if(wl) wl.style.display = '';
+  var b = document.getElementById('nav-watchlist'); if(b) b.classList.add('active');
 }
 function showNflPlayersView(){
-  const wl = document.getElementById('watchlist-view');
-  const np = document.getElementById('nflplayers-view');
-  if(wl) wl.style.display = 'none';
-  if(np) np.style.display = '';
-  const bWl = document.getElementById('nav-watchlist');
-  const bNp = document.getElementById('nav-nflplayers');
-  if(bWl) bWl.classList.remove('active');
-  if(bNp) bNp.classList.add('active');
+  _hideAllViews();
+  var np = document.getElementById('nflplayers-view'); if(np) np.style.display = '';
+  var b = document.getElementById('nav-nflplayers'); if(b) b.classList.add('active');
   if(typeof renderNflPlayers === 'function') renderNflPlayers();
+}
+// RANKINGS_PAGE_V1 — positional rankings view. Phase 1 shell: tabs switch, table renders an empty state.
+// Phase 2 (banked in 02 Plans/rankings_page_plan_nfl_then_nba.md): real rows + add + drag-rank + NAS save.
+var _rankPos = 'QB';  // active position sub-tab
+var _rankings = { QB:[], RB:[], WR:[], TE:[], DEF:[] };  // Phase 2 fills these from NAS
+function showRankingsView(){
+  _hideAllViews();
+  var rv = document.getElementById('rankings-view'); if(rv) rv.style.display = '';
+  var b = document.getElementById('nav-rankings'); if(b) b.classList.add('active');
+  renderRankings();
+}
+function switchRankPos(pos, btn){
+  _rankPos = pos;
+  document.querySelectorAll('.rank-subnav-btn').forEach(function(x){ x.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+  renderRankings();
+}
+function renderRankings(){
+  var tbody = document.getElementById('rankings-body');
+  var statusEl = document.getElementById('rankings-status');
+  if(!tbody) return;
+  var list = (_rankings && _rankings[_rankPos]) || [];
+  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + list.length + ' ranked. (Positional rankings, separate from the Watch 101 list.)';
+  if(list.length === 0){
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><strong>' + _rankPos + ' rankings are empty</strong>Phase 2 will add players + drag-to-rank here.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><strong>' + _rankPos + ': ' + list.length + ' players</strong>Row rendering lands in Phase 2.</td></tr>';
 }
 
 // Pool sort state — independent of the watch list's _sortField (data-npsort, not
