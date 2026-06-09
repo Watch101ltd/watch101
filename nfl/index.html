@@ -1048,31 +1048,143 @@ function renderRankings(){
     tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
     return;
   }
-  var ids = _rankingsIdsFor(_rankPos);
-  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players (auto-loaded, Yahoo order). Drag-to-rank + save coming in Phase 2. Separate from the Watch 101 list.';
+  // RANKINGS_DRAGRANK_V1 — _rankings[pos] is the source of truth for ORDER. Empty until seeded: the first
+  // time a position renders with no saved order, seed it from the Yahoo auto-load (_rankingsIdsFor). After
+  // that, drag reorders the array (Matt's order wins) and it persists. New players not yet in the saved
+  // order get appended in Yahoo order so the list never silently drops anyone.
+  var seed = _rankingsIdsFor(_rankPos);
+  if(!_rankings[_rankPos] || _rankings[_rankPos].length === 0){
+    _rankings[_rankPos] = seed.slice();
+  } else {
+    // append any newly-eligible players missing from the saved order (keeps Matt's order, adds rookies/etc.)
+    var have = {};
+    _rankings[_rankPos].forEach(function(pid){ have[pid]=1; });
+    seed.forEach(function(pid){ if(!have[pid]) _rankings[_rankPos].push(pid); });
+    // drop any saved pid that's no longer eligible (retired/inactive)
+    var seedSet = {}; seed.forEach(function(pid){ seedSet[pid]=1; });
+    _rankings[_rankPos] = _rankings[_rankPos].filter(function(pid){ return seedSet[pid]; });
+  }
+  var ids = _rankings[_rankPos];
+  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players. Drag the ☰ handle to re-rank. Separate from the Watch 101 list.';
   if(ids.length === 0){
     tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
     return;
   }
   tbody.innerHTML = ids.map(function(pid, i){
     var p = _playerDB[pid];
+    if(!p) return '';
     var name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
     var pos  = p.position || '?';
     var team = p.team || '—';
     var age  = nflDecimalAge(p);
     var s = (typeof _statsRow === 'function') ? _statsRow(pid) : {};
     var fpts = (s && s.pts_half_ppr != null) ? statCellOrDash(s.pts_half_ppr, 1) : '<span class="placeholder">—</span>';
-    return '<tr data-rank-pid="' + escapeHtml(pid) + '">' +
-      '<td class="center col-handle nfl-drag-handle disabled" title="Drag-to-rank comes in Phase 2">☰</td>' +
+    var _pidAttr = String(pid).replace(/"/g,'&quot;');
+    return '<tr draggable="true" data-rank-pid="' + escapeHtml(pid) + '"' +
+        ' ondragstart="rankDragStart(event,&quot;' + _pidAttr + '&quot;)"' +
+        ' ondragover="rankDragOver(event,&quot;' + _pidAttr + '&quot;)"' +
+        ' ondrop="rankDrop(event,&quot;' + _pidAttr + '&quot;)"' +
+        ' ondragleave="this.classList.remove(\'nfl-drag-over\')"' +
+        ' ondragend="rankDragEnd(event)">' +
+      '<td class="center col-handle nfl-drag-handle" title="Drag to re-rank">☰</td>' +
       '<td class="col-rank">' + (i+1) + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       '<td class="col-stat-a">' + fpts + '</td>' +
       '<td class="center"><span class="placeholder">—</span></td>' +
     '</tr>';
   }).join('');
+}
+
+// RANKINGS_DRAGRANK_V1 (June 9, 2026 — PC Walter, per the Dude). Drag-to-rank within a position tab,
+// cloned from the watch list's nflDrag* handlers but scoped to _rankings[_rankPos]. On drop, reorder the
+// array, re-render (rank re-derives from array index), and save (localStorage + NAS per-position).
+var _rankDragSrcPid = null;
+function rankDragStart(e, pid){
+  _rankDragSrcPid = pid;
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nfl-dragging');
+  try { e.dataTransfer.effectAllowed = 'move'; } catch(_){}
+}
+function rankDragOver(e, pid){
+  e.preventDefault();
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nfl-drag-over');
+  try { e.dataTransfer.dropEffect = 'move'; } catch(_){}
+}
+function rankDrop(e, pid){
+  e.preventDefault();
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.remove('nfl-drag-over');
+  if(_rankDragSrcPid == null || _rankDragSrcPid === pid) return;
+  var arr = _rankings[_rankPos]; if(!arr) return;
+  var si = arr.indexOf(_rankDragSrcPid);
+  var ti = arr.indexOf(pid);
+  if(si < 0 || ti < 0) return;
+  var moved = arr.splice(si, 1)[0];
+  arr.splice(ti, 0, moved);
+  _rankDragSrcPid = null;
+  renderRankings();
+  saveRankings(_rankPos);
+}
+function rankDragEnd(e){
+  _rankDragSrcPid = null;
+  document.querySelectorAll('tr.nfl-dragging, tr.nfl-drag-over').forEach(function(tr){
+    tr.classList.remove('nfl-dragging'); tr.classList.remove('nfl-drag-over');
+  });
+}
+
+// RANKINGS_SAVE_V1 — save one position's order. localStorage instant + POST to rankings-nfl-<pos>.
+var RANKINGS_STORAGE_KEY = 'watch101_nfl_rankings_v0';
+function _rankSaveLocal(){
+  try { localStorage.setItem(RANKINGS_STORAGE_KEY, JSON.stringify(_rankings)); }
+  catch(e){ console.warn('[RANKINGS_SAVE_V1] localStorage save failed:', e); }
+}
+var _rankNasSaving = {};
+async function saveRankings(pos){
+  _rankSaveLocal();
+  var listId = 'rankings-nfl-' + pos.toLowerCase();
+  if(_rankNasSaving[pos]) return;
+  _rankNasSaving[pos] = true;
+  var statusEl = document.getElementById('rankings-status');
+  try {
+    var players = (_rankings[pos]||[]).map(function(pid){ return { pid: pid }; });
+    var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ players: players })
+    });
+    if(res.ok){ if(statusEl) statusEl.textContent = '✓ ' + pos + ' rankings saved (' + players.length + ').'; }
+    else { if(statusEl) statusEl.textContent = '⚠ ' + pos + ' rankings save returned HTTP ' + res.status + ' — saved to this browser.'; }
+  } catch(e){
+    console.warn('[RANKINGS_SAVE_V1] NAS save failed for ' + pos + ':', e);
+    if(statusEl) statusEl.textContent = '⚠ ' + pos + ' rankings NAS save failed (saved to this browser).';
+  } finally { _rankNasSaving[pos] = false; }
+}
+
+// RANKINGS_LOAD_V1 — on boot, hydrate _rankings from localStorage first (instant), then try the NAS for
+// each position (authoritative). A saved order overrides the Yahoo seed; missing → renderRankings seeds it.
+function _rankLoadLocal(){
+  try {
+    var raw = localStorage.getItem(RANKINGS_STORAGE_KEY);
+    if(raw){ var obj = JSON.parse(raw); if(obj && typeof obj === 'object'){ ['QB','RB','WR','TE','DEF'].forEach(function(k){ if(Array.isArray(obj[k])) _rankings[k] = obj[k]; }); } }
+  } catch(e){ console.warn('[RANKINGS_LOAD_V1] localStorage load failed:', e); }
+}
+async function loadRankingsFromNAS(){
+  _rankLoadLocal();
+  var positions = ['QB','RB','WR','TE','DEF'];
+  for(var i=0;i<positions.length;i++){
+    var pos = positions[i];
+    var listId = 'rankings-nfl-' + pos.toLowerCase();
+    try {
+      var res = await fetch(SERVER_URL + '/list-staging/' + listId, {cache:'no-cache'});
+      if(res.ok){
+        var data = await res.json();
+        var players = (data && data.data && Array.isArray(data.data.players)) ? data.data.players
+                    : (data && Array.isArray(data.players)) ? data.players : null;
+        if(players && players.length){ _rankings[pos] = players.map(function(it){ return (it && it.pid != null) ? it.pid : it; }); }
+      }
+    } catch(e){ /* no saved ranking yet for this position — renderRankings will seed it */ }
+  }
+  if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankings();
 }
 
 // Pool sort state — independent of the watch list's _sortField (data-npsort, not
@@ -1376,6 +1488,9 @@ async function bootstrap(){
     // CBS_OWNED_V1 — background load of the weekly CBS scrape JSON (fills the CBS column).
     // Quietly no-ops with em-dashes until the NAS scraper has produced the file.
     loadCbsData().catch(err => console.warn('[cbs] background load failed:', err.message));
+    // RANKINGS_LOAD_V1 — background load of Matt's saved positional rankings (per-position NAS lists).
+    // No-ops to the Yahoo auto-seed until Matt has saved an order. Re-renders the Rankings view if open.
+    loadRankingsFromNAS().catch(err => console.warn('[rankings] background load failed:', err.message));
   } catch(e){
     console.error('[bootstrap]', e);
     statusEl.textContent = '⚠ Could not load data: ' + e.message;
