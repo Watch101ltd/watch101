@@ -716,16 +716,9 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
   <div class="table-wrap">
     <table class="watch-list" id="rankings-table">
       <thead>
-        <tr>
-          <th class="col-handle">☰</th>
-          <th class="col-rank">Rank</th>
-          <th class="col-pos">Pos</th>
-          <th class="left col-player">Player</th>
-          <th class="col-team">Team</th>
-          <th class="col-age">Age</th>
-          <th class="col-stat col-stat-a">FPts</th>
-          <th class="col-action">Action</th>
-        </tr>
+        <!-- RANKINGS_STATS_V1 (June 9, 2026 — PC Walter, per the Dude): header is built per-position
+             by _rankRenderHead() so each tab shows only its appropriate stat columns. -->
+        <tr id="rankings-head-row"></tr>
       </thead>
       <tbody id="rankings-body">
         <tr><td colspan="8" class="empty-state"><strong>QB rankings are empty</strong>Phase 2 will add players + drag-to-rank here.</td></tr>
@@ -1004,6 +997,7 @@ function showRankingsView(){
 }
 function switchRankPos(pos, btn){
   _rankPos = pos;
+  _rankSortField = null;  // RANKINGS_STATS_V1 — each tab starts in manual saved order, not a carried-over sort
   document.querySelectorAll('.rank-subnav-btn').forEach(function(x){ x.classList.remove('active'); });
   if(btn) btn.classList.add('active');
   renderRankings();
@@ -1064,38 +1058,156 @@ function renderRankings(){
     var seedSet = {}; seed.forEach(function(pid){ seedSet[pid]=1; });
     _rankings[_rankPos] = _rankings[_rankPos].filter(function(pid){ return seedSet[pid]; });
   }
-  var ids = _rankings[_rankPos];
-  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players. Drag the ☰ handle to re-rank. Separate from the Watch 101 list.';
+  // RANKINGS_STATS_V1 — manual saved order lives in _rankings[pos]. If a stat-sort is active for THIS
+  // position, render a SORTED VIEW copy (does not mutate the saved order). Dragging clears the sort and
+  // re-snaps to the manual order (see rankDrop). The RANK column reflects whatever order is showing.
+  var manualIds = _rankings[_rankPos];
+  var ids = _rankSortField ? _rankSortedView(manualIds) : manualIds;
+  var sortNote = _rankSortField ? ' · sorted by ' + _rankSortField.toUpperCase() + ' (drag a player to return to your order)' : '';
+  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players. Drag the ☰ handle to re-rank. Separate from the Watch 101 list.' + sortNote;
+
+  var cols = _rankColsFor(_rankPos);
+  _rankRenderHead(cols);
+
   if(ids.length === 0){
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="' + (cols.length + 3) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
     return;
   }
+  var dragLocked = !!_rankSortField;  // while sorted, the view isn't the saved order, so disable drag
   tbody.innerHTML = ids.map(function(pid, i){
     var p = _playerDB[pid];
     if(!p) return '';
     var name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
     var pos  = p.position || '?';
-    var team = p.team || '—';
-    var age  = nflDecimalAge(p);
-    var s = (typeof _statsRow === 'function') ? _statsRow(pid) : {};
-    var fpts = (s && s.pts_half_ppr != null) ? statCellOrDash(s.pts_half_ppr, 1) : '<span class="placeholder">—</span>';
     var _pidAttr = String(pid).replace(/"/g,'&quot;');
-    return '<tr draggable="true" data-rank-pid="' + escapeHtml(pid) + '"' +
+    // Stat cells, position-aware, built from the column config.
+    var statCells = cols.map(function(c){ return '<td class="' + (c.tdClass||'') + '">' + c.render(pid, p) + '</td>'; }).join('');
+    var dragAttrs = dragLocked ? '' :
+        ' draggable="true"' +
         ' ondragstart="rankDragStart(event,&quot;' + _pidAttr + '&quot;)"' +
         ' ondragover="rankDragOver(event,&quot;' + _pidAttr + '&quot;)"' +
         ' ondrop="rankDrop(event,&quot;' + _pidAttr + '&quot;)"' +
         ' ondragleave="this.classList.remove(\'nfl-drag-over\')"' +
-        ' ondragend="rankDragEnd(event)">' +
-      '<td class="center col-handle nfl-drag-handle" title="Drag to re-rank">☰</td>' +
+        ' ondragend="rankDragEnd(event)"';
+    var handleCell = dragLocked
+        ? '<td class="center col-handle" title="Clear the sort to drag-rank" style="opacity:.3">☰</td>'
+        : '<td class="center col-handle nfl-drag-handle" title="Drag to re-rank">☰</td>';
+    return '<tr data-rank-pid="' + escapeHtml(pid) + '"' + dragAttrs + '>' +
+      handleCell +
       '<td class="col-rank">' + (i+1) + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span></td>' +
-      '<td>' + team + '</td>' +
-      '<td>' + age + '</td>' +
-      '<td class="col-stat-a">' + fpts + '</td>' +
-      '<td class="center"><span class="placeholder">—</span></td>' +
+      statCells +
     '</tr>';
   }).join('');
+  _rankWireSortHeaders();
+  _rankUpdateSortArrows();
+}
+
+// ══════════ RANKINGS_STATS_V1 (June 9, 2026 — PC Walter, per the Dude) ══════════
+// Position-aware stat columns on the Rankings page, ported from the main watch-list / NFL Players table.
+// Each position tab shows only the stats that make sense for it (QB: passing+rushing, RB: rushing+receiving,
+// WR/TE: receiving+rushing, DEF: none). Y!Rank, Y!Owned, FPTS and Age are on EVERY tab. Headers are
+// clickable to sort (the Dude's standing "every stat column clickable" rule); dragging re-snaps to the
+// manual saved order. Helpers reused: _yahooLookupNum/_yahooLookupFmt, statCellOrDash, nflDecimalAge.
+
+// A column definition: key (sort id), label (header), tdClass (cell class), num (sort value), render (cell HTML).
+function _rankCol_yrank(){ return { key:'yrank', label:'Y!Rank', headClass:'yh-rank', tdClass:'',
+  num:function(pid){ var v=_yahooLookupNum(pid,'yahoo_rank'); return v==null?Infinity:v; },
+  render:function(pid){ var has=_yahooLookupNum(pid,'yahoo_rank')!=null; return has ? _yahooLookupFmt(pid,'yahoo_rank') : '<span class="placeholder">—</span>'; } }; }
+function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', headClass:'yh-owned', tdClass:'',
+  num:function(pid){ var v=_yahooLookupNum(pid,'roster_pct'); return v==null?-1:v; },
+  render:function(pid){ var has=_yahooLookupNum(pid,'roster_pct')!=null; return has ? _yahooLookupFmt(pid,'roster_pct',true) : '<span class="placeholder">—</span>'; } }; }
+function _rankCol_age(){ return { key:'age', label:'Age', tdClass:'',
+  num:function(pid){ var a=parseFloat(nflDecimalAge(_playerDB[pid])); return isFinite(a)?a:Infinity; },
+  render:function(pid,p){ return nflDecimalAge(p); } }; }
+function _rankStatCol(key,label,field,tdClass,decimals){
+  return { key:key, label:label, tdClass:(tdClass||'col-stat-a'),
+    num:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=s?s[field]:null; return (v==null)?-1:Number(v); },
+    render:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=s?s[field]:null;
+      return (v==null) ? '<span class="placeholder">—</span>' : statCellOrDash(v, (decimals!=null?decimals:undefined)); } };
+}
+function _rankCol_fpts(){ return _rankStatCol('fpts','FPTS','pts_half_ppr','col-stat-a',1); }
+
+// The per-position column lists. Y!Rank, Y!Owned, FPTS, Age on every tab (the Dude's call).
+function _rankColsFor(pos){
+  var yrank = _rankCol_yrank(), yowned = _rankCol_yowned(), fpts = _rankCol_fpts(), age = _rankCol_age();
+  var paYd = _rankStatCol('payd','PA YD','pass_yd','col-stat-b');
+  var paTd = _rankStatCol('patd','PA TD','pass_td','col-stat-b');
+  var ruYd = _rankStatCol('ruyd','RU YD','rush_yd','col-stat-b');
+  var ruTd = _rankStatCol('rutd','RU TD','rush_td','col-stat-b');
+  var rec  = _rankStatCol('rec','REC','rec','col-stat-a');
+  var reYd = _rankStatCol('reyd','RE YD','rec_yd','col-stat-a');
+  var reTd = _rankStatCol('retd','RE TD','rec_td','col-stat-a');
+  if(pos === 'QB')  return [yrank, yowned, age, fpts, paYd, paTd, ruYd, ruTd];
+  if(pos === 'RB')  return [yrank, yowned, age, fpts, ruYd, ruTd, rec, reYd, reTd];
+  if(pos === 'WR' || pos === 'TE') return [yrank, yowned, age, fpts, rec, reYd, reTd, ruYd, ruTd];
+  // DEF: no offensive stats — just the universal four.
+  return [yrank, yowned, age, fpts];
+}
+
+// Build the thead per the active position's columns. Fixed leading cols (handle/Rank/Pos/Player) + dynamic
+// stat cols (sortable, with a sort arrow). data-ranksort carries the sort key.
+function _rankRenderHead(cols){
+  var headRow = document.getElementById('rankings-head-row');
+  if(!headRow) return;
+  var fixed = '<th class="col-handle">☰</th>' +
+              '<th class="col-rank">Rank</th>' +
+              '<th class="col-pos">Pos</th>' +
+              '<th class="left col-player">Player</th>';
+  var statHeads = cols.map(function(c){
+    return '<th class="' + (c.headClass||'') + '" data-ranksort="' + c.key + '" style="cursor:pointer">' +
+           c.label + ' <span class="sort-arrow" style="opacity:.4">↕</span></th>';
+  }).join('');
+  headRow.innerHTML = fixed + statHeads;
+}
+
+// A SORTED VIEW of the manual order (copy — never mutates _rankings[pos]). Sort by the active stat column.
+function _rankSortedView(manualIds){
+  var cols = _rankColsFor(_rankPos);
+  var col = null; for(var i=0;i<cols.length;i++){ if(cols[i].key === _rankSortField){ col = cols[i]; break; } }
+  if(!col) return manualIds;
+  var view = manualIds.slice();
+  var dir = (_rankSortDir === 'asc') ? 1 : -1;
+  view.sort(function(a, b){
+    var va = col.num(a), vb = col.num(b);
+    if(va < vb) return -1*dir;
+    if(va > vb) return  1*dir;
+    return 0;
+  });
+  return view;
+}
+
+// Sort state + click wiring (cloned from the NFL Players page's _npSort* pattern, scoped to rankings).
+var _rankSortField = null;   // null = manual saved order; otherwise a column key
+var _rankSortDir = 'desc';
+function _rankSortBy(field){
+  if(!field) return;
+  if(_rankSortField === field){ _rankSortDir = (_rankSortDir === 'desc') ? 'asc' : 'desc'; }
+  else { _rankSortField = field; _rankSortDir = (field === 'yrank' || field === 'age') ? 'asc' : 'desc'; }
+  renderRankings();
+}
+function _rankWireSortHeaders(){
+  document.querySelectorAll('#rankings-head-row th[data-ranksort]').forEach(function(th){
+    if(th._rankWired) return;            // avoid stacking listeners across re-renders
+    th._rankWired = true;
+    th.addEventListener('click', function(){ _rankSortBy(th.dataset.ranksort); });
+  });
+}
+function _rankUpdateSortArrows(){
+  document.querySelectorAll('#rankings-head-row th[data-ranksort]').forEach(function(th){
+    var arrow = th.querySelector('.sort-arrow');
+    if(!arrow) return;
+    if(th.dataset.ranksort === _rankSortField){
+      arrow.textContent = (_rankSortDir === 'desc') ? '↓' : '↑';
+      arrow.style.opacity = '1';
+      arrow.style.color = 'var(--turf-bright, var(--turf))';
+    } else {
+      arrow.textContent = '↕';
+      arrow.style.opacity = '0.4';
+      arrow.style.color = '';
+    }
+  });
 }
 
 // RANKINGS_DRAGRANK_V1 (June 9, 2026 — PC Walter, per the Dude). Drag-to-rank within a position tab,
@@ -1123,6 +1235,7 @@ function rankDrop(e, pid){
   var moved = arr.splice(si, 1)[0];
   arr.splice(ti, 0, moved);
   _rankDragSrcPid = null;
+  _rankSortField = null;  // RANKINGS_STATS_V1 — a drag IS the ranking; snap the view back to the manual order
   renderRankings();
   saveRankings(_rankPos);
 }
