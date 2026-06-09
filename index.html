@@ -5870,7 +5870,12 @@ function fitTables(){
       const natural = table.scrollWidth;
       if(natural <= 0 || avail <= 0){ return; }
       if(natural <= avail){
-        table.style.zoom = '1';        // already fits — full size
+        // GROW_TO_FILL_V1 (June 9, 2026 — PC Walter, per The Dude). When the table is
+        // NARROWER than the container (wide monitor at 100% zoom), grow it to fill the
+        // space instead of leaving the right side blank. No ceiling — the Dude's call:
+        // bigger monitor = bigger table. Same `zoom` technique as the shrink path so
+        // sticky theads stay pinned. The shrink path below is the smush fix, untouched.
+        table.style.zoom = (avail / natural).toFixed(4);
         return;
       }
       let scale = avail / natural;
