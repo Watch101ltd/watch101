@@ -224,8 +224,11 @@ table.watch-list tbody td.nba-drag-handle.disabled{cursor:not-allowed;color:var(
 table.watch-list tbody tr.nba-dragging{opacity:0.45}
 table.watch-list tbody tr.nba-drag-over{box-shadow:inset 0 2px 0 0 var(--court-bright,#ea580c)}
 table.watch-list thead th.col-rank,table.watch-list tbody td.col-rank{width:32px;text-align:right;font-weight:800;color:var(--text2)}
-table.watch-list thead th.col-pos{width:46px;text-align:center}
-table.watch-list tbody td .pos-badge{font-size:9px;padding:2px 5px;letter-spacing:0.04em}
+table.watch-list thead th.col-pos{width:58px;text-align:center}
+/* NBA_POS_BADGE_SHRINK_V1 (June 9, 2026 — PC Walter, per the Dude). Mirror baseball's compact badge
+   sizing + the .pos-stack 2-column grid so multi-position badges sit small and tidy (not chunky). */
+table.watch-list tbody td .pos-badge{font-size:8px;padding:1px 3px;border-radius:2px;font-weight:600;letter-spacing:0.02em;min-width:18px;text-align:center;line-height:1.3;box-sizing:border-box}
+table.watch-list tbody td .pos-stack{display:grid;grid-template-columns:repeat(2, auto);gap:1px;justify-content:center;align-items:center;width:auto}
 table.watch-list thead th.col-player,table.watch-list tbody td.col-player{width:180px;text-align:left}
 table.watch-list tbody .player-name{font-size:12px;font-weight:800}
 table.watch-list thead th.col-team{width:40px;text-align:right}
@@ -1551,8 +1554,8 @@ function _nbaPosBadges(p){
           : (p && p.position ? [p.position] : []);
   var seen = {}, uniq = [];
   for(var i=0;i<arr.length;i++){ var v=arr[i]; if(v && !seen[v]){ seen[v]=1; uniq.push(v); } }
-  if(uniq.length === 0) return '<span class="stat-na">—</span>';
-  return uniq.map(function(pos){ return '<span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span>'; }).join('');
+  if(uniq.length === 0) return '<div class="pos-stack"><span class="stat-na">—</span></div>';
+  return '<div class="pos-stack">' + uniq.map(function(pos){ return '<span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span>'; }).join('') + '</div>';
 }
 function statCellOrDash(val, decimals){
   if(val == null || val === 0) return '<span class="stat-zero">—</span>';
