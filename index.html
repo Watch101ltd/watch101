@@ -2460,6 +2460,8 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="filter-tab" id="pool-pos-hitter" onclick="setPoolPos('HITTER',this)">Hitters</button>
         <button class="filter-tab" id="pool-pos-pitcher" onclick="setPoolPos('PITCHER',this)">Pitchers</button>
       </div>
+      <!-- INSTANT_DATERANGE_V1 (June 9, 2026) — instant date-range out in the Pool instant row. -->
+      <select id="pool-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="setDateRange(this.value); if(typeof syncDateRangeDropdowns==='function') syncDateRangeDropdowns(this.value);" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="live">🔴 Live</option><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select>
       <!-- TEAM_FILTER_POOL_V1 (April 26, 2026) — same MLB team picker as the Watch list -->
       <!-- FILTER_TABLE_PORT_V1 (2026-06-03 — PC Walter, per the Dude) — the old single dropdown
            was replaced by the STAT FILTERING panel (ported from Prospects). Same 5 controls as
@@ -2681,6 +2683,8 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="filter-tab" id="tank-pos-hitter" onclick="setTankPos('HITTER',this)">Hitters</button>
         <button class="filter-tab" id="tank-pos-pitcher" onclick="setTankPos('PITCHER',this)">Pitchers</button>
       </div>
+      <!-- INSTANT_DATERANGE_V1 (June 9, 2026) — instant date-range out in the Tank instant row. -->
+      <select id="tank-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="setDateRange(this.value); if(typeof syncDateRangeDropdowns==='function') syncDateRangeDropdowns(this.value);" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="live">🔴 Live</option><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select>
       <!-- TEAM_FILTER_POOL_V1 (April 26, 2026) — same MLB team picker as the Watch list -->
       <!-- PLAYER_FILTER_V1 — Pool — same seven options as the Watch list filter -->
       <!-- AUTO_SCALE_FILTERS_V1 — Speedsters and Qualified Hitters get their
@@ -3303,6 +3307,8 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <input id="pros-search" type="text" placeholder="Search prospects..." oninput="renderProspects()"
           style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:13px;color:var(--text);font-family:'Nunito Sans',sans-serif;outline:none;width:200px">
+        <!-- INSTANT_DATERANGE_V1 (June 9, 2026) — instant date-range out in the Prospects search row. -->
+        <select id="pros-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="setDateRange(this.value); if(typeof syncDateRangeDropdowns==='function') syncDateRangeDropdowns(this.value);" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="live">🔴 Live</option><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select>
       </div>
       <!-- PROSPECTS_FILTER_TABLE_V1 (2026-06-03 — PC Walter, per the Dude + Matt) — replaces the
            single dropdown with a set-your-own filter panel (FanGraphs-style, simplified). Prototype
@@ -13491,7 +13497,7 @@ function setPoolWrapTop(){
 
 function syncDateRangeDropdowns(val){
   // Keep all three dropdowns in sync visually
-  ['daterange-select','instant-daterange','wlf-daterange','poolf-daterange','tankf-daterange','ldrf-daterange','prosf-daterange','ppo-daterange-select'].forEach(id => {
+  ['daterange-select','instant-daterange','pool-instant-daterange','tank-instant-daterange','pros-instant-daterange','wlf-daterange','poolf-daterange','tankf-daterange','ldrf-daterange','prosf-daterange','ppo-daterange-select'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.value = val;
     if(el) el.classList.toggle('daterange-active', val !== 'season');
