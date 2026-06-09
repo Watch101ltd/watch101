@@ -10326,6 +10326,87 @@ function dragLeave(e){
   // is responsible for final cleanup.
 }
 
+// TIER_DRAG_SELFREPAIR_V1 (June 8, 2026 — PC Walter, per The Dude). Companion to
+// TIER_REMOVAL_SELFREPAIR_V1, for the DRAG path. Two locked rules:
+//  (1) Drag a player OUT of a tier's range -> the tier STAYS put and re-anchors to its
+//      surviving edge players (it does NOT follow the dragged player). 
+//  (2) Drag a player INTO another tier's range -> he JOINS that tier (its span expands
+//      to include him if he landed at/inside the band).
+// Implementation: capture each tier's MEMBER set (mlb_ids between its anchors, inclusive)
+// BEFORE the move; after the move, recompute each tier's anchors as the top+bottom of its
+// surviving members in the NEW order. The dragged player is removed from his old tier's
+// member set and added to any tier whose NEW rank-span contains his landing slot.
+// Call _tierDragCaptureMembers() BEFORE the splices, _tierDragReanchor(movedMlbId) AFTER
+// reorderRanks(). Tiers key off mlb_id (not the uid `id`).
+var _tierDragMemberSnapshot = null;
+function _tierDragCaptureMembers(){
+  _tierDragMemberSnapshot = null;
+  try {
+    if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
+    var idxOf = {};
+    for(var i=0;i<players.length;i++){ if(players[i] && players[i].mlb_id != null) idxOf[String(players[i].mlb_id)] = i; }
+    var snap = [];
+    for(var t=0;t<currentTiers.length;t++){
+      var tier = currentTiers[t]; if(!tier){ snap.push(null); continue; }
+      var sIdx = idxOf[String(tier.start_mlb_id)];
+      var eIdx = idxOf[String(tier.end_mlb_id)];
+      var members = [];
+      if(sIdx != null && eIdx != null && sIdx <= eIdx){
+        for(var k=sIdx;k<=eIdx;k++){ if(players[k] && players[k].mlb_id != null) members.push(String(players[k].mlb_id)); }
+      }
+      snap.push({ id: tier.id, members: members });
+    }
+    _tierDragMemberSnapshot = snap;
+  } catch(e){ console.warn('[TIER_DRAG_SELFREPAIR_V1] capture failed:', e); _tierDragMemberSnapshot = null; }
+}
+function _tierDragReanchor(movedMlbId){
+  try {
+    if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
+    if(!_tierDragMemberSnapshot) return;
+    var moved = (movedMlbId == null) ? null : String(movedMlbId);
+    // New-order index map.
+    var idxOf = {};
+    for(var i=0;i<players.length;i++){ if(players[i] && players[i].mlb_id != null) idxOf[String(players[i].mlb_id)] = i; }
+    var movedIdx = (moved == null) ? null : idxOf[moved];
+    var changed = false;
+    var survivors = [];
+    for(var t=0;t<currentTiers.length;t++){
+      var tier = currentTiers[t]; if(!tier){ continue; }
+      var snap = null;
+      for(var s=0;s<_tierDragMemberSnapshot.length;s++){ if(_tierDragMemberSnapshot[s] && _tierDragMemberSnapshot[s].id === tier.id){ snap = _tierDragMemberSnapshot[s]; break; } }
+      // Start from the captured members, MINUS the moved player (he left his old position).
+      var memberSet = {};
+      if(snap){ for(var m=0;m<snap.members.length;m++){ memberSet[snap.members[m]] = true; } }
+      if(moved != null && memberSet[moved]){ delete memberSet[moved]; }
+      // RULE 2: if the moved player LANDED inside this tier's CURRENT span (between its
+      // surviving top & bottom in the new order), add him as a member.
+      // Compute this tier's surviving member indices in new order first.
+      var idxs = [];
+      for(var mk in memberSet){ if(memberSet.hasOwnProperty(mk)){ var ix = idxOf[mk]; if(ix != null) idxs.push(ix); } }
+      idxs.sort(function(a,b){ return a-b; });
+      if(moved != null && movedIdx != null && idxs.length > 0){
+        if(movedIdx >= idxs[0] && movedIdx <= idxs[idxs.length-1]){
+          memberSet[moved] = true; idxs.push(movedIdx); idxs.sort(function(a,b){ return a-b; });
+        }
+      }
+      // Re-derive anchors from the surviving (+maybe joined) members.
+      if(idxs.length === 0){ changed = true; continue; } // tier emptied -> drop it
+      var newStartId = String(players[idxs[0]].mlb_id);
+      var newEndId   = String(players[idxs[idxs.length-1]].mlb_id);
+      if(String(tier.start_mlb_id) !== newStartId || String(tier.end_mlb_id) !== newEndId){
+        tier.start_mlb_id = newStartId; tier.end_mlb_id = newEndId; tier.updated_at = new Date().toISOString(); changed = true;
+      }
+      survivors.push(tier);
+    }
+    if(changed){
+      currentTiers = survivors;
+      _tiersUserMutated = true;
+      console.log('[TIER_DRAG_SELFREPAIR_V1] re-anchored tiers after drag of mlb_id', moved, '— tiers now:', currentTiers.length);
+    }
+    _tierDragMemberSnapshot = null;
+  } catch(e){ console.warn('[TIER_DRAG_SELFREPAIR_V1] reanchor failed:', e); _tierDragMemberSnapshot = null; }
+}
+
 async function drop(e,idx){
   e.preventDefault();e.currentTarget.classList.remove('drag-over');
   // DROP_INDICATOR_V1 — always hide the bar+pill once a drop happens,
@@ -10338,6 +10419,8 @@ async function drop(e,idx){
   const si=players.findIndex(p=>p.id===srcId),ti=players.findIndex(p=>p.id===tgtId);
   // Snapshot BEFORE the move so undo can restore it
   snapshotForUndo();
+  // TIER_DRAG_SELFREPAIR_V1 — capture tier memberships in the CURRENT order before we move.
+  try { _tierDragCaptureMembers(); } catch(e){ console.warn('[TIER_DRAG_SELFREPAIR_V1] pre-capture failed:', e); }
   // DROP_INDICATOR_V1 — honor the top-half / bottom-half choice the user
   // made during dragOver. If they were in the bottom half, the player
   // should land BELOW the target row, i.e. at index ti+1 (after the splice
@@ -10351,6 +10434,9 @@ async function drop(e,idx){
   if(!_dropAbove) insertAt = insertAt + 1; // land below the target
   players.splice(insertAt,0,moved);
   reorderRanks();
+  // TIER_DRAG_SELFREPAIR_V1 — tier stays put / re-anchors to survivors; moved player
+  // joins a tier only if he landed inside its span. moved is a player obj; use mlb_id.
+  try { _tierDragReanchor(moved && moved.mlb_id); } catch(e){ console.warn('[TIER_DRAG_SELFREPAIR_V1] post-reanchor failed:', e); }
   dragSrcIdx=null;
   renderTable();
   // MUTATION_AUTOSAVE_V1 (2026-04-24) — old comment said "don't save yet" but nothing ever
