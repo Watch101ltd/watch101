@@ -575,6 +575,58 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 
 <script>
 // ──────────────────────────────────────────────────────────────────────────
+// AUTO_SHRINK + GROW_TO_FILL (ported from baseball June 9, 2026 — PC Walter, per
+// The Dude). Same fitTables() pattern as the baseball flagship: measure each visible
+// .table-wrap's table natural width vs the room available and set CSS `zoom` to match.
+// SHRINK when the table is wider than the screen (the smush fix, floored at 0.70 so it
+// stays readable; below the floor the wrap's overflow-x:auto side-scrolls). GROW when
+// the table is narrower than the screen (fills the empty space, no ceiling — bigger
+// monitor, bigger table). `zoom` NOT transform:scale — transform breaks sticky theads.
+// NBA has TWO tables: the watch list (#watch-list-body) + the Players pool
+// (#nba-players-body), each in its own .table-wrap. Observer watches both.
+// ──────────────────────────────────────────────────────────────────────────
+const AUTOSHRINK_MIN = 0.70; // never shrink below 70% — readability floor
+let _fitRaf = null;
+function fitTables(){
+  if(_fitRaf) cancelAnimationFrame(_fitRaf);
+  _fitRaf = requestAnimationFrame(function(){
+    _fitRaf = null;
+    const wraps = document.querySelectorAll('.table-wrap');
+    wraps.forEach(function(wrap){
+      const table = wrap.querySelector('table');
+      if(!table) return;
+      if(wrap.offsetParent === null){ return; }   // skip hidden surfaces
+      table.style.zoom = '1';                       // reset to read true natural width
+      const avail = wrap.clientWidth;
+      const natural = table.scrollWidth;
+      if(natural <= 0 || avail <= 0){ return; }
+      if(natural <= avail){
+        table.style.zoom = (avail / natural).toFixed(4);  // GROW to fill, no ceiling
+        return;
+      }
+      let scale = avail / natural;
+      if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; } // SHRINK, clamped → scroll if still too wide
+      table.style.zoom = scale.toFixed(4);
+    });
+  });
+}
+window.addEventListener('resize', fitTables);
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fitTables); } else { fitTables(); }
+(function _wireFitObserver(){
+  function attach(){
+    const ids = ['watch-list-body','nba-players-body'];
+    const onChange = function(){ fitTables(); };
+    const obs = new MutationObserver(onChange);
+    ids.forEach(function(id){
+      const el = document.getElementById(id);
+      if(el){ obs.observe(el, {childList:true, subtree:true}); }
+    });
+    onChange();
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', attach); } else { attach(); }
+})();
+
+// ──────────────────────────────────────────────────────────────────────────
 // CONFIG
 // ──────────────────────────────────────────────────────────────────────────
 // The live NBA server, deployed June 4 2026 behind Cloudflare. Sleeper stats
