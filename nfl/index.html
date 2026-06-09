@@ -460,6 +460,16 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 }
 .priority-stars .pstar:hover{color:var(--turf-bright)}
 .priority-stars .pstar.filled{color:var(--turf-bright)}
+
+/* COLLAPSIBLE_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude). Ported from baseball. The two NFL
+   STAT FILTERING panels (#nflwl-filter-panel watch list, #nflp-filter-panel pool) collapse to just
+   their gold title row + a +/- caret. Collapsed (hidden) by default, resets each load. Click to toggle.
+   Pure presentation — the filter handlers + Apply gating untouched. */
+.filt-title{cursor:pointer;user-select:none;display:flex;align-items:center;gap:7px;}
+.filt-caret{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;
+  border:1px solid var(--gold);border-radius:3px;font-size:12px;font-weight:700;line-height:1;color:var(--gold);}
+.filt-collapsed > *:not(:first-child){display:none !important;}
+.filt-collapsed > .filt-title{margin-bottom:0 !important;}
 </style>
 </head>
 <body>
@@ -678,6 +688,37 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 </div>
 
 <script>
+// COLLAPSIBLE_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude). Make the two NFL STAT FILTERING
+// panels collapsible. First child of each panel is the gold title row; make it clickable, prepend a
+// +/- caret, start collapsed (hidden by default). Click toggles .filt-collapsed (CSS hides the body).
+// Resets each load, no storage. Pure presentation; filter handlers + Apply gating untouched.
+function toggleFilterPanel(titleEl){
+  var panel = titleEl.parentElement;
+  if(!panel) return;
+  var collapsed = panel.classList.toggle('filt-collapsed');
+  var caret = titleEl.querySelector('.filt-caret');
+  if(caret) caret.textContent = collapsed ? '+' : '\u2212';
+}
+(function _wireCollapsibleFilters(){
+  function attach(){
+    ['nflwl-filter-panel','nflp-filter-panel'].forEach(function(id){
+      var panel = document.getElementById(id);
+      if(!panel) return;
+      var title = panel.firstElementChild;
+      if(!title || title.dataset.filtWired) return;
+      title.dataset.filtWired = '1';
+      title.classList.add('filt-title');
+      var caret = document.createElement('span');
+      caret.className = 'filt-caret';
+      caret.textContent = '+';
+      title.insertBefore(caret, title.firstChild);
+      title.addEventListener('click', function(){ toggleFilterPanel(title); });
+      panel.classList.add('filt-collapsed');
+    });
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', attach); } else { attach(); }
+})();
+
 // ──────────────────────────────────────────────────────────────────────────
 // CONFIG
 // ──────────────────────────────────────────────────────────────────────────
@@ -1166,6 +1207,9 @@ async function bootstrap(){
     // so Yahoo's slow first build (90-120s on cold cache) doesn't block render.
     refreshYahooAuthBadge();
     loadYahooData().catch(err => console.warn('[yahoo] background load failed:', err.message));
+    // CBS_OWNED_V1 — background load of the weekly CBS scrape JSON (fills the CBS column).
+    // Quietly no-ops with em-dashes until the NAS scraper has produced the file.
+    loadCbsData().catch(err => console.warn('[cbs] background load failed:', err.message));
   } catch(e){
     console.error('[bootstrap]', e);
     statusEl.textContent = '⚠ Could not load data: ' + e.message;
@@ -1348,10 +1392,10 @@ function renderWatchList(){
       '<td class="placeholder">—</td>' +
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       '<td class="left placeholder">—</td>' +
-      // YAHOO_DATA_V1: y!rank, y!owned, cbs owned cells
+      // YAHOO_DATA_V1: y!rank, y!owned cells. CBS_OWNED_V1: cbs owned cell (joins by name+team).
       '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
-      '<td class="placeholder">—</td>' +
+      '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
@@ -1654,8 +1698,10 @@ function sortValueFor(field, p, s, pid){
     case 'exp':
     case 'delta':
     case 'type':
-    case 'cbsowned':
       return null;
+    // CBS_OWNED_V1: real CBS rostered % (null sorts to bottom until data exists)
+    case 'cbsowned':
+      return _cbsLookupNum(pid);
     // YAHOO_DATA_V1: real values from _yahooDataByPid (null = sort to bottom)
     case 'yrank':
       return _yahooLookupNum(pid, 'yahoo_rank');
@@ -2230,6 +2276,61 @@ function _yahooNormalizeName(name){
 }
 
 // Lookup helpers used by renderWatchList and sortBy.
+// ══════════ CBS OWNERSHIP (CBS_OWNED_V1, 2026-06-07 — PC Walter, per the Dude) ══════════
+// Reads the weekly CBS football scrape JSON (produced by the NAS scraper at
+// Fantasy Football/Brandt Assistant/scripts/cbs_scraper/main.py → CBS Data/cbs_rostered_latest.json,
+// pushed to GitHub alongside the page). CBS data has NO Sleeper pid, so we join by
+// normalized name+team, exactly how the baseball CBS column joins. Until the scraper
+// has run + the JSON exists, the fetch 404s quietly and the column shows em-dashes
+// (same graceful-degrade pattern Yahoo used during its build).
+let _cbsByNameTeam = {};      // key: "normalizedname|TEAM" -> rostered_pct
+let _cbsByName = {};          // fallback key: "normalizedname" -> rostered_pct (when team missing)
+let _cbsDataLoaded = false;
+function _cbsNorm(s){
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]/g, '');   // strip spaces, punctuation, apostrophes, Jr/Sr handled loosely
+}
+async function loadCbsData(){
+  try {
+    // The JSON ships to the repo's cbs-nfl/ folder (pushed by push_cbs_nfl_to_github.py).
+    // The football page deploys at nfl/watch-list/, so go up two levels to the repo root,
+    // then into cbs-nfl/. (If a future deploy changes the page's folder depth, update this path.)
+    const res = await fetch('../../cbs-nfl/cbs_rostered_latest.json', { cache: 'no-cache' });
+    if(!res.ok) { console.warn('[cbs] no CBS data yet (HTTP ' + res.status + ')'); return; }
+    const data = await res.json();
+    const players = (data && data.players) || [];
+    let n = 0;
+    for(const p of players){
+      if(p.rostered_pct == null) continue;
+      const nm = _cbsNorm(p.name);
+      if(!nm) continue;
+      const tm = (p.team || '').toUpperCase();
+      if(tm) _cbsByNameTeam[nm + '|' + tm] = p.rostered_pct;
+      _cbsByName[nm] = p.rostered_pct;   // last-wins fallback
+      n++;
+    }
+    _cbsDataLoaded = true;
+    console.log('[cbs] loaded ' + n + ' CBS ownership rows (as of ' + (data.as_of || '?') + ')');
+    if(typeof renderWatchList === 'function') renderWatchList();   // re-render so cells fill in
+  } catch(e){
+    console.warn('[cbs] load failed (column stays em-dash):', e.message);
+  }
+}
+// Look up a Sleeper player's CBS rostered %. Join by name+team, fall back to name only.
+function _cbsLookupNum(pid){
+  const p = _playerDB && _playerDB[pid];
+  if(!p) return null;
+  const nm = _cbsNorm(p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim());
+  if(!nm) return null;
+  const tm = (p.team || '').toUpperCase();
+  let v = (tm && _cbsByNameTeam[nm + '|' + tm] != null) ? _cbsByNameTeam[nm + '|' + tm] : _cbsByName[nm];
+  return (typeof v === 'number') ? v : null;
+}
+function _cbsLookupFmt(pid){
+  const v = _cbsLookupNum(pid);
+  return (v == null) ? '—' : (v + '%');
+}
+
 function _yahooLookupNum(pid, field){
   const rec = _yahooDataByPid[pid];
   if(!rec) return null;
