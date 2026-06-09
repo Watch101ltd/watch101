@@ -378,6 +378,30 @@ table.watch-list thead th.col-action,table.watch-list tbody td:last-child{width:
 table.watch-list tbody td.placeholder{color:var(--text3)}
 table.watch-list tbody .remove-btn{padding:2px 6px;font-size:9px}
 table.watch-list tbody .stat-cell{font-size:11px}
+
+/* ══════════ RANKINGS_WIDTH_V1 (June 9, 2026 — PC Walter, per the Dude) ══════════
+   The shared .watch-list rule is width:100% + min-width:1150px + table-layout:fixed, which
+   makes the browser SPREAD the Rankings page's few columns edge-to-edge (eyes travel the
+   whole monitor). The Dude wants the columns packed tight on the LEFT with blank space on
+   the right. Scope a Rankings-only override: shrink-to-content table, left-aligned, with
+   comfortable per-column padding and a slightly bigger stat font. Touches ONLY #rankings-table. */
+#rankings-table{
+  width:auto;             /* shrink to content instead of stretching to 100% */
+  min-width:0;            /* kill the 1150px floor that forces the spread */
+  table-layout:auto;      /* size each column to its content, not evenly across the page */
+  margin:0;               /* sit on the left edge, blank space falls on the right */
+}
+/* The wrap no longer needs to scroll for this narrow table; keep overflow safe but don't stretch. */
+#rankings-table thead th{ padding:6px 14px; font-size:10px; }
+#rankings-table tbody td{ padding:6px 14px; font-size:13px; }
+#rankings-table tbody .stat-cell{ font-size:13px; }
+#rankings-table tbody .player-name{ font-size:13px; }
+/* Give the fixed lead columns a little breathing room but keep them snug. */
+#rankings-table thead th.col-handle, #rankings-table tbody td.col-handle{ padding:6px 6px; }
+#rankings-table thead th.col-rank,   #rankings-table tbody td.col-rank{ padding:6px 10px; }
+#rankings-table thead th.col-pos{ padding:6px 8px; }
+/* Player name column: enough to hold a full name, no more. */
+#rankings-table thead th.col-player, #rankings-table tbody td.col-player{ width:200px; max-width:200px; }
 /* Yahoo/CBS header accent prefixes */
 table.watch-list thead th .y-prefix{color:#6001D2;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
 table.watch-list thead th .cbs-prefix{color:#3b82f6;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
@@ -1142,8 +1166,16 @@ function _rankColsFor(pos){
   if(pos === 'QB')  return [yrank, yowned, age, fpts, paYd, paTd, ruYd, ruTd];
   if(pos === 'RB')  return [yrank, yowned, age, fpts, ruYd, ruTd, rec, reYd, reTd];
   if(pos === 'WR' || pos === 'TE') return [yrank, yowned, age, fpts, rec, reYd, reTd, ruYd, ruTd];
-  // DEF: no offensive stats — just the universal four.
-  return [yrank, yowned, age, fpts];
+  // DEF (RANKINGS_DEF_STATS_V1 — June 9, 2026, per the Dude): real team-defense stats. No Age (a team
+  // has no age). Y!Rank/Y!Owned kept for visual consistency (they show dashes for team defenses). Sleeper
+  // combines INT-return and fumble-return TDs into the single def_td field, so "DEF TD" is one column.
+  var dInt  = _rankStatCol('def_int','INT','def_int','col-stat-a');
+  var dFumR = _rankStatCol('def_fum_rec','FUM REC','def_fum_rec','col-stat-a');
+  var dTd   = _rankStatCol('def_td','DEF TD','def_td','col-stat-b');
+  var dSack = _rankStatCol('def_sack','SACK','def_sack','col-stat-b');
+  var dSafe = _rankStatCol('def_safety','SAFETY','def_safety','col-stat-a');
+  var dPa   = _rankStatCol('pts_allow','PTS ALL','pts_allow','col-stat-b');
+  return [yrank, yowned, fpts, dInt, dFumR, dTd, dSack, dSafe, dPa];
 }
 
 // Build the thead per the active position's columns. Fixed leading cols (handle/Rank/Pos/Player) + dynamic
