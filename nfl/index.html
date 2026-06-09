@@ -783,6 +783,11 @@ let _watchList = [];
 // 'season' uses the existing _seasonStats; the others use _dateRangeStats.windows[N].
 let _dateRangeStats = null;       // full payload from /sleeper/stats/daterange/:year
 let _dateRange = 'season';        // current selection, shared by both surfaces
+// NFL_FANTASY_POS_ONLY_V1 (June 9, 2026 — PC Walter, per the Dude + Matt). Fantasy-relevant positions
+// only. Individual defenders (CB, S, LB, DL, DB, OL, OT, etc.) are excluded from the pool + search so
+// they never clutter results. DEF = team defense, which IS kept. Used by _npSortedIds + renderSearchResults.
+var NFL_FANTASY_POS = ['QB','RB','WR','TE','DEF'];
+function _isFantasyNflPos(pos){ return NFL_FANTASY_POS.indexOf(pos) !== -1; }
 
 // _statsRow(pid) — the single source of truth for "what stats do we show for this
 // player right now." Reads the active window so every table cell, sort, and filter
@@ -1034,6 +1039,7 @@ function _npSortedIds(){
   for(const id in _playerDB){
     const p = _playerDB[id];
     if(!p || !p.position) continue;
+    if(!_isFantasyNflPos(p.position)) continue;   // NFL_FANTASY_POS_ONLY_V1 — no individual defenders
     if(!p.team) continue;   // same "real NFL player" filter the search uses
     // NFLP_POOL_SEARCH_V1 — instant name search (whole pool). Empty box => no constraint.
     if(typeof _npSearchQ === 'string' && _npSearchQ){
@@ -1285,6 +1291,7 @@ function renderSearchResults(term){
   for(const id in _playerDB){
     const p = _playerDB[id];
     if(!p || !p.position) continue;
+    if(!_isFantasyNflPos(p.position)) continue;   // NFL_FANTASY_POS_ONLY_V1 — no individual defenders
     if(p.position !== 'DEF' && !p.team) continue;
     const name = (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
     if(!name.includes(t)) continue;
