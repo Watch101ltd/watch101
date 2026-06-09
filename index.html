@@ -2029,6 +2029,13 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="filter-tab" id="instant-pit" onclick="setFilter('PITCHER',this)">Pitchers</button>
         <button class="filter-tab" id="instant-movers" onclick="setFilter('MOVERS',this)">Movers</button>
       </div>
+      <!-- INSTANT_DATERANGE_V1 (June 9, 2026 — PC Walter, per the Dude + Matt). A second date-range
+           dropdown OUT in the instant-filter row (next to All/Hitters/Pitchers/Movers). No Apply:
+           onchange calls setDateRange() which renders immediately, plus syncDateRangeDropdowns() so the
+           in-box #wlf-daterange + every other surface stay matched. Same 6 options as the in-box one. -->
+      <select id="instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="setDateRange(this.value); if(typeof syncDateRangeDropdowns==='function') syncDateRangeDropdowns(this.value);" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none">
+        <option value="live">🔴 Live</option><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option>
+      </select>
     </div>
   </div>
 
@@ -13484,7 +13491,7 @@ function setPoolWrapTop(){
 
 function syncDateRangeDropdowns(val){
   // Keep all three dropdowns in sync visually
-  ['daterange-select','wlf-daterange','poolf-daterange','tankf-daterange','ldrf-daterange','prosf-daterange','ppo-daterange-select'].forEach(id => {
+  ['daterange-select','instant-daterange','wlf-daterange','poolf-daterange','tankf-daterange','ldrf-daterange','prosf-daterange','ppo-daterange-select'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.value = val;
     if(el) el.classList.toggle('daterange-active', val !== 'season');
