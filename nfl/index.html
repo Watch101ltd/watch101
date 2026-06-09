@@ -1008,17 +1008,71 @@ function switchRankPos(pos, btn){
   if(btn) btn.classList.add('active');
   renderRankings();
 }
+// RANKINGS_AUTOLOAD_V1 (June 9, 2026 — PC Walter, per the Dude). Each position tab AUTO-LOADS every
+// fantasy-relevant player at that position (no add-one-by-one — Matt ranks the whole field). Sorted by
+// Yahoo rank (best first; players with no Yahoo rank sink to the bottom). Capped per position so it's the
+// fantasy-relevant depth (~250-300 total), not 4th-string practice-squad guys. Active + on-a-team only.
+// Phase 2 still to come: drag-to-rank to override this order + persist Matt's order to the NAS.
+var RANK_POS_CAP = { QB:32, RB:70, WR:80, TE:32, DEF:32 };
+function _rankingsIdsFor(pos){
+  if(!_playerDB) return [];
+  var ids = [];
+  for(var id in _playerDB){
+    var p = _playerDB[id];
+    if(!p || !p.position) continue;
+    if(p.position !== pos) continue;            // exact position match for this tab
+    if(pos !== 'DEF' && !p.team) continue;       // active/on-a-team only (DEF is a team unit)
+    ids.push(id);
+  }
+  // Sort by Yahoo rank ascending; null/missing ranks sink to the bottom (then by name for stability).
+  ids.sort(function(a,b){
+    var ra = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(a,'yahoo_rank') : null;
+    var rb = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(b,'yahoo_rank') : null;
+    var am = (ra==null), bm = (rb==null);
+    if(am && bm){
+      var na=(_playerDB[a].full_name||''), nb=(_playerDB[b].full_name||'');
+      return na.localeCompare(nb);
+    }
+    if(am) return 1;
+    if(bm) return -1;
+    return ra - rb;
+  });
+  var cap = RANK_POS_CAP[pos] || 50;
+  return ids.slice(0, cap);
+}
 function renderRankings(){
   var tbody = document.getElementById('rankings-body');
   var statusEl = document.getElementById('rankings-status');
   if(!tbody) return;
-  var list = (_rankings && _rankings[_rankPos]) || [];
-  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + list.length + ' ranked. (Positional rankings, separate from the Watch 101 list.)';
-  if(list.length === 0){
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><strong>' + _rankPos + ' rankings are empty</strong>Phase 2 will add players + drag-to-rank here.</td></tr>';
+  if(!_playerDB){
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
     return;
   }
-  tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><strong>' + _rankPos + ': ' + list.length + ' players</strong>Row rendering lands in Phase 2.</td></tr>';
+  var ids = _rankingsIdsFor(_rankPos);
+  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players (auto-loaded, Yahoo order). Drag-to-rank + save coming in Phase 2. Separate from the Watch 101 list.';
+  if(ids.length === 0){
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = ids.map(function(pid, i){
+    var p = _playerDB[pid];
+    var name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
+    var pos  = p.position || '?';
+    var team = p.team || '—';
+    var age  = nflDecimalAge(p);
+    var s = (typeof _statsRow === 'function') ? _statsRow(pid) : {};
+    var fpts = (s && s.pts_half_ppr != null) ? statCellOrDash(s.pts_half_ppr, 1) : '<span class="placeholder">—</span>';
+    return '<tr data-rank-pid="' + escapeHtml(pid) + '">' +
+      '<td class="center col-handle nfl-drag-handle disabled" title="Drag-to-rank comes in Phase 2">☰</td>' +
+      '<td class="col-rank">' + (i+1) + '</td>' +
+      '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
+      '<td>' + team + '</td>' +
+      '<td>' + age + '</td>' +
+      '<td class="col-stat-a">' + fpts + '</td>' +
+      '<td class="center"><span class="placeholder">—</span></td>' +
+    '</tr>';
+  }).join('');
 }
 
 // Pool sort state — independent of the watch list's _sortField (data-npsort, not
