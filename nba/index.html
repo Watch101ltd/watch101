@@ -768,6 +768,18 @@ async function _applyInstantDateRange(selectId){
 // NBA_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
 // Functional: team / minPts / age (NBA has that data). %Owned + date range are inert (no data).
 let _wlFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, posPositions:[] };
+// NBA_MULTIPOS_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude + Matt). Sleeper NBA records carry a
+// fantasy_positions ARRAY (e.g. ['PG','SG'] for Hinrich/Augustin, ['PF','SF','SG'] for Butler), not just
+// the single p.position. The old filter only matched p.position, so multi-position guys showed under one
+// slot. This matches ANY of the player's fantasy_positions against the checked boxes; falls back to the
+// single p.position if the array is missing. Verified live: ~15+ multi-position players in the data.
+function _nbaPosMatch(p, checked){
+  if(!checked || !checked.length) return true;
+  var arr = (p && Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions
+          : (p && p.position ? [p.position] : []);
+  for(var i=0;i<arr.length;i++){ if(checked.indexOf(arr[i]) !== -1) return true; }
+  return false;
+}
 let _wlTeamSelectBuilt = false;
 function _wlfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
 // NBA_MIN_GAMES_FILTER_V1 — minGames added to the gate. A "games-only" Apply must
@@ -812,8 +824,8 @@ function _wlPassesFilter(pid){
   const s=_statsRow(pid);
   if(F.minPts!=null && (Number(s.pts)||0) < F.minPts) return false;
   if(F.minGames!=null && (Number(s.gp)||0) < F.minGames) return false;  // NBA_MIN_GAMES_FILTER_V1
-  // POSITION_FILTER_V1 (2026-06-06) — single NBA position, match ANY checked.
-  if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) return false;
+  // NBA_MULTIPOS_FILTER_V1 — match ANY of the player's fantasy_positions against the checked boxes.
+  if(F.posPositions && F.posPositions.length && !_nbaPosMatch(p, F.posPositions)) return false;
   if(F.ageMin!=null || F.ageMax!=null){
     const a=nbaDecimalAgeNum(p);
     if(F.ageMin!=null && (a==null || a<F.ageMin)) return false;
@@ -969,7 +981,7 @@ function _npSortedIds(){
       if(_nm.indexOf(_npSearchQ) === -1) continue;
     }
     if(F.team && F.team !== 'ALL' && p.team !== F.team) continue;
-    if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) continue;  // POSITION_FILTER_V1
+    if(F.posPositions && F.posPositions.length && !_nbaPosMatch(p, F.posPositions)) continue;  // NBA_MULTIPOS_FILTER_V1
     const s = _statsRow(id);
     if(F.minPts != null && (Number(s.pts)||0) < F.minPts) continue;
     if(F.minGames != null && (Number(s.gp)||0) < F.minGames) continue;  // NBA_MIN_GAMES_FILTER_V1
@@ -1031,7 +1043,7 @@ function renderNbaPlayers(){
     // counting (PTS REB ORB DRB AST STL BLK TOV PF), then shooting (FG FGA 3P 3PA FT FTA),
     // then percentages (FG% 3P% FT%).
     return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
-      '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
+      '<td class="center">' + _nbaPosBadges(p) + '</td>' +
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
@@ -1376,7 +1388,7 @@ function renderWatchList(){
     return _trOpen +
       _handleCell +
       '<td class="col-rank">' + rank + '</td>' +
-      '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
+      '<td class="center">' + _nbaPosBadges(p) + '</td>' +
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
@@ -1530,6 +1542,17 @@ async function loadListFromStorage(){
 function posClassFor(pos){
   const known = ['PG','SG','SF','PF','C','G','F'];
   return known.includes(pos) ? ('pos-' + pos) : 'pos-other';
+}
+// NBA_POS_BADGES_V1 (June 9, 2026 — PC Walter, per the Dude). Show ALL eligibility positions in the Pos
+// column, like baseball's posBadgesColumn. Reads the player's fantasy_positions array (Butler PF/SF/SG),
+// falls back to the single p.position. Renders one colored badge per position. Dedups + keeps array order.
+function _nbaPosBadges(p){
+  var arr = (p && Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions
+          : (p && p.position ? [p.position] : []);
+  var seen = {}, uniq = [];
+  for(var i=0;i<arr.length;i++){ var v=arr[i]; if(v && !seen[v]){ seen[v]=1; uniq.push(v); } }
+  if(uniq.length === 0) return '<span class="stat-na">—</span>';
+  return uniq.map(function(pos){ return '<span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span>'; }).join('');
 }
 function statCellOrDash(val, decimals){
   if(val == null || val === 0) return '<span class="stat-zero">—</span>';
