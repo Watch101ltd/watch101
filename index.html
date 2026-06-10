@@ -1646,14 +1646,17 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
      and the status strip. Desktop is untouched (this is inside the phone media query). */
   #page-nav{display:none !important;}                 /* the 4 nav tabs */
   #wl-filter-panel{display:none !important;}           /* STAT FILTERING box */
-  .toolbar-right{display:none !important;}             /* Save / Undo / Compact / More / Clear */
+  /* PHONE_THEME_BTN_BACK_V1 (June 10, 2026 — PC Walter, per the Dude): PHONE_STRIP_CHROME_V1
+     hid ALL of .toolbar-right, which swallowed the day/night switch (#theme-toggle lives inside it).
+     Keep the container, hide every child EXCEPT the theme toggle. */
+  .toolbar-right > *:not(#theme-toggle){display:none !important;} /* Save / Undo / Compact / More / Clear stay hidden */
   #milb-legend-chip{display:none !important;}          /* "italic = minors" chip */
   #hdr-status-strip{display:none !important;}          /* "stats: Xm ago" status strip */
   /* PHONE_NOTE_STAR_V1 (June 9, 2026 — PC Walter, per the Dude, from Matt's June 9 meeting). The approved
      Option C list ROW: the NOTE is the star. No stats on the front page (stats live on the Deep Cut). Tap
      a row → Deep Cut. Rank, name (red for must-watch), meta (team/pos/age/stars), the note, priority emojis
      by the name, and the +/- mover + ownership on the right rail. */
-  .pc-row{display:flex;align-items:stretch;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface);cursor:pointer;}
+  .pc-row{display:flex;align-items:stretch;gap:10px;padding:11px 12px;border-bottom:1px solid var(--border);background:var(--surface);cursor:pointer;} /* PHONE_GLOWUP_V1: 10->11px, the NFL/NBA spacing */
   .pc-row:nth-child(even){background:var(--surface2);}
   .pc-row:active{background:var(--surface3,#1a212b);}
   .pc-rank{flex:0 0 26px;display:flex;align-items:flex-start;justify-content:center;font-size:17px;font-weight:900;color:var(--gold);padding-top:1px;}
@@ -1672,7 +1675,17 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
   .pc-own b{color:var(--text2);}
   /* On phone, let the STAT FILTERING box + toolbar breathe and stack. */
   .header,.toolbar{flex-wrap:wrap !important;}
-  .logo{font-size:34px !important;flex-wrap:wrap !important;}
+  /* PHONE_GLOWUP_V1 (June 10, 2026 — PC Walter, per the Dude, mockup-approved:
+     05 Research/phone_preview_baseball_glowup.html). The NFL/NBA phone look ported home:
+     compact header with the GOLD bottom line, smaller wordmark, colored position badge
+     chips in the meta line, dimmed empty stars. Desktop untouched (phone media query). */
+  .header{border-bottom:2px solid var(--gold) !important;padding:0.9rem 1rem !important;}
+  .logo{font-size:28px !important;flex-wrap:wrap !important;}
+  .pc-meta .pos-stack{display:inline-flex;gap:2px;vertical-align:1px;}
+  .pc-meta .pos-badge{font-size:8px;padding:1px 4px;}
+  .pc-stars{color:var(--gold);letter-spacing:1px;font-size:10px;}
+  .pc-stars .half{opacity:.55;}
+  .pc-stars .off{color:#3a4656;}
 }
 #player-page-overlay .ppo-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;}
 #player-page-overlay .ppo-block h2{font-family:'Bowlby One',sans-serif;font-size:18px;letter-spacing:0.06em;color:var(--gold);margin:0 0 4px;}
@@ -1988,19 +2001,16 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
 
 <script>
 /* EARLY THEME INIT — runs before any visible content paints.
-   Reads saved preference from localStorage, or falls back to the
-   user's OS color scheme. If day mode is chosen, applies the
-   .day-mode class immediately so the page never flashes night
-   colors on a user who prefers light. */
+   NIGHT_DEFAULT_V1 (June 10, 2026 — PC Walter, per the Dude): NIGHT is the
+   default, always. Day mode applies ONLY when the user explicitly chose it
+   (saved 'day' in localStorage via the toggle). The old OS color-scheme
+   fallback is gone — it was forcing day mode on phones whose OS reports
+   "prefers light," which is exactly how the Dude got stuck in day mode
+   with the toggle hidden. */
 (function(){
   try {
     var saved = localStorage.getItem('watch101-theme');
-    var isDay;
-    if (saved === 'day' || saved === 'night') {
-      isDay = (saved === 'day');
-    } else {
-      isDay = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-    }
+    var isDay = (saved === 'day');
     if (isDay) document.body.classList.add('day-mode');
   } catch(e) { /* localStorage blocked — default to night */ }
 })();
@@ -8499,8 +8509,23 @@ function renderPhoneCards(){
   function avg(v){ try { return (typeof fmtAvg==='function') ? fmtAvg(v) : (v==null?na:v); } catch(e){ return v==null?na:v; } }
 
   host.innerHTML = list.map(function(p){
-    var pos = ''; try { pos = (typeof posBadgesColumn==='function') ? posBadgesColumn(p.positions) : ''; } catch(e){}
-    var stars=''; try { stars = (typeof renderPriorityStars==='function') ? renderPriorityStars(p) : ''; } catch(e){}
+    var pos = ''; try { pos = (typeof posBadgesColumn==='function') ? posBadgesColumn(p.positions,'none') : ''; } catch(e){}  // PHONE_GLOWUP_V1: 'none' = colored badges, NON-clickable (the clickable ones cluster-sort)
+    // PHONE_GLOWUP_V1 — INERT stars. renderPriorityStars output is a clickable ADMIN control
+    // (sets priority on tap); fans on phone must not flip priority. Render plain stars instead:
+    // full gold / half at 55% / empty dimmed — priority reads at a glance, nothing tappable.
+    var stars='';
+    try {
+      var _pv = (p && p.priority != null && p.priority !== '') ? Number(p.priority) : 0;
+      if(isNaN(_pv) || _pv < 0) _pv = 0; if(_pv > 5) _pv = 5;
+      if(_pv > 0){
+        stars = '<span class="pc-stars">';
+        for(var _n = 1; _n <= 5; _n++){
+          var _c = (_pv >= _n) ? 'on' : ((_pv >= _n - 0.5) ? 'half' : 'off');
+          stars += '<span class="' + _c + '">★</span>';
+        }
+        stars += '</span>';
+      }
+    } catch(e){}
     var delta=''; try { delta = (typeof renderDelta==='function') ? renderDelta(p) : ''; } catch(e){}
     var age=''; try { age = (typeof decimalAge==='function') ? decimalAge(p) : (p.age||''); } catch(e){ age=p.age||''; }
     var mustFlash=''; try { mustFlash = (typeof _mustWatchFlashClass==='function') ? _mustWatchFlashClass(p) : ''; } catch(e){}
@@ -8525,7 +8550,7 @@ function renderPhoneCards(){
 
     var yOwn = (p.roster_pct!=null && p.roster_pct!=='') ? parseFloat(p.roster_pct).toFixed(0)+'%' : '0%';
     var cOwn = (p.cbs_roster_pct!=null && p.cbs_roster_pct!=='') ? parseFloat(p.cbs_roster_pct).toFixed(0)+'%' : '0%';
-    var _meta = (p.team||'') + (pos?(' · '+String(pos).replace(/<[^>]+>/g,'').trim()):'') + (age?(' · '+age):'');
+    var _meta = (p.team||'') + (pos?(' · '+pos):'') + (age?(' · '+age):'');  // PHONE_GLOWUP_V1: badges stay as colored chips (CSS shrinks them)
     var _idAttr = (p.id||'');
 
     return '<div class="pc-row" data-id="'+_idAttr+'" onclick="_phoneCardTap(\''+_idAttr+'\')">'
