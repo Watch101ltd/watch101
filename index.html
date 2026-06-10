@@ -1610,6 +1610,16 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 @media(max-width:768px){
   #player-page-overlay{top:0;left:0;transform:none;width:100vw;height:100vh;border-radius:0;border:none;box-shadow:none;}
   #player-page-backdrop{display:none !important;}
+  /* DEEPCUT_PHONE_COMPACT_V1 (June 9, 2026 — PC Walter, per the Dude, from Matt's June 9 meeting).
+     Matt doesn't want the headshot on phone, and the 48px name eats the whole top of the screen, burying
+     Matt's Take. Hide the photo + shrink the name on phone ONLY so the stat bar and the take rise up the
+     page (you reach the take with almost no scrolling). Desktop is untouched (this is inside the phone
+     media query). */
+  #player-page-overlay .ppo-hero-photo{display:none !important;}
+  #player-page-overlay .ppo-hero{padding:1rem 1.1rem;gap:10px;}
+  #player-page-overlay .ppo-hero-name{font-size:24px;line-height:1.05;}
+  #player-page-overlay .ppo-hero-sub{font-size:12px;margin-top:6px;}
+  #player-page-overlay .ppo-hero-rank{margin-top:10px;}
 }
 
 /* MOBILE_TIGHTEN block REMOVED June 7, 2026 (PHONE_CARDS_V1, PC Walter) — the old
@@ -1714,6 +1724,14 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
    Deep Cut overlay. Sits below the Mark-flaming row. Multi-select checkbox
    group, one row per TYPE_TAGS_V1 entry. */
 #player-page-overlay .ppo-type-tags-block{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);}
+/* DEEPCUT_TAGS_SHOWN_V1 (June 9, 2026 — PC Walter, per the Dude) — the FRONT-FACING selected-tag chips
+   shown under the Priority stars (emoji + label). Read-only display; the editable picker is .ppo-type-tags-block. */
+#player-page-overlay .ppo-tags-shown-block{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);}
+#player-page-overlay .ppo-tags-shown-list{display:flex;flex-wrap:wrap;gap:8px 10px;}
+#player-page-overlay .ppo-tag-shown{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;background:var(--surface2);
+  border:1px solid var(--border2);border-left:2px solid var(--gold);border-radius:6px;font-size:13px;color:var(--text2);font-weight:700;}
+#player-page-overlay .ppo-tag-shown-emoji{font-size:15px;line-height:1;}
+#player-page-overlay .ppo-tag-shown-label{font-size:12px;letter-spacing:0.02em;}
 #player-page-overlay .ppo-type-tags-title{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
 #player-page-overlay .ppo-type-tags-tag{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;font-weight:400;}
 #player-page-overlay .ppo-type-tags-list{display:flex;flex-wrap:wrap;gap:6px 14px;}
@@ -6484,16 +6502,24 @@ function flameEmoji(p){
 // the following Approve. So the emoji appears for one publish cycle and then
 // quietly disappears. Click opens the same Deep Cut overlay as clicking the
 // player's name. stopPropagation prevents bubbling to row-level handlers.
+// NEW_NOTE_48H_V1 (June 9, 2026 — PC Walter, per the Dude + Matt). The "new note" badge now keys off a
+// TIMESTAMP, not publish count. Matt publishes several times a day, so a publish-count trigger wiped the
+// flag constantly; instead editNote stamps p.note_saved_at = Date.now() when the note text changes, and
+// this badge shows 📝 only while it's been less than 48 hours. Pure read-time math → it auto-expires on
+// the next render after 48h. The old note_publish_count_since_change field is no longer read.
+var NEW_NOTE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
 function noteBadge(p){
   try {
     if(!p) return '';
-    if(!Object.prototype.hasOwnProperty.call(p, 'note_publish_count_since_change')) return '';
+    var ts = Number(p.note_saved_at);
+    if(!ts || !isFinite(ts)) return '';
+    if((Date.now() - ts) >= NEW_NOTE_WINDOW_MS) return '';   // older than 48h → expired
     var pid = (p.id != null) ? String(p.id).replace(/'/g, '') : '';
     if(!pid) return '';
     return '<span class="note-badge" '
          + 'onclick="event.stopPropagation(); noteBadgeOpen(\'' + pid + '\');" '
-         + 'title="Matt added or changed a note recently — click to read" '
-         + 'role="button" tabindex="0">📋</span>';
+         + 'title="New note — Matt added or changed this within the last 48 hours. Click to read." '
+         + 'role="button" tabindex="0">📝</span>';
   } catch(e){
     return '';
   }
@@ -9118,6 +9144,9 @@ function editNote(id,el){
     // MUTATION_AUTOSAVE_V1 — note edits should persist to NAS, not just localStorage
     try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] editNote autosave failed:', e); }
   });
+  // NEW_NOTE_48H_V1 (June 9, 2026) — NOTE: the "new note" 48h clock does NOT start here. Per the Dude,
+  // it starts at PUBLISH (when the approval batch runs), so p.note_saved_at is stamped by the approval
+  // script, not by this in-browser save. The badge (noteBadge) reads that publish-time timestamp.
   input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();});
 }
 
@@ -16555,6 +16584,32 @@ function openPlayerPage(p){
     + '<span class="ppo-priority-tag backend-only">' + _priorityTagText + '</span>'
     + _priorityStampHtml
     + '</div>';
+
+  // DEEPCUT_TAGS_SHOWN_V1 (June 9, 2026 — PC Walter, per the Dude, from Matt's June 9 meeting).
+  // FRONT-FACING display of the player's SELECTED type tags, right under the Priority stars. Reads
+  // p.type_tags (array of ids), looks each up in TYPE_TAGS_V1 for the emoji + label, and shows
+  // "EMOJI Label" chips. This is what fans (and Matt) see. It ALSO solves the phone emoji problem:
+  // on a phone there's no hover tooltip, but the label is printed right next to the emoji here, so a
+  // phone user reading the Deep Cut knows what each emoji means. Renders NOTHING if the player has no
+  // tags (so untagged players don't get an empty block). Distinct from the BACKEND picker below (which
+  // is the checkbox editor); this is read-only display.
+  var _shownTags = Array.isArray(p.type_tags) ? p.type_tags : [];
+  if(_shownTags.length){
+    var _shownRows = '';
+    for(var _si=0; _si<_shownTags.length; _si++){
+      var _sdef = (typeof _typeTagById === 'function') ? _typeTagById(_shownTags[_si]) : null;
+      if(!_sdef) continue;
+      _shownRows += '<span class="ppo-tag-shown" title="' + (_sdef.tagline||'').replace(/"/g,'&quot;') + '">'
+        + '<span class="ppo-tag-shown-emoji">' + _sdef.emoji + '</span>'
+        + '<span class="ppo-tag-shown-label">' + _sdef.label + '</span>'
+        + '</span>';
+    }
+    if(_shownRows){
+      notesHtml += '<div class="ppo-tags-shown-block">'
+        + '<div class="ppo-tags-shown-list">' + _shownRows + '</div>'
+        + '</div>';
+    }
+  }
 
   // TYPE_TAGS_V1 (April 27, 2026) — BACKEND_ONLY type-tag picker.
   // Sibling to MARK_FLAMING_V1 / MARK_NOTE_FRESH_V1. Multi-select: a player
