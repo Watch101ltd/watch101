@@ -1220,9 +1220,12 @@ function renderRankings(){
 // manual saved order. Helpers reused: _yahooLookupNum/_yahooLookupFmt, statCellOrDash, nflDecimalAge.
 
 // A column definition: key (sort id), label (header), tdClass (cell class), num (sort value), render (cell HTML).
-function _rankCol_yrank(){ return { key:'yrank', label:'Y!Rank', headClass:'yh-rank', tdClass:'',
-  num:function(pid){ var v=_yahooLookupNum(pid,'yahoo_rank'); return v==null?Infinity:v; },
-  render:function(pid){ var has=_yahooLookupNum(pid,'yahoo_rank')!=null; return has ? _yahooLookupFmt(pid,'yahoo_rank') : '<span class="placeholder">—</span>'; } }; }
+// YAHOO_DEF_RANKS_V1 (June 10, 2026 — PC Walter): optional field param. Default stays
+// 'yahoo_rank' (overall). The DEF tab passes 'yahoo_def_rank' — Yahoo's 1-32 rank AMONG
+// defenses — because DSTs never get an overall rank (kept null so pool sorts stay honest).
+function _rankCol_yrank(field){ var f = field || 'yahoo_rank'; return { key:'yrank', label:'Y!Rank', headClass:'yh-rank', tdClass:'',
+  num:function(pid){ var v=_yahooLookupNum(pid,f); return v==null?Infinity:v; },
+  render:function(pid){ var has=_yahooLookupNum(pid,f)!=null; return has ? _yahooLookupFmt(pid,f) : '<span class="placeholder">—</span>'; } }; }
 function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', headClass:'yh-owned', tdClass:'',
   num:function(pid){ var v=_yahooLookupNum(pid,'roster_pct'); return v==null?-1:v; },
   render:function(pid){ var has=_yahooLookupNum(pid,'roster_pct')!=null; return has ? _yahooLookupFmt(pid,'roster_pct',true) : '<span class="placeholder">—</span>'; } }; }
@@ -1267,7 +1270,8 @@ function _rankColsFor(pos){
   var dFumRec = _rankStatCol('def_fum_rec','FUM REC','def_fum_rec','col-stat-b');
   var dSafety = _rankStatCol('def_safety','SAFETY','def_safety','col-stat-b');
   var dTd     = _rankStatCol('def_td','DEF TD','def_td','col-stat-b');
-  return [yrank, yowned, dInt, dSack, dFumRec, dSafety, dTd, fpts];  // FPTS_LAST_V1 — FPTS rightmost
+  var yrankDef = _rankCol_yrank('yahoo_def_rank');  // YAHOO_DEF_RANKS_V1 — rank among defenses
+  return [yrankDef, yowned, dInt, dSack, dFumRec, dSafety, dTd, fpts];  // FPTS_LAST_V1 — FPTS rightmost
 }
 
 // Build the thead per the active position's columns. Fixed leading cols (handle/Rank/Pos/Player) + dynamic
@@ -2697,10 +2701,23 @@ const _NFL_FULLNAME_TO_ABBR = {
   'new york jets':'NYJ','philadelphia eagles':'PHI','pittsburgh steelers':'PIT','san francisco 49ers':'SF',
   'seattle seahawks':'SEA','tampa bay buccaneers':'TB','tennessee titans':'TEN','washington commanders':'WAS'
 };
+// DST_NICKNAME_MAP_V1 (June 10, 2026 — PC Walter). GROUND-TRUTHED via the live
+// _def_diag payload: Yahoo names team defenses by NICKNAME ONLY ("Texans", not
+// "Houston Texans"), so the fullname map alone misses every DST. 32 fixed entries.
+const _NFL_NICKNAME_TO_ABBR = {
+  'cardinals':'ARI','falcons':'ATL','ravens':'BAL','bills':'BUF','panthers':'CAR',
+  'bears':'CHI','bengals':'CIN','browns':'CLE','cowboys':'DAL','broncos':'DEN',
+  'lions':'DET','packers':'GB','texans':'HOU','colts':'IND','jaguars':'JAX',
+  'chiefs':'KC','raiders':'LV','chargers':'LAC','rams':'LAR','dolphins':'MIA',
+  'vikings':'MIN','patriots':'NE','saints':'NO','giants':'NYG','jets':'NYJ',
+  'eagles':'PHI','steelers':'PIT','49ers':'SF','seahawks':'SEA','buccaneers':'TB',
+  'titans':'TEN','commanders':'WAS'
+};
 function _nflTeamToAbbr(team){
   if(!team) return '';
   const key = String(team).trim().toLowerCase();
   if(_NFL_FULLNAME_TO_ABBR[key]) return _NFL_FULLNAME_TO_ABBR[key];
+  if(_NFL_NICKNAME_TO_ABBR[key]) return _NFL_NICKNAME_TO_ABBR[key];   // DST_NICKNAME_MAP_V1
   return String(team).toUpperCase();   // already an abbr, or unmapped — pass through
 }
 
@@ -2778,7 +2795,27 @@ async function loadYahooData(){
   let matchedByNameTeam = 0;
   let unmatched = 0;
   let nameClobberBlocked = 0;
+  let matchedDst = 0;
   for(const yp of yahooPlayers){
+    // YAHOO_DEF_RANKS_V1 (June 10, 2026 — PC Walter, per the Dude). Team defenses take
+    // their own deterministic bridge: Sleeper keys DSTs by team ABBR ('BAL'), and Yahoo's
+    // DST name IS the full team name ("Baltimore Ravens"), so _nflTeamToAbbr resolves the
+    // pid directly — no fuzzy matching, no clobber risk. yahoo_def_rank = Yahoo's 1-32
+    // rank among defenses (overall yahoo_rank stays null for DSTs on purpose).
+    if(yp.is_dst){
+      const defPid = _nflTeamToAbbr(yp.name);
+      if(defPid && _playerDB && _playerDB[defPid]){
+        merged[defPid] = {
+          yahoo_rank: null,
+          yahoo_def_rank: (typeof yp.yahoo_def_rank === 'number') ? yp.yahoo_def_rank : null,
+          roster_pct: (typeof yp.roster_pct === 'number') ? yp.roster_pct : null
+        };
+        matchedDst++;
+      } else {
+        unmatched++;
+      }
+      continue;
+    }
     let sleeperPid = null;
     let matchSource = null;
     // Primary lookup: by Yahoo player_id (works for all records where Sleeper has yahoo_id stamped)
@@ -2833,7 +2870,7 @@ async function loadYahooData(){
   const matched = matchedById + matchedByNameTeam;
   _yahooDataByPid = merged;
   _yahooDataLoaded = true;
-  console.log('[yahoo] matched ' + matched + ' / ' + yahooPlayers.length + ' Yahoo players (primary id: ' + matchedById + ', name fallback: ' + matchedByNameTeam + ', unmatched: ' + unmatched + ', dupe-name clobbers blocked: ' + nameClobberBlocked + ')');
+  console.log('[yahoo] matched ' + matched + ' / ' + yahooPlayers.length + ' Yahoo players (primary id: ' + matchedById + ', name fallback: ' + matchedByNameTeam + ', DST: ' + matchedDst + ', unmatched: ' + unmatched + ', dupe-name clobbers blocked: ' + nameClobberBlocked + ')');  // YAHOO_DEF_RANKS_V1: DST count visible
 
   if(statusEl) {
     const playerCount = _playerDB ? Object.keys(_playerDB).length : 0;
