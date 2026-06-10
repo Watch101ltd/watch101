@@ -200,20 +200,43 @@ a.logo-mini:hover{opacity:1;}
 }
 
 .table-wrap{padding:0.5rem 0.75rem 3rem;overflow-x:auto}
+/* NBA_STICKY_HEADERS_V1 (June 9, 2026 — PC Walter, per the Dude) — native sticky headers, proven
+   baseball/football recipe (NOT a JS clone-bar). THREE rules: sticky thead + bg, th bg, wrapper
+   overflow:visible (overflow-x:auto traps sticky). Also removed overflow:hidden from the table element
+   above (the second trap found on football). NBA smush uses zoom (not transform) so sticky still pins. */
+#nbamain-wrap.table-wrap thead, #nbaplayers-wrap.table-wrap thead{
+  position:sticky; top:0; z-index:10; background:var(--surface);
+}
+#nbamain-wrap.table-wrap thead th, #nbaplayers-wrap.table-wrap thead th{
+  background:var(--surface);
+}
+#nbamain-wrap.table-wrap, #nbaplayers-wrap.table-wrap{
+  overflow:visible;
+}
 table.watch-list{
   width:100%;border-collapse:separate;border-spacing:0;
   min-width:1050px;table-layout:fixed;background:var(--surface);
-  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+  border:1px solid var(--border);border-radius:8px;
+  /* NBA_STICKY_HEADERS_V1 — removed overflow:hidden (traps position:sticky; same trap fixed on football). */
 }
 table.watch-list thead th{
   padding:5px 3px;text-align:right;
   font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:800;
   letter-spacing:0.04em;text-transform:uppercase;
   color:var(--text3);background:var(--surface2);
-  border-bottom:2px solid var(--court);
+  border-bottom:2px solid var(--gold2);  /* GOLD_THEME_V1 — gold header line like baseball/football */
   white-space:nowrap;
 }
 table.watch-list thead th.left{text-align:left}
+/* GOLD_THEME_V1 (June 9, 2026 — PC Walter, per the Dude) — gold vertical group-dividers (ported from
+   baseball/football col-zone-divider). Gold line before each stat group so the eye reads sections fast. */
+table.watch-list thead th.col-zone-divider, table.watch-list tbody td.col-zone-divider{
+  border-left:2px solid rgba(196,127,0,0.55);
+  padding-left:7px;
+}
+table.watch-list thead th:has(+ th.col-zone-divider), table.watch-list tbody td:has(+ td.col-zone-divider){
+  padding-right:7px;
+}
 table.watch-list tbody td{padding:4px 3px;font-size:11px;white-space:nowrap;overflow:hidden;text-align:right;border-bottom:1px solid var(--border);vertical-align:middle;}
 /* Column widths */
 table.watch-list thead th.col-handle,table.watch-list tbody td.col-handle{width:20px;text-align:center;color:var(--text3);font-size:11px;padding:4px 1px}
@@ -448,7 +471,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 </div>
 
 <!-- ── WATCH LIST TABLE ─────── -->
-<div class="table-wrap">
+<div class="table-wrap" id="nbamain-wrap">
   <table class="watch-list">
     <thead>
       <tr>
@@ -462,10 +485,10 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <th class="col-type" data-sort="type">Type <span class="sort-arrow">↕</span></th>
         <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
         <th class="left col-note">Note</th>
-        <th class="col-yrank" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
+        <th class="col-yrank col-zone-divider" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-zone-divider" data-sort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="pts" title="Points per game">PTS <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="reb" title="Total rebounds per game">REB <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="oreb" title="Offensive rebounds per game">ORB <span class="sort-arrow">↕</span></th>
@@ -475,7 +498,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <th class="col-stat col-stat-a" data-sort="blk" title="Blocks per game">BLK <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="to" title="Turnovers per game">TOV <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="pf" title="Personal fouls per game">PF <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-b" data-sort="fga" title="Field goals attempted per game">FGA <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-b col-zone-divider" data-sort="fga" title="Field goals attempted per game">FGA <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="fgm" title="Field goals made per game">FG <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="fgpct" title="Field goal %">FG% <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="tpa" title="3-pointers attempted per game">3PA <span class="sort-arrow">↕</span></th>
@@ -552,7 +575,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       </div>
     </div>
   </div>
-  <div class="table-wrap">
+  <div class="table-wrap" id="nbaplayers-wrap">
     <table class="watch-list" id="nba-players-table">
       <thead>
         <tr>
@@ -560,7 +583,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <th class="left col-player" data-npsort="name">Player <span class="sort-arrow">↕</span></th>
           <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-a" data-npsort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a col-zone-divider" data-npsort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="pts" title="Points per game">PTS <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="reb" title="Total rebounds per game">REB <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="oreb" title="Offensive rebounds per game">ORB <span class="sort-arrow">↕</span></th>
@@ -570,7 +593,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <th class="col-stat col-stat-a" data-npsort="blk" title="Blocks per game">BLK <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="to" title="Turnovers per game">TOV <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="pf" title="Personal fouls per game">PF <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-b" data-npsort="fga" title="Field goals attempted per game">FGA <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-b col-zone-divider" data-npsort="fga" title="Field goals attempted per game">FGA <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="fgm" title="Field goals made per game">FG <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="fgpct" title="Field goal %">FG% <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="tpa" title="3-pointers attempted per game">3PA <span class="sort-arrow">↕</span></th>
@@ -1050,7 +1073,7 @@ function renderNbaPlayers(){
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(s.gp, 0) + '</td>' +
+      '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.oreb, gp), 1) + '</td>' +
@@ -1060,7 +1083,7 @@ function renderNbaPlayers(){
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.blk, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.to, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pf, gp), 1) + '</td>' +
-      '<td class="col-stat-b">' + statCellOrDash(perGame(s.fga, gp), 1) + '</td>' +
+      '<td class="col-stat-b col-zone-divider">' + statCellOrDash(perGame(s.fga, gp), 1) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
       '<td class="col-stat-b">' + pctCellOrDash(fgPct) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(perGame(s.tpa, gp), 1) + '</td>' +
@@ -1399,10 +1422,10 @@ function renderWatchList(){
       '<td class="left placeholder">—</td>' + // Type (planned)
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       '<td class="left placeholder">—</td>' + // Note (planned)
-      '<td class="placeholder">—</td>' +   // Y!Rank (planned — Yahoo layer)
+      '<td class="placeholder col-zone-divider">—</td>' +   // Y!Rank (planned — Yahoo layer)
       '<td class="placeholder">—</td>' +   // Y!Owned (planned — Yahoo layer)
       '<td class="placeholder">—</td>' +   // CBS Owned (planned — CBS layer)
-      '<td class="col-stat-a">' + statCellOrDash(s.gp, 0) + '</td>' +
+      '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.oreb, gp), 1) + '</td>' +
@@ -1412,7 +1435,7 @@ function renderWatchList(){
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.blk, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.to, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pf, gp), 1) + '</td>' +
-      '<td class="col-stat-b">' + statCellOrDash(perGame(s.fga, gp), 1) + '</td>' +
+      '<td class="col-stat-b col-zone-divider">' + statCellOrDash(perGame(s.fga, gp), 1) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
       '<td class="col-stat-b">' + pctCellOrDash(fgPct) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(perGame(s.tpa, gp), 1) + '</td>' +
