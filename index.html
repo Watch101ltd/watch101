@@ -1638,21 +1638,28 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
 #phone-card-list{display:none;}
 @media(max-width:600px) and (pointer:coarse){
   #main-wrap > table{display:none !important;}      /* hide the spreadsheet on phones */
-  #phone-card-list{display:block;padding:8px 8px 24px;}
-  .pcard{background:var(--surface,#fff);border:1px solid var(--border,#e2dcc8);border-radius:12px;padding:10px 12px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
-  .pcard-r1{display:flex;align-items:flex-start;gap:8px;}
-  .pcard-rank{font-size:20px;font-weight:900;color:var(--gold);min-width:30px;line-height:1.1;}
-  .pcard-id{flex:1;min-width:0;}
-  .pcard-name{font-size:16px;font-weight:800;color:var(--text,#1a1a1a);}
-  .pcard-name .player-name{font-weight:800;}
-  .pcard-meta{font-size:11px;color:var(--text3,#6b6450);font-weight:700;text-align:right;white-space:nowrap;line-height:1.3;}
-  .pcard-sub{margin-top:4px;}
-  .pcard-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 4px;margin-top:9px;border-top:1px solid var(--border,#e2dcc8);padding-top:8px;}
-  .pcard-stat{text-align:center;}
-  .pcard-stat .v{font-size:14px;font-weight:800;color:var(--text,#1a1a1a);}
-  .pcard-stat .k{font-size:9px;color:var(--text3,#6b6450);font-weight:700;letter-spacing:.03em;margin-top:1px;}
-  .pcard-own{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:11px;color:var(--text3,#6b6450);font-weight:600;}
-  .pcard-own b{color:var(--text,#1a1a1a);}
+  #phone-card-list{display:block;padding:0 0 24px;}
+  /* PHONE_NOTE_STAR_V1 (June 9, 2026 — PC Walter, per the Dude, from Matt's June 9 meeting). The approved
+     Option C list ROW: the NOTE is the star. No stats on the front page (stats live on the Deep Cut). Tap
+     a row → Deep Cut. Rank, name (red for must-watch), meta (team/pos/age/stars), the note, priority emojis
+     by the name, and the +/- mover + ownership on the right rail. */
+  .pc-row{display:flex;align-items:stretch;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface);cursor:pointer;}
+  .pc-row:nth-child(even){background:var(--surface2);}
+  .pc-row:active{background:var(--surface3,#1a212b);}
+  .pc-rank{flex:0 0 26px;display:flex;align-items:flex-start;justify-content:center;font-size:17px;font-weight:900;color:var(--gold);padding-top:1px;}
+  .pc-main{flex:1 1 auto;min-width:0;}
+  .pc-nm{font-size:14px;font-weight:800;color:var(--text);line-height:1.15;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .pc-nm .player-name{font-weight:800;}
+  .pc-prio{font-size:11px;line-height:1;}
+  .pc-meta{font-size:10px;color:var(--text3);font-weight:600;margin-top:2px;}
+  .pc-note{font-size:12px;color:var(--text2);font-style:italic;font-weight:600;line-height:1.3;margin-top:5px;
+           background:rgba(240,165,0,0.06);border-left:2px solid var(--gold);border-radius:3px;padding:5px 8px;}
+  .pc-note .note-link-badge{font-style:normal;}
+  .pc-note-empty{color:var(--text3);font-style:normal;opacity:.6;}
+  .pc-rail{flex:0 0 52px;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-start;gap:5px;}
+  .pc-delta{font-size:13px;font-weight:800;}
+  .pc-own{font-size:9px;color:var(--text3);font-weight:700;text-align:right;line-height:1.3;}
+  .pc-own b{color:var(--text2);}
   /* On phone, let the STAT FILTERING box + toolbar breathe and stack. */
   .header,.toolbar{flex-wrap:wrap !important;}
   .logo{font-size:34px !important;flex-wrap:wrap !important;}
@@ -8480,43 +8487,48 @@ function renderPhoneCards(){
   }
   function num(v, dec){ try { return (typeof fmt==='function') ? fmt(v, dec||0) : (v==null?na:v); } catch(e){ return v==null?na:v; } }
   function avg(v){ try { return (typeof fmtAvg==='function') ? fmtAvg(v) : (v==null?na:v); } catch(e){ return v==null?na:v; } }
-  function cell(label, val){ return '<div class="pcard-stat"><div class="v">'+val+'</div><div class="k">'+label+'</div></div>'; }
 
   host.innerHTML = list.map(function(p){
-    var pit = false; try { pit = (typeof isPitcher==='function') && isPitcher(p); } catch(e){}
     var pos = ''; try { pos = (typeof posBadgesColumn==='function') ? posBadgesColumn(p.positions) : ''; } catch(e){}
     var stars=''; try { stars = (typeof renderPriorityStars==='function') ? renderPriorityStars(p) : ''; } catch(e){}
     var delta=''; try { delta = (typeof renderDelta==='function') ? renderDelta(p) : ''; } catch(e){}
     var age=''; try { age = (typeof decimalAge==='function') ? decimalAge(p) : (p.age||''); } catch(e){ age=p.age||''; }
-    var bt = pit ? (p.throws||p.bats||'') : (p.bats||'');
     var mustFlash=''; try { mustFlash = (typeof _mustWatchFlashClass==='function') ? _mustWatchFlashClass(p) : ''; } catch(e){}
 
-    // Core 8 stats — hitter vs pitcher, mirroring the table row exactly.
-    var stats;
-    if(!pit){
-      stats = cell('AB', num(sv(p,'ab'))) + cell('R', num(sv(p,'r'))) + cell('HR', num(sv(p,'hr'))) + cell('RBI', num(sv(p,'rbi')))
-            + cell('SB', num(sv(p,'sb'))) + cell('AVG', avg(sv(p,'avg'))) + cell('OBP', avg(sv(p,'obp'))) + cell('OPS', num(sv(p,'ops'),3));
-    } else {
-      var kbb = (p.kbb_ratio!=null) ? p.kbb_ratio.toFixed(2) : na;
-      stats = cell('IP', num(sv(p,'ip'),1)) + cell('K', num(sv(p,'k'))) + cell('W', num(sv(p,'w'))) + cell('SV', num(sv(p,'sv')))
-            + cell('HLD', num(sv(p,'hld'))) + cell('ERA', num(sv(p,'era'),2)) + cell('WHIP', num(sv(p,'whip'),2)) + cell('K/BB', kbb);
-    }
+    // PHONE_NOTE_STAR_V1 — emoji indicators (type tags) shown right by the name, the Dude's "magic".
+    var emojis = '';
+    try {
+      if(Array.isArray(p.type_tags) && typeof _typeTagById==='function'){
+        for(var _e=0;_e<p.type_tags.length;_e++){ var _d=_typeTagById(p.type_tags[_e]); if(_d) emojis += _d.emoji; }
+      }
+    } catch(e){}
+    var prio = emojis ? ('<span class="pc-prio">'+emojis+'</span>') : '';
+
+    // THE NOTE — Matt's Take. Reuse the same helpers the table uses (text + 🔗 badge). Empty -> faded placeholder.
+    var _noteRaw = (p.note != null) ? String(p.note) : '';
+    var _split = (typeof _splitNoteAndUrl==='function') ? _splitNoteAndUrl(_noteRaw) : { text:_noteRaw, url:'' };
+    var _noteText = _split.text || '';
+    var _noteBadge = (typeof _renderNoteLinkBadge==='function') ? _renderNoteLinkBadge(_split.url) : '';
+    var _noteHtml = _noteText
+      ? ('<div class="pc-note">'+_noteText+_noteBadge+'</div>')
+      : '<div class="pc-note"><span class="pc-note-empty">No note yet</span></div>';
 
     var yOwn = (p.roster_pct!=null && p.roster_pct!=='') ? parseFloat(p.roster_pct).toFixed(0)+'%' : '0%';
     var cOwn = (p.cbs_roster_pct!=null && p.cbs_roster_pct!=='') ? parseFloat(p.cbs_roster_pct).toFixed(0)+'%' : '0%';
-    var yRank = (typeof fmt==='function') ? fmt(p.yahoo_rank) : (p.yahoo_rank||na);
+    var _meta = (p.team||'') + (pos?(' · '+String(pos).replace(/<[^>]+>/g,'').trim()):'') + (age?(' · '+age):'');
+    var _idAttr = (p.id||'');
 
-    return '<div class="pcard" data-id="'+(p.id||'')+'" onclick="_phoneCardTap(\''+(p.id||'')+'\')">'
-      + '<div class="pcard-r1">'
-        + '<span class="pcard-rank">'+(p.rank||'—')+'</span>'
-        + '<div class="pcard-id">'
-          + '<span class="pcard-name">'+pos+' <span class="player-name'+mustFlash+'">'+(p.name||'')+'</span> '+delta+'</span>'
-          + '<div class="pcard-sub">'+stars+'</div>'
-        + '</div>'
-        + '<div class="pcard-meta">'+(p.team||'')+'<br>'+age+(bt?(' · '+bt):'')+'</div>'
+    return '<div class="pc-row" data-id="'+_idAttr+'" onclick="_phoneCardTap(\''+_idAttr+'\')">'
+      + '<div class="pc-rank">'+(p.rank||'—')+'</div>'
+      + '<div class="pc-main">'
+        + '<div class="pc-nm"><span class="player-name'+mustFlash+'">'+(p.name||'')+'</span> '+prio+'</div>'
+        + '<div class="pc-meta">'+_meta+' '+stars+'</div>'
+        + _noteHtml
       + '</div>'
-      + '<div class="pcard-stats">'+stats+'</div>'
-      + '<div class="pcard-own">Y! owned <b>'+yOwn+'</b> · CBS owned <b>'+cOwn+'</b> · Y!Rank <b>'+yRank+'</b></div>'
+      + '<div class="pc-rail">'
+        + '<div class="pc-delta">'+delta+'</div>'
+        + '<div class="pc-own">Y! <b>'+yOwn+'</b><br>CBS <b>'+cOwn+'</b></div>'
+      + '</div>'
     + '</div>';
   }).join('');
 }
