@@ -1943,6 +1943,10 @@ body.day-mode #player-page-overlay .ppo-sched-prob-pill{background:rgba(161,98,7
 #player-page-overlay .ppo-statbar-val.hit{color:var(--stat-hitter);}
 #player-page-overlay .ppo-statbar-val.pit{color:var(--stat-pitcher);}
 #player-page-overlay .ppo-statbar-val.na{color:var(--text3);font-weight:500;}
+/* DEEPCUT_ROSTER_ROW_V1 (June 10, 2026 — PC Walter, per the Dude): forces the Y!Rk/Y!Ros%/CBS%
+   cells onto their own row under the game stats. flex-basis:100% + height:0 = a wrap point;
+   its border-top draws the divider line between the stat row and the roster row. */
+#player-page-overlay .ppo-statbar-rowbreak{flex-basis:100%;height:0;border-top:1px solid var(--border);}
 /* DEEPCUT_MILB_ITALIC_V1 (2026-06-05) — when the Deep Cut stat bar is showing MINOR-league numbers
    (MiLB-only player, or both-sample player flipped to MiLB via the chip), italicize the values so
    it reads as minor-league at a glance — same tell the main page uses with row-minor-stats. */
@@ -17552,15 +17556,24 @@ function renderPlayerStatBar(p){
     cells.push({label:'OBP', val: avg3(sc && sc.obp)});
     cells.push({label:'OPS', val: avg3(sc && sc.ops)});
   }
-  // Roster context at the end — these are identity, not date-range dependent
-  // ORDER (May 7, 2026): Y!Rk -> Y!Ros% -> CBS% to match column order across the site
-  cells.push({label:'Y!Rk',   val: txt(p.yahoo_rank)});
-  cells.push({label:'Y!Ros%', val: txt(rosterPct)});
-  cells.push({label:'CBS%',   val: txt(cbsPct)});
+  // DEEPCUT_ROSTER_ROW_V1 (June 10, 2026 — PC Walter, per the Dude's phone screenshot):
+  // the three roster-context cells (Y!Rk / Y!Ros% / CBS%) no longer ride inside the stat flow.
+  // On phone the wrapping bar used to break after Y!Rk, stranding Y!Ros% + CBS% alone on a
+  // second line while Y!Rk sat up with the game stats. Now all three render together on their
+  // OWN full-width row UNDER the stats (a flex-basis:100% break forces the wrap at the same
+  // spot on every screen width — desktop gets the same clean two-row bar).
+  // ORDER kept (May 7, 2026): Y!Rk -> Y!Ros% -> CBS% to match column order across the site.
+  var rosterCells = [];
+  rosterCells.push({label:'Y!Rk',   val: txt(p.yahoo_rank)});
+  rosterCells.push({label:'Y!Ros%', val: txt(rosterPct)});
+  rosterCells.push({label:'CBS%',   val: txt(cbsPct)});
 
-  container.innerHTML = cells.map(function(c){
+  function _sbCell(c){
     return '<div class="ppo-statbar-cell"><div class="ppo-statbar-label">'+c.label+'</div>'+c.val+'</div>';
-  }).join('');
+  }
+  container.innerHTML = cells.map(_sbCell).join('')
+    + '<div class="ppo-statbar-rowbreak"></div>'
+    + rosterCells.map(_sbCell).join('');
 
   // DEEPCUT_MILB_ITALIC_V1 (2026-06-05, PC Walter, per the Dude) — italicize the Deep Cut stat
   // values when MINOR-league numbers are showing, matching the main page's italic tell. Reuses
