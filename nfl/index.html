@@ -624,9 +624,11 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="payd">PaYd <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="patd">PaTD <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-b" data-sort="ruatt">RuAtt <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="ruyd">RuYd <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="rutd">RuTD <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="rec">Rec <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a" data-sort="tgt">Tgt <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="reyd">ReYd <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="retd">ReTD <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="fpts">FPts <span class="sort-arrow">↕</span></th>
@@ -709,9 +711,11 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="payd">PaYd <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="patd">PaTD <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-b" data-npsort="ruatt">RuAtt <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="ruyd">RuYd <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="rutd">RuTD <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="rec">Rec <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a" data-npsort="tgt">Tgt <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="reyd">ReYd <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="retd">ReTD <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="fpts">FPts <span class="sort-arrow">↕</span></th>
@@ -1158,6 +1162,7 @@ function _rankColsFor(pos){
   var yrank = _rankCol_yrank(), yowned = _rankCol_yowned(), fpts = _rankCol_fpts(), age = _rankCol_age();
   var paYd = _rankStatCol('payd','PA YD','pass_yd','col-stat-b');
   var paTd = _rankStatCol('patd','PA TD','pass_td','col-stat-b');
+  var ruAtt = _rankStatCol('ruatt','RU ATT','rush_att','col-stat-b');  // RUSH_ATT_V1 — carries (wear & tear)
   var ruYd = _rankStatCol('ruyd','RU YD','rush_yd','col-stat-b');
   var ruTd = _rankStatCol('rutd','RU TD','rush_td','col-stat-b');
   var rec  = _rankStatCol('rec','REC','rec','col-stat-a');
@@ -1165,9 +1170,9 @@ function _rankColsFor(pos){
   var reTd = _rankStatCol('retd','RE TD','rec_td','col-stat-a');
   // FPTS_LAST_V1 (June 9, 2026 — per the Dude): fantasy points is ALWAYS the last/rightmost stat column.
   // Real football stats first, FPTS last. Matches every other fantasy site's convention.
-  if(pos === 'QB')  return [yrank, yowned, age, paYd, paTd, ruYd, ruTd, fpts];
-  if(pos === 'RB')  return [yrank, yowned, age, ruYd, ruTd, rec, reYd, reTd, fpts];
-  if(pos === 'WR' || pos === 'TE') return [yrank, yowned, age, rec, reYd, reTd, ruYd, ruTd, fpts];
+  if(pos === 'QB')  return [yrank, yowned, age, paYd, paTd, ruAtt, ruYd, ruTd, fpts];
+  if(pos === 'RB')  return [yrank, yowned, age, ruAtt, ruYd, ruTd, rec, reYd, reTd, fpts];
+  if(pos === 'WR' || pos === 'TE') return [yrank, yowned, age, rec, reYd, reTd, ruAtt, ruYd, ruTd, fpts];
   // DEF (RANKINGS_DEF_STATS_V2 — June 9, 2026, per the Dude): trimmed to the ONLY two stat fields Sleeper
   // actually carries on a TEAM-defense row — pts_half_ppr (FPTS) and def_td. VERIFIED via live console:
   // _statsRow('BAL') => { pts_half_ppr, pts_ppr, pts_std, def_td } and NOTHING else. Sleeper does NOT
@@ -1392,9 +1397,11 @@ function _npStatValue(field, p, s, pid){
     case 'fpts': return (s.pts_half_ppr || 0);
     case 'payd': return (s.pass_yd || 0);
     case 'patd': return (s.pass_td || 0);
+    case 'ruatt': return (s.rush_att || 0);
     case 'ruyd': return (s.rush_yd || 0);
     case 'rutd': return (s.rush_td || 0);
     case 'rec':  return (s.rec || 0);
+    case 'tgt':  return (s.rec_tgt || 0);
     case 'reyd': return (s.rec_yd || 0);
     case 'retd': return (s.rec_td || 0);
     case 'yrank':  return (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(pid, 'yahoo_rank') : null;
@@ -1506,9 +1513,11 @@ function renderNflPlayers(){
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
+      '<td class="col-stat-b">' + statCellOrDash(s.rush_att) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.rush_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.rush_td) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec) + '</td>' +
+      '<td class="col-stat-a">' + statCellOrDash(s.rec_tgt) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_yd) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_td) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
@@ -1834,9 +1843,11 @@ function renderWatchList(){
       '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
+      '<td class="col-stat-b">' + statCellOrDash(s.rush_att) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.rush_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.rush_td) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec) + '</td>' +
+      '<td class="col-stat-a">' + statCellOrDash(s.rec_tgt) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_yd) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_td) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
@@ -2122,9 +2133,11 @@ function sortValueFor(field, p, s, pid){
     case 'fpts':     return (s.pts_half_ppr || 0);
     case 'payd':     return (s.pass_yd || 0);
     case 'patd':     return (s.pass_td || 0);
+    case 'ruatt':    return (s.rush_att || 0);
     case 'ruyd':     return (s.rush_yd || 0);
     case 'rutd':     return (s.rush_td || 0);
     case 'rec':      return (s.rec || 0);
+    case 'tgt':      return (s.rec_tgt || 0);
     case 'reyd':     return (s.rec_yd || 0);
     case 'retd':     return (s.rec_td || 0);
     case 'priority': {
