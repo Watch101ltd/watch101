@@ -622,7 +622,6 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <th class="col-yrank" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="fpts">FPts <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="payd">PaYd <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="patd">PaTD <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="ruyd">RuYd <span class="sort-arrow">↕</span></th>
@@ -630,6 +629,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <th class="col-stat col-stat-a" data-sort="rec">Rec <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="reyd">ReYd <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="retd">ReTD <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a" data-sort="fpts">FPts <span class="sort-arrow">↕</span></th>
         <th class="col-action">Action</th>
       </tr>
     </thead>
@@ -707,7 +707,6 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
           <th class="col-yrank" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-a" data-npsort="fpts">FPts <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="payd">PaYd <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="patd">PaTD <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="ruyd">RuYd <span class="sort-arrow">↕</span></th>
@@ -715,6 +714,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <th class="col-stat col-stat-a" data-npsort="rec">Rec <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="reyd">ReYd <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="retd">ReTD <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a" data-npsort="fpts">FPts <span class="sort-arrow">↕</span></th>
           <th class="center col-action">Add</th>
         </tr>
       </thead>
@@ -1163,19 +1163,20 @@ function _rankColsFor(pos){
   var rec  = _rankStatCol('rec','REC','rec','col-stat-a');
   var reYd = _rankStatCol('reyd','RE YD','rec_yd','col-stat-a');
   var reTd = _rankStatCol('retd','RE TD','rec_td','col-stat-a');
-  if(pos === 'QB')  return [yrank, yowned, age, fpts, paYd, paTd, ruYd, ruTd];
-  if(pos === 'RB')  return [yrank, yowned, age, fpts, ruYd, ruTd, rec, reYd, reTd];
-  if(pos === 'WR' || pos === 'TE') return [yrank, yowned, age, fpts, rec, reYd, reTd, ruYd, ruTd];
-  // DEF (RANKINGS_DEF_STATS_V1 — June 9, 2026, per the Dude): real team-defense stats. No Age (a team
-  // has no age). Y!Rank/Y!Owned kept for visual consistency (they show dashes for team defenses). Sleeper
-  // combines INT-return and fumble-return TDs into the single def_td field, so "DEF TD" is one column.
-  var dInt  = _rankStatCol('def_int','INT','def_int','col-stat-a');
-  var dFumR = _rankStatCol('def_fum_rec','FUM REC','def_fum_rec','col-stat-a');
-  var dTd   = _rankStatCol('def_td','DEF TD','def_td','col-stat-b');
-  var dSack = _rankStatCol('def_sack','SACK','def_sack','col-stat-b');
-  var dSafe = _rankStatCol('def_safety','SAFETY','def_safety','col-stat-a');
-  var dPa   = _rankStatCol('pts_allow','PTS ALL','pts_allow','col-stat-b');
-  return [yrank, yowned, fpts, dInt, dFumR, dTd, dSack, dSafe, dPa];
+  // FPTS_LAST_V1 (June 9, 2026 — per the Dude): fantasy points is ALWAYS the last/rightmost stat column.
+  // Real football stats first, FPTS last. Matches every other fantasy site's convention.
+  if(pos === 'QB')  return [yrank, yowned, age, paYd, paTd, ruYd, ruTd, fpts];
+  if(pos === 'RB')  return [yrank, yowned, age, ruYd, ruTd, rec, reYd, reTd, fpts];
+  if(pos === 'WR' || pos === 'TE') return [yrank, yowned, age, rec, reYd, reTd, ruYd, ruTd, fpts];
+  // DEF (RANKINGS_DEF_STATS_V2 — June 9, 2026, per the Dude): trimmed to the ONLY two stat fields Sleeper
+  // actually carries on a TEAM-defense row — pts_half_ppr (FPTS) and def_td. VERIFIED via live console:
+  // _statsRow('BAL') => { pts_half_ppr, pts_ppr, pts_std, def_td } and NOTHING else. Sleeper does NOT
+  // provide team-level INT / FUM REC / SACK / SAFETY / points-allowed — those live on individual defensive
+  // PLAYERS, not the DST unit. Showing them would just be 5 columns of dashes. The richer defensive stats
+  // are a future sub-project off a different source (nflverse) — banked in 02 Plans. Y!Rank/Y!Owned kept
+  // for visual consistency (they show dashes until the DST Yahoo-rank fix ships — separate sub-project).
+  var dTd = _rankStatCol('def_td','DEF TD','def_td','col-stat-b');
+  return [yrank, yowned, dTd, fpts];  // FPTS_LAST_V1 — FPTS rightmost
 }
 
 // Build the thead per the active position's columns. Fixed leading cols (handle/Rank/Pos/Player) + dynamic
@@ -1503,7 +1504,6 @@ function renderNflPlayers(){
       // unlike NBA). Same lookup the watch list uses; placeholder class when no value.
       '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.rush_yd) + '</td>' +
@@ -1511,6 +1511,7 @@ function renderNflPlayers(){
       '<td class="col-stat-a">' + statCellOrDash(s.rec) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_yd) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_td) + '</td>' +
+      '<td class="col-stat-a">' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
       '<td class="center col-action">' + (onList
           ? '<button class="np-add-btn added" disabled>✓ Added</button>'
           : '<button class="np-add-btn" onclick="npAddToList(' + _pidJson + ', this)">+ Add</button>') + '</td>' +
@@ -1831,7 +1832,6 @@ function renderWatchList(){
       '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.rush_yd) + '</td>' +
@@ -1839,6 +1839,7 @@ function renderWatchList(){
       '<td class="col-stat-a">' + statCellOrDash(s.rec) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_yd) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_td) + '</td>' +
+      '<td class="col-stat-a">' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
       '<td class="center"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
     '</tr>';
   }).join('');
