@@ -309,6 +309,23 @@ table.trending tbody td.cnt{text-align:right;color:var(--turf);font-weight:800;w
 }
 
 .table-wrap{padding:0.5rem 0.75rem 3rem;overflow-x:auto}
+/* NFL_STICKY_HEADERS_V1 (June 9, 2026 — PC Walter, per the Dude) — native CSS sticky headers, the
+   PROVEN baseball pattern (MAIN_STICKY_ENABLE_V1, May 28). NOT a JS clone-bar (that was the BAD one
+   that caused the column-drift / misaligned-gridline headaches — never use clone headers). The recipe is
+   THREE rules per table, not one (the lesson from the May fight): (a) sticky thead WITH a background
+   (transparent = rows show through = looks invisible), (b) the th cells get the background too, (c)
+   overflow:visible on the wrapper (overflow-x:auto silently TRAPS position:sticky inside the wrapper
+   instead of pinning to the viewport — this was the killer gotcha). Body already has overflow-x:hidden,
+   same as baseball, so the wide table is handled at the body level. */
+#nflmain-wrap.table-wrap thead, #nflplayers-wrap.table-wrap thead, #nflrankings-wrap.table-wrap thead{
+  position:sticky; top:0; z-index:10; background:var(--surface);
+}
+#nflmain-wrap.table-wrap thead th, #nflplayers-wrap.table-wrap thead th, #nflrankings-wrap.table-wrap thead th{
+  background:var(--surface);
+}
+#nflmain-wrap.table-wrap, #nflplayers-wrap.table-wrap, #nflrankings-wrap.table-wrap{
+  overflow:visible;
+}
 table.watch-list{
   width:100%;border-collapse:separate;border-spacing:0;
   min-width:900px;background:var(--surface);
@@ -615,7 +632,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 </div>
 
 <!-- ── WATCH LIST TABLE ──────────────────────────────── -->
-<div class="table-wrap">
+<div class="table-wrap" id="nflmain-wrap">
   <table class="watch-list">
     <thead>
       <tr>
@@ -710,7 +727,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       </div>
     </div>
   </div>
-  <div class="table-wrap">
+  <div class="table-wrap" id="nflplayers-wrap">
     <table class="watch-list" id="nfl-players-table">
       <thead>
         <tr>
@@ -752,7 +769,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <button class="rank-subnav-btn" data-rankpos="TE" onclick="switchRankPos('TE', this)">TE</button>
     <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
   </div>
-  <div class="table-wrap">
+  <div class="table-wrap" id="nflrankings-wrap">
     <table class="watch-list" id="rankings-table">
       <thead>
         <!-- RANKINGS_STATS_V1 (June 9, 2026 — PC Walter, per the Dude): header is built per-position
