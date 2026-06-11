@@ -452,6 +452,11 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <div class="logo">
       <span class="logo-watch">Watch</span><img class="logo-img" src="images/watch101_basketball_logo.png" alt="Watch101 NBA"><span class="logo-basketball">NBA</span>
     </div>
+    <!-- NBA_MULTILIST_V1 (June 11, 2026 — PC Walter, per the Dude + Matt) — list switcher, cloned from baseball's MULTILIST_V1 picker. -->
+    <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--court,#ea580c) 0%,#c2410c 100%);color:#fff;border:1px solid var(--court,#ea580c);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:240px;margin:6px 0 2px 0">
+      <option value="integrity-nba">⭐ List of Integrity</option>
+      <option value="dynasty-nba">👑 Dynasty List</option>
+    </select>
     <div class="logo-sub" id="logo-sub">Watch List · Loading…</div>
   </div>
   <div class="header-right">
@@ -815,7 +820,34 @@ const SERVER_URL = 'https://nba-nas.fantasywatch101.com';
 let STATS_YEAR = '2025';
 const LIST_STORAGE_KEY = 'watch101_nba_watch_list_v0';
 const MAX_SEARCH_RESULTS = 12;
-const LIST_ID = 'integrity-nba';
+// NBA_MULTILIST_V1 (June 11, 2026 — PC Walter, per the Dude + Matt) — multi-list support, cloned
+// from baseball's MULTILIST_V1 (WATCH_LISTS registry + currentListId + switchActiveList). LIST_ID is
+// now a let that follows the active list, so every existing save/load path (autoSaveToNbaNAS,
+// loadListFromStorage, the manual Save button) keys to the active list with no further changes.
+const WL_LISTS = [
+  { id: 'integrity-nba', folder: 'Integrity', name: 'List of Integrity', emoji: '⭐' },
+  { id: 'dynasty-nba',   folder: 'Dynasty',   name: 'Dynasty List',      emoji: '👑' },
+];
+let currentListId = 'integrity-nba';
+let LIST_ID = 'integrity-nba';  // follows currentListId (was a const when there was only one list)
+function _activeList(){ return WL_LISTS.find(function(l){ return l.id === currentListId; }) || WL_LISTS[0]; }
+// Per-list localStorage key. Integrity keeps the ORIGINAL key so existing saved copies aren't orphaned.
+function _wlStorageKey(){ return (currentListId === 'integrity-nba') ? LIST_STORAGE_KEY : ('watch101_nba_watch_list_' + currentListId); }
+async function switchActiveList(newId){
+  if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
+  currentListId = newId;
+  LIST_ID = newId;
+  var sel = document.getElementById('list-switcher'); if(sel && sel.value !== newId) sel.value = newId;
+  _updateYearLabels();                 // header subtitle shows the active list's name
+  _wlTeamSelectBuilt = false;          // the filter TEAM dropdown rebuilds from the new list
+  _watchList = [];
+  renderWatchList();                   // instant clear so the old list never lingers while loading
+  await loadListFromStorage();         // NAS first (keyed to the new LIST_ID), localStorage fallback
+  _normalizeWatchList();
+  renderWatchList();
+  var np = document.getElementById('nbaplayers-view');
+  if(np && np.style.display !== 'none' && typeof renderNbaPlayers === 'function') renderNbaPlayers();  // refresh the pool's ✓ Added pills against the new list
+}
 
 // STATE
 let _playerDB = null;
@@ -1543,7 +1575,8 @@ function _npUpdateSortArrows(){
 
 function _updateYearLabels(){
   const sub = document.getElementById('logo-sub');
-  if(sub) sub.textContent = 'Watch List · ' + STATS_YEAR + ' Stats';
+  const listName = (typeof _activeList === 'function') ? _activeList().name : 'Watch List';  // NBA_MULTILIST_V1
+  if(sub) sub.textContent = listName + ' · ' + STATS_YEAR + ' Stats';
 }
 
 async function _deriveStatsYear(){
@@ -1913,7 +1946,7 @@ function _phoneRowTap(pid){
 // showDirectoryPicker to the Synology-synced _Staging/Integrity folder.
 async function saveList(){
   const statusEl = document.getElementById('status-bar');
-  try { localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList)); }
+  try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); }  // NBA_MULTILIST_V1 — per-list key
   catch(e){ console.warn('[saveList] localStorage save failed:', e); }
 
   if(!window.showDirectoryPicker){
@@ -1923,18 +1956,18 @@ async function saveList(){
   try {
     const nowIso = new Date().toISOString();
     const fileSafeTimestamp = nowIso.replace(/[:.]/g, '-').slice(0, 19);
-    const fileName = 'Watch101_NBA_Integrity_' + fileSafeTimestamp + '.json';
+    const fileName = 'Watch101_NBA_' + _activeList().folder + '_' + fileSafeTimestamp + '.json';  // NBA_MULTILIST_V1
     const payload = {
       list_id: LIST_ID,
-      list_name: 'Watch101 NBA - List of Integrity',
+      list_name: 'Watch101 NBA - ' + _activeList().name,
       saved_at: nowIso,
       saved_at_local: new Date().toLocaleString(),
       source: 'NBA watch list shell v1',
       player_count: _watchList.length,
       players: _watchList,
     };
-    statusEl.textContent = 'Pick your Synology-synced _Staging/Integrity folder...';
-    const dirHandle = await window.showDirectoryPicker({ id: 'watch101-nba-save-integrity', mode: 'readwrite', startIn: 'documents' });
+    statusEl.textContent = 'Pick your Synology-synced _Staging/' + _activeList().folder + ' folder...';
+    const dirHandle = await window.showDirectoryPicker({ id: 'watch101-nba-save-' + currentListId, mode: 'readwrite', startIn: 'documents' });  // NBA_MULTILIST_V1
     const fileHandle = await dirHandle.getFileHandle(fileName, {create: true});
     const writable = await fileHandle.createWritable();
     await writable.write(new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'}));
@@ -1958,7 +1991,7 @@ async function saveList(){
 // Dude clicks Save once when the ranking is done to push it to the Synology-synced
 // staging folder. Same build-then-save rhythm as the baseball + football lists.
 function _nbaSaveLocal(){
-  try { localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList)); }
+  try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); }  // NBA_MULTILIST_V1 — per-list key
   catch(e){ console.warn('[_nbaSaveLocal] localStorage save failed:', e); }
 }
 
@@ -2015,7 +2048,7 @@ async function loadListFromStorage(){
     }
   }
   try {
-    const raw = localStorage.getItem(LIST_STORAGE_KEY);
+    const raw = localStorage.getItem(_wlStorageKey());  // NBA_MULTILIST_V1 — per-list key
     if(!raw) return;
     const arr = JSON.parse(raw);
     if(Array.isArray(arr)) _watchList = arr;
