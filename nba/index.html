@@ -204,13 +204,13 @@ a.logo-mini:hover{opacity:1;}
    baseball/football recipe (NOT a JS clone-bar). THREE rules: sticky thead + bg, th bg, wrapper
    overflow:visible (overflow-x:auto traps sticky). Also removed overflow:hidden from the table element
    above (the second trap found on football). NBA smush uses zoom (not transform) so sticky still pins. */
-#nbamain-wrap.table-wrap thead, #nbaplayers-wrap.table-wrap thead{
+#nbamain-wrap.table-wrap thead, #nbaplayers-wrap.table-wrap thead, #nbarankings-wrap.table-wrap thead{
   position:sticky; top:0; z-index:10; background:var(--surface);
 }
-#nbamain-wrap.table-wrap thead th, #nbaplayers-wrap.table-wrap thead th{
+#nbamain-wrap.table-wrap thead th, #nbaplayers-wrap.table-wrap thead th, #nbarankings-wrap.table-wrap thead th{
   background:var(--surface);
 }
-#nbamain-wrap.table-wrap, #nbaplayers-wrap.table-wrap{
+#nbamain-wrap.table-wrap, #nbaplayers-wrap.table-wrap, #nbarankings-wrap.table-wrap{
   overflow:visible;
 }
 table.watch-list{
@@ -355,6 +355,11 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 .page-nav-btn{background:var(--surface2,#161b22);color:var(--text2,#9aa4b2);border:1px solid var(--border2,#2a3240);border-radius:8px 8px 0 0;padding:8px 16px;font-size:13px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s}
 .page-nav-btn:hover{color:var(--court-bright,#fb923c);border-color:var(--court-bright,#fb923c)}
 .page-nav-btn.active{background:var(--court,#ea580c);color:#fff;border-color:var(--court,#ea580c)}
+/* NBA_RANKINGS_PAGE_V1 (June 11, 2026) — position sub-tabs on the Rankings view (clone of football's rank-subnav) */
+.rank-subnav{display:flex;gap:6px;padding:10px 16px 0 16px;flex-wrap:wrap}
+.rank-subnav-btn{background:var(--surface2,#161b22);color:var(--text2,#9aa4b2);border:1px solid var(--border2,#2a3240);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s}
+.rank-subnav-btn:hover{color:var(--court-bright,#fb923c);border-color:var(--court-bright,#fb923c)}
+.rank-subnav-btn.active{background:var(--court,#ea580c);color:#fff;border-color:var(--court,#ea580c)}
 .np-on-list{color:var(--court,#ea580c);font-weight:800}
 /* NBA_PLAYERS_PAGE_V1 Stage 3 — pool "+ Add" button + added state */
 .np-add-btn{background:var(--court,#ea580c);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s;white-space:nowrap}
@@ -442,6 +447,8 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 <div class="page-nav" id="page-nav">
   <button class="page-nav-btn active" id="nav-watchlist" onclick="showWatchListView()">🏠 Watch List</button>
   <button class="page-nav-btn" id="nav-nbaplayers" onclick="showNbaPlayersView()">🏀 NBA Players</button>
+  <!-- NBA_RANKINGS_PAGE_V1 (June 11, 2026 — PC Walter, per the Dude + Matt) — 3rd tab: positional rankings, separate from the watch list. -->
+  <button class="page-nav-btn" id="nav-rankings" onclick="showRankingsView()">📋 Rankings</button>
 </div>
 
 <!-- ══════════ WATCH LIST VIEW (default) ══════════ -->
@@ -660,6 +667,31 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     </table>
   </div>
 </div>
+
+<!-- ══════════ RANKINGS VIEW (NBA_RANKINGS_PAGE_V1, June 11 2026 — hidden by default) ══════════ -->
+<!-- Positional rankings Matt maintains, SEPARATE from the watch list (clone of football's RANKINGS_PAGE_V1).
+     Sub-tabs per position, PG default. MULTI-POS FAN-OUT (Matt's call, June 11): a player appears on EVERY
+     tab he's eligible for (fantasy_positions), so e.g. Jaylen Brown ranks on SG AND SF AND PF. -->
+<div id="rankings-view" style="display:none">
+  <div class="status-bar-wl" id="rankings-status">Rankings — positional rankings, separate from the Watch101 list.</div>
+  <div class="rank-subnav" id="rank-subnav">
+    <button class="rank-subnav-btn active" data-rankpos="PG" onclick="switchRankPos('PG', this)">PG</button>
+    <button class="rank-subnav-btn" data-rankpos="SG" onclick="switchRankPos('SG', this)">SG</button>
+    <button class="rank-subnav-btn" data-rankpos="SF" onclick="switchRankPos('SF', this)">SF</button>
+    <button class="rank-subnav-btn" data-rankpos="PF" onclick="switchRankPos('PF', this)">PF</button>
+    <button class="rank-subnav-btn" data-rankpos="C" onclick="switchRankPos('C', this)">C</button>
+  </div>
+  <div class="table-wrap" id="nbarankings-wrap">
+    <table class="watch-list" id="rankings-table">
+      <thead>
+        <tr id="rankings-head-row"></tr>
+      </thead>
+      <tbody id="rankings-body">
+        <tr><td colspan="15" class="empty-state"><strong>PG rankings are loading</strong>Player data may still be loading — give it a moment.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div><!-- /#rankings-view -->
 
 <div class="footer">
   Watch101 NBA · Stats via Sleeper · <a href="https://nba-nas.fantasywatch101.com/health" target="_blank">server status</a>
@@ -926,28 +958,318 @@ async function reloadWatchList(){
 // (default) and the NBA Players feeder pool. These fns flip which is visible and
 // which nav button is active. Stage 2 wires renderNbaPlayers() into showNbaPlayersView.
 // ──────────────────────────────────────────────────────────────────────────
+// NBA_RANKINGS_PAGE_V1 (June 11, 2026 — PC Walter, per the Dude + Matt). Three views now, so every
+// show*View() hides the other TWO via the shared _hideAllViews() (Rule #9 — every show path must hide
+// every other view, or two render at once). Cloned from football's RANKINGS_PAGE_V1 (the reference).
+function _hideAllViews(){
+  ['watchlist-view','nbaplayers-view','rankings-view'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
+  ['nav-watchlist','nav-nbaplayers','nav-rankings'].forEach(function(id){ var b=document.getElementById(id); if(b) b.classList.remove('active'); });
+}
 function showWatchListView(){
-  const wl = document.getElementById('watchlist-view');
-  const np = document.getElementById('nbaplayers-view');
-  if(wl) wl.style.display = '';
-  if(np) np.style.display = 'none';
-  const bWl = document.getElementById('nav-watchlist');
-  const bNp = document.getElementById('nav-nbaplayers');
-  if(bWl) bWl.classList.add('active');
-  if(bNp) bNp.classList.remove('active');
+  _hideAllViews();
+  var wl = document.getElementById('watchlist-view'); if(wl) wl.style.display = '';
+  var b = document.getElementById('nav-watchlist'); if(b) b.classList.add('active');
 }
 function showNbaPlayersView(){
-  const wl = document.getElementById('watchlist-view');
-  const np = document.getElementById('nbaplayers-view');
-  if(wl) wl.style.display = 'none';
-  if(np) np.style.display = '';
-  const bWl = document.getElementById('nav-watchlist');
-  const bNp = document.getElementById('nav-nbaplayers');
-  if(bWl) bWl.classList.remove('active');
-  if(bNp) bNp.classList.add('active');
-  // Stage 2 will call renderNbaPlayers() here to build/refresh the pool table.
+  _hideAllViews();
+  var np = document.getElementById('nbaplayers-view'); if(np) np.style.display = '';
+  var b = document.getElementById('nav-nbaplayers'); if(b) b.classList.add('active');
   if(typeof renderNbaPlayers === 'function') renderNbaPlayers();
 }
+
+// ══════════ NBA_RANKINGS_PAGE_V1 (June 11, 2026 — PC Walter, per the Dude + Matt) ══════════
+// Positional rankings page, cloned from football's RANKINGS_PAGE_V1 + AUTOLOAD + DRAGRANK + SAVE/LOAD
+// (the reference implementation rule: checked football first, matched its exact pattern). NBA differences:
+//  - MULTI-POS FAN-OUT (Matt's call, June 11): a player appears on EVERY position tab he's eligible
+//    for (fantasy_positions array — Jaylen Brown ranks on SG AND SF AND PF). Each tab keeps its own
+//    independent saved order, so his rank can differ per tab. That is by design, not a bug.
+//  - No Yahoo layer on NBA yet, so the auto-load seed sorts by SEASON PTS PER GAME descending (the
+//    pool's default sort; the Dude's call, June 11). When the Yahoo layer lands, revisit the seed.
+//  - Stat columns are the 9-cat per-game set, same on every tab (NBA positions share stats).
+//  - NBA pids are STRINGS — onclick args are &quot;-escaped (the NBA_REMOVE_BUTTON_QUOTE_FIX lesson).
+var _rankPos = 'PG';  // active position sub-tab
+var _rankings = { PG:[], SG:[], SF:[], PF:[], C:[] };  // saved manual orders (arrays of pids)
+function showRankingsView(){
+  _hideAllViews();
+  var rv = document.getElementById('rankings-view'); if(rv) rv.style.display = '';
+  var b = document.getElementById('nav-rankings'); if(b) b.classList.add('active');
+  renderRankings();
+}
+function switchRankPos(pos, btn){
+  _rankPos = pos;
+  _rankSortField = null;  // each tab opens in manual saved order, not a carried-over sort
+  document.querySelectorAll('.rank-subnav-btn').forEach(function(x){ x.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+  renderRankings();
+}
+// NBA_RANKINGS_AUTOLOAD_V1 — each tab auto-loads every active (on-a-team) player ELIGIBLE at that
+// position, sorted by season PTS/G desc, capped at 60 per tab (the Dude's call, June 11). No
+// add-one-by-one: the field loads, Matt just ranks. Eligibility reads fantasy_positions (fan-out).
+var RANK_POS_CAP = { PG:60, SG:60, SF:60, PF:60, C:60 };
+function _rankEligible(p, pos){
+  var arr = (p && Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions
+          : (p && p.position ? [p.position] : []);
+  return arr.indexOf(pos) !== -1;
+}
+function _rankSeedPpg(pid){
+  var s = (_seasonStats && _seasonStats[pid]) || {};   // SEASON on purpose — the seed must be stable, not date-range
+  var gp = Number(s.gp) || 0;
+  if(gp <= 0 || s.pts == null) return -1;
+  return Number(s.pts) / gp;
+}
+function _rankingsIdsFor(pos){
+  if(!_playerDB) return [];
+  var ids = [];
+  for(var id in _playerDB){
+    var p = _playerDB[id];
+    if(!p || !p.position) continue;
+    if(!p.team) continue;                 // active / on-a-team only
+    if(!_rankEligible(p, pos)) continue;  // MULTI-POS FAN-OUT — any eligible position qualifies
+    ids.push(id);
+  }
+  ids.sort(function(a,b){
+    var pa = _rankSeedPpg(a), pb = _rankSeedPpg(b);
+    if(pb !== pa) return pb - pa;
+    var na=(_playerDB[a].full_name||''), nb=(_playerDB[b].full_name||'');
+    return na.localeCompare(nb);
+  });
+  var cap = RANK_POS_CAP[pos] || 50;
+  return ids.slice(0, cap);
+}
+function renderRankings(){
+  var tbody = document.getElementById('rankings-body');
+  var statusEl = document.getElementById('rankings-status');
+  if(!tbody) return;
+  if(!_playerDB){
+    tbody.innerHTML = '<tr><td colspan="15" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
+    return;
+  }
+  // _rankings[pos] is the source of truth for ORDER. First render with no saved order seeds from the
+  // auto-load; after that drag reorders the array (Matt's order wins). Newly-eligible players get
+  // appended in seed order; players no longer eligible get dropped (never silently loses anyone).
+  var seed = _rankingsIdsFor(_rankPos);
+  if(!_rankings[_rankPos] || _rankings[_rankPos].length === 0){
+    _rankings[_rankPos] = seed.slice();
+  } else {
+    var have = {};
+    _rankings[_rankPos].forEach(function(pid){ have[pid]=1; });
+    seed.forEach(function(pid){ if(!have[pid]) _rankings[_rankPos].push(pid); });
+    var seedSet = {}; seed.forEach(function(pid){ seedSet[pid]=1; });
+    _rankings[_rankPos] = _rankings[_rankPos].filter(function(pid){ return seedSet[pid]; });
+  }
+  // Manual saved order lives in _rankings[pos]. If a stat-sort is active, render a SORTED VIEW copy
+  // (never mutates the saved order). Dragging clears the sort and re-snaps to the manual order.
+  var manualIds = _rankings[_rankPos];
+  var ids = _rankSortField ? _rankSortedView(manualIds) : manualIds;
+  var sortNote = _rankSortField ? ' · sorted by ' + _rankSortField.toUpperCase() + ' (drag a player to return to your order)' : '';
+  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players. Drag the ☰ handle to re-rank. Separate from the Watch101 list.' + sortNote;
+
+  var cols = _rankColsFor(_rankPos);
+  _rankRenderHead(cols);
+
+  if(ids.length === 0){
+    tbody.innerHTML = '<tr><td colspan="' + (cols.length + 4) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
+    return;
+  }
+  var dragLocked = !!_rankSortField;  // while sorted, the view is not the saved order, so disable drag
+  tbody.innerHTML = ids.map(function(pid, i){
+    var p = _playerDB[pid];
+    if(!p) return '';
+    var name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
+    var _pidAttr = String(pid).replace(/"/g,'&quot;');
+    var statCells = cols.map(function(c){ return '<td class="' + (c.tdClass||'') + '">' + c.render(pid, p) + '</td>'; }).join('');
+    var dragAttrs = dragLocked ? '' :
+        ' draggable="true"' +
+        ' ondragstart="rankDragStart(event,&quot;' + _pidAttr + '&quot;)"' +
+        ' ondragover="rankDragOver(event,&quot;' + _pidAttr + '&quot;)"' +
+        ' ondrop="rankDrop(event,&quot;' + _pidAttr + '&quot;)"' +
+        ' ondragleave="this.classList.remove(\'nba-drag-over\')"' +
+        ' ondragend="rankDragEnd(event)"';
+    var handleCell = dragLocked
+        ? '<td class="center col-handle nba-drag-handle disabled" title="Clear the sort to drag-rank">☰</td>'
+        : '<td class="center col-handle nba-drag-handle" title="Drag to re-rank">☰</td>';
+    return '<tr data-rank-pid="' + escapeHtml(pid) + '"' + dragAttrs + '>' +
+      handleCell +
+      '<td class="col-rank">' + (i+1) + '</td>' +
+      '<td class="center">' + _nbaPosBadges(p) + '</td>' +
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span></td>' +
+      statCells +
+    '</tr>';
+  }).join('');
+  _rankWireSortHeaders();
+  _rankUpdateSortArrows();
+}
+
+// NBA_RANKINGS_STATS_V1 — the 9-cat per-game column set, same on every position tab. Every stat
+// column clickable to sort (the Dude's standing rule). Per-game via perGame(); percentages true ratios.
+function _rankStatCol(key,label,field,tdClass){
+  return { key:key, label:label, tdClass:(tdClass||'col-stat-a'),
+    num:function(pid){ var s=_statsRow(pid)||{}; var gp=Number(s.gp)||0; var v=s[field]; if(v==null||gp<=0) return -1; return Number(v)/gp; },
+    render:function(pid){ var s=_statsRow(pid)||{}; var gp=Number(s.gp)||0; return statCellOrDash(perGame(s[field],gp),1); } };
+}
+function _rankPctCol(key,label,mk,att){
+  return { key:key, label:label, tdClass:'col-stat-b',
+    num:function(pid){ var s=_statsRow(pid)||{}; var v=pctOrNull(s[mk],s[att]); return v==null?-1:v; },
+    render:function(pid){ var s=_statsRow(pid)||{}; return pctCellOrDash(pctOrNull(s[mk],s[att])); } };
+}
+function _rankCol_age(){ return { key:'age', label:'Age', tdClass:'',
+  num:function(pid){ var a=nbaDecimalAgeNum(_playerDB[pid]); return (a==null||isNaN(a))?Infinity:a; },
+  render:function(pid,p){ return nbaDecimalAge(p); } }; }
+function _rankCol_gp(){ return { key:'gp', label:'GP', tdClass:'col-stat-a col-zone-divider',
+  num:function(pid){ var s=_statsRow(pid)||{}; return (s.gp==null)?-1:Number(s.gp); },
+  render:function(pid){ var s=_statsRow(pid)||{}; return statCellOrDash(s.gp,0); } }; }
+function _rankColsFor(pos){
+  return [ _rankCol_age(), _rankCol_gp(),
+    _rankStatCol('pts','PTS','pts'), _rankStatCol('reb','REB','reb'), _rankStatCol('ast','AST','ast'),
+    _rankStatCol('stl','STL','stl'), _rankStatCol('blk','BLK','blk'), _rankStatCol('to','TOV','to'),
+    _rankPctCol('fgpct','FG%','fgm','fga'), _rankPctCol('tppct','3P%','tpm','tpa'), _rankPctCol('ftpct','FT%','ftm','fta') ];
+}
+function _rankRenderHead(cols){
+  var headRow = document.getElementById('rankings-head-row');
+  if(!headRow) return;
+  var fixed = '<th class="col-handle">☰</th>' +
+              '<th class="col-rank">Rank</th>' +
+              '<th class="col-pos">Pos</th>' +
+              '<th class="left col-player">Player</th>';
+  var statHeads = cols.map(function(c){
+    return '<th class="' + (c.headClass||'') + '" data-ranksort="' + c.key + '" style="cursor:pointer">' +
+           c.label + ' <span class="sort-arrow" style="opacity:.4">↕</span></th>';
+  }).join('');
+  headRow.innerHTML = fixed + statHeads;
+}
+function _rankSortedView(manualIds){
+  var cols = _rankColsFor(_rankPos);
+  var col = null; for(var i=0;i<cols.length;i++){ if(cols[i].key === _rankSortField){ col = cols[i]; break; } }
+  if(!col) return manualIds;
+  var view = manualIds.slice();
+  var dir = (_rankSortDir === 'asc') ? 1 : -1;
+  view.sort(function(a, b){
+    var va = col.num(a), vb = col.num(b);
+    if(va < vb) return -1*dir;
+    if(va > vb) return  1*dir;
+    return 0;
+  });
+  return view;
+}
+var _rankSortField = null;   // null = manual saved order; otherwise a column key
+var _rankSortDir = 'desc';
+function _rankSortBy(field){
+  if(!field) return;
+  if(_rankSortField === field){ _rankSortDir = (_rankSortDir === 'desc') ? 'asc' : 'desc'; }
+  else { _rankSortField = field; _rankSortDir = (field === 'age') ? 'asc' : 'desc'; }
+  renderRankings();
+}
+function _rankWireSortHeaders(){
+  document.querySelectorAll('#rankings-head-row th[data-ranksort]').forEach(function(th){
+    if(th._rankWired) return;            // avoid stacking listeners across re-renders
+    th._rankWired = true;
+    th.addEventListener('click', function(){ _rankSortBy(th.dataset.ranksort); });
+  });
+}
+function _rankUpdateSortArrows(){
+  document.querySelectorAll('#rankings-head-row th[data-ranksort]').forEach(function(th){
+    var arrow = th.querySelector('.sort-arrow');
+    if(!arrow) return;
+    if(th.dataset.ranksort === _rankSortField){
+      arrow.textContent = (_rankSortDir === 'desc') ? '↓' : '↑';
+      arrow.style.opacity = '1';
+      arrow.style.color = 'var(--court-bright, var(--court))';
+    } else {
+      arrow.textContent = '↕';
+      arrow.style.opacity = '0.4';
+      arrow.style.color = '';
+    }
+  });
+}
+// NBA_RANKINGS_DRAGRANK_V1 — drag-to-rank within a position tab, scoped to _rankings[_rankPos].
+// On drop: reorder the array, re-render (rank re-derives from index), save (localStorage + NAS).
+var _rankDragSrcPid = null;
+function rankDragStart(e, pid){
+  _rankDragSrcPid = pid;
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nba-dragging');
+  try { e.dataTransfer.effectAllowed = 'move'; } catch(_){}
+}
+function rankDragOver(e, pid){
+  e.preventDefault();
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nba-drag-over');
+  try { e.dataTransfer.dropEffect = 'move'; } catch(_){}
+}
+function rankDrop(e, pid){
+  e.preventDefault();
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.remove('nba-drag-over');
+  if(_rankDragSrcPid == null || _rankDragSrcPid === pid) return;
+  var arr = _rankings[_rankPos]; if(!arr) return;
+  var si = arr.indexOf(_rankDragSrcPid);
+  var ti = arr.indexOf(pid);
+  if(si < 0 || ti < 0) return;
+  var moved = arr.splice(si, 1)[0];
+  arr.splice(ti, 0, moved);
+  _rankDragSrcPid = null;
+  _rankSortField = null;  // a drag IS the ranking; snap the view back to the manual order
+  renderRankings();
+  saveRankings(_rankPos);
+}
+function rankDragEnd(e){
+  _rankDragSrcPid = null;
+  document.querySelectorAll('tr.nba-dragging, tr.nba-drag-over').forEach(function(tr){
+    tr.classList.remove('nba-dragging'); tr.classList.remove('nba-drag-over');
+  });
+}
+// NBA_RANKINGS_SAVE_V1 — save one position's order. localStorage instant + POST to rankings-nba-<pos>.
+// Until the Dude's Docker rebuild registers the new list ids, the POST returns 404 and the order still
+// survives in this browser via localStorage (same interim behavior football had).
+var RANKINGS_STORAGE_KEY = 'watch101_nba_rankings_v0';
+function _rankSaveLocal(){
+  try { localStorage.setItem(RANKINGS_STORAGE_KEY, JSON.stringify(_rankings)); }
+  catch(e){ console.warn('[NBA_RANKINGS_SAVE_V1] localStorage save failed:', e); }
+}
+var _rankNasSaving = {};
+async function saveRankings(pos){
+  _rankSaveLocal();
+  var listId = 'rankings-nba-' + pos.toLowerCase();
+  if(_rankNasSaving[pos]) return;
+  _rankNasSaving[pos] = true;
+  var statusEl = document.getElementById('rankings-status');
+  try {
+    var players = (_rankings[pos]||[]).map(function(pid){ return { pid: pid }; });
+    var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ players: players })
+    });
+    if(res.ok){ if(statusEl) statusEl.textContent = '✓ ' + pos + ' rankings saved (' + players.length + ').'; }
+    else { if(statusEl) statusEl.textContent = '⚠ ' + pos + ' rankings save returned HTTP ' + res.status + ' — saved to this browser.'; }
+  } catch(e){
+    console.warn('[NBA_RANKINGS_SAVE_V1] NAS save failed for ' + pos + ':', e);
+    if(statusEl) statusEl.textContent = '⚠ ' + pos + ' rankings NAS save failed (saved to this browser).';
+  } finally { _rankNasSaving[pos] = false; }
+}
+// NBA_RANKINGS_LOAD_V1 — on boot, hydrate from localStorage first (instant), then the NAS per position
+// (authoritative). A saved order overrides the seed; missing → renderRankings seeds it.
+function _rankLoadLocal(){
+  try {
+    var raw = localStorage.getItem(RANKINGS_STORAGE_KEY);
+    if(raw){ var obj = JSON.parse(raw); if(obj && typeof obj === 'object'){ ['PG','SG','SF','PF','C'].forEach(function(k){ if(Array.isArray(obj[k])) _rankings[k] = obj[k]; }); } }
+  } catch(e){ console.warn('[NBA_RANKINGS_LOAD_V1] localStorage load failed:', e); }
+}
+async function loadRankingsFromNAS(){
+  _rankLoadLocal();
+  var positions = ['PG','SG','SF','PF','C'];
+  for(var i=0;i<positions.length;i++){
+    var pos = positions[i];
+    var listId = 'rankings-nba-' + pos.toLowerCase();
+    try {
+      var res = await fetch(SERVER_URL + '/list-staging/' + listId, {cache:'no-cache'});
+      if(res.ok){
+        var data = await res.json();
+        var players = (data && data.data && Array.isArray(data.data.players)) ? data.data.players
+                    : (data && Array.isArray(data.players)) ? data.players : null;
+        if(players && players.length){ _rankings[pos] = players.map(function(it){ return (it && it.pid != null) ? it.pid : it; }); }
+      }
+    } catch(e){ /* no saved ranking yet for this position — renderRankings will seed it */ }
+  }
+  if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankings();
+}
+// ══════════ /NBA_RANKINGS_PAGE_V1 ══════════
 
 // ──────────────────────────────────────────────────────────────────────────
 // NBA_PLAYERS_PAGE_V1 (2026-06-06) — Stage 2: the full-league feeder table.
@@ -1250,6 +1572,7 @@ async function bootstrap(){
     await loadListFromStorage();
     _normalizeWatchList();
     renderWatchList();
+    loadRankingsFromNAS();  // NBA_RANKINGS_LOAD_V1 — fire-and-forget; hydrates Matt's saved orders in the background
   } catch(e){
     console.error('[bootstrap]', e);
     statusEl.textContent = '⚠ Could not load data: ' + e.message;
