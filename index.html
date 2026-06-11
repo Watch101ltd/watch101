@@ -4060,6 +4060,7 @@ function applyQSToAllCaches(){
   try {
     if(!window.QS_CACHE) return;
     var QS = window.QS_CACHE;
+    var _zeroVal = (window.QS_CACHE_LOADED === true) ? 0 : null;  // QS_ZERO_FOR_PITCHERS_V1 — 0 once the cache is real; dash if it never arrived
     // (a) date-range cache: overwrite hld in every window row for pitchers.
     if(typeof PLAYER_DATERANGE_CACHE !== 'undefined' && PLAYER_DATERANGE_CACHE){
       var WINS = ['yesterday','7','14','30'];
@@ -4080,9 +4081,9 @@ function applyQSToAllCaches(){
           var val;
           if(entry !== undefined){
             var qv = _qsWindowValue(entry, w);
-            val = (qv !== undefined && qv !== null) ? qv : null;
+            val = (qv !== undefined && qv !== null) ? qv : _zeroVal;  // QS_ZERO_FOR_PITCHERS_V1 — tracked starter, no start in this window -> 0
           } else {
-            val = null; // not a tracked starter -> em-dash
+            val = _zeroVal; // QS_ZERO_FOR_PITCHERS_V1 — zero starts this season -> 0, not em-dash
           }
           // Only overwrite when this looks like a pitcher row (has pitcher
           // fields) OR the pitcher is in QS. A row with sb/ab but no ip is a
@@ -4104,7 +4105,7 @@ function applyQSToAllCaches(){
         var isPit = ((typeof isPitcher === 'function') && isPitcher(pl)) || ((typeof isPitcherPos === 'function') && isPitcherPos(pl.primaryPos));
         if(!isPit) continue;
         var sv = (e !== undefined) ? _qsWindowValue(e, 'season') : undefined;
-        var sval = (sv !== undefined && sv !== null) ? sv : null;
+        var sval = (sv !== undefined && sv !== null) ? sv : _zeroVal;  // QS_ZERO_FOR_PITCHERS_V1
         pl.hld = sval;
         if(pl.statsMlb && typeof pl.statsMlb === 'object') pl.statsMlb.hld = sval;
         if(pl.statsMilb && typeof pl.statsMilb === 'object') pl.statsMilb.hld = sval;
@@ -4124,6 +4125,7 @@ async function loadQSCacheFromNAS(){
     const data = await res.json();
     if(data && typeof data === 'object' && data.qs && typeof data.qs === 'object'){
       window.QS_CACHE = data.qs;
+      window.QS_CACHE_LOADED = true;  // QS_ZERO_FOR_PITCHERS_V1 (June 11, 2026 — per the Dude): cache verifiably loaded -> no-start pitchers may now show a real 0 instead of an em-dash
       applyQSToAllCaches();
       var _c = Object.keys(data.qs).length;
       var _ts = (data.meta && data.meta.generated_at) ? data.meta.generated_at : 'unknown';
@@ -13720,7 +13722,7 @@ function getDisplayStats(p){
         var _drIsPit = ((typeof isPitcher === 'function') && isPitcher(p)) || ((typeof isPitcherPos === 'function') && isPitcherPos(p.primaryPos));
         if(_drIsPit){
           var _drQs = _qsForCurrentWindow(p.mlb_id);
-          var _drVal = (_drQs !== undefined && _drQs !== null) ? _drQs : null;
+          var _drVal = (_drQs !== undefined && _drQs !== null) ? _drQs : ((window.QS_CACHE_LOADED === true) ? 0 : null);  // QS_ZERO_FOR_PITCHERS_V1 — 0, not em-dash, once the cache is real
           if(_row && typeof _row === 'object') _row.hld = _drVal;
           if(_row && _row.mlb && typeof _row.mlb === 'object') _row.mlb.hld = _drVal;
         }
@@ -15338,12 +15340,16 @@ function _activeSampleFor(p, tableName){
         if(_sample && typeof _sample === 'object') _sample.hld = _qs;
         p.hld = _qs;
       } else {
-        // pitcher NOT in the QS cache (e.g. a reliever who never started) ->
-        // clear the hld slot so the cell renders an em-dash instead of his
-        // old holds value. Only pitchers are cleared; hitters keep this slot
-        // for stolen bases, so we never touch a hitter's field here.
-        if(_sample && typeof _sample === 'object') _sample.hld = null;
-        p.hld = null;
+        // QS_ZERO_FOR_PITCHERS_V1 (June 11, 2026 — per the Dude): a pitcher NOT in
+        // the QS cache has ZERO starts this season (qs_fetch.py scans EVERY pitcher
+        // on the bridge map and includes anyone with >=1 start, quality or not — a
+        // stretched-out reliever appears the moment he makes his first start). So
+        // show a real 0, not an em-dash. SAFETY: if the cache never actually loaded
+        // (NAS hiccup), fall back to null/em-dash — never a false 0 for missing data.
+        // Hitters keep this slot for stolen bases; never touched here.
+        var _qsZero = (window.QS_CACHE_LOADED === true) ? 0 : null;
+        if(_sample && typeof _sample === 'object') _sample.hld = _qsZero;
+        p.hld = _qsZero;
       }
     }
   } catch(_qsErr){}
