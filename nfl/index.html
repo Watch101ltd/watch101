@@ -586,6 +586,11 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <div class="logo">
       <span class="logo-watch">Watch</span><img class="logo-img" src="images/watch101_football_logo.png" alt="Watch 101 NFL"><span class="logo-football">NFL</span>
     </div>
+    <!-- NFL_MULTILIST_V1 (June 11, 2026 — PC Walter, per the Dude + Matt) — list switcher, cloned from baseball's MULTILIST_V1 picker (NBA mirror same day). -->
+    <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--turf,#16a34a) 0%,#15803d 100%);color:#fff;border:1px solid var(--turf,#16a34a);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:240px;margin:6px 0 2px 0">
+      <option value="integrity-nfl">⭐ List of Integrity</option>
+      <option value="dynasty-nfl">👑 Dynasty List</option>
+    </select>
     <div class="logo-sub" id="logo-sub">Watch List · Loading…</div>
   </div>
   <div class="header-right">
@@ -1666,7 +1671,8 @@ function _npUpdateSortArrows(){
 // STATS_YEAR's current value naturally.
 function _updateYearLabels(){
   const sub = document.getElementById('logo-sub');
-  if(sub) sub.textContent = 'Watch List · ' + STATS_YEAR + ' Stats';
+  const listName = (typeof _activeList === 'function') ? _activeList().name : 'Watch List';  // NFL_MULTILIST_V1
+  if(sub) sub.textContent = listName + ' · ' + STATS_YEAR + ' Stats';
 }
 
 // DYNAMIC_STATS_YEAR_V1 — derives the right stats year from Sleeper's
@@ -2023,13 +2029,40 @@ function _phoneRowTap(pid){
 // back to localStorage. So users always see SOMETHING even if the server is down.
 // ----------------------------------------------------------------
 
-const LIST_ID = 'integrity-nfl';
+// NFL_MULTILIST_V1 (June 11, 2026 — PC Walter, per the Dude + Matt) — multi-list support, cloned
+// from baseball's MULTILIST_V1, mirrored from the NBA build same session. LIST_ID is now a let that
+// follows the active list, so every existing save/load path (autoSaveToNflNAS, loadListFromStorage,
+// the manual Save button) keys to the active list with no further changes.
+const WL_LISTS = [
+  { id: 'integrity-nfl', folder: 'Integrity', name: 'List of Integrity', emoji: '⭐' },
+  { id: 'dynasty-nfl',   folder: 'Dynasty',   name: 'Dynasty List',      emoji: '👑' },
+];
+let currentListId = 'integrity-nfl';
+let LIST_ID = 'integrity-nfl';  // follows currentListId (was a const when there was only one list)
+function _activeList(){ return WL_LISTS.find(function(l){ return l.id === currentListId; }) || WL_LISTS[0]; }
+// Per-list localStorage key. Integrity keeps the ORIGINAL key so existing saved copies aren't orphaned.
+function _wlStorageKey(){ return (currentListId === 'integrity-nfl') ? LIST_STORAGE_KEY : ('watch101_nfl_watch_list_' + currentListId); }
+async function switchActiveList(newId){
+  if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
+  currentListId = newId;
+  LIST_ID = newId;
+  var sel = document.getElementById('list-switcher'); if(sel && sel.value !== newId) sel.value = newId;
+  _updateYearLabels();                 // header subtitle shows the active list's name
+  _wlTeamSelectBuilt = false;          // the filter TEAM dropdown rebuilds from the new list
+  _watchList = [];
+  renderWatchList();                   // instant clear so the old list never lingers while loading
+  await loadListFromStorage();         // NAS first (keyed to the new LIST_ID), localStorage fallback
+  _normalizeWatchList();
+  renderWatchList();
+  var np = document.getElementById('nflplayers-view');
+  if(np && np.style.display !== 'none' && typeof renderNflPlayers === 'function') renderNflPlayers();  // refresh the pool's ✓ Added pills against the new list
+}
 
 async function saveList(){
   const statusEl = document.getElementById('status-bar');
   // Fallback: still always save to localStorage so we don't lose data.
   try {
-    localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList));
+    localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList));  // NFL_MULTILIST_V1 — per-list key
   } catch(e){
     console.warn('[saveList] localStorage save failed:', e);
   }
@@ -2043,10 +2076,10 @@ async function saveList(){
     // Build the JSON payload (matches baseball\'s JSON_SIDECAR shape).
     const nowIso = new Date().toISOString();
     const fileSafeTimestamp = nowIso.replace(/[:.]/g, '-').slice(0, 19);
-    const fileName = 'Watch101_NFL_Integrity_' + fileSafeTimestamp + '.json';
+    const fileName = 'Watch101_NFL_' + _activeList().folder + '_' + fileSafeTimestamp + '.json';  // NFL_MULTILIST_V1
     const payload = {
       list_id: LIST_ID,
-      list_name: 'Watch 101 NFL - List of Integrity',
+      list_name: 'Watch101 NFL - ' + _activeList().name,
       saved_at: nowIso,
       saved_at_local: new Date().toLocaleString(),
       source: 'NFL watch list tracker v1',
@@ -2054,9 +2087,9 @@ async function saveList(){
       players: _watchList,  // array of Sleeper player_ids
     };
 
-    statusEl.textContent = 'Pick your Synology-synced _Staging/Integrity folder...';
+    statusEl.textContent = 'Pick your Synology-synced _Staging/' + _activeList().folder + ' folder...';  // NFL_MULTILIST_V1
     const dirHandle = await window.showDirectoryPicker({
-      id: 'watch101-nfl-save-integrity',
+      id: 'watch101-nfl-save-' + currentListId,
       mode: 'readwrite',
       startIn: 'documents'
     });
@@ -2098,7 +2131,7 @@ async function loadListFromStorage(){
   }
   // localStorage fallback.
   try {
-    const raw = localStorage.getItem(LIST_STORAGE_KEY);
+    const raw = localStorage.getItem(_wlStorageKey());  // NFL_MULTILIST_V1 — per-list key
     if(!raw) return;
     const arr = JSON.parse(raw);
     if(Array.isArray(arr)) _watchList = arr;
@@ -2234,7 +2267,7 @@ function nflDragEnd(e){
 // to localStorage (a reload keeps the order, nothing lost mid-session); the Dude clicks
 // Save once when the ranking is done to push it to the Synology-synced staging folder.
 function _nflSaveLocal(){
-  try { localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(_watchList)); }
+  try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); }  // NFL_MULTILIST_V1 — per-list key
   catch(e){ console.warn('[_nflSaveLocal] localStorage save failed:', e); }
 }
 
