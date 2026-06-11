@@ -14192,6 +14192,78 @@ checkYahooStatus();
 startYahooAutoSync();
 setTimeout(() => loadSavantData(), 500);
 
+// ══════════ DRAG_FLIGHT_RECORDER_V1 (June 11, 2026 — PC Walter, per the Dude) ══════════
+// Passive black-box for the intermittent tier-drag lag (Open Bug #3 on the Bug Board; full case file in
+// Memory (Claude)/05 Bug Fixes/TIER_DRAG_LAG_INVESTIGATION_2026-06-11.md). Records every drag's vitals
+// (move-event gaps, main-thread stalls, DOM weight, list, tier, zoom) and keeps the LAST 10 reports in
+// localStorage (key fw101_flight_recorder) — so when a drag feels laggy, nobody has to reproduce
+// anything: the recording already exists, survives reloads, and is readable from ANY tab on this origin
+// via window.flightRecorder.read(). Costs ~nothing when not dragging — every listener exits on one flag.
+(function(){
+  var KEY = 'fw101_flight_recorder';
+  var R = { active:false, gaps:[], last:0, lt:0, ltWorst:0, ltSum:0, t0:0, ctx:null };
+  try {
+    new PerformanceObserver(function(list){
+      if(!R.active) return;
+      list.getEntries().forEach(function(e){ R.lt++; R.ltSum += e.duration; if(e.duration > R.ltWorst) R.ltWorst = Math.round(e.duration); });
+    }).observe({ entryTypes:['longtask'] });
+  } catch(_e){}
+  function ctxSnap(){
+    var pool = document.getElementById('pool-tbody');
+    return {
+      list: (typeof currentListId !== 'undefined') ? currentListId : '?',
+      tier: (typeof _tierDragPayload !== 'undefined' && _tierDragPayload) ? String(_tierDragPayload.tierId) : 'single-player',
+      dom: document.getElementsByTagName('*').length,
+      poolNodes: pool ? pool.getElementsByTagName('*').length : -1,
+      dpr: +(window.devicePixelRatio || 1).toFixed(3),
+      dayMode: document.body.classList.contains('day-mode')
+    };
+  }
+  document.addEventListener('dragstart', function(){
+    R.active = true; R.gaps = []; R.last = 0; R.lt = 0; R.ltWorst = 0; R.ltSum = 0; R.t0 = performance.now(); R.ctx = null;
+    setTimeout(function(){ if(R.active) R.ctx = ctxSnap(); }, 0);  // next tick so the tier payload (set during dragstart) is visible
+  }, true);
+  document.addEventListener('dragover', function(){
+    if(!R.active) return;
+    var n = performance.now();
+    if(R.last){ if(R.gaps.length < 5000) R.gaps.push(n - R.last); }
+    R.last = n;
+  }, true);
+  function finalize(kind){
+    if(!R.active) return;
+    R.active = false;
+    try {
+      var g = R.gaps.slice().sort(function(a,b){ return a-b; });
+      var rep = {
+        at: new Date().toLocaleString(),
+        endedBy: kind,
+        durSec: +((performance.now() - R.t0)/1000).toFixed(1),
+        dragovers: g.length,
+        gapMed: g.length ? +g[Math.floor(g.length/2)].toFixed(1) : null,
+        gapP95: g.length ? +g[Math.floor(g.length*0.95)].toFixed(1) : null,
+        gapWorst: g.length ? +g[g.length-1].toFixed(1) : null,
+        longtasks: R.lt, worstStall: R.ltWorst, totalStallMs: Math.round(R.ltSum)
+      };
+      var c = R.ctx || ctxSnap();
+      for(var k in c) rep[k] = c[k];
+      var buf = [];
+      try { buf = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(_e2){ buf = []; }
+      buf.push(rep);
+      while(buf.length > 10) buf.shift();
+      localStorage.setItem(KEY, JSON.stringify(buf));
+      var laggy = (rep.gapP95 != null && rep.gapP95 > 50) || rep.worstStall > 250;
+      console.log('[FLIGHT_RECORDER]' + (laggy ? ' ⚠ LAGGY' : '') + ' ' + rep.tier + ' on ' + rep.list + ' — ' + rep.dragovers + ' moves, med ' + rep.gapMed + 'ms, p95 ' + rep.gapP95 + 'ms, worst stall ' + rep.worstStall + 'ms (' + buf.length + ' reports stored)');
+    } catch(_e){}
+  }
+  document.addEventListener('drop', function(){ finalize('drop'); }, true);
+  document.addEventListener('dragend', function(){ finalize('dragend'); }, true);
+  window.flightRecorder = {
+    read: function(){ try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(_e){ return []; } },
+    clear: function(){ try { localStorage.removeItem(KEY); } catch(_e){} return 'cleared'; }
+  };
+})();
+// ══════════ /DRAG_FLIGHT_RECORDER_V1 ══════════
+
 // STAT_FRESHNESS_V1 (May 8, 2026) — Stat freshness chip + manual refresh button.
 // =============================================================================
 // The chip in the header polls the Worker /health endpoint every 5 minutes and
