@@ -789,27 +789,38 @@ body.day-mode .lg-redname{color:#b91c1c;}
    Default state is unarmed — pointer-events:none, no halo, click-through to
    rows works as today. Armed adds pointer-events:auto and cursor:grab so the
    user can grab the whole tier and drag it. */
-@keyframes tier-armed-pulse {
-  0%   { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
-  50%  { box-shadow: 0 0 14px #ffc107, 0 0 28px rgba(255,193,7,0.7), inset 0 0 10px rgba(255,193,7,0.35); }
-  100% { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
-}
-@keyframes tier-armed-pulse-daymode {
-  0%   { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
-  50%  { box-shadow: 0 0 12px #d97706, 0 0 22px rgba(217,119,6,0.6), inset 0 0 8px rgba(217,119,6,0.3); }
-  100% { box-shadow: 0 0 0 transparent, inset 0 0 0 transparent; }
+/* TIER_PULSE_OPACITY_V1 (June 11, 2026 — PC Walter, per the Dude) — THE TIER-DRAG LAG FIX.
+   The old pulse ANIMATED box-shadow on the bracket box itself — a per-frame REPAINT of a triple
+   blurred glow, the same disease as the must-watch glow killed May 30. Flight-recorder conviction:
+   the laggy drag measured med 56ms / p95 115.8ms / 321 stalls totaling 19.9s; killing the pulse
+   live in the SAME poisoned tab dropped the SAME tier drag to med 1.7ms / p95 20.3ms (33x).
+   New build: the glow is painted ONCE on a ::after overlay and only its OPACITY animates —
+   compositor-only, near-zero cost, visually identical pulse. Old keyframes removed. */
+@keyframes tier-armed-fade {
+  0%   { opacity: 0; }
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
 }
 .tier-bracket-box.tier-armed {
-  animation: tier-armed-pulse 1.5s ease-in-out infinite;
   pointer-events: auto !important;
   cursor: grab;
-  will-change: box-shadow;
 }
 .tier-bracket-box.tier-armed:active {
   cursor: grabbing;
 }
-body.day-mode .tier-bracket-box.tier-armed {
-  animation: tier-armed-pulse-daymode 1.5s ease-in-out infinite;
+.tier-bracket-box.tier-armed::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 14px #ffc107, 0 0 28px rgba(255,193,7,0.7), inset 0 0 10px rgba(255,193,7,0.35);
+  opacity: 0;
+  animation: tier-armed-fade 1.5s ease-in-out infinite;
+  will-change: opacity;
+}
+body.day-mode .tier-bracket-box.tier-armed::after {
+  box-shadow: 0 0 12px #d97706, 0 0 22px rgba(217,119,6,0.6), inset 0 0 8px rgba(217,119,6,0.3);
 }
 /* /TIER_DRAG_V1 */
 
