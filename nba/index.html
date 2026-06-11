@@ -360,6 +360,26 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 .rank-subnav-btn{background:var(--surface2,#161b22);color:var(--text2,#9aa4b2);border:1px solid var(--border2,#2a3240);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s}
 .rank-subnav-btn:hover{color:var(--court-bright,#fb923c);border-color:var(--court-bright,#fb923c)}
 .rank-subnav-btn.active{background:var(--court,#ea580c);color:#fff;border-color:var(--court,#ea580c)}
+/* ══════════ NBA_RANKINGS_WIDTH_V1 (June 11, 2026 — PC Walter, per the Dude) ══════════
+   Clone of football's RANKINGS_WIDTH_V1. The shared .watch-list rule is width:100% + min-width:1050px
+   + table-layout:fixed, which SPREADS the Rankings columns edge-to-edge (eyes travel the whole
+   monitor). Pack the columns tight on the LEFT, blank space on the right. Touches ONLY #rankings-table.
+   The fitTables grow-to-fill zoom is also skipped for #nbarankings-wrap (see fitTables) or it would
+   re-inflate this narrow table right back to full width. */
+#rankings-table{
+  width:auto;             /* shrink to content instead of stretching to 100% */
+  min-width:0;            /* kill the 1050px floor that forces the spread */
+  table-layout:auto;      /* size each column to its content, not evenly across the page */
+  margin:0;               /* sit on the left edge, blank space falls on the right */
+}
+#rankings-table thead th{ padding:6px 14px; font-size:10px; }
+#rankings-table tbody td{ padding:6px 14px; font-size:13px; }
+#rankings-table tbody .stat-cell{ font-size:13px; }
+#rankings-table tbody .player-name{ font-size:13px; }
+#rankings-table thead th.col-handle, #rankings-table tbody td.col-handle{ padding:6px 6px; }
+#rankings-table thead th.col-rank,   #rankings-table tbody td.col-rank{ padding:6px 10px; }
+#rankings-table thead th.col-pos{ padding:6px 8px; }
+#rankings-table thead th.col-player, #rankings-table tbody td.col-player{ width:200px; max-width:200px; }
 .np-on-list{color:var(--court,#ea580c);font-weight:800}
 /* NBA_PLAYERS_PAGE_V1 Stage 3 — pool "+ Add" button + added state */
 .np-add-btn{background:var(--court,#ea580c);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s;white-space:nowrap}
@@ -750,6 +770,7 @@ function fitTables(){
       const table = wrap.querySelector('table');
       if(!table) return;
       if(wrap.offsetParent === null){ return; }   // skip hidden surfaces
+      if(wrap.id === 'nbarankings-wrap'){ table.style.zoom = '1'; return; }  // NBA_RANKINGS_WIDTH_V1 — rankings table is deliberately narrow (packed left, like football); grow-to-fill would re-spread it
       table.style.zoom = '1';                       // reset to read true natural width
       const avail = wrap.clientWidth;
       const natural = table.scrollWidth;
