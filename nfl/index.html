@@ -776,7 +776,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
-        <input id="nflpf-cbsowned" type="number" min="0" max="100" placeholder="any" disabled title="No NFL CBS data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+        <input id="nflpf-cbsowned" type="number" min="0" max="100" placeholder="any" title="Max CBS rostered %" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">POSITION <span style="color:var(--text3);font-weight:400">(any checked)</span></div>
@@ -798,6 +798,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
           <th class="col-yrank col-zone-divider" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
+          <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b col-zone-divider" data-npsort="payd">PaYd <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="patd">PaTD <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b col-zone-divider" data-npsort="ruatt">RuAtt <span class="sort-arrow">↕</span></th>
@@ -812,7 +813,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         </tr>
       </thead>
       <tbody id="nfl-players-body">
-        <tr><td colspan="15" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
+        <tr><td colspan="16" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -1453,7 +1454,7 @@ let _npBuilt     = false;
 // pipeline). MIN GAMES reads s.gp (Sleeper games-played) — INERT in the offseason until Sleeper
 // populates it for the new season, then live automatically (no rebuild needed). Date Range + CBS are
 // inert (no pipeline / no data). All Apply-gated.
-let _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, posPositions:[] };
+let _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
 let _npTeamSelectBuilt = false;
 function _npfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
 async function applyNflPoolFilters(){
@@ -1463,18 +1464,19 @@ async function applyNflPoolFilters(){
   _npFilters.ageMin   = _npfNum('nflpf-agemin');
   _npFilters.ageMax   = _npfNum('nflpf-agemax');
   _npFilters.maxOwned = _npfNum('nflpf-owned');
+  _npFilters.maxCbsOwned = _npfNum('nflpf-cbsowned');
   _npFilters.posPositions = Array.from(document.querySelectorAll('.nflpf-pos:checked')).map(cb => cb.value);
   await _applyDateRangeFrom('nflpf-daterange');   // date range is Apply-gated too
   renderNflPlayers();
 }
 function resetNflPoolFilters(){
-  ['nflpf-fpts','nflpf-games','nflpf-agemin','nflpf-agemax','nflpf-owned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['nflpf-fpts','nflpf-games','nflpf-agemin','nflpf-agemax','nflpf-owned','nflpf-cbsowned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const t=document.getElementById('nflpf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('nflpf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('nflwlpf-daterange'); if(dr2) dr2.value='season';
   document.querySelectorAll('.nflpf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
-  _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, posPositions:[] };
+  _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
   renderNflPlayers();
 }
 function _npBuildTeamSelect(){
@@ -1505,6 +1507,7 @@ function _npStatValue(field, p, s, pid){
     case 'retd': return (s.rec_td || 0);
     case 'yrank':  return (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(pid, 'yahoo_rank') : null;
     case 'yowned': return (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(pid, 'roster_pct') : null;
+    case 'cbsowned': return (typeof _cbsLookupNum === 'function') ? _cbsLookupNum(pid) : null;
     default: return null;
   }
 }
@@ -1541,6 +1544,10 @@ function _npSortedIds(){
     if(F.maxOwned != null){
       const ow = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(id, 'roster_pct') : null;
       if(ow == null || ow > F.maxOwned) continue;   // no Yahoo owned => excluded from a max-owned filter
+    }
+    if(F.maxCbsOwned != null){
+      const cw = (typeof _cbsLookupNum === 'function') ? _cbsLookupNum(id) : null;
+      if(cw == null || cw > F.maxCbsOwned) continue;   // no CBS owned => excluded from a max-CBS filter
     }
     ids.push(id);
   }
@@ -1610,6 +1617,8 @@ function renderNflPlayers(){
       // unlike NBA). Same lookup the watch list uses; placeholder class when no value.
       '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? " class=\"col-zone-divider\"" : " class=\"placeholder col-zone-divider\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
+      // CBS_OWNED_NFLPLAYERS_V1 (2026-06-17) — CBS rostered% column, same lookup the watch list uses.
+      '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.rush_att) + '</td>' +
