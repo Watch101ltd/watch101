@@ -2969,9 +2969,10 @@ function _cbsNorm(s){
 async function loadCbsData(){
   try {
     // The JSON ships to the repo's cbs-nfl/ folder (pushed by push_cbs_nfl_to_github.py).
-    // The football page deploys at nfl/watch-list/, so go up two levels to the repo root,
-    // then into cbs-nfl/. (If a future deploy changes the page's folder depth, update this path.)
-    const res = await fetch('../../cbs-nfl/cbs_rostered_latest.json', { cache: 'no-cache' });
+    // CBS_PATH_FIX 2026-06-17: this page serves at /watch101/nfl/ (one level under the
+    // repo root), so a SINGLE ../ reaches /watch101/cbs-nfl/. (../../ was one too many and
+    // 404'd at the domain root.) If a future deploy changes the page depth, update this.)
+    const res = await fetch('../cbs-nfl/cbs_rostered_latest.json', { cache: 'no-cache' });
     if(!res.ok) { console.warn('[cbs] no CBS data yet (HTTP ' + res.status + ')'); return; }
     const data = await res.json();
     const players = (data && data.players) || [];
