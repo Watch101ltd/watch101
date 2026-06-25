@@ -10003,6 +10003,26 @@ async function exportXLSX(opts){
           console.warn('[PERLIST_FOLDERS_V2] could not persist handle:', e);
         }
       }
+      // MISPOINT_GUARD_V1 (2026-06-25 — PC Walter, per the Dude) — Matt's folder
+      // permission expires every few days; when he re-picks, he sometimes drills one
+      // level too deep and selects the list's _HoldingTank SUBfolder by mistake. Every
+      // main-list save then pollutes the tank (and makes a nested _HoldingTank/_HoldingTank).
+      // Refuse to save into a _HoldingTank folder: wipe the bad handle and re-prompt so
+      // the very next Save re-opens the picker. This is the MAIN-LIST save only; the
+      // legitimate tank save (saveHoldingTankToNAS) has its own separate write path and
+      // is unaffected.
+      try {
+        const _h = _xlsxDirHandles[listId];
+        if(_h && _h.name === '_HoldingTank'){
+          console.warn('[MISPOINT_GUARD_V1] save folder is _HoldingTank for', listId, '— refusing, wiping handle, re-prompting.');
+          _xlsxDirHandles[listId] = null;
+          try { await _idbDelHandle(listId); } catch(e){}
+          if(!silent){
+            alert('Wrong folder picked.\n\nThe save folder is set to "_HoldingTank", which is the demotion-tank subfolder. Saving here would pollute the tank.\n\nPlease click Save again and pick the LIST folder itself (e.g. "' + listSlug + '"), NOT the _HoldingTank inside it.');
+          }
+          return;
+        }
+      } catch(_ge){ console.warn('[MISPOINT_GUARD_V1] guard check failed (non-fatal):', _ge); }
       const fileHandle = await _xlsxDirHandles[listId].getFileHandle(fileName, {create:true});
       const writable = await fileHandle.createWritable();
       const wbArray = XLSX.write(wb, {bookType:'xlsx', type:'array'});
