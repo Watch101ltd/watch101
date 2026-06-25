@@ -18077,10 +18077,12 @@ function onTankPromote(mlbId){
   if(idx < 0) return;
   const p = _holdingTank[idx];
   if(!p) return;
-  const CAP = 101;
+  // INLINE_OVERFLOW_V1 (2026-06-25) — promote cap lifted to MAX_PLAYERS (no practical ceiling)
+  // so holding-tank players can be promoted into the Overflow Tank (ranks 102+) on the same list.
+  const CAP = MAX_PLAYERS;
   if(players.length >= CAP){
-    alert('Watch 101 is full (' + CAP + ' players).\n\nRemove someone from the main list first, then promote ' +
-          (p.name || 'this player') + ' from the Tank.');
+    alert('This list is full (' + CAP + ' players).\n\nRemove someone first, then promote ' +
+          (p.name || 'this player') + '.');
     return;
   }
   // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — bail out if already on main list (mlb_id collision).
@@ -18094,7 +18096,7 @@ function onTankPromote(mlbId){
 
   let maxRank = 0;
   players.forEach(mp => { const r = parseInt(mp.rank,10); if(!isNaN(r) && r > maxRank) maxRank = r; });
-  const newRank = Math.min(maxRank + 1, CAP);
+  const newRank = maxRank + 1; // INLINE_OVERFLOW_V1 — stack onto the bottom (102, 103, ...), no clamp
   // HOLDING_TANK_AS_TAB_V1 (May 16, 2026) — stamp a fresh uid() so the X-delete button and any
   // other id-based handlers work on promoted players. Without this the promoted player has no .id
   // and clicking the X is a silent no-op (the filter never matches).
