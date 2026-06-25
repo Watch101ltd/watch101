@@ -13727,6 +13727,22 @@ async function _fetchDeepCutMilbWindow(mlbId, range){
 }
 
 function getDisplayStats(p){
+  // DEEPCUT_DATERANGE_ISOLATION_V1 (2026-06-25 — PC Walter, per the Dude) — when the Deep
+  // Cut overlay is the one rendering (window._ppoRendering), temporarily run this function
+  // against the OVERLAY's own date range (window._ppoDateRange) instead of the global one,
+  // then restore the global on the way out. This keeps the popup's date range fully
+  // independent of the main page. The module-level `dateRange` is briefly swapped and
+  // always restored in the finally, so no other render path ever sees the overlay's value.
+  var _gdsSavedRange = dateRange;
+  var _gdsOverlay = (typeof window !== 'undefined' && window._ppoRendering && window._ppoDateRange);
+  if(_gdsOverlay){ dateRange = window._ppoDateRange; }
+  try {
+    return _getDisplayStatsInner(p);
+  } finally {
+    if(_gdsOverlay){ dateRange = _gdsSavedRange; }
+  }
+}
+function _getDisplayStatsInner(p){
   // Returns the stat object to display for the current dateRange:
   //  - 'season' -> the player record itself (season totals already live on p)
   //  - 'yesterday' / '7' / '14' / '30' -> the pre-baked server-side cache when possible,
@@ -16558,6 +16574,16 @@ function openPlayerPage(p){
   var overlay = document.getElementById('player-page-overlay');
   if(!overlay) return;
 
+  // DEEPCUT_DATERANGE_ISOLATION_V1 (2026-06-25 — PC Walter, per the Dude) — the Deep Cut
+  // overlay's date range is independent of the main page and RESETS to Season every time
+  // it opens. Set the overlay's own range + snap its dropdown back to 'season'.
+  window._ppoDateRange = 'season';
+  window._ppoLastDateRangeValue = 'season';
+  try {
+    var _ppoSel = document.getElementById('ppo-daterange-select');
+    if(_ppoSel){ _ppoSel.value = 'season'; _ppoSel.classList.remove('daterange-active'); }
+  } catch(e){}
+
   var photoEl = document.getElementById('ppo-photo');
   photoEl.src = mlbId
     ? 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_426,q_auto:best/v1/people/'+mlbId+'/headshot/67/current'
@@ -17632,7 +17658,10 @@ function renderPlayerStatBar(p){
   // Get the stat source based on current dateRange.
   // - dateRange === 'season' -> use p directly (season-long numbers on the player object)
   // - otherwise use getDisplayStats(p) which returns cached byDateRange stats or null (loading)
-  var usingDateRange = (typeof dateRange !== 'undefined') && dateRange !== 'season';
+  // DEEPCUT_DATERANGE_ISOLATION_V1 — the overlay uses its OWN range (window._ppoDateRange),
+  // independent of the main page's global dateRange.
+  var _ppoRange = (typeof window !== 'undefined' && window._ppoDateRange) ? window._ppoDateRange : 'season';
+  var usingDateRange = _ppoRange !== 'season';
   var sc;
   // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05, PC Walter, per the Dude) — does this render want the MiLB
   // side? True when the player is MiLB-only OR the Dude flipped the Deep Cut chip to MiLB.
@@ -17833,10 +17862,32 @@ function onOverlayDateRangeChange(val){
   }
   // Remember the most recent "real" value so we can revert to it next time the popup option is picked.
   window._ppoLastDateRangeValue = val;
-  // Reuse the main-page infrastructure so data fetching + syncing across all dropdowns happens the same way
-  if(typeof setDateRange === 'function') setDateRange(val);
-  if(typeof syncDateRangeDropdowns === 'function') syncDateRangeDropdowns(val);
-  // Immediately re-render the overlay stat bar (this will kick off polling if the cache is still warming up)
+  // DEEPCUT_DATERANGE_ISOLATION_V1 (2026-06-25 — PC Walter, per the Dude) — the Deep Cut
+  // overlay now has its OWN date range, fully independent of the main page behind it.
+  // Changing this dropdown used to call the global setDateRange()+syncDateRangeDropdowns(),
+  // which re-rendered the WHOLE site behind the popup. Now we ONLY store the overlay's own
+  // value and re-render the overlay stat bar. renderPlayerStatBar() borrows the global
+  // dateRange just for its own render and restores it (see that function), so the main
+  // page's date range never actually changes.
+  window._ppoDateRange = val;
+  // Prime the date-range cache for the overlay's window WITHOUT changing what the main
+  // page shows. fetchDateRangeStats() is keyed by the global dateRange and re-renders the
+  // main table, so we borrow the global just long enough to kick the fetch, then restore it
+  // and re-render only the main table back to its real state. The overlay reads its own
+  // window via window._ppoDateRange (see getDisplayStats), so its stat bar is independent.
+  if(val !== 'season' && val !== 'live' && typeof fetchDateRangeStats === 'function'){
+    var _savedGlobal = (typeof dateRange !== 'undefined') ? dateRange : 'season';
+    if(_savedGlobal !== val){
+      try {
+        dateRange = val;
+        Promise.resolve(fetchDateRangeStats(val)).then(function(){
+          if(window._ppoCurrentPlayer) renderPlayerStatBar(window._ppoCurrentPlayer);
+        }).catch(function(){});
+      } finally {
+        dateRange = _savedGlobal;
+      }
+    }
+  }
   if(window._ppoCurrentPlayer){
     renderPlayerStatBar(window._ppoCurrentPlayer);
   }
