@@ -2101,7 +2101,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     <button class="tab-nav-btn" id="nav-tab-home"      onclick="goHome()">🏠 Watch101</button>
     <button class="tab-nav-btn" id="nav-tab-pool"      onclick="openPlayerPool()">⚾ MLB Players</button>
     <button class="tab-nav-btn" id="nav-tab-prospects" onclick="openProspects()">🍼 MiLB Prospects</button>
-    <button class="tab-nav-btn backend-only" id="nav-tab-tank" onclick="openHoldingTank()" title="Matt's editorial bench">🪣 Holding Tank</button>
+    <button class="tab-nav-btn backend-only" id="nav-tab-tank" onclick="openHoldingTank()" title="Matt's editorial bench">🪣 Demotion Tank</button>
   </div>
   <!-- search (instant) + the Hitter/Pitcher quick buttons. INSTANT FILTER label removed per the Dude. -->
   <div style="display:flex;flex-direction:column;gap:6px">
@@ -2534,7 +2534,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="tab-nav-btn" onclick="goHome()">🏠 Watch101</button>
         <button class="tab-nav-btn active" onclick="openPlayerPool()">⚾ MLB Players</button>
         <button class="tab-nav-btn" onclick="openProspects()">🍼 MiLB Prospects</button>
-        <button class="tab-nav-btn backend-only" onclick="openHoldingTank()">🪣 Holding Tank</button>
+        <button class="tab-nav-btn backend-only" onclick="openHoldingTank()">🪣 Demotion Tank</button>
       </div>
 
       <div class="pool-search-wrap">
@@ -2740,7 +2740,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
        Backend-only — fans never see this overlay because the entry point is backend-only. -->
   <div class="tank-header backend-only" id="tank-header">
     <div class="tank-header-logo-slot" id="tank-header-logo-slot"></div>
-    <div class="tank-header-title">🪣 Holding Tank</div>
+    <div class="tank-header-title">🪣 Demotion Tank</div>
     <div class="tank-header-sub">Matt's editorial bench</div>
   </div>
 
@@ -2754,7 +2754,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="tab-nav-btn" onclick="goHome()">🏠 Watch101</button>
         <button class="tab-nav-btn" onclick="openPlayerPool()">⚾ MLB Players</button>
         <button class="tab-nav-btn" onclick="openProspects()">🍼 MiLB Prospects</button>
-        <button class="tab-nav-btn active backend-only" onclick="openHoldingTank()">🪣 Holding Tank</button>
+        <button class="tab-nav-btn active backend-only" onclick="openHoldingTank()">🪣 Demotion Tank</button>
       </div>
       <div class="tab-nav-group">
         <!-- TANK_NAS_SAVE_V1 (May 18, 2026) — manual Save button for the Tank. -->
@@ -3385,7 +3385,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         <button class="tab-nav-btn" onclick="goHome()">🏠 Watch101</button>
         <button class="tab-nav-btn" onclick="openPlayerPool()">⚾ MLB Players</button>
         <button class="tab-nav-btn active" onclick="openProspects()">🍼 MiLB Prospects</button>
-        <button class="tab-nav-btn backend-only" onclick="openHoldingTank()">🪣 Holding Tank</button>
+        <button class="tab-nav-btn backend-only" onclick="openHoldingTank()">🪣 Demotion Tank</button>
       </div>
 
       <div style="font-family:'Nunito Sans',sans-serif;font-size:20px;color:var(--gold);letter-spacing:0.05em;white-space:nowrap">🍼 MiLB Prospects — 2026</div>
@@ -6514,6 +6514,16 @@ function injuryBadge(status){
   return `<span class="injury-badge injury-na">${s}</span>`;
 }
 
+// DEMOTION_TANK_V1 (2026-06-25 — per the Dude + Matt) — small tag showing WHEN a
+// player was demoted off the main list (date + time, stamped in deletePlayer).
+// Shown at the end of the name like an injury designation. The full timestamp is
+// ALSO put in the name span's title= tooltip (see the tank row) so even when a long
+// name squeezes this tag off-screen, hovering the name always reveals the date.
+function demotedBadge(p){
+  if(!p || !p.demoted_at) return '';
+  return `<span class="injury-badge" style="background:#3a2a12;color:#e0a94e;border-color:#6b4a1a" title="Demoted ${p.demoted_at}">📉 ${p.demoted_at}</span>`;
+}
+
 // NEWS_BADGE_V1 RETIRED (April 27, 2026) — news pipeline removed.
 // newsBadge function replaced with a no-op stub returning empty string,
 // so the row-render call sites are harmless even if any survive cleanup.
@@ -9150,7 +9160,7 @@ function _tierRepairOnRemoval(removedMlbId){
 
 async function deletePlayer(id){
   if(_blockIfReadOnly('deletePlayer')) return;
-  if(!confirm('Remove this player from the Watch List?\n\nThey will be moved to the Holding Tank (your editorial bench) instead of disappearing.')) return;
+  if(!confirm('Remove this player from the Watch List?\n\nThey will be moved to the Demotion Tank (time-stamped) instead of disappearing.')) return;
   // UNDO_REMOVAL_V1 (May 17, 2026) — snapshot the pre-removal state so Undo
   // can put this player back on the main list (in their original rank) AND
   // remove them from the Tank. Fires AFTER the confirm so cancelled removals
@@ -9167,6 +9177,14 @@ async function deletePlayer(id){
   if(_removed && !_holdingTank.some(t => t.id === _removed.id)){
     // Reset rank since they're starting fresh in the Tank. New rank = end of Tank.
     _removed.rank = _holdingTank.length + 1;
+    // DEMOTION_TANK_V1 (2026-06-25 — per the Dude + Matt) — stamp the exact moment
+    // this player was demoted so Matt can look back and write about who was cut and when.
+    // Date + time. Only set on FIRST entry; if already stamped (re-removed), keep original.
+    try {
+      var _now = new Date();
+      var _pad = function(n){ return (n<10?'0':'')+n; };
+      _removed.demoted_at = _now.getFullYear()+'-'+_pad(_now.getMonth()+1)+'-'+_pad(_now.getDate())+' '+_pad(_now.getHours())+':'+_pad(_now.getMinutes());
+    } catch(e){ console.warn('[DEMOTION_TANK_V1] timestamp failed:', e); }
     _holdingTank.push(_removed);
     saveHoldingTank();
     // TANK_NAS_SAVE_V1 (May 18, 2026) Push 3c — silent auto-save to Synology after every Tank mutation.
@@ -11947,7 +11965,7 @@ function renderPool(){
         ? '<span class="btn-add-pool added">✓ On List</span>'
         : isInTank
           ? `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><span class="btn-add-tank added">✓ Tank</span>`
-          : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddFromPoolToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">🪣 Tank</button>`
+          : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
       }</td>
     </tr>`;
   }).join('');
@@ -12432,7 +12450,7 @@ function renderContext(){
       ? '<span class="btn-add-pool added">✓ On List</span>'
       : isInTank
         ? `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button><span class="btn-add-tank added">✓ Tank</span>`
-        : `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddFromPoolToTank(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">🪣 Tank</button>`;
+        : `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button>`;
     // MILB_ITALIC_V1 (May 8, 2026) — flag MiLB-sourced rows so the italic+dim
     // stat treatment fires in the context table the same way it does in the
     // main list, pool, and leaders.
@@ -13017,7 +13035,7 @@ function renderLeaders(){
         ? '<span class="btn-add-pool added">✓ On List</span>'
         : isInTank
           ? `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><span class="btn-add-tank added">✓ Tank</span>`
-          : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="event.stopPropagation();quickAddFromPoolToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">🪣 Tank</button>`
+          : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="event.stopPropagation();quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
       }</td>
     </tr>`;
   }).join('');
@@ -13360,7 +13378,7 @@ function renderLeadersTable(splits, highlightStat, isPit){
       ? '<span class="btn-add-pool added">✓ On List</span>'
       : isInTank
         ? `<button class="btn-add-pool" onclick="quickAddLeader(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">${activeListAddLabel('+ Add to ')}</button><span class="btn-add-tank added">✓ Tank</span>`
-        : `<button class="btn-add-pool" onclick="quickAddLeader(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="quickAddLeaderToTank(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">🪣 Tank</button>`;
+        : `<button class="btn-add-pool" onclick="quickAddLeader(${mlbId},'${name.replace(/'/g,"\\'")}','${team}','${pos}',this)">${activeListAddLabel('+ Add to ')}</button>`;
 
     if(isPit){
       return `<tr class="${isAdded?'already-added':isInTank?'tank-row':''}">
@@ -13493,7 +13511,7 @@ function _alreadyOnMain(mlbId){ if(!Array.isArray(players)) return false; const 
 
 async function quickAddFromPoolToTank(mlbId, name, team, primaryPos, age, btnEl){
   if(_blockIfReadOnly('quickAddFromPoolToTank')) return;
-  if(_alreadyOnMain(mlbId)){ alert('"' + (name||'This player') + '" is already on your main Watch 101 list.\n\nIf you want them in the Holding Tank instead, remove them from the main list first.'); return; }
+  if(_alreadyOnMain(mlbId)){ alert('"' + (name||'This player') + '" is already on your main Watch 101 list.\n\nIf you want them in the Demotion Tank instead, remove them from the main list first.'); return; }
   if(_tankAlreadyHas(mlbId)){ btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added'; btnEl.disabled=true; return; }
   if(_tankIsFull()){ alert('Holding Tank is full (' + HOLDING_TANK_CAP + ' players).\n\nPromote or remove someone from the Tank first.'); return; }
   btnEl.textContent='⟳ Tanking...'; btnEl.disabled=true;
@@ -13513,7 +13531,7 @@ async function quickAddFromPoolToTank(mlbId, name, team, primaryPos, age, btnEl)
 
 async function quickAddLeaderToTank(mlbId, name, team, primaryPos, btnEl){
   if(_blockIfReadOnly('quickAddLeaderToTank')) return;
-  if(_alreadyOnMain(mlbId)){ alert('"' + (name||'This player') + '" is already on your main Watch 101 list.\n\nIf you want them in the Holding Tank instead, remove them from the main list first.'); return; }
+  if(_alreadyOnMain(mlbId)){ alert('"' + (name||'This player') + '" is already on your main Watch 101 list.\n\nIf you want them in the Demotion Tank instead, remove them from the main list first.'); return; }
   if(_tankAlreadyHas(mlbId)){ btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added'; btnEl.disabled=true; return; }
   if(_tankIsFull()){ alert('Holding Tank is full (' + HOLDING_TANK_CAP + ' players).\n\nPromote or remove someone from the Tank first.'); return; }
   btnEl.textContent='⟳ Tanking...'; btnEl.disabled=true;
@@ -13532,7 +13550,7 @@ async function quickAddLeaderToTank(mlbId, name, team, primaryPos, btnEl){
 
 async function addProspectToTank(mlbId, name, team, primaryPos, age, level, btnEl){
   if(_blockIfReadOnly('addProspectToTank')) return;
-  if(_alreadyOnMain(mlbId)){ alert('"' + (name||'This player') + '" is already on your main Watch 101 list.\n\nIf you want them in the Holding Tank instead, remove them from the main list first.'); return; }
+  if(_alreadyOnMain(mlbId)){ alert('"' + (name||'This player') + '" is already on your main Watch 101 list.\n\nIf you want them in the Demotion Tank instead, remove them from the main list first.'); return; }
   if(_tankAlreadyHas(mlbId)){ btnEl.textContent='✓ In Tank'; btnEl.className='btn-add-tank added'; btnEl.disabled=true; return; }
   if(_tankIsFull()){ alert('Holding Tank is full (' + HOLDING_TANK_CAP + ' players).\n\nPromote or remove someone from the Tank first.'); return; }
   btnEl.textContent='⟳ Tanking...'; btnEl.disabled=true;
@@ -16066,7 +16084,7 @@ function renderProspects(){
       ? '<span class="btn-add-pool added">✓ On List</span>'
       : isInTank
         ? `<button class="btn-add-pool" onclick="addProspectToList(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">${activeListAddLabel('+ Add to ')}</button><span class="btn-add-tank added">✓ Tank</span>`
-        : `<button class="btn-add-pool" onclick="addProspectToList(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">${activeListAddLabel('+ Add to ')}</button><button class="btn-add-tank backend-only" title="Send to Holding Tank" onclick="addProspectToTank(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">🪣 Tank</button>`;
+        : `<button class="btn-add-pool" onclick="addProspectToList(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},'${p.level}',this)">${activeListAddLabel('+ Add to ')}</button>`;
     // MILB_ITALIC_V2 (May 8, 2026) — Smarter italic gate for Prospects. Some
     // prospects have an MLB sample this year (got called up; maybe back down).
     // We want their MLB numbers to render upright so we can tell at a glance
@@ -18123,7 +18141,7 @@ function onTankRemove(mlbId){
   if(idx < 0) return;
   const p = _holdingTank[idx];
   if(!p) return;
-  if(!confirm('Remove ' + (p.name || 'this player') + ' from the Holding Tank?\n\nThey will go back to the general MLB pool. You can always re-add them later.')) return;
+  if(!confirm('Remove ' + (p.name || 'this player') + ' from the Demotion Tank?\n\nThey will go back to the general MLB pool. You can always re-add them later.')) return;
   _holdingTank.splice(idx, 1);
   _holdingTank.forEach((tp, i) => { tp.rank = i + 1; });
   saveHoldingTank();
@@ -18613,7 +18631,7 @@ function renderTank(){
       <td class="col-rank-num" style="text-align:center;color:var(--text3);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600">${_showPoolRank ? (idx+1) : ''}</td>
       <!-- STATIC_ZONE_REORDER_V1 — Pos cell now before Player; col-zone-divider on Y!RANK. -->
       <td class="pos-cell col-pos">${posBadgesColumn(poolPositions, 'pool')}</td>
-      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}" style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'tank')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}</div></td>
+      <td class="player-col col-player"><div class="name-cell"><span class="player-name ${flameClass(p)}"${p.demoted_at?` title="Demoted ${p.demoted_at}"`:''} style="color:var(--turquoise);font-weight:600">${_renderLevelChip(p, 'tank')}${flameEmoji(p)}${p.name}</span>${injuryBadge(p.injury_status)}${noteBadge(p)}${demotedBadge(p)}</div></td>
       <td class="team-cell col-team">${p.team||na}</td>
       <td class="stat-cell col-age">${decimalAge(p)}</td>
       <td class="stat-cell col-exp" style="text-align:right">${experienceLabel(p)}</td>
@@ -19602,7 +19620,7 @@ document.addEventListener('keydown', function(e){
     {
       id: 'tank',
       emoji: '\uD83E\uDEA3', // 🪣
-      label: 'Holding Tank',
+      label: 'Demotion Tank',
       adminOnly: true, // RIGHTCLICK_READONLY_GATE_V1 (5/20 19:15 ET) — hidden from fans
       isActive: function(){ return typeof tankActive !== 'undefined' && tankActive; },
       navTo: function(){ if(typeof openHoldingTank === 'function') openHoldingTank(); }
