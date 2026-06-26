@@ -1281,6 +1281,7 @@ function _rankCol_fpts(){ return _rankStatCol('fpts','FPTS','pts_half_ppr','col-
 // The per-position column lists. Y!Rank, Y!Owned, FPTS, Age on every tab (the Dude's call).
 function _rankColsFor(pos){
   var yrank = _rankCol_yrank(), yowned = _rankCol_yowned(), fpts = _rankCol_fpts(), age = _rankCol_age();
+  var cbs = _rankCol_cbsowned();  // CBS_ON_RANK_TABS_V1 (2026-06-26 — per the Dude): CBS Owned on every rankings tab, right after Y!Owned.
   var paYd = _rankStatCol('payd','PA YD','pass_yd','col-stat-b');
   var paTd = _rankStatCol('patd','PA TD','pass_td','col-stat-b');
   var ruAtt = _rankStatCol('ruatt','RU ATT','rush_att','col-stat-b');  // RUSH_ATT_V1 — carries (wear & tear)
@@ -1296,13 +1297,12 @@ function _rankColsFor(pos){
   // dashes where a stat doesn't apply (a QB dashes the receiving cols, a WR dashes the passing cols).
   // Includes CBS Owned to match the NFL Players page. FPTS stays rightmost.
   if(pos === 'Overall'){
-    var cbs = _rankCol_cbsowned();
     var tgt  = _rankStatCol('tgt','TGT','rec_tgt','col-stat-a');
     return [yrank, yowned, cbs, age, paYd, paTd, ruAtt, ruYd, ruTd, tgt, rec, reYd, reTd, fpts];
   }
-  if(pos === 'QB')  return [yrank, yowned, age, paYd, paTd, ruAtt, ruYd, ruTd, fpts];
-  if(pos === 'RB')  return [yrank, yowned, age, ruAtt, ruYd, ruTd, rec, reYd, reTd, fpts];
-  if(pos === 'WR' || pos === 'TE') return [yrank, yowned, age, rec, reYd, reTd, ruAtt, ruYd, ruTd, fpts];
+  if(pos === 'QB')  return [yrank, yowned, cbs, age, paYd, paTd, ruAtt, ruYd, ruTd, fpts];
+  if(pos === 'RB')  return [yrank, yowned, cbs, age, ruAtt, ruYd, ruTd, rec, reYd, reTd, fpts];
+  if(pos === 'WR' || pos === 'TE') return [yrank, yowned, cbs, age, rec, reYd, reTd, ruAtt, ruYd, ruTd, fpts];
   // NFLVERSE_DEF_STATS_V1 (June 10, 2026 — PC Walter, per the Dude): the DEF columns are BACK.
   // Sleeper's team-DST row still only carries FPTS + def_td (the June 9 data ceiling, proven via
   // console), but the SERVER now merges nflverse team-defense SEASON stats into the same stats row
@@ -1318,7 +1318,7 @@ function _rankColsFor(pos){
   var dSafety = _rankStatCol('def_safety','SAFETY','def_safety','col-stat-b');
   var dTd     = _rankStatCol('def_td','DEF TD','def_td','col-stat-b');
   var yrankDef = _rankCol_yrank('yahoo_def_rank');  // YAHOO_DEF_RANKS_V1 — rank among defenses
-  return [yrankDef, yowned, dInt, dSack, dFumRec, dSafety, dTd, fpts];  // FPTS_LAST_V1 — FPTS rightmost
+  return [yrankDef, yowned, cbs, dInt, dSack, dFumRec, dSafety, dTd, fpts];  // FPTS_LAST_V1 — FPTS rightmost
 }
 
 // Build the thead per the active position's columns. Fixed leading cols (handle/Rank/Pos/Player) + dynamic
@@ -3009,8 +3009,15 @@ let _cbsByNameTeam = {};      // key: "normalizedname|TEAM" -> rostered_pct
 let _cbsByName = {};          // fallback key: "normalizedname" -> rostered_pct (when team missing)
 let _cbsDataLoaded = false;
 function _cbsNorm(s){
-  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]/g, '');   // strip spaces, punctuation, apostrophes, Jr/Sr handled loosely
+  // CBS_SUFFIX_FIX_V1 (2026-06-26 — PC Walter, per the Dude, found by Matt): CBS is INCONSISTENT
+  // about name suffixes (lists "Michael Pittman" but "Brian Thomas Jr.") while Sleeper carries them.
+  // The old version stripped spaces/punctuation but NOT the suffix, so "michaelpittmanjr" (Sleeper)
+  // never matched "michaelpittman" (CBS) → the CBS Owned column dashed for every Jr./Sr./III player.
+  // Fix: drop the trailing suffix BEFORE stripping spaces, exactly like _yahooNormalizeName does
+  // (which is why Yahoo never had this bug). Applies to BOTH sides of the join (same function).
+  var n = String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  n = n.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, '');   // drop trailing Jr/Sr/II/III/IV/V (with optional period)
+  return n.replace(/[^a-z0-9]/g, '');                  // then strip spaces, punctuation, apostrophes
 }
 async function loadCbsData(){
   try {
