@@ -3007,6 +3007,7 @@ function _yahooNormalizeName(name){
 // (same graceful-degrade pattern Yahoo used during its build).
 let _cbsByNameTeam = {};      // key: "normalizedname|TEAM" -> rostered_pct
 let _cbsByName = {};          // fallback key: "normalizedname" -> rostered_pct (when team missing)
+let _cbsByLastTeamPos = {};   // CBS_LASTNAME_FALLBACK_V1 — "lastname|TEAM|POS" -> pct (null if collision)
 let _cbsDataLoaded = false;
 function _cbsNorm(s){
   // CBS_SUFFIX_FIX_V1 (2026-06-26 — PC Walter, per the Dude, found by Matt): CBS is INCONSISTENT
@@ -3018,6 +3019,21 @@ function _cbsNorm(s){
   var n = String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   n = n.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, '');   // drop trailing Jr/Sr/II/III/IV/V (with optional period)
   return n.replace(/[^a-z0-9]/g, '');                  // then strip spaces, punctuation, apostrophes
+}
+// CBS_LASTNAME_FALLBACK_V1 (2026-06-26 — PC Walter, per the Dude, found by Matt): the suffix fix
+// rescued Jr./III players, but NICKNAME mismatches still dash (Sleeper "Kenny Gainwell" vs CBS
+// "Kenneth Gainwell"; "Chig Okonkwo" vs "Chigoziem Okonkwo"; "Chris Brooks" vs "Christopher Brooks").
+// A normalizer can't bridge nicknames. So we add a THIRD match tier: last name + team + position.
+// SAFETY: only used when that key is UNIQUE in the CBS data — if two players share last+team+pos
+// (e.g. Caleb Williams & Dalyn Williams, both CHI QB), the fallback REFUSES and leaves a dash
+// rather than risk grabbing the wrong player's number. Collisions are marked dead in the index.
+function _cbsLastName(s){
+  // suffix-stripped, normalized LAST token only
+  var n = String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  n = n.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i,'').trim();
+  var parts = n.split(/\s+/);
+  var last = parts.length ? parts[parts.length-1] : '';
+  return last.replace(/[^a-z0-9]/g,'');
 }
 async function loadCbsData(){
   try {
@@ -3037,6 +3053,14 @@ async function loadCbsData(){
       const tm = (p.team || '').toUpperCase();
       if(tm) _cbsByNameTeam[nm + '|' + tm] = p.rostered_pct;
       _cbsByName[nm] = p.rostered_pct;   // last-wins fallback
+      // CBS_LASTNAME_FALLBACK_V1 — build the UNIQUE last|team|pos index. First sighting stores the
+      // value; a second sighting of the same key marks it dead (null) so a collision never matches.
+      const cbsPos = (Array.isArray(p.positions) && p.positions.length) ? String(p.positions[0]).toUpperCase() : '';
+      const lk = _cbsLastName(p.name) + '|' + tm + '|' + cbsPos;
+      if(tm && cbsPos && _cbsLastName(p.name)){
+        if(!(lk in _cbsByLastTeamPos)) _cbsByLastTeamPos[lk] = p.rostered_pct;  // first wins
+        else _cbsByLastTeamPos[lk] = null;                                       // collision -> dead
+      }
       n++;
     }
     _cbsDataLoaded = true;
@@ -3054,6 +3078,12 @@ function _cbsLookupNum(pid){
   if(!nm) return null;
   const tm = (p.team || '').toUpperCase();
   let v = (tm && _cbsByNameTeam[nm + '|' + tm] != null) ? _cbsByNameTeam[nm + '|' + tm] : _cbsByName[nm];
+  // CBS_LASTNAME_FALLBACK_V1 — exact name+team missed (nickname mismatch). Try the UNIQUE
+  // last|team|pos index. A null entry means a collision was recorded, so we leave it as a dash.
+  if((typeof v !== 'number') && tm && p.position){
+    const lk = _cbsLastName(p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()) + '|' + tm + '|' + String(p.position).toUpperCase();
+    if(lk in _cbsByLastTeamPos && typeof _cbsByLastTeamPos[lk] === 'number') v = _cbsByLastTeamPos[lk];
+  }
   return (typeof v === 'number') ? v : null;
 }
 function _cbsLookupFmt(pid){
