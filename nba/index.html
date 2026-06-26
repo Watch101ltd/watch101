@@ -668,6 +668,10 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <th class="left col-player" data-npsort="name">Player <span class="sort-arrow">↕</span></th>
           <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
+          <!-- OWNERSHIP_COLS_NBA_V1 (2026-06-26) — Y!Rank/Y!Owned/CBS Owned, matching the Watch List. Placeholders (no NBA data pipeline yet). -->
+          <th class="col-yrank col-zone-divider" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
+          <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
+          <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a col-zone-divider" data-npsort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="pts" title="Points per game">PTS <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="reb" title="Total rebounds per game">REB <span class="sort-arrow">↕</span></th>
@@ -704,7 +708,8 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 <div id="rankings-view" style="display:none">
   <div class="status-bar-wl" id="rankings-status">Rankings — positional rankings, separate from the Watch101 list.</div>
   <div class="rank-subnav" id="rank-subnav">
-    <button class="rank-subnav-btn active" data-rankpos="PG" onclick="switchRankPos('PG', this)">PG</button>
+    <button class="rank-subnav-btn active" data-rankpos="Overall" onclick="switchRankPos('Overall', this)">Overall</button>
+    <button class="rank-subnav-btn" data-rankpos="PG" onclick="switchRankPos('PG', this)">PG</button>
     <button class="rank-subnav-btn" data-rankpos="SG" onclick="switchRankPos('SG', this)">SG</button>
     <button class="rank-subnav-btn" data-rankpos="SF" onclick="switchRankPos('SF', this)">SF</button>
     <button class="rank-subnav-btn" data-rankpos="PF" onclick="switchRankPos('PF', this)">PF</button>
@@ -1044,8 +1049,8 @@ function showNbaPlayersView(){
 //    pool's default sort; the Dude's call, June 11). When the Yahoo layer lands, revisit the seed.
 //  - Stat columns are the 9-cat per-game set, same on every tab (NBA positions share stats).
 //  - NBA pids are STRINGS — onclick args are &quot;-escaped (the NBA_REMOVE_BUTTON_QUOTE_FIX lesson).
-var _rankPos = 'PG';  // active position sub-tab
-var _rankings = { PG:[], SG:[], SF:[], PF:[], C:[] };  // saved manual orders (arrays of pids)
+var _rankPos = 'Overall';  // active position sub-tab (OVERALL_RANK_V1: Overall default/leftmost)
+var _rankings = { Overall:[], PG:[], SG:[], SF:[], PF:[], C:[] };  // saved manual orders (arrays of pids) (OVERALL_RANK_V1)
 function showRankingsView(){
   _hideAllViews();
   var rv = document.getElementById('rankings-view'); if(rv) rv.style.display = '';
@@ -1062,7 +1067,7 @@ function switchRankPos(pos, btn){
 // NBA_RANKINGS_AUTOLOAD_V1 — each tab auto-loads every active (on-a-team) player ELIGIBLE at that
 // position, sorted by season PTS/G desc, capped at 60 per tab (the Dude's call, June 11). No
 // add-one-by-one: the field loads, Matt just ranks. Eligibility reads fantasy_positions (fan-out).
-var RANK_POS_CAP = { PG:60, SG:60, SF:60, PF:60, C:60 };
+var RANK_POS_CAP = { Overall:100, PG:60, SG:60, SF:60, PF:60, C:60 };  // OVERALL_RANK_V1: top-100 overall depth
 function _rankEligible(p, pos){
   var arr = (p && Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions
           : (p && p.position ? [p.position] : []);
@@ -1081,7 +1086,11 @@ function _rankingsIdsFor(pos){
     var p = _playerDB[id];
     if(!p || !p.position) continue;
     if(!p.team) continue;                 // active / on-a-team only
-    if(!_rankEligible(p, pos)) continue;  // MULTI-POS FAN-OUT — any eligible position qualifies
+    // OVERALL_RANK_V1 (2026-06-26 — PC Walter, per the Dude): the Overall tab gathers EVERY position
+    // into one board. Seeded by points-per-game (no Yahoo overall-rank pipeline for NBA yet — PPG is the
+    // stable seed the position tabs already use). Matt drags to build his own overall board; saves to its
+    // own NAS slot (rankings-nba-overall). When the Yahoo rank layer ships, swap the seed here.
+    if(pos !== 'Overall' && !_rankEligible(p, pos)) continue;  // position tabs: eligible-position filter; Overall: all
     ids.push(id);
   }
   ids.sort(function(a,b){
@@ -1175,8 +1184,19 @@ function _rankCol_age(){ return { key:'age', label:'Age', tdClass:'',
 function _rankCol_gp(){ return { key:'gp', label:'GP', tdClass:'col-stat-a col-zone-divider',
   num:function(pid){ var s=_statsRow(pid)||{}; return (s.gp==null)?-1:Number(s.gp); },
   render:function(pid){ var s=_statsRow(pid)||{}; return statCellOrDash(s.gp,0); } }; }
+// OWNERSHIP_COLS_NBA_V1 (2026-06-26 — PC Walter, per the Dude): Y!Rank / Y!Owned / CBS Owned columns
+// for the NBA Rankings tabs, matching the Watch List. NO data pipeline yet (no Yahoo API, no CBS scrape
+// for NBA) — these render em-dash placeholders for now, exactly like the Watch List does. When the data
+// layer ships, swap the render() bodies to read the real lookups (and wire num() for sorting).
+function _rankCol_yrank(){ return { key:'yrank', label:'Y!Rank', headClass:'col-zone-divider', tdClass:'placeholder col-zone-divider',
+  num:function(){ return Infinity; }, render:function(){ return '—'; } }; }
+function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', tdClass:'placeholder',
+  num:function(){ return -1; }, render:function(){ return '—'; } }; }
+function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Owned', tdClass:'placeholder',
+  num:function(){ return -1; }, render:function(){ return '—'; } }; }
 function _rankColsFor(pos){
-  return [ _rankCol_age(), _rankCol_gp(),
+  // OWNERSHIP_COLS_NBA_V1 — Y!Rank/Y!Owned/CBS Owned lead the stat block on every tab (placeholders for now).
+  return [ _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(), _rankCol_gp(),
     _rankStatCol('pts','PTS','pts'), _rankStatCol('reb','REB','reb'), _rankStatCol('ast','AST','ast'),
     _rankStatCol('stl','STL','stl'), _rankStatCol('blk','BLK','blk'), _rankStatCol('to','TOV','to'),
     _rankPctCol('fgpct','FG%','fgm','fga'), _rankPctCol('tppct','3P%','tpm','tpa'), _rankPctCol('ftpct','FT%','ftm','fta') ];
@@ -1305,12 +1325,12 @@ async function saveRankings(pos){
 function _rankLoadLocal(){
   try {
     var raw = localStorage.getItem(RANKINGS_STORAGE_KEY);
-    if(raw){ var obj = JSON.parse(raw); if(obj && typeof obj === 'object'){ ['PG','SG','SF','PF','C'].forEach(function(k){ if(Array.isArray(obj[k])) _rankings[k] = obj[k]; }); } }
+    if(raw){ var obj = JSON.parse(raw); if(obj && typeof obj === 'object'){ ['Overall','PG','SG','SF','PF','C'].forEach(function(k){ if(Array.isArray(obj[k])) _rankings[k] = obj[k]; }); } }
   } catch(e){ console.warn('[NBA_RANKINGS_LOAD_V1] localStorage load failed:', e); }
 }
 async function loadRankingsFromNAS(){
   _rankLoadLocal();
-  var positions = ['PG','SG','SF','PF','C'];
+  var positions = ['Overall','PG','SG','SF','PF','C'];
   for(var i=0;i<positions.length;i++){
     var pos = positions[i];
     var listId = 'rankings-nba-' + pos.toLowerCase();
@@ -1501,6 +1521,10 @@ function renderNbaPlayers(){
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
+      // OWNERSHIP_COLS_NBA_V1 — Y!Rank/Y!Owned/CBS Owned placeholders (no NBA data pipeline yet; matches the Watch List).
+      '<td class="placeholder col-zone-divider">—</td>' +
+      '<td class="placeholder">—</td>' +
+      '<td class="placeholder">—</td>' +
       '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
