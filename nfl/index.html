@@ -1456,6 +1456,43 @@ function _rankLoadLocal(){
     if(raw){ var obj = JSON.parse(raw); if(obj && typeof obj === 'object'){ ['Overall','QB','RB','WR','TE','DEF'].forEach(function(k){ if(Array.isArray(obj[k])) _rankings[k] = obj[k]; }); } }
   } catch(e){ console.warn('[RANKINGS_LOAD_V1] localStorage load failed:', e); }
 }
+// RANKINGS_SELFHEAL_V1 (2026-06-27 — PC Walter, per the Dude). BUG: QB/DEF/Overall tabs seeded their
+// order while Yahoo data was still loading in the background, so every yahoo_rank was null and the seed
+// fell to the alphabetical tie-breaker — then that ALPHABETICAL order got saved to the NAS as if it were
+// Matt's manual order. RB/WR/TE happened to seed after Yahoo loaded, so they're fine. This heal runs AFTER
+// Yahoo data is loaded: for each position, it asks "is the saved order just the alphabetical fallback?"
+// If YES (saved order == alphabetical order AND != the Yahoo-rank order), it was never really dragged, so
+// re-seed it by Yahoo rank and re-save. If the saved order matches NEITHER, Matt dragged it — leave it alone.
+function _rankSelfHealStaleOrders(){
+  if(!_playerDB || typeof _yahooLookupNum !== 'function') return;
+  var positions = ['Overall','QB','RB','WR','TE','DEF'];
+  positions.forEach(function(pos){
+    var saved = _rankings[pos];
+    if(!Array.isArray(saved) || saved.length < 3) return;   // nothing meaningful to heal
+    // Yahoo-rank order (what it SHOULD be) and alphabetical order (the stale-fallback fingerprint).
+    var byYahoo = saved.slice().sort(function(a,b){
+      var ra=_yahooLookupNum(a,'yahoo_rank'), rb=_yahooLookupNum(b,'yahoo_rank');
+      var am=(ra==null), bm=(rb==null);
+      if(am&&bm){ return String(_playerDB[a]&&_playerDB[a].full_name||'').localeCompare(String(_playerDB[b]&&_playerDB[b].full_name||'')); }
+      if(am) return 1; if(bm) return -1; return ra-rb;
+    });
+    var byAlpha = saved.slice().sort(function(a,b){
+      return String(_playerDB[a]&&_playerDB[a].full_name||'').localeCompare(String(_playerDB[b]&&_playerDB[b].full_name||''));
+    });
+    var eq = function(x,y){ if(x.length!==y.length) return false; for(var i=0;i<x.length;i++){ if(x[i]!==y[i]) return false; } return true; };
+    // How many of these players actually HAVE a Yahoo rank? If almost none, we can't judge — skip.
+    var withRank = saved.filter(function(p){ return _yahooLookupNum(p,'yahoo_rank')!=null; }).length;
+    if(withRank < Math.min(5, saved.length)) return;   // not enough Yahoo data to trust the heal
+    var looksAlpha = eq(saved, byAlpha);
+    var alreadyYahoo = eq(saved, byYahoo);
+    if(looksAlpha && !alreadyYahoo){
+      console.log('[rankings-selfheal] '+pos+' saved order was alphabetical (stale seed) — re-seeding by Yahoo rank.');
+      _rankings[pos] = byYahoo;
+      _rankSaveLocal();
+      if(typeof saveRankings === 'function') saveRankings(pos);   // persist the corrected order to the NAS
+    }
+  });
+}
 async function loadRankingsFromNAS(){
   _rankLoadLocal();
   var positions = ['Overall','QB','RB','WR','TE','DEF'];
@@ -1472,6 +1509,10 @@ async function loadRankingsFromNAS(){
       }
     } catch(e){ /* no saved ranking yet for this position — renderRankings will seed it */ }
   }
+  // RANKINGS_SELFHEAL_V1 — the saved orders just loaded from the NAS. If Yahoo data is ALREADY present
+  // (it won the race), heal any stale alphabetical order now. If Yahoo hasn't loaded yet, its own
+  // completion hook will run the heal once it lands. Either race order is covered.
+  if(_yahooDataLoaded && typeof _rankSelfHealStaleOrders === 'function') _rankSelfHealStaleOrders();
   if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankings();
 }
 
@@ -2966,6 +3007,13 @@ async function loadYahooData(){
   // before Yahoo finished loading in the background.
   if(typeof renderNflPlayers === 'function' && document.getElementById('nflplayers-view') && document.getElementById('nflplayers-view').style.display !== 'none'){
     renderNflPlayers();
+  }
+  // RANKINGS_SELFHEAL_V1 — Yahoo data just landed. Heal any ranking whose saved order is the stale
+  // alphabetical fallback (seeded before Yahoo loaded), then re-render the Rankings view if it's open
+  // so the user sees the corrected Yahoo order without a manual reload.
+  if(typeof _rankSelfHealStaleOrders === 'function') _rankSelfHealStaleOrders();
+  if(typeof renderRankings === 'function' && document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none'){
+    renderRankings();
   }
 }
 
