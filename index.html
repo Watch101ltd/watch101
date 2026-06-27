@@ -17826,13 +17826,19 @@ function renderPlayerStatBar(p){
     }).join('');
   }
 
-  // Keep the overlay dropdown visually in sync with global dateRange
+  // DEEPCUT_DROPDOWN_ISOLATION_V1 (2026-06-27 — PC Walter, per the Dude). THE REAL FIX for the
+  // "Deep Cut dropdown shows the main page's range instead of Season" bug. This block used to sync
+  // the overlay dropdown to the GLOBAL main-page dateRange on every stat-bar render — which ran
+  // AFTER openPlayerPage reset it to 'season', so it stamped it right back to e.g. "Last 14 Days".
+  // Per DEEPCUT_DATERANGE_ISOLATION_V1 (6/25) the overlay has its OWN range (window._ppoDateRange,
+  // resets to 'season' on open). The dropdown must mirror the OVERLAY's range, not the main page's.
   var dd = document.getElementById('ppo-daterange-select');
-  if(dd && typeof dateRange !== 'undefined' && dd.value !== dateRange){
-    dd.value = dateRange;
+  var _ppoRange = (typeof window !== 'undefined' && window._ppoDateRange) ? window._ppoDateRange : 'season';
+  if(dd && dd.value !== _ppoRange){
+    dd.value = _ppoRange;
   }
   if(dd){
-    dd.classList.toggle('daterange-active', typeof dateRange !== 'undefined' && dateRange !== 'season');
+    dd.classList.toggle('daterange-active', _ppoRange !== 'season');
   }
 
   // If we're in a loading state, poll until the cache fills so the bar refreshes without user action
