@@ -1160,9 +1160,12 @@ function _rankingsIdsFor(pos){
     ids.push(id);
   }
   // Sort by Yahoo rank ascending; null/missing ranks sink to the bottom (then by name for stability).
+  // DEF_SEED_FIX_V1 (2026-06-27): DSTs have NO overall yahoo_rank (always null) — they rank by
+  // yahoo_def_rank (Yahoo's 1-32 among defenses). So the DEF tab seeds by that field, not yahoo_rank.
+  var seedField = (pos === 'DEF') ? 'yahoo_def_rank' : 'yahoo_rank';
   ids.sort(function(a,b){
-    var ra = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(a,'yahoo_rank') : null;
-    var rb = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(b,'yahoo_rank') : null;
+    var ra = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(a,seedField) : null;
+    var rb = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(b,seedField) : null;
     var am = (ra==null), bm = (rb==null);
     if(am && bm){
       var na=(_playerDB[a].full_name||''), nb=(_playerDB[b].full_name||'');
@@ -1463,35 +1466,42 @@ function _rankLoadLocal(){
 // Yahoo data is loaded: for each position, it asks "is the saved order just the alphabetical fallback?"
 // If YES (saved order == alphabetical order AND != the Yahoo-rank order), it was never really dragged, so
 // re-seed it by Yahoo rank and re-save. If the saved order matches NEITHER, Matt dragged it — leave it alone.
+// RESEED_ALL approach (2026-06-27 — per the Dude: NONE of the football ranking tabs have been hand-dragged
+// yet, so the safe + bulletproof fix is to FORCE every tab to correct Yahoo-rank order once, then re-save.
+// This drops the fragile "is it alphabetical?" detection that left QB (partial-alpha) and DEF stuck. Uses
+// the RIGHT rank field per position: DEF ranks by 'yahoo_def_rank' (DSTs have no overall yahoo_rank — it's
+// always null), everyone else by 'yahoo_rank'. A one-time correction gate (localStorage flag) makes it run
+// ONCE so that any FUTURE hand-drag Matt does is never wiped on a later load.
+var _RANK_RESEED_FLAG = 'watch101_nfl_rankings_reseeded_v1';
 function _rankSelfHealStaleOrders(){
-  if(!_playerDB || typeof _yahooLookupNum !== 'function') return;
+  if(!_playerDB || typeof _yahooLookupNum !== 'function' || !_yahooDataLoaded) return;
+  try { if(localStorage.getItem(_RANK_RESEED_FLAG) === '1') return; } catch(e){}   // already corrected once
   var positions = ['Overall','QB','RB','WR','TE','DEF'];
+  var rankField = function(pos){ return (pos === 'DEF') ? 'yahoo_def_rank' : 'yahoo_rank'; };
+  var anyHealed = false;
   positions.forEach(function(pos){
     var saved = _rankings[pos];
-    if(!Array.isArray(saved) || saved.length < 3) return;   // nothing meaningful to heal
-    // Yahoo-rank order (what it SHOULD be) and alphabetical order (the stale-fallback fingerprint).
+    if(!Array.isArray(saved) || saved.length < 3) return;
+    var fld = rankField(pos);
+    // Only re-seed if at least some players carry the relevant rank — otherwise Yahoo data for this
+    // group isn't really here yet and we'd just re-alphabetize. (DEF uses def_rank, so it's covered.)
+    var withRank = saved.filter(function(p){ return _yahooLookupNum(p,fld)!=null; }).length;
+    if(withRank < Math.min(5, saved.length)) return;
     var byYahoo = saved.slice().sort(function(a,b){
-      var ra=_yahooLookupNum(a,'yahoo_rank'), rb=_yahooLookupNum(b,'yahoo_rank');
+      var ra=_yahooLookupNum(a,fld), rb=_yahooLookupNum(b,fld);
       var am=(ra==null), bm=(rb==null);
       if(am&&bm){ return String(_playerDB[a]&&_playerDB[a].full_name||'').localeCompare(String(_playerDB[b]&&_playerDB[b].full_name||'')); }
       if(am) return 1; if(bm) return -1; return ra-rb;
     });
-    var byAlpha = saved.slice().sort(function(a,b){
-      return String(_playerDB[a]&&_playerDB[a].full_name||'').localeCompare(String(_playerDB[b]&&_playerDB[b].full_name||''));
-    });
-    var eq = function(x,y){ if(x.length!==y.length) return false; for(var i=0;i<x.length;i++){ if(x[i]!==y[i]) return false; } return true; };
-    // How many of these players actually HAVE a Yahoo rank? If almost none, we can't judge — skip.
-    var withRank = saved.filter(function(p){ return _yahooLookupNum(p,'yahoo_rank')!=null; }).length;
-    if(withRank < Math.min(5, saved.length)) return;   // not enough Yahoo data to trust the heal
-    var looksAlpha = eq(saved, byAlpha);
-    var alreadyYahoo = eq(saved, byYahoo);
-    if(looksAlpha && !alreadyYahoo){
-      console.log('[rankings-selfheal] '+pos+' saved order was alphabetical (stale seed) — re-seeding by Yahoo rank.');
-      _rankings[pos] = byYahoo;
-      _rankSaveLocal();
-      if(typeof saveRankings === 'function') saveRankings(pos);   // persist the corrected order to the NAS
-    }
+    _rankings[pos] = byYahoo;
+    if(typeof saveRankings === 'function') saveRankings(pos);   // persist corrected order to the NAS
+    anyHealed = true;
+    console.log('[rankings-reseed] '+pos+' re-seeded by '+fld+'.');
   });
+  if(anyHealed){
+    _rankSaveLocal();
+    try { localStorage.setItem(_RANK_RESEED_FLAG, '1'); } catch(e){}   // one-time gate — never wipe a future hand-drag
+  }
 }
 async function loadRankingsFromNAS(){
   _rankLoadLocal();
