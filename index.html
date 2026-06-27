@@ -13662,8 +13662,15 @@ function setPoolWrapTop(){
 }
 
 function syncDateRangeDropdowns(val){
-  // Keep all three dropdowns in sync visually
-  ['daterange-select','instant-daterange','pool-instant-daterange','tank-instant-daterange','pros-instant-daterange','wlf-daterange','poolf-daterange','tankf-daterange','ldrf-daterange','prosf-daterange','ppo-daterange-select'].forEach(id => {
+  // Keep the MAIN-PAGE dropdowns in sync visually.
+  // DEEPCUT_DROPDOWN_ISOLATION_V1 (2026-06-27 — PC Walter, per the Dude): 'ppo-daterange-select'
+  // (the Deep Cut overlay's "Stats For" dropdown) was REMOVED from this list. It is isolated per
+  // DEEPCUT_DATERANGE_ISOLATION_V1 (6/25): the overlay's stats reset to Season on every open, but
+  // this sync was still reaching into the overlay's dropdown and stamping it with the main page's
+  // last pick (e.g. "Last 7 Days") behind the scenes — so on open the LABEL showed the stale range
+  // even though the stats correctly showed Season. The overlay dropdown is now owned SOLELY by
+  // openPlayerPage (resets it to 'season' on open) and onOverlayDateRangeChange (user picks inside).
+  ['daterange-select','instant-daterange','pool-instant-daterange','tank-instant-daterange','pros-instant-daterange','wlf-daterange','poolf-daterange','tankf-daterange','ldrf-daterange','prosf-daterange'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.value = val;
     if(el) el.classList.toggle('daterange-active', val !== 'season');
