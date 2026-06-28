@@ -831,6 +831,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <button class="rank-subnav-btn" data-rankpos="WR" onclick="switchRankPos('WR', this)">WR</button>
     <button class="rank-subnav-btn" data-rankpos="TE" onclick="switchRankPos('TE', this)">TE</button>
     <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
+    <button class="rank-subnav-btn" id="seed-yahoo-btn" onclick="seedByYahooRank()" title="Re-sort this tab by Yahoo rank and save it" style="margin-left:auto;background:var(--turf,#16a34a);color:#fff;border-color:var(--turf,#16a34a)">↕ Seed by Yahoo Rank</button>
   </div>
   <div class="table-wrap" id="nflrankings-wrap">
     <table class="watch-list" id="rankings-table">
@@ -1120,6 +1121,25 @@ function switchRankPos(pos, btn){
   document.querySelectorAll('.rank-subnav-btn').forEach(function(x){ x.classList.remove('active'); });
   if(btn) btn.classList.add('active');
   renderRankings();
+}
+
+// NFL_YAHOO_SEED_BUTTON_V1 (2026-06-28) — manual "Seed by Yahoo Rank" (clone of the NBA
+// fix). The auto-seed + self-heal raced the Yahoo data load and kept leaving Overall on
+// the alphabetical fallback. A button removes the race: click it when the page is loaded;
+// it re-sorts the ACTIVE tab to Yahoo rank order (_rankingsIdsFor uses the right field per
+// position incl. DEF's yahoo_def_rank) and SAVES. Drags still save normally.
+function seedByYahooRank(){
+  if(!_playerDB){ return; }
+  if(!_yahooDataLoaded){
+    if(typeof alert==='function') alert('Yahoo rank data is still loading — give it a few seconds and click again.');
+    return;
+  }
+  _rankings[_rankPos] = _rankingsIdsFor(_rankPos).slice();
+  _rankSortField = null;
+  renderRankings();
+  if(typeof saveRankings==='function') saveRankings(_rankPos);
+  var st = document.getElementById('rankings-status');
+  if(st) st.textContent = _rankPos + ' rankings re-seeded by Yahoo rank and saved.';
 }
 // RANKINGS_AUTOLOAD_V1 (June 9, 2026 — PC Walter, per the Dude). Each position tab AUTO-LOADS every
 // fantasy-relevant player at that position (no add-one-by-one — Matt ranks the whole field). Sorted by
@@ -1425,7 +1445,7 @@ function rankDragEnd(e){
 }
 
 // RANKINGS_SAVE_V1 — save one position's order. localStorage instant + POST to rankings-nfl-<pos>.
-var RANKINGS_STORAGE_KEY = 'watch101_nfl_rankings_v0';
+var RANKINGS_STORAGE_KEY = 'watch101_nfl_rankings_v1';  // v1 (NFL_YAHOO_SEED_BUTTON_V1): drop stuck alphabetical Overall order
 function _rankSaveLocal(){
   try { localStorage.setItem(RANKINGS_STORAGE_KEY, JSON.stringify(_rankings)); }
   catch(e){ console.warn('[RANKINGS_SAVE_V1] localStorage save failed:', e); }
@@ -1522,7 +1542,8 @@ async function loadRankingsFromNAS(){
   // RANKINGS_SELFHEAL_V1 — the saved orders just loaded from the NAS. If Yahoo data is ALREADY present
   // (it won the race), heal any stale alphabetical order now. If Yahoo hasn't loaded yet, its own
   // completion hook will run the heal once it lands. Either race order is covered.
-  if(_yahooDataLoaded && typeof _rankSelfHealStaleOrders === 'function') _rankSelfHealStaleOrders();
+  // NFL_YAHOO_SEED_BUTTON_V1: self-heal retired in favor of the manual button (it was unreliable).
+  // if(_yahooDataLoaded && typeof _rankSelfHealStaleOrders === 'function') _rankSelfHealStaleOrders();
   if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankings();
 }
 
