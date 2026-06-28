@@ -576,7 +576,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <th class="left col-note">Note</th>
         <th class="col-yrank col-zone-divider" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
-        <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
+        <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Rank <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a col-zone-divider" data-sort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="pts" title="Points per game">PTS <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="reb" title="Total rebounds per game">REB <span class="sort-arrow">↕</span></th>
@@ -678,7 +678,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <!-- OWNERSHIP_COLS_NBA_V1 (2026-06-26) — Y!Rank/Y!Owned/CBS Owned, matching the Watch List. Placeholders (no NBA data pipeline yet). -->
           <th class="col-yrank col-zone-divider" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
-          <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
+          <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Rank <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a col-zone-divider" data-npsort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="pts" title="Points per game">PTS <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="reb" title="Total rebounds per game">REB <span class="sort-arrow">↕</span></th>
@@ -877,6 +877,79 @@ function _yahooFor(pid){
   return key ? (_yahooByName[key] || null) : null;
 }
 // ── /NBA_YAHOO_OWNERSHIP_V1 ──────────────────────────────────────────────────
+
+// ── NBA_CBS_OWNERSHIP_V1 (2026-06-28) ────────────────────────────────────────
+// Loads CBS rostered % from the weekly scrape JSON (Matt's dimemag CBS NBA league,
+// scraped by Fantasy Basketball/Brandt Assistant/scripts/cbs_scraper/main.py and
+// pushed to the repo's cbs-nba/ folder). Join by normalized name+team, with the
+// two name-match fixes proven on football: trailing-suffix strip + a UNIQUE
+// last-name|team|pos fallback for nickname mismatches. Fills the CBS Rank column
+// (em-dash until the data exists). NBA season is over now → expect stale/low
+// numbers until fall drafts; the pipe is what we're proving.
+let _cbsByNameTeam = {};     // "normname|TEAM" -> cbs_rank
+let _cbsByName = {};         // "normname" -> cbs_rank (last-wins fallback)
+let _cbsByLastTeamPos = {};  // "lastname|TEAM|POS" -> pct (null if collision)
+let _cbsDataLoaded = false;
+function _cbsNorm(s){
+  // suffix strip BEFORE punctuation strip (so "michaeljr" never blocks "michael")
+  var n = String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  n = n.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i,'');
+  return n.replace(/[^a-z0-9]/g,'');
+}
+function _cbsLastName(s){
+  var n = String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  n = n.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i,'').trim();
+  var parts = n.split(/\s+/);
+  var last = parts.length ? parts[parts.length-1] : '';
+  return last.replace(/[^a-z0-9]/g,'');
+}
+async function loadCbsNBA(){
+  try {
+    // Page serves at /watch101/nba/, so a single ../ reaches /watch101/cbs-nba/.
+    const res = await fetch('../cbs-nba/cbs_rostered_latest.json', { cache:'no-cache' });
+    if(!res.ok){ console.warn('[NBA_CBS] no CBS data yet (HTTP ' + res.status + ')'); return; }
+    const data = await res.json();
+    const players = (data && data.players) || [];
+    _cbsByNameTeam = {}; _cbsByName = {}; _cbsByLastTeamPos = {};
+    let n = 0;
+    for(const p of players){
+      if(p.cbs_rank == null) continue;
+      const nm = _cbsNorm(p.name);
+      if(!nm) continue;
+      const tm = (p.team || '').toUpperCase();
+      if(tm) _cbsByNameTeam[nm + '|' + tm] = p.cbs_rank;
+      _cbsByName[nm] = p.cbs_rank;
+      const cbsPos = (Array.isArray(p.positions) && p.positions.length) ? String(p.positions[0]).toUpperCase() : '';
+      const lk = _cbsLastName(p.name) + '|' + tm + '|' + cbsPos;
+      if(tm && cbsPos && _cbsLastName(p.name)){
+        if(!(lk in _cbsByLastTeamPos)) _cbsByLastTeamPos[lk] = p.cbs_rank;  // first wins
+        else _cbsByLastTeamPos[lk] = null;                                       // collision -> dead
+      }
+      n++;
+    }
+    _cbsDataLoaded = true;
+    console.log('[NBA_CBS] loaded ' + n + ' CBS rows (as of ' + (data.as_of || '?') + ')');
+    if(typeof renderWatchList==='function') renderWatchList();
+    if(typeof renderNbaPlayers==='function') renderNbaPlayers();
+    if(typeof renderRankings==='function') renderRankings();
+  } catch(e){ console.warn('[NBA_CBS] load failed (column stays em-dash):', e.message); }
+}
+// Look up a Sleeper player's CBS rostered %. name+team, then unique last|team|pos.
+function _cbsForNum(pid){
+  const p = _playerDB && _playerDB[pid];
+  if(!p) return null;
+  const full = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
+  const nm = _cbsNorm(full);
+  if(!nm) return null;
+  const tm = (p.team || '').toUpperCase();
+  let v = (tm && _cbsByNameTeam[nm + '|' + tm] != null) ? _cbsByNameTeam[nm + '|' + tm] : _cbsByName[nm];
+  if((typeof v !== 'number') && tm && p.position){
+    const lk = _cbsLastName(full) + '|' + tm + '|' + String(p.position).toUpperCase();
+    if(lk in _cbsByLastTeamPos && typeof _cbsByLastTeamPos[lk] === 'number') v = _cbsByLastTeamPos[lk];
+  }
+  return (typeof v === 'number') ? v : null;
+}
+// ── /NBA_CBS_OWNERSHIP_V1 ────────────────────────────────────────────────────
 
 // DYNAMIC_STATS_YEAR — derive the right season from Sleeper's NBA state. During
 // regular/postseason show this year's stats-so-far; during off/preseason show
@@ -1262,8 +1335,9 @@ function _rankCol_yrank(){ return { key:'yrank', label:'Y!Rank', headClass:'col-
 function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', tdClass:'',
   num:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):-1; },
   render:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Math.round(y.roster_pct)+'%':'—'; } }; }
-function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Owned', tdClass:'placeholder',
-  num:function(){ return -1; }, render:function(){ return '—'; } }; }
+function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Rank', tdClass:'',
+  num:function(pid){ var v=_cbsForNum(pid); return v==null?Infinity:v; },   // rank: lower=better, missing sinks
+  render:function(pid){ var v=_cbsForNum(pid); return v==null?'—':v; } }; }
 function _rankColsFor(pos){
   // OWNERSHIP_COLS_NBA_V1 — Y!Rank/Y!Owned/CBS Owned lead the stat block on every tab (placeholders for now).
   return [ _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(), _rankCol_gp(),
@@ -1597,10 +1671,10 @@ function renderNbaPlayers(){
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
-      // OWNERSHIP_COLS_NBA_V1 + NBA_YAHOO_OWNERSHIP_V1 — Y!Rank/Y!Owned now live; CBS still placeholder.
+      // OWNERSHIP_COLS_NBA_V1 + NBA_YAHOO_OWNERSHIP_V1 + NBA_CBS_OWNERSHIP_V1 — all three now live.
       '<td class="col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +
       '<td class="' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +
-      '<td class="placeholder">—</td>' +
+      '<td class="' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid):'—') + '</td>' +
       '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
@@ -1732,6 +1806,7 @@ async function bootstrap(){
     renderWatchList();
     loadRankingsFromNAS();  // NBA_RANKINGS_LOAD_V1 — fire-and-forget; hydrates Matt's saved orders in the background
     syncYahooNBA();  // NBA_YAHOO_OWNERSHIP_V1 — fire-and-forget; fills Y!Rank/Y!Owned when it returns
+    loadCbsNBA();    // NBA_CBS_OWNERSHIP_V1 — fire-and-forget; fills CBS Owned when it returns
   } catch(e){
     console.error('[bootstrap]', e);
     statusEl.textContent = '⚠ Could not load data: ' + e.message;
@@ -1957,7 +2032,7 @@ function renderWatchList(){
       '<td class="left placeholder">—</td>' + // Note (planned)
       '<td class="col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +   // Y!Owned (NBA_YAHOO_OWNERSHIP_V1)
-      '<td class="placeholder">—</td>' +   // CBS Owned (planned — CBS layer)
+      '<td class="' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid):'—') + '</td>' +   // CBS Rank (NBA_CBS_OWNERSHIP_V1 / CBS_RANK_V1)
       '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
@@ -2325,9 +2400,9 @@ function sortValueFor(field, p, s, pid){
     // Planned columns — no data yet, always sort to bottom.
     case 'yrank':  { const y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?Number(y.yahoo_rank):null; }   // NBA_YAHOO_OWNERSHIP_V1
     case 'yowned': { const y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):null; }   // NBA_YAHOO_OWNERSHIP_V1
+    case 'cbsowned': { var cv=_cbsForNum(pid); return (cv!=null)?Number(cv):null; }   // NBA_CBS_OWNERSHIP_V1
     case 'delta':
     case 'type':
-    case 'cbsowned':
       return null;
     default: return null;
   }
