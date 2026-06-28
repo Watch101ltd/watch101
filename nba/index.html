@@ -721,6 +721,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <button class="rank-subnav-btn" data-rankpos="SF" onclick="switchRankPos('SF', this)">SF</button>
     <button class="rank-subnav-btn" data-rankpos="PF" onclick="switchRankPos('PF', this)">PF</button>
     <button class="rank-subnav-btn" data-rankpos="C" onclick="switchRankPos('C', this)">C</button>
+    <button class="rank-subnav-btn" id="seed-yahoo-btn" onclick="seedByYahooRank()" title="Re-sort this tab by Yahoo overall rank and save it" style="margin-left:auto;background:var(--court,#ea580c);color:#fff;border-color:var(--court,#ea580c)">↕ Seed by Yahoo Rank</button>
   </div>
   <div class="table-wrap" id="nbarankings-wrap">
     <table class="watch-list" id="rankings-table">
@@ -841,6 +842,7 @@ const SERVER_URL = 'https://nba-nas.fantasywatch101.com';
 // below (or do the getNBAGameKey auto-detect upgrade — see memory).
 const NBA_YAHOO_LEAGUE_KEY = '466.l.17116';
 let _yahooByYid = {};   // String(yahoo_player_id) -> payload row
+let _yahooLoaded = false;  // NBA_YAHOO_SEED_V1 — true once Yahoo ranks are in (gate the seed)
 let _yahooByName = {};  // normalized name -> payload row
 function _nbaYahooNorm(str){
   return (str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -856,6 +858,7 @@ async function syncYahooNBA(){
       if(yp.yahoo_player_id != null) _yahooByYid[String(yp.yahoo_player_id)] = yp;
       if(yp.name) _yahooByName[_nbaYahooNorm(yp.name)] = yp;
     });
+    _yahooLoaded = true;
     console.log('[NBA_YAHOO] loaded ' + Object.keys(_yahooByYid).length + ' Yahoo rows');
     if(typeof renderWatchList==='function') renderWatchList();
     if(typeof renderNbaPlayers==='function') renderNbaPlayers();
@@ -1192,6 +1195,25 @@ function switchRankPos(pos, btn){
   if(btn) btn.classList.add('active');
   renderRankings();
 }
+
+// NBA_YAHOO_SEED_BUTTON_V1 (2026-06-28) — manual "Seed by Yahoo Rank". The auto-seed
+// raced the Yahoo data load (seeded before ranks arrived → PPG/alpha order, then a drag
+// saved that). A button removes the race: the Dude clicks it when the page is loaded, it
+// re-sorts the ACTIVE tab to Yahoo rank order (via _rankingsIdsFor, which sorts by Yahoo
+// rank) and SAVES. Drags still save their own order normally. Works on every tab.
+function seedByYahooRank(){
+  if(!_playerDB){ return; }
+  if(!_yahooLoaded){
+    if(typeof alert==='function') alert('Yahoo rank data is still loading — give it a few seconds and click again.');
+    return;
+  }
+  _rankings[_rankPos] = _rankingsIdsFor(_rankPos).slice();  // Yahoo-rank order for this tab
+  _rankSortField = null;                                    // clear any column sort
+  renderRankings();
+  if(typeof saveRankings==='function') saveRankings(_rankPos);   // persist to NAS + localStorage
+  var st = document.getElementById('rankings-status');
+  if(st) st.textContent = _rankPos + ' rankings re-seeded by Yahoo rank and saved.';
+}
 // NBA_RANKINGS_AUTOLOAD_V1 — each tab auto-loads every active (on-a-team) player ELIGIBLE at that
 // position, sorted by season PTS/G desc, capped at 60 per tab (the Dude's call, June 11). No
 // add-one-by-one: the field loads, Matt just ranks. Eligibility reads fantasy_positions (fan-out).
@@ -1255,8 +1277,18 @@ function renderRankings(){
   // auto-load; after that drag reorders the array (Matt's order wins). Newly-eligible players get
   // appended in seed order; players no longer eligible get dropped (never silently loses anyone).
   var seed = _rankingsIdsFor(_rankPos);
+  // NBA_YAHOO_SEED_V1 timing guard: the seed sorts by Yahoo rank. If Yahoo data
+  // hasn't loaded yet, seeding now would fall back to PPG order AND (worse) get
+  // saved — sticking the tab on PPG forever. So if there's no saved order yet AND
+  // Yahoo isn't loaded, render a PROVISIONAL order this pass WITHOUT committing it
+  // to _rankings (so syncYahooNBA's later renderRankings() re-seeds with real ranks).
+  var _provisional = false;
   if(!_rankings[_rankPos] || _rankings[_rankPos].length === 0){
-    _rankings[_rankPos] = seed.slice();
+    if(!_yahooLoaded){
+      _provisional = true;   // show seed but do NOT persist — wait for Yahoo
+    } else {
+      _rankings[_rankPos] = seed.slice();
+    }
   } else {
     var have = {};
     _rankings[_rankPos].forEach(function(pid){ have[pid]=1; });
@@ -1266,7 +1298,7 @@ function renderRankings(){
   }
   // Manual saved order lives in _rankings[pos]. If a stat-sort is active, render a SORTED VIEW copy
   // (never mutates the saved order). Dragging clears the sort and re-snaps to the manual order.
-  var manualIds = _rankings[_rankPos];
+  var manualIds = _provisional ? seed : _rankings[_rankPos];
   var ids = _rankSortField ? _rankSortedView(manualIds) : manualIds;
   var sortNote = _rankSortField ? ' · sorted by ' + _rankSortField.toUpperCase() + ' (drag a player to return to your order)' : '';
   if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players. Drag the ☰ handle to re-rank. Separate from the Watch101 list.' + sortNote;
@@ -1444,7 +1476,7 @@ function rankDragEnd(e){
 // (the Overall tab had a stale pre-Yahoo auto-seed saved that overrode the new
 // Yahoo-rank seed) are dropped once. Fresh Yahoo seed on next load for everyone.
 // Hand-dragged orders after this point save under v1 and persist normally.
-var RANKINGS_STORAGE_KEY = 'watch101_nba_rankings_v1';
+var RANKINGS_STORAGE_KEY = 'watch101_nba_rankings_v2';  // v2 (NBA_YAHOO_SEED_V1 timing fix): drops the stale PPG-ordered Overall save
 function _rankSaveLocal(){
   try { localStorage.setItem(RANKINGS_STORAGE_KEY, JSON.stringify(_rankings)); }
   catch(e){ console.warn('[NBA_RANKINGS_SAVE_V1] localStorage save failed:', e); }
