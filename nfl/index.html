@@ -388,6 +388,7 @@ table.watch-list thead th.col-player,table.watch-list tbody td:nth-child(4){widt
 table.watch-list tbody .player-name{font-size:12px;font-weight:800}
 table.watch-list thead th.col-team{width:38px;text-align:right}
 table.watch-list thead th.col-age{width:32px;text-align:right}
+table.watch-list thead th.col-exp{width:32px;text-align:right}
 table.watch-list thead th.col-delta{width:36px;text-align:right}
 table.watch-list thead th.col-type{width:42px;text-align:right}
 table.watch-list thead th.col-priority{width:46px;text-align:right}
@@ -699,6 +700,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <th class="left col-player" data-sort="name">Player <span class="sort-arrow">↕</span></th>
         <th class="col-team" data-sort="team">Team <span class="sort-arrow">↕</span></th>
         <th class="col-age" data-sort="age">Age <span class="sort-arrow">↕</span></th>
+        <th class="col-exp" data-sort="exp">Exp <span class="sort-arrow">↕</span></th>
         <th class="col-delta" data-sort="delta">+/– <span class="sort-arrow">↕</span></th>
         <th class="col-type" data-sort="type">Type <span class="sort-arrow">↕</span></th>
         <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
@@ -2030,9 +2032,10 @@ function renderWatchList(){
       '<td class="left"><span class="player-name ftl-clickable" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
-      '<td class="placeholder">—</td>' +
-      '<td class="placeholder">—</td>' +
-      '<td class="placeholder">—</td>' +
+      // EXP_FILL_V1 (2026-06-28) — fill the EXP column from Sleeper years_exp (0 = Rookie -> "R").
+      '<td' + (p.years_exp != null && p.years_exp !== '' ? '' : ' class="placeholder"') + '>' + (p.years_exp != null && p.years_exp !== '' ? (Number(p.years_exp) === 0 ? 'R' : p.years_exp) : '—') + '</td>' +
+      '<td class="placeholder">—</td>' +   // +/- (planned)
+      '<td class="placeholder">—</td>' +   // Type (planned)
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       '<td class="left placeholder">—</td>' +
       // YAHOO_DATA_V1: y!rank, y!owned cells. CBS_OWNED_V1: cbs owned cell (joins by name+team).
@@ -2435,6 +2438,7 @@ function sortValueFor(field, p, s, pid){
       const idx = _wlIndexOf(pid || '');
       return (idx >= 0) ? _wlPriority(_watchList[idx]) : 0;
     }
+    case 'exp':    { const e = (_playerDB[pid]||{}).years_exp; return (e != null && e !== '') ? Number(e) : null; }  // EXP_FILL_V1
     case 'delta':
     case 'type':
       return null;
