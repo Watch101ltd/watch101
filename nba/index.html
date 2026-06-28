@@ -2106,11 +2106,9 @@ function statCellOrDash(val, decimals){
   const n = Number(val);
   if(!isFinite(n)) return '<span class="stat-zero">—</span>';
   let formatted = (decimals != null) ? n.toFixed(decimals) : Math.round(n).toLocaleString();
-  // STRIP_TRAILING_ZERO_V1 (2026-06-06 — PC Walter, per the Dude). Counting-stat
-  // season totals (PTS/REB/AST/STL/BLK/TO) are whole numbers but were formatted with
-  // toFixed(1), so they showed a useless ".0" (1021.0). Drop a trailing ".0" only —
-  // a real fraction like 12.5 is left untouched. Matches baseball's no-junk-zero style.
-  if(decimals != null) formatted = formatted.replace(/\.0+$/, '');
+  // POINTZERO_V1 (2026-06-28, per Matt): keep the trailing .0 on per-game stats so columns line up
+  // uniform (5 -> 5.0, 26 -> 26.0). GP (decimals=0) uses Math.round above so it never gets a .0. Blocks/
+  // steals are sub-1.0 (0.7, 0.4) so they're unaffected. The old STRIP_TRAILING_ZERO_V1 line is removed.
   return '<span class="stat-cell">' + formatted + '</span>';
 }
 function pctCellOrDash(pct){
@@ -2328,7 +2326,7 @@ function _ftlStatCell(label, val){
          '</div><div class="ftl-statval' + (na ? ' na' : '') + '">' + shown + '</div></div>';
 }
 // Format a per-game number to 1 decimal, strip a trailing .0, em-dash when null.
-function _ftlPG(total, gp){ const v = perGame(total, gp); return (v == null) ? null : v.toFixed(1).replace(/\.0$/, ''); }
+function _ftlPG(total, gp){ const v = perGame(total, gp); return (v == null) ? null : v.toFixed(1); } // POINTZERO_V1 (2026-06-28): keep trailing .0 to match the table
 function _ftlPct(makes, att){ const v = pctOrNull(makes, att); return (v == null) ? null : v.toFixed(1); }
 
 function openFromTheLogo(pid){
