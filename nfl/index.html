@@ -388,7 +388,6 @@ table.watch-list thead th.col-player,table.watch-list tbody td:nth-child(4){widt
 table.watch-list tbody .player-name{font-size:12px;font-weight:800}
 table.watch-list thead th.col-team{width:38px;text-align:right}
 table.watch-list thead th.col-age{width:32px;text-align:right}
-table.watch-list thead th.col-exp{width:32px;text-align:right}
 table.watch-list thead th.col-delta{width:36px;text-align:right}
 table.watch-list thead th.col-type{width:42px;text-align:right}
 table.watch-list thead th.col-priority{width:46px;text-align:right}
@@ -700,7 +699,6 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <th class="left col-player" data-sort="name">Player <span class="sort-arrow">↕</span></th>
         <th class="col-team" data-sort="team">Team <span class="sort-arrow">↕</span></th>
         <th class="col-age" data-sort="age">Age <span class="sort-arrow">↕</span></th>
-        <th class="col-exp" data-sort="exp">Exp <span class="sort-arrow">↕</span></th>
         <th class="col-delta" data-sort="delta">+/– <span class="sort-arrow">↕</span></th>
         <th class="col-type" data-sort="type">Type <span class="sort-arrow">↕</span></th>
         <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
@@ -831,7 +829,6 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <button class="rank-subnav-btn" data-rankpos="WR" onclick="switchRankPos('WR', this)">WR</button>
     <button class="rank-subnav-btn" data-rankpos="TE" onclick="switchRankPos('TE', this)">TE</button>
     <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
-    <button class="rank-subnav-btn" id="seed-yahoo-btn" onclick="seedByYahooRank()" title="Re-sort this tab by Yahoo rank and save it" style="margin-left:auto;background:var(--turf,#16a34a);color:#fff;border-color:var(--turf,#16a34a)">↕ Seed by Yahoo Rank</button>
   </div>
   <div class="table-wrap" id="nflrankings-wrap">
     <table class="watch-list" id="rankings-table">
@@ -1123,24 +1120,6 @@ function switchRankPos(pos, btn){
   renderRankings();
 }
 
-// NFL_YAHOO_SEED_BUTTON_V1 (2026-06-28) — manual "Seed by Yahoo Rank" (clone of the NBA
-// fix). The auto-seed + self-heal raced the Yahoo data load and kept leaving Overall on
-// the alphabetical fallback. A button removes the race: click it when the page is loaded;
-// it re-sorts the ACTIVE tab to Yahoo rank order (_rankingsIdsFor uses the right field per
-// position incl. DEF's yahoo_def_rank) and SAVES. Drags still save normally.
-function seedByYahooRank(){
-  if(!_playerDB){ return; }
-  if(!_yahooDataLoaded){
-    if(typeof alert==='function') alert('Yahoo rank data is still loading — give it a few seconds and click again.');
-    return;
-  }
-  _rankings[_rankPos] = _rankingsIdsFor(_rankPos).slice();
-  _rankSortField = null;
-  renderRankings();
-  if(typeof saveRankings==='function') saveRankings(_rankPos);
-  var st = document.getElementById('rankings-status');
-  if(st) st.textContent = _rankPos + ' rankings re-seeded by Yahoo rank and saved.';
-}
 // RANKINGS_AUTOLOAD_V1 (June 9, 2026 — PC Walter, per the Dude). Each position tab AUTO-LOADS every
 // fantasy-relevant player at that position (no add-one-by-one — Matt ranks the whole field). Sorted by
 // Yahoo rank (best first; players with no Yahoo rank sink to the bottom). Capped per position so it's the
@@ -2456,7 +2435,6 @@ function sortValueFor(field, p, s, pid){
       const idx = _wlIndexOf(pid || '');
       return (idx >= 0) ? _wlPriority(_watchList[idx]) : 0;
     }
-    case 'exp':
     case 'delta':
     case 'type':
       return null;
