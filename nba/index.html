@@ -1134,6 +1134,15 @@ function _rankSeedPpg(pid){
   if(gp <= 0 || s.pts == null) return -1;
   return Number(s.pts) / gp;
 }
+// NBA_YAHOO_SEED_V1 (2026-06-28) — default rankings seed is now YAHOO OVERALL RANK
+// (the Dude's call). Returns the player's Yahoo rank (1 = best). Players with no
+// Yahoo rank (outside Yahoo's ranked pool) return Infinity so they fall to the
+// bottom; PPG then breaks ties among the unranked so the tail stays sensible.
+function _rankSeedYahoo(pid){
+  var y = _yahooFor(pid);
+  if(y && y.yahoo_rank != null) return Number(y.yahoo_rank);
+  return Infinity;
+}
 function _rankingsIdsFor(pos){
   if(!_playerDB) return [];
   var ids = [];
@@ -1144,11 +1153,15 @@ function _rankingsIdsFor(pos){
     // OVERALL_RANK_V1 (2026-06-26 — PC Walter, per the Dude): the Overall tab gathers EVERY position
     // into one board. Seeded by points-per-game (no Yahoo overall-rank pipeline for NBA yet — PPG is the
     // stable seed the position tabs already use). Matt drags to build his own overall board; saves to its
-    // own NAS slot (rankings-nba-overall). When the Yahoo rank layer ships, swap the seed here.
+    // own NAS slot (rankings-nba-overall). NBA_YAHOO_SEED_V1 (2026-06-28): seed is now Yahoo overall rank (was PPG).
     if(pos !== 'Overall' && !_rankEligible(p, pos)) continue;  // position tabs: eligible-position filter; Overall: all
     ids.push(id);
   }
   ids.sort(function(a,b){
+    // NBA_YAHOO_SEED_V1 — primary: Yahoo overall rank ASC (1 first); unranked (Infinity) sink.
+    var ya = _rankSeedYahoo(a), yb = _rankSeedYahoo(b);
+    if(ya !== yb) return ya - yb;
+    // tiebreak among same/unranked: points-per-game DESC (keeps the unranked tail meaningful)
     var pa = _rankSeedPpg(a), pb = _rankSeedPpg(b);
     if(pb !== pa) return pb - pa;
     var na=(_playerDB[a].full_name||''), nb=(_playerDB[b].full_name||'');
