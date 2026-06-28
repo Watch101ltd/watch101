@@ -830,6 +830,54 @@ if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoad
 // layer lands, a YAHOO_CACHE_URL Worker gets added — NOT in this shell.
 const SERVER_URL = 'https://nba-nas.fantasywatch101.com';
 
+// ── NBA_YAHOO_OWNERSHIP_V1 (2026-06-28) ──────────────────────────────────────
+// Pulls Yahoo overall ownership % + Yahoo overall rank from the live NBA server
+// (Matt's OAuth token). leagueKey 466.l.17116 = the 2025-26 NBA season game key
+// (prefix 466). The server only uses the prefix to pick the season; percent_owned
+// is Yahoo's PUBLIC ownership across all of Yahoo, not a private league. NO Worker
+// for NBA — we hit the NAS directly. Join key: Sleeper's yahoo_id <-> the payload's
+// yahoo_player_id (pure ID match; normalized-name fallback for the few Sleeper
+// players with no yahoo_id). When the 2026-27 season starts, bump the league key
+// below (or do the getNBAGameKey auto-detect upgrade — see memory).
+const NBA_YAHOO_LEAGUE_KEY = '466.l.17116';
+let _yahooByYid = {};   // String(yahoo_player_id) -> payload row
+let _yahooByName = {};  // normalized name -> payload row
+function _nbaYahooNorm(str){
+  return (str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\b(iii|ii|iv|jr|sr)\b\.?/gi,'').replace(/\s+/g,' ').trim().toLowerCase();
+}
+async function syncYahooNBA(){
+  try{
+    const res = await fetch(SERVER_URL + '/yahoo/league-ranks/' + NBA_YAHOO_LEAGUE_KEY);
+    if(!res.ok){ console.warn('[NBA_YAHOO] league-ranks HTTP ' + res.status); return; }
+    const data = await res.json();
+    _yahooByYid = {}; _yahooByName = {};
+    (data.players||[]).forEach(yp => {
+      if(yp.yahoo_player_id != null) _yahooByYid[String(yp.yahoo_player_id)] = yp;
+      if(yp.name) _yahooByName[_nbaYahooNorm(yp.name)] = yp;
+    });
+    console.log('[NBA_YAHOO] loaded ' + Object.keys(_yahooByYid).length + ' Yahoo rows');
+    if(typeof renderWatchList==='function') renderWatchList();
+    if(typeof renderNbaPlayers==='function') renderNbaPlayers();
+    if(typeof renderRankings==='function') renderRankings();
+  }catch(e){ console.warn('[NBA_YAHOO] sync failed', e); }
+}
+// Look up the Yahoo payload row for a Sleeper player_id.
+// NOTE (verified 2026-06-28): Sleeper's NBA records carry yahoo_id = null for ALL
+// 2,104 players (unlike NFL), so the ID branch never fires for NBA — the NAME
+// match is the real join. _nbaYahooNorm strips accents on both sides so Sleeper's
+// "Nikola Jokić" matches Yahoo's "Nikola Jokic". ID branch kept as a harmless
+// future-proof in case Sleeper ever populates yahoo_id.
+function _yahooFor(pid){
+  const p = _playerDB && _playerDB[pid];
+  if(!p) return null;
+  if(p.yahoo_id != null && _yahooByYid[String(p.yahoo_id)]) return _yahooByYid[String(p.yahoo_id)];
+  const nm = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
+  const key = _nbaYahooNorm(nm);
+  return key ? (_yahooByName[key] || null) : null;
+}
+// ── /NBA_YAHOO_OWNERSHIP_V1 ──────────────────────────────────────────────────
+
 // DYNAMIC_STATS_YEAR — derive the right season from Sleeper's NBA state. During
 // regular/postseason show this year's stats-so-far; during off/preseason show
 // last completed season. Failsafe defaults to 2025.
@@ -1195,10 +1243,12 @@ function _rankCol_gp(){ return { key:'gp', label:'GP', tdClass:'col-stat-a col-z
 // for the NBA Rankings tabs, matching the Watch List. NO data pipeline yet (no Yahoo API, no CBS scrape
 // for NBA) — these render em-dash placeholders for now, exactly like the Watch List does. When the data
 // layer ships, swap the render() bodies to read the real lookups (and wire num() for sorting).
-function _rankCol_yrank(){ return { key:'yrank', label:'Y!Rank', headClass:'col-zone-divider', tdClass:'placeholder col-zone-divider',
-  num:function(){ return Infinity; }, render:function(){ return '—'; } }; }
-function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', tdClass:'placeholder',
-  num:function(){ return -1; }, render:function(){ return '—'; } }; }
+function _rankCol_yrank(){ return { key:'yrank', label:'Y!Rank', headClass:'col-zone-divider', tdClass:'col-zone-divider',
+  num:function(pid){ var y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?Number(y.yahoo_rank):Infinity; },
+  render:function(pid){ var y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?y.yahoo_rank:'—'; } }; }
+function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', tdClass:'',
+  num:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):-1; },
+  render:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Math.round(y.roster_pct)+'%':'—'; } }; }
 function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Owned', tdClass:'placeholder',
   num:function(){ return -1; }, render:function(){ return '—'; } }; }
 function _rankColsFor(pos){
@@ -1519,6 +1569,7 @@ function renderNbaPlayers(){
     const tpPct = pctOrNull(s.tpm, s.tpa);  // NBA_FULL_STATS_V1 — 3P%
     const gp    = Number(s && s.gp) || 0;
     const onList = (_wlIndexOf(pid) >= 0);
+    const _yh = _yahooFor(pid);  // NBA_YAHOO_OWNERSHIP_V1
     const _pidJson = escapeHtml(JSON.stringify(pid));  // safe for the onclick arg
     // NBA_FULL_STATS_V1 — every counting stat is PER-GAME (perGame=total/gp). GP is the
     // raw count. Percentages are true ratios. Column order matches the header: GP, then
@@ -1529,9 +1580,9 @@ function renderNbaPlayers(){
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
-      // OWNERSHIP_COLS_NBA_V1 — Y!Rank/Y!Owned/CBS Owned placeholders (no NBA data pipeline yet; matches the Watch List).
-      '<td class="placeholder col-zone-divider">—</td>' +
-      '<td class="placeholder">—</td>' +
+      // OWNERSHIP_COLS_NBA_V1 + NBA_YAHOO_OWNERSHIP_V1 — Y!Rank/Y!Owned now live; CBS still placeholder.
+      '<td class="col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +
+      '<td class="' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +
       '<td class="placeholder">—</td>' +
       '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
@@ -1663,6 +1714,7 @@ async function bootstrap(){
     _normalizeWatchList();
     renderWatchList();
     loadRankingsFromNAS();  // NBA_RANKINGS_LOAD_V1 — fire-and-forget; hydrates Matt's saved orders in the background
+    syncYahooNBA();  // NBA_YAHOO_OWNERSHIP_V1 — fire-and-forget; fills Y!Rank/Y!Owned when it returns
   } catch(e){
     console.error('[bootstrap]', e);
     statusEl.textContent = '⚠ Could not load data: ' + e.message;
@@ -1862,6 +1914,7 @@ function renderWatchList(){
     const ftPct = pctOrNull(s.ftm, s.fta);
     const tpPct = pctOrNull(s.tpm, s.tpa);  // NBA_FULL_STATS_V1 — 3P%
     const gp    = Number(s && s.gp) || 0;   // NBA_FULL_STATS_V1 — per-game divisor
+    const _yh = _yahooFor(pid);  // NBA_YAHOO_OWNERSHIP_V1
     const _pidJson = escapeHtml(JSON.stringify(pid));
     const _trOpen = dragEnabled
       ? '<tr draggable="true" data-nba-pid="' + escapeHtml(pid) + '"' +
@@ -1885,8 +1938,8 @@ function renderWatchList(){
       '<td class="left placeholder">—</td>' + // Type (planned)
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       '<td class="left placeholder">—</td>' + // Note (planned)
-      '<td class="placeholder col-zone-divider">—</td>' +   // Y!Rank (planned — Yahoo layer)
-      '<td class="placeholder">—</td>' +   // Y!Owned (planned — Yahoo layer)
+      '<td class="col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
+      '<td class="' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +   // Y!Owned (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="placeholder">—</td>' +   // CBS Owned (planned — CBS layer)
       '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
@@ -2253,10 +2306,10 @@ function sortValueFor(field, p, s, pid){
       return (idx >= 0) ? _wlPriority(_watchList[idx]) : 0;
     }
     // Planned columns — no data yet, always sort to bottom.
+    case 'yrank':  { const y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?Number(y.yahoo_rank):null; }   // NBA_YAHOO_OWNERSHIP_V1
+    case 'yowned': { const y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):null; }   // NBA_YAHOO_OWNERSHIP_V1
     case 'delta':
     case 'type':
-    case 'yrank':
-    case 'yowned':
     case 'cbsowned':
       return null;
     default: return null;
