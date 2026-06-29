@@ -263,6 +263,20 @@ table.watch-list thead th.col-note{width:56px;text-align:left}
 table.watch-list thead th.col-yrank{width:42px;text-align:right}
 table.watch-list thead th.col-yowned{width:46px;text-align:right}
 table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
+/* RANKINGS_NOTES_NBA_V1 (2026-06-29 — PC Walter, per Matt via the Dude): editable Note column +
+   note badge on the rankings tabs, mirroring baseball's main-list Notes. */
+#rankings-table th.col-note,#rankings-table td.col-note{width:160px;max-width:160px;text-align:left;overflow:hidden}
+#rankings-table .rk-note{font-size:12px;color:var(--text);font-style:italic;cursor:pointer;display:flex;align-items:center;gap:4px;padding:3px 6px;border-radius:4px;border:1px solid transparent;transition:all .15s;white-space:nowrap;overflow:hidden;max-width:100%}
+#rankings-table .rk-note .rk-note-text{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#rankings-table .rk-note:hover{border-color:var(--gold);background:var(--surface2);color:var(--gold)}
+#rankings-table .rk-note.empty{color:#475569}
+#rankings-table .rk-note-input{width:100%;font-size:12px;font-style:italic;background:var(--surface);border:1px solid var(--gold);color:var(--text);border-radius:4px;padding:2px 6px;font-family:inherit;outline:none}
+#rankings-table th.col-notebadge,#rankings-table td.col-notebadge{width:26px;text-align:center}
+#rankings-table .rk-note-badge{display:inline-block;font-size:12px;line-height:1;cursor:pointer;opacity:.85;transition:transform 120ms ease,opacity 120ms ease}
+#rankings-table .rk-note-badge:hover{opacity:1;transform:scale(1.15)}
+#rankings-table .rk-note-link{display:inline-block;font-size:11px;line-height:1;margin-left:4px;text-decoration:none;opacity:.85;flex-shrink:0}
+#rankings-table .rk-note-link:hover{opacity:1;transform:scale(1.15)}
+
 table.watch-list thead th.col-stat{width:40px;text-align:right}
 /* STAT_HEADER_COLORS_V1 (2026-06-07) — two-tone orange, applied to BOTH the header AND the
    data cells so each column reads as one color group. col-stat-a = counting (light orange),
@@ -728,7 +742,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <tr id="rankings-head-row"></tr>
       </thead>
       <tbody id="rankings-body">
-        <tr><td colspan="15" class="empty-state"><strong>PG rankings are loading</strong>Player data may still be loading — give it a moment.</td></tr>
+        <tr><td colspan="17" class="empty-state"><strong>PG rankings are loading</strong>Player data may still be loading — give it a moment.</td></tr>
       </tbody>
     </table>
   </div>
@@ -1251,7 +1265,7 @@ function renderRankings(){
   var statusEl = document.getElementById('rankings-status');
   if(!tbody) return;
   if(!_playerDB){
-    tbody.innerHTML = '<tr><td colspan="15" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="17" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
     return;
   }
   // _rankings[pos] is the source of truth for ORDER. First render with no saved order seeds from the
@@ -1351,9 +1365,81 @@ function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', tdClass:'',
 function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Owned', tdClass:'',
   num:function(pid){ var v=_cbsForNum(pid); return v==null?-1:v; },   // owned%: higher=better, missing sinks
   render:function(pid){ var v=_cbsForNum(pid); return v==null?'—':v+'%'; } }; }
+// ── RANKINGS_NOTES_NBA_V1 (2026-06-29) ───────────────────────────────────────
+// Per-player notes for the rankings tabs, mirroring baseball's main-list Notes.
+// Keyed by player id so a note follows the player across every position tab.
+// Persists to localStorage AND to the NAS (piggybacked on the rankings save —
+// the /list-staging endpoint stores each player object verbatim, so the note
+// rides along and comes back on load. No server change needed).
+var _rankNotes = {};                                   // pid -> note string
+var RANK_NOTES_KEY = 'watch101_nba_rank_notes_v1';
+function _rankNotesSaveLocal(){
+  try { localStorage.setItem(RANK_NOTES_KEY, JSON.stringify(_rankNotes)); }
+  catch(e){ console.warn('[RANKINGS_NOTES_NBA_V1] localStorage save failed:', e); }
+}
+function _rankNotesLoadLocal(){
+  try { var raw = localStorage.getItem(RANK_NOTES_KEY);
+        if(raw){ var o = JSON.parse(raw); if(o && typeof o==='object') _rankNotes = o; } }
+  catch(e){ console.warn('[RANKINGS_NOTES_NBA_V1] localStorage load failed:', e); }
+}
+function _rankNoteFor(pid){ var v=_rankNotes[pid]; return (v!=null)?String(v):''; }
+// Split a note into visible text + first http(s) url (so we can show a link badge).
+function _rankSplitNote(s){
+  s = String(s||''); var m = s.match(/(https?:\/\/[^\s]+)/i);
+  if(!m) return { text:s, url:'' };
+  return { text:(s.slice(0,m.index)+s.slice(m.index+m[0].length)).replace(/\s+/g,' ').trim(), url:m[0] };
+}
+// Click a note cell to edit in place (mirrors baseball editNote): swap to an input,
+// save on blur/Enter to _rankNotes + localStorage + NAS, then re-render.
+function editRankNote(pid, el){
+  var input = document.createElement('input');
+  input.type='text'; input.className='rk-note-input';
+  input.value = _rankNoteFor(pid);
+  input.placeholder = "Matt's take on this player...";
+  el.replaceWith(input); input.focus();
+  var done = function(){
+    var val = input.value.trim();
+    if(val) _rankNotes[pid] = val; else delete _rankNotes[pid];
+    _rankNotesSaveLocal();
+    if(typeof saveRankings==='function' && _rankPos) saveRankings(_rankPos);  // pushes note to NAS too
+    renderRankings();
+  };
+  input.addEventListener('blur', done);
+  input.addEventListener('keydown', function(e){ if(e.key==='Enter') input.blur(); if(e.key==='Escape'){ input.value=_rankNoteFor(pid); input.blur(); } });
+}
+// Badge click → find this row's note cell and open the same editor.
+function editRankNoteFromBadge(pid, badgeEl){
+  var tr = badgeEl && badgeEl.closest ? badgeEl.closest('tr') : null;
+  var cell = tr ? tr.querySelector('.rk-note') : null;
+  if(cell) editRankNote(pid, cell); else editRankNote(pid, badgeEl);
+}
+// Editable Note column — same role as baseball's col-note.
+function _rankCol_note(){ return { key:'note', label:'Note', headClass:'col-note', tdClass:'col-note',
+  num:function(pid){ return _rankNoteFor(pid) ? 1 : 0; },   // sort: noted players group together
+  render:function(pid){
+    var raw = _rankNoteFor(pid); var sp = _rankSplitNote(raw);
+    var empty = raw ? '' : ' empty';
+    var shown = sp.text || (raw ? '' : 'Add note...');
+    var link = sp.url ? ('<a class="rk-note-link" href="'+escapeHtml(sp.url)+'" target="_blank" rel="noopener" title="'+escapeHtml(sp.url)+'" onclick="event.stopPropagation()">🔗</a>') : '';
+    var title = escapeHtml(raw);
+    var pidAttr = String(pid).replace(/"/g,'&quot;');
+    return '<div class="rk-note'+empty+'" title="'+title+'" onclick="editRankNote(&quot;'+pidAttr+'&quot;,this)"><span class="rk-note-text">'+escapeHtml(shown)+'</span>'+link+'</div>';
+  } }; }
+// Note badge column — clipboard icon that opens the same in-place editor (mirrors
+// baseball's note badge). Filled clipboard when a note exists, empty when not.
+function _rankCol_notebadge(){ return { key:'notebadge', label:'', headClass:'col-notebadge', tdClass:'col-notebadge',
+  num:function(pid){ return _rankNoteFor(pid) ? 1 : 0; },
+  render:function(pid){
+    var has = !!_rankNoteFor(pid);
+    var pidAttr = String(pid).replace(/"/g,'&quot;');
+    var icon = has ? '📋' : '📝';
+    var tip = has ? 'Edit note' : 'Add note';
+    return '<span class="rk-note-badge" title="'+tip+'" onclick="editRankNoteFromBadge(&quot;'+pidAttr+'&quot;,this)">'+icon+'</span>';
+  } }; }
+// ── /RANKINGS_NOTES_NBA_V1 ───────────────────────────────────────────────────
 function _rankColsFor(pos){
   // OWNERSHIP_COLS_NBA_V1 — Y!Rank/Y!Owned/CBS Owned lead the stat block on every tab (placeholders for now).
-  return [ _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(), _rankCol_gp(),
+  return [ _rankCol_notebadge(), _rankCol_note(), _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(), _rankCol_gp(),
     _rankPctCol('fgpct','FG%','fgm','fga'), _rankPctCol('ftpct','FT%','ftm','fta'),
     _rankStatCol('pts','PTS','pts'), _rankStatCol('tpm','3PM','tpm'),
     _rankStatCol('reb','REB','reb'), _rankStatCol('ast','AST','ast'),
@@ -1470,7 +1556,7 @@ async function saveRankings(pos){
   _rankNasSaving[pos] = true;
   var statusEl = document.getElementById('rankings-status');
   try {
-    var players = (_rankings[pos]||[]).map(function(pid){ return { pid: pid }; });
+    var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; return o; });   // RANKINGS_NOTES_NBA_V1: note rides along
     var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ players: players })
@@ -1492,6 +1578,7 @@ function _rankLoadLocal(){
 }
 async function loadRankingsFromNAS(){
   _rankLoadLocal();
+  _rankNotesLoadLocal();   // RANKINGS_NOTES_NBA_V1
   var positions = ['Overall','PG','SG','SF','PF','C'];
   for(var i=0;i<positions.length;i++){
     var pos = positions[i];
@@ -1502,7 +1589,10 @@ async function loadRankingsFromNAS(){
         var data = await res.json();
         var players = (data && data.data && Array.isArray(data.data.players)) ? data.data.players
                     : (data && Array.isArray(data.players)) ? data.players : null;
-        if(players && players.length){ _rankings[pos] = players.map(function(it){ return (it && it.pid != null) ? it.pid : it; }); }
+        if(players && players.length){
+          players.forEach(function(it){ if(it && it.pid != null && it.note != null && String(it.note).trim()){ if(_rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); } });  // RANKINGS_NOTES_NBA_V1: harvest notes from NAS
+          _rankings[pos] = players.map(function(it){ return (it && it.pid != null) ? it.pid : it; });
+        }
       }
     } catch(e){ /* no saved ranking yet for this position — renderRankings will seed it */ }
   }
