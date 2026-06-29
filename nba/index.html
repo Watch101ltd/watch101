@@ -576,7 +576,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
         <th class="left col-note">Note</th>
         <th class="col-yrank col-zone-divider" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
-        <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Rank <span class="sort-arrow">↕</span></th>
+        <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a col-zone-divider" data-sort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="pts" title="Points per game">PTS <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="reb" title="Total rebounds per game">REB <span class="sort-arrow">↕</span></th>
@@ -678,7 +678,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
           <!-- OWNERSHIP_COLS_NBA_V1 (2026-06-26) — Y!Rank/Y!Owned/CBS Owned, matching the Watch List. Placeholders (no NBA data pipeline yet). -->
           <th class="col-yrank col-zone-divider" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
-          <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Rank <span class="sort-arrow">↕</span></th>
+          <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a col-zone-divider" data-npsort="gp" title="Games Played">GP <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="pts" title="Points per game">PTS <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="reb" title="Total rebounds per game">REB <span class="sort-arrow">↕</span></th>
@@ -721,7 +721,6 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <button class="rank-subnav-btn" data-rankpos="SF" onclick="switchRankPos('SF', this)">SF</button>
     <button class="rank-subnav-btn" data-rankpos="PF" onclick="switchRankPos('PF', this)">PF</button>
     <button class="rank-subnav-btn" data-rankpos="C" onclick="switchRankPos('C', this)">C</button>
-    <button class="rank-subnav-btn" id="seed-yahoo-btn" onclick="seedByYahooRank()" title="Re-sort this tab by Yahoo overall rank and save it" style="margin-left:auto;background:var(--court,#ea580c);color:#fff;border-color:var(--court,#ea580c)">↕ Seed by Yahoo Rank</button>
   </div>
   <div class="table-wrap" id="nbarankings-wrap">
     <table class="watch-list" id="rankings-table">
@@ -886,11 +885,11 @@ function _yahooFor(pid){
 // scraped by Fantasy Basketball/Brandt Assistant/scripts/cbs_scraper/main.py and
 // pushed to the repo's cbs-nba/ folder). Join by normalized name+team, with the
 // two name-match fixes proven on football: trailing-suffix strip + a UNIQUE
-// last-name|team|pos fallback for nickname mismatches. Fills the CBS Rank column
+// last-name|team|pos fallback for nickname mismatches. Fills the CBS Owned column
 // (em-dash until the data exists). NBA season is over now → expect stale/low
 // numbers until fall drafts; the pipe is what we're proving.
-let _cbsByNameTeam = {};     // "normname|TEAM" -> cbs_rank
-let _cbsByName = {};         // "normname" -> cbs_rank (last-wins fallback)
+let _cbsByNameTeam = {};     // "normname|TEAM" -> rostered_pct
+let _cbsByName = {};         // "normname" -> rostered_pct (last-wins fallback)
 let _cbsByLastTeamPos = {};  // "lastname|TEAM|POS" -> pct (null if collision)
 let _cbsDataLoaded = false;
 function _cbsNorm(s){
@@ -916,16 +915,16 @@ async function loadCbsNBA(){
     _cbsByNameTeam = {}; _cbsByName = {}; _cbsByLastTeamPos = {};
     let n = 0;
     for(const p of players){
-      if(p.cbs_rank == null) continue;
+      if(p.rostered_pct == null) continue;
       const nm = _cbsNorm(p.name);
       if(!nm) continue;
       const tm = (p.team || '').toUpperCase();
-      if(tm) _cbsByNameTeam[nm + '|' + tm] = p.cbs_rank;
-      _cbsByName[nm] = p.cbs_rank;
+      if(tm) _cbsByNameTeam[nm + '|' + tm] = p.rostered_pct;
+      _cbsByName[nm] = p.rostered_pct;
       const cbsPos = (Array.isArray(p.positions) && p.positions.length) ? String(p.positions[0]).toUpperCase() : '';
       const lk = _cbsLastName(p.name) + '|' + tm + '|' + cbsPos;
       if(tm && cbsPos && _cbsLastName(p.name)){
-        if(!(lk in _cbsByLastTeamPos)) _cbsByLastTeamPos[lk] = p.cbs_rank;  // first wins
+        if(!(lk in _cbsByLastTeamPos)) _cbsByLastTeamPos[lk] = p.rostered_pct;  // first wins
         else _cbsByLastTeamPos[lk] = null;                                       // collision -> dead
       }
       n++;
@@ -1196,24 +1195,6 @@ function switchRankPos(pos, btn){
   renderRankings();
 }
 
-// NBA_YAHOO_SEED_BUTTON_V1 (2026-06-28) — manual "Seed by Yahoo Rank". The auto-seed
-// raced the Yahoo data load (seeded before ranks arrived → PPG/alpha order, then a drag
-// saved that). A button removes the race: the Dude clicks it when the page is loaded, it
-// re-sorts the ACTIVE tab to Yahoo rank order (via _rankingsIdsFor, which sorts by Yahoo
-// rank) and SAVES. Drags still save their own order normally. Works on every tab.
-function seedByYahooRank(){
-  if(!_playerDB){ return; }
-  if(!_yahooLoaded){
-    if(typeof alert==='function') alert('Yahoo rank data is still loading — give it a few seconds and click again.');
-    return;
-  }
-  _rankings[_rankPos] = _rankingsIdsFor(_rankPos).slice();  // Yahoo-rank order for this tab
-  _rankSortField = null;                                    // clear any column sort
-  renderRankings();
-  if(typeof saveRankings==='function') saveRankings(_rankPos);   // persist to NAS + localStorage
-  var st = document.getElementById('rankings-status');
-  if(st) st.textContent = _rankPos + ' rankings re-seeded by Yahoo rank and saved.';
-}
 // NBA_RANKINGS_AUTOLOAD_V1 — each tab auto-loads every active (on-a-team) player ELIGIBLE at that
 // position, sorted by season PTS/G desc, capped at 60 per tab (the Dude's call, June 11). No
 // add-one-by-one: the field loads, Matt just ranks. Eligibility reads fantasy_positions (fan-out).
@@ -1367,9 +1348,9 @@ function _rankCol_yrank(){ return { key:'yrank', label:'Y!Rank', headClass:'col-
 function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', tdClass:'',
   num:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):-1; },
   render:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Math.round(y.roster_pct)+'%':'—'; } }; }
-function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Rank', tdClass:'',
-  num:function(pid){ var v=_cbsForNum(pid); return v==null?Infinity:v; },   // rank: lower=better, missing sinks
-  render:function(pid){ var v=_cbsForNum(pid); return v==null?'—':v; } }; }
+function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Owned', tdClass:'',
+  num:function(pid){ var v=_cbsForNum(pid); return v==null?-1:v; },   // owned%: higher=better, missing sinks
+  render:function(pid){ var v=_cbsForNum(pid); return v==null?'—':v+'%'; } }; }
 function _rankColsFor(pos){
   // OWNERSHIP_COLS_NBA_V1 — Y!Rank/Y!Owned/CBS Owned lead the stat block on every tab (placeholders for now).
   return [ _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(), _rankCol_gp(),
@@ -1706,7 +1687,7 @@ function renderNbaPlayers(){
       // OWNERSHIP_COLS_NBA_V1 + NBA_YAHOO_OWNERSHIP_V1 + NBA_CBS_OWNERSHIP_V1 — all three now live.
       '<td class="col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +
       '<td class="' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +
-      '<td class="' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid):'—') + '</td>' +
+      '<td class="' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +
       '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
@@ -2064,7 +2045,7 @@ function renderWatchList(){
       '<td class="left placeholder">—</td>' + // Note (planned)
       '<td class="col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +   // Y!Owned (NBA_YAHOO_OWNERSHIP_V1)
-      '<td class="' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid):'—') + '</td>' +   // CBS Rank (NBA_CBS_OWNERSHIP_V1 / CBS_RANK_V1)
+      '<td class="' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +   // CBS Owned (NBA_CBS_OWNERSHIP_V1 / CBS_OWNED_PCT_V1)
       '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
