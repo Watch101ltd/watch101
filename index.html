@@ -13904,8 +13904,20 @@ function _getDisplayStatsInner(p){
               if(_pdr && Object.keys(_pdr).length > 0) return _pdr;
             }
             if(typeof _fetchDeepCutMilbWindow === 'function'){ _fetchDeepCutMilbWindow(p.mlb_id, dateRange); }
+            return {}; // MiLB side genuinely absent for this window -> honest em-dashes
           }
-          return {}; // honest em-dashes for the requested side
+          // DEEPCUT_MLB_FLAT_FALLBACK_V1 (June 29, 2026 — PC Walter, per the Dude; Open Bug #7).
+          // MLB side requested but the row has no .mlb sub-object. The OLD code returned {}
+          // (em-dashes) here, which diverged from the MAIN PAGE — the main list's date-range
+          // read ends in `else dr = _row` (the flat row), so a both-sample player like Matt
+          // Wallner showed real Last-7 numbers on the table but EM-DASHES on his Deep Cut.
+          // The Dude's call: make the Deep Cut MATCH the main page. Fall back to the flat row
+          // (which the bake fills with the player's actual windowed line) instead of dashing.
+          // MiLB side above is unchanged (Matt's V3 rule: MiLB isn't date-ranged for both-
+          // sample players, and a real MiLB-only window still dashes the MLB side only after
+          // this flat fallback finds nothing). The flat row is the same source the main page
+          // uses, so the two surfaces now agree.
+          return _row;
         }
       } catch(_tgErr){}
       // Off the Deep Cut page — original behavior unchanged (MLB side, then flat row).
