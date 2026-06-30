@@ -5266,6 +5266,39 @@ function stampManualYahooIds(arr){
   });
 }
 
+// NAMEMATCH_GUARD_FIX_V1 helper (June 29, 2026) — returns true when a normalized
+// name maps to MORE THAN ONE distinct Yahoo player in the current feed (a real
+// same-name collision). Built lazily from yahooDataByMlbId (the feed keyed by
+// Yahoo internal id) the first time it's asked, and cached. Rebuilt whenever the
+// feed size changes (a fresh Yahoo sync). Used by applyYahoo's name-fallback to
+// veto ONLY genuine collisions, never a unique-name match.
+let _yahooAmbigNames = null;
+let _yahooAmbigBuiltFor = -1;
+function _yahooBuildAmbig(){
+  const counts = {};
+  const ids = {};
+  try {
+    Object.values(yahooDataByMlbId || {}).forEach(yp => {
+      if(!yp || !yp.name) return;
+      const yid = yp.mlb_id != null ? String(yp.mlb_id) : (yp.player_key || yp.name);
+      [normalize(yp.name), normalizeName(yp.name)].forEach(k => {
+        if(!k) return;
+        if(!ids[k]) ids[k] = new Set();
+        ids[k].add(yid);
+      });
+    });
+  } catch(e){ /* if anything goes wrong, treat as no ambiguity (trust matches) */ }
+  _yahooAmbigNames = {};
+  Object.keys(ids).forEach(k => { if(ids[k].size > 1) _yahooAmbigNames[k] = true; });
+  _yahooAmbigBuiltFor = Object.keys(yahooDataByMlbId || {}).length;
+}
+function _yahooNameIsAmbiguous(name){
+  if(!name) return false;
+  const size = Object.keys(yahooDataByMlbId || {}).length;
+  if(_yahooAmbigNames === null || size !== _yahooAmbigBuiltFor) _yahooBuildAmbig();
+  return !!(_yahooAmbigNames[normalize(name)] || _yahooAmbigNames[normalizeName(name)]);
+}
+
 function applyYahoo(arr) {
   if(!arr || !Array.isArray(arr)) return;
   arr.forEach(p => {
@@ -5294,8 +5327,19 @@ function applyYahoo(arr) {
         || (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
         || yahooDataByName[normalize(n)]
         || yahooDataByName[normalizeName(n)];
-      // Old duplicate-name guard: only used on the legacy path.
-      if(yp && !p._manual_yahoo_id && yp.mlb_id != null && p.mlb_id != null && String(yp.mlb_id) !== String(p.mlb_id)) yp = null;
+      // NAMEMATCH_GUARD_FIX_V1 (June 29, 2026 — PC Walter, per the Dude; Open Bug #6).
+      // The OLD guard compared yp.mlb_id (which is actually Yahoo's INTERNAL id —
+      // the feed's "mlb_id" misnaming, see comment ~line 5282) against p.mlb_id (the
+      // REAL MLB id). Those are different namespaces, so they NEVER matched for any
+      // player whose registry yid is null — and the guard then DISCARDED a CORRECT
+      // name match, freezing stale Yahoo rank/roster% on Gage Jump and ~122 others.
+      // The guard's real job is only to stop a SAME-NAME collision (two different
+      // players who normalize to the same key). There are only a handful of those in
+      // the feed (Max Muncy, Jared Jones, Fernando Cruz, etc.), and they're already
+      // covered by the registry yid path + the manual-id stamp, both of which run
+      // BEFORE this fallback. So: only veto the name match when the name is genuinely
+      // AMBIGUOUS in the Yahoo feed. Unique names (Gage Jump) are always trusted.
+      if(yp && !p._manual_yahoo_id && _yahooNameIsAmbiguous(n)) yp = null;
     }
 
     if(!yp) return;
