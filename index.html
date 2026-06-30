@@ -988,6 +988,22 @@ body.compact-mode #main-table .note-display .note-text{ white-space:normal; over
    pack from the left and left-align the text. Compact-only; normal mode untouched. */
 body.compact-mode #main-table td.col-note .note-display{ justify-content:flex-start; text-align:left; }
 body.compact-mode #main-table td.col-note .note-display .note-text{ flex:0 1 auto; text-align:left; }
+/* COMPACT_NOTE_WIDTH_FIX_V1 (June 30, 2026 - PC Walter, per the Dude) - the squish
+   fix's sequel. The June 12 rule set the compact Note column to width:auto expecting
+   table-layout:fixed to hand it all the freed space. With short notes it looked fine.
+   But under table-layout:fixed the whole table still carries min-width:1536px (a floor
+   built for ~25 columns). With most columns hidden in compact, an 'auto' column does
+   NOT generously expand - it collapses toward the width of its longest word, so a long
+   note (A.J. Ewing, Matt's paragraph) became a skinny one-word-per-line ribbon and
+   yanked the row left. Fix, compact-main-table only: (1) drop the table min-width floor
+   so columns aren't fighting a 1536px target meant for the full stat grid, and (2) give
+   the Note column a real, generous width so it reliably becomes the wide column and
+   wraps paragraphs full-width starting on the left. Normal mode untouched. */
+body.compact-mode #main-table{ min-width:0; }
+body.compact-mode #main-table th.col-note,
+body.compact-mode #main-table td.col-note{ width:55%; max-width:none; white-space:normal; }
+body.compact-mode #main-table td.col-note .note-display{ white-space:normal; overflow:visible; }
+body.compact-mode #main-table td.col-note .note-display .note-text{ white-space:normal; overflow:visible; text-overflow:clip; word-break:break-word; }
 /* LEADERS_ADVANCED_DEFAULT_V1 (May 12, 2026 — PC Walter) — on the public fan
    view (Cloudflare prod / non-github hosts), the League Leaders table shows
    the advanced Statcast columns by DEFAULT. There's plenty of horizontal
