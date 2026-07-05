@@ -2271,6 +2271,10 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
     <div class="hdr-dd" id="dd-more">
       <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-more', event)" title="More actions">⋯ More <span class="hdr-dd-caret">▾</span></button>
       <div class="hdr-dd-menu">
+        <!-- TRENDING_NAV_V1 (2026-07-05): link to the standalone Trending dashboard at
+             trending/index.html (Yahoo roster delta risers and fallers). Fan visible,
+             so goToTrending is on the FAN_SAFE_ACTIONS allow list in hdrRun. -->
+        <button class="hdr-dd-item" onclick="hdrRun(goToTrending)" title="Open the Trending dashboard: who the Yahoo world is adding and dropping">📈 Trending Adds</button>
         <!-- TIERS_V1 — Create a Tier moved here from the (now deleted) Add Player dropdown (2026-06-06). -->
         <button class="hdr-dd-item backend-only" onclick="hdrRun(openCreateTierModal)" title="Draw a colored bracket around a range of players">🏷️ Create a Tier</button>
         <!-- ADD_CUSTOM_PLAYER_V1 (April 25, 2026) — BACKEND_ONLY admin action.
@@ -5628,13 +5632,17 @@ function hdrToggleDropdown(id, event){
     if(btn) btn.classList.add('open');
   }
 }
+// TRENDING_NAV_V1 (2026-07-05): named navigation action for the More menu.
+// Named (not anonymous) so hdrRun's FAN_SAFE_ACTIONS allow list can match it
+// and fans in read-only mode can reach the Trending page.
+function goToTrending(){ window.location.href = 'trending/'; }
 function hdrRun(fn){
   // READONLY_V2 — most header-dropdown actions are admin-only and should be
   // blocked in read-only mode as a belt-and-suspenders guard. View-toggle
   // actions (Present Mode, etc.) are fan-useful and stay allowed via this
   // allow-list. To allow a new fan-safe action through, add its function name
   // to FAN_SAFE_ACTIONS below.
-  var FAN_SAFE_ACTIONS = ['togglePresentMode'];
+  var FAN_SAFE_ACTIONS = ['togglePresentMode','goToTrending'];
   var fnName = (fn && fn.name) || '';
   var isAllowed = FAN_SAFE_ACTIONS.indexOf(fnName) !== -1;
   if(!isAllowed && _blockIfReadOnly('hdrRun:' + (fnName || 'anonymous'))){
