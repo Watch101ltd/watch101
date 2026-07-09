@@ -1195,6 +1195,10 @@ function showNbaPlayersView(){
 //  - NBA pids are STRINGS — onclick args are &quot;-escaped (the NBA_REMOVE_BUTTON_QUOTE_FIX lesson).
 var _rankPos = 'Overall';  // active position sub-tab (OVERALL_RANK_V1: Overall default/leftmost)
 var _rankings = { Overall:[], PG:[], SG:[], SF:[], PF:[], C:[] };  // saved manual orders (arrays of pids) (OVERALL_RANK_V1)
+// NBA_RANKINGS_LIVE_SEED_V1 (2026-07-08 -- PC Walter, per the Dude; mirror of football's fix same night):
+// which tabs have been HAND-DRAGGED. A tab with no hand-drag follows the LIVE Yahoo seed on every render
+// (no frozen copy = nothing to go stale). A real drag (rankDrop) flips its flag and freezes that tab.
+var _rankManual = { Overall:false, PG:false, SG:false, SF:false, PF:false, C:false };
 function showRankingsView(){
   _hideAllViews();
   var rv = document.getElementById('rankings-view'); if(rv) rv.style.display = '';
@@ -1278,12 +1282,14 @@ function renderRankings(){
   // Yahoo isn't loaded, render a PROVISIONAL order this pass WITHOUT committing it
   // to _rankings (so syncYahooNBA's later renderRankings() re-seeds with real ranks).
   var _provisional = false;
-  if(!_rankings[_rankPos] || _rankings[_rankPos].length === 0){
-    if(!_yahooLoaded){
-      _provisional = true;   // show seed but do NOT persist — wait for Yahoo
-    } else {
-      _rankings[_rankPos] = seed.slice();
-    }
+  if(!_rankManual[_rankPos]){
+    // NBA_RANKINGS_LIVE_SEED_V1 -- never-dragged tab: follow the live Yahoo-rank seed on EVERY render,
+    // so rank drift can never strand a stale order. Before Yahoo lands the seed is the PPG fallback and
+    // stays provisional (syncYahooNBA's re-render swaps in real ranks). Only a hand-drag freezes a tab.
+    if(!_yahooLoaded) _provisional = true;
+    _rankings[_rankPos] = seed.slice();
+  } else if(!_rankings[_rankPos] || _rankings[_rankPos].length === 0){
+    _rankings[_rankPos] = seed.slice();
   } else {
     var have = {};
     _rankings[_rankPos].forEach(function(pid){ have[pid]=1; });
@@ -1527,6 +1533,7 @@ function rankDrop(e, pid){
   arr.splice(ti, 0, moved);
   _rankDragSrcPid = null;
   _rankSortField = null;  // a drag IS the ranking; snap the view back to the manual order
+  _rankManual[_rankPos] = true;  // NBA_RANKINGS_LIVE_SEED_V1 -- a real hand-drag claims this tab (must flip BEFORE renderRankings)
   renderRankings();
   saveRankings(_rankPos);
 }
@@ -1543,9 +1550,9 @@ function rankDragEnd(e){
 // (the Overall tab had a stale pre-Yahoo auto-seed saved that overrode the new
 // Yahoo-rank seed) are dropped once. Fresh Yahoo seed on next load for everyone.
 // Hand-dragged orders after this point save under v1 and persist normally.
-var RANKINGS_STORAGE_KEY = 'watch101_nba_rankings_v2';  // v2 (NBA_YAHOO_SEED_V1 timing fix): drops the stale PPG-ordered Overall save
+var RANKINGS_STORAGE_KEY = 'watch101_nba_rankings_v3';  // v3 (NBA_RANKINGS_LIVE_SEED_V1): {orders, manual} shape; v2 snapshot orders retired
 function _rankSaveLocal(){
-  try { localStorage.setItem(RANKINGS_STORAGE_KEY, JSON.stringify(_rankings)); }
+  try { localStorage.setItem(RANKINGS_STORAGE_KEY, JSON.stringify({ orders: _rankings, manual: _rankManual })); }  // NBA_RANKINGS_LIVE_SEED_V1
   catch(e){ console.warn('[NBA_RANKINGS_SAVE_V1] localStorage save failed:', e); }
 }
 var _rankNasSaving = {};
@@ -1559,7 +1566,7 @@ async function saveRankings(pos){
     var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; return o; });   // RANKINGS_NOTES_NBA_V1: note rides along
     var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ players: players })
+      body: JSON.stringify({ players: players, manual: _rankManual[pos] === true })  // NBA_RANKINGS_LIVE_SEED_V1
     });
     if(res.ok){ if(statusEl) statusEl.textContent = '✓ ' + pos + ' rankings saved (' + players.length + ').'; }
     else { if(statusEl) statusEl.textContent = '⚠ ' + pos + ' rankings save returned HTTP ' + res.status + ' — saved to this browser.'; }
@@ -1573,7 +1580,7 @@ async function saveRankings(pos){
 function _rankLoadLocal(){
   try {
     var raw = localStorage.getItem(RANKINGS_STORAGE_KEY);
-    if(raw){ var obj = JSON.parse(raw); if(obj && typeof obj === 'object'){ ['Overall','PG','SG','SF','PF','C'].forEach(function(k){ if(Array.isArray(obj[k])) _rankings[k] = obj[k]; }); } }
+    if(raw){ var obj = JSON.parse(raw); if(obj && obj.orders && obj.manual){ ['Overall','PG','SG','SF','PF','C'].forEach(function(k){ if(obj.manual[k] === true && Array.isArray(obj.orders[k])){ _rankings[k] = obj.orders[k]; _rankManual[k] = true; } }); } }  // NBA_RANKINGS_LIVE_SEED_V1: only hand-dragged orders hydrate
   } catch(e){ console.warn('[NBA_RANKINGS_LOAD_V1] localStorage load failed:', e); }
 }
 async function loadRankingsFromNAS(){
@@ -1587,11 +1594,17 @@ async function loadRankingsFromNAS(){
       var res = await fetch(SERVER_URL + '/list-staging/' + listId, {cache:'no-cache'});
       if(res.ok){
         var data = await res.json();
-        var players = (data && data.data && Array.isArray(data.data.players)) ? data.data.players
-                    : (data && Array.isArray(data.players)) ? data.players : null;
+        var payload = (data && data.data && Array.isArray(data.data.players)) ? data.data
+                    : (data && Array.isArray(data.players)) ? data : null;
+        var players = payload ? payload.players : null;
         if(players && players.length){
-          players.forEach(function(it){ if(it && it.pid != null && it.note != null && String(it.note).trim()){ if(_rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); } });  // RANKINGS_NOTES_NBA_V1: harvest notes from NAS
-          _rankings[pos] = players.map(function(it){ return (it && it.pid != null) ? it.pid : it; });
+          players.forEach(function(it){ if(it && it.pid != null && it.note != null && String(it.note).trim()){ if(_rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); } });  // RANKINGS_NOTES_NBA_V1: harvest notes from NAS (manual or not)
+          // NBA_RANKINGS_LIVE_SEED_V1 -- only a HAND-DRAGGED order (manual:true in the saved payload)
+          // is adopted; anything else is ignored and the tab follows the live Yahoo seed.
+          if(payload.manual === true){
+            _rankings[pos] = players.map(function(it){ return (it && it.pid != null) ? it.pid : it; });
+            _rankManual[pos] = true;
+          }
         }
       }
     } catch(e){ /* no saved ranking yet for this position — renderRankings will seed it */ }
