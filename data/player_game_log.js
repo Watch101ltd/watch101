@@ -11586,7 +11586,7 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
-        "avg": ".214",
+        "avg": ".210",
         "bb": 0,
         "date": "2026-07-12",
         "date_short": "Jul 12",
@@ -11604,7 +11604,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 3,
-        "avg": ".217",
+        "avg": ".213",
         "bb": 2,
         "date": "2026-07-11",
         "date_short": "Jul 11",
@@ -11622,7 +11622,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 4,
-        "avg": ".216",
+        "avg": ".212",
         "bb": 0,
         "date": "2026-07-10",
         "date_short": "Jul 10",
@@ -11640,7 +11640,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 5,
-        "avg": ".215",
+        "avg": ".212",
         "bb": 0,
         "date": "2026-07-09",
         "date_short": "Jul 9",
@@ -11676,7 +11676,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 4,
-        "avg": ".216",
+        "avg": ".212",
         "bb": 0,
         "date": "2026-07-07",
         "date_short": "Jul 7",
@@ -11694,7 +11694,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 4,
-        "avg": ".215",
+        "avg": ".211",
         "bb": 0,
         "date": "2026-07-05",
         "date_short": "Jul 5",
@@ -32088,7 +32088,7 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 3,
-        "avg": ".248",
+        "avg": ".256",
         "bb": 0,
         "date": "2026-07-12",
         "date_short": "Jul 12",
@@ -32160,7 +32160,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 3,
-        "avg": ".250",
+        "avg": ".258",
         "bb": 1,
         "date": "2026-07-08",
         "date_short": "Jul 8",
@@ -32178,7 +32178,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 4,
-        "avg": ".256",
+        "avg": ".264",
         "bb": 0,
         "date": "2026-07-07",
         "date_short": "Jul 7",
@@ -32196,11 +32196,11 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 4,
-        "avg": ".256",
+        "avg": ".265",
         "bb": 0,
         "date": "2026-07-05",
         "date_short": "Jul 5",
-        "h": 1,
+        "h": 2,
         "home": false,
         "hr": 0,
         "k": 0,
@@ -32215,9 +32215,9 @@ var PLAYER_GAME_LOG = {
     ],
     "summary": {
       "ab": 14,
-      "avg": ".214",
+      "avg": ".286",
       "bb": 1,
-      "h": 3,
+      "h": 4,
       "hr": 0,
       "k": 2,
       "rbi": 0,
@@ -65401,8 +65401,8 @@ var PLAYER_GAME_LOG = {
         "status": "started"
       },
       {
-        "ab": 3,
-        "avg": ".180",
+        "ab": 2,
+        "avg": ".181",
         "bb": 1,
         "date": "2026-07-10",
         "date_short": "Jul 10",
@@ -65492,8 +65492,8 @@ var PLAYER_GAME_LOG = {
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".167",
+      "ab": 17,
+      "avg": ".176",
       "bb": 3,
       "h": 3,
       "hr": 0,
