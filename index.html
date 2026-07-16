@@ -5222,7 +5222,7 @@ async function loadRegistry(){
       // loadProspects() also calls applyYahoo at load time; this is the
       // belt-and-suspenders for the late-arriving registry case.
       if(typeof prospectPlayers !== 'undefined' && Array.isArray(prospectPlayers) && prospectPlayers.length > 0){
-        applyYahoo(prospectPlayers);
+        applyYahoo(prospectPlayers, {noNameMatch:true});
       }
       if(typeof renderTable === 'function') renderTable();
       if(typeof renderPool === 'function') try { renderPool(); } catch(_pe){}
@@ -5319,8 +5319,9 @@ function _yahooNameIsAmbiguous(name){
   return !!(_yahooAmbigNames[normalize(name)] || _yahooAmbigNames[normalizeName(name)]);
 }
 
-function applyYahoo(arr) {
+function applyYahoo(arr, opts) {
   if(!arr || !Array.isArray(arr)) return;
+  var _noNameMatch = !!(opts && opts.noNameMatch);
   arr.forEach(p => {
     const n = p.name || '';
 
@@ -5345,8 +5346,17 @@ function applyYahoo(arr) {
     if(!yp){
       yp = (p._manual_yahoo_id && yahooDataByMlbId[p._manual_yahoo_id])
         || (p.mlb_id != null && yahooDataByMlbId[String(p.mlb_id)])
-        || yahooDataByName[normalize(n)]
-        || yahooDataByName[normalizeName(n)];
+        || null;
+      // PROSPECTS_NAMEMATCH_SUPPRESS_V1 (2026-07-15 — PC Walter, Open Bug #13):
+      // the NAME-match fallback is unsafe for the MiLB prospects universe, where a
+      // minor-leaguer can share a name with a rostered MLB star (Astros AAA pitcher
+      // Julio Rodriguez id 680588 vs the SEA outfielder id 677594). A bare name match
+      // glued the star's 99% ownership onto the prospect; sorted by Owned%, the
+      // name-twins floated to the top. Prospects pass {noNameMatch:true}; the MLB
+      // list/pool keep the name path so the Bug #6 fix stays intact.
+      if(!yp && !_noNameMatch){
+        yp = yahooDataByName[normalize(n)] || yahooDataByName[normalizeName(n)];
+      }
       // NAMEMATCH_GUARD_FIX_V1 (June 29, 2026 — PC Walter, per the Dude; Open Bug #6).
       // The OLD guard compared yp.mlb_id (which is actually Yahoo's INTERNAL id —
       // the feed's "mlb_id" misnaming, see comment ~line 5282) against p.mlb_id (the
@@ -14879,7 +14889,7 @@ async function loadProspects(){
     // 0% for prospects Yahoo doesn't carry (matching the CBS column default)
     // and real % for prospects Yahoo does carry. Y!Rank stays em-dash for
     // not-carried prospects (Dude's call — em-dash is more honest than 0).
-    if(typeof applyYahoo === 'function') applyYahoo(prospectPlayers);
+    if(typeof applyYahoo === 'function') applyYahoo(prospectPlayers, {noNameMatch:true});
 
     // PROSPECTS_REHAB_FILTER_V1 (May 19, 2026 23:46 ET — PC Walter) — stamp
     // p.on_rehab on every prospect record so renderProspects() can filter out
