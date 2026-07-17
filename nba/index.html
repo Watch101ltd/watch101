@@ -58,6 +58,37 @@
   --header-grad-1:#080c10;--header-grad-2:#0d1520;
 }
 
+/* == DAY MODE (DAY_MODE_V1, 2026-07-17 - PC Walter, per the Dude) ==
+   Ported from baseball's proven day/night system. When <body> has class
+   "day-mode", these light cool-gray tokens replace the :root night values.
+   NIGHT stays the default; day applies only when the user clicks the toggle
+   (choice saved in localStorage). Same cool-gray paper palette baseball uses.
+   Matt's call: the two-tone stat colors are night-only for now, so day mode
+   renders those columns plain black. */
+body.day-mode{
+  --bg:#e9ebef;--surface:#f4f5f8;--surface2:#dde0e5;--surface3:#cdd1d7;
+  --border:#c2c6cc;--border2:#a5aab2;
+  --gold:#a16207;--gold2:#854d0e;
+  --text:#1a1a1a;--text2:#333333;--text3:#666666;
+  --turquoise:#0e7490;--turquoise2:#155e75;
+  --court-bright:#ea580c;   /* darken the light-orange accent so stars/arrows read on light */
+  --header-grad-1:#f4f5f8;--header-grad-2:#e5e7ec;
+}
+/* Watch List two-tone stat columns -> plain black in day mode. */
+body.day-mode table.watch-list thead th.col-stat-a,
+body.day-mode table.watch-list thead th.col-stat-b{color:#1a1a1a !important}
+body.day-mode td.col-stat-a .stat-cell,
+body.day-mode td.col-stat-b .stat-cell{color:#1a1a1a}
+/* Rankings table forces white stat cells for night; flip to black in day. */
+body.day-mode #rankings-table tbody td.col-stat-a .stat-cell,
+body.day-mode #rankings-table tbody td.col-stat-b .stat-cell,
+body.day-mode #rankings-table tbody .stat-cell{color:#1a1a1a !important}
+/* Player pop-up (From the Logo) header matches the light page in day mode. */
+body.day-mode #ftl-overlay .ftl-header{background:linear-gradient(135deg,#f4f5f8 0%,#e5e7ec 50%,#f4f5f8 100%);}
+/* Day/night toggle button. */
+#theme-toggle{background:transparent;border:1px solid var(--border2);color:var(--text);font-size:14px;cursor:pointer;padding:4px 10px;border-radius:6px;line-height:1;transition:all 0.15s;user-select:none}
+#theme-toggle:hover{background:var(--surface2);border-color:var(--court)}
+
 body{
   background:var(--bg);
   color:var(--text);
@@ -470,6 +501,22 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 </style>
 </head>
 <body>
+<script>
+/* DAY_MODE_V1 (2026-07-17 - PC Walter, per the Dude) - day/night toggle ported
+   from baseball. NIGHT is the default; day applies only when the user saved it. */
+(function(){try{var s=localStorage.getItem('watch101-theme');if(s==='day')document.body.classList.add('day-mode');}catch(e){}})();
+function toggleTheme(){
+  var isDay=document.body.classList.toggle('day-mode');
+  try{localStorage.setItem('watch101-theme',isDay?'day':'night');}catch(e){}
+  var b=document.getElementById('theme-toggle');
+  if(b){b.textContent=isDay?'☀️':'🌙';b.title=isDay?'Switch to night mode':'Switch to day mode';}
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var b=document.getElementById('theme-toggle');if(!b)return;
+  var isDay=document.body.classList.contains('day-mode');
+  b.textContent=isDay?'☀️':'🌙';b.title=isDay?'Switch to night mode':'Switch to day mode';
+});
+</script>
 
 <!-- ── HEADER ─────── -->
 <div class="header">
@@ -488,6 +535,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
     <a class="logo-mini mlb" href="../" title="Watch101 MLB — open the baseball site"><img class="logo-mini-img" src="images/watch101_baseball_logo.png" alt="101"><span class="logo-mini-sport">MLB</span></a><a class="logo-mini nfl" href="../nfl/" title="Watch101 NFL — open the football site"><img class="logo-mini-img" src="images/watch101_football_logo.png" alt="101"><span class="logo-mini-sport">NFL</span></a>
     <span id="last-updated" class="last-updated">Loading…</span>
     <button class="btn btn-outline" onclick="reloadWatchList()">Refresh</button>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
   </div>
 </div>
 
