@@ -12000,18 +12000,14 @@ function renderPool(){
     // For season stats, use the player object directly (populated by loadAllPoolStats).
     // For date range, overlay the cache. Show "…" while date range cache is loading.
     // POOL_PREBAKE_OVERLAY_V1: pre-baked cache takes priority over runtime cache.
-    const usingDR = dateRange !== 'season';
-    let sc;
-    if(usingDR){
-      const _pre = typeof PLAYER_DATERANGE_CACHE !== 'undefined' && p.mlb_id ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
-      sc = (_pre && _pre[dateRange]) || poolDateRangeCache[p.mlb_id + '_' + dateRange];
-    } else {
-      // Phase 2 refactor — read through chip-resolved sample (was just `p`).
-      sc = _activeSampleFor(p, 'pool') || p;
-    }
-    const loading = usingDR && !sc;
+    // RESOLVER_V1 Stage 3 (2026-07-22, Bug #15) — the Pool asks THE one rulebook.
+    // ROOT CAUSE #2 fix: the old windowed read grabbed the raw cache row and never
+    // consulted the toggle, so the chip could flip italics but never the numbers.
+    const _rp = resolveDisplaySample(p, { surface: 'pool' });
+    let sc = _rp.stats;
+    const loading = !!_rp.pending;
     const pending = `<span style="color:var(--border2);font-size:10px">…</span>`;
-    const na = '<span style="color:var(--text3)">—</span>';
+    const na = '<span style="color:var(--text3)">NA</span>';  // NA_NOT_DASH_V1
     // STRIP_LEADING_ZERO_V1 — Pool helper: route all decimal stats through stripLeadZero
     const sv = (val, dec=0) => loading ? pending : (val===undefined||val===null||val==='' ? na : (dec>0?stripLeadZero(parseFloat(val).toFixed(dec)):val));
     const svAvg = (val) => loading ? pending : (val===undefined||val===null||val==='' ? na : '.'+parseFloat(val).toFixed(3).split('.')[1]);
@@ -12039,8 +12035,8 @@ function renderPool(){
       if(wp && wp.positions && wp.positions.length) poolPositions = wp.positions;
       else poolPositions = p.primaryPos ? [p.primaryPos] : [];
     }
-    // MAJORS_VS_MINORS_V1 — flag rows showing MiLB-only stats
-    const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
+    // RESOLVER_V1 Stage 3 — italics read the resolver's level, same answer as the numbers.
+    const _minorStatsClass = (_rp.level === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${isAdded?'already-added':isInTank?'tank-row':''}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
       <td class="col-rank-num" style="text-align:center;color:var(--text3);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600">${_showPoolRank ? (idx+1) : ''}</td>
       <!-- STATIC_ZONE_REORDER_V1 — Pos cell now before Player; col-zone-divider on Y!RANK. -->
@@ -12554,17 +12550,18 @@ function renderContext(){
     const rowClass = (isAnchor?'ctx-highlight':isCompare?'ctx-compare':'') + (isAdded?' already-added':isInTank?' tank-row':'');
     const posClass = isPitcherPos(p.primaryPos)?'pos-SP':p.primaryPos==='C'?'pos-C':p.primaryPos==='OF'?'pos-OF':['1B','2B','3B','SS'].includes(p.primaryPos)?'pos-'+p.primaryPos:'pos-DH';
     // Phase 2 refactor — read through chip-resolved sample (was just `p.stats||{}`).
-    const s = _activeSampleFor(p, 'context') || p.stats || {};
+    // RESOLVER_V1 Stage 3 — one rulebook; range pinned to 'season' because this
+    // table has no date-range control and has always shown season samples.
+    const _rc = resolveDisplaySample(p, { surface: 'context', range: 'season' });
+    const s = _rc.stats || p.stats || {};
     const rankStyle = isAnchor ? 'color:var(--gold);font-weight:700' : 'color:var(--text3)';
     const addBtn = isAdded
       ? '<span class="btn-add-pool added">✓ On List</span>'
       : isInTank
         ? `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button><span class="btn-add-tank added">✓ Tank</span>`
         : `<button class="btn-add-pool" onclick="quickAddPoolPlayer(${p.mlb_id},'${p.name.replace(/'/g,"\\'")}','${p.team||''}','${p.primaryPos||''}',${p.age||0},this)">${activeListAddLabel('+ Add to ')}</button>`;
-    // MILB_ITALIC_V1 (May 8, 2026) — flag MiLB-sourced rows so the italic+dim
-    // stat treatment fires in the context table the same way it does in the
-    // main list, pool, and leaders.
-    const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
+    // RESOLVER_V1 Stage 3 — italics from the resolver's level (was p.statsSource).
+    const _minorStatsClass = (_rc.level === 'MiLB') ? ' row-minor-stats' : '';
     if(isPit){
       return `<tr class="${rowClass}${_minorStatsClass}" data-mlb-id="${p.mlb_id}">
         <td style="text-align:center;font-family:'Nunito Sans',sans-serif;font-size:12px;${rankStyle}">${rank}</td>
@@ -13063,7 +13060,7 @@ function renderLeaders(){
     if(wp.yahoo_rank || wp.roster_pct !== null || wp.preseason_rank) yahooLookup[wp.name.toLowerCase()] = wp;
   });
 
-  const na = '<span style="color:var(--text3)">—</span>';
+  const na = '<span style="color:var(--text3)">NA</span>';  // NA_NOT_DASH_V1
   // STRIP_LEADING_ZERO_V1 — Leaders helper: route all decimal stats through stripLeadZero
   const sv  = (val, dec=0) => (val===undefined||val===null||val==='' ? na : (dec>0 ? stripLeadZero(parseFloat(val).toFixed(dec)) : val));
   const svAvg = (val)       => (val===undefined||val===null||val==='' ? na : '.' + parseFloat(val).toFixed(3).split('.')[1]);
@@ -15760,8 +15757,11 @@ function resolveDisplaySample(p, opts){
     // Requested level has NO data in this window. The Dude's law: NA, no lies.
     return { stats: null, level: level, windowed: true, complete: false, pending: false };
   }
-  // No bake row — the runtime cache only ever holds MLB-level fetches.
+  // No bake row — the runtime caches only ever hold MLB-level fetches.
+  // (Stage 3: the Pool and Tank keep their own runtime caches keyed by mlb_id.)
   var rc = (typeof dateRangeCache !== 'undefined' && p.id) ? dateRangeCache[p.id + '_' + range] : null;
+  if(!rc && pid && typeof poolDateRangeCache !== 'undefined') rc = poolDateRangeCache[pid + '_' + range] || null;
+  if(!rc && pid && typeof tankDateRangeCache !== 'undefined') rc = tankDateRangeCache[pid + '_' + range] || null;
   if(rc){
     if(level === 'MLB') return { stats: rc, level: level, windowed: true, complete: true, pending: false };
     return { stats: null, level: level, windowed: true, complete: false, pending: false };
@@ -16326,7 +16326,7 @@ function renderProspects(){
     }
   }
 
-  const na = '<span style="color:var(--text3)">—</span>';
+  const na = '<span style="color:var(--text3)">NA</span>';  // NA_NOT_DASH_V1
   // LEADZERO_STRIP_V1 (May 19, 2026) — Prospects sv() now routes decimal
   // output through stripLeadZero, matching the Pool and Leaders helpers.
   // Matt's complaint: Prospects OPS column was rendering '0.000' instead
@@ -18895,18 +18895,13 @@ function renderTank(){
     // For season stats, use the player object directly (populated by loadAllPoolStats).
     // For date range, overlay the cache. Show "…" while date range cache is loading.
     // POOL_PREBAKE_OVERLAY_V1: pre-baked cache takes priority over runtime cache.
-    const usingDR = dateRange !== 'season';
-    let sc;
-    if(usingDR){
-      const _pre = typeof PLAYER_DATERANGE_CACHE !== 'undefined' && p.mlb_id ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
-      sc = (_pre && _pre[dateRange]) || tankDateRangeCache[p.mlb_id + '_' + dateRange];
-    } else {
-      // Phase 2 refactor — read through chip-resolved sample (was just `p`).
-      sc = _activeSampleFor(p, 'tank') || p;
-    }
-    const loading = usingDR && !sc;
+    // RESOLVER_V1 Stage 3 (2026-07-22, Bug #15) — the Tank asks THE one rulebook
+    // (it had the same toggle-blind windowed read the Pool had).
+    const _rt = resolveDisplaySample(p, { surface: 'tank' });
+    let sc = _rt.stats;
+    const loading = !!_rt.pending;
     const pending = `<span style="color:var(--border2);font-size:10px">…</span>`;
-    const na = '<span style="color:var(--text3)">—</span>';
+    const na = '<span style="color:var(--text3)">NA</span>';  // NA_NOT_DASH_V1
     // STRIP_LEADING_ZERO_V1 — Pool helper: route all decimal stats through stripLeadZero
     const sv = (val, dec=0) => loading ? pending : (val===undefined||val===null||val==='' ? na : (dec>0?stripLeadZero(parseFloat(val).toFixed(dec)):val));
     const svAvg = (val) => loading ? pending : (val===undefined||val===null||val==='' ? na : '.'+parseFloat(val).toFixed(3).split('.')[1]);
@@ -18935,7 +18930,7 @@ function renderTank(){
       else poolPositions = p.primaryPos ? [p.primaryPos] : [];
     }
     // MAJORS_VS_MINORS_V1 — flag rows showing MiLB-only stats
-    const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
+    const _minorStatsClass = (_rt.level === 'MiLB') ? ' row-minor-stats' : '';  // RESOLVER_V1 Stage 3
     return `<tr class="${_minorStatsClass.trim()}" data-mlb-id="${p.mlb_id}">
       <td class="col-rank-num" style="text-align:center;color:var(--text3);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600">${_showPoolRank ? (idx+1) : ''}</td>
       <!-- STATIC_ZONE_REORDER_V1 — Pos cell now before Player; col-zone-divider on Y!RANK. -->
