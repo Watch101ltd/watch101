@@ -6485,12 +6485,13 @@ function stripLeadZero(s){
   return (typeof s === 'string' && s.length > 1 && s.charAt(0) === '0' && s.charAt(1) === '.') ? s.slice(1) : s;
 }
 function fmt(val, dec=0){
-  if(val===undefined||val===null||val==='') return '<span class="stat-na">—</span>';
+  // NA_NOT_DASH_V1 (2026-07-22, the Dude's call): stat cells never dash, they say NA.
+  if(val===undefined||val===null||val==='') return '<span class="stat-na">NA</span>';
   if(dec>0) return stripLeadZero(parseFloat(val).toFixed(dec));
   return val;
 }
 function fmtAvg(val){
-  if(val===undefined||val===null||val==='') return '<span class="stat-na">—</span>';
+  if(val===undefined||val===null||val==='') return '<span class="stat-na">NA</span>';  // NA_NOT_DASH_V1
   const s = parseFloat(val).toFixed(3);
   return '.'+s.split('.')[1];
 }
@@ -8477,15 +8478,19 @@ function renderTable(){
     // chip-resolved sample (Phase 2 refactor — was just `p`; now reads
     // through _activeSampleFor so the chip toggle no longer relies on
     // flat-field copying. See STAT_NORMALIZER_V1 block for the why.)
-    const s = usingDateRange ? getDisplayStats(p) : (_activeSampleFor(p, 'watch') || p);
-    const loading = usingDateRange && !s; // still fetching this player
+    // RESOLVER_V1 Stage 2 (2026-07-22, Bug #15) — the watch table asks THE one
+    // rulebook. complete:false -> stats null -> fmt renders NA (the Dude's law).
+    const _rw = resolveDisplaySample(p, { surface: 'watch' });
+    const s = _rw.stats;
+    const loading = !!_rw.pending; // still fetching this player
     const sc = loading ? null : s; // safe stat container
     const na = '<span class="stat-na">—</span>';
     const pending = `<span style="color:var(--border2);font-size:10px">…</span>`;
     const statVal = (val, dec=0) => loading ? pending : fmt(val, dec);
     const statAvg = (val) => loading ? pending : fmtAvg(val);
-    // MAJORS_VS_MINORS_V1 — flag rows whose stats came from MiLB only
-    const _minorStatsClass = (p.statsSource === 'MiLB') ? ' row-minor-stats' : '';
+    // RESOLVER_V1 Stage 2 — italics read the RESOLVER'S level (same answer as the
+    // numbers, so they can never disagree). Was: p.statsSource, the cached claim.
+    const _minorStatsClass = (_rw.level === 'MiLB') ? ' row-minor-stats' : '';
     return `<tr class="${rowClass(p.move)}${_minorStatsClass}" draggable="true" data-id="${p.id}" data-idx="${i}" data-mlb-id="${p.mlb_id||''}" ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
       <!-- STATIC_ZONE_REORDER_V1 (May 7, 2026) — cells in the same order as the thead above. -->
       <td class="col-drag"><span class="drag-handle backend-only">⠿</span></td>
@@ -8637,13 +8642,12 @@ function renderPhoneCards(){
   if(!list){ host.innerHTML=''; return; }
   var na = '<span class="stat-na">—</span>';
   function sv(p, key){
-    var s = null;
-    // PHONE_CARDS_DATERANGE_FIX_V1 (June 8, 2026) — usingDateRange is a LOCAL const inside
-    // renderTable(), invisible here, so cards always read season stats. Use the GLOBAL dateRange
-    // signal the rest of the app uses (dateRange !== 'season') so cards follow the date-range dropdown.
-    var _udr = (typeof dateRange !== 'undefined') && dateRange !== 'season';
-    try { s = (_udr && typeof getDisplayStats==='function') ? getDisplayStats(p) : (_activeSampleFor(p,'watch') || p); } catch(e){ s = p; }
-    return s ? s[key] : null;
+    // RESOLVER_V1 Stage 2 (2026-07-22, Bug #15) — cards ask THE one rulebook,
+    // same as the table, so the two can never drift. Null -> fmt renders NA.
+    try {
+      var _r = resolveDisplaySample(p, { surface: 'watch' });
+      return _r.stats ? _r.stats[key] : null;
+    } catch(e){ return null; }
   }
   function num(v, dec){ try { return (typeof fmt==='function') ? fmt(v, dec||0) : (v==null?na:v); } catch(e){ return v==null?na:v; } }
   function avg(v){ try { return (typeof fmtAvg==='function') ? fmtAvg(v) : (v==null?na:v); } catch(e){ return v==null?na:v; } }
@@ -15704,6 +15708,21 @@ function resolveDisplaySample(p, opts){
       // so for both-sample players the flat record is NOT trusted here).
       s = p.statsMlb || (both ? null : ((p.statsSource === 'MiLB') ? null : (p.stats || p)));
     }
+    // QS parity (QS_APPLY_V2 / QS_ZERO_FOR_PITCHERS_V1): season samples need the
+    // Quality Starts stamp in hld, exactly like _activeSampleFor does. Windowed
+    // reads don't — the bake already writes QS into every window row's hld at
+    // the source (QS_ERASE_HOLDS_V1 in daterange_fetch.py).
+    try {
+      var _rvIsPit = ((typeof isPitcher === 'function') && isPitcher(p)) || ((typeof isPitcherPos === 'function') && isPitcherPos(p.primaryPos));
+      if(_rvIsPit && typeof window !== 'undefined' && window.QS_CACHE && s && typeof s === 'object'){
+        var _rvE = window.QS_CACHE[String(p.mlb_id)];
+        var _rvQ;
+        if(typeof _rvE === 'number') _rvQ = _rvE;
+        else if(_rvE && typeof _rvE === 'object') _rvQ = _rvE.season;
+        if(_rvQ !== undefined && _rvQ !== null){ s.hld = _rvQ; p.hld = _rvQ; }
+        else { var _rvZ = (window.QS_CACHE_LOADED === true) ? 0 : null; s.hld = _rvZ; p.hld = _rvZ; }
+      }
+    } catch(_rvQsErr){}
     return { stats: (s || null), level: level, windowed: false, complete: !!s, pending: false };
   }
   // ---- 3) WINDOWED ----
