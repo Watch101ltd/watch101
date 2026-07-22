@@ -15638,6 +15638,118 @@ function _hasBothSamples(p){
   return !!(p && p.statsMilb && p.statsMlb);
 }
 
+// ============================================================================
+// RESOLVER_V1 (2026-07-22 — PC Walter, the Bug #15 rebuild, per the Dude)
+// THE ONE RULEBOOK. Every surface that shows stats (cells, stat bar, sort,
+// italics, chips) must answer the question "which numbers do I show for this
+// player, at this range, with this toggle" by calling THIS function and
+// nothing else. The four old rulebooks (watch getDisplayStats path, pool raw
+// cache read, the V1-era sort logic, the deep cut _ppoRendering branches) are
+// being retired stage by stage — see Memory (Claude)/03 System Documentation/
+// MLB_MILB_TOGGLE_SYSTEM_MAP.md for the full map and the migration plan.
+//
+// THE DUDE'S LAW (2026-07-22): the site never lies. If the requested level
+// has no data in the requested window, return complete:false and the caller
+// renders NA. Never borrow the other level's numbers, never dress a minor
+// league line up as MLB.
+//
+// Contract:
+//   resolveDisplaySample(p, { surface, range, toggle })
+//     surface: 'watch'|'pool'|'leaders'|'context'|'tank'|'prospects'|'deepcut'
+//              (used for the per-table default when no explicit toggle exists)
+//     range:   'season'|'yesterday'|'7'|'14'|'30'|'live' — defaults to the
+//              global dateRange. Deep Cut passes its OWN _ppoDateRange, so no
+//              global mutation bridge is ever needed.
+//     toggle:  'MLB'|'MiLB' to force a side (Deep Cut passes its own toggle);
+//              omit to use the shared _sampleToggle store + table default.
+//   returns { stats, level:'MLB'|'MiLB', windowed:bool, complete:bool, pending:bool }
+//     stats    — the object whose fields the caller renders (null when !complete)
+//     level    — the level the STATS ACTUALLY BELONG TO (drive italics/chips
+//                from this, never from p.statsSource)
+//     complete — false means "no data for this level+window" -> render NA
+//     pending  — true means a runtime fetch may still land -> render the
+//                loading ellipsis, not NA
+//
+// Data notes (verified against daterange_fetch.py DATERANGE_SPLIT_V1, 7/22):
+//   the bake stamps .mlb on any window row where the player has ANY MLB data
+//   in the window, and .milb likewise (AAA wins). QS already lives in the
+//   sub-objects' hld at bake time (QS_ERASE_HOLDS_V1), so no re-stamp needed
+//   on windowed reads. The FLAT row fields are legacy back-compat only and
+//   may only be trusted for a SINGLE-sample player on a pre-split row.
+// ============================================================================
+function resolveDisplaySample(p, opts){
+  opts = opts || {};
+  var surface = opts.surface || 'watch';
+  var range = (opts.range !== undefined && opts.range !== null)
+    ? opts.range
+    : ((typeof dateRange !== 'undefined') ? dateRange : 'season');
+  if(!p) return { stats:null, level:null, windowed:false, complete:false, pending:false };
+  var both = !!(p.statsMilb && p.statsMlb);
+  // ---- 1) which level is REQUESTED ----
+  var level;
+  if(opts.toggle === 'MLB' || opts.toggle === 'MiLB'){ level = opts.toggle; }
+  else if(both){ level = _resolveActiveSample(p, surface) || 'MLB'; }
+  else if(p.statsMilb && !p.statsMlb){ level = 'MiLB'; }
+  else if(p.statsMlb && !p.statsMilb){ level = 'MLB'; }
+  else { level = (p.statsSource === 'MiLB') ? 'MiLB' : 'MLB'; }
+  // ---- 2) SEASON ----
+  if(range === 'season'){
+    var s;
+    if(level === 'MiLB'){
+      s = p.statsMilb || ((p.statsSource === 'MiLB') ? (p.stats || p) : null);
+    } else {
+      // Pure-MLB players carry season stats flat on the record; both-sample
+      // players carry the true MLB season in statsMlb (the flat fields may
+      // have been stamped with EITHER sample by _applyActiveSampleToFlatFields,
+      // so for both-sample players the flat record is NOT trusted here).
+      s = p.statsMlb || (both ? null : ((p.statsSource === 'MiLB') ? null : (p.stats || p)));
+    }
+    return { stats: (s || null), level: level, windowed: false, complete: !!s, pending: false };
+  }
+  // ---- 3) WINDOWED ----
+  var pid = p.mlb_id;
+  var wantKey = (level === 'MiLB') ? 'milb' : 'mlb';
+  var win = null;
+  if(range !== 'live' && pid && typeof PLAYER_DATERANGE_CACHE !== 'undefined'){
+    var _rowset = PLAYER_DATERANGE_CACHE[String(pid)];
+    if(_rowset) win = _rowset[range] || null;
+  }
+  if(win){
+    var side = win[wantKey];
+    if(side && Object.keys(side).length > 0){
+      return { stats: side, level: level, windowed: true, complete: true, pending: false };
+    }
+    if(wantKey === 'milb'){
+      // Rostered both-sample players are not always in the main bake's .milb —
+      // the prospects cache or a one-shot side-fetch may have the window.
+      if(typeof prospectsDateRangeCache !== 'undefined'){
+        var _pdr = prospectsDateRangeCache[pid + '_' + range];
+        if(_pdr && Object.keys(_pdr).length > 0){
+          return { stats: _pdr, level: level, windowed: true, complete: true, pending: false };
+        }
+      }
+      if(typeof _fetchDeepCutMilbWindow === 'function' && surface === 'deepcut'){
+        _fetchDeepCutMilbWindow(pid, range);
+        return { stats: null, level: level, windowed: true, complete: false, pending: true };
+      }
+    }
+    // Legacy pre-split row (no sub-objects at all): the flat line may only
+    // speak for a SINGLE-sample player, where we know whose line it is.
+    if(!win.mlb && !win.milb && !both){
+      return { stats: win, level: level, windowed: true, complete: true, pending: false };
+    }
+    // Requested level has NO data in this window. The Dude's law: NA, no lies.
+    return { stats: null, level: level, windowed: true, complete: false, pending: false };
+  }
+  // No bake row — the runtime cache only ever holds MLB-level fetches.
+  var rc = (typeof dateRangeCache !== 'undefined' && p.id) ? dateRangeCache[p.id + '_' + range] : null;
+  if(rc){
+    if(level === 'MLB') return { stats: rc, level: level, windowed: true, complete: true, pending: false };
+    return { stats: null, level: level, windowed: true, complete: false, pending: false };
+  }
+  return { stats: null, level: level, windowed: true, complete: false, pending: true };
+}
+
 // EXP_LABEL_V1 (May 12, 2026) — computes the EXP column display value.
 // Reads two Chadwick year integers (mlb_played_first / mlb_played_last)
 // that ride along on every registry row from /registry/lookup.
@@ -17758,7 +17870,7 @@ function renderPlayerStatBar(p){
   var loadingLabel = document.getElementById('ppo-statbar-loading');
   if(!container) return;
   var pit = (typeof isPitcher === 'function') ? isPitcher(p) : false;
-  var na = '<span class="ppo-statbar-val na">&mdash;</span>';
+  var na = '<span class="ppo-statbar-val na">NA</span>';  // NA_NOT_DASH_V1 (2026-07-22, the Dude's call): stat cells never dash, they say NA
 
   // Get the stat source based on current dateRange.
   // - dateRange === 'season' -> use p directly (season-long numbers on the player object)
@@ -17771,24 +17883,18 @@ function renderPlayerStatBar(p){
   // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05, PC Walter, per the Dude) — does this render want the MiLB
   // side? True when the player is MiLB-only OR the Dude flipped the Deep Cut chip to MiLB.
   var _dcBoth = (typeof _hasBothSamples === 'function') ? _hasBothSamples(p) : !!(p && p.statsMilb && p.statsMlb);
-  var _dcWantMilb = (_dcBoth && window._ppoSampleToggle === 'MiLB') || (!_dcBoth && p && p.statsSource === 'MiLB');
-  if(usingDateRange && typeof getDisplayStats === 'function'){
-    // Date-range path: flag the Deep Cut render so getDisplayStats reads Deep Cut's OWN toggle
-    // (_ppoSampleToggle) and returns the windowed .milb side when MiLB is selected. Cleared right
-    // after so no other render path is affected.
-    window._ppoRendering = true;
-    try { sc = getDisplayStats(p); } finally { window._ppoRendering = false; }
-  } else {
-    // Season path: getDisplayStats returns p (MLB season fields) immediately for 'season', so it
-    // can't honor the toggle. Pull the MiLB season sample directly via _activeSampleFor when the
-    // Deep Cut chip is on MiLB; otherwise use the player's MLB season fields (p).
-    if(_dcWantMilb && typeof _activeSampleFor === 'function'){
-      sc = (p.statsMilb || _activeSampleFor(p, 'prospects') || p);
-    } else {
-      sc = p;
-    }
-  }
-  var loading = usingDateRange && sc === null;
+  // RESOLVER_V1 (2026-07-22, Bug #15 Stage 1) — the stat bar now asks THE one
+  // rulebook. The overlay's own range is passed as a PARAMETER (no more
+  // _ppoRendering global-mutation bridge for this path) and the overlay's own
+  // toggle is passed explicitly. complete:false renders NA (the Dude's law:
+  // never borrow the other level's numbers), pending:true keeps the ellipsis.
+  var _res = resolveDisplaySample(p, {
+    surface: 'deepcut',
+    range: _ppoRange,
+    toggle: _dcBoth ? ((window._ppoSampleToggle === 'MiLB') ? 'MiLB' : 'MLB') : undefined
+  });
+  sc = _res.stats;
+  var loading = !!_res.pending;
 
   if(loadingLabel){ loadingLabel.style.display = loading ? 'inline' : 'none'; }
 
