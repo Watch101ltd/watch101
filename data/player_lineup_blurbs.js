@@ -219,6 +219,11 @@ var PLAYER_LINEUP_BLURBS = {
     "blurb": "Played all 5 available games last week.",
     "name": "Nolan Arenado"
   },
+  "571510": {
+    "as_of": "2026-07-22",
+    "blurb": "Made his turn in the rotation this past week.",
+    "name": "Matt Boyd"
+  },
   "571578": {
     "as_of": "2026-07-22",
     "blurb": "No starts in last 7 days.",
@@ -299,6 +304,11 @@ var PLAYER_LINEUP_BLURBS = {
     "blurb": "On IL since Jul 17 - no starts in last 7 days.",
     "name": "Jason Adam"
   },
+  "592122": {
+    "as_of": "2026-07-22",
+    "blurb": "On IL since Jul 17 - missed 5 of last 5 team games.",
+    "name": "Tyler Austin"
+  },
   "592155": {
     "as_of": "2026-07-22",
     "blurb": "No starts in last 7 days.",
@@ -353,6 +363,11 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-07-22",
     "blurb": "Made his turn in the rotation this past week.",
     "name": "Jameson Taillon"
+  },
+  "592858": {
+    "as_of": "2026-07-22",
+    "blurb": "On IL since Jul 17 - no starts in last 7 days.",
+    "name": "Rowan Wick"
   },
   "592885": {
     "as_of": "2026-07-22",
@@ -598,6 +613,11 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-07-22",
     "blurb": "Played all 5 available games last week.",
     "name": "Alex Bregman"
+  },
+  "608331": {
+    "as_of": "2026-07-22",
+    "blurb": "On IL since Jul 17 - no starts in last 7 days.",
+    "name": "Max Fried"
   },
   "608337": {
     "as_of": "2026-07-22",
@@ -1223,6 +1243,11 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-07-22",
     "blurb": "Scratched 5 of 5 games last week.",
     "name": "Bryan De La Cruz"
+  },
+  "650633": {
+    "as_of": "2026-07-22",
+    "blurb": "Made his turn in the rotation this past week.",
+    "name": "Mike King"
   },
   "650644": {
     "as_of": "2026-07-22",
@@ -1969,11 +1994,6 @@ var PLAYER_LINEUP_BLURBS = {
     "blurb": "No starts in last 7 days.",
     "name": "Luis Medina"
   },
-  "665645": {
-    "as_of": "2026-07-22",
-    "blurb": "No starts in last 7 days.",
-    "name": "Kervin Castro"
-  },
   "665660": {
     "as_of": "2026-07-22",
     "blurb": "No starts in last 7 days.",
@@ -2434,6 +2454,11 @@ var PLAYER_LINEUP_BLURBS = {
     "blurb": "Made his turn in the rotation this past week.",
     "name": "Logan Gilbert"
   },
+  "669310": {
+    "as_of": "2026-07-22",
+    "blurb": "No starts in last 7 days.",
+    "name": "CJ Van Eyk"
+  },
   "669330": {
     "as_of": "2026-07-22",
     "blurb": "No starts in last 7 days.",
@@ -2693,6 +2718,11 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-07-22",
     "blurb": "Played all 5 available games last week.",
     "name": "Heliot Ramos"
+  },
+  "671277": {
+    "as_of": "2026-07-22",
+    "blurb": "Scratched 2 of 5 games last week.",
+    "name": "Luis Garc\u00eda"
   },
   "671286": {
     "as_of": "2026-07-22",
@@ -3094,6 +3124,11 @@ var PLAYER_LINEUP_BLURBS = {
     "blurb": "On IL since Jul 17 - no starts in last 7 days.",
     "name": "Garrett Crochet"
   },
+  "677020": {
+    "as_of": "2026-07-22",
+    "blurb": "No starts in last 7 days.",
+    "name": "Josh Walker"
+  },
   "677053": {
     "as_of": "2026-07-22",
     "blurb": "On IL since Jul 17 - no starts in last 7 days.",
@@ -3243,6 +3278,11 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-07-22",
     "blurb": "Scratched 5 of 5 games last week.",
     "name": "Junior Perez"
+  },
+  "678606": {
+    "as_of": "2026-07-22",
+    "blurb": "No starts in last 7 days.",
+    "name": "Jos\u00e9 Ferrer"
   },
   "678662": {
     "as_of": "2026-07-22",
@@ -3514,11 +3554,6 @@ var PLAYER_LINEUP_BLURBS = {
     "blurb": "Played all 5 available games last week.",
     "name": "Heriberto Hernandez"
   },
-  "681751": {
-    "as_of": "2026-07-22",
-    "blurb": "No starts in last 7 days.",
-    "name": "Lazaro Estrada"
-  },
   "681807": {
     "as_of": "2026-07-22",
     "blurb": "Scratched 2 of 5 games last week.",
@@ -3643,6 +3678,11 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-07-22",
     "blurb": "Back from IL - 2 starts, 2 scratches since return.",
     "name": "Jonatan Clase"
+  },
+  "682818": {
+    "as_of": "2026-07-22",
+    "blurb": "Scratched 5 of 5 games last week.",
+    "name": "Yohendrick Pinango"
   },
   "682829": {
     "as_of": "2026-07-22",
@@ -4299,6 +4339,11 @@ var PLAYER_LINEUP_BLURBS = {
     "blurb": "Scratched 3 of 5 games last week.",
     "name": "Daniel Susac"
   },
+  "691777": {
+    "as_of": "2026-07-22",
+    "blurb": "Scratched 4 of 5 games last week.",
+    "name": "Max Muncy"
+  },
   "691783": {
     "as_of": "2026-07-22",
     "blurb": "On IL since Jul 17 - missed 5 of last 5 team games.",
@@ -4538,6 +4583,11 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-07-22",
     "blurb": "Played all 5 available games last week.",
     "name": "Jac Caglianone"
+  },
+  "695508": {
+    "as_of": "2026-07-22",
+    "blurb": "Scratched 3 of 5 games last week.",
+    "name": "Cameron Cauley"
   },
   "695534": {
     "as_of": "2026-07-22",
@@ -5078,6 +5128,16 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-07-22",
     "blurb": "Scratched 4 of 5 games last week.",
     "name": "Sean Keys"
+  },
+  "820862": {
+    "as_of": "2026-07-22",
+    "blurb": "No starts in last 7 days.",
+    "name": "Jos\u00e9 Fermin"
+  },
+  "823550": {
+    "as_of": "2026-07-22",
+    "blurb": "Scratched 4 of 5 games last week.",
+    "name": "Sung Mun Song"
   },
   "828599": {
     "as_of": "2026-07-22",
