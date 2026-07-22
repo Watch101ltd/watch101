@@ -13809,7 +13809,7 @@ async function _fetchDeepCutMilbWindow(mlbId, range){
     if(typeof prospectsDateRangeCache !== 'undefined'){ prospectsDateRangeCache[key] = stats; }
     // Repaint the Deep Cut bar if this player is still showing and still on this range/MiLB side.
     if(window._ppoCurrentPlayer && window._ppoCurrentPlayer.mlb_id === mlbId
-       && typeof dateRange !== 'undefined' && dateRange === range
+       && (window._ppoDateRange || 'season') === range  // Stage 6 fix: the OVERLAY's range, not the main page's
        && window._ppoSampleToggle === 'MiLB'
        && typeof renderPlayerStatBar === 'function'){
       renderPlayerStatBar(window._ppoCurrentPlayer);
@@ -13821,150 +13821,15 @@ async function _fetchDeepCutMilbWindow(mlbId, range){
   }
 }
 
-function getDisplayStats(p){
-  // DEEPCUT_DATERANGE_ISOLATION_V1 (2026-06-25 — PC Walter, per the Dude) — when the Deep
-  // Cut overlay is the one rendering (window._ppoRendering), temporarily run this function
-  // against the OVERLAY's own date range (window._ppoDateRange) instead of the global one,
-  // then restore the global on the way out. This keeps the popup's date range fully
-  // independent of the main page. The module-level `dateRange` is briefly swapped and
-  // always restored in the finally, so no other render path ever sees the overlay's value.
-  var _gdsSavedRange = dateRange;
-  var _gdsOverlay = (typeof window !== 'undefined' && window._ppoRendering && window._ppoDateRange);
-  if(_gdsOverlay){ dateRange = window._ppoDateRange; }
-  try {
-    return _getDisplayStatsInner(p);
-  } finally {
-    if(_gdsOverlay){ dateRange = _gdsSavedRange; }
-  }
-}
-function _getDisplayStatsInner(p){
-  // Returns the stat object to display for the current dateRange:
-  //  - 'season' -> the player record itself (season totals already live on p)
-  //  - 'yesterday' / '7' / '14' / '30' -> the pre-baked server-side cache when possible,
-  //    falling back to the runtime dateRangeCache for fresh additions not yet in the bake
-  //  - 'live' -> always the runtime cache (byDateRange API fetch of today's window)
-  //
-  // CHIP_AWARE_DATERANGE_V1 (May 19, 2026) — when the player has both MLB and MiLB
-  // samples in the window, the cache row now carries .mlb and .milb sub-objects
-  // (see DATERANGE_SPLIT_V1 in daterange_fetch.py). We read whichever side matches
-  // p.statsSource ('MLB' vs 'MiLB' — set by the chip toggle). For backward compat,
-  // if the sub-object doesn't exist (most players, who only played at one level
-  // in the window), we fall back to the flat fields on the range row itself.
-  if(dateRange === 'season') return p;
-  // CHIP_AWARE_DATERANGE_V3 (5/21 12:00 ET - PC Walter, per Matt's spec) - when
-  // the chip is in MiLB state, the date range is IGNORED. Always return the
-  // player's season-long MiLB totals (p.statsMilb), with the same fallback
-  // chain _activeSampleFor uses. This replaces both V1 (sub-object lookup in
-  // the date-range cache) and V2 (em-dash on missing sub-object) since neither
-  // approach was what Matt wanted: he doesn't want MiLB broken down by date
-  // range at all. MLB-state behavior is unchanged - it still reads the date-
-  // range cache normally.
-  if(p && p.statsSource === 'MiLB'){
-    // DEEPCUT_MILB_ONLY_DATERANGE_V1 (2026-06-05, PC Walter, per the Dude) — edge-case fix.
-    // Matt's V3 rule (ignore date range for MiLB, show season totals) was meant for players who
-    // have BOTH levels: when viewing their MiLB side, don't break it down by date range. But a
-    // MiLB-ONLY player (never called up this season, e.g. Yohandy Morales) has NOTHING BUT minor-
-    // league stats, so date-sorting them is exactly what's wanted. For those players, read the
-    // windowed .milb stats from the pre-bake the same way getProspectDisplayStats does. Players
-    // with both samples still hit Matt's original behavior below (unchanged). NOTE: a future phase
-    // will add the MLB/MiLB chip toggle to the Deep Cut page for both-level players (Augustin
-    // Ramirez use-case) — see the parked task. This fix is the MiLB-only slice only.
-    var _bothSamples = (typeof _hasBothSamples === 'function') ? _hasBothSamples(p) : !!(p.statsMilb && p.statsMlb);
-    // Two cases want a date-ranged MiLB read here:
-    //  (1) MiLB-ONLY player (Yohandy Morales) — date-sorting his only stats is the point.
-    //  (2) BOTH-sample player the Dude EXPLICITLY toggled to MiLB on the DEEP CUT page
-    //      (Augustin Ramirez call-up watch). Deep Cut has its OWN toggle (_ppoSampleToggle),
-    //      checked only while the Deep Cut stat bar is rendering (window._ppoRendering). Matt's
-    //      V3 "season totals" rule still applies to a both-sample player NOT on the Deep Cut page.
-    var _deepCutMilb = (typeof window !== 'undefined') && window._ppoRendering && window._ppoSampleToggle === 'MiLB';
-    var _wantWindowedMilb = (!_bothSamples || _deepCutMilb);
-    if(_wantWindowedMilb && dateRange !== 'season' && dateRange !== 'live' && p.mlb_id && typeof PLAYER_DATERANGE_CACHE !== 'undefined'){
-      var _preMilb = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
-      if(_preMilb && _preMilb[dateRange]){
-        var _rowMilb = _preMilb[dateRange];
-        if(_rowMilb.milb && Object.keys(_rowMilb.milb).length > 0) return _rowMilb.milb;
-        return _rowMilb;
-      }
-      // No windowed data for this window → empty so the bar shows dashes (honest),
-      // matching PROSPECTS_DASH_HONESTY_V2 rather than misleading season totals.
-      return {};
-    }
-    if(typeof _activeSampleFor === 'function'){
-      var _milbSample = _activeSampleFor(p, 'watch');
-      if(_milbSample) return _milbSample;
-    }
-    return p.statsMilb || p.stats || p;
-  }
-  if(dateRange !== 'live' && p && p.mlb_id && typeof PLAYER_DATERANGE_CACHE !== 'undefined'){
-    var pre = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
-    if(pre && pre[dateRange]){
-      var _row = pre[dateRange];
-      // QS_WINDOW_DR_V1 (June 3, 2026) — overlay this pitcher's windowed Quality
-      // Starts onto the date-range row's hld so the QS column shows the count for
-      // the selected window (holds is fully replaced by QS sitewide, so stamping
-      // hld here is consistent, not a leak). Pitchers only (isPitcher guard) so a
-      // hitter's SB in the shared slot is never touched. A pitcher with no QS
-      // value for this window gets hld=null -> em-dash. Mirrors QS_APPLY_V2.
-      try {
-        var _drIsPit = ((typeof isPitcher === 'function') && isPitcher(p)) || ((typeof isPitcherPos === 'function') && isPitcherPos(p.primaryPos));
-        if(_drIsPit){
-          var _drQs = _qsForCurrentWindow(p.mlb_id);
-          var _drVal = (_drQs !== undefined && _drQs !== null) ? _drQs : ((window.QS_CACHE_LOADED === true) ? 0 : null);  // QS_ZERO_FOR_PITCHERS_V1 — 0, not em-dash, once the cache is real
-          if(_row && typeof _row === 'object') _row.hld = _drVal;
-          if(_row && _row.mlb && typeof _row.mlb === 'object') _row.mlb.hld = _drVal;
-        }
-      } catch(_drErr){}
-      // Pre-V3 the row carried .mlb / .milb sub-objects for chip awareness.
-      // Under V3, MiLB is short-circuited above so we only need the MLB side.
-      // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05) — EXCEPT when the Dude has toggled a both-sample player
-      // to MiLB ON THE DEEP CUT PAGE. Deep Cut uses its OWN toggle (_ppoSampleToggle), checked only
-      // while the Deep Cut stat bar is rendering (window._ppoRendering) so the main list is never
-      // affected. No Deep Cut MiLB toggle => MLB side as before (Matt's default unchanged).
-      // DEEPCUT_CHIP_TOGGLE_V1 (2026-06-05, PC Walter, per the Dude) — on the DEEP CUT page the chip
-      // is authoritative: return EXACTLY the requested level's windowed sub-object, or em-dashes if
-      // that level has no stats in this window. NEVER fall back to the flat row, because the flat row
-      // mirrors whichever level the player actually played (e.g. Agustin Ramirez is in the minors, so
-      // his flat last-7 row IS his MiLB line — returning it for the MLB side wrongly showed MiLB
-      // numbers under "MLB"). Correct behavior: AAA → .milb (real), MLB → dashes (he hasn't played
-      // in the bigs this window). _ppoRendering scopes this to the Deep Cut render only.
-      try {
-        if(typeof window !== 'undefined' && window._ppoRendering){
-          var _want = (window._ppoSampleToggle === 'MiLB') ? 'milb' : 'mlb';
-          var _side = _row[_want];
-          if(_side && Object.keys(_side).length > 0) return _side;
-          // Requested side absent. For MiLB, the prospects level=milb cache / a direct fetch may have
-          // it (rostered both-sample players aren't always in the main bake's .milb). For MLB, dashes.
-          if(_want === 'milb'){
-            if(typeof prospectsDateRangeCache !== 'undefined'){
-              var _pdr = prospectsDateRangeCache[p.mlb_id + '_' + dateRange];
-              if(_pdr && Object.keys(_pdr).length > 0) return _pdr;
-            }
-            if(typeof _fetchDeepCutMilbWindow === 'function'){ _fetchDeepCutMilbWindow(p.mlb_id, dateRange); }
-            return {}; // MiLB side genuinely absent for this window -> honest em-dashes
-          }
-          // DEEPCUT_MLB_FLAT_FALLBACK_V1 (June 29, 2026 — PC Walter, per the Dude; Open Bug #7).
-          // MLB side requested but the row has no .mlb sub-object. The OLD code returned {}
-          // (em-dashes) here, which diverged from the MAIN PAGE — the main list's date-range
-          // read ends in `else dr = _row` (the flat row), so a both-sample player like Matt
-          // Wallner showed real Last-7 numbers on the table but EM-DASHES on his Deep Cut.
-          // The Dude's call: make the Deep Cut MATCH the main page. Fall back to the flat row
-          // (which the bake fills with the player's actual windowed line) instead of dashing.
-          // MiLB side above is unchanged (Matt's V3 rule: MiLB isn't date-ranged for both-
-          // sample players, and a real MiLB-only window still dashes the MLB side only after
-          // this flat fallback finds nothing). The flat row is the same source the main page
-          // uses, so the two surfaces now agree.
-          return _row;
-        }
-      } catch(_tgErr){}
-      // Off the Deep Cut page — original behavior unchanged (MLB side, then flat row).
-      if(_row.mlb) return _row.mlb;
-      return _row;
-    }
-  }
-  var cached = dateRangeCache[p.id + '_' + dateRange];
-  if(cached) return cached;
-  return null; // still loading for this player
-}
+// ============================================================================
+// RETIRED 2026-07-22 (Bug #15 Stage 6 demolition — PC Walter, per the Dude):
+// getDisplayStats() and _getDisplayStatsInner() lived here for ~2 months —
+// carrying Matt's V3 MiLB short-circuit, the CHIP_AWARE_DATERANGE chain, the
+// Deep Cut _ppoRendering branches, and the Bug #7 flat-row fallback. Every
+// surface now asks resolveDisplaySample(), THE one rulebook. Full history:
+// 03 System Documentation/MLB_MILB_TOGGLE_SYSTEM_MAP.md. The Dude's law:
+// the site never lies — NA over borrowed numbers, always.
+// ============================================================================
 
 async function fetchDateRangeStats(days){
   if(dateRangeFetching) return;
@@ -18065,9 +17930,17 @@ function renderPlayerStatBar(p){
     window._ppoPollTimer = setInterval(function(){
       var cp = window._ppoCurrentPlayer;
       if(!cp){ clearPlayerStatBarPoll(); return; }
-      // Stop if range was reset to season
-      if(typeof dateRange === 'undefined' || dateRange === 'season'){ clearPlayerStatBarPoll(); renderPlayerStatBar(cp); return; }
-      if(typeof getDisplayStats === 'function' && getDisplayStats(cp) !== null){
+      // RESOLVER_V1 Stage 6 (2026-07-22) — poll the one rulebook. Also fixed a
+      // pre-isolation leftover: this used to watch the MAIN page's dateRange
+      // instead of the overlay's own _ppoDateRange.
+      var _pRange = window._ppoDateRange || 'season';
+      if(_pRange === 'season'){ clearPlayerStatBarPoll(); renderPlayerStatBar(cp); return; }
+      var _pr = resolveDisplaySample(cp, {
+        surface: 'deepcut',
+        range: _pRange,
+        toggle: (cp.statsMlb && cp.statsMilb) ? ((window._ppoSampleToggle === 'MiLB') ? 'MiLB' : 'MLB') : undefined
+      });
+      if(!_pr.pending){
         clearPlayerStatBarPoll();
         renderPlayerStatBar(cp);
       }
