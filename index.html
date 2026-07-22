@@ -6423,10 +6423,11 @@ function getFiltered(){
             // CHIP_AWARE_DATERANGE_V1 (May 19, 2026) — pick the sub-object
             // matching chip state, falling back to flat fields. Same logic
             // as getDisplayStats() so the sort order matches the cells.
-            const _row = _pre[dateRange];
-            if(p.statsSource === 'MiLB' && _row.milb) dr = _row.milb;
-            else if(p.statsSource === 'MLB' && _row.mlb) dr = _row.mlb;
-            else dr = _row;
+            // RESOLVER_V1 Stage 4 (2026-07-22, Bug #15) — sort asks THE one
+            // rulebook so order always matches the cells. (V1-era chip logic
+            // had been frozen here since May 19 while the cells moved on.)
+            const _rs4 = resolveDisplaySample(p, { surface: 'watch' });
+            dr = _rs4.stats;
           }
         }
         if(!dr && typeof dateRangeCache !== 'undefined' && p.id){
@@ -11777,9 +11778,9 @@ function renderPool(){
     const _drStatFor = (p, key) => {
       const useDR = (typeof dateRange !== 'undefined' && dateRange !== 'season');
       if(useDR && p.mlb_id){
-        const _pre = (typeof PLAYER_DATERANGE_CACHE !== 'undefined') ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
-        const _dr = (_pre && _pre[dateRange]) || (typeof poolDateRangeCache !== 'undefined' ? poolDateRangeCache[p.mlb_id + '_' + dateRange] : null);
-        return _dr ? (parseFloat(_dr[key])||0) : 0;
+        // RESOLVER_V1 Stage 4 — the filter tests the SAME number the cell shows.
+        const _rf4 = resolveDisplaySample(p, { surface: 'pool' });
+        return _rf4.stats ? (parseFloat(_rf4.stats[key])||0) : 0;
       }
       return parseFloat(p[key])||0;
     };
@@ -11875,9 +11876,9 @@ function renderPool(){
       // sentinel if neither has data yet.
       let v;
       if(useDateRange && p.mlb_id){
-        const _pre = (typeof PLAYER_DATERANGE_CACHE !== 'undefined') ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
-        const _dr = (_pre && _pre[dateRange]) || (typeof poolDateRangeCache !== 'undefined' ? poolDateRangeCache[p.mlb_id + '_' + dateRange] : null);
-        v = _dr ? _dr[key] : undefined;
+        // RESOLVER_V1 Stage 4 — sort reads the one rulebook, same as the cells.
+        const _rs4 = resolveDisplaySample(p, { surface: 'pool' });
+        v = _rs4.stats ? _rs4.stats[key] : undefined;
       } else {
         v = p[key];
       }
@@ -12570,12 +12571,12 @@ function renderContext(){
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
         <td class="stat col-exp" style="text-align:right">${experienceLabel(p)}</td>
-        <td class="stat">${s.era!=null?stripLeadZero(parseFloat(s.era).toFixed(2)):'—'}</td>
-        <td class="stat">${s.whip!=null?stripLeadZero(parseFloat(s.whip).toFixed(2)):'—'}</td>
-        <td class="stat">${s.k??'—'}</td>
-        <td class="stat">${s.w??'—'}</td>
-        <td class="stat">${s.sv??'—'}</td>
-        <td class="stat">${s.ip!=null?parseFloat(s.ip).toFixed(1):'—'}</td>
+        <td class="stat">${s.era!=null?stripLeadZero(parseFloat(s.era).toFixed(2)):'NA'}</td>
+        <td class="stat">${s.whip!=null?stripLeadZero(parseFloat(s.whip).toFixed(2)):'NA'}</td>
+        <td class="stat">${s.k??'NA'}</td>
+        <td class="stat">${s.w??'NA'}</td>
+        <td class="stat">${s.sv??'NA'}</td>
+        <td class="stat">${s.ip!=null?parseFloat(s.ip).toFixed(1):'NA'}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const yr=yw&&yw.yahoo_rank?yw.yahoo_rank:p.yahoo_rank;return yr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const rp=yw&&yw.roster_pct!=null?yw.roster_pct:p.roster_pct;return rp!=null?parseFloat(rp).toFixed(0)+'%':'0%';})()}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* CBS_COLUMN_V1 — read cbs_roster_pct from player object (applyCBS merged it from cbsDataByName) */ return p.cbs_roster_pct!=null?parseFloat(p.cbs_roster_pct).toFixed(0)+'%':'0%';})()}</td>
@@ -12590,12 +12591,12 @@ function renderContext(){
         <td class="stat team-cell">${p.team||'—'}</td>
         <td class="stat">${decimalAge(p)}</td>
         <td class="stat col-exp" style="text-align:right">${experienceLabel(p)}</td>
-        <td class="stat">${s.ops!=null?stripLeadZero(parseFloat(s.ops).toFixed(3)):'—'}</td>
-        <td class="stat">${s.avg!=null?'.'+parseFloat(s.avg).toFixed(3).split('.')[1]:'—'}</td>
-        <td class="stat">${s.hr??'—'}</td>
-        <td class="stat">${s.rbi??'—'}</td>
-        <td class="stat">${s.r??'—'}</td>
-        <td class="stat">${s.sb??'—'}</td>
+        <td class="stat">${s.ops!=null?stripLeadZero(parseFloat(s.ops).toFixed(3)):'NA'}</td>
+        <td class="stat">${s.avg!=null?'.'+parseFloat(s.avg).toFixed(3).split('.')[1]:'NA'}</td>
+        <td class="stat">${s.hr??'NA'}</td>
+        <td class="stat">${s.rbi??'NA'}</td>
+        <td class="stat">${s.r??'NA'}</td>
+        <td class="stat">${s.sb??'NA'}</td>
         <td class="stat" style="text-align:center">${p.bats||'<span style="color:var(--text3)">—</span>'}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const yr=yw&&yw.yahoo_rank?yw.yahoo_rank:p.yahoo_rank;return yr||'<span style=\'color:var(--text3)\'>—</span>';})()}</td>
         <td class="stat" style="color:var(--text)">${(()=>{/* DUPLICATE_NAME_FIX_V1 — mlb_id first, name fallback only if no id */ const yw=(p.mlb_id!=null&&ctxYahooLookup[String(p.mlb_id)])||ctxYahooLookupByName[normalize(p.name||"")]||ctxYahooLookupByName[normalizeName(p.name||"")];const rp=yw&&yw.roster_pct!=null?yw.roster_pct:p.roster_pct;return rp!=null?parseFloat(rp).toFixed(0)+'%':'0%';})()}</td>
@@ -12984,9 +12985,9 @@ function renderLeaders(){
       if((pushPitchers && pit) || (pushHitters && !pit)) return sentinel;
       let v;
       if(useDateRange && p.mlb_id){
-        const _pre = (typeof PLAYER_DATERANGE_CACHE !== 'undefined') ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
-        const _dr = (_pre && _pre[dateRange]) || (typeof poolDateRangeCache !== 'undefined' ? poolDateRangeCache[p.mlb_id + '_' + dateRange] : null);
-        v = _dr ? _dr[key] : undefined;
+        // RESOLVER_V1 Stage 4 — sort reads the one rulebook, same as the cells.
+        const _rs4 = resolveDisplaySample(p, { surface: 'pool' });
+        v = _rs4.stats ? _rs4.stats[key] : undefined;
       } else {
         v = p[key];
       }
@@ -18667,9 +18668,9 @@ function renderTank(){
     const _drStatFor = (p, key) => {
       const useDR = (typeof dateRange !== 'undefined' && dateRange !== 'season');
       if(useDR && p.mlb_id){
-        const _pre = (typeof PLAYER_DATERANGE_CACHE !== 'undefined') ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
-        const _dr = (_pre && _pre[dateRange]) || (typeof tankDateRangeCache !== 'undefined' ? tankDateRangeCache[p.mlb_id + '_' + dateRange] : null);
-        return _dr ? (parseFloat(_dr[key])||0) : 0;
+        // RESOLVER_V1 Stage 4 — the tank filter tests the SAME number the cell shows.
+        const _rf4 = resolveDisplaySample(p, { surface: 'tank' });
+        return _rf4.stats ? (parseFloat(_rf4.stats[key])||0) : 0;
       }
       return parseFloat(p[key])||0;
     };
@@ -18765,9 +18766,9 @@ function renderTank(){
       // sentinel if neither has data yet.
       let v;
       if(useDateRange && p.mlb_id){
-        const _pre = (typeof PLAYER_DATERANGE_CACHE !== 'undefined') ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
-        const _dr = (_pre && _pre[dateRange]) || (typeof tankDateRangeCache !== 'undefined' ? tankDateRangeCache[p.mlb_id + '_' + dateRange] : null);
-        v = _dr ? _dr[key] : undefined;
+        // RESOLVER_V1 Stage 4 — tank sort reads the one rulebook, same as the cells.
+        const _rs4 = resolveDisplaySample(p, { surface: 'tank' });
+        v = _rs4.stats ? _rs4.stats[key] : undefined;
       } else {
         v = p[key];
       }
