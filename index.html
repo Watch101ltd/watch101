@@ -11505,7 +11505,7 @@ async function loadPoolPlayers(){
     if(typeof applyCBS === 'function') applyCBS(poolPlayers);
     document.getElementById('pool-loading').style.display = 'none';
     document.getElementById('pool-status').textContent = poolPlayers.length + ' MLB players loaded — loading stats...';
-    renderPool(); // POOL_RENDER_COALESCE_V1 — roster paints IMMEDIATELY for fast first-feedback; only the stat renders below are debounced.
+    renderPool();
     // If League Leaders is open, show the roster while stats load in the background
     if(leadersActive) renderLeaders();
     // Backfill bats/throws via the /people endpoint (which always returns batSide+pitchHand)
@@ -11554,7 +11554,7 @@ async function loadPoolBatsThrows(){
       } catch(e){ /* skip failed chunk */ }
     }
     // Re-render whatever's currently visible so the B/T column lights up
-    if(typeof renderPool    === 'function' && poolActive)    schedulePoolRender();
+    if(typeof renderPool    === 'function' && poolActive)    renderPool();
     if(typeof renderLeaders === 'function' && leadersActive) renderLeaders();
   } catch(e){}
 }
@@ -11562,59 +11562,11 @@ async function loadPoolBatsThrows(){
 // ---- BULK STATS LOADER ----
 // Fetches season stats for ALL MLB players in just 2 API calls (hitting + pitching).
 // Maps results back into poolPlayers by mlb_id, then re-renders the pool.
-// POOL_RENDER_COALESCE_V1 (2026-07-23, PC Walter) — the first-open load path calls renderPool
-// up to 4 times (roster, stats, sample-backfill, bats/throws), each a ~450ms 78k-node repaint.
-// This debounces them into ONE render ~30ms after the last call, so first-open paints once like
-// the instant re-open. Direct renderPool() callers (sorts, filters, tab-open) are unchanged.
-var _poolRenderTimer = null;
-function schedulePoolRender(){
-  if(_poolRenderTimer) clearTimeout(_poolRenderTimer);
-  _poolRenderTimer = setTimeout(function(){
-    _poolRenderTimer = null;
-    if(typeof poolActive === 'undefined' || poolActive){ try { renderPool(); } catch(e){} }
-  }, 30);
-}
 async function loadAllPoolStats(){
   if(poolStatsLoaded) return;
   try {
     document.getElementById('pool-status').textContent = '⟳ Loading stats for all players...';
     const timeout = ms => new Promise((_,r) => setTimeout(()=>r(new Error('timeout')), ms));
-    // POOL_STATS_FROM_CACHE_V1 (2026-07-23, PC Walter) — build the season statMap from the
-    // pre-baked PLAYER_DATERANGE_CACHE 'season' window and SKIP the two live bulk /stats
-    // calls when it is available. mergeSavant + kbb/k9 still run, and QS is stamped later by
-    // the sample backfill's _applyActiveSampleToFlatFields, so the QS column is unaffected.
-    // If the cache is empty (NAS down / not yet synced) we fall through to the live fetch below.
-    var _poolCacheStats = {};
-    if(typeof PLAYER_DATERANGE_CACHE !== 'undefined' && PLAYER_DATERANGE_CACHE){
-      poolPlayers.forEach(function(p){
-        var rec = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
-        var season = rec && rec.season;
-        var src = season ? (season.mlb || (!season.milb ? season : null)) : null;
-        if(src && (src.ab != null || src.ip != null || src.era != null || src.avg != null)){
-          _poolCacheStats[p.mlb_id] = { ab:src.ab, r:src.r, hr:src.hr, rbi:src.rbi, sb:src.sb, avg:src.avg, obp:src.obp, ops:src.ops, ip:src.ip, k:src.k, w:src.w, sv:src.sv, era:src.era, whip:src.whip, bb_pit:src.bb_pit };
-        }
-      });
-    }
-    if(Object.keys(_poolCacheStats).length > 0){
-      poolPlayers.forEach(function(p){
-        var s = _poolCacheStats[p.mlb_id];
-        if(!s) return;
-        Object.assign(p, s);
-        p.stats = true;
-        var _ipNum = parseFloat(p.ip);
-        p.kbb_ratio = (p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
-        p.k_per_9   = (_ipNum > 0 && p.k != null)  ? +((p.k * 9) / _ipNum).toFixed(2) : null;
-        if(!p.positions || !p.positions.length) p.positions = p.primaryPos ? [p.primaryPos] : [];
-        mergeSavant(p);
-      });
-      poolStatsLoaded = true;
-      var _cnt = poolPlayers.filter(function(p){ return p.stats; }).length;
-      var _statusEl = document.getElementById('pool-status');
-      if(_statusEl) _statusEl.textContent = poolPlayers.length + ' players \u00b7 stats loaded for ' + _cnt;
-      schedulePoolRender();
-      if(typeof leadersActive !== 'undefined' && leadersActive) renderLeaders();
-      return;
-    }
     // Two calls: one for all hitters, one for all pitchers
     const [hitRes, pitRes] = await Promise.all([
       Promise.race([
@@ -14925,54 +14877,6 @@ async function fetchSampleBackfillForListPlayers(targetArray, surfaceName){
   const targets = source.filter(p => p && p.mlb_id);
   if(!targets.length) return;
   console.log('[SAMPLE_BACKFILL]', _surface, '— backfilling', targets.length, 'players with both samples...');
-  // POOL_SAMPLE_FROM_CACHE_V1 (2026-07-23, PC Walter) — build the MLB/MiLB season sample maps
-  // from the pre-baked PLAYER_DATERANGE_CACHE 'season' window instead of 8 live bulk /stats calls
-  // + processing six 5000-row responses. The stash logic (statsMlb/statsMilb/level,
-  // _applyActiveSampleToFlatFields = QS + flat fields, kbb/k9) is IDENTICAL to the live path below.
-  // Falls through to the live fetch if the cache is empty (NAS down / not synced).
-  var _cbMlb = {}, _cbMilb = {}, _cbLevel = {}, _cbAny = 0;
-  if(typeof PLAYER_DATERANGE_CACHE !== 'undefined' && PLAYER_DATERANGE_CACHE){
-    targets.forEach(function(p){
-      var rec = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
-      var season = rec && rec.season;
-      if(!season) return;
-      var hasN = season.milb && Object.keys(season.milb).length;
-      if(season.mlb && Object.keys(season.mlb).length){
-        var m = Object.assign({}, season.mlb); delete m.hld; delete m.level; _cbMlb[p.mlb_id] = m;
-      } else if(!hasN){
-        var flat = {}, anyF = false;
-        ['ab','hr','rbi','r','sb','avg','obp','ops','ip','k','w','sv','era','whip','bb_pit'].forEach(function(kk){ if(season[kk] != null){ flat[kk] = season[kk]; anyF = true; } });
-        if(anyF) _cbMlb[p.mlb_id] = flat;
-      }
-      if(hasN){
-        var n = Object.assign({}, season.milb);
-        if(n.level) _cbLevel[p.mlb_id] = n.level;
-        delete n.hld; delete n.level;
-        _cbMilb[p.mlb_id] = n;
-      }
-      if(_cbMlb[p.mlb_id] || _cbMilb[p.mlb_id]) _cbAny++;
-    });
-  }
-  if(_cbAny > 0){
-    var _cbHitCount = 0;
-    targets.forEach(function(p){
-      p.statsMilb = _cbMilb[p.mlb_id] || null;
-      p.statsMlb  = _cbMlb[p.mlb_id]  || null;
-      if(!p.level && _cbLevel[p.mlb_id]) p.level = _cbLevel[p.mlb_id];
-      if(p.statsMilb || p.statsMlb) _cbHitCount++;
-      if(!_sampleToggle[p.mlb_id]){
-        _applyActiveSampleToFlatFields(p, _surface);
-        p.kbb_ratio = (typeof p.bb_pit === 'number' && p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
-        p.k_per_9 = (typeof p.ip === 'number' && p.ip > 0 && p.k != null) ? +((p.k * 9) / p.ip).toFixed(2) : null;
-      }
-    });
-    console.log('[SAMPLE_BACKFILL]', _surface, '(cache) resolved samples for', _cbHitCount, '/', targets.length, 'players.');
-    if(typeof renderTable   === 'function') try { renderTable(); }   catch(e){}
-    schedulePoolRender();
-    if(typeof renderLeaders === 'function') try { renderLeaders(); } catch(e){}
-    if(typeof renderContext === 'function') try { renderContext(); } catch(e){}
-    return;
-  }
 
   // Same shape as fetchProspectStatsBulk — 4 MiLB level/group combos
   // (AAA/AA/A × hitting/pitching) plus the MLB feed (sportId=1, both groups).
