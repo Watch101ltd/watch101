@@ -14305,7 +14305,13 @@ setTimeout(async () => {
 }, 2000);
 checkYahooStatus();
 startYahooAutoSync();
-setTimeout(() => loadSavantData(), 500);
+// STATCAST_EARLY_LOAD_V1 (2026-07-23, PC Walter) — kick off the Statcast fetches IMMEDIATELY
+// at boot instead of via a 500ms timer whose callback gets stuck behind boot congestion until
+// ~3.4s. The 9 fetches are async (to the cached Worker, ~170ms each), so firing them now lets
+// them finish in the background well before the MLB Players tab is opened. Kills the 'second
+// wave' advanced-stat delay and the em-dash flicker at the source. loadSavantData is a fire-
+// and-forget async call (same as the old setTimeout), just started earlier.
+loadSavantData();
 
 // ══════════ DRAG_FLIGHT_RECORDER_V1 (June 11, 2026 — PC Walter, per the Dude) ══════════
 // Passive black-box for the intermittent tier-drag lag (Open Bug #3 on the Bug Board; full case file in
