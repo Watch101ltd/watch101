@@ -14204,15 +14204,39 @@ async function _refreshPlayerStatsBothSources(p){
 
   let touched = false;
   try {
-    const [mlbRes, milbRes] = await Promise.all([
-      fetch(mlbUrl).then(r => r.json()).catch(() => null),
-      fetch(milbUrl).then(r => r.json()).catch(() => null),
-    ]);
-    // Per JP's architectural rule: the endpoint determines provenance.
-    // MLB endpoint returns whatever MLB stats the player has accumulated
-    // (zero or more). MiLB endpoint returns the same for minor-league play.
-    const mlbStats = _extractStats(mlbRes);
-    const milbStats = _extractStats(milbRes);
+    // SEASON_CACHE_READ_V1 (2026-07-23, PC Walter) — read the season MLB/MiLB samples
+    // from the pre-baked PLAYER_DATERANGE_CACHE 'season' window instead of two live
+    // per-player /stats calls (the ~320-call STAT_FRESHNESS storm). The cache sub-objects
+    // are the SAME shape _extractStats produced, so everything downstream
+    // (_applyActiveSampleToFlatFields, QS stamping, the MLB/MiLB toggle) is untouched.
+    // Live fetch stays as the fallback for any player the overnight bake missed.
+    let mlbStats = null, milbStats = null, _fromCache = false;
+    var _drRow = (typeof PLAYER_DATERANGE_CACHE !== 'undefined' && PLAYER_DATERANGE_CACHE)
+      ? PLAYER_DATERANGE_CACHE[String(p.mlb_id)] : null;
+    var _seasonRow = _drRow && _drRow.season;
+    if(_seasonRow){
+      var _cm = _seasonRow.mlb ? Object.assign({}, _seasonRow.mlb) : null;
+      var _cn = _seasonRow.milb ? Object.assign({}, _seasonRow.milb) : null;
+      if(!_cm && !_cn){
+        // Legacy single-sample row: flat fields with no sub-objects = the MLB sample.
+        var _fk = ['ab','hr','rbi','r','sb','avg','obp','ops','ip','k','w','sv','era','whip','bb_pit'];
+        var _flat = {}, _anyFlat = false;
+        for(var _i=0;_i<_fk.length;_i++){ if(_seasonRow[_fk[_i]] != null){ _flat[_fk[_i]] = _seasonRow[_fk[_i]]; _anyFlat = true; } }
+        if(_anyFlat) _cm = _flat;
+      }
+      if(_cm){ _cm.hld = null; mlbStats = _cm; }   // QS_KILL_HOLDS parity — QS fills hld downstream
+      if(_cn){ _cn.hld = null; milbStats = _cn; }
+      if(mlbStats || milbStats) _fromCache = true;
+    }
+    if(!_fromCache){
+      const [mlbRes, milbRes] = await Promise.all([
+        fetch(mlbUrl).then(r => r.json()).catch(() => null),
+        fetch(milbUrl).then(r => r.json()).catch(() => null),
+      ]);
+      // Per JP's architectural rule: the endpoint determines provenance.
+      mlbStats = _extractStats(mlbRes);
+      milbStats = _extractStats(milbRes);
+    }
 
     // A key subtlety: the MLB-only endpoint (no leagueListId) sometimes
     // returns AAA splits too for prospects (MLB Stats API quirk). To stay
