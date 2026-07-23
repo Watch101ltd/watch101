@@ -11362,7 +11362,17 @@ async function loadPoolPlayers(){
     // pool's #1 load bottleneck, confirmed via the Dude's Network tab (13-24s). This drops
     // the missing-team count to ~0 so the live 60-call fallback below is skipped. If the
     // registry has not loaded yet (boot race), nothing is filled and the fallback still runs.
+    // SHORE-UP (2026-07-23): the fill only works if the registry is loaded. It loads at boot
+    // (loadRegistry, a big file) but if the pool opens BEFORE it finishes, the fill missed and
+    // the 60 live calls fired anyway — the timing dependence that made the load time swing. So
+    // if the registry is not ready yet, WAIT for the in-flight boot load (poll registryLoadedAt,
+    // up to ~5s) before deciding. No double-fetch of the 24 MB registry; just wait for the one
+    // already downloading. If it never lands, fall through to the live 60-call fallback below.
     try {
+      if(!registryLoadedAt){
+        try { var _ps = document.getElementById('pool-status'); if(_ps) _ps.textContent = 'Loading roster...'; } catch(_e){}
+        for(var _w=0; _w<50 && !registryLoadedAt; _w++){ await new Promise(function(r){ setTimeout(r,100); }); }
+      }
       if(typeof registryByMlbam !== 'undefined' && registryByMlbam && Object.keys(registryByMlbam).length){
         for(const p of poolPlayers){
           if(!p.team){
