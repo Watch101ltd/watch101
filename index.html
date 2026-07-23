@@ -2057,8 +2057,8 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
-<script src="data/player_game_log.js"></script>
-<script src="data/player_pitching_game_log.js"></script>
+<!-- GAMELOG_LAZYLOAD_V1 (2026-07-23): player_game_log.js + player_pitching_game_log.js
+     removed from boot. Now lazy-loaded on first Deep Cut open. See ensureGameLogsLoaded(). -->
 <script src="data/player_lineup_blurbs.js"></script>
 <script src="data/schedule_7d.js"></script>
 <script src="data/player_daterange_cache.js"></script>
@@ -16996,7 +16996,7 @@ function openPlayerPage(p){
   renderRankHistory(mlbId);
   renderSchedule7D(mlbId);
   renderPodcastMentions(mlbId);
-  renderGameLog(mlbId);
+  renderGameLogLazy(mlbId);
   // NEWS_LINKS_V1 (May 17, 2026) Push 4c — populate the Latest blurb strip
   // with this player's most recent highlight from yesterday's slate. If no
   // blurb exists, the function hides the whole strip cleanly.
@@ -17218,6 +17218,52 @@ function renderLineupBlurb(mlbId){
 
 // GAME_LOG_RENDER_V1 — renders the Last 7 Games box-score table on the overlay.
 // Reads PLAYER_GAME_LOG which is populated by lineup_history.py --inject.
+// ============ GAMELOG_LAZYLOAD_V1 (2026-07-23, PC Walter, per the Dude) ============
+// The two box-score files (player_game_log.js + player_pitching_game_log.js, about
+// 3.5 MB / 173k lines combined) used to load as blocking <script src> in the head, so
+// every visitor paid the full download and parse cost at boot. The ONLY consumer is the
+// Deep Cut overlay (renderGameLog / _renderPitcherGameLog). They now load on demand the
+// first time any Deep Cut opens: first open shows a one-time 'Loading game log...' line
+// for a second or two, every open after is instant (globals stay in memory). Boot no
+// longer parses these at all. Plan: 02 Plans (Future Work)/boot_speed_lazyload_plan.md.
+window._gameLogLoadState = window._gameLogLoadState || 'unloaded'; // unloaded | loading | loaded
+window._gameLogLoadCallbacks = window._gameLogLoadCallbacks || [];
+function ensureGameLogsLoaded(cb){
+  if(window._gameLogLoadState === 'loaded'){ if(cb) cb(); return; }
+  if(cb) window._gameLogLoadCallbacks.push(cb);
+  if(window._gameLogLoadState === 'loading') return;
+  window._gameLogLoadState = 'loading';
+  var files = ['data/player_game_log.js', 'data/player_pitching_game_log.js'];
+  var remaining = files.length;
+  function done(){
+    if(--remaining > 0) return;
+    window._gameLogLoadState = 'loaded';
+    var cbs = window._gameLogLoadCallbacks.slice();
+    window._gameLogLoadCallbacks = [];
+    cbs.forEach(function(fn){ try { fn(); } catch(_e){} });
+  }
+  files.forEach(function(src){
+    var s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onload = done;
+    s.onerror = done; // resolve anyway so we do not retry-loop; renderGameLog degrades on its own
+    document.head.appendChild(s);
+  });
+}
+// The wrapper openPlayerPage calls instead of renderGameLog. Already loaded: render now.
+// Not loaded: show a one-time loading line, render once the files land, but only if this
+// player is still on screen (guards against opening player B mid-load of player A).
+function renderGameLogLazy(mlbId){
+  window._ppoActiveMlbId = mlbId;
+  if(window._gameLogLoadState === 'loaded'){ renderGameLog(mlbId); return; }
+  var wrap = document.getElementById('ppo-gamelog-wrap');
+  if(wrap) wrap.innerHTML = '<div class="ppo-gamelog-empty">Loading game log...</div>';
+  ensureGameLogsLoaded(function(){
+    if(String(window._ppoActiveMlbId) === String(mlbId)) renderGameLog(mlbId);
+  });
+}
+// ============ /GAMELOG_LAZYLOAD_V1 ============
 function renderGameLog(mlbId){
   var wrap = document.getElementById('ppo-gamelog-wrap');
   if(!wrap) return;
