@@ -11567,6 +11567,42 @@ async function loadAllPoolStats(){
   try {
     document.getElementById('pool-status').textContent = '⟳ Loading stats for all players...';
     const timeout = ms => new Promise((_,r) => setTimeout(()=>r(new Error('timeout')), ms));
+    // POOL_STATS_FROM_CACHE_V1 (2026-07-23, PC Walter) — build the season statMap from the
+    // pre-baked PLAYER_DATERANGE_CACHE 'season' window and SKIP the two live bulk /stats
+    // calls when it is available. mergeSavant + kbb/k9 still run, and QS is stamped later by
+    // the sample backfill's _applyActiveSampleToFlatFields, so the QS column is unaffected.
+    // If the cache is empty (NAS down / not yet synced) we fall through to the live fetch below.
+    var _poolCacheStats = {};
+    if(typeof PLAYER_DATERANGE_CACHE !== 'undefined' && PLAYER_DATERANGE_CACHE){
+      poolPlayers.forEach(function(p){
+        var rec = PLAYER_DATERANGE_CACHE[String(p.mlb_id)];
+        var season = rec && rec.season;
+        var src = season ? (season.mlb || (!season.milb ? season : null)) : null;
+        if(src && (src.ab != null || src.ip != null || src.era != null || src.avg != null)){
+          _poolCacheStats[p.mlb_id] = { ab:src.ab, r:src.r, hr:src.hr, rbi:src.rbi, sb:src.sb, avg:src.avg, obp:src.obp, ops:src.ops, ip:src.ip, k:src.k, w:src.w, sv:src.sv, era:src.era, whip:src.whip, bb_pit:src.bb_pit };
+        }
+      });
+    }
+    if(Object.keys(_poolCacheStats).length > 0){
+      poolPlayers.forEach(function(p){
+        var s = _poolCacheStats[p.mlb_id];
+        if(!s) return;
+        Object.assign(p, s);
+        p.stats = true;
+        var _ipNum = parseFloat(p.ip);
+        p.kbb_ratio = (p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
+        p.k_per_9   = (_ipNum > 0 && p.k != null)  ? +((p.k * 9) / _ipNum).toFixed(2) : null;
+        if(!p.positions || !p.positions.length) p.positions = p.primaryPos ? [p.primaryPos] : [];
+        mergeSavant(p);
+      });
+      poolStatsLoaded = true;
+      var _cnt = poolPlayers.filter(function(p){ return p.stats; }).length;
+      var _statusEl = document.getElementById('pool-status');
+      if(_statusEl) _statusEl.textContent = poolPlayers.length + ' players \u00b7 stats loaded for ' + _cnt;
+      renderPool();
+      if(typeof leadersActive !== 'undefined' && leadersActive) renderLeaders();
+      return;
+    }
     // Two calls: one for all hitters, one for all pitchers
     const [hitRes, pitRes] = await Promise.all([
       Promise.race([
