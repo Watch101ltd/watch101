@@ -4113,9 +4113,30 @@ async function loadDateRangeCacheFromNAS(){
     loadStaticDateRangeFallback('nas-error'); // DATERANGE_LAZY_FALLBACK_V1
   }
 }
-// Kick it off immediately at parse time. Static file (if loaded) provides
-// the initial value; this fetch upgrades it to MLB + MiLB once it lands.
-loadDateRangeCacheFromNAS();
+// DATERANGE_DEFER_OFF_BOOT_V1 (2026-07-23, PC Walter, per the Dude) — the NAS
+// /daterange-cache is ~5 MB and used to be fetched at parse time, hogging one of the
+// browser's 6 connections to the Worker host for SECONDS right when the pool is
+// loading everything it actually needs. But the default Season view NEVER reads this
+// cache (every reader is gated on dateRange !== 'season'), so paying 5 MB up front
+// buys nothing until the user picks a windowed range. So: (a) an idempotent starter,
+// (b) warm it only after the page is idle AND a delay so the boot path stays clear,
+// and (c) start it on demand the instant a windowed range is selected (setDateRange).
+// Either trigger fires it once; the render hooks inside loadDateRangeCacheFromNAS
+// land the data into any visible windowed table when it arrives.
+window._daterangeFetchStarted = false;
+function ensureDateRangeCacheLoaded(){
+  if(window._daterangeFetchStarted) return;
+  window._daterangeFetchStarted = true;
+  loadDateRangeCacheFromNAS();
+}
+(function(){
+  var _warm = function(){ ensureDateRangeCacheLoaded(); };
+  if(typeof window.requestIdleCallback === 'function'){
+    setTimeout(function(){ window.requestIdleCallback(_warm, { timeout: 4000 }); }, 6000);
+  } else {
+    setTimeout(_warm, 6000);
+  }
+})();
 // ── /DATERANGE_NAS_FETCH_V1 ──────────────────────────────────────────────────
 
 // ── QS_NAS_FETCH_V1 (June 3, 2026) ───────────────────────────────────────────
@@ -13817,6 +13838,9 @@ function setDateRange(val){
       Object.keys(tankDateRangeCache).forEach(k => { if(k.endsWith('_' + val)) delete tankDateRangeCache[k]; });
     }
     }
+    // DATERANGE_DEFER_OFF_BOOT_V1 — a windowed range is now selected, so make sure the
+    // deferred 5 MB NAS daterange cache is loading (no-op if it already started at idle).
+    if(typeof ensureDateRangeCacheLoaded === 'function') ensureDateRangeCacheLoaded();
     // Fire all three simultaneously — pool and prospects run silently in background
     fetchDateRangeStats(val);
     fetchPoolDateRangeStats(val);
