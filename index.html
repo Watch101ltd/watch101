@@ -4557,7 +4557,7 @@ async function loadData(){
         if(typeof renderProspects === 'function' && typeof prospectsActive !== 'undefined' && prospectsActive) try { renderProspects(); } catch(_re){}
       }
       if(typeof renderTable === 'function') try { renderTable(); } catch(_re){}
-      if(typeof renderPool === 'function' && typeof poolLoaded !== 'undefined' && poolLoaded) try { renderPool(); } catch(_re){}
+      if(typeof scheduleRenderPool === 'function' && typeof poolLoaded !== 'undefined' && poolLoaded) try { scheduleRenderPool(); } catch(_re){}
       if(typeof renderLeaders === 'function') try { renderLeaders(); } catch(_re){}
     }).catch(e => { window._injuryCacheStatus = 'failed'; console.warn('[IL_CADENCE_V1] hook failed:', e); });
   }
@@ -4812,7 +4812,7 @@ async function loadSavantData(){
     try {
       if(typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers) && poolPlayers.length){
         poolPlayers.forEach(p => mergeSavant(p));
-        if(typeof renderPool === 'function' && typeof poolStatsLoaded !== 'undefined' && poolStatsLoaded) renderPool();
+        if(typeof scheduleRenderPool === 'function' && typeof poolStatsLoaded !== 'undefined' && poolStatsLoaded) scheduleRenderPool();
         if(typeof renderLeaders === 'function' && typeof leadersActive !== 'undefined' && leadersActive) renderLeaders();
       }
     } catch(e){ console.warn('[POOL_GOLD_BLOCK_V1] post-Savant pool re-merge failed:', e); }
@@ -4822,7 +4822,7 @@ async function loadSavantData(){
       try {
         if(typeof poolPlayers !== 'undefined' && Array.isArray(poolPlayers) && poolPlayers.length){
           poolPlayers.forEach(p => mergeSavant(p));
-          if(typeof renderPool === 'function' && typeof poolStatsLoaded !== 'undefined' && poolStatsLoaded) renderPool();
+          if(typeof scheduleRenderPool === 'function' && typeof poolStatsLoaded !== 'undefined' && poolStatsLoaded) scheduleRenderPool();
           if(typeof renderLeaders === 'function' && typeof leadersActive !== 'undefined' && leadersActive) renderLeaders();
         }
       } catch(e){ console.warn('[POOL_GOLD_BLOCK_V1] delayed pool re-merge failed:', e); }
@@ -5263,8 +5263,8 @@ async function loadRegistry(){
         try {
           if(typeof _mergeRegistryActivesIntoPool === 'function'){
             var _added = _mergeRegistryActivesIntoPool();
-            if(_added > 0 && typeof renderPool === 'function'){
-              try { renderPool(); } catch(_pre){}
+            if(_added > 0 && typeof scheduleRenderPool === 'function'){
+              try { scheduleRenderPool(); } catch(_pre){}
             }
           }
         } catch(_pme){ console.warn('[POOL_REGISTRY_MERGE_V1] late merge failed:', _pme); }
@@ -5277,7 +5277,7 @@ async function loadRegistry(){
         applyYahoo(prospectPlayers, {noNameMatch:true});
       }
       if(typeof renderTable === 'function') renderTable();
-      if(typeof renderPool === 'function') try { renderPool(); } catch(_pe){}
+      if(typeof scheduleRenderPool === 'function') try { scheduleRenderPool(); } catch(_pe){}
       if(typeof renderLeaders === 'function') try { renderLeaders(); } catch(_le){}
     }
   } catch(e){
@@ -6098,7 +6098,7 @@ async function syncYahooData(manual = false){
     renderTable();
 
     // Re-render pool and dual view if active
-    if(typeof renderPool === 'function' && typeof poolLoaded !== 'undefined' && poolLoaded) renderPool();
+    if(typeof scheduleRenderPool === 'function' && typeof poolLoaded !== 'undefined' && poolLoaded) scheduleRenderPool();
     if(typeof renderDualView === 'function') renderDualView();
 
     if(btn){ btn.className = 'hdr-yahoo-dot connected'; btn.textContent = 'Yahoo'; }  // HEADER_REDESIGN_V1
@@ -11764,7 +11764,7 @@ async function loadAllPoolStats(){
     poolStatsLoaded = true;
     const count = poolPlayers.filter(p => p.stats).length;
     document.getElementById('pool-status').textContent = `${poolPlayers.length} players · stats loaded for ${count}`;
-    renderPool();
+    scheduleRenderPool();  // POOL_RENDER_COALESCE_V1 — coalesce with the injury/Savant/Yahoo waves
     // If League Leaders is open, re-render it with the freshly loaded stats
     if(leadersActive) renderLeaders();
   } catch(e) {
@@ -11882,6 +11882,23 @@ function resetPoolFilters(){
   renderPool();
 }
 
+// POOL_RENDER_COALESCE_V1 (2026-07-23, PC Walter, per the Dude) — the pool table is
+// ~79,000 DOM nodes and each renderPool() is a FULL teardown+rebuild (~0.7s on a fast
+// box, more on a laptop). On a cold load the data lands in waves — names, injuries,
+// season stats, Statcast (x2), Yahoo — and each wave used to fire its OWN full rebuild:
+// 5-6 back-to-back page freezes = the 8-14s jank. This coalesces the DATA-LANDING
+// renders: rapid schedule calls collapse into ONE rebuild after a short quiet window.
+// User actions (sort / filter / toggle clicks) still call renderPool() directly so they
+// stay instant. Safe by design: it changes render TIMING only, never what gets rendered.
+var _poolRenderCoalesceTimer = null;
+function scheduleRenderPool(){
+  if(_poolRenderCoalesceTimer) clearTimeout(_poolRenderCoalesceTimer);
+  _poolRenderCoalesceTimer = setTimeout(function(){
+    _poolRenderCoalesceTimer = null;
+    try { if(typeof renderPool === 'function') renderPool(); }
+    catch(e){ console.warn('[POOL_RENDER_COALESCE_V1] render failed:', e); }
+  }, 250);
+}
 function renderPool(){
   const tbody = document.getElementById('pool-tbody');
   // POOL_GATE_BY_ID_V1 (May 28, 2026 — PC Walter, per The Dude) — gate by mlb_id
