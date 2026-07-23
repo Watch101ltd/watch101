@@ -5777,6 +5777,26 @@ let yahooSyncing = false;
 // MLB Stats API status.code values are exactly IL10 / IL15 / IL60 — our badge
 // CSS now has classes for all three (.injury-il10, .injury-il15, .injury-il60).
 async function fetchMLBInjuryStatus(){
+  // INJURIES_CACHE_READ_V1 (2026-07-23, PC Walter) — read the pre-baked injury cache from the
+  // NAS (/injuries, refreshed every ~15-20 min by injuries_fetch.py) in ONE call instead of the
+  // 30 live per-team 40Man roster calls below. On a real home connection those 30 calls queue
+  // behind the browser's 6-connection limit and are a major chunk of the MLB Players load time.
+  // The baked shape is identical to what this function returns, so applyMLBInjuryStatus is
+  // unchanged. Falls through to the live 30-call fetch below if the cache is unavailable or looks
+  // empty (same <30 sanity floor the live path uses), so shipping this before the NAS endpoint
+  // is ready is harmless — it just quietly does nothing until /injuries is being served.
+  try {
+    if(typeof NAS_PROXY_URL !== 'undefined' && NAS_PROXY_URL){
+      const _cRes = await fetch(NAS_PROXY_URL + '/injuries', { headers: {'ngrok-skip-browser-warning': 'true'}, cache: 'no-store' });
+      if(_cRes.ok){
+        const _c = await _cRes.json();
+        if(_c && _c.ilMap && Object.keys(_c.ilMap).length >= 30){
+          console.log('[INJURIES_CACHE_READ_V1] loaded ' + Object.keys(_c.ilMap).length + ' IL players from NAS cache (generated: ' + ((_c.meta && _c.meta.generated_at) || '?') + ') — skipped 30 live roster calls');
+          return { ilMap: _c.ilMap, rehabMap: _c.rehabMap || {}, fortyManMap: _c.fortyManMap || {} };
+        }
+      }
+    }
+  } catch(_ce){ try { console.warn('[INJURIES_CACHE_READ_V1] cache read failed, falling back to live 30-call fetch:', _ce && _ce.message); } catch(__){} }
   // IL_CADENCE_V2 (May 14, 2026 overnight — bug fix to V1).
   // V1 used rosterType=injuredList which (verified via curl) returns the
   // ACTIVE roster, not IL. Result: V1 always returned 0 players. The right
