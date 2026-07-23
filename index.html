@@ -11382,17 +11382,18 @@ async function loadPoolPlayers(){
     // pool's #1 load bottleneck, confirmed via the Dude's Network tab (13-24s). This drops
     // the missing-team count to ~0 so the live 60-call fallback below is skipped. If the
     // registry has not loaded yet (boot race), nothing is filled and the fallback still runs.
-    // SHORE-UP (2026-07-23): the fill only works if the registry is loaded. It loads at boot
-    // (loadRegistry, a big file) but if the pool opens BEFORE it finishes, the fill missed and
-    // the 60 live calls fired anyway — the timing dependence that made the load time swing. So
-    // if the registry is not ready yet, WAIT for the in-flight boot load (poll registryLoadedAt,
-    // up to ~5s) before deciding. No double-fetch of the 24 MB registry; just wait for the one
-    // already downloading. If it never lands, fall through to the live 60-call fallback below.
+    // TEAMFILL_FROM_CACHE_V1 (2026-07-23, PC Walter) — replaced the old registry
+    // poll-wait shore-up, which stalled the pool up to ~5s waiting on the 24 MB
+    // registry download (that WAIT is what made the last load ~30s). Team names
+    // now come from two FAST sources with NO waiting:
+    //   1. the registry IF it already happens to be loaded (free, no wait), then
+    //   2. the injury cache /injuries teamMap — a ~25 KB file baked server-side
+    //      every 20 min that carries the team abbreviation for every 40-man player.
+    // Only if BOTH miss does the live 60-call fallback below run. Together with the
+    // injury cache read in fetchMLBInjuryStatus, this removes ~90 per-team roster
+    // calls (~2s each on a real home line) — the pool's #1 load bottleneck.
     try {
-      if(!registryLoadedAt){
-        try { var _ps = document.getElementById('pool-status'); if(_ps) _ps.textContent = 'Loading roster...'; } catch(_e){}
-        for(var _w=0; _w<50 && !registryLoadedAt; _w++){ await new Promise(function(r){ setTimeout(r,100); }); }
-      }
+      // 1. Registry fill — only if it's ALREADY loaded. No waiting.
       if(typeof registryByMlbam !== 'undefined' && registryByMlbam && Object.keys(registryByMlbam).length){
         for(const p of poolPlayers){
           if(!p.team){
@@ -11400,6 +11401,21 @@ async function loadPoolPlayers(){
             if(_rr && _rr.team) p.team = _rr.team;
           }
         }
+      }
+      // 2. Injury-cache teamMap fill — fast (~25 KB), covers every 40-man player.
+      if(poolPlayers.some(function(p){ return !p.team; }) && typeof NAS_PROXY_URL !== 'undefined' && NAS_PROXY_URL){
+        try {
+          const _tRes = await fetch(NAS_PROXY_URL + '/injuries', { headers: {'ngrok-skip-browser-warning': 'true'}, cache: 'no-store' });
+          if(_tRes.ok){
+            const _tc = await _tRes.json();
+            const _tm = (_tc && _tc.teamMap) ? _tc.teamMap : null;
+            if(_tm){
+              for(const p of poolPlayers){
+                if(!p.team && _tm[String(p.mlb_id)]) p.team = _tm[String(p.mlb_id)];
+              }
+            }
+          }
+        } catch(_te){ console.warn('[TEAMFILL_FROM_CACHE_V1] cache fill failed (non-fatal):', _te); }
       }
     } catch(e){ console.warn('[POOL_TEAM_FROM_REGISTRY_V1] failed (non-fatal):', e); }
 
