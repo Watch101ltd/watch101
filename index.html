@@ -4547,6 +4547,10 @@ async function loadData(){
       // (user clicks the Prospects tab), which usually happens AFTER this
       // page-load fetch has already completed.
       window._mlbInjuryEnvelope = envelope;
+      // TEAMFILL_FROM_CACHE_V2 — record injury-cache health for the pool's fallback
+      // gate, and fill pool teams NOW in case the pool rendered before this landed.
+      window._injuryCacheStatus = (envelope && envelope.teamMap && Object.keys(envelope.teamMap).length) ? 'ok' : 'failed';
+      try { if(envelope && envelope.teamMap) _fillPoolTeamsFromEnvelope(envelope); } catch(_tfe){}
       // Apply to prospects too if they happen to already be loaded.
       if(typeof prospectPlayers !== 'undefined' && Array.isArray(prospectPlayers) && prospectPlayers.length > 0){
         applyMLBInjuryStatus(prospectPlayers, envelope);
@@ -4555,7 +4559,7 @@ async function loadData(){
       if(typeof renderTable === 'function') try { renderTable(); } catch(_re){}
       if(typeof renderPool === 'function' && typeof poolLoaded !== 'undefined' && poolLoaded) try { renderPool(); } catch(_re){}
       if(typeof renderLeaders === 'function') try { renderLeaders(); } catch(_re){}
-    }).catch(e => console.warn('[IL_CADENCE_V1] hook failed:', e));
+    }).catch(e => { window._injuryCacheStatus = 'failed'; console.warn('[IL_CADENCE_V1] hook failed:', e); });
   }
 
   // MAIN_LIST_BIO_BULK_V1 (May 11, 2026) — Backfill birthDate (and bats) for
@@ -5797,6 +5801,27 @@ let yahooSyncing = false;
 //
 // MLB Stats API status.code values are exactly IL10 / IL15 / IL60 — our badge
 // CSS now has classes for all three (.injury-il10, .injury-il15, .injury-il60).
+// TEAMFILL_FROM_CACHE_V2 (2026-07-23, PC Walter) — fill pool players' team from an
+// ALREADY-FETCHED injury envelope's teamMap. In-memory, instant, ZERO network. Used
+// both by loadPoolPlayers (reusing window._mlbInjuryEnvelope that the boot injury
+// fetch already populated) and by the boot injury handler when the envelope lands
+// after the pool has already rendered. This replaces the old V1 teamMap fill that
+// did a SECOND blocking fetch('/injuries') in loadPoolPlayers' critical path — that
+// second call stalled in the connection queue and held up the entire pool load
+// (diagnosed via the Dude's Network tab, 2026-07-23).
+function _fillPoolTeamsFromEnvelope(envelope){
+  try {
+    var tm = envelope && envelope.teamMap;
+    if(!tm) return 0;
+    if(typeof poolPlayers === 'undefined' || !Array.isArray(poolPlayers)) return 0;
+    var n = 0;
+    for(var i=0; i<poolPlayers.length; i++){
+      var p = poolPlayers[i];
+      if(p && !p.team && tm[String(p.mlb_id)]){ p.team = tm[String(p.mlb_id)]; n++; }
+    }
+    return n;
+  } catch(e){ return 0; }
+}
 async function fetchMLBInjuryStatus(){
   // INJURIES_CACHE_READ_V1 (2026-07-23, PC Walter) — read the pre-baked injury cache from the
   // NAS (/injuries, refreshed every ~15-20 min by injuries_fetch.py) in ONE call instead of the
@@ -11413,7 +11438,6 @@ async function loadPoolPlayers(){
     // Only if BOTH miss does the live 60-call fallback below run. Together with the
     // injury cache read in fetchMLBInjuryStatus, this removes ~90 per-team roster
     // calls (~2s each on a real home line) — the pool's #1 load bottleneck.
-    var _teamCacheApplied = false;
     try {
       // 1. Registry fill — only if it's ALREADY loaded. No waiting.
       if(typeof registryByMlbam !== 'undefined' && registryByMlbam && Object.keys(registryByMlbam).length){
@@ -11424,21 +11448,13 @@ async function loadPoolPlayers(){
           }
         }
       }
-      // 2. Injury-cache teamMap fill — fast (~25 KB), covers every 40-man player.
-      if(poolPlayers.some(function(p){ return !p.team; }) && typeof NAS_PROXY_URL !== 'undefined' && NAS_PROXY_URL){
-        try {
-          const _tRes = await fetch(NAS_PROXY_URL + '/injuries', { headers: {'ngrok-skip-browser-warning': 'true'}, cache: 'no-store' });
-          if(_tRes.ok){
-            const _tc = await _tRes.json();
-            const _tm = (_tc && _tc.teamMap) ? _tc.teamMap : null;
-            if(_tm && Object.keys(_tm).length){
-              _teamCacheApplied = true;   // teamMap covers every 40-man/active player — fully supersedes the live fallback
-              for(const p of poolPlayers){
-                if(!p.team && _tm[String(p.mlb_id)]) p.team = _tm[String(p.mlb_id)];
-              }
-            }
-          }
-        } catch(_te){ console.warn('[TEAMFILL_FROM_CACHE_V1] cache fill failed (non-fatal):', _te); }
+      // 2. Injury-cache teamMap fill — TEAMFILL_FROM_CACHE_V2: REUSE the injury
+      //    envelope the boot fetch already pulled (window._mlbInjuryEnvelope). No
+      //    second /injuries fetch, no blocking await in the critical path. If the
+      //    envelope hasn't landed yet, we simply don't fill here — the boot injury
+      //    handler fills teams and re-renders the pool the moment it arrives.
+      if(typeof window._mlbInjuryEnvelope !== 'undefined' && window._mlbInjuryEnvelope && window._mlbInjuryEnvelope.teamMap){
+        _fillPoolTeamsFromEnvelope(window._mlbInjuryEnvelope);
       }
     } catch(e){ console.warn('[POOL_TEAM_FROM_REGISTRY_V1] failed (non-fatal):', e); }
 
@@ -11446,14 +11462,14 @@ async function loadPoolPlayers(){
     // Pulls both 'active' (26-man) AND '40Man' rosters so IL / optioned / suspended
     // players on the 40-man also get their team filled in.
     const missingTeam = poolPlayers.filter(p => !p.team).length;
-    // TEAMFILL_FROM_CACHE_V1 gate — the injury-cache teamMap already covers every
-    // player on a 40-man/active roster, which is EXACTLY who this live active+40Man
-    // fallback could ever fill. Anyone still missing is a minor-leaguer not on a
-    // 40-man (e.g. AAA depth), whom the 90-call fallback can't fill either — so once
-    // the cache applied, firing it is pure waste (~90 calls, ~2s each on a real line).
-    // If the cache fetch failed, _teamCacheApplied stays false and the fallback runs,
-    // preserving the old behavior as a safety net.
-    if(missingTeam > 0 && !_teamCacheApplied){
+    // TEAMFILL_FROM_CACHE_V2 gate — the injury-cache teamMap covers every player on a
+    // 40-man/active roster, which is EXACTLY who this live active+40Man fallback could
+    // ever fill. Anyone still missing is a minor-leaguer not on a 40-man (e.g. AAA
+    // depth), whom the 90-call fallback can't fill either. So we ONLY fire the fallback
+    // if the injury cache DEFINITIVELY failed (window._injuryCacheStatus === 'failed').
+    // If it's still pending, we skip — the boot injury handler fills teams and
+    // re-renders when the envelope lands. This never blocks the pool on a network call.
+    if(missingTeam > 0 && window._injuryCacheStatus === 'failed'){
       document.getElementById('pool-status').textContent = 'Loading team data for ' + missingTeam + ' players...';
       try {
         // Build a map of mlb_id -> team abbreviation from all 30 team rosters
