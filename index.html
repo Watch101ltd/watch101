@@ -11392,6 +11392,7 @@ async function loadPoolPlayers(){
     // Only if BOTH miss does the live 60-call fallback below run. Together with the
     // injury cache read in fetchMLBInjuryStatus, this removes ~90 per-team roster
     // calls (~2s each on a real home line) — the pool's #1 load bottleneck.
+    var _teamCacheApplied = false;
     try {
       // 1. Registry fill — only if it's ALREADY loaded. No waiting.
       if(typeof registryByMlbam !== 'undefined' && registryByMlbam && Object.keys(registryByMlbam).length){
@@ -11409,7 +11410,8 @@ async function loadPoolPlayers(){
           if(_tRes.ok){
             const _tc = await _tRes.json();
             const _tm = (_tc && _tc.teamMap) ? _tc.teamMap : null;
-            if(_tm){
+            if(_tm && Object.keys(_tm).length){
+              _teamCacheApplied = true;   // teamMap covers every 40-man/active player — fully supersedes the live fallback
               for(const p of poolPlayers){
                 if(!p.team && _tm[String(p.mlb_id)]) p.team = _tm[String(p.mlb_id)];
               }
@@ -11423,7 +11425,14 @@ async function loadPoolPlayers(){
     // Pulls both 'active' (26-man) AND '40Man' rosters so IL / optioned / suspended
     // players on the 40-man also get their team filled in.
     const missingTeam = poolPlayers.filter(p => !p.team).length;
-    if(missingTeam > 0){
+    // TEAMFILL_FROM_CACHE_V1 gate — the injury-cache teamMap already covers every
+    // player on a 40-man/active roster, which is EXACTLY who this live active+40Man
+    // fallback could ever fill. Anyone still missing is a minor-leaguer not on a
+    // 40-man (e.g. AAA depth), whom the 90-call fallback can't fill either — so once
+    // the cache applied, firing it is pure waste (~90 calls, ~2s each on a real line).
+    // If the cache fetch failed, _teamCacheApplied stays false and the fallback runs,
+    // preserving the old behavior as a safety net.
+    if(missingTeam > 0 && !_teamCacheApplied){
       document.getElementById('pool-status').textContent = 'Loading team data for ' + missingTeam + ' players...';
       try {
         // Build a map of mlb_id -> team abbreviation from all 30 team rosters
