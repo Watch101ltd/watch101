@@ -2061,7 +2061,9 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
      removed from boot. Now lazy-loaded on first Deep Cut open. See ensureGameLogsLoaded(). -->
 <script src="data/player_lineup_blurbs.js"></script>
 <script src="data/schedule_7d.js"></script>
-<script src="data/player_daterange_cache.js"></script>
+<!-- DATERANGE_LAZY_FALLBACK_V1 (2026-07-23): player_daterange_cache.js (3.7 MB) removed from boot.
+     Default Season view never reads it; NAS /daterange-cache fills it at boot; the static file
+     now loads lazily ONLY if the NAS fetch fails. See loadStaticDateRangeFallback(). -->
 </head>
 <body>
 
@@ -4059,13 +4061,37 @@ loadHighlightsFromNAS();
 // PROSPECTS / RENDERS that fire after page load:
 //   They re-read PLAYER_DATERANGE_CACHE each time, so they pick up the NAS
 //   data automatically once it arrives. No manual re-render needed.
+// ============ DATERANGE_LAZY_FALLBACK_V1 (2026-07-23, PC Walter, per the Dude) ============
+// The static data/player_daterange_cache.js was the single heaviest boot file (3.7 MB) and is
+// no longer a blocking <script> in the head. The default Season view never reads the date-range
+// cache (every reader is gated on dateRange !== 'season', and the page always boots on Season),
+// and the NAS /daterange-cache fetch below is the primary source (MLB + MiLB). This helper
+// injects the static MLB-only file ONLY when the NAS fetch fails, preserving the exact old
+// offline fallback without paying 3.7 MB on every boot. Injects at most once.
+// NOTE: the older comment below about the static file loading first is superseded by this.
+function loadStaticDateRangeFallback(reason){
+  if(window._staticDateRangeFallbackLoaded) return;
+  window._staticDateRangeFallbackLoaded = true;
+  try {
+    var s = document.createElement('script');
+    s.src = 'data/player_daterange_cache.js';
+    s.async = true;
+    s.onload = function(){
+      console.log('[DATERANGE_LAZY_FALLBACK_V1] static MLB fallback loaded (reason: ' + reason + ')');
+      if(typeof applyQSToAllCaches === 'function'){ try { applyQSToAllCaches(); } catch(_e){} }
+      try { if(typeof dateRange !== 'undefined' && dateRange !== 'season' && typeof renderTable === 'function') renderTable(); } catch(_e){}
+      try { if(typeof dateRange !== 'undefined' && dateRange !== 'season' && typeof renderPool === 'function' && typeof poolActive !== 'undefined' && poolActive) renderPool(); } catch(_e){}
+    };
+    document.head.appendChild(s);
+  } catch(e){ /* last-ditch: live per-cell fetch still covers windowed ranges */ }
+}
 async function loadDateRangeCacheFromNAS(){
   try {
     const res = await fetch(`${NAS_PROXY_URL}/daterange-cache`, {
       headers: {'ngrok-skip-browser-warning': 'true'},
       cache: 'no-store'
     });
-    if(!res.ok) return; // silent fail — static file stays in place as fallback
+    if(!res.ok){ loadStaticDateRangeFallback('nas-not-ok'); return; } // DATERANGE_LAZY_FALLBACK_V1 (was: static stays in place)
     const data = await res.json();
     if(data && typeof data === 'object' && data.player_daterange_cache && typeof data.player_daterange_cache === 'object'){
       window.PLAYER_DATERANGE_CACHE = data.player_daterange_cache;
@@ -4084,6 +4110,7 @@ async function loadDateRangeCacheFromNAS(){
     }
   } catch(e){
     console.warn('[DATERANGE_NAS_FETCH_V1] fetch failed:', e && e.message);
+    loadStaticDateRangeFallback('nas-error'); // DATERANGE_LAZY_FALLBACK_V1
   }
 }
 // Kick it off immediately at parse time. Static file (if loaded) provides
