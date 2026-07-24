@@ -11899,6 +11899,36 @@ function scheduleRenderPool(){
     catch(e){ console.warn('[POOL_RENDER_COALESCE_V1] render failed:', e); }
   }, 250);
 }
+// POOL_PROGRESSIVE_RENDER_V1 (2026-07-23, PC Walter, per the Dude's idea) — the pool
+// has ~1,475 rows (vs 160 on the Watch list); drawing all of them at once is a ~1.5-3s
+// main-thread FREEZE. Instead, draw the first chunk INSTANTLY (screen looks fully
+// loaded), then append the remaining rows in small background batches during idle time,
+// so the page stays responsive and never freezes. All rows still end up rendered, fully
+// sortable/scrollable. A generation token cancels an in-flight fill when a newer render
+// (sort click, filter, or a stats wave) supersedes it, so rows never duplicate.
+var _poolRenderGen = 0;
+var POOL_FIRST_CHUNK = 200;   // rows drawn immediately — enough to fill the screen + buffer
+var POOL_BG_CHUNK = 150;      // rows per background batch
+function renderPoolProgressive(tbody, display, buildRow){
+  var gen = ++_poolRenderGen;
+  var firstN = Math.min(POOL_FIRST_CHUNK, display.length);
+  var html = '';
+  for(var i=0;i<firstN;i++){ html += buildRow(display[i], i); }
+  tbody.innerHTML = html;                 // instant paint — the screen looks done
+  if(display.length <= firstN) return;
+  var idx = firstN;
+  var ric = window.requestIdleCallback || function(cb){ return setTimeout(cb, 16); };
+  function step(){
+    if(gen !== _poolRenderGen) return;    // superseded by a newer render — stop, don't duplicate
+    var end = Math.min(idx + POOL_BG_CHUNK, display.length);
+    var chunk = '';
+    for(var j=idx;j<end;j++){ chunk += buildRow(display[j], j); }
+    try { tbody.insertAdjacentHTML('beforeend', chunk); } catch(e){ return; }
+    idx = end;
+    if(idx < display.length) ric(step, { timeout: 250 });
+  }
+  ric(step, { timeout: 250 });
+}
 function renderPool(){
   const tbody = document.getElementById('pool-tbody');
   // POOL_GATE_BY_ID_V1 (May 28, 2026 — PC Walter, per The Dude) — gate by mlb_id
@@ -12117,7 +12147,9 @@ function renderPool(){
   // is meaningless. The rank is the player's position in the currently visible
   // (filtered + sorted) list — what you see is what gets numbered.
   const _showPoolRank = poolSortCol && poolSortCol !== 'name';
-  tbody.innerHTML = display.map((p, idx) => {
+  // POOL_PROGRESSIVE_RENDER_V1 — build each row via this fn; the progressive renderer
+  // below paints the first chunk instantly then fills the rest in idle batches.
+  const _poolBuildRow = (p, idx) => {
     // POOL_GATE_BY_ID_V1 — gate by mlb_id, not name.
     const _gateId = (p && p.mlb_id != null) ? String(p.mlb_id) : null;
     const isAdded = !!_gateId && addedNames.has(_gateId);
@@ -12229,7 +12261,9 @@ function renderPool(){
           : `<button class="btn-add-pool" title="Add to ${activeListName()}" onclick="quickAddFromPool(${p.mlb_id},'${safeName}','${p.team}','${p.primaryPos}',${p.age||0},this)">+ Add</button>`
       }</td>
     </tr>`;
-  }).join('');
+  };
+  // POOL_PROGRESSIVE_RENDER_V1 — draw first 200 instantly, background-fill the rest.
+  renderPoolProgressive(tbody, display, _poolBuildRow);
   // Don't overwrite the "stats loaded" status message if stats are loading
   if(!poolStatsLoaded){
     document.getElementById('pool-status').textContent = list.length + ' players';
