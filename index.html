@@ -11228,7 +11228,7 @@ let poolPosFilter = 'ALL';
 let poolFilters = { ab:null, ip:null, ageMin:null, ageMax:null, ownedMax:null, cbsOwnedMax:null, posPositions:[] };
 let poolTeamFilter = 'ALL';     // TEAM_FILTER_POOL_V1 — Pool — MLB team picker (mirrors the Watch list team filter)
 let poolActive = false;
-let poolSortCol = 'name';
+let poolSortCol = 'yahoo_rank';   // YAHOO_RANK_DEFAULT_V1 (2026-07-24) — MLB Players page opens sorted by Yahoo Rank (best first, unranked last), not alphabetical.
 let poolSortDir = 1;
 let poolClusterByPos = null;   // Pool-tab version of cluster state (independent of main list's clusterByPos)
 let poolSearchFilter = '';
@@ -12018,6 +12018,23 @@ function renderPool(){
       return (a.name || '').localeCompare(b.name || '');
     });
   }
+
+  // YAHOO_RANK_PRESORT_V1 (2026-07-24 — PC Walter, per the Dude) — default Pool sort is
+  // now Yahoo Rank. Pool players get yahoo_rank stamped at render time (~line 12174) AFTER
+  // this sort, and their load-time Yahoo merge fails by design (Yahoo's internal id != real
+  // mlb_id). So stamp rank onto the list HERE, before the sort, so the FIRST paint is
+  // correctly Yahoo-ranked instead of jumbled-until-a-later-re-render. Globals only
+  // (yahooDataByMlbId / yahooDataByName / normalize / normalizeName); fills yahoo_rank only
+  // when missing, never overwrites.
+  try {
+    list.forEach(p => {
+      if(p.yahoo_rank != null) return;
+      var _yw = (p._manual_yahoo_id && typeof yahooDataByMlbId==='object' && yahooDataByMlbId ? yahooDataByMlbId[p._manual_yahoo_id] : null)
+             || (p.mlb_id != null && typeof yahooDataByMlbId==='object' && yahooDataByMlbId ? yahooDataByMlbId[String(p.mlb_id)] : null)
+             || (typeof yahooDataByName==='object' && yahooDataByName ? (yahooDataByName[normalize(p.name||'')] || yahooDataByName[normalizeName(p.name||'')]) : null);
+      if(_yw && _yw.yahoo_rank != null) p.yahoo_rank = _yw.yahoo_rank;
+    });
+  } catch(_yprE){}
 
   list.sort((a,b)=>{
     // Cluster mode already pre-sorted; leave the list alone.
