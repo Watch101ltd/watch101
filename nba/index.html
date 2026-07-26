@@ -980,8 +980,18 @@ function _cbsLastName(s){
 }
 async function loadCbsNBA(){
   try {
-    // Page serves at /watch101/nba/, so a single ../ reaches /watch101/cbs-nba/.
-    const res = await fetch('../cbs-nba/cbs_rostered_latest.json', { cache:'no-cache' });
+    // CBS_NAS_FETCH_V1 (2026-07-26 — PC Walter, per the Dude, Bug #19): read CBS from the
+    // NAS endpoint instead of a relative repo path. THE BUG THIS FIXES: the old
+    // '../cbs-nba/cbs_rostered_latest.json' only ever resolved on GitHub Pages, because the
+    // scraper's push script uploads into the repo's cbs-nba/ folder and nothing has ever
+    // placed a cbs-nba folder in the Cloudflare deploy. So the column filled on GitHub and
+    // stayed em-dash on Cloudflare, silently (the !res.ok branch below just warns). Found on
+    // FOOTBALL by the Dude and checked here at his request in the same run; basketball had
+    // the identical defect. Now both hosts read ONE live source, served by CBS_ROSTERED_NBA_V1
+    // in the NBA server, so the scrape reaches both sites with no data push (Rule #4). Mirrors
+    // baseball, which has worked this way since May (CBS_ROSTERED_V1). Do NOT put this back on
+    // a relative path: host-relative data paths are the defect, not the deploy depth.
+    const res = await fetch(SERVER_URL + '/cbs/rostered-latest', { cache:'no-cache' });
     if(!res.ok){ console.warn('[NBA_CBS] no CBS data yet (HTTP ' + res.status + ')'); return; }
     const data = await res.json();
     const players = (data && data.players) || [];
