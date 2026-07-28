@@ -2854,45 +2854,67 @@ function onYahooAuthBadgeClick(){
   }
 }
 
-// Pick the first NFL league from /yahoo/leagues.
-// Returns the league_key (e.g. "461.l.123456") or null if user has no NFL leagues.
+// Pick the CURRENT-SEASON NFL league from /yahoo/leagues.
+// Returns the league_key (e.g. "470.l.4445") or null.
+//
+// YAHOO_LEAGUEKEY_REMEMBER_V1 (2026-07-28, PC Walter, per the Dude). WHY THIS EXISTS:
+// /yahoo/leagues is the ONE Yahoo call on this page with NO cache anywhere. It runs on
+// every single page load and goes straight to Yahoo. On 2026-07-28 Yahoo began refusing
+// it (our HTTP 500 wrapping a Yahoo 403). This function then returned null, loadYahooData
+// bailed out BEFORE it ever asked for ranks, and every Y!Rank and Y!Owned on the page went
+// blank. That in turn made the rankings seed fall through to its alphabetical tie-breaker,
+// which is what put 32 team defenses at the top of the Overall board and made it look like
+// "the stats are not loading." One unavailable league key took the whole page down.
+//
+// The key changes at most once a season, so there is no reason to re-ask Yahoo on every
+// load. Remember the last good one and use it whenever the live lookup fails. The live
+// lookup still WINS whenever it succeeds, so a new season is adopted automatically the
+// first time Yahoo answers again. The ranks endpoint behind this has its own 6-hour
+// server-side cache and is answering fine, so a remembered key is enough to keep real
+// numbers on the page right through a Yahoo outage.
+//
+// NOTE: the proper companion fix is to cache the league list on the NAS as well, so the
+// server stops making this call on every request too. That needs a container rebuild and
+// is deliberately NOT bundled in here, because this half is front-end only and ships with
+// a plain push.
+const _YAHOO_LEAGUEKEY_LS = 'watch101-nfl-yahoo-league-key';
+// Last-resort seed: the Dude's real 2026 NFL league, verified live 2026-07-28 against
+// /yahoo/leagues ("Yahoo H2H-Pts 4445", season 2026, 10 teams) and confirmed to return a
+// warm ranks cache of 2,032 players. Only ever used when the live lookup fails AND nothing
+// has been remembered yet. Any successful live lookup overwrites it.
+const _YAHOO_LEAGUEKEY_SEED = '470.l.4445';
+function _yahooRememberedLeagueKey(why){
+  var k = null;
+  try { k = localStorage.getItem(_YAHOO_LEAGUEKEY_LS); } catch(e){ /* storage blocked */ }
+  if(k){
+    console.warn('[yahoo] ' + why + ' -- using REMEMBERED league key ' + k);
+    return k;
+  }
+  console.warn('[yahoo] ' + why + ' -- nothing remembered, using SEED league key ' + _YAHOO_LEAGUEKEY_SEED);
+  return _YAHOO_LEAGUEKEY_SEED;
+}
 async function _yahooFirstNflLeagueKey(){
   try {
     const res = await fetch(SERVER_URL + '/yahoo/leagues');
-    if(res.status === 401) {
-      console.log('[yahoo] not signed in; skipping league lookup');
-      return null;
-    }
-    if(!res.ok) {
-      console.warn('[yahoo] /yahoo/leagues HTTP ' + res.status);
-      return null;
-    }
+    if(res.status === 401) return _yahooRememberedLeagueKey('not signed in');
+    if(!res.ok) return _yahooRememberedLeagueKey('/yahoo/leagues HTTP ' + res.status);
     const data = await res.json();
     const leagues = (data && data.leagues) || [];
-    if(!leagues.length){
-      console.warn('[yahoo] user has zero leagues');
-      return null;
-    }
-    // YAHOO_CURRENT_SEASON_LEAGUE_V1 (2026-06-06 — PC Walter, per the Dude). CRITICAL FIX:
+    if(!leagues.length) return _yahooRememberedLeagueKey('user has zero leagues');
+    // YAHOO_CURRENT_SEASON_LEAGUE_V1 (2026-06-06 - PC Walter, per the Dude). CRITICAL FIX:
     // the old code took leagues[0], which is the OLDEST league (the Dude has NFL leagues
-    // from 2021→2026, and Yahoo returns them oldest-first). That made the whole ranking
-    // pull 2021 data — Tom Brady ranked #3, retired/teamless players near the top, gaps
-    // in the rank-sorted pool. The league key drives the game key the server ranks
-    // against (buildLeagueRanksPayload: gameKey = leagueKey.split('.l.')[0]), so picking
-    // an old league = old-season rankings. FIX: pick the league with the HIGHEST season
-    // (most recent) so we always rank against the CURRENT NFL season.
+    // from 2021 to 2026, and Yahoo returns them oldest-first). That made the whole ranking
+    // pull 2021 data. The league key drives the game key the server ranks against, so
+    // picking an old league = old-season rankings. Pick the HIGHEST season instead.
     const sorted = leagues.slice().sort((a, b) => (parseInt(b.season,10)||0) - (parseInt(a.season,10)||0));
     const first = sorted[0];
     const key = first.league_key || first.key || null;
-    if(!key){
-      console.warn('[yahoo] most-recent league had no league_key field:', first);
-      return null;
-    }
+    if(!key) return _yahooRememberedLeagueKey('most-recent league had no league_key field');
+    try { localStorage.setItem(_YAHOO_LEAGUEKEY_LS, key); } catch(e){ /* storage blocked */ }
     console.log('[yahoo] using CURRENT NFL league:', key, '(' + (first.name || 'unnamed') + ', season ' + first.season + ')');
     return key;
   } catch(e){
-    console.warn('[yahoo] _yahooFirstNflLeagueKey error:', e.message);
-    return null;
+    return _yahooRememberedLeagueKey('_yahooFirstNflLeagueKey error: ' + e.message);
   }
 }
 
