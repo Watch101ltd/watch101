@@ -17026,11 +17026,86 @@ if(typeof PLAYER_PODCAST_MENTIONS === 'undefined'){ var PLAYER_PODCAST_MENTIONS 
 //   that wrapped the original inline block (news pipeline retired April 27, 2026).
 if(typeof PLAYER_TEAM_INDEX === 'undefined'){ var PLAYER_TEAM_INDEX = (window.PLAYER_TEAM_INDEX) || {}; }
 
+/* ===========================================================================
+   OWNED_PLAYERS_V1 (2026-07-30, PC Walter, per the Dude).
+   "I own this player" — a fan ticks a box in the Deep Cut and that player gets
+   a thin gold outline everywhere he appears. Saved in the visitor's OWN browser.
+   Nothing is sent anywhere and nothing touches the shared list.
+
+   WHY IT IS BUILT THIS WAY, so nobody "simplifies" it later and breaks it:
+
+   1. NO NEW COLUMN. The Dude ruled that out and he was right — a column
+      disturbs sorting, widths and the compact-mode rules. Instead this leans
+      on the fact that EVERY player row already carries data-mlb-id.
+
+   2. NO CHANGES TO ANY render FUNCTION. There are 7+ places that build rows
+      (main list, pool, prospects, tank, dual view). Editing all of them is 7
+      chances to break something. Instead this keeps ONE <style> element
+      listing the owned ids. CSS applies itself to any matching row, in any
+      table, before or after a re-render, forever. Sorting, filtering and
+      switching lists keep working with zero extra code.
+
+   3. outline, NOT border. outline occupies no space, so it cannot shift the
+      table layout by even a pixel. A border would.
+
+   4. THIS DELIBERATELY DOES NOT CALL _blockIfReadOnly.
+      Every other save on this page does, and it must NOT here.
+      _isReadOnlyMode() returns true for any host that is not github, so EVERY
+      REAL VISITOR on the live site is read-only. That guard stops the public
+      editing the Dude and Matt's shared list. This feature is FOR the public
+      and writes only to their own browser. Adding the guard would silently
+      disable it for 100% of its audience while still working perfectly for
+      the Dude on staging — the worst kind of bug to chase.
+   =========================================================================== */
+var OWNED_KEY = 'fw101_owned';
+var ownedPlayers = [];
+try { var _ownRaw = localStorage.getItem(OWNED_KEY); if(_ownRaw) ownedPlayers = JSON.parse(_ownRaw) || []; } catch(e){ ownedPlayers = []; }
+
+function isOwnedPlayer(id){ return ownedPlayers.indexOf(String(id)) !== -1; }
+
+function _ownedSave(){
+  try { localStorage.setItem(OWNED_KEY, JSON.stringify(ownedPlayers)); } catch(e){ /* private mode or quota — just will not persist */ }
+}
+
+function toggleOwnedPlayer(id){
+  id = String(id || '');
+  if(!id) return;
+  var i = ownedPlayers.indexOf(id);
+  if(i === -1) ownedPlayers.push(id); else ownedPlayers.splice(i, 1);
+  _ownedSave();
+  applyOwnedOutlines();
+}
+
+function applyOwnedOutlines(){
+  try {
+    var el = document.getElementById('owned-players-style');
+    if(!el){ el = document.createElement('style'); el.id = 'owned-players-style'; document.head.appendChild(el); }
+    var css = '#ppo-own-wrap{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:7px 13px;'
+            + 'border:1px solid var(--gold,#f0a500);border-radius:999px;cursor:pointer;font-weight:700;'
+            + 'font-size:13px;letter-spacing:.02em;color:var(--gold,#f0a500);background:rgba(240,165,0,.08);'
+            + '-webkit-user-select:none;user-select:none;transition:background .15s}'
+            + '#ppo-own-wrap:hover{background:rgba(240,165,0,.18)}'
+            + '#ppo-own-check{width:16px;height:16px;accent-color:var(--gold,#f0a500);cursor:pointer;margin:0}';
+    if(ownedPlayers.length){
+      var sel = ownedPlayers.map(function(id){ return 'tr[data-mlb-id="' + id + '"]'; }).join(',');
+      css += sel + '{outline:1px solid var(--gold,#f0a500);outline-offset:-1px}';
+    }
+    el.textContent = css;
+  } catch(e){ console.warn('[OWNED_PLAYERS_V1] could not apply outlines', e); }
+}
+
+try { applyOwnedOutlines(); } catch(e){}
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', applyOwnedOutlines); }
+
 function openPlayerPage(p){
   if(!p) return;
   var mlbId = p.mlb_id;
   var overlay = document.getElementById('player-page-overlay');
   if(!overlay) return;
+  // OWNED_PLAYERS_V1 — remember who is on screen so the checkbox knows what to toggle,
+  // and reflect whether this visitor already marked him owned.
+  window._ppoCurrentMlbId = mlbId;
+  try { var _ownChk = document.getElementById("ppo-own-check"); if(_ownChk) _ownChk.checked = isOwnedPlayer(mlbId); } catch(e){}
 
   // DEEPCUT_DATERANGE_ISOLATION_V1 (2026-06-25 — PC Walter, per the Dude) — the Deep Cut
   // overlay's date range is independent of the main page and RESETS to Season every time
@@ -19378,6 +19453,10 @@ function attachTankScrollHandler(){
       <div class="ppo-hero-name" id="ppo-name"></div>
       <div class="ppo-hero-sub" id="ppo-sub"></div>
       <div class="ppo-hero-rank" id="ppo-rank" style="display:none">Watch 101 Rank <span class="num" id="ppo-rank-num"></span></div>
+      <label id="ppo-own-wrap" title="Saved in your browser only. Nobody else sees this.">
+        <input type="checkbox" id="ppo-own-check" onchange="toggleOwnedPlayer(window._ppoCurrentMlbId)">
+        <span>I own this player</span>
+      </label>
       <div class="ppo-daterange-wrap">
         <!-- DEEPCUT_CHIP_TOGGLE_V1 — MLB/MiLB swap chip (populated by openPlayerPage via _renderLevelChip;
              empty for single-sample players). Lets the Dude pick which level the date range applies to. -->
