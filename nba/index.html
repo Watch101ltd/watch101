@@ -31,7 +31,7 @@
   ============================================================================
 -->
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=Bowlby+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=Bowlby+One&family=Noto+Serif:wght@400;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 
 /* ── COLOR TOKENS ──────────────────────────────────────────────────────────
@@ -509,9 +509,129 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
    browser-native white background, so the select's inherited white text was invisible. Dark text on white
    for the option rows; the closed button keeps its white-on-orange look. */
 #list-switcher option{color:#1a1a1a;background:#fff}
+
+/* ===== SITE_CHROME_V1 ported to BASKETBALL 2026-07-30 by Walter, from mlb/index.html.
+   Baseball red swapped for --court (basketball orange). Links set for /nba/ depth. =====
+   Only w101- namespaced rules came across, so nothing can collide with the
+   tracker's own class names. Every colour is an existing theme var, so day mode
+   keeps working. The tracker's own #theme-toggle stays in charge of the theme;
+   the hub's duplicate button was stripped on purpose.
+   TOMORROW, when this file becomes mlb/index.html, the nav and footer hrefs need
+   a ../ prefix: about.html, contact.html, updates.html, home.html, nfl/, nba/.
+   The Baseball entry is already ./ and needs no change. ===== */
+:root{--mlb-accent:#1d4ed8;--nfl-accent:#15803d;--nba-accent:#f97316}
+/* =========================================================================
+   SITE_CHROME_V1  NAV START
+   Lift this whole block (CSS + the <header> markup) into the list pages.
+   Sticky from 768px up, static below, per the Dude 2026-07-29.
+   ========================================================================= */
+.w101-nav{
+  background:linear-gradient(135deg,var(--header-grad-1) 0%,var(--header-grad-2) 50%,var(--header-grad-1) 100%);
+  border-bottom:1px solid var(--court);
+  position:static;top:0;z-index:900;
+}
+@media(min-width:768px){ .w101-nav{position:sticky} }
+.w101-nav-inner{
+  max-width:1240px;margin:0 auto;padding:14px 20px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+.w101-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.w101-brand-word{font-family:'Bowlby One',sans-serif;font-size:26px;letter-spacing:.04em;color:var(--court);line-height:1}
+.w101-brand img{height:34px;width:auto;display:block}
+.w101-menu{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-left:auto}
+.w101-menu a,.w101-menu button{
+  font-family:'Noto Serif',serif;font-size:15px;font-weight:600;
+  color:var(--text2);background:none;border:none;cursor:pointer;
+  padding:9px 13px;border-radius:6px;text-decoration:none;
+  transition:background .15s,color .15s;white-space:nowrap;
+}
+.w101-menu a:hover,.w101-menu button:hover{background:var(--surface2);color:var(--text)}
+/* dropdown */
+.w101-drop{position:relative}
+.w101-drop>button::after{content:' \25BE';font-size:11px;opacity:.7}
+.w101-drop-panel{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:210px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+  box-shadow:0 12px 34px rgba(0,0,0,.45);overflow:hidden;padding:5px;
+}
+.w101-drop.open .w101-drop-panel{display:block}
+.w101-drop-panel a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:5px;font-size:15px}
+.w101-drop-panel a span.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.w101-sub{
+  font-family:'Noto Serif',serif;font-weight:700;font-size:15px;
+  background:var(--gold);color:#000;border:1px solid var(--gold);
+  padding:9px 16px;border-radius:6px;cursor:pointer;text-decoration:none;white-space:nowrap;
+}
+.w101-sub:hover{background:#fbbf24;border-color:#fbbf24}
+.w101-sub.pending{opacity:.62;cursor:default}
+.w101-theme{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text2);
+  width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:15px;line-height:1;
+}
+/* social row. Top and prominent, the Dude's call over Matt's bottom placement. */
+.w101-social{display:flex;align-items:center;gap:7px}
+.w101-social a{
+  width:34px;height:34px;border-radius:7px;display:grid;place-items:center;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text2);text-decoration:none;transition:transform .12s,background .15s,color .15s;
+}
+.w101-social a:hover{background:var(--court);color:#fff;transform:translateY(-2px)}
+.w101-social a svg{width:17px;height:17px;fill:currentColor;display:block}
+.w101-social a.pending{opacity:.45}
+.w101-social a.pending:hover{background:var(--surface2);color:var(--text2);transform:none}
+/* ---------------- footer, four bands ---------------- */
+.w101-foot{margin-top:64px;border-top:1px solid var(--border);background:var(--surface)}
+.w101-foot-inner{max-width:1240px;margin:0 auto;padding:32px 20px 26px;text-align:center}
+.w101-foot-links{display:flex;justify-content:center;gap:8px 22px;flex-wrap:wrap;margin-bottom:20px}
+.w101-foot-links a{color:var(--text2);text-decoration:none;font-size:15px;font-weight:600}
+.w101-foot-links a:hover{color:var(--gold)}
+.w101-foot .w101-social{justify-content:center;margin-bottom:20px}
+.w101-copy{font-size:13px;color:var(--text3);font-family:'Nunito Sans',sans-serif;margin-bottom:14px}
+.w101-top{
+  background:none;border:1px solid var(--border2);color:var(--text3);
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:.13em;
+  padding:9px 17px;border-radius:6px;cursor:pointer;text-transform:uppercase;
+}
+.w101-top:hover{color:var(--text);border-color:var(--text3)}
+@media(max-width:620px){
+  .w101-nav-inner{gap:12px}
+  .w101-menu{width:100%;margin-left:0;justify-content:center}
+  .w101-social{width:100%;justify-content:center;order:5}
+  .hero{padding-top:36px}
+}
 </style>
 </head>
 <body>
+<!-- ===================== SITE_CHROME_V1 NAV MARKUP START ===================== -->
+<header class="w101-nav">
+  <div class="w101-nav-inner">
+
+    <a class="w101-brand" href="../" title="Watch101 home">
+      <span class="w101-brand-word">Watch</span>
+      <img src="data:image/png;base64,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" alt="101">
+    </a>
+
+    <nav class="w101-menu">
+      <div class="w101-drop" id="drop-lists">
+        <button type="button" onclick="w101Drop('drop-lists',event)" aria-haspopup="true">The Lists</button>
+        <div class="w101-drop-panel">
+          <a href="../mlb/"><span class="dot" style="background:var(--mlb-accent)"></span>Baseball</a>
+          <a href="../nfl/"><span class="dot" style="background:var(--nfl-accent)"></span>Football</a>
+          <a href="./"><span class="dot" style="background:var(--nba-accent)"></span>Basketball</a>
+        </div>
+      </div>
+      <a href="../about.html">About Us</a>
+      <a href="../updates.html" id="nav-updates">Updates</a>
+      <a href="../contact.html">Contact</a>
+      <a class="w101-sub" id="subscribe-btn" href="#">Subscribe</a>
+      <!-- theme toggle omitted: the tracker header already owns #theme-toggle -->
+    </nav>
+
+    <div class="w101-social" id="social-row"></div>
+  </div>
+</header>
+<!-- ====================== SITE_CHROME_V1 NAV MARKUP END ====================== -->
+
 <script>
 /* DAY_MODE_V1 (2026-07-17 - PC Walter, per the Dude) - day/night toggle ported
    from baseball. NIGHT is the default; day applies only when the user saved it. */
@@ -543,7 +663,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="logo-sub" id="logo-sub">Watch List · Loading…</div>
   </div>
   <div class="header-right">
-    <a class="logo-mini mlb" href="../" title="Watch101 MLB — open the baseball site"><img class="logo-mini-img" src="images/watch101_baseball_logo.png" alt="101"><span class="logo-mini-sport">MLB</span></a><a class="logo-mini nfl" href="../nfl/" title="Watch101 NFL — open the football site"><img class="logo-mini-img" src="images/watch101_football_logo.png" alt="101"><span class="logo-mini-sport">NFL</span></a>
+    <a class="logo-mini mlb" href="../mlb/" title="Watch101 MLB — open the baseball site"><img class="logo-mini-img" src="images/watch101_baseball_logo.png" alt="101"><span class="logo-mini-sport">MLB</span></a><a class="logo-mini nfl" href="../nfl/" title="Watch101 NFL — open the football site"><img class="logo-mini-img" src="images/watch101_football_logo.png" alt="101"><span class="logo-mini-sport">NFL</span></a>
     <span id="last-updated" class="last-updated">Loading…</span>
     <button class="btn btn-outline" onclick="reloadWatchList()">Refresh</button>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
@@ -2755,5 +2875,103 @@ bootstrap();
   </section>
   <div class="ftl-statwrap" id="ftl-statwrap"></div>
 </div>
+<!-- ==================== SITE_CHROME_V1 FOOTER MARKUP START ==================== -->
+<footer class="w101-foot">
+  <div class="w101-foot-inner">
+    <div class="w101-foot-links">
+      <a href="../">Home</a>
+      <a href="../mlb/">Baseball</a>
+      <a href="../nfl/">Football</a>
+      <a href="./">Basketball</a>
+      <a href="../about.html">About Us</a>
+      <a href="../updates.html">Updates</a>
+      <a href="../contact.html">Contact</a>
+    </div>
+    <div class="w101-social" id="social-row-foot"></div>
+    <p class="w101-copy">Copyright &copy; 2026 Watch101. All rights reserved.</p>
+    <button class="w101-top" type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back to top</button>
+  </div>
+</footer>
+<!-- ===================== SITE_CHROME_V1 FOOTER MARKUP END ===================== -->
+<script>
+/* ===========================================================================
+   SITE_CHROME_V1 SCRIPT. Lift this with the nav.
+
+   🔧 THE ONLY PART YOU EVER NEED TO EDIT IS THE CONFIG BLOCK BELOW.
+   Fill in a URL and that icon or button turns on by itself. Leave it empty
+   and it renders dimmed and unclickable, which is deliberate: Matt wanted the
+   social links visible early to put pressure on himself to finish the accounts.
+   =========================================================================== */
+var W101 = {
+  // Paste the real URLs here as Matt creates the accounts. Empty string = dimmed.
+  substack : '',
+  social   : {
+    x        : '',
+    instagram: '',
+    facebook : '',
+    bluesky  : '',
+    youtube  : '',
+    linkedin : ''
+  }
+};
+
+/* --- tiny inline SVG icons, so there is no icon font or external request --- */
+var W101_ICONS = {
+  x:'<svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.4l-5-6.6L5.8 22H2.7l8.1-9.3L1.5 2H8l4.7 6.2zm-1.1 18h1.8L6.3 3.8H4.4z"/></svg>',
+  instagram:'<svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.07 1.2.05 1.8.25 2.2.42.6.22 1 .5 1.5.94.44.44.72.85.94 1.45.17.43.37 1.05.42 2.25.06 1.28.07 1.68.07 4.9s0 3.6-.07 4.9c-.05 1.2-.25 1.8-.42 2.2-.22.6-.5 1-.94 1.5-.44.44-.85.72-1.45.94-.43.17-1.05.37-2.25.42-1.28.06-1.68.07-4.9.07s-3.6 0-4.9-.07c-1.2-.05-1.8-.25-2.2-.42-.6-.22-1-.5-1.5-.94-.44-.44-.72-.85-.94-1.45-.17-.43-.37-1.05-.42-2.25C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.9c.05-1.2.25-1.8.42-2.2.22-.6.5-1 .94-1.5.44-.44.85-.72 1.45-.94.43-.17 1.05-.37 2.25-.42C8.4 2.2 8.8 2.2 12 2.2zm0 1.98c-3.14 0-3.5.01-4.74.07-.95.04-1.47.2-1.81.33-.46.18-.78.39-1.12.73-.34.34-.55.66-.73 1.12-.13.34-.29.86-.33 1.81-.06 1.24-.07 1.6-.07 4.74s.01 3.5.07 4.74c.04.95.2 1.47.33 1.81.18.46.39.78.73 1.12.34.34.66.55 1.12.73.34.13.86.29 1.81.33 1.24.06 1.6.07 4.74.07s3.5-.01 4.74-.07c.95-.04 1.47-.2 1.81-.33.46-.18.78-.39 1.12-.73.34-.34.55-.66.73-1.12.13-.34.29-.86.33-1.81.06-1.24.07-1.6.07-4.74s-.01-3.5-.07-4.74c-.04-.95-.2-1.47-.33-1.81a3.02 3.02 0 00-.73-1.12 3.02 3.02 0 00-1.12-.73c-.34-.13-.86-.29-1.81-.33-1.24-.06-1.6-.07-4.74-.07zM12 7.9a4.1 4.1 0 110 8.2 4.1 4.1 0 010-8.2zm0 1.98a2.12 2.12 0 100 4.24 2.12 2.12 0 000-4.24zm5.23-2.2a.96.96 0 11-1.92 0 .96.96 0 011.92 0z"/></svg>',
+  facebook:'<svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 10-11.56 9.88v-7H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.88h-2.33v7A10 10 0 0022 12z"/></svg>',
+  bluesky:'<svg viewBox="0 0 24 24"><path d="M6.2 4.2C8.5 5.9 11 9.5 12 11.4c1-1.9 3.5-5.5 5.8-7.2 1.7-1.2 4.2-2.2 4.2 1 0 .6-.4 4.9-.6 5.6-.7 2.4-3.1 3-5.3 2.6 3.8.7 4.8 2.9 2.7 5.1-3.9 4.1-5.6-1-6-2.3-.1-.4-.2-.6-.3-.6s-.2.2-.3.6c-.4 1.3-2.1 6.4-6 2.3-2.1-2.2-1.1-4.4 2.7-5.1-2.2.4-4.6-.2-5.3-2.6C2.4 10.1 2 5.8 2 5.2c0-3.2 2.5-2.2 4.2-1z"/></svg>',
+  youtube:'<svg viewBox="0 0 24 24"><path d="M23 12s0-3.2-.4-4.7c-.2-.9-.9-1.5-1.7-1.7C19.3 5.2 12 5.2 12 5.2s-7.3 0-8.9.4c-.8.2-1.5.8-1.7 1.7C1 8.8 1 12 1 12s0 3.2.4 4.7c.2.9.9 1.5 1.7 1.7 1.6.4 8.9.4 8.9.4s7.3 0 8.9-.4c.8-.2 1.5-.8 1.7-1.7.4-1.5.4-4.7.4-4.7zM9.8 15.3V8.7l6 3.3z"/></svg>',
+  linkedin:'<svg viewBox="0 0 24 24"><path d="M20.4 20.4h-3.6v-5.6c0-1.3-.5-2.2-1.7-2.2-.9 0-1.4.6-1.7 1.2-.1.2-.1.5-.1.8v5.8H9.7s.05-9.4 0-10.4h3.6v1.5c.5-.7 1.3-1.8 3.2-1.8 2.3 0 4 1.5 4 4.8v6zM5.9 8.6h-.02c-1.2 0-2-.8-2-1.8s.8-1.8 2.05-1.8c1.2 0 1.98.8 2 1.8 0 1-.78 1.8-2.03 1.8zM7.7 20.4H4.1V10h3.6z"/></svg>'
+};
+var W101_LABELS = {x:'X',instagram:'Instagram',facebook:'Facebook',bluesky:'Bluesky',youtube:'YouTube',linkedin:'LinkedIn'};
+
+/* build the social rows from config, top and footer */
+(function(){
+  var html='';
+  for (var k in W101.social){
+    if(!W101_ICONS[k]) continue;
+    var url=(W101.social[k]||'').trim();
+    html += url
+      ? '<a href="'+url+'" target="_blank" rel="noopener" title="'+W101_LABELS[k]+'" aria-label="'+W101_LABELS[k]+'">'+W101_ICONS[k]+'</a>'
+      : '<a class="pending" href="#" title="'+W101_LABELS[k]+' account is not up yet" aria-label="'+W101_LABELS[k]+' coming soon" onclick="return false">'+W101_ICONS[k]+'</a>';
+  }
+  ['social-row','social-row-foot'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.innerHTML=html;
+  });
+})();
+
+/* wire the Subscribe buttons. No Substack URL yet = dimmed and honest. */
+(function(){
+  var url=(W101.substack||'').trim();
+  ['subscribe-btn','subscribe-btn-2'].forEach(function(id){
+    var b=document.getElementById(id); if(!b) return;
+    if(url){ b.href=url; b.target='_blank'; b.rel='noopener'; }
+    else{
+      b.classList.add('pending');
+      b.href='#';
+      b.title='The newsletter is not open yet. Check back shortly.';
+      b.onclick=function(){ return false; };
+    }
+  });
+})();
+
+/* dropdown. Click to open, click anywhere else or press Escape to close. */
+function w101Drop(id,ev){
+  if(ev) ev.stopPropagation();
+  var d=document.getElementById(id); if(!d) return;
+  var open=d.classList.contains('open');
+  document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+  if(!open) d.classList.add('open');
+}
+document.addEventListener('click',function(){
+  document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+});
+
+/* theme toggle omitted on purpose: the tracker page owns toggleTheme(). */
+</script>
 </body>
 </html>
