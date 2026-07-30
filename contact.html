@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Watch101</title>
+<meta name="description" content="Get in touch with Watch101.">
+<!-- Watch101 contact page. Chrome is generated from home.html so the two cannot drift.
+     Built 2026-07-29 20:15 by Walter. Links are relative on purpose (GitHub Pages subfolder). -->
+<script>
+/* EARLY THEME INIT. Must run before paint so there is no white flash.
+   Night is the default. Day applies only if the reader chose it. Copied from
+   the baseball page (NIGHT_DEFAULT_V1) so both pages behave identically. */
+(function(){
+  try {
+    if (localStorage.getItem('watch101-theme') === 'day') {
+      document.documentElement.setAttribute('data-early-day','1');
+    }
+  } catch(e) {}
+})();
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Nunito+Sans:wght@400;600;700;800&family=Bowlby+One&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ---- THEME TOKENS. Same names and values as the baseball page. ---- */
+:root{
+  --bg:#080c10;--surface:#0d1117;--surface2:#131920;--surface3:#1a2330;
+  --border:#1e2d3d;--border2:#253545;
+  --gold:#f0a500;--gold2:#c47f00;
+  --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --turquoise:#06b6d4;--turquoise2:#0891b2;
+  --title-blue:#1d4ed8;--title-red:#dc2626;
+  --text:#ffffff;--text2:#e2e8f0;--text3:#94a3b8;
+  --header-grad-1:#080c10;--header-grad-2:#0d1520;
+  /* per vertical accents, settled with Matt 2026-07-29 */
+  --mlb-accent:#1d4ed8;--nfl-accent:#15803d;--nba-accent:#f97316;
+}
+body.day-mode{
+  --bg:#e9ebef;--surface:#f4f5f8;--surface2:#dde0e5;--surface3:#cdd1d7;
+  --border:#c2c6cc;--border2:#a5aab2;
+  --gold:#a16207;--gold2:#854d0e;
+  --turquoise:#000000;--turquoise2:#000000;
+  --title-blue:#1d4ed8;--title-red:#b91c1c;
+  --text:#1a1a1a;--text2:#333333;--text3:#666666;
+  --header-grad-1:#f4f5f8;--header-grad-2:#e5e7ec;
+}
+
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Noto Serif',Georgia,serif;
+  font-size:16px;line-height:1.6;min-height:100vh;overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* =========================================================================
+   SITE_CHROME_V1  NAV START
+   Lift this whole block (CSS + the <header> markup) into the list pages.
+   Sticky from 768px up, static below, per the Dude 2026-07-29.
+   ========================================================================= */
+.w101-nav{
+  background:linear-gradient(135deg,var(--header-grad-1) 0%,var(--header-grad-2) 50%,var(--header-grad-1) 100%);
+  border-bottom:1px solid var(--title-red);
+  position:static;top:0;z-index:900;
+}
+@media(min-width:768px){ .w101-nav{position:sticky} }
+
+.w101-nav-inner{
+  max-width:1240px;margin:0 auto;padding:14px 20px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+.w101-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.w101-brand-word{font-family:'Bowlby One',sans-serif;font-size:26px;letter-spacing:.04em;color:var(--title-red);line-height:1}
+.w101-brand img{height:34px;width:auto;display:block}
+
+.w101-menu{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-left:auto}
+.w101-menu a,.w101-menu button{
+  font-family:'Noto Serif',serif;font-size:15px;font-weight:600;
+  color:var(--text2);background:none;border:none;cursor:pointer;
+  padding:9px 13px;border-radius:6px;text-decoration:none;
+  transition:background .15s,color .15s;white-space:nowrap;
+}
+.w101-menu a:hover,.w101-menu button:hover{background:var(--surface2);color:var(--text)}
+
+/* dropdown */
+.w101-drop{position:relative}
+.w101-drop>button::after{content:' \25BE';font-size:11px;opacity:.7}
+.w101-drop-panel{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:210px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+  box-shadow:0 12px 34px rgba(0,0,0,.45);overflow:hidden;padding:5px;
+}
+.w101-drop.open .w101-drop-panel{display:block}
+.w101-drop-panel a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:5px;font-size:15px}
+.w101-drop-panel a span.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+
+.w101-sub{
+  font-family:'Noto Serif',serif;font-weight:700;font-size:15px;
+  background:var(--gold);color:#000;border:1px solid var(--gold);
+  padding:9px 16px;border-radius:6px;cursor:pointer;text-decoration:none;white-space:nowrap;
+}
+.w101-sub:hover{background:#fbbf24;border-color:#fbbf24}
+.w101-sub.pending{opacity:.62;cursor:default}
+
+.w101-theme{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text2);
+  width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:15px;line-height:1;
+}
+
+/* social row. Top and prominent, the Dude's call over Matt's bottom placement. */
+.w101-social{display:flex;align-items:center;gap:7px}
+.w101-social a{
+  width:34px;height:34px;border-radius:7px;display:grid;place-items:center;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text2);text-decoration:none;transition:transform .12s,background .15s,color .15s;
+}
+.w101-social a:hover{background:var(--title-red);color:#fff;transform:translateY(-2px)}
+.w101-social a svg{width:17px;height:17px;fill:currentColor;display:block}
+.w101-social a.pending{opacity:.45}
+.w101-social a.pending:hover{background:var(--surface2);color:var(--text2);transform:none}
+/* SITE_CHROME_V1  NAV END */
+
+/* ---------------- hero ---------------- */
+.hero{max-width:1240px;margin:0 auto;padding:56px 20px 30px;text-align:center}
+.hero-mark{font-family:'Bowlby One',sans-serif;font-size:clamp(40px,8vw,74px);line-height:1;letter-spacing:.03em;display:flex;align-items:center;justify-content:center;gap:.06em;flex-wrap:wrap}
+.hero-mark .w{color:var(--title-red)}
+.hero-mark img{height:1.55em;width:auto}
+.hero-tag{
+  margin:22px auto 0;max-width:640px;font-size:clamp(17px,2.3vw,21px);
+  color:var(--text2);line-height:1.55;
+}
+.hero-note{margin-top:14px;font-size:14px;color:var(--text3);font-family:'Nunito Sans',sans-serif}
+
+/* ---------------- the three tiles ---------------- */
+.tiles{
+  max-width:1240px;margin:0 auto;padding:24px 20px 10px;
+  display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(275px,1fr));
+}
+.tile{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:30px 24px 26px;text-align:center;text-decoration:none;color:inherit;
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  transition:transform .16s,border-color .16s,box-shadow .16s;
+  border-top:4px solid var(--tile-accent,var(--border2));
+}
+.tile:hover{transform:translateY(-4px);border-color:var(--tile-accent,var(--border2));box-shadow:0 14px 34px rgba(0,0,0,.34)}
+.tile img{width:100%;max-width:210px;height:auto;display:block}
+.tile h2{font-size:23px;font-weight:800;letter-spacing:.01em}
+.tile p{font-size:15px;color:var(--text3);line-height:1.5;max-width:250px}
+.tile .status{
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:.11em;
+  text-transform:uppercase;padding:4px 11px;border-radius:20px;
+  background:var(--surface2);color:var(--text3);border:1px solid var(--border2);
+}
+.tile .status.live{background:var(--tile-accent);color:#fff;border-color:var(--tile-accent)}
+
+/* ---------------- what this is ---------------- */
+.blurb{max-width:760px;margin:44px auto 0;padding:0 20px;text-align:center}
+.blurb h3{font-size:15px;font-family:'Nunito Sans',sans-serif;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.blurb p{font-size:17px;color:var(--text2);margin-bottom:15px}
+.blurb a.more{color:var(--gold);font-weight:700;text-decoration:none;border-bottom:1px solid var(--gold2)}
+
+/* ---------------- newsletter band ---------------- */
+.news-band{
+  max-width:760px;margin:52px auto 0;padding:30px 24px;text-align:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+}
+.news-band h3{font-size:22px;font-weight:800;margin-bottom:10px}
+.news-quote{font-style:italic;color:var(--text3);font-size:15px;margin-top:14px;line-height:1.5}
+.news-quote cite{display:block;font-style:normal;font-size:12.5px;margin-top:6px;color:var(--text3);opacity:.8;font-family:'Nunito Sans',sans-serif;letter-spacing:.04em}
+
+/* ---------------- footer, four bands ---------------- */
+.w101-foot{margin-top:64px;border-top:1px solid var(--border);background:var(--surface)}
+.w101-foot-inner{max-width:1240px;margin:0 auto;padding:32px 20px 26px;text-align:center}
+.w101-foot-links{display:flex;justify-content:center;gap:8px 22px;flex-wrap:wrap;margin-bottom:20px}
+.w101-foot-links a{color:var(--text2);text-decoration:none;font-size:15px;font-weight:600}
+.w101-foot-links a:hover{color:var(--gold)}
+.w101-foot .w101-social{justify-content:center;margin-bottom:20px}
+.w101-copy{font-size:13px;color:var(--text3);font-family:'Nunito Sans',sans-serif;margin-bottom:14px}
+.w101-top{
+  background:none;border:1px solid var(--border2);color:var(--text3);
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:.13em;
+  padding:9px 17px;border-radius:6px;cursor:pointer;text-transform:uppercase;
+}
+.w101-top:hover{color:var(--text);border-color:var(--text3)}
+
+@media(max-width:620px){
+  .w101-nav-inner{gap:12px}
+  .w101-menu{width:100%;margin-left:0;justify-content:center}
+  .w101-social{width:100%;justify-content:center;order:5}
+  .hero{padding-top:36px}
+}
+</style>
+
+<style>
+/* inner content pages. Reading column, not a dashboard. */
+.page{max-width:730px;margin:0 auto;padding:46px 20px 10px}
+.page h1{font-size:clamp(30px,5vw,42px);font-weight:800;letter-spacing:-.01em;margin-bottom:20px;color:var(--title-red)}
+.page h2{font-size:23px;font-weight:800;margin:38px 0 14px;color:var(--text)}
+.page p{font-size:17px;color:var(--text2);margin-bottom:17px}
+.page p.lead{font-size:20px;color:var(--text);line-height:1.5;margin-bottom:26px}
+.page a.more,.page a{color:var(--gold);font-weight:700;text-decoration:none;border-bottom:1px solid var(--gold2)}
+.page .contact-block{
+  background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--gold);
+  border-radius:0 10px 10px 0;padding:20px 22px;font-size:19px;
+}
+.page .contact-block .pending{color:var(--text3);font-size:16px;font-weight:400}
+.log{margin-top:12px}
+.entry{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:16px}
+.entry h2{margin:0 0 12px;font-size:18px;color:var(--gold);font-family:'Nunito Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.entry ul{margin:0;padding-left:20px}
+.entry li{font-size:16.5px;color:var(--text2);margin-bottom:9px;line-height:1.55}
+.entry li:last-child{margin-bottom:0}
+.entry.unseen{border-color:var(--title-red)}
+.entry.unseen h2::after{content:' NEW';background:var(--title-red);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:8px;letter-spacing:.08em;vertical-align:2px}
+/* the red dot Matt asked for, on the nav Updates link */
+#nav-updates.has-new{position:relative}
+#nav-updates.has-new::after{
+  content:'';position:absolute;top:6px;right:5px;width:8px;height:8px;
+  border-radius:50%;background:var(--title-red);
+}
+</style>
+</head>
+<body data-page="contact">
+
+<!-- ===================== SITE_CHROME_V1 NAV MARKUP START ===================== -->
+<header class="w101-nav">
+  <div class="w101-nav-inner">
+
+    <a class="w101-brand" href="./" title="Watch101 home">
+      <span class="w101-brand-word">Watch</span>
+      <img src="data:image/png;base64,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" alt="101">
+    </a>
+
+    <nav class="w101-menu">
+      <div class="w101-drop" id="drop-lists">
+        <button type="button" onclick="w101Drop('drop-lists',event)" aria-haspopup="true">The Lists</button>
+        <div class="w101-drop-panel">
+          <a href="mlb/"><span class="dot" style="background:var(--mlb-accent)"></span>Baseball</a>
+          <a href="nfl/"><span class="dot" style="background:var(--nfl-accent)"></span>Football</a>
+          <a href="nba/"><span class="dot" style="background:var(--nba-accent)"></span>Basketball</a>
+        </div>
+      </div>
+      <a href="about.html">About Us</a>
+      <a href="updates.html" id="nav-updates">Updates</a>
+      <a href="contact.html">Contact</a>
+      <a class="w101-sub" id="subscribe-btn" href="#">Subscribe</a>
+      <button class="w101-theme" id="theme-toggle" type="button" onclick="w101Theme()" title="Toggle day and night mode">&#127769;</button>
+    </nav>
+
+    <div class="w101-social" id="social-row"></div>
+  </div>
+</header>
+<!-- ====================== SITE_CHROME_V1 NAV MARKUP END ====================== -->
+
+<section class="page">
+  <h1>Contact</h1>
+
+  <p class="lead">Arguments about rankings are welcome and encouraged.</p>
+
+  <p>Email is the fastest way to reach us. Whether a player is ranked too high, too low, or missing entirely, we would rather hear it than not.</p>
+
+  <p class="contact-block" id="contact-block"></p>
+
+  <p>Social accounts are being set up right now. Once they are live the icons at the top of every page will light up and a reply there will reach us just as fast.</p>
+
+  <p>If you are asking about advertising, a partnership, or anything business shaped, email is the right door.</p>
+</section>
+
+
+<!-- ==================== SITE_CHROME_V1 FOOTER MARKUP START ==================== -->
+<footer class="w101-foot">
+  <div class="w101-foot-inner">
+    <div class="w101-foot-links">
+      <a href="./">Home</a>
+      <a href="mlb/">Baseball</a>
+      <a href="nfl/">Football</a>
+      <a href="nba/">Basketball</a>
+      <a href="about.html">About Us</a>
+      <a href="updates.html">Updates</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <div class="w101-social" id="social-row-foot"></div>
+    <p class="w101-copy">Copyright &copy; 2026 Watch101. All rights reserved.</p>
+    <button class="w101-top" type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back to top</button>
+  </div>
+</footer>
+<!-- ===================== SITE_CHROME_V1 FOOTER MARKUP END ===================== -->
+
+<script>
+/* ===========================================================================
+   SITE_CHROME_V1 SCRIPT. Lift this with the nav.
+
+   🔧 THE ONLY PART YOU EVER NEED TO EDIT IS THE CONFIG BLOCK BELOW.
+   Fill in a URL and that icon or button turns on by itself. Leave it empty
+   and it renders dimmed and unclickable, which is deliberate: Matt wanted the
+   social links visible early to put pressure on himself to finish the accounts.
+   =========================================================================== */
+var W101 = {
+  // Paste the real URLs here as Matt creates the accounts. Empty string = dimmed.
+  substack : '',
+  email    : '',   // 🔧 the public contact address goes here
+  social   : {
+    x        : '',
+    instagram: '',
+    facebook : '',
+    bluesky  : '',
+    youtube  : '',
+    linkedin : ''
+  }
+};
+
+/* --- tiny inline SVG icons, so there is no icon font or external request --- */
+var W101_ICONS = {
+  x:'<svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.4l-5-6.6L5.8 22H2.7l8.1-9.3L1.5 2H8l4.7 6.2zm-1.1 18h1.8L6.3 3.8H4.4z"/></svg>',
+  instagram:'<svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.07 1.2.05 1.8.25 2.2.42.6.22 1 .5 1.5.94.44.44.72.85.94 1.45.17.43.37 1.05.42 2.25.06 1.28.07 1.68.07 4.9s0 3.6-.07 4.9c-.05 1.2-.25 1.8-.42 2.2-.22.6-.5 1-.94 1.5-.44.44-.85.72-1.45.94-.43.17-1.05.37-2.25.42-1.28.06-1.68.07-4.9.07s-3.6 0-4.9-.07c-1.2-.05-1.8-.25-2.2-.42-.6-.22-1-.5-1.5-.94-.44-.44-.72-.85-.94-1.45-.17-.43-.37-1.05-.42-2.25C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.9c.05-1.2.25-1.8.42-2.2.22-.6.5-1 .94-1.5.44-.44.85-.72 1.45-.94.43-.17 1.05-.37 2.25-.42C8.4 2.2 8.8 2.2 12 2.2zm0 1.98c-3.14 0-3.5.01-4.74.07-.95.04-1.47.2-1.81.33-.46.18-.78.39-1.12.73-.34.34-.55.66-.73 1.12-.13.34-.29.86-.33 1.81-.06 1.24-.07 1.6-.07 4.74s.01 3.5.07 4.74c.04.95.2 1.47.33 1.81.18.46.39.78.73 1.12.34.34.66.55 1.12.73.34.13.86.29 1.81.33 1.24.06 1.6.07 4.74.07s3.5-.01 4.74-.07c.95-.04 1.47-.2 1.81-.33.46-.18.78-.39 1.12-.73.34-.34.55-.66.73-1.12.13-.34.29-.86.33-1.81.06-1.24.07-1.6.07-4.74s-.01-3.5-.07-4.74c-.04-.95-.2-1.47-.33-1.81a3.02 3.02 0 00-.73-1.12 3.02 3.02 0 00-1.12-.73c-.34-.13-.86-.29-1.81-.33-1.24-.06-1.6-.07-4.74-.07zM12 7.9a4.1 4.1 0 110 8.2 4.1 4.1 0 010-8.2zm0 1.98a2.12 2.12 0 100 4.24 2.12 2.12 0 000-4.24zm5.23-2.2a.96.96 0 11-1.92 0 .96.96 0 011.92 0z"/></svg>',
+  facebook:'<svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 10-11.56 9.88v-7H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.88h-2.33v7A10 10 0 0022 12z"/></svg>',
+  bluesky:'<svg viewBox="0 0 24 24"><path d="M6.2 4.2C8.5 5.9 11 9.5 12 11.4c1-1.9 3.5-5.5 5.8-7.2 1.7-1.2 4.2-2.2 4.2 1 0 .6-.4 4.9-.6 5.6-.7 2.4-3.1 3-5.3 2.6 3.8.7 4.8 2.9 2.7 5.1-3.9 4.1-5.6-1-6-2.3-.1-.4-.2-.6-.3-.6s-.2.2-.3.6c-.4 1.3-2.1 6.4-6 2.3-2.1-2.2-1.1-4.4 2.7-5.1-2.2.4-4.6-.2-5.3-2.6C2.4 10.1 2 5.8 2 5.2c0-3.2 2.5-2.2 4.2-1z"/></svg>',
+  youtube:'<svg viewBox="0 0 24 24"><path d="M23 12s0-3.2-.4-4.7c-.2-.9-.9-1.5-1.7-1.7C19.3 5.2 12 5.2 12 5.2s-7.3 0-8.9.4c-.8.2-1.5.8-1.7 1.7C1 8.8 1 12 1 12s0 3.2.4 4.7c.2.9.9 1.5 1.7 1.7 1.6.4 8.9.4 8.9.4s7.3 0 8.9-.4c.8-.2 1.5-.8 1.7-1.7.4-1.5.4-4.7.4-4.7zM9.8 15.3V8.7l6 3.3z"/></svg>',
+  linkedin:'<svg viewBox="0 0 24 24"><path d="M20.4 20.4h-3.6v-5.6c0-1.3-.5-2.2-1.7-2.2-.9 0-1.4.6-1.7 1.2-.1.2-.1.5-.1.8v5.8H9.7s.05-9.4 0-10.4h3.6v1.5c.5-.7 1.3-1.8 3.2-1.8 2.3 0 4 1.5 4 4.8v6zM5.9 8.6h-.02c-1.2 0-2-.8-2-1.8s.8-1.8 2.05-1.8c1.2 0 1.98.8 2 1.8 0 1-.78 1.8-2.03 1.8zM7.7 20.4H4.1V10h3.6z"/></svg>'
+};
+var W101_LABELS = {x:'X',instagram:'Instagram',facebook:'Facebook',bluesky:'Bluesky',youtube:'YouTube',linkedin:'LinkedIn'};
+
+/* build the social rows from config, top and footer */
+(function(){
+  var html='';
+  for (var k in W101.social){
+    if(!W101_ICONS[k]) continue;
+    var url=(W101.social[k]||'').trim();
+    html += url
+      ? '<a href="'+url+'" target="_blank" rel="noopener" title="'+W101_LABELS[k]+'" aria-label="'+W101_LABELS[k]+'">'+W101_ICONS[k]+'</a>'
+      : '<a class="pending" href="#" title="'+W101_LABELS[k]+' account is not up yet" aria-label="'+W101_LABELS[k]+' coming soon" onclick="return false">'+W101_ICONS[k]+'</a>';
+  }
+  ['social-row','social-row-foot'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.innerHTML=html;
+  });
+})();
+
+/* wire the Subscribe buttons. No Substack URL yet = dimmed and honest. */
+(function(){
+  var url=(W101.substack||'').trim();
+  ['subscribe-btn','subscribe-btn-2'].forEach(function(id){
+    var b=document.getElementById(id); if(!b) return;
+    if(url){ b.href=url; b.target='_blank'; b.rel='noopener'; }
+    else{
+      b.classList.add('pending');
+      b.href='#';
+      b.title='The newsletter is not open yet. Check back shortly.';
+      b.onclick=function(){ return false; };
+    }
+  });
+})();
+
+/* dropdown. Click to open, click anywhere else or press Escape to close. */
+function w101Drop(id,ev){
+  if(ev) ev.stopPropagation();
+  var d=document.getElementById(id); if(!d) return;
+  var open=d.classList.contains('open');
+  document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+  if(!open) d.classList.add('open');
+}
+document.addEventListener('click',function(){
+  document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+});
+
+/* theme toggle. Same class, same storage key as the baseball page. */
+function w101Theme(){
+  var isDay=document.body.classList.toggle('day-mode');
+  try{ localStorage.setItem('watch101-theme',isDay?'day':'night'); }catch(e){}
+  var b=document.getElementById('theme-toggle');
+  if(b){ b.innerHTML=isDay?'&#9728;&#65039;':'&#127769;'; b.title=isDay?'Switch to night mode':'Switch to day mode'; }
+}
+(function(){
+  if(document.documentElement.getAttribute('data-early-day')==='1'){
+    document.body.classList.add('day-mode');
+    var b=document.getElementById('theme-toggle');
+    if(b){ b.innerHTML='&#9728;&#65039;'; b.title='Switch to night mode'; }
+  }
+})();
+</script>
+
+<script>
+/* ---------------------------------------------------------------------------
+   UPDATES RED DOT.  Matt asked for a mark when a returning reader has missed
+   something.  It compares the newest entry date against a value in the
+   reader's own browser.  No login, no server, nothing stored by us.
+
+   🔧 WHEN YOU ADD AN UPDATES ENTRY: bump W101_UPDATES_LATEST to that date.
+   That is the only edit needed for the dot to appear for everybody.
+   --------------------------------------------------------------------------- */
+var W101_UPDATES_LATEST = '2026-07-29';
+var W101_SEEN_KEY = 'watch101-updates-seen';
+
+(function(){
+  var seen='';
+  try{ seen=localStorage.getItem(W101_SEEN_KEY)||''; }catch(e){}
+  var link=document.getElementById('nav-updates');
+  if(link && W101_UPDATES_LATEST > seen){
+    link.classList.add('has-new');
+    link.title='New updates since your last visit';
+  }
+  /* On the Updates page itself: flag which entries are new, then mark as seen. */
+  if(document.body.getAttribute('data-page')==='updates'){
+    document.querySelectorAll('.entry').forEach(function(el){
+      if((el.getAttribute('data-date')||'') > seen) el.classList.add('unseen');
+    });
+    try{ localStorage.setItem(W101_SEEN_KEY, W101_UPDATES_LATEST); }catch(e){}
+    if(link){ link.classList.remove('has-new'); link.removeAttribute('title'); }
+  }
+  /* Contact address comes from the config block so there is one place to edit. */
+  var cb=document.getElementById('contact-block');
+  if(cb){
+    var e=(W101.email||'').trim();
+    cb.innerHTML = e
+      ? '<a href="mailto:'+e+'">'+e+'</a>'
+      : '<span class="pending">The public address is being set up. It will appear here shortly.</span>';
+  }
+})();
+</script>
+
+</body>
+</html>
