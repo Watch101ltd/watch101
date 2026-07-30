@@ -441,7 +441,7 @@ var PLAYER_LINEUP_BLURBS = {
   },
   "596001": {
     "as_of": "2026-07-30",
-    "blurb": "No starts in last 7 days.",
+    "blurb": "On IL since Jul 29 - no starts in last 7 days.",
     "name": "Jakob Junis"
   },
   "596019": {
@@ -1713,6 +1713,11 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-07-30",
     "blurb": "Scratched 3 of 6 games last week.",
     "name": "Trevor Larnach"
+  },
+  "663623": {
+    "as_of": "2026-07-30",
+    "blurb": "On IL since Jul 29 - no starts in last 7 days.",
+    "name": "Jake Irvin"
   },
   "663624": {
     "as_of": "2026-07-30",
@@ -4528,6 +4533,11 @@ var PLAYER_LINEUP_BLURBS = {
     "as_of": "2026-07-30",
     "blurb": "On IL since Jul 24 - no starts in last 7 days.",
     "name": "Jose Corniell"
+  },
+  "692437": {
+    "as_of": "2026-07-30",
+    "blurb": "No starts in last 7 days.",
+    "name": "Winston Santos"
   },
   "693304": {
     "as_of": "2026-07-30",
