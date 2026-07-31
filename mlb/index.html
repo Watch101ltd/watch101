@@ -184,6 +184,13 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif
 #quick-edit-popup .ppo-mark-flaming-btn:hover{background:rgba(251,191,36,0.1);}
 #quick-edit-popup .ppo-mark-flaming-btn.flagged,#quick-edit-popup .ppo-mark-flaming-btn:disabled{border-color:var(--border2);color:var(--text3);background:transparent;cursor:default;}
 #quick-edit-popup .ppo-mark-flaming-tag{font-size:10px;color:var(--text3);letter-spacing:0.04em;}
+/* SHOW_AS_NEW_TOGGLE_V1 (Bug #28). Mirrors the #ppo-own-wrap pill already used for
+   the owned-player checkbox, so the two checkboxes in the Deep Cut look like siblings.
+   Gold rather than blue because this is a BACKEND control, matching the other admin
+   affordances around it. */
+.ppo-newflag-wrap{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--gold);border-radius:999px;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:0.04em;color:var(--gold);background:rgba(240,165,0,.08);-webkit-user-select:none;user-select:none;transition:background .15s;white-space:nowrap}
+.ppo-newflag-wrap:hover{background:rgba(240,165,0,.18)}
+.ppo-newflag-check{width:14px;height:14px;accent-color:var(--gold);cursor:pointer;margin:0}
 #quick-edit-popup .ppo-priority-row{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);}
 #quick-edit-popup .ppo-priority-label{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:700;}
 #quick-edit-popup .priority-stars{font-size:18px;}
@@ -7035,49 +7042,77 @@ async function markNoteAsFresh(mlbId){
 //
 // **Hide this control when Read-Only Mode ships.** Backend-only override —
 // fans on Cloudflare should never see this button.
-async function markNameAsFlaming(mlbId){
-  // NEW_BADGE_NOCOUNTER_V1 (2026-06-01) — repointed. Was the old flame-counter
-  // button (set publish_count_since_new=0 + move=new). Now it drives the +/-
-  // column directly: pins prev_rank = rank so the player shows the 🆕 NEW badge
-  // immediately. The Dude's use case: a player buried by several publishes can
-  // be manually re-surfaced as NEW on staging so Matt can verify before the next
-  // publish. Backend-only — fans never see this control.
-  if(_blockIfReadOnly('markNameAsFlaming')) return;
+// SHOW_AS_NEW_TOGGLE_V1 (2026-07-30, Bug #28, found by Matt, per the Dude).
+//
+// THE BUG: "Show as NEW" was a ONE WAY action. Click it and the button disabled
+// ITSELF ('checked' state rendered as <button disabled>), so the only control that
+// could have unset the flag turned itself off. Matt clicked it on Noelvi Marte to
+// see what it did and could not undo it. His words: "I was hoping there'd be some
+// way to unclick it." The Dude's call: make it a checkbox you can check or uncheck.
+//
+// ⚠️ NOT A REOPEN OF BUG #2, checked before writing this. Bug #2 was the manual
+// badge being WIPED BY PUBLISH, cured by MANUAL_NEW_PENDING_V1. Same control,
+// different fault: this one is that there was never an off switch at all.
+//
+// 🪨 WHAT "OFF" MUST AND MUST NOT UNDO. The ON path sets THREE fields. Off only
+// reverses two of them, deliberately:
+//   is_new_this_publish = false   YES. renderDelta reads ONLY this to draw the blue
+//                                 badge, so this is what actually removes it.
+//   manual_new_pending  = false   YES, AND THIS IS THE SUBTLE ONE. It is the marker
+//                                 _stamp_baseline.py reads to honour a manual NEW for
+//                                 one publish. Leave it true while turning the badge
+//                                 off and the next publish RESURRECTS the badge, which
+//                                 would look like the un-check silently failed.
+//   baseline_set                  NO. LEAVE IT ALONE. That is a different concept: the
+//                                 red-badge-to-blue-badge commit for brand new players
+//                                 (NEW_BADGE_RDELTA_V1). Flipping it back to false would
+//                                 throw the player into the uncommitted RED badge state,
+//                                 which is not "off", it is a third state nobody asked for.
+//
+// The read-only guard STAYS. Unlike the owned-player checkbox (which writes to the
+// visitor's own browser), this writes to the shared list and must remain backend only.
+async function setShowAsNew(mlbId, on){
+  if(_blockIfReadOnly('setShowAsNew')) return;
   try {
     var p = null;
     if(typeof players !== 'undefined' && Array.isArray(players)){
       p = players.find(function(x){ return String(x.mlb_id) === String(mlbId); });
     }
     if(!p){
-      console.warn('[NEW_BADGE_NOCOUNTER_V1] player not found in active list for mlb_id:', mlbId);
+      console.warn('[SHOW_AS_NEW_TOGGLE_V1] player not found in active list for mlb_id:', mlbId);
       return;
     }
-    // NEW_BADGE_VS_PREVIOUS_V2 — flag this player NEW so renderDelta shows the
-    // badge immediately on staging. Cleared automatically on the next approve
-    // (he WILL be on the previous list then) — The Dude's "one publish" rule.
-    p.is_new_this_publish = true;
-    // MANUAL_NEW_PENDING_V1 (2026-06-02) — companion marker the publish script
-    // (_stamp_baseline.py) reads to HONOR this manual NEW for exactly one publish.
-    // Without it the script recomputes is_new_this_publish from scratch every
-    // approve and wipes the manual badge (the Pinango bug). The script keeps the
-    // badge this publish, then retires this marker so the NEXT publish clears it.
-    p.manual_new_pending = true;
-    p.baseline_set = true;
-    try { await autoSaveToNAS(); } catch(e){ console.warn('[NEW_BADGE_NOCOUNTER_V1] autosave failed:', e); }
+    if(on){
+      p.is_new_this_publish = true;
+      p.manual_new_pending  = true;
+      p.baseline_set        = true;
+    } else {
+      p.is_new_this_publish = false;
+      p.manual_new_pending  = false;
+      // baseline_set intentionally untouched, see the note above
+    }
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[SHOW_AS_NEW_TOGGLE_V1] autosave failed:', e); }
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
-    // Flip the button so we know the click landed.
+    // keep every copy of this control on screen in agreement (Deep Cut + Quick Edit)
     try {
-      var btn = document.getElementById('ppo-mark-flaming-btn-' + mlbId);
-      if(btn){
-        btn.classList.add('flagged');
-        btn.textContent = '\u2713 Showing as NEW';
-        btn.disabled = true;
-      }
+      document.querySelectorAll('.ppo-newflag-check[data-mlb-id="' + mlbId + '"]').forEach(function(cb){
+        cb.checked = !!on;
+        var tag = cb.closest('.ppo-mark-flaming-row');
+        tag = tag ? tag.querySelector('.ppo-mark-flaming-tag') : null;
+        if(tag) tag.textContent = on
+          ? 'Backend only \u2014 \uD83C\uDD95 NEW is showing on the +/- column'
+          : 'Backend only \u2014 tick to surface this player as \uD83C\uDD95 NEW on the +/- column';
+      });
     } catch(_re){}
   } catch(e){
-    console.warn('[NEW_BADGE_NOCOUNTER_V1] markNameAsFlaming failed:', e);
+    console.warn('[SHOW_AS_NEW_TOGGLE_V1] setShowAsNew failed:', e);
   }
 }
+
+// Kept as a thin wrapper so every existing caller keeps working rather than
+// orphaning. Rule #9 check run before this edit: the name appears at the Quick Edit
+// popup handler and in two comments. Turning it into an alias is safer than a rename.
+async function markNameAsFlaming(mlbId){ return setShowAsNew(mlbId, true); }
 
 // PRIORITY_STARS_MIGRATION_V1 (May 13, 2026) — normalize any priority value
 // (from CSV, NAS, manual input) to the new 0.5–5.0 half-step scale.
@@ -16688,8 +16723,6 @@ async function addProspectToList(mlbId, name, team, primaryPos, age, level, btnE
   renderTable();
 }
 
-
-
 // ---- POOL CLONE FIXED HEADER ----
 // Works like the main table's fixed header: clones the visible thead and pins
 // it to the top of the screen when the real thead scrolls out of view.
@@ -17348,19 +17381,19 @@ function openPlayerPage(p){
   // NEW_BADGE_VS_PREVIOUS_V2 (2026-06-01) — button reads the real NEW flag.
   // If the player is already flagged NEW this publish, the badge is showing and
   // the button is disabled. Otherwise it offers to surface him as NEW.
-  var _flameDisabled = (p.is_new_this_publish === true);
-  var _flameBtnLabel = _flameDisabled ? '✓ Showing as NEW' : '🆕 Show as NEW';
-  var _flameTagText = _flameDisabled
-    ? 'Backend only — already at baseline, 🆕 NEW is showing'
-    : 'Backend only — surface this player as 🆕 NEW on the +/- column';
+  // SHOW_AS_NEW_TOGGLE_V1 (Bug #28) — was a one-way button that disabled itself once
+  // clicked, so there was no way to undo it. Now a real checkbox with an off state.
+  var _flameOn = (p.is_new_this_publish === true);
+  var _flameTagText = _flameOn
+    ? 'Backend only — 🆕 NEW is showing on the +/- column'
+    : 'Backend only — tick to surface this player as 🆕 NEW on the +/- column';
   notesHtml += '<div class="ppo-mark-flaming-row backend-only">'
-    + (_flameDisabled
-        ? '<button class="ppo-mark-flaming-btn flagged" disabled>' + _flameBtnLabel + '</button>'
-        : '<button id="ppo-mark-flaming-btn-' + mlbId + '" class="ppo-mark-flaming-btn" '
-          + 'onclick="markNameAsFlaming(\'' + mlbId + '\')" '
-          + 'title="Surface this player as 🆕 NEW on the +/- column (backend only)">'
-          + _flameBtnLabel + '</button>'
-      )
+    + '<label class="ppo-newflag-wrap" title="Surface this player as 🆕 NEW on the +/- column (backend only). Untick to remove it.">'
+    +   '<input type="checkbox" class="ppo-newflag-check" data-mlb-id="' + mlbId + '"'
+    +     (_flameOn ? ' checked' : '')
+    +     ' onchange="setShowAsNew(\'' + mlbId + '\', this.checked)">'
+    +   '<span>🆕 Show as NEW</span>'
+    + '</label>'
     + '<span class="ppo-mark-flaming-tag">' + _flameTagText + '</span>'
     + '</div>';
 
@@ -20551,15 +20584,19 @@ document.addEventListener('keydown', function(e){
       + '</div>';
 
     // NEW_BADGE_VS_PREVIOUS_V2 (2026-06-01) — reads the real NEW flag.
-    var _flameDisabled = (p.is_new_this_publish === true);
-    var _flameBtnLabel = _flameDisabled ? '\u2713 Showing as NEW' : '\uD83C\uDD95 Show as NEW';
-    var _flameTagText = _flameDisabled
-      ? 'Backend only \u2014 already at baseline, \uD83C\uDD95 NEW is showing'
-      : 'Backend only \u2014 surface this player as \uD83C\uDD95 NEW on the +/- column';
+    // SHOW_AS_NEW_TOGGLE_V1 (Bug #28) — THE TWIN. This popup carried the identical
+    // one-way button. Fixing only the Deep Cut would have left the same bug reachable
+    // by right-clicking a row. Same checkbox, same handler.
+    var _flameOn = (p.is_new_this_publish === true);
+    var _flameTagText = _flameOn
+      ? 'Backend only \u2014 \uD83C\uDD95 NEW is showing on the +/- column'
+      : 'Backend only \u2014 tick to surface this player as \uD83C\uDD95 NEW on the +/- column';
     var flameHtml = '<div class="ppo-mark-flaming-row">'
-      + (_flameDisabled
-          ? '<button class="ppo-mark-flaming-btn flagged" disabled>' + _flameBtnLabel + '</button>'
-          : '<button class="ppo-mark-flaming-btn" data-qep-action="mark-flaming" data-mlb-id="' + mlbId + '">' + _flameBtnLabel + '</button>')
+      + '<label class="ppo-newflag-wrap">'
+      +   '<input type="checkbox" class="ppo-newflag-check" data-qep-action="mark-flaming" data-mlb-id="' + mlbId + '"'
+      +     (_flameOn ? ' checked' : '') + '>'
+      +   '<span>\uD83C\uDD95 Show as NEW</span>'
+      + '</label>'
       + '<span class="ppo-mark-flaming-tag">' + _flameTagText + '</span>'
       + '</div>';
 
@@ -20684,14 +20721,17 @@ document.addEventListener('keydown', function(e){
       hideQuickEditPopup();
       return;
     }
-    var flameBtn = e.target.closest && e.target.closest('[data-qep-action="mark-flaming"]');
-    if(flameBtn && !flameBtn.disabled){
-      var pid = flameBtn.getAttribute('data-mlb-id');
-      if(pid && typeof markNameAsFlaming === 'function'){
-        try { markNameAsFlaming(pid); }
-        catch(err){ console.warn('[QUICK_EDIT_POPUP_V1] markNameAsFlaming failed:', err); }
+    // SHOW_AS_NEW_TOGGLE_V1 (Bug #28) — now a checkbox, so pass its state rather than
+    // always turning the flag ON. The popup no longer closes on this click: unticking
+    // and having the panel vanish reads like something went wrong, and the point of a
+    // checkbox is that you can see the state you just set.
+    var flameBox = e.target.closest && e.target.closest('input.ppo-newflag-check[data-qep-action="mark-flaming"]');
+    if(flameBox){
+      var pid = flameBox.getAttribute('data-mlb-id');
+      if(pid && typeof setShowAsNew === 'function'){
+        try { setShowAsNew(pid, flameBox.checked); }
+        catch(err){ console.warn('[QUICK_EDIT_POPUP_V1] setShowAsNew failed:', err); }
       }
-      hideQuickEditPopup();
       return;
     }
   });
