@@ -17235,8 +17235,36 @@ function openPlayerPage(p){
   // same-text "history" entry below. Now reads BOTH field names so the dedupe
   // works regardless of which writer produced the entry. Mirrors the same
   // h.body||h.note read pattern used by the renderer at line 15004.
+  // NOTE_HISTORY_BLANKS_FIX_V1 (2026-07-30, Bug #27, found by Matt, diagnosed by the Dude).
+  //
+  // SYMPTOM: a Deep Cut showed several dated rows with NO text beside them, plus a
+  // "5 prior notes - loaded by Brandt" counter, and a tall empty panel on the right
+  // because the left column was holding all that dead height.
+  //
+  // CAUSE, and the Dude called it before the data did: PLAYER_NOTES_HISTORY is NOT a
+  // notes log. _append_history.py writes ONE ROW PER PLAYER ON EVERY APPROVE, carrying
+  // date + time + rank + movement + list_id, plus whatever the note happened to be at
+  // that moment. Publish a list while a player has no note and you store note:"".
+  // Measured against the live /history/notes feed on 2026-07-30: 889 entries with an
+  // EMPTY note against 15 with real text. So ~98% of that feed is rank snapshots, and
+  // this renderer was printing every one of them as if it were a note.
+  //
+  // WHY IT ONLY BIT SOME PLAYERS, which is why it went unnoticed for so long: the old
+  // filter existed only to de-duplicate the CURRENT note. If a player had NO current
+  // note, currentNote was '' and the blank rows were dropped by accident ('' !== '' is
+  // false). The moment a player HAD a note, '' !== 'some text' passed and every blank
+  // publish row rendered. So the bug needed a player with a note AND publish history.
+  //
+  // FIX: drop entries with no note text. They are rank rows, not notes.
+  //
+  // ⚠️ THE RANK CHART IS UNAFFECTED AND MUST STAY THAT WAY. renderRankHistory() reads
+  // PLAYER_NOTES_HISTORY directly with its own unfiltered `history` var (see its own
+  // comment: "Every approved publish writes a row with date + time + rank + list_id").
+  // It NEEDS the blank-note rows, because they are the rank timeline. Never filter at
+  // the PLAYER_NOTES_HISTORY level to fix a notes problem, only here.
   var oldHistory = history.filter(function(h){
     var hText = String(h.body || h.note || '').trim();
+    if(!hText) return false;
     return hText !== currentNote;
   });
   var notesHtml = '';
