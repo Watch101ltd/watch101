@@ -2551,8 +2551,11 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
   <div class="count-badge" id="count-badge">0 players</div>
   <span class="status-sep">·</span>
   <span id="savant-indicator">⚡ Loading Statcast...</span>
-  <span class="status-sep">·</span>
-  <button id="yahoo-btn" class="hdr-yahoo-dot disconnected" onclick="yahooButtonClick()" title="Yahoo connection status — click to refresh or reconnect">Yahoo</button>
+  <!-- YAHOO_PILL_REMOVED_V1 (2026-07-31, the Dude's call) — the "● Yahoo" status pill and its separator
+       were removed. It predated the NAS/cache architecture: green only ever meant "server answered,"
+       not "data is fresh," so it stayed green through the entire Bug #29 outage. Also a bare styled
+       Yahoo wordmark is dubious under the brand guidelines (see footer attribution). Do NOT re-add.
+       updateYahooBtn()/sync-status code no-ops harmlessly (null-guarded); yahooButtonClick() removed. -->
   <span class="status-sep">·</span>
   <!-- LEGEND_KEY_V1 — ⓘ Key button moved into the status strip (right of Yahoo) per The Dude, 2026-06-02. Same #legend-btn id / openLegend() handler; only its location changed. -->
   <button id="legend-btn" onclick="openLegend()" title="What do the symbols mean? (Key)" aria-label="Open the Key">&#9432;</button>
@@ -5913,22 +5916,7 @@ document.addEventListener('DOMContentLoaded', function(){
   try { if(typeof _setActiveNavTab === 'function') _setActiveNavTab('home'); } catch(e){}
 });
 
-function yahooButtonClick(){
-  if(yahooConnected){
-    // Already connected — refresh data
-    syncYahooData(true);
-  } else {
-    // Open Yahoo login in new tab
-    window.open(`${SERVER_URL}/auth/login`, '_blank');
-    // Poll for connection every 3 seconds for up to 2 minutes
-    let attempts = 0;
-    const poll = setInterval(async () => {
-      attempts++;
-      await checkYahooStatus();
-      if(yahooConnected || attempts > 40) clearInterval(poll);
-    }, 3000);
-  }
-}
+/* YAHOO_PILL_REMOVED_V1 — yahooButtonClick() removed 2026-07-31; its only caller was the deleted #yahoo-btn. */
 
 let yahooSyncing = false;
 // IL_CADENCE_V1 (May 14, 2026 overnight) — pull current IL designations directly
