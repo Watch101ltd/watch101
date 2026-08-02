@@ -526,6 +526,19 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-rank{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:6px 14px;background:#16a34a33;border:1px solid var(--turf);border-radius:6px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4ade80;font-weight:700;}
 #ftl-overlay .ftl-rank .num{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:16px;letter-spacing:0.04em}
 #ftl-overlay .ftl-statwrap{padding:1.5rem;}
+/* SCHEDULE_RESULTS_V1 (Aug 2, 2026) -- Schedule / Results table in In the Pocket. */
+#ftl-overlay .ftl-schedwrap{padding:0 1.5rem 1.5rem;}
+#ftl-overlay .fs-note{font-size:12px;color:var(--text3);padding:6px 2px;}
+#ftl-overlay .fs-tablewrap{overflow-x:auto;border:1px solid var(--border2);border-radius:6px;}
+#ftl-overlay .fs-table{width:100%;border-collapse:collapse;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;}
+#ftl-overlay .fs-table th{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--turf);font-weight:700;padding:7px 8px;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap;}
+#ftl-overlay .fs-table th.fs-left,#ftl-overlay .fs-table td.fs-left{text-align:left;}
+#ftl-overlay .fs-table td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap;}
+#ftl-overlay .fs-table tr:last-child td{border-bottom:none;}
+#ftl-overlay .fs-table td.fs-result.win{color:#10b981;font-weight:600;}
+#ftl-overlay .fs-table td.fs-result.loss{color:#ec4899;font-weight:600;}
+#ftl-overlay .fs-table tr.fs-bye td,#ftl-overlay .fs-table tr.fs-dnp td{color:var(--text3);}
+#ftl-overlay .fs-table td.fs-dash{color:var(--text3);}
 #ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin:0 0 10px 2px;}
 #ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:22px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
 #ftl-overlay .ftl-statcell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;min-width:66px;flex:1;border-right:1px solid var(--border);text-align:center;}
@@ -2809,6 +2822,161 @@ function _ftlNum(v, dec){
   return (dec != null) ? n.toFixed(dec).replace(/\.0$/, '') : Math.round(n).toLocaleString();
 }
 
+// ============================================================================
+// SCHEDULE_RESULTS_V1 (August 2, 2026 -- Walter, per the Dude).
+// ----------------------------------------------------------------------------
+// "Schedule / Results" section in In the Pocket. ONE table, the Dude's design:
+// all 18 weeks + the bye visible from day one; future games show date +
+// opponent; played games fill in W/L + score and the player's position-
+// appropriate stat line. The season builds itself -- a week with no data
+// simply is not filled in yet.
+// Data: SERVER_URL /nfl/schedule/:year (Sleeper skeleton + nflverse scores)
+// and /sleeper/gamelog/:year/:pid (per-week Sleeper lines). If the container
+// has not been rebuilt with those endpoints yet, the section shows a quiet
+// note and the rest of the card is unaffected.
+// ============================================================================
+let _ftlCurrentPid = null;
+let _ftlSchedCache = null;
+let _ftlSchedCacheYear = null;
+const _ftlGamelogCache = {};
+
+function _ftlSeasonYear(){
+  // The CURRENT season, deliberately NOT STATS_YEAR (that shows last season
+  // all offseason). NFL seasons run Sep-Jan, so Jan/Feb still belong to the
+  // previous calendar year's season. Auto-rolls, no annual hand bump.
+  const now = new Date();
+  return (now.getMonth() < 2) ? (now.getFullYear() - 1) : now.getFullYear();
+}
+
+async function _ftlFetchSchedule(year){
+  if (_ftlSchedCache && _ftlSchedCacheYear === year) return _ftlSchedCache;
+  const res = await fetch(SERVER_URL + '/nfl/schedule/' + year);
+  if (!res.ok) throw new Error('schedule HTTP ' + res.status);
+  const data = await res.json();
+  _ftlSchedCache = data;
+  _ftlSchedCacheYear = year;
+  return data;
+}
+
+async function _ftlFetchGamelog(year, pid){
+  const key = year + ':' + pid;
+  if (_ftlGamelogCache[key]) return _ftlGamelogCache[key];
+  const res = await fetch(SERVER_URL + '/sleeper/gamelog/' + year + '/' + encodeURIComponent(pid));
+  if (!res.ok) throw new Error('gamelog HTTP ' + res.status);
+  const data = await res.json();
+  _ftlGamelogCache[key] = (data && data.weeks) || {};
+  return _ftlGamelogCache[key];
+}
+
+function _ftlSchedCols(pos){
+  // Position-appropriate columns: [header, sleeper stat key]
+  switch(pos){
+    case 'QB': return [['CMP','pass_cmp'],['ATT','pass_att'],['PA YD','pass_yd'],['PA TD','pass_td'],['INT','pass_int'],['RU YD','rush_yd'],['RU TD','rush_td']];
+    case 'RB':
+    case 'FB': return [['CAR','rush_att'],['RU YD','rush_yd'],['RU TD','rush_td'],['TGT','rec_tgt'],['REC','rec'],['RE YD','rec_yd'],['RE TD','rec_td']];
+    case 'WR':
+    case 'TE': return [['TGT','rec_tgt'],['REC','rec'],['RE YD','rec_yd'],['RE TD','rec_td'],['CAR','rush_att'],['RU YD','rush_yd']];
+    case 'K':  return [['FGM','fgm'],['FGA','fga'],['XPM','xpm'],['XPA','xpa']];
+    case 'DEF':return [['SACK','def_sack'],['INT','def_int'],['FUM REC','def_fum_rec'],['TD','def_td'],['PTS ALLOW','pts_allow']];
+    default:   return [['CAR','rush_att'],['RU YD','rush_yd'],['REC','rec'],['RE YD','rec_yd']];
+  }
+}
+
+function _ftlFmtSchedDate(iso){
+  // '2026-09-13' -> 'Sep 13'. String math on purpose -- new Date('YYYY-MM-DD')
+  // parses as UTC and can shift a day in US timezones.
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  if (!m) return iso || '—';
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[Number(m[2]) - 1] + ' ' + Number(m[3]);
+}
+
+function _ftlSchedStatCell(v){
+  const n = Number(v);
+  if (v == null || !isFinite(n)) return '<td class="fs-dash">—</td>';
+  return '<td>' + Math.round(n) + '</td>';
+}
+
+async function _ftlRenderScheduleResults(pid){
+  const wrap = document.getElementById('ftl-schedwrap');
+  if (!wrap) return;
+  const p = _playerDB && _playerDB[pid];
+  const year = _ftlSeasonYear();
+  const label = '<div class="ftl-statgroup-label">Schedule / Results — ' + year + '</div>';
+  if (!p || !p.team){
+    // Free agent / no team: no schedule to show.
+    wrap.innerHTML = label + '<div class="fs-note">No team — no schedule.</div>';
+    return;
+  }
+  wrap.innerHTML = label + '<div class="fs-note">Loading schedule…</div>';
+  let sched, log;
+  try {
+    const both = await Promise.all([ _ftlFetchSchedule(year), _ftlFetchGamelog(year, pid) ]);
+    sched = both[0]; log = both[1];
+  } catch(e){
+    wrap.innerHTML = label + '<div class="fs-note">Schedule unavailable right now.</div>';
+    return;
+  }
+  // The Dude may have opened a different player while we awaited -- do not
+  // paint a stale player's table into the current card.
+  if (_ftlCurrentPid !== pid) return;
+
+  const team = p.team;
+  const byWeek = {};
+  for (const g of (sched.games || [])) {
+    if (g.status === 'canceled') continue;
+    if (g.home === team || g.away === team) byWeek[g.week] = g;
+  }
+  const cols = _ftlSchedCols(p.position);
+
+  let head = '<tr><th class="fs-left">WK</th><th class="fs-left">DATE</th><th class="fs-left">OPP</th><th class="fs-left">RESULT</th>';
+  for (const c of cols) head += '<th>' + c[0] + '</th>';
+  head += '<th>FPTS</th></tr>';
+
+  let rows = '';
+  for (let w = 1; w <= 18; w++) {
+    const g = byWeek[w];
+    if (!g) {
+      rows += '<tr class="fs-bye"><td class="fs-left">' + w + '</td><td class="fs-left">—</td><td class="fs-left">BYE</td><td class="fs-left">—</td><td colspan="' + (cols.length + 1) + '"></td></tr>';
+      continue;
+    }
+    const home = (g.home === team);
+    const oppCell = (home ? '' : '@ ') + (home ? g.away : g.home);
+    const hasScores = (typeof g.home_score === 'number' && typeof g.away_score === 'number');
+    const played = hasScores || g.status === 'complete';
+
+    let resultCell;
+    if (hasScores) {
+      const my = home ? g.home_score : g.away_score;
+      const their = home ? g.away_score : g.home_score;
+      const wl = my > their ? 'W' : (my < their ? 'L' : 'T');
+      const cls = my > their ? ' win' : (my < their ? ' loss' : '');
+      resultCell = '<td class="fs-left fs-result' + cls + '">' + wl + ' ' + my + '–' + their + '</td>';
+    } else if (played) {
+      resultCell = '<td class="fs-left">Final</td>';
+    } else {
+      resultCell = '<td class="fs-left">—</td>';
+    }
+
+    const s = log[String(w)] || null;
+    let statCells = '';
+    if (s) {
+      for (const c of cols) statCells += _ftlSchedStatCell(s[c[1]]);
+      const fp = Number(s.pts_half_ppr);
+      statCells += (isFinite(fp) && s.pts_half_ppr != null) ? '<td>' + fp.toFixed(1) + '</td>' : '<td class="fs-dash">—</td>';
+      rows += '<tr><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + statCells + '</tr>';
+    } else if (played) {
+      // Team played, no stat line recorded for him -- DNP, grayed like baseball's log.
+      rows += '<tr class="fs-dnp"><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + '<td colspan="' + (cols.length + 1) + '">DNP</td></tr>';
+    } else {
+      for (let i = 0; i < cols.length + 1; i++) statCells += '<td class="fs-dash"></td>';
+      rows += '<tr><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + statCells + '</tr>';
+    }
+  }
+
+  wrap.innerHTML = label + '<div class="fs-tablewrap"><table class="fs-table"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>';
+}
+
 function openFromTheLogo(pid){
   const p = _playerDB && _playerDB[pid];
   if(!p) return;
@@ -2849,6 +3017,9 @@ function openFromTheLogo(pid){
   // Header note reflects the year the page is showing (offseason shows last season).
   const hr = document.getElementById('ftl-header-right');
   if(hr && typeof STATS_YEAR !== 'undefined') hr.textContent = STATS_YEAR + ' Season Stats';
+
+  _ftlCurrentPid = pid;
+  _ftlRenderScheduleResults(pid);
 
   document.getElementById('ftl-backdrop').classList.add('visible');
   document.getElementById('ftl-overlay').classList.add('visible');
@@ -3478,6 +3649,7 @@ function _yahooLookupFmt(pid, field, isPercent){
     </div>
   </section>
   <div class="ftl-statwrap" id="ftl-statwrap"></div>
+  <div class="ftl-schedwrap" id="ftl-schedwrap"></div>
 </div>
 
 <!-- ==================== SITE_CHROME_V1 FOOTER MARKUP START ==================== -->
