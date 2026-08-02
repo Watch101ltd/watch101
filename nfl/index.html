@@ -389,7 +389,7 @@ table.watch-list thead th:has(+ th.col-zone-divider), table.watch-list tbody td:
   padding-right:7px;
 }
 /* PLAYER_POOL_21COL_V2 (compact, 150%-zoom-friendly) - mirrors baseball density */
-table.watch-list{min-width:1150px;table-layout:fixed}
+table.watch-list{min-width:1300px;table-layout:fixed}  /* BLOCK_CLONE_V1: identity block widened to baseball spec */
 /* Compact header + body padding so 23 columns fit at 150% zoom */
 table.watch-list thead th{padding:5px 3px;font-size:9px;letter-spacing:0.04em}
 table.watch-list tbody td{padding:4px 3px;font-size:11px;white-space:nowrap;overflow:hidden}
@@ -416,19 +416,19 @@ table.watch-list tbody td.nfl-drag-handle.disabled{cursor:not-allowed;color:var(
 table.watch-list tbody tr.nfl-dragging{opacity:0.45}
 table.watch-list tbody tr.nfl-drag-over{box-shadow:inset 0 2px 0 0 var(--turf,#16a34a)}
 table.watch-list thead th.col-rank,table.watch-list tbody td.col-rank{width:32px;text-align:right;font-weight:800;color:var(--text2)}
-table.watch-list thead th.col-pos{width:38px;text-align:center}
+table.watch-list thead th.col-pos{width:56px;text-align:center}
 table.watch-list tbody td .pos-badge{font-size:9px;padding:2px 5px;letter-spacing:0.04em}
 table.watch-list thead th.col-player,table.watch-list tbody td:nth-child(4){width:180px;text-align:left}
 table.watch-list tbody .player-name{font-size:12px;font-weight:800}
 table.watch-list thead th.col-team{width:38px;text-align:right}
 table.watch-list thead th.col-age{width:32px;text-align:right}
 table.watch-list thead th.col-exp{width:32px;text-align:right}
-table.watch-list thead th.col-delta{width:36px;text-align:right}
-table.watch-list thead th.col-type{width:42px;text-align:right}
-table.watch-list thead th.col-priority{width:46px;text-align:right}
-table.watch-list thead th.col-note{width:60px;text-align:left}
-table.watch-list thead th.col-yrank{width:42px;text-align:right}
-table.watch-list thead th.col-yowned{width:46px;text-align:right}
+table.watch-list thead th.col-delta{width:44px;text-align:right}
+table.watch-list thead th.col-type{width:60px;text-align:right}
+table.watch-list thead th.col-priority{width:88px;text-align:right}
+table.watch-list thead th.col-note{width:144px;text-align:left}
+table.watch-list thead th.col-yrank{width:44px;text-align:right}
+table.watch-list thead th.col-yowned{width:50px;text-align:right}
 table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
 /* RANKINGS_NOTES_NFL_V1 (2026-06-29 — PC Walter, per Matt via the Dude): editable Note column +
    note badge on the rankings tabs, mirroring baseball's main-list Notes (same as the NBA build). */
@@ -540,18 +540,17 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .fs-table tr.fs-bye td,#ftl-overlay .fs-table tr.fs-dnp td{color:var(--text3);}
 #ftl-overlay .fs-table td.fs-dash{color:var(--text3);}
 /* WL_NOTES_V1 (Aug 2, 2026) -- live Note column. */
-.col-note{min-width:150px;max-width:280px;white-space:normal;}
+td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}  /* BLOCK_CLONE_V1: baseball note recipe */
 .wl-note-cell{cursor:text;}
 .wl-note-cell.placeholder{cursor:pointer;}
 .note-input{width:100%;min-width:150px;box-sizing:border-box;background:var(--surface2,rgba(255,255,255,0.04));border:1px solid var(--turf);border-radius:4px;color:var(--text1,#fff);font-size:12px;padding:4px 6px;font-family:inherit;}
 .note-link-badge{text-decoration:none;margin-left:4px;}
 /* NOTE_WIDTH_V1 + COMPACT_MODE_V1 (Aug 2, 2026) -- notes are the focal point. */
-.watch-list th.col-note,.watch-list td.col-note{min-width:240px;}
 .note-add-hint{color:var(--text3,#888);font-style:italic;}
 #compact-toggle-btn.active{background:var(--turf);color:#0d1117;border-color:var(--turf);}
 body.compact-mode #nflmain-wrap th:nth-child(n+12):nth-child(-n+24),
 body.compact-mode #nflmain-wrap td:nth-child(n+12):nth-child(-n+24){display:none !important;}
-body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.col-note{max-width:none;width:55%;}
+body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.col-note{max-width:none;width:55%;white-space:normal;}
 
 /* MATTSTAKE_RANKHIST_V1 (Aug 2, 2026) -- Matt's Take + 101 Rank History cards. */
 #ftl-overlay .ftl-takewrap{display:flex;gap:16px;padding:0 1.5rem 1.5rem;flex-wrap:wrap;}
@@ -2579,6 +2578,56 @@ function escapeHtml(s){
 function _wlPid(item){
   return (typeof item === 'string') ? item : (item && item.pid);
 }
+// ──────────────────────────────────────────────────────────────────────────
+// AUTO_SHRINK_NFL_V1 (August 2, 2026 -- Walter, per the Dude, BLOCK_CLONE_V1 pass).
+// fitTables() ported from the NBA page (which ported it from baseball): measure
+// each visible .table-wrap, set CSS zoom so the table fits -- columns shrink
+// together in proportion, no side-scroll. GROWS to fill when narrower. `zoom`
+// NOT transform:scale (transform breaks sticky theads). The NFL Rankings table
+// is deliberately narrow/packed-left, so it is exempted like NBA's.
+// ──────────────────────────────────────────────────────────────────────────
+const AUTOSHRINK_MIN = 0.70; // never shrink below 70% -- readability floor
+let _fitRaf = null;
+function fitTables(){
+  if(_fitRaf) cancelAnimationFrame(_fitRaf);
+  _fitRaf = requestAnimationFrame(function(){
+    _fitRaf = null;
+    const wraps = document.querySelectorAll('.table-wrap');
+    wraps.forEach(function(wrap){
+      const table = wrap.querySelector('table');
+      if(!table) return;
+      if(wrap.offsetParent === null){ return; }   // skip hidden surfaces
+      if(wrap.id === 'nflrankings-wrap'){ table.style.zoom = '1'; return; }  // rankings stays packed-left
+      table.style.zoom = '1';                       // reset to read true natural width
+      const avail = wrap.clientWidth;
+      const natural = table.scrollWidth;
+      if(natural <= 0 || avail <= 0){ return; }
+      if(natural <= avail){
+        table.style.zoom = (avail / natural).toFixed(4);  // GROW to fill, no ceiling
+        return;
+      }
+      let scale = avail / natural;
+      if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; } // SHRINK, clamped
+      table.style.zoom = scale.toFixed(4);
+    });
+  });
+}
+window.addEventListener('resize', fitTables);
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fitTables); } else { fitTables(); }
+(function _wireFitObserver(){
+  function attach(){
+    const ids = ['watch-list-body','nfl-players-body'];
+    const onChange = function(){ fitTables(); };
+    const obs = new MutationObserver(onChange);
+    ids.forEach(function(id){
+      const el = document.getElementById(id);
+      if(el){ obs.observe(el, {childList:true, subtree:true}); }
+    });
+    onChange();
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', attach); } else { attach(); }
+})();
+
 // ============================================================================
 // COMPACT_MODE_V1 (August 2, 2026 -- Walter, per the Dude). Checklist item 7.
 // Baseball's Matt-focus compact: one body class hides the ownership + stat
