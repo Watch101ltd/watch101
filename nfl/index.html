@@ -545,6 +545,13 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 .wl-note-cell.placeholder{cursor:pointer;}
 .note-input{width:100%;min-width:150px;box-sizing:border-box;background:var(--surface2,rgba(255,255,255,0.04));border:1px solid var(--turf);border-radius:4px;color:var(--text1,#fff);font-size:12px;padding:4px 6px;font-family:inherit;}
 .note-link-badge{text-decoration:none;margin-left:4px;}
+/* NOTE_WIDTH_V1 + COMPACT_MODE_V1 (Aug 2, 2026) -- notes are the focal point. */
+.watch-list th.col-note,.watch-list td.col-note{min-width:240px;}
+.note-add-hint{color:var(--text3,#888);font-style:italic;}
+#compact-toggle-btn.active{background:var(--turf);color:#0d1117;border-color:var(--turf);}
+body.compact-mode #nflmain-wrap th:nth-child(n+12):nth-child(-n+24),
+body.compact-mode #nflmain-wrap td:nth-child(n+12):nth-child(-n+24){display:none !important;}
+body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.col-note{max-width:none;width:55%;}
 
 /* MATTSTAKE_RANKHIST_V1 (Aug 2, 2026) -- Matt's Take + 101 Rank History cards. */
 #ftl-overlay .ftl-takewrap{display:flex;gap:16px;padding:0 1.5rem 1.5rem;flex-wrap:wrap;}
@@ -861,6 +868,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div id="search-results" class="search-results"></div>
   </div>
   <div class="toolbar-right">
+    <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: hide the stat and ownership columns and stretch the Note column so Matt's notes take center stage.">&#8596; Compact</button>
     <div class="count-badge" id="count-badge">0 players</div>
     <button class="btn btn-turf" id="save-btn" onclick="saveList()">💾 Save</button>
     <button class="btn btn-red" onclick="clearList()">Clear All</button>
@@ -2572,6 +2580,21 @@ function _wlPid(item){
   return (typeof item === 'string') ? item : (item && item.pid);
 }
 // ============================================================================
+// COMPACT_MODE_V1 (August 2, 2026 -- Walter, per the Dude). Checklist item 7.
+// Baseball's Matt-focus compact: one body class hides the ownership + stat
+// columns on the WATCH LIST table (nth-child ranges pinned to this sport's
+// exact column layout -- if columns are ever added or reordered, update the
+// ranges in the COMPACT_MODE_V1 CSS block too, header and body stay in
+// lockstep automatically since both use the same indexes). The Note column
+// stretches to fill the freed space. Not persisted across reloads, same as
+// baseball. fitTables() is called when this sport has it (NBA auto-shrink).
+// ============================================================================
+function toggleCompactMode(el){
+  const on = document.body.classList.toggle('compact-mode');
+  if(el){ el.classList.toggle('active', on); }
+  if(typeof fitTables === 'function'){ try{ fitTables(); }catch(e){} }
+}
+
 // WL_NOTES_V1 (August 2, 2026 -- Walter, per the Dude). Checklist item 2.
 // ----------------------------------------------------------------------------
 // The watch-list Note column comes ALIVE, baseball's pattern: click the cell,
@@ -2616,7 +2639,7 @@ function _wlNoteCellHtml(pid){
   const safePid = String(pid).replace(/"/g, '&quot;');
   const onclick = 'onclick="event.stopPropagation();editWlNote(&quot;' + safePid + '&quot;, this)"';
   if(!raw || !raw.trim()){
-    return '<td class="left col-note wl-note-cell placeholder" title="Click to add a note" ' + onclick + '>&#8212;</td>';
+    return '<td class="left col-note wl-note-cell" title="Click to add a note" ' + onclick + '><em class="note-add-hint">Add note...</em></td>';
   }
   const sp = _splitNoteAndUrl(raw);
   return '<td class="left col-note wl-note-cell" title="Click to edit this note" ' + onclick + '>' + escapeHtml(sp.text) + _renderNoteLinkBadge(sp.url) + '</td>';
