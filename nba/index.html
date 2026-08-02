@@ -406,6 +406,13 @@ td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-
 .note-add-hint{color:var(--text3,#888);font-style:italic;}
 /* WL_DELTA_V1 (Aug 2, 2026) -- blue NEW badge, baseball's clone. */
 .rdelta-new-badge{display:inline-block;background:rgba(59,130,246,0.15);color:var(--blue,#3b82f6);border:1px solid rgba(59,130,246,0.4);border-radius:4px;font-size:9px;font-weight:800;letter-spacing:0.04em;padding:1px 5px;white-space:nowrap;}
+/* MATT_CONTROLS_V1 (Aug 2, 2026) -- Show as NEW + Type Tags placeholder in Matt's Take. */
+#ftl-overlay .ftl-take-hint{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-left:12px;}
+#ftl-overlay .ftl-take-newrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:10px 0;}
+#ftl-overlay .ftl-shownew-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--court);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700;color:var(--text1,#fff);cursor:pointer;}
+#ftl-overlay .ftl-shownew-pill input{accent-color:var(--court);width:15px;height:15px;cursor:pointer;}
+#ftl-overlay .ftl-take-prow,#ftl-overlay .ftl-take-typerow{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:10px 0 6px;}
+#ftl-overlay .ftl-take-typebody{font-size:12px;color:var(--text3);font-style:italic;padding:4px 2px 2px;}
 #compact-toggle-btn.active{background:var(--court);color:#0d1117;border-color:var(--court);}
 body.compact-mode #nbamain-wrap th:nth-child(n+11):nth-child(-n+32),
 body.compact-mode #nbamain-wrap td:nth-child(n+11):nth-child(-n+32){display:none !important;}
@@ -2717,6 +2724,47 @@ function toggleCompactMode(el){
 // show a quiet dash. Blue NEW badge = first publish on this list, exactly one
 // publish, then the sliding baseline clears it.
 // ============================================================================
+// ============================================================================
+// MATT_CONTROLS_V1 (August 2, 2026 -- Walter, per the Dude).
+// ----------------------------------------------------------------------------
+// Baseball's Deep Cut admin controls ported into the Matt's Take card:
+// Show-as-NEW checkbox (baseball's SHOW_AS_NEW_TOGGLE_V1 semantics, exactly:
+// tick -> is_new_this_publish=true for the instant badge PLUS
+// manual_new_pending=true so _stamp_baseline.py honors it for exactly one
+// publish; untick clears both), priority-stars explainer, and the Type Tags
+// PLACEHOLDER (fills in after the Dude + Matt pick this sport's emoji
+// vocabulary -- parity item 1). "Backend only" labels match baseball; actual
+// fan-gating arrives with the read-only mode port (parity item 10).
+// ============================================================================
+function _ftlUpdateShowNewHint(on){
+  const hint = document.getElementById('ftl-shownew-hint');
+  if(!hint) return;
+  hint.innerHTML = on
+    ? 'Backend only — 🆕 NEW is showing on the +/- column'
+    : 'Backend only — tick to surface this player as 🆕 NEW on the +/- column';
+}
+function _ftlSetShowAsNew(checkboxEl){
+  const pid = _ftlCurrentPid;
+  if(pid == null) return;
+  const idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  const on = !!(checkboxEl && checkboxEl.checked);
+  const entry = _watchList[idx];
+  const upd = (entry && typeof entry === 'object') ? Object.assign({}, entry) : { pid: pid };
+  upd.pid = pid;
+  if(on){
+    upd.is_new_this_publish = true;
+    upd.manual_new_pending = true;
+  } else {
+    upd.is_new_this_publish = false;
+    upd.manual_new_pending = false;
+  }
+  _watchList[idx] = upd;
+  try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
+  renderWatchList();   // the +/- cell updates instantly
+  _ftlUpdateShowNewHint(on);
+}
+
 function _wlDeltaFor(pid){
   const idx = _wlIndexOf(pid);
   if(idx < 0) return null;
@@ -3072,6 +3120,23 @@ function _ftlRenderMattsTake(pid){
     const pr = (idx >= 0) ? _wlPriority(_watchList[idx]) : 0;
     starsEl.innerHTML = renderPriorityStars(pid, pr);
   }
+  // MATT_CONTROLS_V1: Show-as-NEW checkbox -- only for players ON the watch list.
+  const nrow = document.getElementById('ftl-shownew-row');
+  const ndiv = document.getElementById('ftl-shownew-div');
+  const ncheck = document.getElementById('ftl-shownew-check');
+  if (nrow && ncheck){
+    const idxN = _wlIndexOf(pid);
+    if (idxN >= 0){
+      nrow.style.display = '';
+      if (ndiv) ndiv.style.display = '';
+      const it = _watchList[idxN];
+      ncheck.checked = !!(it && typeof it === 'object' && it.is_new_this_publish === true);
+      _ftlUpdateShowNewHint(ncheck.checked);
+    } else {
+      nrow.style.display = 'none';
+      if (ndiv) ndiv.style.display = 'none';
+    }
+  }
 }
 
 async function _ftlRenderRankHistory(pid){
@@ -3249,7 +3314,15 @@ bootstrap();
       <div class="ftl-take-title">Matt&#39;s Take</div>
       <div class="ftl-take-note" id="ftl-take-note"><em>No notes from Matt yet.</em></div>
       <div class="ftl-take-divider"></div>
-      <div class="ftl-take-prow"><span class="ftl-take-plabel">Priority</span><span id="ftl-take-stars"></span></div>
+      <div class="ftl-take-newrow" id="ftl-shownew-row" style="display:none">
+        <label class="ftl-shownew-pill"><input type="checkbox" id="ftl-shownew-check" onchange="_ftlSetShowAsNew(this)"> &#127381; Show as NEW</label>
+        <span class="ftl-take-hint" id="ftl-shownew-hint">Backend only &#8212; tick to surface this player as &#127381; NEW on the +/- column</span>
+      </div>
+      <div class="ftl-take-divider" id="ftl-shownew-div" style="display:none"></div>
+      <div class="ftl-take-prow"><span class="ftl-take-plabel">Priority</span><span id="ftl-take-stars"></span><span class="ftl-take-hint">Backend only &#8212; click stars to rank Matt's add-priority (5 = highest)</span></div>
+      <div class="ftl-take-divider"></div>
+      <div class="ftl-take-typerow"><span class="ftl-take-plabel">Type Tags</span><span class="ftl-take-hint">Backend only &#8212; check all that apply</span></div>
+      <div class="ftl-take-typebody" id="ftl-take-typebody"><em>Type tag emojis land here once the Dude and Matt pick this sport's vocabulary.</em></div>
     </div>
     <div class="ftl-take-card">
       <div class="ftl-take-title">101 Rank History</div>
