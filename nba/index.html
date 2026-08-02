@@ -396,6 +396,13 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-chart-line{fill:none;stroke:var(--court);stroke-width:2;}
 #ftl-overlay .ftl-chart-dot{fill:var(--court);}
 #ftl-overlay .ftl-chart-foot{display:flex;justify-content:space-between;border-top:1px dashed var(--border2);margin-top:10px;padding-top:10px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);}
+/* WL_NOTES_V1 (Aug 2, 2026) -- live Note column. */
+.col-note{min-width:150px;max-width:280px;white-space:normal;}
+.wl-note-cell{cursor:text;}
+.wl-note-cell.placeholder{cursor:pointer;}
+.note-input{width:100%;min-width:150px;box-sizing:border-box;background:var(--surface2,rgba(255,255,255,0.04));border:1px solid var(--court);border-radius:4px;color:var(--text1,#fff);font-size:12px;padding:4px 6px;font-family:inherit;}
+.note-link-badge{text-decoration:none;margin-left:4px;}
+
 #ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin:0 0 10px 2px;}
 #ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
 #ftl-overlay .ftl-statcell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 10px;min-width:54px;flex:1;border-right:1px solid var(--border);text-align:center;}
@@ -2396,7 +2403,7 @@ function renderWatchList(){
       '<td class="placeholder">—</td>' +   // +/- (planned)
       '<td class="left placeholder">—</td>' + // Type (planned)
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
-      '<td class="left placeholder">—</td>' + // Note (planned)
+      _wlNoteCellHtml(pid) +   // WL_NOTES_V1 -- live Note column
       '<td class="col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +   // Y!Owned (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +   // CBS Owned (NBA_CBS_OWNERSHIP_V1 / CBS_OWNED_PCT_V1)
@@ -2659,6 +2666,81 @@ function escapeHtml(s){
 
 // PRIORITY_STARS — per-player 1-5 priority rating, stored on each list item.
 function _wlPid(item){ return (typeof item === 'string') ? item : (item && item.pid); }
+// ============================================================================
+// WL_NOTES_V1 (August 2, 2026 -- Walter, per the Dude). Checklist item 2.
+// ----------------------------------------------------------------------------
+// The watch-list Note column comes ALIVE, baseball's pattern: click the cell,
+// it becomes an inline text input; blur or Enter saves. Notes live IN the
+// list entries ({pid, priority, note}) so they ride the existing save flow:
+// localStorage immediately, NAS staging via the Save button, public via the
+// approve batch -- the exact rails priority stars already use. The phone
+// card's hide-when-empty note box already reads item.note, so it lights up
+// with zero changes. Matt's Take (player card) prefers this live note.
+// _splitNoteAndUrl + _renderNoteLinkBadge ported verbatim from baseball's
+// NOTE_HYPERLINK_V1: the first http(s):// URL in a note becomes a clean
+// clickable chain badge (bare domains deliberately NOT detected).
+// ============================================================================
+function _wlNote(item){
+  if(typeof item === 'string') return '';
+  const v = item && item.note;
+  return (typeof v === 'string') ? v : '';
+}
+function _splitNoteAndUrl(noteText){
+  if(noteText == null) return { text: '', url: null };
+  var s = String(noteText);
+  var m = s.match(/https?:\/\/[^\s<>"'`]+/);
+  if(!m) return { text: s, url: null };
+  var url = m[0];
+  url = url.replace(/[.,;:!?)\]}]+$/, '');
+  var stripped = s.replace(url, '').replace(/\s+/g, ' ').trim();
+  return { text: stripped, url: url };
+}
+function _renderNoteLinkBadge(url){
+  if(!url) return '';
+  var safeUrl = String(url).replace(/"/g, '&quot;');
+  return ' <a class="note-link-badge" '
+       + 'href="' + safeUrl + '" '
+       + 'target="_blank" rel="noopener noreferrer" '
+       + 'onclick="event.stopPropagation();" '
+       + 'title="' + safeUrl + '" '
+       + 'role="button">&#128279;</a>';
+}
+function _wlNoteCellHtml(pid){
+  const idx = _wlIndexOf(pid);
+  const raw = (idx >= 0) ? _wlNote(_watchList[idx]) : '';
+  const safePid = String(pid).replace(/"/g, '&quot;');
+  const onclick = 'onclick="event.stopPropagation();editWlNote(&quot;' + safePid + '&quot;, this)"';
+  if(!raw || !raw.trim()){
+    return '<td class="left col-note wl-note-cell placeholder" title="Click to add a note" ' + onclick + '>&#8212;</td>';
+  }
+  const sp = _splitNoteAndUrl(raw);
+  return '<td class="left col-note wl-note-cell" title="Click to edit this note" ' + onclick + '>' + escapeHtml(sp.text) + _renderNoteLinkBadge(sp.url) + '</td>';
+}
+function _setWlNote(pid, text){
+  const idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  const cur = _watchList[idx];
+  _watchList[idx] = { pid: pid, priority: _wlPriority(cur), note: String(text || '') };
+  // Persist locally right away so a typed note can never be lost to a refresh.
+  // The NAS still gets it through the normal Save button -> staging -> approve.
+  try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
+  renderWatchList();
+}
+function editWlNote(pid, el){
+  const idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'note-input';
+  input.value = _wlNote(_watchList[idx]);
+  input.placeholder = 'Why is this player here?';
+  el.replaceWith(input);
+  input.focus();
+  input.addEventListener('blur', function(){ _setWlNote(pid, input.value); });
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') input.blur(); });
+  input.addEventListener('click', function(e){ e.stopPropagation(); });
+}
+
 function _wlPriority(item){
   if(typeof item === 'string') return 0;
   const v = item && item.priority;
@@ -2902,12 +2984,26 @@ function _ftlRenderMattsTake(pid){
   const noteEl = document.getElementById('ftl-take-note');
   const starsEl = document.getElementById('ftl-take-stars');
   if (noteEl){
+    // WL_NOTES_V1: the LIVE list note wins; history is the fallback so an
+    // approved-then-removed note can still show on the card.
     let latestNote = null;
-    const hist = (_ftlNotesHistory && _ftlNotesHistory[pid]) || [];
-    for (let i = hist.length - 1; i >= 0; i--) {
-      if (hist[i] && hist[i].note){ latestNote = hist[i].note; break; }
+    const idxW = _wlIndexOf(pid);
+    if (idxW >= 0){
+      const lv = _wlNote(_watchList[idxW]);
+      if (lv && lv.trim()) latestNote = lv;
     }
-    noteEl.innerHTML = latestNote ? escapeHtml(latestNote) : '<em>No notes from Matt yet.</em>';
+    if (!latestNote){
+      const hist = (_ftlNotesHistory && _ftlNotesHistory[pid]) || [];
+      for (let i = hist.length - 1; i >= 0; i--) {
+        if (hist[i] && hist[i].note){ latestNote = hist[i].note; break; }
+      }
+    }
+    if (latestNote){
+      const sp = _splitNoteAndUrl(latestNote);
+      noteEl.innerHTML = escapeHtml(sp.text) + _renderNoteLinkBadge(sp.url);
+    } else {
+      noteEl.innerHTML = '<em>No notes from Matt yet.</em>';
+    }
   }
   if (starsEl){
     const idx = _wlIndexOf(pid);
