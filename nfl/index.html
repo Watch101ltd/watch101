@@ -3071,7 +3071,7 @@ async function _yahooFetchLeagueRanks(leagueKey){
       // fall back to NAS direct here — that would defeat the ban protection.
       const body = await res.json().catch(() => ({}));
       console.warn('[yahoo] Worker guardrail blocked the call:', body);
-      throw new Error('Yahoo guardrail: ' + (body.detail || 'unavailable'));
+      throw new Error('rankings guardrail: ' + (body.detail || 'unavailable'));  // NEUTRAL_STATUS_V1
     }
     if(res.ok){
       console.log('[yahoo] league-ranks via Worker (fast path)');
@@ -3093,7 +3093,7 @@ async function _yahooFetchLeagueRanks(leagueKey){
   // payload. After this completes, the NAS cache is warm for 6 hours and the
   // Worker fast path takes over for all subsequent loads.
   if(statusEl){
-    statusEl.textContent = 'Loading Yahoo league data — first-time build can take up to 2 minutes. Worker cache will be hot for the next 6 hours after this.';
+    statusEl.textContent = 'Loading league rankings — the first build can take up to 2 minutes.';  // NEUTRAL_STATUS_V1
   }
   console.log('[yahoo] league-ranks via NAS direct (slow first-time build)');
   const res = await fetch(nasUrl);
@@ -3158,14 +3158,14 @@ async function loadYahooData(){
   const leagueKey = await _yahooFirstNflLeagueKey();
   if(!leagueKey) return;
 
-  if(statusEl) statusEl.textContent = 'Loading Yahoo league data (may take 90-120 sec on first load)…';
+  if(statusEl) statusEl.textContent = 'Loading league rankings (may take 90-120 sec on first load)…';  // NEUTRAL_STATUS_V1
 
   let payload;
   try {
     payload = await _yahooFetchLeagueRanks(leagueKey);
   } catch(e){
     console.warn('[yahoo] league-ranks fetch failed:', e.message);
-    if(statusEl) statusEl.textContent = 'Yahoo data unavailable: ' + e.message;
+    if(statusEl) statusEl.textContent = 'League rankings are temporarily unavailable — showing the latest saved list.';  // NEUTRAL_STATUS_V1 (2026-08-02, the Dude's call): no brand names in visitor-facing status/error banners; technical detail stays in the console.warn above.
     return;
   }
 
