@@ -525,7 +525,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-sub .sep{color:var(--border2);margin:0 8px}
 #ftl-overlay .ftl-rank{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:6px 14px;background:#16a34a33;border:1px solid var(--turf);border-radius:6px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4ade80;font-weight:700;}
 #ftl-overlay .ftl-rank .num{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:16px;letter-spacing:0.04em}
-#ftl-overlay .ftl-statwrap{padding:1.5rem;}
+#ftl-overlay .ftl-statwrap{flex:1 1 420px;min-width:300px;align-self:center;padding:0;}  /* QUADRANTS_V1: stats live in the hero now */
 /* SCHEDULE_RESULTS_V1 (Aug 2, 2026) -- Schedule / Results table in In the Pocket. */
 #ftl-overlay .ftl-schedwrap{padding:0 1.5rem 1.5rem;}
 #ftl-overlay .fs-note{font-size:12px;color:var(--text3);padding:6px 2px;}
@@ -556,11 +556,11 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-chart-dot{fill:var(--turf);}
 #ftl-overlay .ftl-chart-foot{display:flex;justify-content:space-between;border-top:1px dashed var(--border2);margin-top:10px;padding-top:10px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);}
 #ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin:0 0 10px 2px;}
-#ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:22px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
-#ftl-overlay .ftl-statcell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;min-width:66px;flex:1;border-right:1px solid var(--border);text-align:center;}
+#ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
+#ftl-overlay .ftl-statcell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 10px;min-width:54px;flex:1;border-right:1px solid var(--border);text-align:center;}
 #ftl-overlay .ftl-statcell:last-child{border-right:none;}
 #ftl-overlay .ftl-statlabel{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:9px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
-#ftl-overlay .ftl-statval{font-size:18px;font-weight:700;color:#22c55e;line-height:1;}
+#ftl-overlay .ftl-statval{font-size:15px;font-weight:700;color:#22c55e;line-height:1;}
 #ftl-overlay .ftl-statval.na{color:var(--text3);font-weight:500;}
 @media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:34px}#ftl-overlay .ftl-photo{width:130px;height:130px}}
 .pos-badge{
@@ -3151,11 +3151,9 @@ function openFromTheLogo(pid){
   const passing = _ftlStatCell('PA YD', _ftlNum(s.pass_yd)) + _ftlStatCell('PA TD', _ftlNum(s.pass_td));
   const rushing = _ftlStatCell('RU YD', _ftlNum(s.rush_yd)) + _ftlStatCell('RU TD', _ftlNum(s.rush_td));
   const receiving = _ftlStatCell('REC', _ftlNum(s.rec)) + _ftlStatCell('RE YD', _ftlNum(s.rec_yd)) + _ftlStatCell('RE TD', _ftlNum(s.rec_td));
+  // QUADRANTS_V1 (Aug 2, 2026): one compact stat strip in the hero, baseball-style.
   document.getElementById('ftl-statwrap').innerHTML =
-    '<div class="ftl-statgroup-label">Fantasy</div><div class="ftl-statbar">' + fantasy + '</div>' +
-    '<div class="ftl-statgroup-label">Passing</div><div class="ftl-statbar">' + passing + '</div>' +
-    '<div class="ftl-statgroup-label">Rushing</div><div class="ftl-statbar">' + rushing + '</div>' +
-    '<div class="ftl-statgroup-label">Receiving</div><div class="ftl-statbar">' + receiving + '</div>';
+    '<div class="ftl-statbar">' + fantasy + passing + rushing + receiving + '</div>';
 
   // Header note reflects the year the page is showing (offseason shows last season).
   const hr = document.getElementById('ftl-header-right');
@@ -3791,9 +3789,8 @@ function _yahooLookupFmt(pid, field, isPercent){
       <div class="ftl-sub" id="ftl-sub"></div>
       <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num"></span></div>
     </div>
+    <div class="ftl-statwrap" id="ftl-statwrap"></div>
   </section>
-  <div class="ftl-statwrap" id="ftl-statwrap"></div>
-  <div class="ftl-schedwrap" id="ftl-schedwrap"></div>
   <div class="ftl-takewrap">
     <div class="ftl-take-card">
       <div class="ftl-take-title">Matt&#39;s Take</div>
@@ -3807,6 +3804,7 @@ function _yahooLookupFmt(pid, field, isPercent){
       <div class="ftl-chart-foot"><span id="ftl-chart-oldest">&#8212;</span><span id="ftl-chart-latest">&#8212;</span></div>
     </div>
   </div>
+  <div class="ftl-schedwrap" id="ftl-schedwrap"></div>
 </div>
 
 <!-- ==================== SITE_CHROME_V1 FOOTER MARKUP START ==================== -->
