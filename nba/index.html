@@ -380,6 +380,22 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-rank{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:6px 14px;background:#c2410c33;border:1px solid var(--court-deep);border-radius:6px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--court-bright);font-weight:700;}
 #ftl-overlay .ftl-rank .num{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:16px;letter-spacing:0.04em}
 #ftl-overlay .ftl-statwrap{padding:1.5rem;}
+/* MATTSTAKE_RANKHIST_V1 (Aug 2, 2026) -- Matt's Take + 101 Rank History cards. */
+#ftl-overlay .ftl-takewrap{display:flex;gap:16px;padding:0 1.5rem 1.5rem;flex-wrap:wrap;}
+#ftl-overlay .ftl-take-card{flex:1 1 340px;min-width:0;background:var(--surface2,rgba(255,255,255,0.02));border:1px solid var(--border2);border-radius:10px;padding:16px 18px;}
+#ftl-overlay .ftl-take-title{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:20px;letter-spacing:0.03em;color:var(--court);margin-bottom:12px;}
+#ftl-overlay .ftl-take-note{font-size:14px;color:var(--text2);line-height:1.6;white-space:pre-wrap;min-height:48px;text-align:center;padding:10px 6px;}
+#ftl-overlay .ftl-take-note em{color:var(--text3);}
+#ftl-overlay .ftl-take-divider{border-top:1px dashed var(--border2);margin:12px 0;}
+#ftl-overlay .ftl-take-plabel{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--court);font-weight:700;margin-right:10px;}
+#ftl-overlay .ftl-chartwrap{width:100%;}
+#ftl-overlay #ftl-rank-chart{width:100%;height:auto;display:block;}
+#ftl-overlay .ftl-chart-grid{stroke:var(--border2);stroke-width:1;}
+#ftl-overlay .ftl-chart-axis{stroke:var(--text3);stroke-width:1;}
+#ftl-overlay .ftl-chart-label{fill:var(--text3);font-size:11px;}
+#ftl-overlay .ftl-chart-line{fill:none;stroke:var(--court);stroke-width:2;}
+#ftl-overlay .ftl-chart-dot{fill:var(--court);}
+#ftl-overlay .ftl-chart-foot{display:flex;justify-content:space-between;border-top:1px dashed var(--border2);margin-top:10px;padding-top:10px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);}
 #ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin:0 0 10px 2px;}
 #ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:22px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
 #ftl-overlay .ftl-statcell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;min-width:62px;flex:1;border-right:1px solid var(--border);text-align:center;}
@@ -2851,6 +2867,134 @@ function _ftlStatCell(label, val){
 function _ftlPG(total, gp){ const v = perGame(total, gp); return (v == null) ? null : v.toFixed(1); } // POINTZERO_V1 (2026-06-28): keep trailing .0 to match the table
 function _ftlPct(makes, att){ const v = pctOrNull(makes, att); return (v == null) ? null : v.toFixed(1); }
 
+// ============================================================================
+// MATTSTAKE_RANKHIST_V1 (August 2, 2026 -- Walter, per the Dude).
+// ----------------------------------------------------------------------------
+// "Matt's Take" + "101 Rank History" in the player card, ported from
+// baseball's Deep Cut (same sections, same information, this sport's colors).
+// Data: GET /history/notes on this sport's NAS -- player_notes_history.json,
+// written by _append_history.py on every approve (one row per player:
+// date/time/rank/note/list_id). The chart filters to the ACTIVE list by
+// exact list_id match and starts empty: it earns its first dot on the first
+// approve after this ships. Matt's Take note shows the newest non-empty
+// history note; the twins' lists carry no notes yet, so the placeholder
+// stands until the Note column ships (parity checklist item 2). Priority
+// stars are the page's existing live PRIORITY_STARS_V1 control.
+// Movement Mode is deliberately NOT here -- its own pass later, per the Dude.
+// ============================================================================
+let _ftlCurrentPid = null;
+let _ftlNotesHistory = null;
+
+async function _ftlLoadHistoryNotes(){
+  if (_ftlNotesHistory) return _ftlNotesHistory;
+  try {
+    const res = await fetch(SERVER_URL + '/history/notes');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    _ftlNotesHistory = (data && typeof data === 'object') ? data : {};
+  } catch(e){
+    _ftlNotesHistory = {};
+  }
+  return _ftlNotesHistory;
+}
+
+function _ftlRenderMattsTake(pid){
+  const noteEl = document.getElementById('ftl-take-note');
+  const starsEl = document.getElementById('ftl-take-stars');
+  if (noteEl){
+    let latestNote = null;
+    const hist = (_ftlNotesHistory && _ftlNotesHistory[pid]) || [];
+    for (let i = hist.length - 1; i >= 0; i--) {
+      if (hist[i] && hist[i].note){ latestNote = hist[i].note; break; }
+    }
+    noteEl.innerHTML = latestNote ? escapeHtml(latestNote) : '<em>No notes from Matt yet.</em>';
+  }
+  if (starsEl){
+    const idx = _wlIndexOf(pid);
+    const pr = (idx >= 0) ? _wlPriority(_watchList[idx]) : 0;
+    starsEl.innerHTML = renderPriorityStars(pid, pr);
+  }
+}
+
+async function _ftlRenderRankHistory(pid){
+  await _ftlLoadHistoryNotes();
+  if (_ftlCurrentPid !== pid) return;  // stale open guard
+  _ftlRenderMattsTake(pid);
+
+  const svg = document.getElementById('ftl-rank-chart');
+  const oldestLbl = document.getElementById('ftl-chart-oldest');
+  const latestLbl = document.getElementById('ftl-chart-latest');
+  if (!svg) return;
+  const history = (_ftlNotesHistory && _ftlNotesHistory[pid]) || [];
+  const activeListId = _activeList().id;
+
+  const points = [];
+  for (let i = 0; i < history.length; i++) {
+    const h = history[i];
+    if (!h || !h.date || h.rank == null) continue;
+    if (activeListId && h.list_id && h.list_id !== activeListId) continue;
+    points.push({ date: String(h.date), time: h.time ? String(h.time) : '0000', rank: Number(h.rank) });
+  }
+  points.sort(function(a, b){
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return a.time < b.time ? -1 : (a.time > b.time ? 1 : 0);
+  });
+
+  if (!points.length){
+    svg.innerHTML = '<text x="400" y="110" text-anchor="middle" class="ftl-chart-label">No rank history yet.</text>';
+    if (oldestLbl) oldestLbl.textContent = '—';
+    if (latestLbl) latestLbl.textContent = '—';
+    return;
+  }
+
+  const W = 800, H = 220, padL = 40, padR = 20, padT = 20, padB = 30;
+  const chartW = W - padL - padR, chartH = H - padT - padB, n = points.length;
+  function rankY(r){
+    let frac = (r - 1) / 100;
+    if (frac < 0) frac = 0;
+    if (frac > 1) frac = 1;
+    return padT + frac * chartH;
+  }
+  function xAt(i){
+    if (n === 1) return padL + chartW / 2;
+    return padL + (i / (n - 1)) * chartW;
+  }
+
+  const parts = [];
+  const gridRanks = [1, 25, 50, 75, 101];
+  for (let g = 0; g < gridRanks.length; g++){
+    const gy = rankY(gridRanks[g]);
+    parts.push('<line class="ftl-chart-grid" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + gy + '" y2="' + gy + '"/>');
+    parts.push('<text class="ftl-chart-label" x="' + (padL - 6) + '" y="' + (gy + 3) + '" text-anchor="end">' + gridRanks[g] + '</text>');
+  }
+  parts.push('<line class="ftl-chart-axis" x1="' + padL + '" x2="' + padL + '" y1="' + padT + '" y2="' + (H - padB) + '"/>');
+  parts.push('<line class="ftl-chart-axis" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + (H - padB) + '" y2="' + (H - padB) + '"/>');
+
+  if (n > 1){
+    let d = '';
+    for (let j = 0; j < n; j++){
+      d += (j === 0 ? 'M' : 'L') + xAt(j) + ' ' + rankY(points[j].rank);
+    }
+    parts.push('<path class="ftl-chart-line" d="' + d + '"/>');
+  }
+  for (let k = 0; k < n; k++){
+    let tt = points[k].date;
+    if (points[k].time && points[k].time !== '0000'){
+      tt += ' ' + points[k].time.substring(0, 2) + ':' + points[k].time.substring(2, 4);
+    }
+    tt += ' • Rank ' + points[k].rank;
+    parts.push('<circle class="ftl-chart-dot" cx="' + xAt(k) + '" cy="' + rankY(points[k].rank) + '" r="4"><title>' + tt + '</title></circle>');
+  }
+  parts.push('<text class="ftl-chart-label" x="' + xAt(0) + '" y="' + (H - padB + 14) + '" text-anchor="start">' + points[0].date + '</text>');
+  if (n > 1){
+    parts.push('<text class="ftl-chart-label" x="' + xAt(n - 1) + '" y="' + (H - padB + 14) + '" text-anchor="end">' + points[n - 1].date + '</text>');
+  }
+
+  svg.innerHTML = parts.join('');
+  if (oldestLbl) oldestLbl.textContent = 'Oldest: ' + points[0].date + ' · Rank ' + points[0].rank;
+  if (latestLbl) latestLbl.textContent = 'Latest: ' + points[n - 1].date + ' · Rank ' + points[n - 1].rank;
+}
+
 function openFromTheLogo(pid){
   const p = _playerDB && _playerDB[pid];
   if(!p) return;
@@ -2893,6 +3037,9 @@ function openFromTheLogo(pid){
   document.getElementById('ftl-statwrap').innerHTML =
     '<div class="ftl-statgroup-label">Per Game</div><div class="ftl-statbar">' + counting + '</div>' +
     '<div class="ftl-statgroup-label">Shooting</div><div class="ftl-statbar">' + shooting + '</div>';
+
+  _ftlCurrentPid = pid;
+  _ftlRenderRankHistory(pid);
 
   document.getElementById('ftl-backdrop').classList.add('visible');
   document.getElementById('ftl-overlay').classList.add('visible');
@@ -2938,6 +3085,19 @@ bootstrap();
     </div>
   </section>
   <div class="ftl-statwrap" id="ftl-statwrap"></div>
+  <div class="ftl-takewrap">
+    <div class="ftl-take-card">
+      <div class="ftl-take-title">Matt&#39;s Take</div>
+      <div class="ftl-take-note" id="ftl-take-note"><em>No notes from Matt yet.</em></div>
+      <div class="ftl-take-divider"></div>
+      <div class="ftl-take-prow"><span class="ftl-take-plabel">Priority</span><span id="ftl-take-stars"></span></div>
+    </div>
+    <div class="ftl-take-card">
+      <div class="ftl-take-title">101 Rank History</div>
+      <div class="ftl-chartwrap"><svg id="ftl-rank-chart" viewBox="0 0 800 220" preserveAspectRatio="xMidYMid meet"></svg></div>
+      <div class="ftl-chart-foot"><span id="ftl-chart-oldest">&#8212;</span><span id="ftl-chart-latest">&#8212;</span></div>
+    </div>
+  </div>
 </div>
 <!-- ==================== SITE_CHROME_V1 FOOTER MARKUP START ==================== -->
 <footer class="w101-foot">
