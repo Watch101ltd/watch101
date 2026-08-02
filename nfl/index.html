@@ -547,6 +547,8 @@ td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-
 .note-link-badge{text-decoration:none;margin-left:4px;}
 /* NOTE_WIDTH_V1 + COMPACT_MODE_V1 (Aug 2, 2026) -- notes are the focal point. */
 .note-add-hint{color:var(--text3,#888);font-style:italic;}
+/* WL_DELTA_V1 (Aug 2, 2026) -- blue NEW badge, baseball's clone. */
+.rdelta-new-badge{display:inline-block;background:rgba(59,130,246,0.15);color:var(--blue,#3b82f6);border:1px solid rgba(59,130,246,0.4);border-radius:4px;font-size:9px;font-weight:800;letter-spacing:0.04em;padding:1px 5px;white-space:nowrap;}
 #compact-toggle-btn.active{background:var(--turf);color:#0d1117;border-color:var(--turf);}
 body.compact-mode #nflmain-wrap th:nth-child(n+12):nth-child(-n+24),
 body.compact-mode #nflmain-wrap td:nth-child(n+12):nth-child(-n+24){display:none !important;}
@@ -2333,7 +2335,7 @@ function renderWatchList(){
       '<td>' + age + '</td>' +
       // EXP_FILL_V1 (2026-06-28) — fill the EXP column from Sleeper years_exp (0 = Rookie -> "R").
       '<td' + (p.years_exp != null && p.years_exp !== '' ? '' : ' class="placeholder"') + '>' + (p.years_exp != null && p.years_exp !== '' ? (Number(p.years_exp) === 0 ? 'R' : p.years_exp) : '—') + '</td>' +
-      '<td class="placeholder">—</td>' +   // +/- (planned)
+      renderDeltaCell(pid) +   // WL_DELTA_V1 -- live +/- vs previous publish
       '<td class="placeholder">—</td>' +   // Type (planned)
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       _wlNoteCellHtml(pid) +   // WL_NOTES_V1 -- live Note column
@@ -2657,6 +2659,39 @@ function toggleCompactMode(el){
 // NOTE_HYPERLINK_V1: the first http(s):// URL in a note becomes a clean
 // clickable chain badge (bare domains deliberately NOT detected).
 // ============================================================================
+// ============================================================================
+// WL_DELTA_V1 (August 2, 2026 -- Walter, per the Dude). Checklist item 4.
+// ----------------------------------------------------------------------------
+// The +/- column comes alive, baseball's NEW_BADGE_VS_PREVIOUS_V2 semantics:
+// "how far has Matt moved this player since the LAST published list."
+// _stamp_baseline.py (called by the approve batch) writes prev_rank +
+// is_new_this_publish into the production JSON entries; this page loads
+// production first, so the fields arrive with the list. The delta is computed
+// LIVE as prev_rank minus the player's CURRENT position, so it updates while
+// the Dude drags. Unstamped entries (fresh local adds, pre-first-stamp lists)
+// show a quiet dash. Blue NEW badge = first publish on this list, exactly one
+// publish, then the sliding baseline clears it.
+// ============================================================================
+function _wlDeltaFor(pid){
+  const idx = _wlIndexOf(pid);
+  if(idx < 0) return null;
+  const it = _watchList[idx];
+  if(!it || typeof it !== 'object' || it.prev_rank == null) return null;
+  return Number(it.prev_rank) - (idx + 1);   // positive = moved up
+}
+function renderDeltaCell(pid){
+  const idx = _wlIndexOf(pid);
+  const it = (idx >= 0) ? _watchList[idx] : null;
+  if(it && typeof it === 'object' && it.is_new_this_publish === true){
+    return '<td class="col-delta-cell"><span class="rdelta-new-badge" title="New on this published list">🆕 NEW</span></td>';
+  }
+  const delta = _wlDeltaFor(pid);
+  if(delta == null) return '<td class="placeholder col-delta-cell">—</td>';
+  if(delta === 0) return '<td class="col-delta-cell" style="color:var(--text3)">—</td>';
+  if(delta > 0) return '<td class="col-delta-cell" style="color:var(--green);font-weight:700">+' + delta + '</td>';
+  return '<td class="col-delta-cell" style="color:var(--red);font-weight:700">' + delta + '</td>';
+}
+
 function _wlNote(item){
   if(typeof item === 'string') return '';
   const v = item && item.note;
@@ -2697,7 +2732,8 @@ function _setWlNote(pid, text){
   const idx = _wlIndexOf(pid);
   if(idx < 0) return;
   const cur = _watchList[idx];
-  _watchList[idx] = { pid: pid, priority: _wlPriority(cur), note: String(text || '') };
+  // WL_DELTA_V1: spread the existing entry so stamped baseline fields survive.
+  _watchList[idx] = Object.assign({}, (cur && typeof cur === 'object') ? cur : {}, { pid: pid, priority: _wlPriority(cur), note: String(text || '') });
   // Persist locally right away so a typed note can never be lost to a refresh.
   // The NAS still gets it through the normal Save button -> staging -> approve.
   try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
@@ -2742,9 +2778,13 @@ function _normalizeWatchList(){
 function setPriority(pid, newPriority){
   const idx = _wlIndexOf(pid);
   if(idx < 0) return;
-  const current = _wlPriority(_watchList[idx]);
+  const entry = _watchList[idx];
+  const current = _wlPriority(entry);
   const finalValue = (current === newPriority) ? 0 : newPriority;
-  _watchList[idx] = {pid: pid, priority: finalValue};
+  // WL_DELTA_V1 fix: build on the existing entry -- the old line rebuilt
+  // {pid, priority} from scratch and silently dropped the note and the
+  // stamped baseline fields. Latent since WL_NOTES_V1 shipped, caught here.
+  _watchList[idx] = Object.assign({}, (entry && typeof entry === 'object') ? entry : {}, {pid: pid, priority: finalValue});
   renderWatchList();
 }
 function renderPriorityStars(pid, currentPriority){
@@ -2881,7 +2921,7 @@ function sortValueFor(field, p, s, pid){
       return (idx >= 0) ? _wlPriority(_watchList[idx]) : 0;
     }
     case 'exp':    { const e = (_playerDB[pid]||{}).years_exp; return (e != null && e !== '') ? Number(e) : null; }  // EXP_FILL_V1
-    case 'delta':
+    case 'delta': return _wlDeltaFor(pid);   // WL_DELTA_V1 (null = unstamped, sorts to bottom)
     case 'type':
       return null;
     // CBS_OWNED_V1: real CBS rostered % (null sorts to bottom until data exists)
