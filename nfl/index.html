@@ -547,6 +547,7 @@ td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-
 .note-link-badge{text-decoration:none;margin-left:4px;}
 /* NOTE_WIDTH_V1 + COMPACT_MODE_V1 (Aug 2, 2026) -- notes are the focal point. */
 .note-add-hint{color:var(--text3,#888);font-style:italic;}
+.note-badge{cursor:pointer;margin-left:4px;font-size:12px;}  /* NEW_NOTE_48H_V1 */
 /* WL_DELTA_V1 (Aug 2, 2026) -- blue NEW badge, baseball's clone. */
 .rdelta-new-badge{display:inline-block;background:rgba(59,130,246,0.15);color:var(--blue,#3b82f6);border:1px solid rgba(59,130,246,0.4);border-radius:4px;font-size:9px;font-weight:800;letter-spacing:0.04em;padding:1px 5px;white-space:nowrap;}
 /* CAREER_POPUP_V1 (Aug 2, 2026) -- Career by Season popup, baseball's cp styles in this sport's accent. */
@@ -2409,7 +2410,7 @@ function renderWatchList(){
       _handleCell +
       '<td class="col-rank">' + rank + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
+      '<td class="left"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _noteBadgeHtml(pid) + '</td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       // EXP_FILL_V1 (2026-06-28) — fill the EXP column from Sleeper years_exp (0 = Rookie -> "R").
@@ -3542,13 +3543,37 @@ function _wlNoteCellHtml(pid){
   const sp = _splitNoteAndUrl(raw);
   return '<td class="left col-note wl-note-cell" ' + (ro ? '' : 'title="Click to edit this note" ') + onclick + '>' + escapeHtml(sp.text) + _renderNoteLinkBadge(sp.url) + '</td>';
 }
+// NEW_NOTE_48H_V1 (2026-08-03 — PC Walter). Baseball's 📝 badge ported — the June 9
+// timestamp design, NOT the retired publish-count one: _setWlNote stamps note_saved_at
+// when the note TEXT changes; this badge renders next to the name only while the stamp
+// is under 48 hours old, then expires on its own at render time (pure read-time math).
+// The stamp lives in the list entry so it rides save/approve/history untouched.
+// Click = open the player card (Matt's Take shows the note).
+var NEW_NOTE_WINDOW_MS = 48 * 60 * 60 * 1000;   // 48 hours
+function _noteBadgeHtml(pid){
+  try {
+    var idx = _wlIndexOf(pid);
+    if(idx < 0) return '';
+    var it = _watchList[idx] || {};
+    var ts = Number(it.note_saved_at);
+    if(!ts || !isFinite(ts)) return '';
+    if((Date.now() - ts) >= NEW_NOTE_WINDOW_MS) return '';
+    var safePid = String(pid).replace(/"/g,'&quot;');
+    return '<span class="note-badge" onclick="event.stopPropagation();openFromTheLogo(&quot;' + safePid + '&quot;)" title="New note — added or changed within the last 48 hours. Click to read." role="button" tabindex="0">📝</span>';
+  } catch(e){ return ''; }
+}
 function _setWlNote(pid, text){
   if(_blockIfReadOnly('_setWlNote')) return;
   const idx = _wlIndexOf(pid);
   if(idx < 0) return;
   const cur = _watchList[idx];
   // WL_DELTA_V1: spread the existing entry so stamped baseline fields survive.
-  _watchList[idx] = Object.assign({}, (cur && typeof cur === 'object') ? cur : {}, { pid: pid, priority: _wlPriority(cur), note: String(text || '') });
+  const _prevNote = (cur && cur.note != null) ? String(cur.note) : '';
+  const _newNote = String(text || '');
+  _watchList[idx] = Object.assign({}, (cur && typeof cur === 'object') ? cur : {}, { pid: pid, priority: _wlPriority(cur), note: _newNote });
+  // NEW_NOTE_48H_V1 — stamp only when the note TEXT actually changes; clearing the note clears the stamp.
+  if(_newNote.trim() && _newNote !== _prevNote){ _watchList[idx].note_saved_at = Date.now(); }
+  else if(!_newNote.trim()){ delete _watchList[idx].note_saved_at; }
   // Persist locally right away so a typed note can never be lost to a refresh.
   // The NAS still gets it through the normal Save button -> staging -> approve.
   try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
