@@ -462,6 +462,11 @@ body.day-mode .must-watch-flash{color:#b91c1c !important;}
 .cp-table tbody td{padding:6px 6px;border-bottom:1px solid rgba(255,255,255,0.04);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
 .cp-table tbody td.cp-left{text-align:left;}
 .cp-table tbody td.cp-col-year{font-weight:700;color:var(--court);text-align:left;}
+/* DRAG_POLISH_V1 (Aug 2, 2026, late night) -- undo + drop indicator. */
+#drop-indicator-bar{display:none;position:absolute;height:5px;background:var(--court);border-radius:3px;z-index:9000;pointer-events:none;box-shadow:0 0 8px var(--court);}
+#drop-indicator-pill{display:none;position:fixed;background:var(--court);color:#0d1117;font-size:11px;font-weight:800;letter-spacing:0.04em;padding:3px 9px;border-radius:999px;z-index:9001;pointer-events:none;white-space:nowrap;}
+#undo-btn:disabled{opacity:0.4;cursor:default;}
+
 
 #compact-toggle-btn.active{background:var(--court);color:#0d1117;border-color:var(--court);}
 body.compact-mode #nbamain-wrap th:nth-child(n+11):nth-child(-n+32),
@@ -812,6 +817,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div id="search-results" class="search-results"></div>
   </div>
   <div class="toolbar-right">
+    <button class="btn btn-outline" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
     <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: hide the stat and ownership columns and stretch the Note column so Matt's notes take center stage.">&#8596; Compact</button>
     <div class="count-badge" id="count-badge">0 players</div>
     <button class="btn btn-court" id="save-btn" onclick="saveList()">💾 Save</button>
@@ -2326,6 +2332,7 @@ function addPlayerToList(playerId){
   autoSaveToNbaNAS();   // NBA_AUTOSAVE_NAS_V1 — persist to NAS on every add (baseball parity)
 }
 function removePlayerFromList(playerId){
+  snapshotForUndo();   // DRAG_POLISH_V1 -- removals are undoable too
   _watchList = _watchList.filter(item => _wlPid(item) !== playerId);
   renderWatchList();
   autoSaveToNbaNAS();   // NBA_AUTOSAVE_NAS_V1 — persist the removal so it sticks across a refresh
@@ -2333,6 +2340,7 @@ function removePlayerFromList(playerId){
 function clearList(){
   if(_watchList.length === 0) return;
   if(!confirm('Remove all ' + _watchList.length + ' players from your watch list?')) return;
+  snapshotForUndo();   // DRAG_POLISH_V1 -- even Clear All is undoable
   _watchList = [];
   renderWatchList();
   autoSaveToNbaNAS();   // NBA_AUTOSAVE_NAS_V1 — persist the clear
@@ -3218,6 +3226,108 @@ function _cpRenderRows(body, rows, cols, sortIdx, sortDir){
 }
 
 // (MATT_CONTROLS_V1 continues below)
+// ============================================================================
+// DRAG_POLISH_V1 (August 2, 2026, late night -- Walter, per the Dude).
+// Parity item 8: the three drag comforts baseball has and the twins lacked.
+// ----------------------------------------------------------------------------
+// 1) UNDO -- snapshot the list before every drop/remove/clear; ↩ Undo button
+//    in the toolbar restores the previous order and re-runs the same silent
+//    NAS autosave the mutation used (undo that doesn't persist is a lie).
+//    Baseball's shallow-copy reasoning kept: entries are shared by reference,
+//    only WHICH slot they occupy changes.
+// 2) DROP INDICATOR -- an accent bar in the exact gap where the row will land
+//    plus a floating "→ Rank N" pill by the cursor. The twins' drop semantics
+//    (insert at the target's pre-drop index) mean the landing rank is always
+//    target-index + 1; the bar shows above the target when dragging up,
+//    below when dragging down -- truthful to where the row actually lands.
+// 3) EDGE AUTO-SCROLL -- baseball's interval-based scroller (setInterval, NOT
+//    rAF -- browsers throttle rAF during drag operations, baseball's earned
+//    lesson). Generic document-level listeners, so the Rankings drag gets it
+//    free.
+// ============================================================================
+let _dragUndoStack = [];
+const DRAG_UNDO_LIMIT = 30;
+function snapshotForUndo(){
+  _dragUndoStack.push(_watchList.slice());
+  if(_dragUndoStack.length > DRAG_UNDO_LIMIT) _dragUndoStack.shift();
+  updateUndoButton();
+}
+function undoLastMove(){
+  if(_dragUndoStack.length === 0) return;
+  _watchList = _dragUndoStack.pop();
+  updateUndoButton();
+  renderWatchList();
+  autoSaveToNbaNAS();   // persist the restore the same way the mutation persisted
+}
+function updateUndoButton(){
+  const btn = document.getElementById('undo-btn');
+  if(!btn) return;
+  const n = _dragUndoStack.length;
+  btn.disabled = (n === 0);
+  btn.title = n === 0 ? 'Nothing to undo yet' : ('Undo the last move (' + n + ' step' + (n === 1 ? '' : 's') + ' banked)');
+}
+
+function _hideDropIndicator(){
+  const bar = document.getElementById('drop-indicator-bar');
+  if(bar) bar.style.display = 'none';
+  const pill = document.getElementById('drop-indicator-pill');
+  if(pill) pill.style.display = 'none';
+}
+function _positionDropIndicatorBar(rowEl, above){
+  const bar = document.getElementById('drop-indicator-bar');
+  if(!bar || !rowEl) return;
+  const rect = rowEl.getBoundingClientRect();
+  bar.style.top = ((above ? rect.top : rect.bottom) + window.scrollY - 2) + 'px';
+  bar.style.left = (rect.left + window.scrollX) + 'px';
+  bar.style.width = rect.width + 'px';
+  bar.style.display = 'block';
+}
+function _showDropIndicatorPill(clientX, clientY, rankNum){
+  const pill = document.getElementById('drop-indicator-pill');
+  if(!pill) return;
+  pill.textContent = '→ Rank ' + rankNum;
+  pill.style.left = (clientX + 14) + 'px';
+  pill.style.top  = (clientY + 18) + 'px';
+  pill.style.display = 'block';
+}
+function _dragIndicatorOnOver(e, pid, srcPid){
+  try {
+    if(srcPid == null || srcPid === pid){ _hideDropIndicator(); return; }
+    const si = _wlIndexOf(srcPid);
+    const ti = _wlIndexOf(pid);
+    if(si < 0 || ti < 0){ _hideDropIndicator(); return; }
+    const row = e.currentTarget;
+    _positionDropIndicatorBar(row, si > ti);   // dragging up -> lands above target; down -> below
+    _showDropIndicatorPill(e.clientX, e.clientY, ti + 1);
+  } catch(err){ /* indicator is cosmetic -- never let it break a drag */ }
+}
+
+// Edge auto-scroll during any HTML5 drag (baseball's scroller, ported intact).
+(function(){
+  const EDGE_ZONE = 100, MAX_STEP = 20, MIN_STEP = 4, TICK_MS = 16;
+  let intervalId = null, scrollDir = 0, scrollStep = 0;
+  function stopEdgeScroll(){
+    if(intervalId){ clearInterval(intervalId); intervalId = null; }
+    scrollDir = 0; scrollStep = 0;
+  }
+  function tick(){
+    if(!scrollDir){ stopEdgeScroll(); return; }
+    window.scrollBy(0, scrollDir * scrollStep);
+  }
+  document.addEventListener('dragover', function(e){
+    const y = e.clientY, h = window.innerHeight;
+    let dir = 0, step = 0;
+    if(y < EDGE_ZONE){ dir = -1; step = Math.max(MIN_STEP, MAX_STEP * (1 - y / EDGE_ZONE)); }
+    else if(y > h - EDGE_ZONE){ dir = 1; step = Math.max(MIN_STEP, MAX_STEP * (1 - (h - y) / EDGE_ZONE)); }
+    scrollDir = dir; scrollStep = step;
+    if(dir && !intervalId){ intervalId = setInterval(tick, TICK_MS); }
+    if(!dir){ stopEdgeScroll(); }
+  });
+  document.addEventListener('dragend', function(){ stopEdgeScroll(); _hideDropIndicator(); });
+  document.addEventListener('drop', function(){ stopEdgeScroll(); _hideDropIndicator(); }, true);
+})();
+
+// (MATT_CONTROLS_V1 continues below)
 function _ftlUpdateShowNewHint(on){
   const hint = document.getElementById('ftl-shownew-hint');
   if(!hint) return;
@@ -3397,6 +3507,7 @@ function nbaDragOver(e, pid){
   e.preventDefault();
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nba-drag-over');
   try { e.dataTransfer.dropEffect = 'move'; } catch(_){}
+  _dragIndicatorOnOver(e, pid, _nbaDragSrcPid);   // DRAG_POLISH_V1
 }
 function nbaDrop(e, pid){
   e.preventDefault();
@@ -3406,6 +3517,8 @@ function nbaDrop(e, pid){
   const si = _watchList.findIndex(item => _wlPid(item) === _nbaDragSrcPid);
   const ti = _watchList.findIndex(item => _wlPid(item) === pid);
   if(si < 0 || ti < 0) return;
+  snapshotForUndo();   // DRAG_POLISH_V1 -- bank the pre-move order
+  _hideDropIndicator();
   const [moved] = _watchList.splice(si, 1);
   _watchList.splice(ti, 0, moved);
   _nbaDragSrcPid = null;
@@ -3842,6 +3955,11 @@ bootstrap();
   </div>
   <div class="cp-body" id="cp-body"></div>
 </div>
+
+
+<!-- DRAG_POLISH_V1 -- drop indicator bar + floating rank pill -->
+<div id="drop-indicator-bar"></div>
+<div id="drop-indicator-pill"></div>
 
 <!-- ==================== SITE_CHROME_V1 FOOTER MARKUP START ==================== -->
 <footer class="w101-foot">
