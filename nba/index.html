@@ -729,6 +729,7 @@ body.compact-mode #nbamain-wrap th.col-note,body.compact-mode #nbamain-wrap td.c
   .hero{padding-top:36px}
 }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
 </head>
 <body>
 <!-- ===================== SITE_CHROME_V1 NAV MARKUP START ===================== -->
@@ -829,6 +830,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="toolbar-right">
     <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
     <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: hide the stat and ownership columns and stretch the Note column so Matt's notes take center stage.">&#8596; Compact</button>
+    <button class="btn btn-outline" id="export-btn" onclick="exportXLSXDownload()" title="Download the current list as an Excel (.xlsx) file">&#128228; Export</button>
     <div class="count-badge" id="count-badge">0 players</div>
     <button class="btn btn-court backend-only" id="save-btn" onclick="saveList()">💾 Save</button>
     <button class="btn btn-red backend-only" onclick="clearList()">Clear All</button>
@@ -1350,6 +1352,85 @@ function closeListInfoOverlay(){
   var overlay = document.getElementById('list-info-overlay');
   if(overlay) overlay.style.display = 'none';
 }
+
+// EXPORT_V1 (2026-08-03 — PC Walter). Parity item 17: baseball's CSV/Excel export
+// ported. The 📤 Export button downloads real Excel (Matt's 5/11 ask: "I hate when
+// the site's like, oh CSV"); Ctrl+Shift+E gives the CSV, matching baseball. Exports
+// the ACTIVE watch list in its current order using the page's own per-game math and
+// ownership lookups, so the file always matches what the table shows.
+function _exportRows(){
+  var headers = ['Rank','Player','Position','Team','Age','GP','Y! Rank','Y! Owned %','CBS Owned %',
+                 'PTS','REB','AST','STL','BLK','TO','FG%','3P%','FT%','Priority','Type Tags','Note'];
+  var rows = [];
+  var r1 = function(n){ return (n==null) ? '' : Math.round(n*10)/10; };
+  for(var i=0; i<_watchList.length; i++){
+    var it = _watchList[i] || {};
+    var pid = it.pid;
+    var p = (_playerDB && _playerDB[pid]) || {};
+    var s = (typeof _statsRow === 'function') ? (_statsRow(pid) || {}) : {};
+    var y = (typeof _yahooFor === 'function') ? _yahooFor(pid) : null;
+    var cv = (typeof _cbsForNum === 'function') ? _cbsForNum(pid) : null;
+    var nm = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
+    var age = (typeof nbaDecimalAgeNum === 'function') ? nbaDecimalAgeNum(p) : null;
+    var tags = _wlTypeTags(it).map(function(id){ var d=_typeTagById(id); return d ? d.label : id; }).join(' / ');
+    rows.push([
+      i+1, nm || '', p.position || '', p.team || '',
+      (age==null) ? '' : age, s.gp || '',
+      (y && y.yahoo_rank!=null) ? y.yahoo_rank : '',
+      (y && y.roster_pct!=null) ? Math.round(y.roster_pct) : '',
+      (cv!=null) ? cv : '',
+      r1(perGame(s.pts, s.gp)), r1(perGame(s.reb, s.gp)), r1(perGame(s.ast, s.gp)),
+      r1(perGame(s.stl, s.gp)), r1(perGame(s.blk, s.gp)), r1(perGame(s.to, s.gp)),
+      r1(pctOrNull(s.fgm, s.fga)), r1(pctOrNull(s.tpm, s.tpa)), r1(pctOrNull(s.ftm, s.fta)),
+      it.priority || 0, tags, (it.note!=null) ? String(it.note) : ''
+    ]);
+  }
+  return { headers: headers, rows: rows };
+}
+function _csvCell(v){ v = (v==null)?'':String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; }
+function exportCSV(){
+  if(!_watchList.length){ alert('No players to export.'); return; }
+  try {
+    var d = _exportRows();
+    var lines = [d.headers.map(_csvCell).join(',')];
+    for(var i=0;i<d.rows.length;i++){ lines.push(d.rows[i].map(_csvCell).join(',')); }
+    var blob = new Blob([lines.join('\n')], { type:'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = _exportFileBase() + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e){ console.error('[EXPORT_V1] CSV failed:', e); alert('CSV export failed. Check the console for details.'); }
+}
+function exportXLSXDownload(){
+  if(!_watchList.length){ alert('No players to export.'); return; }
+  if(typeof XLSX === 'undefined'){ alert('The Excel library did not load (offline?). Try the CSV shortcut Ctrl+Shift+E instead.'); return; }
+  try {
+    var d = _exportRows();
+    var ws = XLSX.utils.aoa_to_sheet([d.headers].concat(d.rows));
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Watch101 NBA');
+    var wbArray = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+    var blob = new Blob([wbArray], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = _exportFileBase() + '.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e){ console.error('[EXPORT_V1] Excel failed:', e); alert('Excel download failed. Check the console for details.'); }
+}
+function _exportFileBase(){
+  var d = new Date();
+  var ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  var slug = (typeof _activeList === 'function' && _activeList().folder) ? _activeList().folder : 'List';
+  return 'Watch101_' + 'NBA' + '_' + slug + '_' + ds;
+}
+// Ctrl+Shift+E = CSV, matching baseball's shortcut.
+document.addEventListener('keydown', function(e){
+  if(e.ctrlKey && e.shiftKey && e.key === 'E'){ e.preventDefault(); exportCSV(); }
+});
 
 async function switchActiveList(newId){
   if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
