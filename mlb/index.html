@@ -20106,6 +20106,30 @@ function _cpBuildTable(rows, cols, tableTag){
 
 // Phase 4 real renderer — replaces _cpRenderDiagnostic.
 // Decides which table(s) to show based on the locked thresholds, then renders them.
+// CAREER_FIT_V1 (August 2, 2026, late evening -- Walter, per the Dude). The
+// career tables could end up wider than the popup (any zoom/viewport combo),
+// hiding stats behind a side scroll. The Dude's spec: EVERY stat visible at a
+// glance, no side scroll, ever. Same proven fit pattern as AUTO_SHRINK_V1's
+// fitTables (css zoom, columns shrink together, NOT transform:scale), no
+// readability floor on purpose -- 11 columns can never get unreadably small.
+// Sorting only swaps tbody rows, so one fit at render time holds through sorts.
+function _cpFitTables(scope){
+  try {
+    var wraps = (scope || document).querySelectorAll('.cp-table-wrap');
+    wraps.forEach(function(wrap){
+      var table = wrap.querySelector('table');
+      if(!table) return;
+      table.style.zoom = '1';
+      var avail = wrap.clientWidth;
+      var natural = table.scrollWidth;
+      if(natural > 0 && avail > 0 && natural > avail){
+        table.style.zoom = (avail / natural).toFixed(4);
+      }
+    });
+  } catch(e){ /* fit is cosmetic -- never let it break a render */ }
+}
+window.addEventListener('resize', function(){ _cpFitTables(document); });
+
 function _cpRenderTables(body, data){
   if(!body) return;
   var h = (data && data.hitting) || [];
@@ -20129,6 +20153,7 @@ function _cpRenderTables(body, data){
   // Stash the rendered data + col defs on the body element so Phase 5's sort
   // handler can grab them without re-fetching or re-parsing.
   body._cpData = { hitting: h, pitching: p };
+  _cpFitTables(body);   // CAREER_FIT_V1 -- fit every stat on screen
 }
 
 // ============================================================================
