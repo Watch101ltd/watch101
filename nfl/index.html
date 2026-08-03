@@ -886,7 +886,10 @@ document.addEventListener('DOMContentLoaded',function(){
       <option value="ffpc-redraft-nfl">🏈 FFPC Re-Draft</option>
       <option value="sfb16-nfl">🐠 #SFB16</option>
       <option value="empire-nfl">✌️ Empire</option>
-    </select>
+    </select><button onclick="openListInfoOverlay()" title="What is each of these lists?" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;font-size:13px;font-weight:700;cursor:pointer;outline:none;font-family:'Nunito Sans',sans-serif;vertical-align:middle;margin-left:8px">ℹ️</button>
+    <!-- LIST_CHROME_V1 (2026-08-03) — big active-list title + tagline, baseball's LIST_PICKER_HEADER_V2 pattern in NFL colors. Updated by _updateYearLabels(). -->
+    <div id="active-list-title" style="font-size:16px;font-weight:800;color:#4ade80;letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4);margin-top:4px">List of Integrity</div>
+    <div id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">The flagship 101</div>
     <div class="logo-sub" id="logo-sub">Watch List · Loading…</div>
   </div>
   <div class="header-right">
@@ -2139,8 +2142,13 @@ function _npUpdateSortArrows(){
 // STATS_YEAR's current value naturally.
 function _updateYearLabels(){
   const sub = document.getElementById('logo-sub');
-  const listName = (typeof _activeList === 'function') ? _activeList().name : 'Watch List';  // NFL_MULTILIST_V1
-  if(sub) sub.textContent = listName + ' · ' + STATS_YEAR + ' Stats';
+  if(sub) sub.textContent = STATS_YEAR + ' Stats';   // LIST_CHROME_V1 — the list name moved up into the big title
+  // LIST_CHROME_V1 — big active-list title + tagline (baseball's LIST_PICKER_HEADER_V2 pattern)
+  const al = (typeof _activeList === 'function') ? _activeList() : null;
+  const t = document.getElementById('active-list-title');
+  const tg = document.getElementById('active-list-subtitle');
+  if(t && al) t.textContent = al.name;
+  if(tg) tg.textContent = (al && al.tag) ? al.tag : '';
 }
 
 // DYNAMIC_STATS_YEAR_V1 — derives the right stats year from Sleeper's
@@ -2508,17 +2516,42 @@ function _phoneRowTap(pid){
 // follows the active list, so every existing save/load path (autoSaveToNflNAS, loadListFromStorage,
 // the manual Save button) keys to the active list with no further changes.
 const WL_LISTS = [
-  { id: 'integrity-nfl',    folder: 'Integrity',    name: 'List of Integrity', emoji: '⭐' },
-  { id: 'dynasty-nfl',      folder: 'Dynasty',      name: 'Dynasty List',      emoji: '👑' },
-  { id: 'ffpc-redraft-nfl', folder: 'FFPC-ReDraft', name: 'FFPC Re-Draft',     emoji: '🏈' },
-  { id: 'sfb16-nfl',        folder: 'SFB16',        name: '#SFB16',            emoji: '🐠' },
-  { id: 'empire-nfl',       folder: 'Empire',       name: 'Empire',            emoji: '✌️' },
+  { id: 'integrity-nfl',    folder: 'Integrity',    name: 'List of Integrity', emoji: '⭐', tag: 'The flagship 101', blurb: 'The main Watch101 NFL watch list: the players most worth your attention right now.' },
+  { id: 'dynasty-nfl',      folder: 'Dynasty',      name: 'Dynasty List',      emoji: '👑', tag: 'The long game', blurb: 'Keepers, rookies and building blocks, valued over a multi-season horizon rather than one week of scores.' },
+  { id: 'ffpc-redraft-nfl', folder: 'FFPC-ReDraft', name: 'FFPC Re-Draft',     emoji: '🏈', tag: 'FFPC re-draft', blurb: 'The watch list for the FFPC re-draft league.' },
+  { id: 'sfb16-nfl',        folder: 'SFB16',        name: '#SFB16',            emoji: '🐠', tag: 'Scott Fish Bowl 16', blurb: 'The watch list for #SFB16, the giant industry charity tournament.' },
+  { id: 'empire-nfl',       folder: 'Empire',       name: 'Empire',            emoji: '✌️', tag: 'The Empire league', blurb: 'The watch list for the Empire league.' },
 ];
 let currentListId = 'integrity-nfl';
 let LIST_ID = 'integrity-nfl';  // follows currentListId (was a const when there was only one list)
 function _activeList(){ return WL_LISTS.find(function(l){ return l.id === currentListId; }) || WL_LISTS[0]; }
 // Per-list localStorage key. Integrity keeps the ORIGINAL key so existing saved copies aren't orphaned.
 function _wlStorageKey(){ return (currentListId === 'integrity-nfl') ? LIST_STORAGE_KEY : ('watch101_nfl_watch_list_' + currentListId); }
+// LIST_INFO_OVERLAY_V1 (2026-08-03 — PC Walter). Baseball's ℹ️ list explainer ported:
+// body built from WL_LISTS at open time (LIST_INFO_BODY_V1 pattern) and backendOnly
+// lists are NEVER described here, admin or fan (baseball's LIST_REBRAND_V1 rule).
+function openListInfoOverlay(){
+  var overlay = document.getElementById('list-info-overlay');
+  if(!overlay) return;
+  try {
+    var body = document.getElementById('list-info-body');
+    if(body && Array.isArray(WL_LISTS)){
+      body.innerHTML = WL_LISTS.filter(function(l){ return !l.backendOnly; }).map(function(l){
+        return '<div style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--turf,#16a34a);border-radius:6px">'
+          +    '<div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:2px">' + (l.emoji ? l.emoji + ' ' : '') + (l.name || l.id) + '</div>'
+          +    (l.tag ? '<div style="font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">' + l.tag + '</div>' : '')
+          +    '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + (l.blurb || '') + '</div>'
+          +  '</div>';
+      }).join('');
+    }
+  } catch(e){ console.warn('[LIST_INFO_OVERLAY_V1] populate failed:', e); }
+  overlay.style.display = 'flex';
+}
+function closeListInfoOverlay(){
+  var overlay = document.getElementById('list-info-overlay');
+  if(overlay) overlay.style.display = 'none';
+}
+
 async function switchActiveList(newId){
   if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
   currentListId = newId;
@@ -4619,6 +4652,17 @@ function _yahooLookupFmt(pid, field, isPercent){
      Football cousin of the NBA From the Logo card. Opens on a player-name click.
      v1 = shell + photo + the season-total stats the football table shows. Games deferred. -->
 <div id="ftl-backdrop" onclick="closeFromTheLogo()"></div>
+<!-- LIST_INFO_OVERLAY_V1 (2026-08-03) — the ℹ️ "what are these lists" explainer, ported from
+     baseball (LIST_INFO_OVERLAY_RESTORE_V1 shell). #list-info-body is populated by JS at open time. -->
+<div id="list-info-overlay" onclick="if(event.target===this)closeListInfoOverlay()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9998;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:640px;width:100%;padding:20px 22px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:800;color:var(--text);letter-spacing:0.04em">The Watch101 Lists</div>
+      <button onclick="closeListInfoOverlay()" title="Close" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;width:32px;height:32px;font-size:16px;font-weight:700;cursor:pointer">×</button>
+    </div>
+    <div id="list-info-body" style="display:flex;flex-direction:column;gap:14px"><!-- populated by JS at open time --></div>
+  </div>
+</div>
 <div id="ftl-overlay" role="dialog" aria-modal="true" aria-label="Player detail">
   <button class="ftl-close" onclick="closeFromTheLogo()" aria-label="Close">&times;</button>
   <div class="ftl-header">
