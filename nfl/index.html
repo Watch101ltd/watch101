@@ -575,6 +575,13 @@ td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-
 #drop-indicator-bar{display:none;position:absolute;height:5px;background:var(--turf);border-radius:3px;z-index:9000;pointer-events:none;box-shadow:0 0 8px var(--turf);}
 #drop-indicator-pill{display:none;position:fixed;background:var(--turf);color:#0d1117;font-size:11px;font-weight:800;letter-spacing:0.04em;padding:3px 9px;border-radius:999px;z-index:9001;pointer-events:none;white-space:nowrap;}
 #undo-btn:disabled{opacity:0.4;cursor:default;}
+/* READONLY_V1 (Aug 2, 2026) -- one rule hides every admin control for fans. */
+body.readonly-mode .backend-only{display:none !important;}
+body.readonly-mode table.watch-list thead th.col-handle,body.readonly-mode table.watch-list tbody td.col-handle{display:none !important;}
+body.readonly-mode table.watch-list thead th.col-action,body.readonly-mode table.watch-list tbody td:last-child{display:none !important;}
+body.readonly-mode .priority-stars{pointer-events:none;}
+body.readonly-mode .wl-note-cell{cursor:default;}
+
 
 
 /* MATT_CONTROLS_V1 (Aug 2, 2026) -- Show as NEW + Type Tags placeholder in Matt's Take. */
@@ -914,11 +921,11 @@ document.addEventListener('DOMContentLoaded',function(){
     <div id="search-results" class="search-results"></div>
   </div>
   <div class="toolbar-right">
-    <button class="btn btn-outline" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
+    <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
     <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: hide the stat and ownership columns and stretch the Note column so Matt's notes take center stage.">&#8596; Compact</button>
     <div class="count-badge" id="count-badge">0 players</div>
-    <button class="btn btn-turf" id="save-btn" onclick="saveList()">💾 Save</button>
-    <button class="btn btn-red" onclick="clearList()">Clear All</button>
+    <button class="btn btn-turf backend-only" id="save-btn" onclick="saveList()">💾 Save</button>
+    <button class="btn btn-red backend-only" onclick="clearList()">Clear All</button>
   </div>
 </div>
 
@@ -1602,6 +1609,7 @@ function _rankSplitNote(s){
   return { text:(s.slice(0,m.index)+s.slice(m.index+m[0].length)).replace(/\s+/g,' ').trim(), url:m[0] };
 }
 function editRankNote(pid, el){
+  if(_blockIfReadOnly('editRankNote')) return;
   var input = document.createElement('input');
   input.type='text'; input.className='rk-note-input';
   input.value = _rankNoteFor(pid);
@@ -1618,6 +1626,7 @@ function editRankNote(pid, el){
   input.addEventListener('keydown', function(e){ if(e.key==='Enter') input.blur(); if(e.key==='Escape'){ input.value=_rankNoteFor(pid); input.blur(); } });
 }
 function editRankNoteFromBadge(pid, badgeEl){
+  if(_blockIfReadOnly('editRankNoteFromBadge')) return;
   var tr = badgeEl && badgeEl.closest ? badgeEl.closest('tr') : null;
   var cell = tr ? tr.querySelector('.rk-note') : null;
   if(cell) editRankNote(pid, cell); else editRankNote(pid, badgeEl);
@@ -1754,6 +1763,7 @@ function _rankUpdateSortArrows(){
 // array, re-render (rank re-derives from array index), and save (localStorage + NAS per-position).
 var _rankDragSrcPid = null;
 function rankDragStart(e, pid){
+  if(_blockIfReadOnly('rankDragStart')){ e.preventDefault(); return; }
   _rankDragSrcPid = pid;
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nfl-dragging');
   try { e.dataTransfer.effectAllowed = 'move'; } catch(_){}
@@ -1796,6 +1806,7 @@ function _rankSaveLocal(){
 }
 var _rankNasSaving = {};
 async function saveRankings(pos){
+  if(_blockIfReadOnly('saveRankings')) return;
   _rankSaveLocal();
   var listId = 'rankings-nfl-' + pos.toLowerCase();
   if(_rankNasSaving[pos]) return;
@@ -2269,18 +2280,21 @@ resultsEl.addEventListener('mousedown', (e) => {
 // WATCH LIST OPERATIONS
 // ──────────────────────────────────────────────────────────────────────────
 function addPlayerToList(playerId){
+  if(_blockIfReadOnly('addPlayerToList')) return;
   if(_wlIndexOf(playerId) >= 0) return;
   _watchList.push({pid: playerId, priority: 0});
   renderWatchList();
   autoSaveToNflNAS();   // NFL_AUTOSAVE_NAS_V1 — persist to NAS on every add (baseball/NBA parity)
 }
 function removePlayerFromList(playerId){
+  if(_blockIfReadOnly('removePlayerFromList')) return;
   snapshotForUndo();   // DRAG_POLISH_V1 -- removals are undoable too
   _watchList = _watchList.filter(item => _wlPid(item) !== playerId);
   renderWatchList();
   autoSaveToNflNAS();   // NFL_AUTOSAVE_NAS_V1 — persist the removal so it sticks across a refresh
 }
 function clearList(){
+  if(_blockIfReadOnly('clearList')) return;
   if(_watchList.length === 0) return;
   if(!confirm('Remove all ' + _watchList.length + ' players from your watch list?')) return;
   snapshotForUndo();   // DRAG_POLISH_V1 -- even Clear All is undoable
@@ -2517,6 +2531,7 @@ async function switchActiveList(newId){
 }
 
 async function saveList(){
+  if(_blockIfReadOnly('saveList')) return;
   const statusEl = document.getElementById('status-bar');
   // Fallback: still always save to localStorage so we don't lose data.
   try {
@@ -2778,6 +2793,7 @@ function _wlTypeCellHtml(pid){
   return '<td class="col-type-cell"><div class="type-stack">' + (chips || '—') + '</div></td>';
 }
 function _ftlToggleTypeTag(checkboxEl){
+  if(_blockIfReadOnly('_ftlToggleTypeTag')) return;
   const pid = _ftlCurrentPid;
   if(pid == null || !checkboxEl) return;
   const idx = _wlIndexOf(pid);
@@ -2799,6 +2815,15 @@ function _ftlToggleTypeTag(checkboxEl){
 function _ftlRenderTypeTags(pid){
   const body = document.getElementById('ftl-take-typebody');
   if(!body) return;
+  if((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode()){
+    // READONLY_V1: fans see the tags, not the checkboxes.
+    const idxR = _wlIndexOf(pid);
+    const tagsR = (idxR >= 0) ? _wlTypeTags(_watchList[idxR]) : [];
+    let chips = '';
+    tagsR.forEach(function(id){ const d = _typeTagById(id); if(d) chips += '<span class="type-chip" title="' + d.tagline + '">' + d.emoji + ' ' + d.label + '</span> &nbsp;'; });
+    body.innerHTML = chips || '<em>No type tags on this player.</em>';
+    return;
+  }
   const idx = _wlIndexOf(pid);
   if(idx < 0){
     body.innerHTML = '<em>Add this player to the watch list to tag him.</em>';
@@ -3058,6 +3083,7 @@ function snapshotForUndo(){
   updateUndoButton();
 }
 function undoLastMove(){
+  if(_blockIfReadOnly('undoLastMove')) return;
   if(_dragUndoStack.length === 0) return;
   _watchList = _dragUndoStack.pop();
   updateUndoButton();
@@ -3151,6 +3177,76 @@ function _rankIndicatorOnOver(e, pid){
 })();
 
 // (MATT_CONTROLS_V1 continues below)
+// ============================================================================
+// READONLY_V1 + V2 (August 2, 2026, deep night -- Walter, per the Dude).
+// Parity item 10 -- THE launch blocker. Baseball's frontend/backend split,
+// ported with its exact hostname rule and defense-in-depth philosophy:
+//   GitHub Pages (the Dude + Matt's staging) -> full editing cockpit.
+//   ANYWHERE else (Cloudflare prod, custom domain) -> read-only fan view.
+// Layer 1: body.readonly-mode + one CSS rule hides every .backend-only element.
+// Layer 2: every admin handler opens with _blockIfReadOnly(), so dev-tools
+// bypasses, stray keyboard paths, and console calls all exit before mutating
+// anything or POSTing to the NAS.
+// Fan-USABLE by design (baseball parity): owned-players gold check
+// (browser-local), Compact, theme toggle, sorting, filters, Career popup,
+// games sections, viewing notes/tags/stars/history.
+// Lists: WL_LISTS entries may carry backendOnly:true -- those vanish from the
+// fan switcher (none are flagged yet; the mechanism is ready).
+// ============================================================================
+function _isStagingEnvironment(){
+  try {
+    const host = (window.location && window.location.hostname) || '';
+    return host.toLowerCase().includes('github');
+  } catch(e){ return false; }
+}
+function _isReadOnlyMode(){
+  try {
+    const host = (window.location && window.location.hostname) || '';
+    return !host.toLowerCase().includes('github');
+  } catch(e){ return false; }
+}
+function _blockIfReadOnly(actionName){
+  try {
+    if(_isReadOnlyMode()){
+      console.log('[READONLY_V2] blocked admin action: ' + (actionName || 'unknown') + ' (read-only mode)');
+      return true;
+    }
+  } catch(e){ /* fail-open so staging editing never breaks */ }
+  return false;
+}
+function _applyReadOnlyBodyClass(){
+  try {
+    if(_isReadOnlyMode() && document.body){
+      document.body.classList.add('readonly-mode');
+      console.log('[READONLY_V1] read-only mode active — admin controls hidden');
+    }
+  } catch(e){ console.warn('[READONLY_V1] could not apply body class:', e); }
+}
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', _applyReadOnlyBodyClass); }
+else { _applyReadOnlyBodyClass(); }
+
+(function hideBackendListsOnFanView(){
+  function run(){
+    try {
+      if(!_isReadOnlyMode()) return;
+      const sel = document.getElementById('list-switcher');
+      if(sel && typeof WL_LISTS !== 'undefined'){
+        const hide = WL_LISTS.filter(function(l){ return l.backendOnly; }).map(function(l){ return l.id; });
+        Array.prototype.slice.call(sel.options).forEach(function(opt){
+          if(hide.indexOf(opt.value) !== -1) opt.remove();
+        });
+        if(hide.indexOf(sel.value) !== -1){
+          const firstPublic = WL_LISTS.find(function(l){ return !l.backendOnly; });
+          if(firstPublic && typeof switchActiveList === 'function'){ switchActiveList(firstPublic.id); }
+        }
+      }
+    } catch(e){ /* never break the page over this */ }
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', run); }
+  else { run(); }
+})();
+
+// (MATT_CONTROLS_V1 continues below)
 function _ftlUpdateShowNewHint(on){
   const hint = document.getElementById('ftl-shownew-hint');
   if(!hint) return;
@@ -3159,6 +3255,7 @@ function _ftlUpdateShowNewHint(on){
     : 'Backend only — tick to surface this player as 🆕 NEW on the +/- column';
 }
 function _ftlSetShowAsNew(checkboxEl){
+  if(_blockIfReadOnly('_ftlSetShowAsNew')) return;
   const pid = _ftlCurrentPid;
   if(pid == null) return;
   const idx = _wlIndexOf(pid);
@@ -3228,15 +3325,18 @@ function _renderNoteLinkBadge(url){
 function _wlNoteCellHtml(pid){
   const idx = _wlIndexOf(pid);
   const raw = (idx >= 0) ? _wlNote(_watchList[idx]) : '';
+  const ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();   // READONLY_V1
   const safePid = String(pid).replace(/"/g, '&quot;');
-  const onclick = 'onclick="event.stopPropagation();editWlNote(&quot;' + safePid + '&quot;, this)"';
+  const onclick = ro ? '' : 'onclick="event.stopPropagation();editWlNote(&quot;' + safePid + '&quot;, this)"';
   if(!raw || !raw.trim()){
+    if(ro) return '<td class="placeholder col-note">—</td>';   // fans see a quiet dash, no invitation
     return '<td class="left col-note wl-note-cell" title="Click to add a note" ' + onclick + '><em class="note-add-hint">Add note...</em></td>';
   }
   const sp = _splitNoteAndUrl(raw);
-  return '<td class="left col-note wl-note-cell" title="Click to edit this note" ' + onclick + '>' + escapeHtml(sp.text) + _renderNoteLinkBadge(sp.url) + '</td>';
+  return '<td class="left col-note wl-note-cell" ' + (ro ? '' : 'title="Click to edit this note" ') + onclick + '>' + escapeHtml(sp.text) + _renderNoteLinkBadge(sp.url) + '</td>';
 }
 function _setWlNote(pid, text){
+  if(_blockIfReadOnly('_setWlNote')) return;
   const idx = _wlIndexOf(pid);
   if(idx < 0) return;
   const cur = _watchList[idx];
@@ -3248,6 +3348,7 @@ function _setWlNote(pid, text){
   renderWatchList();
 }
 function editWlNote(pid, el){
+  if(_blockIfReadOnly('editWlNote')) return;
   const idx = _wlIndexOf(pid);
   if(idx < 0) return;
   const input = document.createElement('input');
@@ -3284,6 +3385,7 @@ function _normalizeWatchList(){
   }).filter(Boolean);
 }
 function setPriority(pid, newPriority){
+  if(_blockIfReadOnly('setPriority')) return;
   const idx = _wlIndexOf(pid);
   if(idx < 0) return;
   const entry = _watchList[idx];
@@ -3325,6 +3427,7 @@ document.addEventListener('click', function(e){
 let _nflDragSrcPid = null;
 function nflDragStart(e, pid){
   if(_sortField !== null){ e.preventDefault(); return; }
+  if(_blockIfReadOnly('nflDragStart')){ e.preventDefault(); return; }
   _nflDragSrcPid = pid;
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nfl-dragging');
   try { e.dataTransfer.effectAllowed = 'move'; } catch(_){}
@@ -3376,6 +3479,7 @@ function _nflSaveLocal(){
 // button (folder picker) stays as a belt-and-suspenders manual push.
 let _nflNasSaving = false;
 async function autoSaveToNflNAS(){
+  if(_blockIfReadOnly('autoSaveToNAS')) return;
   _nflSaveLocal();  // local copy first — always succeeds, instant
   if(_nflNasSaving) return;  // coalesce rapid mutations; the latest list is what posts
   _nflNasSaving = true;
@@ -4535,11 +4639,11 @@ function _yahooLookupFmt(pid, field, isPercent){
       <div class="ftl-take-title">Matt&#39;s Take</div>
       <div class="ftl-take-note" id="ftl-take-note"><em>No notes from Matt yet.</em></div>
       <div class="ftl-take-divider"></div>
-      <div class="ftl-take-newrow" id="ftl-shownew-row" style="display:none">
+      <div class="ftl-take-newrow backend-only" id="ftl-shownew-row" style="display:none">
         <label class="ftl-shownew-pill"><input type="checkbox" id="ftl-shownew-check" onchange="_ftlSetShowAsNew(this)"> &#127381; Show as NEW</label>
         <span class="ftl-take-hint" id="ftl-shownew-hint">Backend only &#8212; tick to surface this player as &#127381; NEW on the +/- column</span>
       </div>
-      <div class="ftl-take-divider" id="ftl-shownew-div" style="display:none"></div>
+      <div class="ftl-take-divider backend-only" id="ftl-shownew-div" style="display:none"></div>
       <div class="ftl-take-prow"><span class="ftl-take-plabel">Priority</span><span id="ftl-take-stars"></span><span class="ftl-take-hint">Backend only &#8212; click stars to rank Matt's add-priority (5 = highest)</span></div>
       <div class="ftl-take-divider"></div>
       <div class="ftl-take-typerow"><span class="ftl-take-plabel">Type Tags</span><span class="ftl-take-hint">Backend only &#8212; check all that apply</span></div>
