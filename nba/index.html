@@ -423,6 +423,23 @@ td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-
 .must-watch-flash{color:var(--red,#ef4444) !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}
 @keyframes must-watch-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
 body.day-mode .must-watch-flash{color:#b91c1c !important;}
+/* NBA_GAMES_V1 (Aug 2, 2026, late evening) -- Previous / Upcoming Games cards. */
+#ftl-overlay .ftl-gl-note{font-size:12px;color:var(--text3);padding:6px 2px;font-style:italic;}
+#ftl-overlay .ftl-gl-summary{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:9px 13px;margin-bottom:10px;background:var(--surface2,rgba(255,255,255,0.02));border:1px solid var(--border2);border-left:3px solid var(--court);border-radius:6px;font-size:12px;color:var(--text2);}
+#ftl-overlay .ftl-gl-summary b{color:var(--text1,#fff);font-variant-numeric:tabular-nums;}
+#ftl-overlay .ftl-gl-tablewrap{overflow-x:auto;border:1px solid var(--border2);border-radius:6px;}
+#ftl-overlay .ftl-gl-table{width:100%;border-collapse:collapse;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;}
+#ftl-overlay .ftl-gl-table th{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--court);font-weight:700;padding:7px 7px;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap;}
+#ftl-overlay .ftl-gl-table th.gl-left,#ftl-overlay .ftl-gl-table td.gl-left{text-align:left;}
+#ftl-overlay .ftl-gl-table td{padding:6px 7px;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap;}
+#ftl-overlay .ftl-gl-table tr:last-child td{border-bottom:none;}
+#ftl-overlay .ftl-gl-table td.gl-res.win{color:#10b981;font-weight:600;}
+#ftl-overlay .ftl-gl-table td.gl-res.loss{color:#ec4899;font-weight:600;}
+#ftl-overlay .ftl-gl-table tr.gl-totals td{border-top:2px solid var(--court);color:var(--text1,#fff);font-weight:700;}
+#ftl-overlay .ftl-up-row{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid var(--border2);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--text2);}
+#ftl-overlay .ftl-up-row .up-date{min-width:74px;color:var(--text1,#fff);font-weight:700;}
+#ftl-overlay .ftl-up-row .up-vs{color:var(--text3);font-size:11px;text-transform:uppercase;min-width:20px;}
+#ftl-overlay .ftl-up-row .up-opp{font-weight:800;color:var(--court);letter-spacing:0.03em;}
 #compact-toggle-btn.active{background:var(--court);color:#0d1117;border-color:var(--court);}
 body.compact-mode #nbamain-wrap th:nth-child(n+11):nth-child(-n+32),
 body.compact-mode #nbamain-wrap td:nth-child(n+11):nth-child(-n+32){display:none !important;}
@@ -2901,6 +2918,144 @@ function _ftlSyncOwnedCheck(pid){
 applyOwnedRowFill();   // boot: paint any owned rows saved from earlier sessions
 
 // (MATT_CONTROLS_V1 continues below)
+// ============================================================================
+// NBA_GAMES_V1 (August 2, 2026, late evening -- Walter, per the Dude).
+// ----------------------------------------------------------------------------
+// Previous Games (last 7 played, per-game box scores, W/L + score) + Upcoming
+// Games (next 7 on the schedule, opponent only -- the Dude's spec: no
+// probable-starter machinery, that's a baseball thing). Data: this NAS's new
+// /nba/gamelog/:pid and /nba/schedule/:year (Sleeper-backed, cached 24h
+// server-side). Upcoming merges the current season + the next one, so the
+// 2026-27 slate appears automatically the day Sleeper publishes it. If the
+// container hasn't been rebuilt with the endpoints yet, both cards show a
+// quiet note and the rest of the card is unaffected.
+// ============================================================================
+const _ftlSchedNbaCache = {};
+const _ftlGamelogNbaCache = {};
+
+function _ftlNbaSeason(){
+  // Season label = starting year (Sleeper convention). Oct-Dec = this year's
+  // season; Jan-Sep = last year's. Auto-rolls, no annual hand bump.
+  const now = new Date();
+  return (now.getMonth() >= 9) ? now.getFullYear() : now.getFullYear() - 1;
+}
+async function _ftlFetchNbaSchedule(year){
+  if (_ftlSchedNbaCache[year]) return _ftlSchedNbaCache[year];
+  const res = await fetch(SERVER_URL + '/nba/schedule/' + year);
+  if (!res.ok) throw new Error('schedule HTTP ' + res.status);
+  const data = await res.json();
+  _ftlSchedNbaCache[year] = (data && data.games) || [];
+  return _ftlSchedNbaCache[year];
+}
+async function _ftlFetchNbaGamelog(pid){
+  if (_ftlGamelogNbaCache[pid]) return _ftlGamelogNbaCache[pid];
+  const res = await fetch(SERVER_URL + '/nba/gamelog/' + encodeURIComponent(pid));
+  if (!res.ok) throw new Error('gamelog HTTP ' + res.status);
+  const data = await res.json();
+  _ftlGamelogNbaCache[pid] = data || {};
+  return _ftlGamelogNbaCache[pid];
+}
+function _ftlGlDate(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  if (!m) return iso || '—';
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[Number(m[2]) - 1] + ' ' + Number(m[3]);
+}
+function _ftlGlNum(v){ return (typeof v === 'number' && isFinite(v)) ? Math.round(v) : '—'; }
+
+async function _ftlRenderNbaGames(pid){
+  const prevEl = document.getElementById('ftl-prevgames-body');
+  const nextEl = document.getElementById('ftl-nextgames-body');
+  if (!prevEl || !nextEl) return;
+  const p = _playerDB && _playerDB[pid];
+  const team = p && p.team;
+  prevEl.innerHTML = '<div class="ftl-gl-note">Loading…</div>';
+  nextEl.innerHTML = '<div class="ftl-gl-note">Loading…</div>';
+
+  // ---- Previous 7 ----
+  try {
+    const log = await _ftlFetchNbaGamelog(pid);
+    if (_ftlCurrentPid !== pid) return;
+    const games = (log && log.games) || [];
+    if (!games.length){
+      prevEl.innerHTML = '<div class="ftl-gl-note">No games played yet.</div>';
+    } else {
+      let w = 0, l = 0;
+      const sums = { pts: 0, reb: 0, ast: 0 };
+      games.forEach(function(g){
+        if (g.result === 'W') w++;
+        if (g.result === 'L') l++;
+        sums.pts += (g.stats.pts || 0); sums.reb += (g.stats.reb || 0); sums.ast += (g.stats.ast || 0);
+      });
+      const n = games.length;
+      let html = '<div class="ftl-gl-summary"><b>L' + n + '</b><span><b>' + w + '-' + l + '</b></span>'
+               + '<span><b>' + (sums.pts / n).toFixed(1) + '</b> PPG</span>'
+               + '<span><b>' + (sums.reb / n).toFixed(1) + '</b> RPG</span>'
+               + '<span><b>' + (sums.ast / n).toFixed(1) + '</b> APG</span>'
+               + '<span>' + log.season + '-' + String(Number(log.season) + 1).slice(2) + ' season</span></div>';
+      html += '<div class="ftl-gl-tablewrap"><table class="ftl-gl-table"><thead><tr>'
+            + '<th class="gl-left">Date</th><th class="gl-left">Opp</th><th class="gl-left">Res</th>'
+            + '<th>Min</th><th>Pts</th><th>Reb</th><th>Ast</th><th>Stl</th><th>Blk</th><th>3P</th><th>TO</th></tr></thead><tbody>';
+      const t = { min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tpm: 0, to: 0 };
+      games.forEach(function(g){
+        const s = g.stats || {};
+        const mins = (typeof s.sp === 'number') ? Math.round(s.sp / 60) : null;
+        if (mins != null) t.min += mins;
+        t.pts += (s.pts||0); t.reb += (s.reb||0); t.ast += (s.ast||0); t.stl += (s.stl||0); t.blk += (s.blk||0); t.tpm += (s.tpm||0); t.to += (s.to||0);
+        let resCell;
+        if (g.result){
+          const cls = g.result === 'W' ? ' win' : (g.result === 'L' ? ' loss' : '');
+          resCell = '<td class="gl-left gl-res' + cls + '">' + g.result + ' ' + (g.score || '') + '</td>';
+        } else {
+          resCell = '<td class="gl-left">—</td>';
+        }
+        html += '<tr><td class="gl-left">' + _ftlGlDate(g.date) + '</td>'
+              + '<td class="gl-left">' + (g.away ? '@ ' : '') + (g.opp || '—') + '</td>' + resCell
+              + '<td>' + (mins != null ? mins : '—') + '</td>'
+              + '<td>' + _ftlGlNum(s.pts) + '</td><td>' + _ftlGlNum(s.reb) + '</td><td>' + _ftlGlNum(s.ast) + '</td>'
+              + '<td>' + _ftlGlNum(s.stl) + '</td><td>' + _ftlGlNum(s.blk) + '</td><td>' + _ftlGlNum(s.tpm) + '</td><td>' + _ftlGlNum(s.to) + '</td></tr>';
+      });
+      html += '<tr class="gl-totals"><td class="gl-left">Avg</td><td class="gl-left"></td><td class="gl-left"></td>'
+            + '<td>' + (t.min / n).toFixed(0) + '</td><td>' + (t.pts / n).toFixed(1) + '</td><td>' + (t.reb / n).toFixed(1) + '</td>'
+            + '<td>' + (t.ast / n).toFixed(1) + '</td><td>' + (t.stl / n).toFixed(1) + '</td><td>' + (t.blk / n).toFixed(1) + '</td>'
+            + '<td>' + (t.tpm / n).toFixed(1) + '</td><td>' + (t.to / n).toFixed(1) + '</td></tr>';
+      html += '</tbody></table></div>';
+      prevEl.innerHTML = html;
+    }
+  } catch(e){
+    if (_ftlCurrentPid === pid) prevEl.innerHTML = '<div class="ftl-gl-note">Game log unavailable right now.</div>';
+  }
+
+  // ---- Upcoming 7 ----
+  try {
+    if (!team){ nextEl.innerHTML = '<div class="ftl-gl-note">No team — no schedule.</div>'; return; }
+    const season = _ftlNbaSeason();
+    const both = await Promise.all([
+      _ftlFetchNbaSchedule(season).catch(function(){ return []; }),
+      _ftlFetchNbaSchedule(season + 1).catch(function(){ return []; })
+    ]);
+    if (_ftlCurrentPid !== pid) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const upcoming = both[0].concat(both[1]).filter(function(g){
+      return g && g.date && g.date >= today && g.status !== 'complete' && g.status !== 'canceled'
+          && (g.home === team || g.away === team);
+    }).sort(function(a, b){ return a.date < b.date ? -1 : 1; }).slice(0, 7);
+    if (!upcoming.length){
+      nextEl.innerHTML = '<div class="ftl-gl-note">No upcoming games on the schedule yet — next season\'s slate lands here the day the league publishes it.</div>';
+    } else {
+      nextEl.innerHTML = upcoming.map(function(g){
+        const home = (g.home === team);
+        return '<div class="ftl-up-row"><span class="up-date">' + _ftlGlDate(g.date) + '</span>'
+             + '<span class="up-vs">' + (home ? 'vs' : '@') + '</span>'
+             + '<span class="up-opp">' + (home ? g.away : g.home) + '</span></div>';
+      }).join('');
+    }
+  } catch(e){
+    if (_ftlCurrentPid === pid) nextEl.innerHTML = '<div class="ftl-gl-note">Schedule unavailable right now.</div>';
+  }
+}
+
+// (MATT_CONTROLS_V1 continues below)
 function _ftlUpdateShowNewHint(on){
   const hint = document.getElementById('ftl-shownew-hint');
   if(!hint) return;
@@ -3430,6 +3585,7 @@ function openFromTheLogo(pid){
   _ftlSyncOwnedCheck(pid);
   _ftlRenderTypeTags(pid);
   _dismissMustWatchOnOpen(pid);
+  _ftlRenderNbaGames(pid);
   _ftlRenderRankHistory(pid);
 
   document.getElementById('ftl-backdrop').classList.add('visible');
@@ -3496,6 +3652,18 @@ bootstrap();
       <div class="ftl-take-title">101 Rank History</div>
       <div class="ftl-chartwrap"><svg id="ftl-rank-chart" viewBox="0 0 800 220" preserveAspectRatio="xMidYMid meet"></svg></div>
       <div class="ftl-chart-foot"><span id="ftl-chart-oldest">&#8212;</span><span id="ftl-chart-latest">&#8212;</span></div>
+    </div>
+  </div>
+  <div class="ftl-takewrap" id="ftl-gameswrap">
+    <div class="ftl-take-card">
+      <div class="ftl-take-title">Previous Games</div>
+      <div class="ftl-take-hint" style="margin:0 0 10px">Per-game box scores &#8226; newest first &#8226; last 7 played</div>
+      <div id="ftl-prevgames-body"><div class="ftl-gl-note">Loading&#8230;</div></div>
+    </div>
+    <div class="ftl-take-card">
+      <div class="ftl-take-title">Upcoming Games</div>
+      <div class="ftl-take-hint" style="margin:0 0 10px">Next 7 on the schedule</div>
+      <div id="ftl-nextgames-body"><div class="ftl-gl-note">Loading&#8230;</div></div>
     </div>
   </div>
 </div>
