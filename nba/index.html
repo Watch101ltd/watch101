@@ -415,7 +415,7 @@ td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-
 #ftl-overlay .ftl-take-typebody{font-size:12px;color:var(--text3);font-style:italic;padding:4px 2px 2px;}
 /* TYPE_TAGS_SEED_V1 + MUST_WATCH_FLASH_V1 (Aug 2, 2026 evening). */
 .type-stack{display:flex;flex-wrap:wrap;gap:2px;}
-.type-chip{font-size:14px;line-height:1.2;cursor:default;}
+.type-chip{font-size:14px;line-height:1.2;cursor:pointer;}  /* TYPE_TAG_TOOLTIPS_V1 — chips are clickable now */
 #ftl-overlay .ftl-typegrid{display:flex;flex-wrap:wrap;gap:8px 18px;padding:4px 0;}
 #ftl-overlay .ftl-typetag{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--text1,#fff);cursor:pointer;font-style:normal;}
 #ftl-overlay .ftl-typetag input{width:15px;height:15px;cursor:pointer;}
@@ -2912,8 +2912,97 @@ function _wlTypeCellHtml(pid){
     const def = _typeTagById(tags[i]);
     if(def) chips += '<span class="type-chip" title="' + def.label + ' — ' + def.tagline + '">' + def.emoji + '</span>';
   }
-  return '<td class="col-type-cell"><div class="type-stack">' + (chips || '—') + '</div></td>';
+  return '<td class="col-type-cell"><div class="type-stack" data-pid="' + pid + '">' + (chips || '—') + '</div></td>';   // TYPE_TAG_TOOLTIPS_V1 — data-pid feeds the click delegator
 }
+// TYPE_TAG_TOOLTIPS_V1 (2026-08-03 — PC Walter). Baseball's tooltip engine ported
+// (parity item 15): click a .type-chip or .type-stack → dark panel next to the click
+// showing every tag (emoji + label + tagline). Click anywhere else closes it. One
+// document-level CAPTURE listener so the click never reaches the row and opens the
+// player card (baseball's "fighting" lesson). The panel lives in document.body
+// (appended once, reused) so cell overflow can never clip it. Stays put on scroll
+// (Jay's 5/23 spec on baseball); closes on resize. This is ALSO item 1's plumbing:
+// when the emoji vocabulary lands in TYPE_TAGS_V1, the tooltips just work.
+function _ensureTypeTagTooltipEl(){
+  var el = document.getElementById('type-tag-tooltip');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'type-tag-tooltip';
+  el.style.cssText =
+    'position:absolute;display:none;background:#1a1a1a;color:#fff;' +
+    'border:1px solid var(--court,#ea580c);border-radius:10px;padding:14px 18px;' +
+    'font-family:"Nunito Sans",sans-serif;font-size:13px;line-height:1.4;' +
+    'box-shadow:0 6px 24px rgba(0,0,0,0.7);z-index:9999;pointer-events:none;' +
+    'max-width:420px;min-width:300px;';
+  document.body.appendChild(el);
+  return el;
+}
+function _showTypeTagTooltip(pid, anchorEl){
+  var idx = _wlIndexOf(pid);
+  var tags = (idx >= 0) ? _wlTypeTags(_watchList[idx]) : [];
+  if(!tags.length) return;
+  var p = (_playerDB && _playerDB[pid]) || null;
+  var nm = p ? (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()) : '(unnamed)';
+  var safeName = String(nm).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  var el = _ensureTypeTagTooltipEl();
+  var html = '<div style="font-weight:800;letter-spacing:0.08em;font-size:11px;color:var(--court-bright,#fb923c);text-transform:uppercase;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid rgba(251,146,60,0.3)">'
+           + safeName + ' &mdash; Tag Key</div>';
+  for(var i=0; i<tags.length; i++){
+    var def = _typeTagById(tags[i]);
+    if(!def) continue;
+    var safeLabel   = String(def.label).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var safeTagline = String(def.tagline || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var rowTopPad = (i === 0) ? '0' : '10px';
+    html +=
+      '<div style="display:flex;align-items:flex-start;gap:12px;padding-top:' + rowTopPad + '">' +
+        '<div style="font-size:24px;line-height:1.2;flex:0 0 auto">' + def.emoji + '</div>' +
+        '<div style="flex:1 1 auto">' +
+          '<div style="color:var(--court-bright,#fb923c);font-weight:700;font-size:14px;line-height:1.25">' + safeLabel + '</div>' +
+          (safeTagline ? '<div style="color:#fff;font-weight:600;font-size:12px;line-height:1.35;margin-top:2px">' + safeTagline + '</div>' : '') +
+        '</div>' +
+      '</div>';
+  }
+  el.innerHTML = html;
+  var rect = anchorEl.getBoundingClientRect();
+  var left = rect.left + window.scrollX;
+  var top  = rect.bottom + window.scrollY + 6;
+  el.style.left = left + 'px';
+  el.style.top  = top + 'px';
+  el.style.display = 'block';
+  var elRect = el.getBoundingClientRect();
+  var overflowRight = elRect.right - window.innerWidth;
+  if(overflowRight > 0){ el.style.left = (left - overflowRight - 12) + 'px'; }
+}
+function _hideTypeTagTooltip(){
+  var el = document.getElementById('type-tag-tooltip');
+  if(el) el.style.display = 'none';
+}
+document.addEventListener('click', function(ev){
+  try {
+    var chipOrStack = null;
+    var node = ev.target;
+    while(node && node !== document.body){
+      if(node.classList && (node.classList.contains('type-chip') || node.classList.contains('type-stack'))){
+        chipOrStack = node; break;
+      }
+      node = node.parentElement;
+    }
+    if(chipOrStack){
+      ev.stopPropagation();   // never let the click reach the row → no player-card open
+      ev.preventDefault();
+      var stack = chipOrStack.classList.contains('type-stack') ? chipOrStack : chipOrStack.closest('.type-stack');
+      var pid = stack ? stack.getAttribute('data-pid') : null;
+      if(!pid){ _hideTypeTagTooltip(); return; }
+      _showTypeTagTooltip(pid, stack);   // show FIRST — the dismiss below re-renders the table and detaches the anchor
+      if(chipOrStack.classList.contains('type-chip') && (chipOrStack.textContent || '').trim() === '🚨'){
+        _dismissMustWatchOnOpen(pid);   // 🚨 chip click acknowledges the pulse (baseball semantics; ⏭️ baseball itself orders dismiss-first and shares this detached-anchor edge — back-port candidate)
+      }
+      return;
+    }
+    _hideTypeTagTooltip();
+  } catch(e){ console.warn('[TYPE_TAG_TOOLTIPS_V1] delegator failed:', e); }
+}, true);  // useCapture=true — intercept BEFORE row-level listeners fire
+window.addEventListener('resize', _hideTypeTagTooltip);
+
 function _ftlToggleTypeTag(checkboxEl){
   if(_blockIfReadOnly('_ftlToggleTypeTag')) return;
   const pid = _ftlCurrentPid;
