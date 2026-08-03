@@ -1837,6 +1837,8 @@ body:not(.readonly-mode) .frontend-only{display:none !important;}
 /* DEEPCUT_TAGS_SHOWN_V1 (June 9, 2026 — PC Walter, per the Dude) — the FRONT-FACING selected-tag chips
    shown under the Priority stars (emoji + label). Read-only display; the editable picker is .ppo-type-tags-block. */
 #player-page-overlay .ppo-tags-shown-block{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);}
+.ppo-tags-shown-title{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold,#f0a500);font-weight:700;margin-bottom:6px;}  /* TAGBOX_ALWAYS_V1 */
+.ppo-tags-shown-empty{font-size:13px;color:var(--text3,#888);font-style:italic;}
 #player-page-overlay .ppo-tags-shown-list{display:flex;flex-wrap:wrap;gap:8px 10px;}
 #player-page-overlay .ppo-tag-shown{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;background:var(--surface2);
   border:1px solid var(--border2);border-left:2px solid var(--gold);border-radius:6px;font-size:13px;color:var(--text2);font-weight:700;}
@@ -17438,22 +17440,26 @@ function openPlayerPage(p){
   // tags (so untagged players don't get an empty block). Distinct from the BACKEND picker below (which
   // is the checkbox editor); this is read-only display.
   var _shownTags = Array.isArray(p.type_tags) ? p.type_tags : [];
-  if(_shownTags.length){
-    var _shownRows = '';
-    for(var _si=0; _si<_shownTags.length; _si++){
-      var _sdef = (typeof _typeTagById === 'function') ? _typeTagById(_shownTags[_si]) : null;
-      if(!_sdef) continue;
-      _shownRows += '<span class="ppo-tag-shown" title="' + (_sdef.tagline||'').replace(/"/g,'&quot;') + '">'
-        + '<span class="ppo-tag-shown-emoji">' + _sdef.emoji + '</span>'
-        + '<span class="ppo-tag-shown-label">' + _sdef.label + '</span>'
-        + '</span>';
-    }
-    if(_shownRows){
-      notesHtml += '<div class="ppo-tags-shown-block">'
-        + '<div class="ppo-tags-shown-list">' + _shownRows + '</div>'
-        + '</div>';
-    }
+  // TAGBOX_ALWAYS_V1 (Aug 2, 2026, deep night — Walter, per the Dude): the twins'
+  // fan cards ALWAYS show a labeled Type Tags box ("No type tags on this player."
+  // when empty) and the Dude liked that better than baseball's render-nothing —
+  // the box should sit there ready to fill as emojis get assigned. Baseball now
+  // matches its kids: heading + chips, or heading + the empty line.
+  var _shownRows = '';
+  for(var _si=0; _si<_shownTags.length; _si++){
+    var _sdef = (typeof _typeTagById === 'function') ? _typeTagById(_shownTags[_si]) : null;
+    if(!_sdef) continue;
+    _shownRows += '<span class="ppo-tag-shown" title="' + (_sdef.tagline||'').replace(/"/g,'&quot;') + '">'
+      + '<span class="ppo-tag-shown-emoji">' + _sdef.emoji + '</span>'
+      + '<span class="ppo-tag-shown-label">' + _sdef.label + '</span>'
+      + '</span>';
   }
+  notesHtml += '<div class="ppo-tags-shown-block">'
+    + '<div class="ppo-tags-shown-title">Type Tags</div>'
+    + (_shownRows
+        ? '<div class="ppo-tags-shown-list">' + _shownRows + '</div>'
+        : '<div class="ppo-tags-shown-empty"><em>No type tags on this player.</em></div>')
+    + '</div>';
 
   // TYPE_TAGS_V1 (April 27, 2026) — BACKEND_ONLY type-tag picker.
   // Sibling to MARK_FLAMING_V1 / MARK_NOTE_FRESH_V1. Multi-select: a player
