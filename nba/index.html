@@ -1850,6 +1850,7 @@ function rankDragOver(e, pid){
   e.preventDefault();
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nba-drag-over');
   try { e.dataTransfer.dropEffect = 'move'; } catch(_){}
+  _rankIndicatorOnOver(e, pid);   // DRAG_POLISH_V1 addendum
 }
 function rankDrop(e, pid){
   e.preventDefault();
@@ -1859,6 +1860,7 @@ function rankDrop(e, pid){
   var si = arr.indexOf(_rankDragSrcPid);
   var ti = arr.indexOf(pid);
   if(si < 0 || ti < 0) return;
+  _hideDropIndicator();   // DRAG_POLISH_V1 addendum
   var moved = arr.splice(si, 1)[0];
   arr.splice(ti, 0, moved);
   _rankDragSrcPid = null;
@@ -3300,6 +3302,24 @@ function _dragIndicatorOnOver(e, pid, srcPid){
     _positionDropIndicatorBar(row, si > ti);   // dragging up -> lands above target; down -> below
     _showDropIndicatorPill(e.clientX, e.clientY, ti + 1);
   } catch(err){ /* indicator is cosmetic -- never let it break a drag */ }
+}
+
+// DRAG_POLISH_V1 addendum (same night, the Dude's ask): the indicator on the
+// RANKINGS drag too. Same truth math -- rankings drop inserts at the target's
+// pre-drop index in the MANUAL order array, so the pill's rank is ti+1 even
+// while a stat sort is temporarily showing a different view (the drop snaps
+// back to manual order, so the pill tells you where he ACTUALLY lands).
+function _rankIndicatorOnOver(e, pid){
+  try {
+    const srcPid = _rankDragSrcPid;
+    if(srcPid == null || srcPid === pid){ _hideDropIndicator(); return; }
+    const arr = _rankings[_rankPos];
+    if(!arr){ _hideDropIndicator(); return; }
+    const si = arr.indexOf(srcPid), ti = arr.indexOf(pid);
+    if(si < 0 || ti < 0){ _hideDropIndicator(); return; }
+    _positionDropIndicatorBar(e.currentTarget, si > ti);
+    _showDropIndicatorPill(e.clientX, e.clientY, ti + 1);
+  } catch(err){ /* cosmetic */ }
 }
 
 // Edge auto-scroll during any HTML5 drag (baseball's scroller, ported intact).
