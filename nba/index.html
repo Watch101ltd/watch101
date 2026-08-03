@@ -792,7 +792,10 @@ document.addEventListener('DOMContentLoaded',function(){
       <option value="keeper-nba">🔒 Keeper List</option>
       <option value="shl-nba">🏔️ SHL Deep League</option>
       <option value="sleeper-nba">🎯 Sleeper Points</option>
-    </select>
+    </select><button onclick="openListInfoOverlay()" title="What is each of these lists?" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;font-size:13px;font-weight:700;cursor:pointer;outline:none;font-family:'Nunito Sans',sans-serif;vertical-align:middle;margin-left:8px">ℹ️</button>
+    <!-- LIST_CHROME_V1 (2026-08-03) — big active-list title + tagline, baseball's LIST_PICKER_HEADER_V2 pattern in NBA colors. Updated by _updateYearLabels(). -->
+    <div id="active-list-title" style="font-size:16px;font-weight:800;color:var(--court-bright,#fb923c);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4);margin-top:4px">List of Integrity</div>
+    <div id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">The flagship 101</div>
     <div class="logo-sub" id="logo-sub">Watch List · Loading…</div>
   </div>
   <div class="header-right">
@@ -1303,8 +1306,8 @@ const MAX_SEARCH_RESULTS = 12;
 // now a let that follows the active list, so every existing save/load path (autoSaveToNbaNAS,
 // loadListFromStorage, the manual Save button) keys to the active list with no further changes.
 const WL_LISTS = [
-  { id: 'integrity-nba', folder: 'Integrity', name: 'List of Integrity', emoji: '⭐' },
-  { id: 'dynasty-nba',   folder: 'Dynasty',   name: 'Dynasty List',      emoji: '👑' },
+  { id: 'integrity-nba', folder: 'Integrity', name: 'List of Integrity', emoji: '⭐', tag: 'The flagship 101', blurb: 'The main Watch101 NBA watch list: the players most worth your attention right now.' },
+  { id: 'dynasty-nba',   folder: 'Dynasty',   name: 'Dynasty List',      emoji: '👑', tag: 'The long game', blurb: 'Keepers, stashes and building blocks, valued over a multi-season horizon rather than the latest box score.' },
   // MATT_NBA_LISTS_V1 (2026-07-30, PC Walter, per the Dude). Four lists Matt asked for in his
   // 'Watch101 ideas' email of 2026-07-28. His own descriptions, kept so nobody has to re-derive them:
   //   Weekly  = weekly league, 9 cat, H2H playoffs
@@ -1313,16 +1316,41 @@ const WL_LISTS = [
   //   Sleeper = weekly, points, H2H, playoffs  (the Sleeper APP, not sleeper picks)
   // Each one ALSO needs a matching entry in server.js WATCH_LISTS_NBA and an <option> in
   // #list-switcher above. Three places, or the list half-works.
-  { id: 'weekly-nba',     folder: 'Weekly',      name: 'Weekly List',       emoji: '📅' },
-  { id: 'keeper-nba',     folder: 'Keeper',      name: 'Keeper List',       emoji: '🔒' },
-  { id: 'shl-nba',        folder: 'SHL',         name: 'SHL Deep League',   emoji: '🏔️' },
-  { id: 'sleeper-nba',    folder: 'Sleeper',     name: 'Sleeper Points',    emoji: '🎯' },
+  { id: 'weekly-nba',     folder: 'Weekly',      name: 'Weekly List',       emoji: '📅', tag: 'Weekly lineups · 9-cat · H2H', blurb: 'Built for the weekly-lineup league: nine categories, head-to-head, playoffs. Full-week value beats one big night here.' },
+  { id: 'keeper-nba',     folder: 'Keeper',      name: 'Keeper List',       emoji: '🔒', tag: 'Daily moves · 13 cats · deeper', blurb: 'The NBA Keeper league: daily lineup moves and thirteen categories, so depth, flexibility and schedule all matter.' },
+  { id: 'shl-nba',        folder: 'SHL',         name: 'SHL Deep League',   emoji: '🏔️', tag: '20+ team keeper · 9-cat with minutes', blurb: 'The SHL: a deep keeper league of twenty plus teams, nine categories with minutes in the mix. End-of-bench names matter here.' },
+  { id: 'sleeper-nba',    folder: 'Sleeper',     name: 'Sleeper Points',    emoji: '🎯', tag: 'Weekly · points · H2H', blurb: 'The points league on the Sleeper app: weekly lineups, head-to-head, playoffs. Total production over category balance.' },
 ];
 let currentListId = 'integrity-nba';
 let LIST_ID = 'integrity-nba';  // follows currentListId (was a const when there was only one list)
 function _activeList(){ return WL_LISTS.find(function(l){ return l.id === currentListId; }) || WL_LISTS[0]; }
 // Per-list localStorage key. Integrity keeps the ORIGINAL key so existing saved copies aren't orphaned.
 function _wlStorageKey(){ return (currentListId === 'integrity-nba') ? LIST_STORAGE_KEY : ('watch101_nba_watch_list_' + currentListId); }
+// LIST_INFO_OVERLAY_V1 (2026-08-03 — PC Walter). Baseball's ℹ️ list explainer ported:
+// body built from WL_LISTS at open time (LIST_INFO_BODY_V1 pattern) and backendOnly
+// lists are NEVER described here, admin or fan (baseball's LIST_REBRAND_V1 rule).
+function openListInfoOverlay(){
+  var overlay = document.getElementById('list-info-overlay');
+  if(!overlay) return;
+  try {
+    var body = document.getElementById('list-info-body');
+    if(body && Array.isArray(WL_LISTS)){
+      body.innerHTML = WL_LISTS.filter(function(l){ return !l.backendOnly; }).map(function(l){
+        return '<div style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--court,#ea580c);border-radius:6px">'
+          +    '<div style="font-size:14px;font-weight:700;color:var(--court-bright,#fb923c);margin-bottom:2px">' + (l.emoji ? l.emoji + ' ' : '') + (l.name || l.id) + '</div>'
+          +    (l.tag ? '<div style="font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">' + l.tag + '</div>' : '')
+          +    '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + (l.blurb || '') + '</div>'
+          +  '</div>';
+      }).join('');
+    }
+  } catch(e){ console.warn('[LIST_INFO_OVERLAY_V1] populate failed:', e); }
+  overlay.style.display = 'flex';
+}
+function closeListInfoOverlay(){
+  var overlay = document.getElementById('list-info-overlay');
+  if(overlay) overlay.style.display = 'none';
+}
+
 async function switchActiveList(newId){
   if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
   currentListId = newId;
@@ -2238,8 +2266,13 @@ function _npUpdateSortArrows(){
 
 function _updateYearLabels(){
   const sub = document.getElementById('logo-sub');
-  const listName = (typeof _activeList === 'function') ? _activeList().name : 'Watch List';  // NBA_MULTILIST_V1
-  if(sub) sub.textContent = listName + ' · ' + STATS_YEAR + ' Stats';
+  if(sub) sub.textContent = STATS_YEAR + ' Stats';   // LIST_CHROME_V1 — the list name moved up into the big title
+  // LIST_CHROME_V1 — big active-list title + tagline (baseball's LIST_PICKER_HEADER_V2 pattern)
+  const al = (typeof _activeList === 'function') ? _activeList() : null;
+  const t = document.getElementById('active-list-title');
+  const tg = document.getElementById('active-list-subtitle');
+  if(t && al) t.textContent = al.name;
+  if(tg) tg.textContent = (al && al.tag) ? al.tag : '';
 }
 
 async function _deriveStatsYear(){
@@ -4038,6 +4071,17 @@ bootstrap();
      The basketball cousin of the baseball Deep Cut. Opens when a player name is clicked.
      v1 = shell + photo + the per-game stats we have. Upcoming/Previous games deferred. -->
 <div id="ftl-backdrop" onclick="closeFromTheLogo()"></div>
+<!-- LIST_INFO_OVERLAY_V1 (2026-08-03) — the ℹ️ "what are these lists" explainer, ported from
+     baseball (LIST_INFO_OVERLAY_RESTORE_V1 shell). #list-info-body is populated by JS at open time. -->
+<div id="list-info-overlay" onclick="if(event.target===this)closeListInfoOverlay()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9998;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:640px;width:100%;padding:20px 22px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:800;color:var(--text);letter-spacing:0.04em">The Watch101 Lists</div>
+      <button onclick="closeListInfoOverlay()" title="Close" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;width:32px;height:32px;font-size:16px;font-weight:700;cursor:pointer">×</button>
+    </div>
+    <div id="list-info-body" style="display:flex;flex-direction:column;gap:14px"><!-- populated by JS at open time --></div>
+  </div>
+</div>
 <div id="ftl-overlay" role="dialog" aria-modal="true" aria-label="Player detail">
   <button class="ftl-close" onclick="closeFromTheLogo()" aria-label="Close">&times;</button>
   <div class="ftl-header">
