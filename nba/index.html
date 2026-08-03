@@ -870,11 +870,11 @@ document.addEventListener('DOMContentLoaded',function(){
     </div>
     <div>
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
-      <input id="wlpf-owned" type="number" min="0" max="100" placeholder="any" disabled title="No NBA Yahoo data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+      <input id="wlpf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
     </div>
     <div>
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
-      <input id="wlpf-cbsowned" type="number" min="0" max="100" placeholder="any" disabled title="No NBA CBS data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+      <input id="wlpf-cbsowned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
     </div>
     <div>
       <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">POSITION <span style="color:var(--text3);font-weight:400">(any checked)</span></div>
@@ -979,11 +979,11 @@ document.addEventListener('DOMContentLoaded',function(){
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
-        <input id="nbapf-owned" type="number" min="0" max="100" placeholder="any" disabled title="No NBA Yahoo data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+        <input id="nbapf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
-        <input id="nbapf-cbsowned" type="number" min="0" max="100" placeholder="any" disabled title="No NBA CBS data yet" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text3);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none;cursor:not-allowed;opacity:0.6">
+        <input id="nbapf-cbsowned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
       </div>
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">POSITION <span style="color:var(--text3);font-weight:400">(any checked)</span></div>
@@ -1417,7 +1417,7 @@ async function _applyInstantDateRange(selectId){
 
 // NBA_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
 // Functional: team / minPts / age (NBA has that data). %Owned + date range are inert (no data).
-let _wlFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, posPositions:[] };
+let _wlFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
 // NBA_MULTIPOS_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude + Matt). Sleeper NBA records carry a
 // fantasy_positions ARRAY (e.g. ['PG','SG'] for Hinrich/Augustin, ['PF','SF','SG'] for Butler), not just
 // the single p.position. The old filter only matched p.position, so multi-position guys showed under one
@@ -1435,7 +1435,7 @@ function _wlfNum(id){ const el=document.getElementById(id); if(!el) return null;
 // NBA_MIN_GAMES_FILTER_V1 — minGames added to the gate. A "games-only" Apply must
 // register as an active filter or renderWatchList would skip the filter pass entirely
 // (the exact bug the position filter hit on 2026-06-06 — see POSITION_FILTER_V1).
-function _wlFilterActive(){ return _wlFilters && (_wlFilters.team!=='ALL' || _wlFilters.minPts!=null || _wlFilters.minGames!=null || _wlFilters.ageMin!=null || _wlFilters.ageMax!=null || (_wlFilters.posPositions && _wlFilters.posPositions.length)); }
+function _wlFilterActive(){ return _wlFilters && (_wlFilters.team!=='ALL' || _wlFilters.minPts!=null || _wlFilters.minGames!=null || _wlFilters.ageMin!=null || _wlFilters.ageMax!=null || _wlFilters.maxOwned!=null || _wlFilters.maxCbsOwned!=null || (_wlFilters.posPositions && _wlFilters.posPositions.length)); }
 async function applyNbaWlFilters(){
   _wlFilters.team   = (document.getElementById('wlpf-team')||{}).value || 'ALL';
   _wlFilters.minPts = _wlfNum('wlpf-pts');
@@ -1443,17 +1443,19 @@ async function applyNbaWlFilters(){
   _wlFilters.ageMin = _wlfNum('wlpf-agemin');
   _wlFilters.ageMax = _wlfNum('wlpf-agemax');
   _wlFilters.posPositions = Array.from(document.querySelectorAll('.wlpf-pos:checked')).map(cb => cb.value);
+  _wlFilters.maxOwned = _wlfNum('wlpf-owned');       // OWNED_FILTERS_LIVE_V1
+  _wlFilters.maxCbsOwned = _wlfNum('wlpf-cbsowned'); // OWNED_FILTERS_LIVE_V1
   await _applyDateRangeFrom('wlpf-daterange');   // date range is Apply-gated too
   renderWatchList();
 }
 function resetNbaWlFilters(){
-  ['wlpf-pts','wlpf-games','wlpf-agemin','wlpf-agemax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['wlpf-pts','wlpf-games','wlpf-agemin','wlpf-agemax','wlpf-owned','wlpf-cbsowned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const t=document.getElementById('wlpf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('wlpf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('nbapf-daterange'); if(dr2) dr2.value='season';
   document.querySelectorAll('.wlpf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
-  _wlFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, posPositions:[] };
+  _wlFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
   renderWatchList();
 }
 // Build the TEAM dropdown from the teams actually present on the watch list (no abbr guessing).
@@ -1480,6 +1482,15 @@ function _wlPassesFilter(pid){
     const a=nbaDecimalAgeNum(p);
     if(F.ageMin!=null && (a==null || a<F.ageMin)) return false;
     if(F.ageMax!=null && (a==null || a>F.ageMax)) return false;
+  }
+  if(F.maxOwned!=null){   // OWNED_FILTERS_LIVE_V1 — no Yahoo owned => excluded from a max-owned filter
+    const y=(typeof _yahooFor==='function') ? _yahooFor(pid) : null;
+    const ow=(y && y.roster_pct!=null) ? Number(y.roster_pct) : null;
+    if(ow==null || ow>F.maxOwned) return false;
+  }
+  if(F.maxCbsOwned!=null){   // OWNED_FILTERS_LIVE_V1 — no CBS owned => excluded from a max-CBS filter
+    const cv=(typeof _cbsForNum==='function') ? _cbsForNum(pid) : null;
+    if(cv==null || Number(cv)>F.maxCbsOwned) return false;
   }
   return true;
 }
@@ -1968,8 +1979,8 @@ async function loadRankingsFromNAS(){
 // the watch list's _sortField, so sorting the pool never disturbs the watch list.
 // Stage 3 adds the per-row "+ Add" button (the Add column is a placeholder now).
 // ──────────────────────────────────────────────────────────────────────────
-let _npSortField = 'pts';   // default sort column = points
-let _npSortDir   = 'desc';  // default direction = highest first
+let _npSortField = 'yrank';   // POOL_DEFAULT_YRANK_V1 — default = Yahoo rank (the Dude's June 6 'swap when Yahoo lands' decision, executed 8/3)
+let _npSortDir   = 'asc';   // POOL_DEFAULT_YRANK_V1 — best rank first
 let _npBuilt     = false;   // first-open guard so we only header-wire once
 
 // NBA_POOL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — pool filter state. Only the
@@ -1977,7 +1988,7 @@ let _npBuilt     = false;   // first-open guard so we only header-wire once
 // Date Range + Max %Owned (Y!) + Max %Owned (CBS) for visual consistency with baseball, but
 // those are inert (no date-range pipeline, no Yahoo/CBS data on NBA yet) — their inputs are
 // disabled in the HTML so nothing pretends to filter on absent data.
-let _npFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, posPositions:[] };
+let _npFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
 let _npTeamSelectBuilt = false;
 
 function _npfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
@@ -1989,17 +2000,19 @@ async function applyNbaPoolFilters(){
   _npFilters.ageMin = _npfNum('nbapf-agemin');
   _npFilters.ageMax = _npfNum('nbapf-agemax');
   _npFilters.posPositions = Array.from(document.querySelectorAll('.nbapf-pos:checked')).map(cb => cb.value);
+  _npFilters.maxOwned = _npfNum('nbapf-owned');       // OWNED_FILTERS_LIVE_V1
+  _npFilters.maxCbsOwned = _npfNum('nbapf-cbsowned'); // OWNED_FILTERS_LIVE_V1
   await _applyDateRangeFrom('nbapf-daterange');   // date range is Apply-gated too
   renderNbaPlayers();
 }
 function resetNbaPoolFilters(){
-  ['nbapf-pts','nbapf-games','nbapf-agemin','nbapf-agemax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['nbapf-pts','nbapf-games','nbapf-agemin','nbapf-agemax','nbapf-owned','nbapf-cbsowned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const t=document.getElementById('nbapf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('nbapf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('wlpf-daterange'); if(dr2) dr2.value='season';
   document.querySelectorAll('.nbapf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
-  _npFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, posPositions:[] };
+  _npFilters = { team:'ALL', minPts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
   renderNbaPlayers();
 }
 // Populate the TEAM dropdown from the real teams present in _playerDB (no abbr guessing).
@@ -2013,7 +2026,7 @@ function _npBuildTeamSelect(){
   _npTeamSelectBuilt=true;
 }
 
-function _npStatValue(field, p, s){
+function _npStatValue(field, p, s, pid){
   switch(field){
     case 'name': return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
     case 'pos':  return p.position || 'zzz';
@@ -2039,6 +2052,10 @@ function _npStatValue(field, p, s){
     case 'fgpct': return pctOrNull(s.fgm, s.fga);
     case 'tppct': return pctOrNull(s.tpm, s.tpa);
     case 'ftpct': return pctOrNull(s.ftm, s.fta);
+    // POOL_OWNERSHIP_SORT_V1 — Y!Rank / Y!Owned / CBS sort cases (mirror the watch-list's; nulls sink via the sort's missing-value rule)
+    case 'yrank':  { const y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?Number(y.yahoo_rank):null; }
+    case 'yowned': { const y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):null; }
+    case 'cbsowned': { var cv=_cbsForNum(pid); return (cv!=null)?Number(cv):null; }
     default: return null;
   }
 }
@@ -2072,6 +2089,15 @@ function _npSortedIds(){
       if(F.ageMin != null && (a == null || a < F.ageMin)) continue;
       if(F.ageMax != null && (a == null || a > F.ageMax)) continue;
     }
+    if(F.maxOwned != null){   // OWNED_FILTERS_LIVE_V1
+      const y=(typeof _yahooFor==='function') ? _yahooFor(id) : null;
+      const ow=(y && y.roster_pct!=null) ? Number(y.roster_pct) : null;
+      if(ow == null || ow > F.maxOwned) continue;   // no Yahoo owned => excluded from a max-owned filter
+    }
+    if(F.maxCbsOwned != null){   // OWNED_FILTERS_LIVE_V1
+      const cv=(typeof _cbsForNum==='function') ? _cbsForNum(id) : null;
+      if(cv == null || Number(cv) > F.maxCbsOwned) continue;   // no CBS owned => excluded from a max-CBS filter
+    }
     ids.push(id);
   }
   const f = _npSortField;
@@ -2079,8 +2105,8 @@ function _npSortedIds(){
     const pa = _playerDB[a], pb = _playerDB[b];
     const sa = _statsRow(a);
     const sb = _statsRow(b);
-    let av = _npStatValue(f, pa, sa);
-    let bv = _npStatValue(f, pb, sb);
+    let av = _npStatValue(f, pa, sa, a);
+    let bv = _npStatValue(f, pb, sb, b);
     const aMissing = (av == null), bMissing = (bv == null);
     if(aMissing && bMissing) return 0;
     if(aMissing) return 1;     // missing always sinks
@@ -2105,8 +2131,8 @@ function renderNbaPlayers(){
   if(typeof _npBuildTeamSelect === 'function') _npBuildTeamSelect();  // NBA_POOL_STATFILTER_V1
   const ids = _npSortedIds();
   // NBA_POOL_STATFILTER_V1 — show filtered-vs-total when any functional filter is active.
-  const _fActive = _npFilters && (_npFilters.team!=='ALL' || _npFilters.minPts!=null || _npFilters.minGames!=null || _npFilters.ageMin!=null || _npFilters.ageMax!=null);
-  if(statusEl) statusEl.textContent = (_fActive ? ('Showing ' + ids.length.toLocaleString() + ' filtered') : (ids.length.toLocaleString() + ' NBA players')) + ' · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='pts'?' (default)':'');
+  const _fActive = _npFilters && (_npFilters.team!=='ALL' || _npFilters.minPts!=null || _npFilters.minGames!=null || _npFilters.ageMin!=null || _npFilters.ageMax!=null || _npFilters.maxOwned!=null || _npFilters.maxCbsOwned!=null);
+  if(statusEl) statusEl.textContent = (_fActive ? ('Showing ' + ids.length.toLocaleString() + ' filtered') : (ids.length.toLocaleString() + ' NBA players')) + ' · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='yrank'?' (Yahoo rank)':'');
   tbody.innerHTML = ids.map(pid => {
     const p = _playerDB[pid];
     const s = _statsRow(pid);
