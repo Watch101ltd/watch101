@@ -556,6 +556,16 @@ td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-
 #ftl-overlay .ftl-shownew-pill input{accent-color:var(--turf);width:15px;height:15px;cursor:pointer;}
 #ftl-overlay .ftl-take-prow,#ftl-overlay .ftl-take-typerow{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:10px 0 6px;}
 #ftl-overlay .ftl-take-typebody{font-size:12px;color:var(--text3);font-style:italic;padding:4px 2px 2px;}
+/* TYPE_TAGS_SEED_V1 + MUST_WATCH_FLASH_V1 (Aug 2, 2026 evening). */
+.type-stack{display:flex;flex-wrap:wrap;gap:2px;}
+.type-chip{font-size:14px;line-height:1.2;cursor:default;}
+#ftl-overlay .ftl-typegrid{display:flex;flex-wrap:wrap;gap:8px 18px;padding:4px 0;}
+#ftl-overlay .ftl-typetag{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--text1,#fff);cursor:pointer;font-style:normal;}
+#ftl-overlay .ftl-typetag input{width:15px;height:15px;cursor:pointer;}
+#ftl-overlay .ftl-typegrid-note{font-size:11px;color:var(--text3);margin-top:8px;}
+.must-watch-flash{color:var(--red,#ef4444) !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}
+@keyframes must-watch-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
+body.day-mode .must-watch-flash{color:#b91c1c !important;}
 #compact-toggle-btn.active{background:var(--turf);color:#0d1117;border-color:var(--turf);}
 body.compact-mode #nflmain-wrap th:nth-child(n+12):nth-child(-n+24),
 body.compact-mode #nflmain-wrap td:nth-child(n+12):nth-child(-n+24){display:none !important;}
@@ -2337,13 +2347,13 @@ function renderWatchList(){
       _handleCell +
       '<td class="col-rank">' + rank + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left"><span class="player-name ftl-clickable" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
+      '<td class="left"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       // EXP_FILL_V1 (2026-06-28) — fill the EXP column from Sleeper years_exp (0 = Rookie -> "R").
       '<td' + (p.years_exp != null && p.years_exp !== '' ? '' : ' class="placeholder"') + '>' + (p.years_exp != null && p.years_exp !== '' ? (Number(p.years_exp) === 0 ? 'R' : p.years_exp) : '—') + '</td>' +
       renderDeltaCell(pid) +   // WL_DELTA_V1 -- live +/- vs previous publish
-      '<td class="placeholder">—</td>' +   // Type (planned)
+      _wlTypeCellHtml(pid) +   // TYPE_TAGS_SEED_V1 -- emoji chips
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       _wlNoteCellHtml(pid) +   // WL_NOTES_V1 -- live Note column
       // YAHOO_DATA_V1: y!rank, y!owned cells. CBS_OWNED_V1: cbs owned cell (joins by name+team).
@@ -2691,6 +2701,161 @@ function toggleCompactMode(el){
 // vocabulary -- parity item 1). "Backend only" labels match baseball; actual
 // fan-gating arrives with the read-only mode port (parity item 10).
 // ============================================================================
+// ============================================================================
+// TYPE_TAGS_SEED_V1 + MUST_WATCH_FLASH_V1 + OWNED_PLAYERS_V1 (August 2, 2026,
+// evening session -- Walter, per the Dude). Checklist items 5 + 6, and the
+// DATA PLUMBING for item 1.
+// ----------------------------------------------------------------------------
+// TYPE TAGS: baseball's model exactly -- entry.type_tags = array of tag ids,
+// emoji chips in the Type column, checkbox grid in Matt's Take. The vocabulary
+// below is SEEDED WITH ONE TAG: Must Watch (the site's namesake; certain to
+// exist in every sport). When the Dude + Matt pick the rest, ADD THEM TO THE
+// ARRAY BELOW -- everything else (chips, checkboxes, sort) is data-driven,
+// zero new code.
+// MUST-WATCH RED: name pulses red while the player carries the must_watch tag;
+// opening his card acknowledges it and stops the pulse for the session
+// (baseball's _dismissMustWatch semantics).
+// OWNED PLAYERS: baseball's gold "I own this player" -- browser-local
+// (localStorage, per sport), gold pill in the player card, owned rows get the
+// gold-tinted cell fill via one injected <style> with attribute selectors
+// (static CSS -- it follows re-renders for free; only re-inject on toggle).
+// ============================================================================
+const TYPE_TAGS_V1 = [
+  { id: 'must_watch', emoji: '🚨', label: 'Must Watch', tagline: 'Appointment viewing — do not miss this player.' },
+  // ⬇️ THE REST OF THIS SPORT'S VOCABULARY LANDS HERE after the Dude + Matt
+  //    pick it (parity item 1). Shape: { id, emoji, label, tagline }.
+];
+function _typeTagById(id){
+  for(let i = 0; i < TYPE_TAGS_V1.length; i++){ if(TYPE_TAGS_V1[i].id === id) return TYPE_TAGS_V1[i]; }
+  return null;
+}
+function _wlTypeTags(item){
+  if(!item || typeof item !== 'object' || !Array.isArray(item.type_tags)) return [];
+  return item.type_tags;
+}
+function _wlTypeCellHtml(pid){
+  const idx = _wlIndexOf(pid);
+  const tags = (idx >= 0) ? _wlTypeTags(_watchList[idx]) : [];
+  if(!tags.length) return '<td class="placeholder col-type-cell">—</td>';
+  let chips = '';
+  for(let i = 0; i < tags.length; i++){
+    const def = _typeTagById(tags[i]);
+    if(def) chips += '<span class="type-chip" title="' + def.label + ' — ' + def.tagline + '">' + def.emoji + '</span>';
+  }
+  return '<td class="col-type-cell"><div class="type-stack">' + (chips || '—') + '</div></td>';
+}
+function _ftlToggleTypeTag(checkboxEl){
+  const pid = _ftlCurrentPid;
+  if(pid == null || !checkboxEl) return;
+  const idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  const tagId = checkboxEl.dataset.tagId;
+  if(!tagId) return;
+  const entry = _watchList[idx];
+  const upd = (entry && typeof entry === 'object') ? Object.assign({}, entry) : { pid: pid };
+  upd.pid = pid;
+  const tags = Array.isArray(upd.type_tags) ? upd.type_tags.slice() : [];
+  const at = tags.indexOf(tagId);
+  if(checkboxEl.checked && at === -1) tags.push(tagId);
+  if(!checkboxEl.checked && at !== -1) tags.splice(at, 1);
+  upd.type_tags = tags;
+  _watchList[idx] = upd;
+  try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
+  renderWatchList();
+}
+function _ftlRenderTypeTags(pid){
+  const body = document.getElementById('ftl-take-typebody');
+  if(!body) return;
+  const idx = _wlIndexOf(pid);
+  if(idx < 0){
+    body.innerHTML = '<em>Add this player to the watch list to tag him.</em>';
+    return;
+  }
+  const tags = _wlTypeTags(_watchList[idx]);
+  let html = '<div class="ftl-typegrid">';
+  for(let i = 0; i < TYPE_TAGS_V1.length; i++){
+    const t = TYPE_TAGS_V1[i];
+    const on = tags.indexOf(t.id) !== -1;
+    html += '<label class="ftl-typetag"><input type="checkbox" data-tag-id="' + t.id + '"'
+          + (on ? ' checked' : '') + ' onchange="_ftlToggleTypeTag(this)"> '
+          + t.emoji + ' ' + t.label + '</label>';
+  }
+  html += '</div><div class="ftl-typegrid-note"><em>More tags land here once the Dude and Matt pick this sport\'s vocabulary.</em></div>';
+  body.innerHTML = html;
+}
+
+let _mustWatchAcknowledged = new Set();
+function _isMustWatchActive(pid){
+  const idx = _wlIndexOf(pid);
+  if(idx < 0) return false;
+  if(_wlTypeTags(_watchList[idx]).indexOf('must_watch') === -1) return false;
+  if(_mustWatchAcknowledged.has(String(pid))) return false;
+  return true;
+}
+function _mustWatchFlashClass(pid){
+  return _isMustWatchActive(pid) ? ' must-watch-flash' : '';
+}
+function _dismissMustWatchOnOpen(pid){
+  if(!_isMustWatchActive(pid)) return;
+  _mustWatchAcknowledged.add(String(pid));
+  renderWatchList();   // repaint behind the overlay -- pulse stops for the session
+}
+
+const OWNED_KEY = 'fw101_owned_nfl';
+let ownedPlayers = [];
+try { const _ownRaw = localStorage.getItem(OWNED_KEY); if(_ownRaw) ownedPlayers = JSON.parse(_ownRaw) || []; } catch(e){ ownedPlayers = []; }
+function isOwnedPlayer(pid){ return ownedPlayers.indexOf(String(pid)) !== -1; }
+function _ownedSave(){
+  try { localStorage.setItem(OWNED_KEY, JSON.stringify(ownedPlayers)); } catch(e){ /* private mode / quota -- just will not persist */ }
+}
+function toggleOwnedPlayer(pid){
+  pid = String(pid || '');
+  if(!pid) return;
+  const i = ownedPlayers.indexOf(pid);
+  if(i === -1) ownedPlayers.push(pid); else ownedPlayers.splice(i, 1);
+  _ownedSave();
+  applyOwnedRowFill();
+}
+function applyOwnedRowFill(){
+  try {
+    let el = document.getElementById('owned-players-style');
+    if(!el){ el = document.createElement('style'); el.id = 'owned-players-style'; document.head.appendChild(el); }
+    let css = '#ftl-own-wrap{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:7px 13px;'
+            + 'border:1px solid var(--gold,#f0a500);border-radius:999px;cursor:pointer;font-weight:700;'
+            + 'font-size:13px;letter-spacing:.02em;color:var(--gold,#f0a500);background:rgba(240,165,0,.08);'
+            + '-webkit-user-select:none;user-select:none;transition:background .15s}'
+            + '#ftl-own-wrap:hover{background:rgba(240,165,0,.18)}'
+            + '#ftl-own-check{width:16px;height:16px;accent-color:var(--gold,#f0a500);cursor:pointer;margin:0}';
+    if(ownedPlayers.length){
+      // Fill the CELLS, not the row (baseball's lesson: row striping paints the
+      // td, so a tr background never shows). Attribute selectors are static CSS
+      // -- they follow re-renders automatically.
+      const sel  = ownedPlayers.map(function(id){ return 'tr[data-nfl-pid="' + id + '"] td'; }).join(',');
+      const selH = ownedPlayers.map(function(id){ return 'tr[data-nfl-pid="' + id + '"]:hover td'; }).join(',');
+      css += sel  + '{background:var(--owned-row,#253545) !important}';
+      css += selH + '{background:var(--owned-row-hover,#2f4258) !important}';
+      const selD  = ownedPlayers.map(function(id){ return 'body.day-mode tr[data-nfl-pid="' + id + '"] td'; }).join(',');
+      const selDH = ownedPlayers.map(function(id){ return 'body.day-mode tr[data-nfl-pid="' + id + '"]:hover td'; }).join(',');
+      css += selD  + '{background:#f3e8c8 !important}';
+      css += selDH + '{background:#ecdba6 !important}';
+    }
+    el.textContent = css;
+  } catch(e){ /* styling only -- never let this break a render */ }
+}
+function _ftlToggleOwned(checkboxEl){
+  if(_ftlCurrentPid == null) return;
+  toggleOwnedPlayer(_ftlCurrentPid);
+  if(checkboxEl) checkboxEl.checked = isOwnedPlayer(_ftlCurrentPid);
+}
+function _ftlSyncOwnedCheck(pid){
+  const wrap = document.getElementById('ftl-own-wrap');
+  const check = document.getElementById('ftl-own-check');
+  if(wrap) wrap.style.display = 'inline-flex';
+  if(check) check.checked = isOwnedPlayer(pid);
+}
+applyOwnedRowFill();   // boot: paint any owned rows saved from earlier sessions
+
+// (MATT_CONTROLS_V1 continues below)
 function _ftlUpdateShowNewHint(on){
   const hint = document.getElementById('ftl-shownew-hint');
   if(!hint) return;
@@ -2970,8 +3135,7 @@ function sortValueFor(field, p, s, pid){
     }
     case 'exp':    { const e = (_playerDB[pid]||{}).years_exp; return (e != null && e !== '') ? Number(e) : null; }  // EXP_FILL_V1
     case 'delta': return _wlDeltaFor(pid);   // WL_DELTA_V1 (null = unstamped, sorts to bottom)
-    case 'type':
-      return null;
+    case 'type': { const _ti=_wlIndexOf(pid); const _tt=(_ti>=0)?_wlTypeTags(_watchList[_ti]):[]; return _tt.length ? _tt.length : null; }   // TYPE_TAGS_SEED_V1 (tag count, nulls bottom)
     // CBS_OWNED_V1: real CBS rostered % (null sorts to bottom until data exists)
     case 'cbsowned':
       return _cbsLookupNum(pid);
@@ -3433,6 +3597,9 @@ function openFromTheLogo(pid){
   if(hr && typeof STATS_YEAR !== 'undefined') hr.textContent = STATS_YEAR + ' Season Stats';
 
   _ftlCurrentPid = pid;
+  _ftlSyncOwnedCheck(pid);
+  _ftlRenderTypeTags(pid);
+  _dismissMustWatchOnOpen(pid);
   _ftlRenderScheduleResults(pid);
   _ftlRenderRankHistory(pid);
 
@@ -4061,6 +4228,7 @@ function _yahooLookupFmt(pid, field, isPercent){
       <div class="ftl-name" id="ftl-name"></div>
       <div class="ftl-sub" id="ftl-sub"></div>
       <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num"></span></div>
+      <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label></div>
     </div>
     <div class="ftl-statwrap" id="ftl-statwrap"></div>
   </section>
