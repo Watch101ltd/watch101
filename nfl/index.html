@@ -548,6 +548,13 @@ td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-
 /* NOTE_WIDTH_V1 + COMPACT_MODE_V1 (Aug 2, 2026) -- notes are the focal point. */
 .note-add-hint{color:var(--text3,#888);font-style:italic;}
 .note-badge{cursor:pointer;margin-left:4px;font-size:12px;}  /* NEW_NOTE_48H_V1 */
+/* TIERS_V1 STAGE 1 (2026-08-03) — spacer rows give each tier tab its own visual home
+   (baseball's TIER_SPACER_ROW_V1); swatches are the modal's color palette ring. */
+.tier-spacer-row { height: 28px; background: transparent; pointer-events: none; }
+.tier-spacer-row td { border: none !important; padding: 0 !important; background: transparent !important; }
+.tier-swatch { width:32px; height:32px; border-radius:50%; border:2px solid var(--border); cursor:pointer; padding:0; transition:transform 0.1s, box-shadow 0.1s; }
+.tier-swatch:hover { transform:scale(1.1); }
+.tier-swatch.selected { border-color:#eab308; box-shadow:0 0 0 3px rgba(234,179,8,0.35); transform:scale(1.1); }
 /* WL_DELTA_V1 (Aug 2, 2026) -- blue NEW badge, baseball's clone. */
 .rdelta-new-badge{display:inline-block;background:rgba(59,130,246,0.15);color:var(--blue,#3b82f6);border:1px solid rgba(59,130,246,0.4);border-radius:4px;font-size:9px;font-weight:800;letter-spacing:0.04em;padding:1px 5px;white-space:nowrap;}
 /* CAREER_POPUP_V1 (Aug 2, 2026) -- Career by Season popup, baseball's cp styles in this sport's accent. */
@@ -929,6 +936,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
     <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: hide the stat and ownership columns and stretch the Note column so Matt's notes take center stage.">&#8596; Compact</button>
     <button class="btn btn-outline" id="export-btn" onclick="exportXLSXDownload()" title="Download the current list as an Excel (.xlsx) file">&#128228; Export</button>
+    <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of players">&#127991;&#65039; Tier</button>
     <div class="count-badge" id="count-badge">0 players</div>
     <button class="btn btn-turf backend-only" id="save-btn" onclick="saveList()">💾 Save</button>
     <button class="btn btn-red backend-only" onclick="clearList()">Clear All</button>
@@ -2438,6 +2446,8 @@ function renderWatchList(){
   }).join('');
   // PHONE_NOTE_STAR_NFL_V1 — paint the phone list from the SAME ids the table just rendered (no drift).
   if(typeof _renderPhoneList==='function'){ try{ _renderPhoneList(sortedIds); }catch(e){} }
+  // TIERS_V1 — repaint tier brackets after every table paint (spacers re-inject inside renderTiers).
+  try { if(typeof renderTiers === 'function') setTimeout(renderTiers, 0); } catch(e){}
 }
 
 // ═══════ PHONE_NOTE_STAR_NFL_V1 (June 10, 2026 — PC Walter, per the Dude, mockup-approved:
@@ -2633,6 +2643,360 @@ document.addEventListener('keydown', function(e){
   if(e.ctrlKey && e.shiftKey && e.key === 'E'){ e.preventDefault(); exportCSV(); }
 });
 
+// ============================================================================
+// TIERS_V1 STAGE 1 (2026-08-03 — PC Walter, per the Dude). Baseball's editorial
+// tier system ported: data model + anti-wipe guard + save/load + bracket render
+// + Create/Edit/Delete modal. STAGE 2 (group drag + armed pulse) and STAGE 3
+// (removal self-heal hardening) come later — see the parity checklist item 19.
+// Tier shape matches the public-cut trim script: { id, name, color, start_pid,
+// end_pid, created_at }. Order-anchored to the ACTIVE list, per list.
+// ============================================================================
+const TIER_COLOR_HEX = {
+  red:'#ef4444', orange:'#f97316', gold:'#eab308', green:'#22c55e',
+  blue:'#3b82f6', purple:'#a855f7', pink:'#ec4899', gray:'#94a3b8'
+};
+let currentTiers = [];
+// TIERS_SNAPSHOT_GUARD_V1 — baseball's May 22 lesson, ported whole: tiers got
+// silently wiped TWICE in one day by saves that ran while currentTiers was
+// empty for the wrong reason. An empty tiers save is only trusted after an
+// EXPLICIT user action (create/edit/delete). Otherwise rescue from the load
+// snapshot or localStorage.
+let _tiersLoadedOk = false;
+let _tiersSnapshotAtLoad = [];
+let _tiersUserMutated = false;
+let _tierEditingId = null;
+
+function _tiersLsKey(){ return _wlStorageKey() + '_tiers'; }
+
+function _tiersForSave(){
+  try {
+    if(Array.isArray(currentTiers) && currentTiers.length > 0) return currentTiers;
+    if(_tiersUserMutated) return [];   // the user really deleted them all
+    if(Array.isArray(_tiersSnapshotAtLoad) && _tiersSnapshotAtLoad.length > 0){
+      console.warn('[TIERS_SNAPSHOT_GUARD_V1] refusing to save empty tiers with no user action — rescued from the load snapshot.');
+      return _tiersSnapshotAtLoad.slice();
+    }
+    try {
+      const raw = localStorage.getItem(_tiersLsKey());
+      if(raw){ const arr = JSON.parse(raw); if(Array.isArray(arr) && arr.length){ console.warn('[TIERS_SNAPSHOT_GUARD_V1] rescued tiers from localStorage.'); return arr; } }
+    } catch(e){}
+    return [];
+  } catch(e){ return Array.isArray(currentTiers) ? currentTiers : []; }
+}
+function _tiersPersistLocal(){
+  try { localStorage.setItem(_tiersLsKey(), JSON.stringify(Array.isArray(currentTiers) ? currentTiers : [])); } catch(e){}
+}
+
+// ---- Modal (baseball Phase C/E, adapted to the twins' overlay idiom) ----
+function _tierPopulateForm(tierToEdit){
+  var nameEl  = document.getElementById('tier-name');
+  var colorEl = document.getElementById('tier-color');
+  var startEl = document.getElementById('tier-start');
+  var endEl   = document.getElementById('tier-end');
+  var errEl   = document.getElementById('tier-error');
+  if(nameEl)  nameEl.value  = '';
+  if(colorEl) colorEl.value = '';
+  if(errEl){  errEl.style.display = 'none'; errEl.textContent = ''; }
+  document.querySelectorAll('#tier-color-swatches .tier-swatch.selected')
+    .forEach(function(b){ b.classList.remove('selected'); });
+  if(startEl && endEl && Array.isArray(_watchList)){
+    var optsHtml = '<option value="">Select…</option>';
+    _watchList.forEach(function(it, idx){
+      var pid = it && it.pid;
+      if(pid == null) return;
+      var p = (_playerDB && _playerDB[pid]) || {};
+      var nm = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || ('(pid ' + pid + ')');
+      var label = '#' + (idx + 1) + '  ' + nm;
+      optsHtml += '<option value="' + String(pid).replace(/"/g,'&quot;') + '">' + label.replace(/</g,'&lt;') + '</option>';
+    });
+    startEl.innerHTML = optsHtml;
+    endEl.innerHTML   = optsHtml;
+  }
+  if(tierToEdit){
+    if(nameEl)  nameEl.value  = tierToEdit.name || '';
+    if(startEl) startEl.value = String(tierToEdit.start_pid || '');
+    if(endEl)   endEl.value   = String(tierToEdit.end_pid || '');
+    if(tierToEdit.color) selectTierColor(tierToEdit.color);
+  }
+}
+function _tierConfigureMode(isEdit){
+  var title   = document.getElementById('tier-modal-title');
+  var saveBtn = document.getElementById('tier-save-btn');
+  var delBtn  = document.getElementById('tier-delete-btn');
+  if(title)   title.textContent   = isEdit ? '🏷️ Edit Tier' : '🏷️ Create a Tier';
+  if(saveBtn) saveBtn.textContent = isEdit ? 'Save Changes' : 'Create Tier';
+  if(delBtn)  delBtn.style.display = isEdit ? '' : 'none';
+}
+function openCreateTierModal(){
+  if(_blockIfReadOnly('openCreateTierModal')) return;
+  try {
+    _tierEditingId = null;
+    _tierPopulateForm(null);
+    _tierConfigureMode(false);
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.style.display = 'flex';
+    setTimeout(function(){ var n = document.getElementById('tier-name'); if(n) n.focus(); }, 50);
+  } catch(e){ console.warn('[TIERS_V1] openCreateTierModal failed:', e); }
+}
+function openEditTierModal(tierId){
+  if(_blockIfReadOnly('openEditTierModal')) return;
+  try {
+    var tier = (Array.isArray(currentTiers) ? currentTiers : []).find(function(t){ return t && t.id === tierId; });
+    if(!tier){ console.warn('[TIERS_V1] openEditTierModal — tier not found:', tierId); return; }
+    _tierEditingId = tierId;
+    _tierPopulateForm(tier);
+    _tierConfigureMode(true);
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.style.display = 'flex';
+    setTimeout(function(){ var n = document.getElementById('tier-name'); if(n) n.focus(); }, 50);
+  } catch(e){ console.warn('[TIERS_V1] openEditTierModal failed:', e); }
+}
+function selectTierColor(color){
+  try {
+    var hidden = document.getElementById('tier-color');
+    if(hidden) hidden.value = color;
+    document.querySelectorAll('#tier-color-swatches .tier-swatch')
+      .forEach(function(b){
+        if(b.getAttribute('data-color') === color) b.classList.add('selected');
+        else b.classList.remove('selected');
+      });
+  } catch(e){ console.warn('[TIERS_V1] selectTierColor failed:', e); }
+}
+async function saveTierFromModal(){
+  if(_blockIfReadOnly('saveTierFromModal')) return;
+  var errEl = document.getElementById('tier-error');
+  function showErr(msg){ if(errEl){ errEl.textContent = msg; errEl.style.display = 'block'; } }
+  try {
+    var name  = (document.getElementById('tier-name').value || '').trim();
+    var color = (document.getElementById('tier-color').value || '').trim();
+    var startId = document.getElementById('tier-start').value;
+    var endId   = document.getElementById('tier-end').value;
+    if(!name)    { showErr('Tier name is required.'); return; }
+    if(!color)   { showErr('Pick a color from the palette.'); return; }
+    if(!startId) { showErr('Pick a Start Player.'); return; }
+    if(!endId)   { showErr('Pick an End Player.'); return; }
+    var startIdx = _wlIndexOf(startId);
+    var endIdx   = _wlIndexOf(endId);
+    if(startIdx < 0 || endIdx < 0){ showErr('Could not find one of the selected players. Try reopening the modal.'); return; }
+    if(endIdx < startIdx){ showErr('End Player must be the same as or below the Start Player on the list.'); return; }
+    if(!Array.isArray(currentTiers)) currentTiers = [];
+    if(_tierEditingId){
+      var existing = currentTiers.find(function(t){ return t && t.id === _tierEditingId; });
+      if(!existing){ showErr('Could not find the tier to update. It may have been deleted in another tab.'); return; }
+      existing.name = name;
+      existing.color = color;
+      existing.start_pid = String(startId);
+      existing.end_pid   = String(endId);
+      existing.updated_at = new Date().toISOString();
+      _tiersUserMutated = true;
+    } else {
+      currentTiers.push({
+        id: 'tier_' + Date.now(),
+        name: name,
+        color: color,
+        start_pid: String(startId),
+        end_pid: String(endId),
+        created_at: new Date().toISOString(),
+        created_by: 'matt'
+      });
+      _tiersUserMutated = true;
+    }
+    _tiersPersistLocal();
+    try { if(typeof autoSaveToNflNAS === 'function'){ await autoSaveToNflNAS(); } } catch(e){ console.warn('[TIERS_V1] autosave failed:', e); }
+    closeCreateTierModal();
+    try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){}
+  } catch(e){
+    console.warn('[TIERS_V1] saveTierFromModal failed:', e);
+    showErr('Something went wrong. Check the console for details.');
+  }
+}
+async function deleteTierFromModal(){
+  if(_blockIfReadOnly('deleteTierFromModal')) return;
+  if(!_tierEditingId) return;
+  try {
+    var idx = (Array.isArray(currentTiers) ? currentTiers : []).findIndex(function(t){ return t && t.id === _tierEditingId; });
+    if(idx < 0){ closeCreateTierModal(); return; }
+    var doomed = currentTiers[idx];
+    var ok = confirm('Delete tier "' + (doomed.name || '(untitled)') + '"?\n\nThe players stay on the list — only the colored bracket disappears. This cannot be undone.');
+    if(!ok) return;
+    currentTiers.splice(idx, 1);
+    _tiersUserMutated = true;
+    _tiersPersistLocal();
+    try { if(typeof autoSaveToNflNAS === 'function'){ await autoSaveToNflNAS(); } } catch(e){ console.warn('[TIERS_V1] autosave after delete failed:', e); }
+    closeCreateTierModal();
+    try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){}
+  } catch(e){ console.warn('[TIERS_V1] deleteTierFromModal failed:', e); }
+}
+function closeCreateTierModal(){
+  try {
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.style.display = 'none';
+    _tierEditingId = null;
+  } catch(e){}
+}
+
+// ---- Render subsystem (baseball's overlay + spacer rows + self-heal resolver) ----
+function _tiersDefaultOrder(){
+  // Brackets only make sense in the saved rank order: any sort, search, or
+  // stat filter scrambles rows, so hide the boxes until the list is back.
+  try {
+    if(typeof _sortField !== 'undefined' && _sortField !== null) return false;
+    var search = document.getElementById('player-search');
+    if(search && search.value && search.value.trim() !== '') return false;
+    if(typeof _wlFilterActive === 'function' && _wlFilterActive()) return false;
+    return true;
+  } catch(e){ return false; }
+}
+function _tiersClearOverlay(){
+  var layer = document.getElementById('tier-overlay-layer');
+  if(layer) layer.innerHTML = '';
+}
+function _tiersClearSpacerRows(){
+  var tbody = document.getElementById('watch-list-body');
+  if(!tbody) return;
+  var spacers = tbody.querySelectorAll('tr.tier-spacer-row');
+  for(var i = 0; i < spacers.length; i++){ spacers[i].parentNode.removeChild(spacers[i]); }
+}
+// TIER_SELFHEAL_V1 (baseball June 8, ported): one shared resolver so the spacer
+// and the box always agree. Both anchors must survive on the CURRENT table or
+// the tier draws nothing (no orphan gaps).
+function _tiersResolveRange(tier){
+  var tbody = document.getElementById('watch-list-body');
+  if(!tbody || !tier) return null;
+  var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-nfl-pid]'));
+  if(rows.length === 0) return null;
+  var idOf = function(r){ return String(r.getAttribute('data-nfl-pid')); };
+  var startId = String(tier.start_pid);
+  var endId   = String(tier.end_pid);
+  var si = -1, ei = -1;
+  for(var i=0;i<rows.length;i++){ if(idOf(rows[i])===startId){ si=i; break; } }
+  for(var j=0;j<rows.length;j++){ if(idOf(rows[j])===endId){ ei=j; } }
+  if(si !== -1 && ei !== -1 && si <= ei){ return { startRow: rows[si], endRow: rows[ei] }; }
+  return null;
+}
+function _tiersInjectSpacerRows(){
+  _tiersClearSpacerRows();
+  if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
+  if(!_tiersDefaultOrder()) return;
+  var tbody = document.getElementById('watch-list-body');
+  if(!tbody) return;
+  var firstRow = tbody.querySelector('tr[data-nfl-pid]');
+  if(!firstRow) return;
+  var colCount = firstRow.children.length;
+  currentTiers.forEach(function(tier){
+    try {
+      var range = _tiersResolveRange(tier);
+      if(!range || !range.startRow) return;
+      var spacer = document.createElement('tr');
+      spacer.className = 'tier-spacer-row';
+      spacer.setAttribute('data-tier-spacer-for', String(tier.id));
+      var td = document.createElement('td');
+      td.colSpan = colCount;
+      spacer.appendChild(td);
+      tbody.insertBefore(spacer, range.startRow);
+    } catch(e){ console.warn('[TIER_SPACER_ROW_V1] spacer inject failed:', tier, e); }
+  });
+}
+function _tiersGetOrCreateLayer(){
+  var tbody = document.getElementById('watch-list-body');
+  if(!tbody) return null;
+  var table = tbody.closest('table');
+  if(!table) return null;
+  var anchor = table.parentElement;
+  if(!anchor) return null;
+  var cs = window.getComputedStyle(anchor);
+  if(cs.position === 'static') anchor.style.position = 'relative';
+  var layer = document.getElementById('tier-overlay-layer');
+  if(!layer){
+    layer = document.createElement('div');
+    layer.id = 'tier-overlay-layer';
+    layer.style.cssText = 'position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;z-index:5';
+    anchor.appendChild(layer);
+  } else if(layer.parentElement !== anchor){
+    anchor.appendChild(layer);
+  }
+  return { layer: layer, anchor: anchor };
+}
+function renderTiers(){
+  _tiersClearOverlay();
+  try { _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_SPACER_ROW_V1] inject crashed:', e); }
+  if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
+  if(!_tiersDefaultOrder()){ try { _tiersClearSpacerRows(); } catch(e){} return; }
+  var ctx = _tiersGetOrCreateLayer();
+  if(!ctx) return;
+  var layer = ctx.layer;
+  var anchor = ctx.anchor;
+  var anchorRect = anchor.getBoundingClientRect();
+  currentTiers.forEach(function(tier){
+    try {
+      var _range = _tiersResolveRange(tier);
+      if(!_range) return;
+      var startRow = _range.startRow, endRow = _range.endRow;
+      if(!startRow || !endRow) return;
+      var sRect = startRow.getBoundingClientRect();
+      var eRect = endRow.getBoundingClientRect();
+      var top    = sRect.top - anchorRect.top + anchor.scrollTop;
+      var bottom = eRect.bottom - anchorRect.top + anchor.scrollTop;
+      var height = bottom - top;
+      if(height <= 0) return;
+      var hex = TIER_COLOR_HEX[tier.color] || '#94a3b8';
+      var tbodyRect = document.getElementById('watch-list-body').getBoundingClientRect();
+      var boxLeft   = tbodyRect.left  - anchorRect.left + anchor.scrollLeft;
+      var boxRight  = tbodyRect.right - anchorRect.left + anchor.scrollLeft;
+      var boxWidth  = boxRight - boxLeft;
+      var pad = 4;
+      var box = document.createElement('div');
+      box.className = 'tier-bracket-box';
+      box.setAttribute('data-tier-id', tier.id);
+      box.style.cssText =
+        'position:absolute;top:' + (top - pad) + 'px;left:' + (boxLeft - pad) + 'px;' +
+        'width:' + (boxWidth + pad * 2) + 'px;height:' + (height + pad * 2) + 'px;' +
+        'border:3px solid ' + hex + ';border-radius:6px;' +
+        'box-shadow:0 0 8px ' + hex + '55, inset 0 0 4px ' + hex + '22;' +
+        'background:transparent;pointer-events:none;box-sizing:border-box;';
+      box.title = tier.name;
+      var tab = document.createElement('div');
+      tab.className = 'tier-bracket-tab';
+      tab.setAttribute('data-tier-id', tier.id);
+      tab.textContent = tier.name;
+      var spacerRow = document.querySelector('tr.tier-spacer-row[data-tier-spacer-for="' + String(tier.id).replace(/"/g,'\\"') + '"]');
+      var tabTop, tabRadius, tabShadow;
+      if(spacerRow){
+        var spacerRect = spacerRow.getBoundingClientRect();
+        tabTop = (spacerRect.top - anchorRect.top + anchor.scrollTop) + 5;
+        tabRadius = '4px';
+        tabShadow = '0 1px 4px ' + hex + '55';
+      } else {
+        var firstTbodyRow = document.querySelector('#watch-list-body tr[data-nfl-pid]');
+        if(firstTbodyRow && firstTbodyRow === startRow){
+          tabTop = (top + height + pad - 2); tabRadius = '0 0 6px 6px'; tabShadow = '0 1px 4px ' + hex + '55';
+        } else {
+          tabTop = (top - pad - 14); tabRadius = '6px 6px 0 0'; tabShadow = '0 -1px 4px ' + hex + '55';
+        }
+      }
+      tab.style.cssText =
+        'position:absolute;top:' + tabTop + 'px;left:' + (boxLeft - pad) + 'px;' +
+        'background:' + hex + ';color:#fff;font-family:"Nunito Sans",sans-serif;' +
+        'font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;' +
+        'padding:2px 10px;border-radius:' + tabRadius + ';box-shadow:' + tabShadow + ';' +
+        'pointer-events:auto;cursor:pointer;white-space:nowrap;';
+      var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+      if(isFan){
+        tab.title = 'Tier: ' + tier.name;
+        tab.style.cursor = 'default';
+      } else {
+        tab.title = 'Tier: ' + tier.name + ' — click to edit or delete';
+        (function(tid){
+          tab.addEventListener('click', function(ev){ ev.stopPropagation(); openEditTierModal(tid); });
+        })(tier.id);
+      }
+      layer.appendChild(box);
+      layer.appendChild(tab);
+    } catch(e){ console.warn('[TIERS_V1] failed to render tier:', tier, e); }
+  });
+}
+window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} });
+
 async function switchActiveList(newId){
   if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
   currentListId = newId;
@@ -2677,6 +3041,7 @@ async function saveList(){
       source: 'NFL watch list tracker v1',
       player_count: _watchList.length,
       players: _watchList,  // array of Sleeper player_ids
+      tiers: _tiersForSave(),   // TIERS_V1
     };
 
     statusEl.textContent = 'Pick your Synology-synced _Staging/' + _activeList().folder + ' folder...';  // NFL_MULTILIST_V1
@@ -2714,7 +3079,13 @@ async function loadListFromStorage(){
       const players = body && body.data && body.data.players;
       if(Array.isArray(players) && players.length > 0){
         _watchList = players;
-        console.log('[loadList] loaded ' + players.length + ' players from ' + env + ' (' + (body.filename || '') + ')');
+        // TIERS_V1 — hydrate this list's tiers from the same payload (legacy files have none).
+        currentTiers = (body && body.data && Array.isArray(body.data.tiers)) ? body.data.tiers : [];
+        _tiersSnapshotAtLoad = currentTiers.slice();
+        _tiersUserMutated = false;
+        _tiersLoadedOk = true;
+        _tiersPersistLocal();
+        console.log('[loadList] loaded ' + players.length + ' players from ' + env + ' (' + (body.filename || '') + ')' + (currentTiers.length ? (' + ' + currentTiers.length + ' tiers') : ''));
         return;
       }
     } catch(e){
@@ -2730,6 +3101,16 @@ async function loadListFromStorage(){
   } catch(e){
     console.warn('[loadListFromStorage] localStorage fallback failed:', e);
   }
+  // TIERS_V1 — localStorage fallback for tiers too; and however we got here,
+  // the load is now settled, so capture the snapshot the save guard trusts.
+  try {
+    const trRaw = localStorage.getItem(_tiersLsKey());
+    currentTiers = trRaw ? (JSON.parse(trRaw) || []) : [];
+    if(!Array.isArray(currentTiers)) currentTiers = [];
+  } catch(e){ currentTiers = []; }
+  _tiersSnapshotAtLoad = currentTiers.slice();
+  _tiersUserMutated = false;
+  _tiersLoadedOk = true;
 }
 // ── /LIST_PERSISTENCE_V1 ──────────────────────────────────────────────────
 
@@ -3720,7 +4101,7 @@ async function autoSaveToNflNAS(){
     const res = await fetch(SERVER_URL + '/list-staging/' + LIST_ID, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ players: _watchList }),
+      body: JSON.stringify({ players: _watchList, tiers: _tiersForSave() }),   // TIERS_V1 — guarded, never a silent empty
     });
     if(res.ok){
       const now = new Date().toLocaleTimeString();
@@ -4846,6 +5227,56 @@ function _yahooLookupFmt(pid, field, isPercent){
      Football cousin of the NBA From the Logo card. Opens on a player-name click.
      v1 = shell + photo + the season-total stats the football table shows. Games deferred. -->
 <div id="ftl-backdrop" onclick="closeFromTheLogo()"></div>
+<!-- TIERS_V1 STAGE 1 (2026-08-03) — backend-only Create/Edit Tier modal, baseball's
+     Phase C adapted to the twins' self-contained overlay idiom. Stage 2 adds the
+     "Draggable as a group" row here. Opened by the 🏷️ Tier toolbar button (admin)
+     or by clicking a tier's label tab (admin); fans never see either entry point. -->
+<div id="create-tier-modal" onclick="if(event.target===this)closeCreateTierModal()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:20px 22px">
+    <h2 id="tier-modal-title" style="margin:0 0 10px 0;font-size:17px;color:var(--text)">🏷️ Create a Tier</h2>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5">
+      Draws a colored bracket around a contiguous range of players on the current list.
+      Brackets hide automatically when the list is filtered or sorted, and reappear when
+      the list returns to its saved order. Each list keeps its own tiers.
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Tier Name *</label>
+      <input type="text" id="tier-name" placeholder="e.g. Elite, Sleepers, Avoid" autocomplete="off" maxlength="40" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Color *</label>
+      <input type="hidden" id="tier-color" value="">
+      <div id="tier-color-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+        <button type="button" class="tier-swatch" data-color="red"    style="background:#ef4444" onclick="selectTierColor('red')"    title="Red"></button>
+        <button type="button" class="tier-swatch" data-color="orange" style="background:#f97316" onclick="selectTierColor('orange')" title="Orange"></button>
+        <button type="button" class="tier-swatch" data-color="gold"   style="background:#eab308" onclick="selectTierColor('gold')"   title="Gold"></button>
+        <button type="button" class="tier-swatch" data-color="green"  style="background:#22c55e" onclick="selectTierColor('green')"  title="Green"></button>
+        <button type="button" class="tier-swatch" data-color="blue"   style="background:#3b82f6" onclick="selectTierColor('blue')"   title="Blue"></button>
+        <button type="button" class="tier-swatch" data-color="purple" style="background:#a855f7" onclick="selectTierColor('purple')" title="Purple"></button>
+        <button type="button" class="tier-swatch" data-color="pink"   style="background:#ec4899" onclick="selectTierColor('pink')"   title="Pink"></button>
+        <button type="button" class="tier-swatch" data-color="gray"   style="background:#94a3b8" onclick="selectTierColor('gray')"   title="Gray"></button>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Start Player *</label>
+        <select id="tier-start" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 8px;font-size:13px;font-family:inherit;outline:none;cursor:pointer"><option value="">Select…</option></select>
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">End Player *</label>
+        <select id="tier-end" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 8px;font-size:13px;font-family:inherit;outline:none;cursor:pointer"><option value="">Select…</option></select>
+      </div>
+    </div>
+    <div id="tier-error" style="display:none;color:#ef4444;font-size:12px;margin-bottom:8px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+      <button id="tier-delete-btn" style="display:none;background:#7f1d1d;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer" onclick="deleteTierFromModal()">🗑️ Delete Tier</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-outline" onclick="closeCreateTierModal()">Cancel</button>
+        <button id="tier-save-btn" style="background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer" onclick="saveTierFromModal()">Create Tier</button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- LIST_INFO_OVERLAY_V1 (2026-08-03) — the ℹ️ "what are these lists" explainer, ported from
      baseball (LIST_INFO_OVERLAY_RESTORE_V1 shell). #list-info-body is populated by JS at open time. -->
 <div id="list-info-overlay" onclick="if(event.target===this)closeListInfoOverlay()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9998;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
