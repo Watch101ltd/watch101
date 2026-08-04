@@ -2539,12 +2539,18 @@ function _npStatValue(field, p, s, pid){
   }
 }
 
+function _foldSearch(s){
+  /* SEARCH_ACCENT_FOLD_V1 (2026-08-04) — the Doncic fix.
+     Splits accented letters into letter + accent mark, drops the marks, lowercases.
+     Display is NEVER touched; this is only ever used on both sides of a comparison. */
+  return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
 var _npSearchQ = '';
 function _npSortedIds(){
   if(!_playerDB) return [];
   // NBAP_POOL_SEARCH_V1 — refresh the search query from the box each pass.
   var _se = document.getElementById('nbap-search');
-  _npSearchQ = _se ? (_se.value||'').trim().toLowerCase() : '';
+  _npSearchQ = _se ? _foldSearch((_se.value||'').trim()) : '';
   // Same "real NBA player" filter the search uses: must have a position AND a team.
   // NBA_POOL_STATFILTER_V1 — then apply the STAT FILTERING box (team / min PTS / age range).
   const F = _npFilters || {};
@@ -2555,7 +2561,7 @@ function _npSortedIds(){
     if(!p.team) continue;
     // NBAP_POOL_SEARCH_V1 — instant name search (whole pool). Empty box => no constraint.
     if(typeof _npSearchQ === 'string' && _npSearchQ){
-      var _nm = (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '').toLowerCase();
+      var _nm = _foldSearch(p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '');
       if(_nm.indexOf(_npSearchQ) === -1) continue;
     }
     if(F.team && F.team !== 'ALL' && p.team !== F.team) continue;
@@ -2799,7 +2805,7 @@ searchEl.addEventListener('input', () => {
 });
 
 function renderSearchResults(term){
-  const t = (term || '').trim().toLowerCase();
+  const t = _foldSearch((term || '').trim());
   if(!t || !_playerDB){
     resultsEl.classList.remove('open');
     return;
@@ -2809,7 +2815,7 @@ function renderSearchResults(term){
     const p = _playerDB[id];
     if(!p || !p.position) continue;
     if(!p.team) continue;  // skip free agents / inactive with no team
-    const name = (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
+    const name = _foldSearch(p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim());
     if(!name.includes(t)) continue;
     matches.push({id, p});
     if(matches.length >= MAX_SEARCH_RESULTS) break;
@@ -2946,11 +2952,11 @@ function renderWatchList(){
   }
   // NBAMAIN_SEARCH_FILTER_V1 — instant name filter from the main search box (filters MY list).
   var _wlSearchEl = document.getElementById('player-search');
-  var _wlSearchQ = _wlSearchEl ? (_wlSearchEl.value||'').trim().toLowerCase() : '';
+  var _wlSearchQ = _wlSearchEl ? _foldSearch((_wlSearchEl.value||'').trim()) : '';
   if(_wlSearchQ){
     sortedIds = sortedIds.filter(function(pid){
       var pp = (_playerDB && _playerDB[pid]) || null;
-      var nm = pp ? (pp.full_name || ((pp.first_name||'') + ' ' + (pp.last_name||'')).trim() || '').toLowerCase() : '';
+      var nm = pp ? _foldSearch(pp.full_name || ((pp.first_name||'') + ' ' + (pp.last_name||'')).trim() || '') : '';
       return nm.indexOf(_wlSearchQ) !== -1;
     });
   }
