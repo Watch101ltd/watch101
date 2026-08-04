@@ -7347,7 +7347,7 @@ var TYPE_TAGS_V1 = [
   // gets a 'tagline' one-liner shown in the click tooltip. Voice matches
   // 07 Reference/Type Column Emoji Vocabulary v1.md and the original
   // ground-truth screenshot from the Dude.
-  { id: 'must_watch',         label: 'Must Watch',         emoji: '🚨',  tagline: "Drop everything. Read this player's notes first." },
+  { id: 'must_watch',         label: 'Must Watch',         emoji: '👀',  tagline: "Drop everything. Read this player's notes first." },
   { id: 'speed_specialist',   label: 'Steal Specialist',   emoji: '🏃',  tagline: "Speed and stolen bases are his bread and butter." },
   { id: 'contact_specialist', label: 'Contact Specialist', emoji: '🎯',  tagline: "Average and OBP are his bread and butter. Low K's." },
   { id: 'cup_of_coffee',      label: 'Cup of Coffee',      emoji: '☕',  tagline: "Brief MLB look. Story's still being written." },
@@ -7372,7 +7372,14 @@ var TYPE_TAGS_V1 = [
   { id: 'probably_owned',     label: 'Probably Owned',     emoji: '😕',  tagline: "Likely already rostered in your league. Still worth watching." },
   { id: 'undervalued',        label: 'Undervalued',        emoji: '🔍',  tagline: "Yahoo and the public have him too low. We saw him first." },
   { id: 'sell_high',          label: 'Sell High',          emoji: '📉',  tagline: "Public has him too high. Trade before the regression." },
-  { id: 'future_stash',       label: 'Future Stash',       emoji: '🏦',  tagline: "Not paying off now. Will later. Bank him." }
+  { id: 'future_stash',       label: 'Future Stash',       emoji: '🏦',  tagline: "Not paying off now. Will later. Bank him." },
+
+  // ALERT_ADD_NOW_V1 (2026-08-04) — Matt's new tag from the 8/3 meeting, made possible
+  // by moving Must Watch to the eyes. Both agreed on tape: eyes read better for "watch
+  // this guy" AND it frees the siren for genuine urgency. His words: "stop everything,
+  // go pick up." Added to ALL THREE sports the same day so one emoji can never mean two
+  // different things depending on which page Matt is looking at.
+  { id: 'alert_add_now',      label: 'Alert — Add Now',    emoji: '🚨',  tagline: "Stop what you are doing and put in the claim." }
 ];
 
 function _typeTagById(id){
@@ -7625,8 +7632,16 @@ document.addEventListener('click', function(ev){
       // MUST_WATCH_FLASH_V1 — if the user clicked the 🚨 chip specifically,
       // count it as acknowledgment and stop the pulse. Only fires when the
       // actual clicked element is a .type-chip whose text is the 🚨 emoji.
+      // MUSTWATCH_CHIP_BY_ID_V1 (2026-08-04) — this used to compare the chip's text to a
+      // HARDCODED '🚨'. The moment Must Watch moved to 👀 (Matt's 8/3 call) that check
+      // silently pointed at the WRONG TAG: clicking Must Watch would no longer dismiss the
+      // pulse, and clicking the new Alert chip would dismiss a pulse that was not its own.
+      // Now it asks the vocabulary for must_watch's CURRENT emoji, so changing an emoji can
+      // never break this again. Rule #9 (orphaned-reference check) in its emoji form.
+      var _mwTag = (typeof _typeTagById === 'function') ? _typeTagById('must_watch') : null;
+      var _mwEmoji = (_mwTag && _mwTag.emoji) ? _mwTag.emoji : '👀';
       if(mlbId && chipOrStack.classList.contains('type-chip') &&
-         (chipOrStack.textContent || '').trim() === '🚨'){
+         (chipOrStack.textContent || '').trim() === _mwEmoji){
         _dismissMustWatch(mlbId);
       }
       if(!mlbId){ _hideTypeTagTooltip(); return; }
