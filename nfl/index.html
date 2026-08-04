@@ -4045,6 +4045,20 @@ function setPriority(pid, newPriority){
   // stamped baseline fields. Latent since WL_NOTES_V1 shipped, caught here.
   _watchList[idx] = Object.assign({}, (entry && typeof entry === 'object') ? entry : {}, {pid: pid, priority: finalValue});
   renderWatchList();
+  // PRIORITY_CARD_SYNC_V1 (2026-08-04, per Matt's 8/3 report via the Dude). renderWatchList()
+  // repaints the LIST only, so with a player card open the stars in the card stayed frozen —
+  // the value changed, the row updated behind the card, and the card itself gave zero feedback.
+  // Baseball hit this twice (PRIORITY_OVERLAY_SYNC_V1 May 13, PRIORITY_QEP_SYNC_V1 June 3) and
+  // cured it with a hand-maintained list of contexts, which had to be extended each time a new
+  // surface appeared. We do not copy that. Both surfaces here render the widget with the SAME
+  // selector, so repainting every match covers the row, the card, and any surface added later
+  // with no maintenance. querySelectorAll returns a static list, so swapping outerHTML while
+  // iterating is safe.
+  try {
+    document.querySelectorAll('.priority-stars[data-pid="' + pid + '"]').forEach(function(w){
+      w.outerHTML = renderPriorityStars(pid, finalValue);
+    });
+  } catch(_e){ console.warn('[PRIORITY_CARD_SYNC_V1] repaint failed:', _e); }
 }
 function renderPriorityStars(pid, currentPriority){
   let html = '<span class="priority-stars" data-pid="' + escapeHtml(pid) + '">';
