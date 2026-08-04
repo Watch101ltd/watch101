@@ -1339,6 +1339,79 @@ const MAX_SEARCH_RESULTS = 12;
 // from baseball's MULTILIST_V1 (WATCH_LISTS registry + currentListId + switchActiveList). LIST_ID is
 // now a let that follows the active list, so every existing save/load path (autoSaveToNbaNAS,
 // loadListFromStorage, the manual Save button) keys to the active list with no further changes.
+// ============================================================================
+// NBA_CATEGORY_MODEL_V1 (2026-08-04 -- Walter, per the Dude, from Matt's 8/3 call)
+// ----------------------------------------------------------------------------
+// THE SINGLE SOURCE OF TRUTH FOR "WHAT ARE THIS LIST'S SCORING CATEGORIES."
+//
+// WHY IT EXISTS: three separate items on the 8/3 meeting list were all blocked on
+// the same missing thing, that this knowledge lived in CSS classes on the <th>
+// elements instead of in data the code could read:
+//   1. Matt's category stat filter -- "it probably would be the same nine
+//      categories that I use, the categories that are the stat categories for
+//      each league" (8/3 transcript, ~40:41).
+//   2. His stat-compact button -- "Can we hide certain categories?"
+//   3. The 13-cat list, which is the SAME 19 columns with the scoring/informational
+//      assignment swapped, not a different set of columns.
+//
+// 🪨 NO VALUES ARE READ HERE, ON PURPOSE. Every category is read through
+// _statValue() / _npStatValue(), the exact function the COLUMNS already use, so a
+// filter can never disagree with the number sitting right next to it. Bug #34 was
+// two code paths reading one source two different ways; that is not repeated here.
+//
+// MEMBERSHIP WAS EXTRACTED FROM THE SHIPPED HEADERS, NOT RETYPED FROM THE NOTES.
+// 9-cat scoring = the columns already carrying col-stat-a. 13-cat = those, plus
+// every column whose tooltip already says "a scoring category in 13-cat", MINUS
+// REB -- which is ORB+DRB added together and so drops out of 13-cat, exactly as
+// Matt described it on the call. Both sets were counted: 9 and 13.
+//
+// ⏳ TWO THINGS MATT HAS NOT BEEN ASKED YET, deliberately left as data rather than
+// decided by Walter:
+//   - TURNOVERS score in both formats but are a category where you want a MAXIMUM.
+//     `lowerIsBetter` records that fact; how the filter presents it is his call.
+//   - PERCENTAGES have no minimum-attempts floor. A player who went 1-for-1 reads
+//     100%. Min MPG and Min Games already work as a practical guard when stacked,
+//     but Matt raised the attempts point himself ("87.9 means one thing on half an
+//     attempt a game and something completely different on five"), so whether he
+//     wants a dedicated floor is a question FOR HIM.
+// ============================================================================
+const NBA_CATEGORIES = [
+  // id      label   full name                     scores in      notes
+  { id:'gp',    label:'GP',  name:'Games Played',            scores:[]          },
+  { id:'min',  label:'MIN',  name:'Minutes Per Game',        scores:[]          },
+  { id:'fgm',  label:'FGM',  name:'Field Goals Made',        scores:['13']      },
+  { id:'fga',  label:'FGA',  name:'Field Goals Attempted',   scores:[]          },
+  { id:'fgpct',label:'FG%',  name:'Field Goal Percentage',   scores:['9','13'], pct:true },
+  { id:'ftm',  label:'FTM',  name:'Free Throws Made',        scores:['13']      },
+  { id:'fta',  label:'FTA',  name:'Free Throws Attempted',   scores:[]          },
+  { id:'ftpct',label:'FT%',  name:'Free Throw Percentage',   scores:['9','13'], pct:true },
+  { id:'tpm',  label:'3PM',  name:'Three Pointers Made',     scores:['9','13']  },
+  { id:'tpa',  label:'3PA',  name:'Three Pointers Attempted',scores:[]          },
+  { id:'tppct',label:'3P%',  name:'Three Point Percentage',  scores:['13'], pct:true },
+  { id:'pts',  label:'PTS',  name:'Points',                  scores:['9','13']  },
+  { id:'reb',  label:'REB',  name:'Total Rebounds',          scores:['9']       },
+  { id:'oreb', label:'ORB',  name:'Offensive Rebounds',      scores:['13']      },
+  { id:'dreb', label:'DRB',  name:'Defensive Rebounds',      scores:['13']      },
+  { id:'ast',  label:'AST',  name:'Assists',                 scores:['9','13']  },
+  { id:'stl',  label:'STL',  name:'Steals',                  scores:['9','13']  },
+  { id:'blk',  label:'BLK',  name:'Blocks',                  scores:['9','13']  },
+  { id:'to',   label:'TO',   name:'Turnovers',               scores:['9','13'], lowerIsBetter:true }
+];
+
+// Categories that SCORE in a given format ('9' or '13'). Everything else on the
+// table is informational and is what Matt wants greyed and hideable.
+function nbaCategoriesFor(mode){
+  return NBA_CATEGORIES.filter(function(c){ return c.scores.indexOf(String(mode)) !== -1; });
+}
+function nbaCategoryById(id){
+  for (var i=0;i<NBA_CATEGORIES.length;i++) if (NBA_CATEGORIES[i].id===id) return NBA_CATEGORIES[i];
+  return null;
+}
+// Read a category the SAME way the column does. Never compute a stat here.
+function nbaCategoryValue(catId, p, s, pid){
+  return (typeof _statValue === 'function') ? _statValue(catId, p, s, pid) : null;
+}
+
 const WL_LISTS = [
   // LIST_NAMES_V2 (2026-08-04) — matched to BASEBALL's shape after the Dude showed the
   // two headers side by side. Baseball's `name` is the FORMAT ("12 Team Daily 5x5") and
