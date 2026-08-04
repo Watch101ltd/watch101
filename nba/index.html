@@ -501,7 +501,6 @@ body.readonly-mode .priority-stars{pointer-events:none;}
 body.readonly-mode .wl-note-cell{cursor:default;}
 
 
-
 #compact-toggle-btn.active{background:var(--court);color:#0d1117;border-color:var(--court);}
 body.compact-mode #nbamain-wrap th:nth-child(n+11):nth-child(-n+32),
 body.compact-mode #nbamain-wrap td:nth-child(n+11):nth-child(-n+32){display:none !important;}
@@ -821,12 +820,8 @@ document.addEventListener('DOMContentLoaded',function(){
     <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--court,#ea580c) 0%,#c2410c 100%);color:#fff;border:1px solid var(--court,#ea580c);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:240px;margin:6px 0 2px 0">
       <!-- LIST_NAMES_V1 (2026-08-04) — order and names MUST match WL_LISTS above. Two
            places, per the standing note on that registry. Values are ids and never change. -->
+      <!-- LIST_RANKINGS_GROUP_V1 — built by _buildListSwitcher() from WL_LISTS on load. -->
       <option value="integrity-nba">⭐ 12 Team Daily 9-Cat · 192</option>
-      <option value="weekly-nba">📅 12 Team Weekly 9-Cat · 192</option>
-      <option value="shl-nba">🏔️ 20 Team Keeper 9-Cat · 400</option>
-      <option value="keeper-nba">🔒 13 Cat</option>
-      <option value="dynasty-nba">👑 Dynasty/Keeper</option>
-      <option value="sleeper-nba">🎯 Sleeper Points</option>
     </select><button onclick="openListInfoOverlay()" title="What is each of these lists?" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;font-size:13px;font-weight:700;cursor:pointer;outline:none;font-family:'Nunito Sans',sans-serif;">ℹ️</button>
     </div><!-- /list-picker-header -->
     <!-- LIST_CHROME_V1 (2026-08-03) — big active-list title + tagline, baseball's LIST_PICKER_HEADER_V2 pattern in NBA colors. Updated by _updateYearLabels(). -->
@@ -1367,8 +1362,24 @@ const WL_LISTS = [
   { id: 'weekly-nba',    folder: 'Weekly',    name: '12 Team Weekly 9-Cat', short: 'Weekly',    roster: 192, emoji: '📅', tag: 'Weekly lineups, head to head', blurb: 'The same league shape as the List of Integrity with one difference that changes everything: lineups lock for the week. Full-week value beats one big night here.' },
   { id: 'shl-nba',       folder: 'SHL',       name: '20 Team Keeper 9-Cat', short: 'SHL',       roster: 400, emoji: '🏔️', tag: 'Deep keeper, minutes matter', blurb: 'The SHL: a deep keeper league of twenty plus teams, nine categories with minutes in the mix. Four hundred players deep, so end-of-bench names matter here.' },
   { id: 'keeper-nba',    folder: 'Keeper',    name: '13 Cat',               short: '13 Cat',                 emoji: '🔒', tag: 'Daily moves, thirteen categories', blurb: 'Thirteen categories instead of nine, so field goals made, free throws made, three point percentage and the offensive and defensive rebound split all count. Depth, flexibility and schedule matter more.' },
-  { id: 'dynasty-nba',   folder: 'Dynasty',   name: 'Dynasty/Keeper',       short: 'Dynasty',                emoji: '👑', tag: 'The long game', blurb: 'Keepers, stashes and building blocks, valued over a multi-season horizon rather than the latest box score.' },
+
   { id: 'sleeper-nba',   folder: 'Sleeper',   name: 'Sleeper Points',       short: 'Points',                 emoji: '🎯', tag: 'Weekly, points scoring', blurb: 'The points league on the Sleeper app: weekly lineups, head to head, playoffs. Total production over category balance.' },
+
+  // LIST_RANKINGS_GROUP_V1 (2026-08-04) — `group: 'rankings'` puts an entry under the
+  // RANKINGS heading in the switcher instead of LISTS. Matt's ask from 8/3: a
+  // non-clickable header with the ranking views beneath it ("there's a non clickable
+  // one that goes dash dash rankings dash dash, and then underneath it it's got redraft
+  // and keeper"). Done with a native <optgroup>, which is exactly that and needs no
+  // custom widget — and he was explicit he did not want popups: "less popups the better."
+  //
+  // Dynasty/Keeper MOVED here from LISTS at the Dude's call, following Matt's reasoning
+  // that a 101 is the wrong shape for it: those leagues run 300-400 deep and the players
+  // who matter are at the edges, so a top-101 would be "a list full of nobodies."
+  // ⚠️ id AND folder STILL UNCHANGED — this is a presentation move. Its data is exactly
+  // where it has always been, and selecting it loads that data exactly as before.
+  // ⏭️ Making it a TRUE rankings page (positional sub-tabs, the Rankings_* save folders,
+  //    no 101 cap) is a separate build and has NOT been done here.
+  { id: 'dynasty-nba',   folder: 'Dynasty',   name: 'Dynasty/Keeper Rankings', short: '', group: 'rankings', emoji: '👑', tag: 'The long game, ranked deep', blurb: 'Keepers, stashes and building blocks, valued over a multi-season horizon rather than the latest box score. Ranked rather than capped at 101, because in a 300 to 400 player keeper league the names that decide it live at the edges.' },
 ];
 let currentListId = 'integrity-nba';
 let LIST_ID = 'integrity-nba';  // follows currentListId (was a const when there was only one list)
@@ -1382,14 +1393,32 @@ function _listOptionLabel(l){
   if(!l) return '';
   return l.emoji + ' ' + l.name + (l.roster ? ' · ' + l.roster : '');
 }
-function _syncListSwitcherLabels(){
+// LIST_RANKINGS_GROUP_V1 — the switcher is now BUILT from WL_LISTS rather than kept in
+// sync with hand-written markup. The old note on the registry warned this lived in two
+// places; now it lives in one, so they cannot disagree.
+function _buildListSwitcher(){
   const sel = document.getElementById('list-switcher');
   if(!sel || typeof WL_LISTS === 'undefined') return;
-  WL_LISTS.forEach(function(l){
-    const o = sel.querySelector('option[value="' + l.id + '"]');
-    if(o) o.textContent = _listOptionLabel(l);
-  });
+  const keep = sel.value;
+  const lists = WL_LISTS.filter(function(l){ return l.group !== 'rankings'; });
+  const ranks = WL_LISTS.filter(function(l){ return l.group === 'rankings'; });
+  function grp(label, items, extra){
+    if(!items.length && !extra) return '';
+    let h = '<optgroup label="' + label + '">';
+    items.forEach(function(l){
+      h += '<option value="' + l.id + '">' + _listOptionLabel(l) + '</option>';
+    });
+    if(extra) h += extra;
+    return h + '</optgroup>';
+  }
+  // VIEW_RANKINGS_ID — not a saved list, it opens the existing Rankings view (the same
+  // place the 📋 nav button goes). Prefixed so switchActiveList can tell it apart from
+  // a real list id and never tries to load a folder for it.
+  sel.innerHTML = grp('LISTS', lists)
+                + grp('RANKINGS', ranks, '<option value="view:rankings">📋 Redraft Rankings</option>');
+  if(keep) sel.value = keep;
 }
+function _syncListSwitcherLabels(){ _buildListSwitcher(); }
 function _activeList(){ return WL_LISTS.find(function(l){ return l.id === currentListId; }) || WL_LISTS[0]; }
 // Per-list localStorage key. Integrity keeps the ORIGINAL key so existing saved copies aren't orphaned.
 function _wlStorageKey(){ return (currentListId === 'integrity-nba') ? LIST_STORAGE_KEY : ('watch101_nba_watch_list_' + currentListId); }
@@ -1852,6 +1881,13 @@ function renderTiers(){
 window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} });
 
 async function switchActiveList(newId){
+  // LIST_RANKINGS_GROUP_V1 — "view:*" entries are VIEWS, not lists. They have no folder
+  // and must never reach loadListFromStorage. Redraft Rankings opens the same Rankings
+  // view the 📋 nav button opens, so the dropdown and the button agree.
+  if(typeof newId === 'string' && newId.indexOf('view:') === 0){
+    if(newId === 'view:rankings' && typeof showRankingsView === 'function') showRankingsView();
+    return;
+  }
   if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
   currentListId = newId;
   LIST_ID = newId;
@@ -4914,7 +4950,6 @@ bootstrap();
   </div>
   <div class="cp-body" id="cp-body"></div>
 </div>
-
 
 <!-- DRAG_POLISH_V1 -- drop indicator bar + floating rank pill -->
 <div id="drop-indicator-bar"></div>
