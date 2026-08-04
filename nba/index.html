@@ -3404,7 +3404,7 @@ const TYPE_TAGS_V1 = [
   // Must Watch tagline swapped to baseball's exact line — the old one carried an em-dash in
   // public-facing copy (Rule 13) and all three sports should read identically anyway.
   // ⬇️ Matt's SPORT-SPECIFIC tags still land here after the 8/3 meeting (parity item 1).
-  { id: 'must_watch',       emoji: '🚨', label: 'Must Watch',       tagline: "Drop everything. Read this player's notes first." },
+  { id: 'must_watch',       emoji: '👀', label: 'Must Watch',       tagline: "Drop everything. Read this player's notes first." },
   { id: 'injury_promotion', emoji: '🚑', label: 'Injury Promotion', tagline: 'The starter went down. He got the call.' },
   { id: 'il_return',        emoji: '💪', label: 'IL Return',        tagline: 'Healthy and back on the floor. Value is back.' },
   { id: 'hot_streak',       emoji: '🌶️', label: 'Hot Streak',       tagline: 'Cooking the last 7-14 days. Ride it.' },
@@ -3413,6 +3413,24 @@ const TYPE_TAGS_V1 = [
   { id: 'undervalued',      emoji: '🔍', label: 'Undervalued',      tagline: 'Yahoo and the public have him too low. We saw him first.' },
   { id: 'sell_high',        emoji: '📉', label: 'Sell High',        tagline: 'Public has him too high. Trade before the regression.' },
   { id: 'future_stash',     emoji: '🏦', label: 'Future Stash',     tagline: 'Not paying off now. Will later. Bank him.' },
+
+  // ── NBA_TYPE_TAGS_V1 (2026-08-04) — Matt's basketball vocabulary, from his 8/3
+  //    screenshot and the tape. Sport-specific; the nine above are the universal set.
+  //    ⏳ STILL OWED BY MATT: a 3PT-specialist pick (he wrote "☄️ or 🎯" and never
+  //    chose) and a "Stocks" emoji (he rejected 📈 out loud — "that means on the
+  //    rise" — and asked for GOLD: nuggets, a bar, or a pot, because the phrase is
+  //    "found gold"). Both drop straight in here as one line each.
+  { id: 'alert_add_now',    emoji: '🚨', label: 'Alert — Add Now',  tagline: 'Stop what you are doing and put in the claim.' },
+  { id: 'rookie',           emoji: '👶', label: 'Rookie',           tagline: 'First-year player. Worth knowing before everyone else does.' },
+  { id: 'injury_prone',     emoji: '🤕', label: 'Injury Prone',     tagline: 'Talented, but the body keeps interrupting.' },
+  { id: 'injury_soon',      emoji: '🌈', label: 'Back Soon',        tagline: 'Practising again. Grab him before he plays.' },
+  { id: 'blocks_spec',      emoji: '☝️', label: 'Blocks Specialist', tagline: 'Erases shots. Carries the category on his own.' },
+  { id: 'triple_single',    emoji: '🦄', label: 'Triple Single',    tagline: 'A block, a steal and a three every night. Rare and quietly valuable.' },
+  { id: 'three_and_d',      emoji: '🔱', label: '3 and D',          tagline: 'Shoots it and defends it. Fills the thin categories.' },
+  { id: 'bricks',           emoji: '🧱', label: 'Bricks',           tagline: 'The counting stats cost you percentages.' },
+  { id: 'buy_low',          emoji: '🚀', label: 'Buy Low',          tagline: 'Cheap right now. Not for much longer.' },
+  { id: 'punt_ft',          emoji: '🏈', label: 'Punt FT Build',    tagline: 'For rosters that gave up on free throw percentage.' },
+  { id: 'high_iq',          emoji: '🧠', label: 'High Basketball IQ', tagline: 'Reads the floor. The box score undersells him.' },
 ];
 function _typeTagById(id){
   for(let i = 0; i < TYPE_TAGS_V1.length; i++){ if(TYPE_TAGS_V1[i].id === id) return TYPE_TAGS_V1[i]; }
@@ -3512,7 +3530,15 @@ document.addEventListener('click', function(ev){
       var pid = stack ? stack.getAttribute('data-pid') : null;
       if(!pid){ _hideTypeTagTooltip(); return; }
       _showTypeTagTooltip(pid, stack);   // show FIRST — the dismiss below re-renders the table and detaches the anchor
-      if(chipOrStack.classList.contains('type-chip') && (chipOrStack.textContent || '').trim() === '🚨'){
+      // MUSTWATCH_CHIP_BY_ID_V1 (2026-08-04) — this used to compare the chip's text to a
+      // HARDCODED '🚨'. The moment Must Watch moved to 👀 (Matt's 8/3 call) that check
+      // silently pointed at the WRONG TAG: clicking Must Watch would no longer dismiss the
+      // pulse, and clicking the new Alert chip would dismiss a pulse that was not its own.
+      // Now it asks the vocabulary for must_watch's CURRENT emoji, so changing an emoji can
+      // never break this again. Rule #9 (orphaned-reference check) in its emoji form.
+      var _mwTag = (typeof _typeTagById === 'function') ? _typeTagById('must_watch') : null;
+      var _mwEmoji = (_mwTag && _mwTag.emoji) ? _mwTag.emoji : '👀';
+      if(chipOrStack.classList.contains('type-chip') && (chipOrStack.textContent || '').trim() === _mwEmoji){
         _dismissMustWatchOnOpen(pid);   // 🚨 chip click acknowledges the pulse (baseball semantics; ⏭️ baseball itself orders dismiss-first and shares this detached-anchor edge — back-port candidate)
       }
       return;
