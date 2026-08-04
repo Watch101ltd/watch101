@@ -821,16 +821,16 @@ document.addEventListener('DOMContentLoaded',function(){
     <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--court,#ea580c) 0%,#c2410c 100%);color:#fff;border:1px solid var(--court,#ea580c);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:240px;margin:6px 0 2px 0">
       <!-- LIST_NAMES_V1 (2026-08-04) — order and names MUST match WL_LISTS above. Two
            places, per the standing note on that registry. Values are ids and never change. -->
-      <option value="integrity-nba">⭐ List of Integrity</option>
-      <option value="weekly-nba">📅 Weekly List</option>
-      <option value="shl-nba">🏔️ SHL Deep League</option>
+      <option value="integrity-nba">⭐ 12 Team Daily 9-Cat · 192</option>
+      <option value="weekly-nba">📅 12 Team Weekly 9-Cat · 192</option>
+      <option value="shl-nba">🏔️ 20 Team Keeper 9-Cat · 400</option>
       <option value="keeper-nba">🔒 13 Cat</option>
       <option value="dynasty-nba">👑 Dynasty/Keeper</option>
       <option value="sleeper-nba">🎯 Sleeper Points</option>
     </select><button onclick="openListInfoOverlay()" title="What is each of these lists?" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;font-size:13px;font-weight:700;cursor:pointer;outline:none;font-family:'Nunito Sans',sans-serif;">ℹ️</button>
     </div><!-- /list-picker-header -->
     <!-- LIST_CHROME_V1 (2026-08-03) — big active-list title + tagline, baseball's LIST_PICKER_HEADER_V2 pattern in NBA colors. Updated by _updateYearLabels(). -->
-    <div id="active-list-title" style="font-size:16px;font-weight:800;color:var(--court-bright,#fb923c);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4);margin-top:4px">List of Integrity</div>
+    <div id="active-list-title" style="font-size:16px;font-weight:800;color:var(--court-bright,#fb923c);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4);margin-top:4px">12 Team Daily 9-Cat (Integrity)</div>
     <div id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">The flagship 101</div>
     <div class="logo-sub" id="logo-sub">Watch List · Loading…</div>
     </div><!-- /list-title-stack -->
@@ -1345,36 +1345,51 @@ const MAX_SEARCH_RESULTS = 12;
 // now a let that follows the active list, so every existing save/load path (autoSaveToNbaNAS,
 // loadListFromStorage, the manual Save button) keys to the active list with no further changes.
 const WL_LISTS = [
-  // LIST_NAMES_V1 (2026-08-04, per Matt's 8/3 meeting). RENAMED + REORDERED.
+  // LIST_NAMES_V2 (2026-08-04) — matched to BASEBALL's shape after the Dude showed the
+  // two headers side by side. Baseball's `name` is the FORMAT ("12 Team Daily 5x5") and
+  // the identity word rides in parentheses. The twins had it inverted.
   //
-  // ⚠️ `id` AND `folder` ARE DELIBERATELY UNCHANGED ON EVERY ENTRY. `folder` is the
-  // NAS directory Matt's saved list data actually lives in, and `id` keys both
-  // localStorage and the server's WATCH_LISTS_NBA lookup. Only the DISPLAY name,
-  // tag and blurb move. Renaming a folder here would orphan his lists.
+  // ⚠️ `id` AND `folder` REMAIN UNTOUCHED. `folder` is the NAS directory Matt's saved
+  // list data lives in; `id` keys localStorage and server.js WATCH_LISTS_NBA. Only
+  // display fields move. Renaming a folder here orphans his lists.
   //
-  // HIS ORDER, and his reasoning: most turnover first, so the dropdown stays
-  // regular-season focused at the top. "I would go Deep League next. And then I
-  // would go keeper, then Dynasty, then Sleeper... in order of the most turnover."
+  // `short`  = the identity word shown in parentheses after the format.
+  // `roster` = total roster spots in the league, which is the real depth of the list.
+  //            ONLY set where Matt actually gave a number on the 8/3 call — no guesses:
+  //              Integrity/Weekly  12 teams x 16 spots (PG SG G SF PF F C C UTIL UTIL
+  //                                + 4 bench + 2 IL) = 192. His own maths, out loud.
+  //              SHL               "20 team, 20 person... like 400 players deep."
+  //            13 Cat, Dynasty/Keeper and Sleeper have NO number because he did not give
+  //            one — on 13 Cat he was unsure himself ("it's 12 teams... or it's 14 teams").
   //
-  // TWO RENAMES HE AGREED TO ON THE CALL:
-  //   Keeper List  → "13 Cat"        — he had been naming it after his league rather
-  //     than its format. The Dude suggested naming it for the format; Matt jumped on
-  //     it: "Yeah, we'll change keeper to 13 cat."
-  //   Dynasty List → "Dynasty/Keeper" — they said it at the same time.
-  //
-  // Integrity's format from his spec: 12 team, DAILY LINEUPS, 9-cat, H2H with
-  // playoffs. He self-corrected "daily transactions" to "daily lineups" mid-sentence,
-  // because you can make transactions daily in a weekly-lineup league. Roster is
-  // PG/SG/G/SF/PF/F/C/C/UTIL/UTIL + 4 bench + 2 IL = 16 x 12 teams = 192 players deep.
-  { id: 'integrity-nba', folder: 'Integrity', name: 'List of Integrity', emoji: '⭐', tag: '12 team · daily lineups · 9-cat H2H', blurb: 'The flagship Watch101 NBA list. Twelve teams, daily lineups, nine categories, head to head with playoffs. Sixteen roster spots a team means roughly 192 players matter, so the back end of this list is real.' },
-  { id: 'weekly-nba',     folder: 'Weekly',      name: 'Weekly List',       emoji: '📅', tag: '12 team · weekly lineups · 9-cat H2H', blurb: 'The same league shape as the List of Integrity with one difference that changes everything: lineups lock for the week. Full-week value beats one big night here.' },
-  { id: 'shl-nba',        folder: 'SHL',         name: 'SHL Deep League',   emoji: '🏔️', tag: '20+ team keeper · 9-cat with minutes', blurb: 'The SHL: a deep keeper league of twenty plus teams, nine categories with minutes in the mix. End-of-bench names matter here.' },
-  { id: 'keeper-nba',     folder: 'Keeper',      name: '13 Cat',            emoji: '🔒', tag: 'Daily moves · 13 categories · deeper', blurb: 'Thirteen categories instead of nine, so field goals made, free throws made, three point percentage and the offensive/defensive rebound split all count. Depth, flexibility and schedule all matter more.' },
-  { id: 'dynasty-nba',   folder: 'Dynasty',   name: 'Dynasty/Keeper',      emoji: '👑', tag: 'The long game', blurb: 'Keepers, stashes and building blocks, valued over a multi-season horizon rather than the latest box score.' },
-  { id: 'sleeper-nba',    folder: 'Sleeper',     name: 'Sleeper Points',    emoji: '🎯', tag: 'Weekly · points · H2H', blurb: 'The points league on the Sleeper app: weekly lineups, head-to-head, playoffs. Total production over category balance.' },
+  // ORDER is his: most turnover first, so the dropdown stays regular-season focused.
+  { id: 'integrity-nba', folder: 'Integrity', name: '12 Team Daily 9-Cat',  short: 'Integrity', roster: 192, emoji: '⭐', tag: 'The flagship 101', blurb: 'The flagship Watch101 NBA list. Twelve teams, daily lineups, nine categories, head to head with playoffs. Sixteen roster spots a team means 192 players matter, so the back end of this list is real.' },
+  { id: 'weekly-nba',    folder: 'Weekly',    name: '12 Team Weekly 9-Cat', short: 'Weekly',    roster: 192, emoji: '📅', tag: 'Weekly lineups, head to head', blurb: 'The same league shape as the List of Integrity with one difference that changes everything: lineups lock for the week. Full-week value beats one big night here.' },
+  { id: 'shl-nba',       folder: 'SHL',       name: '20 Team Keeper 9-Cat', short: 'SHL',       roster: 400, emoji: '🏔️', tag: 'Deep keeper, minutes matter', blurb: 'The SHL: a deep keeper league of twenty plus teams, nine categories with minutes in the mix. Four hundred players deep, so end-of-bench names matter here.' },
+  { id: 'keeper-nba',    folder: 'Keeper',    name: '13 Cat',               short: '13 Cat',                 emoji: '🔒', tag: 'Daily moves, thirteen categories', blurb: 'Thirteen categories instead of nine, so field goals made, free throws made, three point percentage and the offensive and defensive rebound split all count. Depth, flexibility and schedule matter more.' },
+  { id: 'dynasty-nba',   folder: 'Dynasty',   name: 'Dynasty/Keeper',       short: 'Dynasty',                emoji: '👑', tag: 'The long game', blurb: 'Keepers, stashes and building blocks, valued over a multi-season horizon rather than the latest box score.' },
+  { id: 'sleeper-nba',   folder: 'Sleeper',   name: 'Sleeper Points',       short: 'Points',                 emoji: '🎯', tag: 'Weekly, points scoring', blurb: 'The points league on the Sleeper app: weekly lineups, head to head, playoffs. Total production over category balance.' },
 ];
 let currentListId = 'integrity-nba';
 let LIST_ID = 'integrity-nba';  // follows currentListId (was a const when there was only one list)
+// LIST_NAMES_V2 (2026-08-04) — ONE source for how a list is written, used by the big
+// title AND the dropdown, so the two can never say different things.
+function _listTitle(l){
+  if(!l) return '';
+  return l.short ? (l.name + ' (' + l.short + ')') : l.name;
+}
+function _listOptionLabel(l){
+  if(!l) return '';
+  return l.emoji + ' ' + l.name + (l.roster ? ' · ' + l.roster : '');
+}
+function _syncListSwitcherLabels(){
+  const sel = document.getElementById('list-switcher');
+  if(!sel || typeof WL_LISTS === 'undefined') return;
+  WL_LISTS.forEach(function(l){
+    const o = sel.querySelector('option[value="' + l.id + '"]');
+    if(o) o.textContent = _listOptionLabel(l);
+  });
+}
 function _activeList(){ return WL_LISTS.find(function(l){ return l.id === currentListId; }) || WL_LISTS[0]; }
 // Per-list localStorage key. Integrity keeps the ORIGINAL key so existing saved copies aren't orphaned.
 function _wlStorageKey(){ return (currentListId === 'integrity-nba') ? LIST_STORAGE_KEY : ('watch101_nba_watch_list_' + currentListId); }
@@ -2774,8 +2789,14 @@ function _updateYearLabels(){
   const al = (typeof _activeList === 'function') ? _activeList() : null;
   const t = document.getElementById('active-list-title');
   const tg = document.getElementById('active-list-subtitle');
-  if(t && al) t.textContent = al.name;
+  // LIST_NAMES_V2 (2026-08-04) — "<format> (<identity>)", baseball's header shape.
+  // ⚠️ Baseball hardcodes its "(Integrity)" in the static markup and switchActiveList
+  // then sets the title from `name` ALONE — so on baseball the parenthesis vanishes the
+  // moment you switch lists and come back. Built data-driven here so it cannot drift.
+  // Back-port candidate for baseball.
+  if(t && al) t.textContent = _listTitle(al);
   if(tg) tg.textContent = (al && al.tag) ? al.tag : '';
+  if(typeof _syncListSwitcherLabels === 'function') _syncListSwitcherLabels();
 }
 
 async function _deriveStatsYear(){
