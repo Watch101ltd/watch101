@@ -7006,9 +7006,10 @@ async function markNoteAsFresh(mlbId){
       return;
     }
     p.note_publish_count_since_change = 0;
-    // Persist so the next Approve cycle ticks this counter, not the stale
-    // value sitting in Staging. Same pattern other admin mutations use.
-    try { await autoSaveToNAS(); } catch(e){ console.warn('[MARK_NOTE_FRESH_V1] autosave failed:', e); }
+    // PAINT_FIRST_SWEEP_V1 (2026-08-04) — autoSaveToNAS() moved BELOW the repaints.
+    // It awaits exportXLSX (spreadsheet build + network POST), so leaving it above meant
+    // the control gave no feedback until the save came back. Same class as the priority
+    // stars Matt reported 8/3. The value is already correct in memory here.
     // Refresh the main table so the 📋 icon pops back on the row.
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
     // Visually flip the button on the overlay so we know the click landed.
@@ -7020,6 +7021,7 @@ async function markNoteAsFresh(mlbId){
         btn.disabled = true;
       }
     } catch(_re){}
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[MARK_NOTE_FRESH_V1] autosave failed:', e); }
   } catch(e){
     console.warn('[MARK_NOTE_FRESH_V1] markNoteAsFresh failed:', e);
   }
@@ -7081,7 +7083,10 @@ async function setShowAsNew(mlbId, on){
       p.manual_new_pending  = false;
       // baseline_set intentionally untouched, see the note above
     }
-    try { await autoSaveToNAS(); } catch(e){ console.warn('[SHOW_AS_NEW_TOGGLE_V1] autosave failed:', e); }
+    // PAINT_FIRST_SWEEP_V1 (2026-08-04) — autoSaveToNAS() moved BELOW the repaints.
+    // It awaits exportXLSX (spreadsheet build + network POST), so leaving it above meant
+    // the control gave no feedback until the save came back. Same class as the priority
+    // stars Matt reported 8/3. The value is already correct in memory here.
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
     // keep every copy of this control on screen in agreement (Deep Cut + Quick Edit)
     try {
@@ -7094,6 +7099,7 @@ async function setShowAsNew(mlbId, on){
           : 'Backend only \u2014 tick to surface this player as \uD83C\uDD95 NEW on the +/- column';
       });
     } catch(_re){}
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[SHOW_AS_NEW_TOGGLE_V1] autosave failed:', e); }
   } catch(e){
     console.warn('[SHOW_AS_NEW_TOGGLE_V1] setShowAsNew failed:', e);
   }
@@ -7197,8 +7203,13 @@ async function setPriority(mlbId, rawValue){
     if(_newPriority !== _prevPriority){
       p.priority_changed_at = new Date().toISOString();
     }
-    // Persist so the next Save-to-Excel and any reload keeps the value.
-    try { await autoSaveToNAS(); } catch(e){ console.warn('[PRIORITY_V2] autosave failed:', e); }
+    // PRIORITY_PAINT_FIRST_V1 (2026-08-04, per Matt's 8/3 report via the Dude) — the
+    // autoSaveToNAS() call USED TO SIT HERE, ahead of every repaint below. It awaits
+    // exportXLSX(), a full spreadsheet build plus a network POST, so the stars did not
+    // light up until the save came back. Matt read that as the click doing nothing.
+    // p.priority is already correct in memory at this point, so painting now is honest,
+    // not optimistic. The save still happens — it just stops blocking the eye. It has
+    // been moved to the END of this function.
     // Refresh the main table so the Priority column updates immediately.
     // If currentSort is 'priority', the row will jump to its new sorted spot.
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
@@ -7251,6 +7262,8 @@ async function setPriority(mlbId, rawValue){
         }
       }
     } catch(_re){}
+    // PRIORITY_PAINT_FIRST_V1 — persist LAST, after every surface has already repainted.
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[PRIORITY_V2] autosave failed:', e); }
   } catch(e){
     console.warn('[PRIORITY_V2] setPriority failed:', e);
   }
@@ -7420,8 +7433,10 @@ async function toggleChipVisibility(mlbId, checked){
     } else {
       p.hideChip = true;
     }
-    // Save to NAS + localStorage. Same pattern as toggleTypeTag.
-    try { await autoSaveToNAS(); } catch(e){ console.warn('[CHIP_TOGGLE_MANUAL_V1] autosave failed:', e); }
+    // PAINT_FIRST_SWEEP_V1 (2026-08-04) — autoSaveToNAS() moved BELOW the repaints.
+    // It awaits exportXLSX (spreadsheet build + network POST), so leaving it above meant
+    // the control gave no feedback until the save came back. Same class as the priority
+    // stars Matt reported 8/3. The value is already correct in memory here.
     // Re-render every surface that paints the chip so the change is
     // visible immediately without a page reload.
     try { if(typeof renderTable === 'function') renderTable(); } catch(e){}
@@ -7430,6 +7445,7 @@ async function toggleChipVisibility(mlbId, checked){
     try { if(typeof renderProspects === 'function' && typeof prospectsActive !== 'undefined' && prospectsActive) renderProspects(); } catch(e){}
     try { if(typeof renderTank === 'function' && typeof tankActive !== 'undefined' && tankActive) renderTank(); } catch(e){}
     try { if(typeof renderContext === 'function') renderContext(p); } catch(e){}
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[CHIP_TOGGLE_MANUAL_V1] autosave failed:', e); }
   } catch(e){
     console.warn('[CHIP_TOGGLE_MANUAL_V1] toggleChipVisibility failed:', e);
   }
@@ -7457,8 +7473,12 @@ async function toggleTypeTag(mlbId, tagId, checked){
     } else if(!checked && idx >= 0){
       p.type_tags.splice(idx, 1);
     }
-    try { await autoSaveToNAS(); } catch(e){ console.warn('[TYPE_TAGS_V1] autosave failed:', e); }
+    // PAINT_FIRST_SWEEP_V1 (2026-08-04) — autoSaveToNAS() moved BELOW the repaints.
+    // It awaits exportXLSX (spreadsheet build + network POST), so leaving it above meant
+    // the control gave no feedback until the save came back. Same class as the priority
+    // stars Matt reported 8/3. The value is already correct in memory here.
     try { if(typeof renderTable === 'function') renderTable(); } catch(_re){}
+    try { await autoSaveToNAS(); } catch(e){ console.warn('[TYPE_TAGS_V1] autosave failed:', e); }
   } catch(e){
     console.warn('[TYPE_TAGS_V1] toggleTypeTag failed:', e);
   }
