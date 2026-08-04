@@ -7232,13 +7232,37 @@ async function setPriority(mlbId, rawValue){
     // BOTH contexts' star widgets, and update the matching .ppo-priority-tag
     // text in each open popup. Surgical swap only (no full popup re-render, to
     // preserve scroll + in-flight UI state), same as the proven overlay path.
+    // PRIORITY_SYNC_ALL_V1 (2026-08-04, the Dude's call — back-ported FROM the twins).
+    //
+    // WHAT THIS REPLACES, and why the old shape kept failing:
+    // the line below used to be  ['overlay','qep'].forEach(...)  — a hand-written
+    // GUEST LIST of which surfaces to repaint. Every time a new surface started
+    // showing priority stars, someone had to remember to add it to that array, and
+    // nobody ever did. That is not hypothetical: PRIORITY_OVERLAY_SYNC_V1 (May 13)
+    // listed only 'overlay', the Quick Edit popup shipped afterwards rendering with
+    // context 'qep', and its stars sat frozen for three weeks until the Dude found
+    // it on June 3 — which is what PRIORITY_QEP_SYNC_V1 was. Same failure, twice.
+    //
+    // The twins were built 2026-08-04 without a list at all: repaint EVERY star
+    // widget on the page belonging to this player. A surface added tomorrow is
+    // covered the day it exists. This brings baseball up to that.
+    //
+    // The one thing a blind sweep must not break: baseball renders these at
+    // DIFFERENT SIZES per surface (20px overlay, 18px qep, 14px row), driven by the
+    // data-context attribute. So each widget is repainted AS ITSELF — we read its
+    // own context back off the element rather than forcing one value across all of
+    // them. Unknown/absent context falls back to 'row', which is renderPriorityStars'
+    // own default, so a future surface is styled sanely even before anyone styles it.
+    //
+    // querySelectorAll returns a STATIC list, so swapping outerHTML while iterating
+    // is safe — the remaining entries stay valid even though each swap detaches its
+    // own node. renderTable() has already run above, so the row widgets in the list
+    // are fresh DOM by this point and get picked up correctly.
     try {
-      // 1) Repaint the star widgets for every open context that shows them.
-      ['overlay', 'qep'].forEach(function(_ctx){
-        var _stars = document.querySelector('.priority-stars[data-mlb-id="' + mlbId + '"][data-context="' + _ctx + '"]');
-        if(_stars){
-          _stars.outerHTML = renderPriorityStars(p, _ctx);
-        }
+      // 1) Repaint every star widget for this player, whatever surface it is on.
+      document.querySelectorAll('.priority-stars[data-mlb-id="' + mlbId + '"]').forEach(function(_stars){
+        var _ctx = _stars.getAttribute('data-context') || 'row';
+        _stars.outerHTML = renderPriorityStars(p, _ctx);
       });
       // 2) Update the helper-text tag in the Deep Cut overlay (its own wording).
       var overlayRow = document.querySelector('#player-page-overlay .ppo-priority-row');
