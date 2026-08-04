@@ -819,11 +819,13 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="list-title-stack" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
     <div class="list-picker-header" style="display:flex;align-items:center;gap:8px">
     <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--court,#ea580c) 0%,#c2410c 100%);color:#fff;border:1px solid var(--court,#ea580c);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:240px;margin:6px 0 2px 0">
+      <!-- LIST_NAMES_V1 (2026-08-04) — order and names MUST match WL_LISTS above. Two
+           places, per the standing note on that registry. Values are ids and never change. -->
       <option value="integrity-nba">⭐ List of Integrity</option>
-      <option value="dynasty-nba">👑 Dynasty List</option>
       <option value="weekly-nba">📅 Weekly List</option>
-      <option value="keeper-nba">🔒 Keeper List</option>
       <option value="shl-nba">🏔️ SHL Deep League</option>
+      <option value="keeper-nba">🔒 13 Cat</option>
+      <option value="dynasty-nba">👑 Dynasty/Keeper</option>
       <option value="sleeper-nba">🎯 Sleeper Points</option>
     </select><button onclick="openListInfoOverlay()" title="What is each of these lists?" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;font-size:13px;font-weight:700;cursor:pointer;outline:none;font-family:'Nunito Sans',sans-serif;">ℹ️</button>
     </div><!-- /list-picker-header -->
@@ -1343,19 +1345,32 @@ const MAX_SEARCH_RESULTS = 12;
 // now a let that follows the active list, so every existing save/load path (autoSaveToNbaNAS,
 // loadListFromStorage, the manual Save button) keys to the active list with no further changes.
 const WL_LISTS = [
-  { id: 'integrity-nba', folder: 'Integrity', name: 'List of Integrity', emoji: '⭐', tag: 'The flagship 101', blurb: 'The main Watch101 NBA watch list: the players most worth your attention right now.' },
-  { id: 'dynasty-nba',   folder: 'Dynasty',   name: 'Dynasty List',      emoji: '👑', tag: 'The long game', blurb: 'Keepers, stashes and building blocks, valued over a multi-season horizon rather than the latest box score.' },
-  // MATT_NBA_LISTS_V1 (2026-07-30, PC Walter, per the Dude). Four lists Matt asked for in his
-  // 'Watch101 ideas' email of 2026-07-28. His own descriptions, kept so nobody has to re-derive them:
-  //   Weekly  = weekly league, 9 cat, H2H playoffs
-  //   Keeper  = daily moves, 13 cats, deeper   (he called it 'NBA Keeper')
-  //   SHL     = deep 20+ team keeper, 9 cat with minutes instead
-  //   Sleeper = weekly, points, H2H, playoffs  (the Sleeper APP, not sleeper picks)
-  // Each one ALSO needs a matching entry in server.js WATCH_LISTS_NBA and an <option> in
-  // #list-switcher above. Three places, or the list half-works.
-  { id: 'weekly-nba',     folder: 'Weekly',      name: 'Weekly List',       emoji: '📅', tag: 'Weekly lineups · 9-cat · H2H', blurb: 'Built for the weekly-lineup league: nine categories, head-to-head, playoffs. Full-week value beats one big night here.' },
-  { id: 'keeper-nba',     folder: 'Keeper',      name: 'Keeper List',       emoji: '🔒', tag: 'Daily moves · 13 cats · deeper', blurb: 'The NBA Keeper league: daily lineup moves and thirteen categories, so depth, flexibility and schedule all matter.' },
+  // LIST_NAMES_V1 (2026-08-04, per Matt's 8/3 meeting). RENAMED + REORDERED.
+  //
+  // ⚠️ `id` AND `folder` ARE DELIBERATELY UNCHANGED ON EVERY ENTRY. `folder` is the
+  // NAS directory Matt's saved list data actually lives in, and `id` keys both
+  // localStorage and the server's WATCH_LISTS_NBA lookup. Only the DISPLAY name,
+  // tag and blurb move. Renaming a folder here would orphan his lists.
+  //
+  // HIS ORDER, and his reasoning: most turnover first, so the dropdown stays
+  // regular-season focused at the top. "I would go Deep League next. And then I
+  // would go keeper, then Dynasty, then Sleeper... in order of the most turnover."
+  //
+  // TWO RENAMES HE AGREED TO ON THE CALL:
+  //   Keeper List  → "13 Cat"        — he had been naming it after his league rather
+  //     than its format. The Dude suggested naming it for the format; Matt jumped on
+  //     it: "Yeah, we'll change keeper to 13 cat."
+  //   Dynasty List → "Dynasty/Keeper" — they said it at the same time.
+  //
+  // Integrity's format from his spec: 12 team, DAILY LINEUPS, 9-cat, H2H with
+  // playoffs. He self-corrected "daily transactions" to "daily lineups" mid-sentence,
+  // because you can make transactions daily in a weekly-lineup league. Roster is
+  // PG/SG/G/SF/PF/F/C/C/UTIL/UTIL + 4 bench + 2 IL = 16 x 12 teams = 192 players deep.
+  { id: 'integrity-nba', folder: 'Integrity', name: 'List of Integrity', emoji: '⭐', tag: '12 team · daily lineups · 9-cat H2H', blurb: 'The flagship Watch101 NBA list. Twelve teams, daily lineups, nine categories, head to head with playoffs. Sixteen roster spots a team means roughly 192 players matter, so the back end of this list is real.' },
+  { id: 'weekly-nba',     folder: 'Weekly',      name: 'Weekly List',       emoji: '📅', tag: '12 team · weekly lineups · 9-cat H2H', blurb: 'The same league shape as the List of Integrity with one difference that changes everything: lineups lock for the week. Full-week value beats one big night here.' },
   { id: 'shl-nba',        folder: 'SHL',         name: 'SHL Deep League',   emoji: '🏔️', tag: '20+ team keeper · 9-cat with minutes', blurb: 'The SHL: a deep keeper league of twenty plus teams, nine categories with minutes in the mix. End-of-bench names matter here.' },
+  { id: 'keeper-nba',     folder: 'Keeper',      name: '13 Cat',            emoji: '🔒', tag: 'Daily moves · 13 categories · deeper', blurb: 'Thirteen categories instead of nine, so field goals made, free throws made, three point percentage and the offensive/defensive rebound split all count. Depth, flexibility and schedule all matter more.' },
+  { id: 'dynasty-nba',   folder: 'Dynasty',   name: 'Dynasty/Keeper',      emoji: '👑', tag: 'The long game', blurb: 'Keepers, stashes and building blocks, valued over a multi-season horizon rather than the latest box score.' },
   { id: 'sleeper-nba',    folder: 'Sleeper',     name: 'Sleeper Points',    emoji: '🎯', tag: 'Weekly · points · H2H', blurb: 'The points league on the Sleeper app: weekly lineups, head-to-head, playoffs. Total production over category balance.' },
 ];
 let currentListId = 'integrity-nba';
