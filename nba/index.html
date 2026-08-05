@@ -851,8 +851,12 @@ document.addEventListener('DOMContentLoaded',function(){
 <div class="page-nav" id="page-nav">
   <button class="page-nav-btn active" id="nav-watchlist" onclick="showWatchListView()">🏠 Watch List</button>
   <button class="page-nav-btn" id="nav-nbaplayers" onclick="showNbaPlayersView()">🏀 NBA Players</button>
-  <!-- NBA_RANKINGS_PAGE_V1 (June 11, 2026 — PC Walter, per the Dude + Matt) — 3rd tab: positional rankings, separate from the watch list. -->
-  <button class="page-nav-btn" id="nav-rankings" onclick="showRankingsView()">📋 Rankings</button>
+  <!-- RANKINGS_TAB_REMOVAL_V1 (2026-08-05, PC Walter, per the Dude). The 📋 Rankings tab that
+       lived here since June 11 is GONE on purpose -- two doors to the same room (tab + dropdown)
+       confused more than they helped. Rankings is now reached ONLY through the list switcher's
+       RANKINGS group. Do not re-add a third tab. Football still has its tab because its dropdown
+       has no rankings entry yet; when football's turn comes, it gets the dropdown group AND this
+       removal as one mirrored package. -->
 </div>
 
 <!-- ══════════ WATCH LIST VIEW (default) ══════════ -->
@@ -2298,17 +2302,27 @@ async function reloadWatchList(){
 // every other view, or two render at once). Cloned from football's RANKINGS_PAGE_V1 (the reference).
 function _hideAllViews(){
   ['watchlist-view','nbaplayers-view','rankings-view'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
-  ['nav-watchlist','nav-nbaplayers','nav-rankings'].forEach(function(id){ var b=document.getElementById(id); if(b) b.classList.remove('active'); });
+  ['nav-watchlist','nav-nbaplayers'].forEach(function(id){ var b=document.getElementById(id); if(b) b.classList.remove('active'); });   // RANKINGS_TAB_REMOVAL_V1: the rankings tab id is gone from this list on purpose
 }
 function showWatchListView(){
   _hideAllViews();
   var wl = document.getElementById('watchlist-view'); if(wl) wl.style.display = '';
   var b = document.getElementById('nav-watchlist'); if(b) b.classList.add('active');
+  // BUG37_RANKINGS_OWN_TITLE_V1 -- returning from rankings: point the dropdown back at the
+  // active list, then let _updateYearLabels restore its title + tagline. Both halves of the
+  // stale-chrome bug, not just the entry half.
+  var _ls = document.getElementById('list-switcher');
+  if(_ls && String(_ls.value).indexOf('view:') === 0) _ls.value = currentListId;
+  if(typeof _updateYearLabels === 'function') _updateYearLabels();
 }
 function showNbaPlayersView(){
   _hideAllViews();
   var np = document.getElementById('nbaplayers-view'); if(np) np.style.display = '';
   var b = document.getElementById('nav-nbaplayers'); if(b) b.classList.add('active');
+  // BUG37_RANKINGS_OWN_TITLE_V1 -- same exit restore as showWatchListView.
+  var _ls = document.getElementById('list-switcher');
+  if(_ls && String(_ls.value).indexOf('view:') === 0) _ls.value = currentListId;
+  if(typeof _updateYearLabels === 'function') _updateYearLabels();
   if(typeof renderNbaPlayers === 'function') renderNbaPlayers();
 }
 
@@ -2331,7 +2345,14 @@ var _rankManual = { Overall:false, PG:false, SG:false, SF:false, PF:false, C:fal
 function showRankingsView(){
   _hideAllViews();
   var rv = document.getElementById('rankings-view'); if(rv) rv.style.display = '';
-  var b = document.getElementById('nav-rankings'); if(b) b.classList.add('active');
+  // RANKINGS_TAB_REMOVAL_V1 (2026-08-05): no nav tab to mark active anymore.
+  // BUG37_RANKINGS_OWN_TITLE_V1 (2026-08-05, found by the Dude): the big header used to keep
+  // whatever list was active before -- rankings never claimed the title. Now it does. The
+  // tagline echoes Dynasty/Keeper's ("The long game, ranked deep"); the Dude can rename it.
+  var _t = document.getElementById('active-list-title');
+  var _tg = document.getElementById('active-list-subtitle');
+  if(_t) _t.textContent = 'Redraft Rankings';
+  if(_tg) _tg.textContent = 'This season, position by position';
   renderRankings();
 }
 function switchRankPos(pos, btn){
