@@ -657,6 +657,13 @@ body.compact-mode #nbamain-wrap th.col-note,body.compact-mode #nbamain-wrap td.c
    browser-native white background, so the select's inherited white text was invisible. Dark text on white
    for the option rows; the closed button keeps its white-on-orange look. */
 #list-switcher option{color:#1a1a1a;background:#fff}
+/* BUG35_OPTGROUP_LABEL_V1 (2026-08-05, PC Walter, found by the Dude). The switcher's inline
+   color:#fff styles the CLOSED orange control; options have their own dark-on-white rule
+   above, but the optgroup LABELS (LISTS / RANKINGS) had no rule at all, inherited the
+   white, and sat invisible on the native dropdown's white panel -- the 'blank space' was
+   the label the whole time. Matt's 8/3 spec was an explicit visible separator ('dash dash
+   rankings dash dash'), so the label gets separator styling: gray, bold, tracked out. */
+#list-switcher optgroup{color:#6b7280;background:#fff;font-style:normal;font-weight:800;font-size:11px;letter-spacing:0.08em}
 
 /* ===== SITE_CHROME_V1 ported to BASKETBALL 2026-07-30 by Walter, from mlb/index.html.
    Baseball red swapped for --court (basketball orange). Links set for /nba/ depth. =====
@@ -2069,6 +2076,14 @@ async function switchActiveList(newId){
   currentListId = newId;
   LIST_ID = newId;
   var sel = document.getElementById('list-switcher'); if(sel && sel.value !== newId) sel.value = newId;
+  // BUG36_SWITCHER_LEAVES_RANKINGS_V1 (2026-08-05, PC Walter, found by the Dude). Picking a
+  // real list while the RANKINGS view is showing must LEAVE rankings, or the pick renders
+  // invisibly underneath it -- 8/4 gave the dropdown a way INTO rankings (view:rankings) but
+  // no way back out, so the switcher read as dead. Only rankings is forced away; the players
+  // POOL keeps its old stay-put behavior on a list pick (it tracks the active list via the
+  // green Added pills, so staying there is meaningful; a rankings page is not per-list).
+  var _rvEsc = document.getElementById('rankings-view');
+  if(_rvEsc && _rvEsc.style.display !== 'none' && typeof showWatchListView === 'function') showWatchListView();
   _updateYearLabels();                 // header subtitle shows the active list's name
   _wlTeamSelectBuilt = false;          // the filter TEAM dropdown rebuilds from the new list
   if(typeof _nbaBuildStatFilterSelects === 'function') _nbaBuildStatFilterSelects();   // STAT_FILTER_TRIPLET_V1 -- 9-cat vs 13-cat options follow the active list
