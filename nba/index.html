@@ -2399,7 +2399,15 @@ function switchRankPos(pos, btn){
 // NBA_RANKINGS_AUTOLOAD_V1 — each tab auto-loads every active (on-a-team) player ELIGIBLE at that
 // position, sorted by season PTS/G desc, capped at 60 per tab (the Dude's call, June 11). No
 // add-one-by-one: the field loads, Matt just ranks. Eligibility reads fantasy_positions (fan-out).
-var RANK_POS_CAP = { Overall:100, PG:60, SG:60, SF:60, PF:60, C:60 };  // OVERALL_RANK_V1: top-100 overall depth
+var RANK_POS_CAP = { Overall:100, PG:60, SG:60, SF:60, PF:60, C:60 };  // OVERALL_RANK_V1: top-100 overall depth (REDRAFT set)
+// DYNCAP_V1 (2026-08-05, PC Walter, per the Dude, same session DYNASTY_RANKINGS_V1 shipped).
+// Dynasty goes DEEP: Matt's whole case for it is that in a 300-400 player keeper league "the
+// names that decide it live at the edges." 400 across every tab -- the position tabs self-cap
+// by eligibility long before that, so 400 effectively means "everyone eligible." Redraft keeps
+// the June top-100/60 call. Costs nothing upstream: the data is already on the page; the only
+// cost is table rows, and the pool already renders ~612 fine.
+var RANK_POS_CAP_DYN = { Overall:400, PG:400, SG:400, SF:400, PF:400, C:400 };
+function _rankCap(pos){ return ((_rankSet === 'dynasty') ? RANK_POS_CAP_DYN : RANK_POS_CAP)[pos] || 50; }
 function _rankEligible(p, pos){
   var arr = (p && Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions
           : (p && p.position ? [p.position] : []);
@@ -2444,7 +2452,7 @@ function _rankingsIdsFor(pos){
     var na=(_playerDB[a].full_name||''), nb=(_playerDB[b].full_name||'');
     return na.localeCompare(nb);
   });
-  var cap = RANK_POS_CAP[pos] || 50;
+  var cap = _rankCap(pos);   // DYNCAP_V1: set-aware (redraft 100/60, dynasty 400)
   return ids.slice(0, cap);
 }
 function renderRankings(){
