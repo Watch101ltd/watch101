@@ -3026,6 +3026,15 @@ async function switchActiveList(newId){
   currentListId = newId;
   LIST_ID = newId;
   var sel = document.getElementById('list-switcher'); if(sel && sel.value !== newId) sel.value = newId;
+  // BUG36_SWITCHER_LEAVES_RANKINGS_V1 (2026-08-05, PC Walter). LATENT here, live on
+  // basketball: the Dude found the NBA switcher dead after visiting rankings (8/4 gave
+  // NBA's dropdown a view:rankings way IN but no way out). Football's dropdown has no
+  // rankings entry yet, but its nav button + switcher coexist the same way, so the same
+  // dead-end was reachable by hand. Fixed on both twins in one pass per the mirror rule.
+  // Only rankings is forced away; the players POOL keeps its old stay-put behavior on a
+  // list pick (it tracks the active list via the Added pills; rankings is not per-list).
+  var _rvEsc = document.getElementById('rankings-view');
+  if(_rvEsc && _rvEsc.style.display !== 'none' && typeof showWatchListView === 'function') showWatchListView();
   _updateYearLabels();                 // header subtitle shows the active list's name
   _wlTeamSelectBuilt = false;          // the filter TEAM dropdown rebuilds from the new list
   _watchList = [];
