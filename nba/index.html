@@ -2073,7 +2073,17 @@ async function switchActiveList(newId){
   // and must never reach loadListFromStorage. Redraft Rankings opens the same Rankings
   // view the 📋 nav button opens, so the dropdown and the button agree.
   if(typeof newId === 'string' && newId.indexOf('view:') === 0){
-    if(newId === 'view:rankings' && typeof showRankingsView === 'function') showRankingsView();
+    if(newId === 'view:rankings' && typeof showRankingsView === 'function') showRankingsView('redraft');
+    return;
+  }
+  // DYNASTY_RANKINGS_V1 (2026-08-05, PC Walter, per the Dude). dynasty-nba is no longer a
+  // loadable 101-style list -- Matt's reasoning from 8/3 (a 101 is the wrong shape for a
+  // 300-400 deep keeper pool) finished the thought: it is a RANKINGS SET. Same engine as
+  // Redraft, own saved orders. Until Matt hand-drags them apart, the two pages are
+  // deliberately identical, both seeded by Yahoo overall rank (NBA_YAHOO_SEED_V1).
+  // The old Dynasty list folder on the NAS is untouched; nothing reads it anymore.
+  if(newId === 'dynasty-nba'){
+    if(typeof showRankingsView === 'function') showRankingsView('dynasty');
     return;
   }
   if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
@@ -2310,18 +2320,21 @@ function showWatchListView(){
   var b = document.getElementById('nav-watchlist'); if(b) b.classList.add('active');
   // BUG37_RANKINGS_OWN_TITLE_V1 -- returning from rankings: point the dropdown back at the
   // active list, then let _updateYearLabels restore its title + tagline. Both halves of the
-  // stale-chrome bug, not just the entry half.
+  // stale-chrome bug, not just the entry half. DYNASTY_RANKINGS_V1 widened the check: the
+  // dropdown can now also be parked on dynasty-nba (a rankings set, not the active list),
+  // so anything that is not the active list snaps back.
   var _ls = document.getElementById('list-switcher');
-  if(_ls && String(_ls.value).indexOf('view:') === 0) _ls.value = currentListId;
+  if(_ls && _ls.value !== currentListId) _ls.value = currentListId;
   if(typeof _updateYearLabels === 'function') _updateYearLabels();
 }
 function showNbaPlayersView(){
   _hideAllViews();
   var np = document.getElementById('nbaplayers-view'); if(np) np.style.display = '';
   var b = document.getElementById('nav-nbaplayers'); if(b) b.classList.add('active');
-  // BUG37_RANKINGS_OWN_TITLE_V1 -- same exit restore as showWatchListView.
+  // BUG37_RANKINGS_OWN_TITLE_V1 -- same exit restore as showWatchListView (widened for
+  // dynasty-nba by DYNASTY_RANKINGS_V1).
   var _ls = document.getElementById('list-switcher');
-  if(_ls && String(_ls.value).indexOf('view:') === 0) _ls.value = currentListId;
+  if(_ls && _ls.value !== currentListId) _ls.value = currentListId;
   if(typeof _updateYearLabels === 'function') _updateYearLabels();
   if(typeof renderNbaPlayers === 'function') renderNbaPlayers();
 }
@@ -2342,17 +2355,37 @@ var _rankings = { Overall:[], PG:[], SG:[], SF:[], PF:[], C:[] };  // saved manu
 // which tabs have been HAND-DRAGGED. A tab with no hand-drag follows the LIVE Yahoo seed on every render
 // (no frozen copy = nothing to go stale). A real drag (rankDrop) flips its flag and freezes that tab.
 var _rankManual = { Overall:false, PG:false, SG:false, SF:false, PF:false, C:false };
-function showRankingsView(){
+// DYNASTY_RANKINGS_V1 -- which rankings set the view is showing. 'redraft' (default) or
+// 'dynasty'. Each set has its own saved orders (localStorage + NAS); the view code is shared.
+var _rankSet = 'redraft';
+function showRankingsView(set){
+  // RANKINGS_TAB_REMOVAL_V1 (2026-08-05): no nav tab to mark active anymore.
+  // BUG37_RANKINGS_OWN_TITLE_V1 (2026-08-05): the view claims the big header title itself.
+  // DYNASTY_RANKINGS_V1 (2026-08-05): `set` picks which rankings set shows. On a set change
+  // the in-memory orders are dropped and reloaded from that set's own storage, so the two
+  // sets can never bleed into each other. Callers: view:rankings -> 'redraft',
+  // dynasty-nba -> 'dynasty', no-arg -> 'redraft'.
+  var target = (set === 'dynasty') ? 'dynasty' : 'redraft';
+  var setChanged = (target !== _rankSet);
+  _rankSet = target;
   _hideAllViews();
   var rv = document.getElementById('rankings-view'); if(rv) rv.style.display = '';
-  // RANKINGS_TAB_REMOVAL_V1 (2026-08-05): no nav tab to mark active anymore.
-  // BUG37_RANKINGS_OWN_TITLE_V1 (2026-08-05, found by the Dude): the big header used to keep
-  // whatever list was active before -- rankings never claimed the title. Now it does. The
-  // tagline echoes Dynasty/Keeper's ("The long game, ranked deep"); the Dude can rename it.
   var _t = document.getElementById('active-list-title');
   var _tg = document.getElementById('active-list-subtitle');
-  if(_t) _t.textContent = 'Redraft Rankings';
-  if(_tg) _tg.textContent = 'This season, position by position';
+  if(_rankSet === 'dynasty'){
+    // Title + tagline come from the WL_LISTS entry so a rename there flows here.
+    var _dl = (typeof WL_LISTS !== 'undefined') ? WL_LISTS.find(function(l){ return l.id === 'dynasty-nba'; }) : null;
+    if(_t) _t.textContent = (_dl && _dl.name) ? _dl.name : 'Dynasty/Keeper Rankings';
+    if(_tg) _tg.textContent = (_dl && _dl.tag) ? _dl.tag : 'The long game, ranked deep';
+  } else {
+    if(_t) _t.textContent = 'Redraft Rankings';
+    if(_tg) _tg.textContent = 'This season, position by position';
+  }
+  if(setChanged){
+    _rankings = { Overall:[], PG:[], SG:[], SF:[], PF:[], C:[] };
+    _rankManual = { Overall:false, PG:false, SG:false, SF:false, PF:false, C:false };
+    loadRankingsFromNAS();   // async: hydrates the new set (localStorage inside, NAS authoritative), re-renders when done
+  }
   renderRankings();
 }
 function switchRankPos(pos, btn){
@@ -2706,15 +2739,22 @@ function rankDragEnd(e){
 // Yahoo-rank seed) are dropped once. Fresh Yahoo seed on next load for everyone.
 // Hand-dragged orders after this point save under v1 and persist normally.
 var RANKINGS_STORAGE_KEY = 'watch101_nba_rankings_v3';  // v3 (NBA_RANKINGS_LIVE_SEED_V1): {orders, manual} shape; v2 snapshot orders retired
+// DYNASTY_RANKINGS_V1 -- the dynasty set stores under its own key (fresh, no legacy versions)
+// and its own NAS ids (rankings-nba-dyn-<pos>). The redraft key is untouched so every existing
+// hand-drag survives this build. NAS saves for the dynasty set 404 harmlessly until the Dude's
+// next container rebuild registers the ids (same interim June 11 had); localStorage carries them.
+var RANKINGS_DYN_STORAGE_KEY = 'watch101_nba_rankings_dyn_v1';
+function _rankStorageKey(){ return (_rankSet === 'dynasty') ? RANKINGS_DYN_STORAGE_KEY : RANKINGS_STORAGE_KEY; }
+function _rankListId(pos){ return 'rankings-nba-' + (_rankSet === 'dynasty' ? 'dyn-' : '') + pos.toLowerCase(); }
 function _rankSaveLocal(){
-  try { localStorage.setItem(RANKINGS_STORAGE_KEY, JSON.stringify({ orders: _rankings, manual: _rankManual })); }  // NBA_RANKINGS_LIVE_SEED_V1
+  try { localStorage.setItem(_rankStorageKey(), JSON.stringify({ orders: _rankings, manual: _rankManual })); }  // NBA_RANKINGS_LIVE_SEED_V1 + DYNASTY_RANKINGS_V1 (set-aware key)
   catch(e){ console.warn('[NBA_RANKINGS_SAVE_V1] localStorage save failed:', e); }
 }
 var _rankNasSaving = {};
 async function saveRankings(pos){
   if(_blockIfReadOnly('saveRankings')) return;
   _rankSaveLocal();
-  var listId = 'rankings-nba-' + pos.toLowerCase();
+  var listId = _rankListId(pos);   // DYNASTY_RANKINGS_V1 (set-aware NAS id)
   if(_rankNasSaving[pos]) return;
   _rankNasSaving[pos] = true;
   var statusEl = document.getElementById('rankings-status');
@@ -2735,7 +2775,7 @@ async function saveRankings(pos){
 // (authoritative). A saved order overrides the seed; missing → renderRankings seeds it.
 function _rankLoadLocal(){
   try {
-    var raw = localStorage.getItem(RANKINGS_STORAGE_KEY);
+    var raw = localStorage.getItem(_rankStorageKey());   // DYNASTY_RANKINGS_V1 (set-aware key)
     if(raw){ var obj = JSON.parse(raw); if(obj && obj.orders && obj.manual){ ['Overall','PG','SG','SF','PF','C'].forEach(function(k){ if(obj.manual[k] === true && Array.isArray(obj.orders[k])){ _rankings[k] = obj.orders[k]; _rankManual[k] = true; } }); } }  // NBA_RANKINGS_LIVE_SEED_V1: only hand-dragged orders hydrate
   } catch(e){ console.warn('[NBA_RANKINGS_LOAD_V1] localStorage load failed:', e); }
 }
@@ -2745,7 +2785,7 @@ async function loadRankingsFromNAS(){
   var positions = ['Overall','PG','SG','SF','PF','C'];
   for(var i=0;i<positions.length;i++){
     var pos = positions[i];
-    var listId = 'rankings-nba-' + pos.toLowerCase();
+    var listId = _rankListId(pos);   // DYNASTY_RANKINGS_V1 (set-aware NAS id)
     try {
       var res = await fetch(SERVER_URL + '/list-staging/' + listId, {cache:'no-cache'});
       if(res.ok){
