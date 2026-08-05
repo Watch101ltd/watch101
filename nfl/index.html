@@ -737,6 +737,10 @@ body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.c
    browser-native white background, so the select's inherited white text was invisible. Dark text on white
    for the option rows; the closed button keeps its white-on-green look. */
 #list-switcher option{color:#1a1a1a;background:#fff}
+/* NFL_RANKINGS_PARITY_V1 (2026-08-05) -- Bug #35's cure ported WITH the optgroups it cures:
+   the select's inline color:#fff would leave the LISTS/RANKINGS labels white-on-white on the
+   native dropdown panel, exactly what the Dude screenshotted on basketball this morning. */
+#list-switcher optgroup{color:#6b7280;background:#fff;font-style:normal;font-weight:800;font-size:11px;letter-spacing:0.08em}
 
 /* ===== SITE_CHROME_V1 ported to FOOTBALL 2026-07-30 by Walter, from mlb/index.html.
    Baseball red swapped for --turf (football green). Links set for /nfl/ depth.
@@ -900,11 +904,22 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="list-title-stack" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
     <div class="list-picker-header" style="display:flex;align-items:center;gap:8px">
     <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--turf,#16a34a) 0%,#15803d 100%);color:#fff;border:1px solid var(--turf,#16a34a);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:240px;margin:6px 0 2px 0">
+      <!-- NFL_RANKINGS_PARITY_V1 (2026-08-05, PC Walter, per the Dude) -- NBA's LIST_RANKINGS_GROUP
+           shape ported: LISTS up top, RANKINGS below the labeled separator. Dynasty moved down: it is
+           a RANKINGS SET now, not a loadable 101 list (Matt's own 8/3 reasoning -- a 101 is the wrong
+           shape for a deep keeper pool). view:rankings opens the same Rankings view the old tab did.
+           NBA builds this from WL_LISTS at runtime; football's stays static for now, one more parity
+           item for the list. -->
+      <optgroup label="LISTS">
       <option value="integrity-nfl">⭐ List of Integrity</option>
-      <option value="dynasty-nfl">👑 Dynasty List</option>
       <option value="ffpc-redraft-nfl">🏈 FFPC Re-Draft</option>
       <option value="sfb16-nfl">🐠 #SFB16</option>
       <option value="empire-nfl">✌️ Empire</option>
+      </optgroup>
+      <optgroup label="RANKINGS">
+      <option value="dynasty-nfl">👑 Dynasty/Keeper Rankings</option>
+      <option value="view:rankings">📋 Redraft Rankings</option>
+      </optgroup>
     </select><button onclick="openListInfoOverlay()" title="What is each of these lists?" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;font-size:13px;font-weight:700;cursor:pointer;outline:none;font-family:'Nunito Sans',sans-serif;">ℹ️</button>
     </div><!-- /list-picker-header -->
     <!-- LIST_CHROME_V1 (2026-08-03) — big active-list title + tagline, baseball's LIST_PICKER_HEADER_V2 pattern in NFL colors. Updated by _updateYearLabels(). -->
@@ -936,8 +951,10 @@ document.addEventListener('DOMContentLoaded',function(){
 <div class="page-nav" id="page-nav">
   <button class="page-nav-btn active" id="nav-watchlist" onclick="showWatchListView()">🏠 Watch List</button>
   <button class="page-nav-btn" id="nav-nflplayers" onclick="showNflPlayersView()">🏈 NFL Players</button>
-  <!-- RANKINGS_PAGE_V1 (June 9, 2026 — PC Walter, per the Dude) — 3rd tab: positional rankings, separate from the watch list. -->
-  <button class="page-nav-btn" id="nav-rankings" onclick="showRankingsView()">📋 Rankings</button>
+  <!-- NFL_RANKINGS_PARITY_V1 (2026-08-05, PC Walter, per the Dude). The 📋 Rankings tab that
+       lived here since June 9 is GONE on purpose, same day and same reason as basketball's:
+       two doors to one room confused more than they helped. Rankings is now reached ONLY
+       through the list switcher's RANKINGS group. Do not re-add a third tab. -->
 </div>
 
 <!-- ══════════ WATCH LIST VIEW (default) ══════════ -->
@@ -1423,17 +1440,27 @@ async function reloadWatchList(){
 // show*View() hides the other TWO (Rule #9 — or two render at once). _rankPos = active position tab.
 function _hideAllViews(){
   ['watchlist-view','nflplayers-view','rankings-view'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
-  ['nav-watchlist','nav-nflplayers','nav-rankings'].forEach(function(id){ var b=document.getElementById(id); if(b) b.classList.remove('active'); });
+  ['nav-watchlist','nav-nflplayers'].forEach(function(id){ var b=document.getElementById(id); if(b) b.classList.remove('active'); });   // NFL_RANKINGS_PARITY_V1: the rankings tab id is gone from this list on purpose
 }
 function showWatchListView(){
   _hideAllViews();
   var wl = document.getElementById('watchlist-view'); if(wl) wl.style.display = '';
   var b = document.getElementById('nav-watchlist'); if(b) b.classList.add('active');
+  // NFL_RANKINGS_PARITY_V1 -- Bug #37's exit restore, ported in the widened form: anything
+  // parked on the dropdown that is not the active list (view:rankings OR dynasty-nfl) snaps
+  // back, and _updateYearLabels restores the list's title + tagline.
+  var _ls = document.getElementById('list-switcher');
+  if(_ls && _ls.value !== currentListId) _ls.value = currentListId;
+  if(typeof _updateYearLabels === 'function') _updateYearLabels();
 }
 function showNflPlayersView(){
   _hideAllViews();
   var np = document.getElementById('nflplayers-view'); if(np) np.style.display = '';
   var b = document.getElementById('nav-nflplayers'); if(b) b.classList.add('active');
+  // NFL_RANKINGS_PARITY_V1 -- same exit restore as showWatchListView.
+  var _ls = document.getElementById('list-switcher');
+  if(_ls && _ls.value !== currentListId) _ls.value = currentListId;
+  if(typeof _updateYearLabels === 'function') _updateYearLabels();
   if(typeof renderNflPlayers === 'function') renderNflPlayers();
 }
 // RANKINGS_PAGE_V1 — positional rankings view. Phase 1 shell: tabs switch, table renders an empty state.
@@ -1444,10 +1471,32 @@ var _rankings = { Overall:[], QB:[], RB:[], WR:[], TE:[], DEF:[] };  // Phase 2 
 // A tab with no hand-drag follows LIVE Yahoo order on every render (no frozen copy = nothing to go
 // stale). A real drag (rankDrop) flips its flag to true and freezes that tab's order from then on.
 var _rankManual = { Overall:false, QB:false, RB:false, WR:false, TE:false, DEF:false };
-function showRankingsView(){
+// NFL_RANKINGS_PARITY_V1 -- which rankings set the view is showing ('redraft' default,
+// 'dynasty'). Each set has its own saved orders; the view code is shared. NBA's pattern exactly.
+var _rankSet = 'redraft';
+function showRankingsView(set){
+  // Set-aware + claims the big header title (Bug #37's cure, ported). On a set change the
+  // in-memory orders drop and reload from that set's own storage, so sets never bleed.
+  var target = (set === 'dynasty') ? 'dynasty' : 'redraft';
+  var setChanged = (target !== _rankSet);
+  _rankSet = target;
   _hideAllViews();
   var rv = document.getElementById('rankings-view'); if(rv) rv.style.display = '';
-  var b = document.getElementById('nav-rankings'); if(b) b.classList.add('active');
+  var _t = document.getElementById('active-list-title');
+  var _tg = document.getElementById('active-list-subtitle');
+  if(_rankSet === 'dynasty'){
+    var _dl = (typeof WL_LISTS !== 'undefined') ? WL_LISTS.find(function(l){ return l.id === 'dynasty-nfl'; }) : null;
+    if(_t) _t.textContent = (_dl && _dl.name) ? _dl.name : 'Dynasty/Keeper Rankings';
+    if(_tg) _tg.textContent = (_dl && _dl.tag) ? _dl.tag : 'The long game, ranked deep';
+  } else {
+    if(_t) _t.textContent = 'Redraft Rankings';
+    if(_tg) _tg.textContent = 'This season, position by position';
+  }
+  if(setChanged){
+    _rankings = { Overall:[], QB:[], RB:[], WR:[], TE:[], DEF:[] };
+    _rankManual = { Overall:false, QB:false, RB:false, WR:false, TE:false, DEF:false };
+    loadRankingsFromNAS();   // async: hydrates the new set, re-renders when done
+  }
   renderRankings();
 }
 function switchRankPos(pos, btn){
@@ -1463,7 +1512,14 @@ function switchRankPos(pos, btn){
 // Yahoo rank (best first; players with no Yahoo rank sink to the bottom). Capped per position so it's the
 // fantasy-relevant depth (~250-300 total), not 4th-string practice-squad guys. Active + on-a-team only.
 // Phase 2 still to come: drag-to-rank to override this order + persist Matt's order to the NAS.
-var RANK_POS_CAP = { Overall:200, QB:32, RB:70, WR:80, TE:32, DEF:32 };  // OVERALL_RANK_V1: top-200 overall depth
+var RANK_POS_CAP = { Overall:200, QB:32, RB:70, WR:80, TE:32, DEF:32 };  // OVERALL_RANK_V1: top-200 overall depth (REDRAFT set)
+// NFL_RANKINGS_PARITY_V1 / DYNCAP (2026-08-05, PC Walter -- WALTER'S CALL, delegated by the
+// Dude after the caps question). Dynasty goes 400 deep on every tab like basketball's; REDRAFT
+// KEEPS June's football-tuned caps rather than basketball's flat 100, because the 32s exist
+// for a reason (32 teams = 32 starting QBs/DSTs) and a 100-deep QB tab would be rows of noise.
+// The twins match in DESIGN, not raw numbers. One table to change if the Dude overrides.
+var RANK_POS_CAP_DYN = { Overall:400, QB:400, RB:400, WR:400, TE:400, DEF:400 };
+function _rankCap(pos){ return ((_rankSet === 'dynasty') ? RANK_POS_CAP_DYN : RANK_POS_CAP)[pos] || 50; }
 function _rankingsIdsFor(pos){
   if(!_playerDB) return [];
   // OVERALL_RANK_V1 (2026-06-26 — PC Walter, per the Dude): the Overall tab gathers EVERY
@@ -1486,7 +1542,7 @@ function _rankingsIdsFor(pos){
       if(am && bm){ var na=(_playerDB[a].full_name||''), nb=(_playerDB[b].full_name||''); return na.localeCompare(nb); }
       if(am) return 1; if(bm) return -1; return ra - rb;
     });
-    return oids.slice(0, RANK_POS_CAP.Overall || 200);
+    return oids.slice(0, _rankCap('Overall'));   // NFL_RANKINGS_PARITY_V1: set-aware
   }
   var ids = [];
   for(var id in _playerDB){
@@ -1512,7 +1568,7 @@ function _rankingsIdsFor(pos){
     if(bm) return -1;
     return ra - rb;
   });
-  var cap = RANK_POS_CAP[pos] || 50;
+  var cap = _rankCap(pos);   // NFL_RANKINGS_PARITY_V1: set-aware (redraft tuned, dynasty 400)
   return ids.slice(0, cap);
 }
 function renderRankings(){
@@ -1837,15 +1893,21 @@ function rankDragEnd(e){
 
 // RANKINGS_SAVE_V1 — save one position's order. localStorage instant + POST to rankings-nfl-<pos>.
 var RANKINGS_STORAGE_KEY = 'watch101_nfl_rankings_v2';  // v2 (RANKINGS_LIVE_SEED_V1): {orders, manual} shape; v1 snapshot orders retired
+// NFL_RANKINGS_PARITY_V1 -- the dynasty set stores under its own key and its own NAS ids
+// (rankings-nfl-dyn-<pos>). The redraft key is untouched so existing hand-drags survive.
+// Dynasty NAS saves 404 harmlessly until the container rebuild registers the ids.
+var RANKINGS_DYN_STORAGE_KEY = 'watch101_nfl_rankings_dyn_v1';
+function _rankStorageKey(){ return (_rankSet === 'dynasty') ? RANKINGS_DYN_STORAGE_KEY : RANKINGS_STORAGE_KEY; }
+function _rankListId(pos){ return 'rankings-nfl-' + (_rankSet === 'dynasty' ? 'dyn-' : '') + pos.toLowerCase(); }
 function _rankSaveLocal(){
-  try { localStorage.setItem(RANKINGS_STORAGE_KEY, JSON.stringify({ orders: _rankings, manual: _rankManual })); }  // RANKINGS_LIVE_SEED_V1
+  try { localStorage.setItem(_rankStorageKey(), JSON.stringify({ orders: _rankings, manual: _rankManual })); }  // RANKINGS_LIVE_SEED_V1 + NFL_RANKINGS_PARITY_V1 (set-aware key)
   catch(e){ console.warn('[RANKINGS_SAVE_V1] localStorage save failed:', e); }
 }
 var _rankNasSaving = {};
 async function saveRankings(pos){
   if(_blockIfReadOnly('saveRankings')) return;
   _rankSaveLocal();
-  var listId = 'rankings-nfl-' + pos.toLowerCase();
+  var listId = _rankListId(pos);   // NFL_RANKINGS_PARITY_V1 (set-aware NAS id)
   if(_rankNasSaving[pos]) return;
   _rankNasSaving[pos] = true;
   var statusEl = document.getElementById('rankings-status');
@@ -1867,7 +1929,7 @@ async function saveRankings(pos){
 // each position (authoritative). A saved order overrides the Yahoo seed; missing → renderRankings seeds it.
 function _rankLoadLocal(){
   try {
-    var raw = localStorage.getItem(RANKINGS_STORAGE_KEY);
+    var raw = localStorage.getItem(_rankStorageKey());   // NFL_RANKINGS_PARITY_V1 (set-aware key)
     if(raw){ var obj = JSON.parse(raw); if(obj && obj.orders && obj.manual){ ['Overall','QB','RB','WR','TE','DEF'].forEach(function(k){ if(obj.manual[k] === true && Array.isArray(obj.orders[k])){ _rankings[k] = obj.orders[k]; _rankManual[k] = true; } }); } }  // RANKINGS_LIVE_SEED_V1: only hand-dragged orders hydrate
   } catch(e){ console.warn('[RANKINGS_LOAD_V1] localStorage load failed:', e); }
 }
@@ -1896,7 +1958,7 @@ async function loadRankingsFromNAS(){
   var positions = ['Overall','QB','RB','WR','TE','DEF'];
   for(var i=0;i<positions.length;i++){
     var pos = positions[i];
-    var listId = 'rankings-nfl-' + pos.toLowerCase();
+    var listId = _rankListId(pos);   // NFL_RANKINGS_PARITY_V1 (set-aware NAS id)
     try {
       var res = await fetch(SERVER_URL + '/list-staging/' + listId, {cache:'no-cache'});
       if(res.ok){
@@ -2554,7 +2616,7 @@ function _phoneRowTap(pid){
 // the manual Save button) keys to the active list with no further changes.
 const WL_LISTS = [
   { id: 'integrity-nfl',    folder: 'Integrity',    name: 'List of Integrity', emoji: '⭐', tag: 'The flagship 101', blurb: 'The main Watch101 NFL watch list: the players most worth your attention right now.' },
-  { id: 'dynasty-nfl',      folder: 'Dynasty',      name: 'Dynasty List',      emoji: '👑', tag: 'The long game', blurb: 'Keepers, rookies and building blocks, valued over a multi-season horizon rather than one week of scores.' },
+  { id: 'dynasty-nfl',      folder: 'Dynasty',      name: 'Dynasty/Keeper Rankings',      emoji: '👑', tag: 'The long game, ranked deep', blurb: 'Keepers, rookies and building blocks, valued over a multi-season horizon rather than one week of scores. Ranked rather than capped at 101, because the names that decide a deep keeper league live at the edges.' },   // NFL_RANKINGS_PARITY_V1 (2026-08-05): now a rankings set; folder untouched, old Dynasty list data preserved on the NAS
   { id: 'ffpc-redraft-nfl', folder: 'FFPC-ReDraft', name: 'FFPC Re-Draft',     emoji: '🏈', tag: 'FFPC re-draft', blurb: 'The watch list for the FFPC re-draft league.' },
   { id: 'sfb16-nfl',        folder: 'SFB16',        name: '#SFB16',            emoji: '🐠', tag: 'Scott Fish Bowl 16', blurb: 'The watch list for #SFB16, the giant industry charity tournament.' },
   { id: 'empire-nfl',       folder: 'Empire',       name: 'Empire',            emoji: '✌️', tag: 'The Empire league', blurb: 'The watch list for the Empire league.' },
@@ -3022,6 +3084,17 @@ function renderTiers(){
 window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} });
 
 async function switchActiveList(newId){
+  // NFL_RANKINGS_PARITY_V1 (2026-08-05) -- NBA's two diverts ported together. "view:*" entries
+  // are VIEWS, not lists; dynasty-nfl is a RANKINGS SET, not a loadable 101 list. Neither may
+  // ever reach loadListFromStorage.
+  if(typeof newId === 'string' && newId.indexOf('view:') === 0){
+    if(newId === 'view:rankings' && typeof showRankingsView === 'function') showRankingsView('redraft');
+    return;
+  }
+  if(newId === 'dynasty-nfl'){
+    if(typeof showRankingsView === 'function') showRankingsView('dynasty');
+    return;
+  }
   if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
   currentListId = newId;
   LIST_ID = newId;
