@@ -5208,7 +5208,13 @@ function mergeSavant(p){
     // 12900% / 1.3% nonsense was caused by the parser misaligning columns, not by units.
     p.sv_gb_pct = parseFloat(src['gb_rate']) * 100;
   }
+  // FBVELO_FALLBACK_V1 (Aug 6, 2026 — Bug #44, found by Matt via Whitlock). ff_avg_speed
+  // is Savant's FOUR-SEAM column. Sinkerballers and cutter-first arms ship it blank even
+  // though the same arsenal CSV carries their fastball speed a column over (Whitlock:
+  // ff blank, si 94.9). Read the first fastball that exists: four-seam, sinker, cutter.
   if(src['ff_avg_speed'])        p.sv_fb_velo      = parseFloat(src['ff_avg_speed']);
+  else if(src['si_avg_speed'])   p.sv_fb_velo      = parseFloat(src['si_avg_speed']);
+  else if(src['fc_avg_speed'])   p.sv_fb_velo      = parseFloat(src['fc_avg_speed']);
   // Live-computed: K-BB% (a single column per Matt's call). Both inputs must
   // be present; otherwise leave undefined so the render shows em-dash.
   if(p.sv_k_pct != null && p.sv_bb_pct != null){
@@ -5289,7 +5295,7 @@ function buildPercentileMaps(){
       sweetspot:'anglesweetspotpercent', barrel:'brl_percent',
       ev95:'ev95percent', maxev:'max_hit_speed', xera:'xera',
       // GOLD_BLOCK_V1 pitcher additions
-      fb_velo:'ff_avg_speed',    // Savant pitch-arsenals CSV column for avg 4-seam velo
+      fb_velo:'ff_avg_speed',    // avg 4-seam velo — FBVELO_FALLBACK_V1 special-cases this below with the ff→si→fc chain
       gb_pct:'gb_rate',          // GB% needs * 100 transform — handled below
       // GOLD_BLOCK_V1 (May 14, 2026 PM) — chase_pct now maps to `oz_swing_percent` from the custom-pitcher endpoint (after Worker update). Savant ships chase_percent as blank for pitchers; oz_swing_percent is the same metric with real data.
       chase_pct:'oz_swing_percent',
@@ -5301,6 +5307,14 @@ function buildPercentileMaps(){
     let vals = Object.values(savantPitchers)
       .map(r => parseFloat(r[apiKey]))
       .filter(v => !isNaN(v));
+    // FBVELO_FALLBACK_V1 — the fb_velo RANKING POOL gets the same four-seam → sinker →
+    // cutter fallback as mergeSavant above, so sinkerballers are ranked against a
+    // population that includes each other, not only four-seam arms.
+    if(field === 'sv_fb_velo'){
+      vals = Object.values(savantPitchers)
+        .map(r => parseFloat(r['ff_avg_speed'] || r['si_avg_speed'] || r['fc_avg_speed']))
+        .filter(v => !isNaN(v));
+    }
     // GOLD_BLOCK_V1 — special-case gb_rate which ships as a 0-1 fraction. Multiply by 100 so the percentile lookup matches the displayed 0-100 percent values. Same transform as mergeSavant line ~3302.
     if(field === 'sv_gb_pct') vals = vals.map(v => v * 100);
     vals.sort((a,b) => a-b);
