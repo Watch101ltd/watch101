@@ -63,6 +63,14 @@
      forces both stat groups to plain black lower down and that rule still wins on
      specificity, so day mode is deliberately unchanged. */
   --stat-teal:#62f9f4;
+  /* STAT_TWIN_V1 (2026-08-05, the Dude's call). The informational (non scoring category)
+     stats were grey, which read as 'switched off' rather than as a deliberate group.
+     This is baseball's hitter green, taken from that page's --stat-hitter NIGHT value
+     (#86efac) rather than re-picked by eye, so the two sports share one green. Baseball
+     defines --stat-hitter twice: green at night, red (#b91c1c) in day mode. The Dude asked
+     for the green one. NIGHT ONLY, matching STAT_TEAL_V1 above: day mode already renders
+     these columns in its own flat palette and those rules still win on specificity. */
+  --stat-info-green:#86efac;
   --leather-light:#c2410c;  /* lighter accent */
   --header-grad-1:#080c10;--header-grad-2:#0d1520;
 }
@@ -336,13 +344,15 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
    so a percentage can be judged against its volume, but make them visibly NOT
    scoring categories. Basketball Monster is the model he named — attempts are
    present but deliberately uncoloured. Grey, slightly dimmed, still sortable. */
-table.watch-list thead th.col-stat-info{color:var(--text3) !important;font-weight:600}
-table.watch-list tbody td.col-stat-info{color:var(--text3);opacity:0.78}
+table.watch-list thead th.col-stat-info{color:var(--stat-info-green) !important;font-weight:600}
+/* STAT_TWIN_V1: opacity was 0.78 to make the grey read as dimmed. Green is a chosen
+   colour, not a dimmed state, and the player card has no dimming to match, so it is 1. */
+table.watch-list tbody td.col-stat-info{color:var(--stat-info-green);opacity:1}
 /* The VALUE is a <span class="stat-cell"> with its own colour (#fb923c orange by
    default, overridden to teal for col-stat-a/-b). Colouring the <td> alone does
    nothing — the span wins. So the informational span is targeted directly, the
    same way the teal ones are two rules below. */
-table.watch-list tbody td.col-stat-info .stat-cell{color:var(--text3);font-weight:600}
+table.watch-list tbody td.col-stat-info .stat-cell{color:var(--stat-info-green);font-weight:600}
 table.watch-list thead th.col-stat-info:hover{filter:brightness(1.4)}
 body.day-mode table.watch-list thead th.col-stat-info{color:#6b7280 !important}
 body.day-mode table.watch-list tbody td.col-stat-info{color:#6b7280}
@@ -513,6 +523,17 @@ body.compact-mode #nbamain-wrap th.col-note,body.compact-mode #nbamain-wrap td.c
 #ftl-overlay .ftl-statlabel{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:9px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
 #ftl-overlay .ftl-statval{font-size:15px;font-weight:700;color:#fb923c;line-height:1;}
 #ftl-overlay .ftl-statval.na{color:var(--text3);font-weight:500;}
+/* STAT_TWIN_V1 (2026-08-05). The card's stat block is now a TWIN of the watch-list table:
+   same 19 stats, same order, same colours. In the table the header and the number beneath it
+   always share one colour, so the card colours its label and value together too. Categories
+   take the same teal as th.col-stat-a; informational take the same green as th.col-stat-info.
+   The .na rule above still wins for missing data, so an em dash never gets painted as if it
+   were a real number. */
+#ftl-overlay .ftl-statcell.cat .ftl-statlabel,
+#ftl-overlay .ftl-statcell.cat .ftl-statval{color:var(--stat-teal);}
+#ftl-overlay .ftl-statcell.info .ftl-statlabel,
+#ftl-overlay .ftl-statcell.info .ftl-statval{color:var(--stat-info-green);}
+#ftl-overlay .ftl-statcell .ftl-statval.na{color:var(--text3);}
 @media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:34px}#ftl-overlay .ftl-photo{width:130px;height:130px}}
 
 /* POS_BADGE — basketball positions: PG/SG/SF/PF/C, plus G/F fallbacks. */
@@ -4852,15 +4873,20 @@ initSortHandlers();
 // sub (team/pos/age) + per-game stats we already have, grouped like the table. Games cards deferred.
 // Photo: Sleeper hosts headshots at sleepercdn.com/content/nba/players/<player_id>.jpg (confirmed
 // live 2026-06-07). onerror falls back to Sleeper's default player silhouette.
-function _ftlStatCell(label, val){
+function _ftlStatCell(label, val, kind){
   const na = (val == null);
   const shown = na ? '—' : val;
-  return '<div class="ftl-statcell"><div class="ftl-statlabel">' + label +
+  // STAT_TWIN_V1: kind is 'cat' (scoring category, teal) or 'info' (informational, green),
+  // mirroring the table's col-stat-a / col-stat-info classes. Omitted = uncoloured, so any
+  // future caller that does not pass one still renders rather than breaking.
+  const cls = (kind === 'cat' || kind === 'info') ? (' ' + kind) : '';
+  return '<div class="ftl-statcell' + cls + '"><div class="ftl-statlabel">' + label +
          '</div><div class="ftl-statval' + (na ? ' na' : '') + '">' + shown + '</div></div>';
 }
 // Format a per-game number to 1 decimal, strip a trailing .0, em-dash when null.
 function _ftlPG(total, gp){ const v = perGame(total, gp); return (v == null) ? null : v.toFixed(1); } // POINTZERO_V1 (2026-06-28): keep trailing .0 to match the table
-function _ftlPct(makes, att){ const v = pctOrNull(makes, att); return (v == null) ? null : v.toFixed(1); }
+// STAT_TWIN_V1: the % sign matches the table, where Matt asked for it on 2026-06-28 (PCTSIGN_V1).
+function _ftlPct(makes, att){ const v = pctOrNull(makes, att); return (v == null) ? null : v.toFixed(1) + '%'; }
 // MIN_CARD_FORMAT_V1 (2026-08-05, Bug #38). _nbaMpg returns a RAW number on purpose so the
 // column sorts can compare it. Every other cell in this card formats at the point of display
 // (_ftlPG, _ftlPct) and the two table renders wrap it in statCellOrDash(v, 1). This cell was the
@@ -5054,23 +5080,45 @@ function openFromTheLogo(pid){
     rankEl.style.display = 'none';
   }
 
-  // Stat boxes — grouped like the table: counting (per game), then shooting (per game), then percentages.
-  const counting = _ftlStatCell('GP', (s.gp != null ? s.gp : null)) +
-    _ftlStatCell('PTS', _ftlPG(s.pts, gp)) + _ftlStatCell('REB', _ftlPG(s.reb, gp)) +
-    _ftlStatCell('ORB', _ftlPG(s.oreb, gp)) + _ftlStatCell('DRB', _ftlPG(s.dreb, gp)) +
-    _ftlStatCell('AST', _ftlPG(s.ast, gp)) + _ftlStatCell('STL', _ftlPG(s.stl, gp)) +
-    _ftlStatCell('BLK', _ftlPG(s.blk, gp)) + _ftlStatCell('TOV', _ftlPG(s.to, gp)) +
-    _ftlStatCell('MIN', _ftlMin(s));   // NINE_CAT_V1 — PF removed (Matt: never, anywhere), MPG added to match the table
-  const shooting = _ftlStatCell('FGA', _ftlPG(s.fga, gp)) + _ftlStatCell('FG', _ftlPG(s.fgm, gp)) +
-    _ftlStatCell('FG%', _ftlPct(s.fgm, s.fga)) +
-    _ftlStatCell('3PA', _ftlPG(s.tpa, gp)) + _ftlStatCell('3P', _ftlPG(s.tpm, gp)) +
-    _ftlStatCell('3P%', _ftlPct(s.tpm, s.tpa)) +
-    _ftlStatCell('FTA', _ftlPG(s.fta, gp)) + _ftlStatCell('FT', _ftlPG(s.ftm, gp)) +
-    _ftlStatCell('FT%', _ftlPct(s.ftm, s.fta));
+  // Stat boxes. Superseded by STAT_TWIN_V1 below: the old counting/shooting grouping is gone,
+  // these now mirror the watch-list table column for column.
+  // STAT_TWIN_V1 (2026-08-05, the Dude's call). These two rows are a TWIN of the watch-list
+  // table's stat block: same 19 stats, same order, same labels, same colours. The card wraps
+  // onto two rows only because 19 will not fit across. The break sits on the table's own gold
+  // zone divider between 3P% and PTS, so all the shooting reads on one line and all the
+  // counting on the other, rather than splitting a group in half.
+  // 'cat'  = one of the nine scoring categories, teal, matches th.col-stat-a.
+  // 'info' = informational, green, matches th.col-stat-info.
+  // Order is lifted from the table header left to right, not re-invented here:
+  //   GP MIN | FG% FGM FGA | FT% FTM FTA | 3PM 3PA 3P% | PTS REB ORB DRB AST STL BLK TO
+  // Three labels were renamed to match the table exactly: FG became FGM, 3P became 3PM,
+  // TOV became TO. The underlying fields are unchanged. PF stays removed site wide, per Matt
+  // ("never, anywhere"), carried over from NINE_CAT_V1.
+  const statRow1 =
+    _ftlStatCell('GP',  (s.gp != null ? s.gp : null), 'info') +
+    _ftlStatCell('MIN', _ftlMin(s),                   'info') +
+    _ftlStatCell('FG%', _ftlPct(s.fgm, s.fga),        'cat')  +
+    _ftlStatCell('FGM', _ftlPG(s.fgm, gp),            'info') +
+    _ftlStatCell('FGA', _ftlPG(s.fga, gp),            'info') +
+    _ftlStatCell('FT%', _ftlPct(s.ftm, s.fta),        'cat')  +
+    _ftlStatCell('FTM', _ftlPG(s.ftm, gp),            'info') +
+    _ftlStatCell('FTA', _ftlPG(s.fta, gp),            'info') +
+    _ftlStatCell('3PM', _ftlPG(s.tpm, gp),            'cat')  +
+    _ftlStatCell('3PA', _ftlPG(s.tpa, gp),            'info') +
+    _ftlStatCell('3P%', _ftlPct(s.tpm, s.tpa),        'info');
+  const statRow2 =
+    _ftlStatCell('PTS', _ftlPG(s.pts, gp),            'cat')  +
+    _ftlStatCell('REB', _ftlPG(s.reb, gp),            'cat')  +
+    _ftlStatCell('ORB', _ftlPG(s.oreb, gp),           'info') +
+    _ftlStatCell('DRB', _ftlPG(s.dreb, gp),           'info') +
+    _ftlStatCell('AST', _ftlPG(s.ast, gp),            'cat')  +
+    _ftlStatCell('STL', _ftlPG(s.stl, gp),            'cat')  +
+    _ftlStatCell('BLK', _ftlPG(s.blk, gp),            'cat')  +
+    _ftlStatCell('TO',  _ftlPG(s.to, gp),             'cat');
   // QUADRANTS_V1 (Aug 2, 2026): two compact stat rows in the hero, baseball-style.
   document.getElementById('ftl-statwrap').innerHTML =
-    '<div class="ftl-statbar">' + counting + '</div>' +
-    '<div class="ftl-statbar">' + shooting + '</div>';
+    '<div class="ftl-statbar">' + statRow1 + '</div>' +
+    '<div class="ftl-statbar">' + statRow2 + '</div>';
 
   _ftlCurrentPid = pid;
   _ftlSyncOwnedCheck(pid);
