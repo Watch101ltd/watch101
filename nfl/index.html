@@ -642,6 +642,15 @@ body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.c
 #ftl-overlay .ftl-statlabel{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:9px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
 #ftl-overlay .ftl-statval{font-size:15px;font-weight:700;color:#22c55e;line-height:1;}
 #ftl-overlay .ftl-statval.na{color:var(--text3);font-weight:500;}
+/* ROTOWIRE_LINK_NFL_V1 (2026-08-05) — baseball's gold RW pill, cloned. Deliberately a PILL and
+   deliberately just a LINK: the Dude looked at a real news feed and decided against rebuilding one
+   tonight, because actual headlines need licensed content, not a hyperlink. Kept as-is so all three
+   sports match until that decision is made. */
+#ftl-overlay .ftl-rw-link{align-items:center;justify-content:center;min-width:44px;padding:5px 12px;
+  background:transparent;border:1px solid var(--gold);border-radius:14px;font-family:'Nunito Sans',sans-serif;
+  font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--gold);text-decoration:none;
+  margin-top:8px;margin-left:10px;vertical-align:middle;transition:background .15s,color .15s;}
+#ftl-overlay .ftl-rw-link:hover{background:var(--gold);color:#0d1117;}
 @media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:34px}#ftl-overlay .ftl-photo{width:130px;height:130px}}
 .pos-badge{
   display:inline-block;padding:3px 7px;border-radius:4px;
@@ -4394,6 +4403,38 @@ initSortHandlers();
 // the SEASON-TOTAL stats the football table shows (football table is totals, not per-game). Games deferred.
 // Photo: Sleeper hosts NFL headshots at sleepercdn.com/content/nfl/players/<player_id>.jpg
 // (confirmed live in-browser 2026-06-07, Joe Flacco pid 19). onerror -> Sleeper default silhouette.
+// ROTOWIRE_LINK_NFL_V1 (2026-08-05) — clone of baseball's ROTOWIRE_LINK_V1 (5/21), shipped the
+// same night as the NBA twin. URL recipe: /football/player/<slug>-<rotowire_id>. VERIFIED LIVE
+// before building, not assumed: a constructed URL was loaded in the browser and returned Patrick
+// Mahomes' real page, title and H1 both correct. Only the sport segment differs across the three.
+// Sleeper ships rotowire_id on the player record, so there is no new data pipeline here.
+// Coverage at build time: 10,164 of 12,210 football players.
+// 🪨 WHEN THERE IS NO ID THE PILL IS HIDDEN ENTIRELY, never pointed at a search or a 404. That is
+// baseball's ROTOWIRE_HIDE_UNMAPPED_V1 rule and it is the honest behaviour: a dead link that looks
+// alive is worse than no link. The ID is also what keeps the TWO Josh Allens in this database
+// (rotowire 10011 and 12483) pointing at different pages.
+function _rwSlug(s){
+  return String(s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+function _ftlRenderRwLink(pid){
+  var el = document.getElementById('ftl-rw-link');
+  if(!el) return;
+  var p = (typeof _playerDB !== 'undefined' && _playerDB) ? _playerDB[pid] : null;
+  var id = p ? p.rotowire_id : null;
+  if(id == null || id === ''){ el.style.display = 'none'; return; }
+  var nm = (p.full_name || ((p.first_name || '') + ' ' + (p.last_name || ''))).trim();
+  var slug = _rwSlug(nm);
+  if(!slug){ el.style.display = 'none'; return; }
+  el.href  = 'https://www.rotowire.com/football/player/' + slug + '-' + encodeURIComponent(id);
+  el.title = 'Open ' + (nm || 'player') + ' on RotoWire';
+  el.style.display = 'inline-flex';
+}
 function _ftlStatCell(label, val){
   const na = (val == null);
   return '<div class="ftl-statcell"><div class="ftl-statlabel">' + label +
@@ -4760,6 +4801,7 @@ function openFromTheLogo(pid){
 
   _ftlCurrentPid = pid;
   _ftlSyncOwnedCheck(pid);
+  _ftlRenderRwLink(pid);   // ROTOWIRE_LINK_NFL_V1
   _ftlRenderTypeTags(pid);
   _dismissMustWatchOnOpen(pid);
   _ftlRenderScheduleResults(pid);
@@ -5451,7 +5493,7 @@ function _yahooLookupFmt(pid, field, isPercent){
       <div class="ftl-name" id="ftl-name"></div>
       <div class="ftl-sub" id="ftl-sub"></div>
       <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num"></span></div>
-      <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label> <button class="btn btn-outline" id="ftl-career-btn" onclick="openCareerPopup()" style="margin-top:8px;margin-left:10px" title="Season-by-season career stats">&#128202; Career by Season</button></div>
+      <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label> <button class="btn btn-outline" id="ftl-career-btn" onclick="openCareerPopup()" style="margin-top:8px;margin-left:10px" title="Season-by-season career stats">&#128202; Career by Season</button><a class="ftl-rw-link" id="ftl-rw-link" href="#" target="_blank" rel="noopener" style="display:none" title="Open on RotoWire">RW</a></div>
     </div>
     <div class="ftl-statwrap" id="ftl-statwrap"></div>
   </section>
