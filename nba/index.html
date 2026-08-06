@@ -4147,7 +4147,17 @@ function _ftlGlDate(iso){
   const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return names[Number(m[2]) - 1] + ' ' + Number(m[3]);
 }
-function _ftlGlNum(v){ return (typeof v === 'number' && isFinite(v)) ? Math.round(v) : '—'; }
+// GAMELOG_ZEROS_V1 (2026-08-05, Matt on the 8/5 call: "We should change these dashes to zeros").
+// Sleeper's per-game feed OMITS a counting stat entirely when its value is zero, so a game with no
+// blocks simply has no `blk` key. That arrived here as undefined and printed an em dash, which read
+// as "we do not know" when the truth is "zero".
+// The proof it was wrong, from the Dude's own screenshot: SGA's BLK column showed 1, then five em
+// dashes, then 3, and the Avg row underneath read 0.6. That is 4 over 7 games, so the summary was
+// ALREADY treating every one of those dashes as a zero while the table refused to. One dataset,
+// two answers, in the same table. This makes the table agree with its own footer.
+// Scope, per the Dude: the seven counting stats and MIN only. Date, Opp and Res keep their em dash,
+// because a missing opponent is unknown, not zero.
+function _ftlGlNum(v){ return (typeof v === 'number' && isFinite(v)) ? Math.round(v) : 0; }
 
 async function _ftlRenderNbaGames(pid){
   const prevEl = document.getElementById('ftl-prevgames-body');
@@ -4197,7 +4207,7 @@ async function _ftlRenderNbaGames(pid){
         }
         html += '<tr><td class="gl-left">' + _ftlGlDate(g.date) + '</td>'
               + '<td class="gl-left">' + (g.away ? '@ ' : '') + (g.opp || '—') + '</td>' + resCell
-              + '<td>' + (mins != null ? mins : '—') + '</td>'
+              + '<td>' + (mins != null ? mins : 0) + '</td>'   // GAMELOG_ZEROS_V1
               + '<td>' + _ftlGlNum(s.pts) + '</td><td>' + _ftlGlNum(s.reb) + '</td><td>' + _ftlGlNum(s.ast) + '</td>'
               + '<td>' + _ftlGlNum(s.stl) + '</td><td>' + _ftlGlNum(s.blk) + '</td><td>' + _ftlGlNum(s.tpm) + '</td><td>' + _ftlGlNum(s.to) + '</td></tr>';
       });
