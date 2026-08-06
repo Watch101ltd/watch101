@@ -587,9 +587,34 @@ body.view-matts-take #nbamain-wrap th.col-stat-a,    body.view-matts-take #nbama
 body.view-matts-take #nbamain-wrap th.col-stat-b,    body.view-matts-take #nbamain-wrap td.col-stat-b{display:none !important;}
 body.view-matts-take #nbamain-wrap th.col-note,body.view-matts-take #nbamain-wrap td.col-note{max-width:none;width:55%;white-space:normal;}
 
-/* NINE CAT — informational stats only, minus the GP and MIN exemption Matt asked for. */
-body.view-nine-cat #nbamain-wrap th.col-stat-info:not(.col-ninecat-keep),
-body.view-nine-cat #nbamain-wrap td.col-stat-info:not(.col-ninecat-keep){display:none !important;}
+/* ── 9 CAT and 13 CAT ─────────────────────────────────────────────────────────────────────────
+   Each view keeps GP + MIN (informational in BOTH formats, which is why they are green and sit
+   ahead of the teal run) plus that format's scoring categories, and hides every other stat.
+   MEMBERSHIP IS NOT TYPED HERE. The col-cat9 / col-cat13 classes were generated from
+   NBA_CATEGORIES, the same model the stat filter reads, so a view can never disagree with the
+   filter about what counts.
+     9 CAT  keeps FG% FT% 3PM PTS REB AST STL BLK TO          hides FGM FGA FTM FTA 3PA 3P% ORB DRB
+     13 CAT keeps FG% FGM FT% FTM 3PM 3P% PTS ORB DRB AST STL BLK TO   hides FGA FTA 3PA REB
+   🪨 REB DISAPPEARS IN 13 CAT AND THAT IS CORRECT. ORB and DRB replace it; showing all three
+   would count every rebound twice. So 13-cat is not 9-cat plus four, it swaps one out and adds
+   five. Both sets were counted in code, 9 and 13.
+   With the columns in their existing order, both views come out CONTIGUOUS once the hidden ones
+   drop, so the teal run is unbroken in each. No reordering was needed. */
+body.view-nine-cat #nbamain-wrap th.col-stat:not(.col-cat9):not(.col-cat-always),
+body.view-nine-cat #nbamain-wrap td.col-stat-a:not(.col-cat9):not(.col-cat-always),
+body.view-nine-cat #nbamain-wrap td.col-stat-b:not(.col-cat9):not(.col-cat-always),
+body.view-nine-cat #nbamain-wrap td.col-stat-info:not(.col-cat9):not(.col-cat-always){display:none !important;}
+
+body.view-thirteen-cat #nbamain-wrap th.col-stat:not(.col-cat13):not(.col-cat-always),
+body.view-thirteen-cat #nbamain-wrap td.col-stat-a:not(.col-cat13):not(.col-cat-always),
+body.view-thirteen-cat #nbamain-wrap td.col-stat-b:not(.col-cat13):not(.col-cat-always),
+body.view-thirteen-cat #nbamain-wrap td.col-stat-info:not(.col-cat13):not(.col-cat-always){display:none !important;}
+
+/* In 13 Cat, FGM / FTM / 3P% / ORB / DRB stop being informational and become real scoring
+   categories, so they take the teal header and the category wash for the duration of that view.
+   GP and MIN are NOT col-cat13, so they correctly keep their grey header and no wash. */
+body.view-thirteen-cat #nbamain-wrap th.col-cat13{color:var(--stat-teal) !important;background:var(--stat-cat-wash);}
+body.view-thirteen-cat #nbamain-wrap td.col-cat13{background:var(--stat-cat-wash);}
 
 #ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin:0 0 10px 2px;}
 #ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
@@ -970,10 +995,11 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
   <div class="toolbar-right">
     <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
-    <select id="view-mode-select" onchange="setViewMode(this.value)" title="Full View shows everything. Matt's Take hides the stats and ownership so his notes, tags and stars take center stage. Nine Cat hides the informational stats, leaving GP, MIN and the nine scoring categories.">
+    <select id="view-mode-select" onchange="setViewMode(this.value)" title="Full View shows everything. Matt's Take hides the stats and ownership so his notes, tags and stars take center stage. 9 Cat leaves GP, MIN and the nine scoring categories. 13 Cat leaves GP, MIN and the thirteen.">
       <option value="full" selected>&#8596; Full View</option>
       <option value="matts-take">&#8596; Matt's Take</option>
-      <option value="nine-cat">&#8596; Nine Cat</option>
+      <option value="nine-cat">&#8596; 9 Cat</option>
+      <option value="thirteen-cat">&#8596; 13 Cat</option>
     </select>
     <button class="btn btn-outline" id="export-btn" onclick="exportXLSXDownload()" title="Download the current list as an Excel (.xlsx) file">&#128228; Export</button>
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of players">&#127991;&#65039; Tier</button>
@@ -1069,25 +1095,25 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-yrank col-zone-divider" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info col-ninecat-keep col-zone-divider" data-sort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info col-ninecat-keep" data-sort="min" title="Minutes per game — informational, not a scoring category">MIN <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a col-zone-divider" data-sort="fgpct" title="Field goal % — scoring category">FG% <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info" data-sort="fgm" title="Field goals made per game — informational in 9-cat, a scoring category in 13-cat">FGM <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-cat-always col-zone-divider" data-sort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-cat-always" data-sort="min" title="Minutes per game — informational, not a scoring category">MIN <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-zone-divider col-cat9 col-cat13" data-sort="fgpct" title="Field goal % — scoring category">FG% <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-cat13" data-sort="fgm" title="Field goals made per game — informational in 9-cat, a scoring category in 13-cat">FGM <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info" data-sort="fga" title="Field goals attempted per game — informational, not a scoring category">FGA <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a col-zone-divider" data-sort="ftpct" title="Free throw % — scoring category">FT% <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info" data-sort="ftm" title="Free throws made per game — informational in 9-cat, a scoring category in 13-cat">FTM <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-zone-divider col-cat9 col-cat13" data-sort="ftpct" title="Free throw % — scoring category">FT% <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-cat13" data-sort="ftm" title="Free throws made per game — informational in 9-cat, a scoring category in 13-cat">FTM <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info" data-sort="fta" title="Free throws attempted per game — informational, not a scoring category">FTA <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a col-zone-divider" data-sort="tpm" title="3-pointers made per game — scoring category">3PM <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-zone-divider col-cat9 col-cat13" data-sort="tpm" title="3-pointers made per game — scoring category">3PM <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info" data-sort="tpa" title="3-pointers attempted per game — informational, not a scoring category">3PA <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info" data-sort="tppct" title="3-point % — informational in 9-cat, a scoring category in 13-cat">3P% <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a col-zone-divider" data-sort="pts" title="Points per game — scoring category">PTS <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="reb" title="Total rebounds per game — scoring category">REB <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info" data-sort="oreb" title="Offensive rebounds per game — informational in 9-cat, a scoring category in 13-cat">ORB <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info" data-sort="dreb" title="Defensive rebounds per game — informational in 9-cat, a scoring category in 13-cat">DRB <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="ast" title="Assists per game — scoring category">AST <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="stl" title="Steals per game — scoring category">STL <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="blk" title="Blocks per game — scoring category">BLK <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="to" title="Turnovers per game — scoring category">TO <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-cat13" data-sort="tppct" title="3-point % — informational in 9-cat, a scoring category in 13-cat">3P% <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-zone-divider col-cat9 col-cat13" data-sort="pts" title="Points per game — scoring category">PTS <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-cat9" data-sort="reb" title="Total rebounds per game — scoring category">REB <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-cat13" data-sort="oreb" title="Offensive rebounds per game — informational in 9-cat, a scoring category in 13-cat">ORB <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-cat13" data-sort="dreb" title="Defensive rebounds per game — informational in 9-cat, a scoring category in 13-cat">DRB <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-cat9 col-cat13" data-sort="ast" title="Assists per game — scoring category">AST <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-cat9 col-cat13" data-sort="stl" title="Steals per game — scoring category">STL <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-cat9 col-cat13" data-sort="blk" title="Blocks per game — scoring category">BLK <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-cat9 col-cat13" data-sort="to" title="Turnovers per game — scoring category">TO <span class="sort-arrow">↕</span></th>
         <th class="col-action">Action</th>
       </tr>
     </thead>
@@ -3162,25 +3188,25 @@ function renderNbaPlayers(){
       '<td class="col-yrank col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +
       '<td class="col-yowned ' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +
       '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +
-      '<td class="col-stat-info col-ninecat-keep col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
-      '<td class="col-stat-info col-ninecat-keep">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
-      '<td class="col-stat-a col-zone-divider">' + pctCellOrDash(fgPct) + '</td>' +
-      '<td class="col-stat-info">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
+      '<td class="col-stat-info col-cat-always col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
+      '<td class="col-stat-info col-cat-always">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
+      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + pctCellOrDash(fgPct) + '</td>' +
+      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fga, gp), 1) + '</td>' +
-      '<td class="col-stat-a col-zone-divider">' + pctCellOrDash(ftPct) + '</td>' +
-      '<td class="col-stat-info">' + statCellOrDash(perGame(s.ftm, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + pctCellOrDash(ftPct) + '</td>' +
+      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.ftm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fta, gp), 1) + '</td>' +
-      '<td class="col-stat-a col-zone-divider">' + statCellOrDash(perGame(s.tpm, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + statCellOrDash(perGame(s.tpm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.tpa, gp), 1) + '</td>' +
-      '<td class="col-stat-info">' + pctCellOrDash(tpPct) + '</td>' +
-      '<td class="col-stat-a col-zone-divider">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
-      '<td class="col-stat-info">' + statCellOrDash(perGame(s.oreb, gp), 1) + '</td>' +
-      '<td class="col-stat-info">' + statCellOrDash(perGame(s.dreb, gp), 1) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(perGame(s.ast, gp), 1) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(perGame(s.stl, gp), 1) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(perGame(s.blk, gp), 1) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(perGame(s.to, gp), 1) + '</td>' +
+      '<td class="col-stat-info col-cat13">' + pctCellOrDash(tpPct) + '</td>' +
+      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-cat9">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
+      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.oreb, gp), 1) + '</td>' +
+      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.dreb, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-cat9 col-cat13">' + statCellOrDash(perGame(s.ast, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-cat9 col-cat13">' + statCellOrDash(perGame(s.stl, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-cat9 col-cat13">' + statCellOrDash(perGame(s.blk, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-cat9 col-cat13">' + statCellOrDash(perGame(s.to, gp), 1) + '</td>' +
       // NBA_PLAYERS_PAGE_V1 Stage 3 — Add button. Already-on-list players show a
       // disabled "✓ Added" pill; others show a clickable "+ Add" that calls
       // npAddToList(pid, btn), which adds to the watch list + flips this button.
@@ -3565,25 +3591,25 @@ function renderWatchList(){
       '<td class="col-yrank col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="col-yowned ' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +   // Y!Owned (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +   // CBS Owned (NBA_CBS_OWNERSHIP_V1 / CBS_OWNED_PCT_V1)
-      '<td class="col-stat-info col-ninecat-keep col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
-      '<td class="col-stat-info col-ninecat-keep">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
-      '<td class="col-stat-a col-zone-divider">' + pctCellOrDash(fgPct) + '</td>' +
-      '<td class="col-stat-info">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
+      '<td class="col-stat-info col-cat-always col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
+      '<td class="col-stat-info col-cat-always">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
+      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + pctCellOrDash(fgPct) + '</td>' +
+      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fga, gp), 1) + '</td>' +
-      '<td class="col-stat-a col-zone-divider">' + pctCellOrDash(ftPct) + '</td>' +
-      '<td class="col-stat-info">' + statCellOrDash(perGame(s.ftm, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + pctCellOrDash(ftPct) + '</td>' +
+      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.ftm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fta, gp), 1) + '</td>' +
-      '<td class="col-stat-a col-zone-divider">' + statCellOrDash(perGame(s.tpm, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + statCellOrDash(perGame(s.tpm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.tpa, gp), 1) + '</td>' +
-      '<td class="col-stat-info">' + pctCellOrDash(tpPct) + '</td>' +
-      '<td class="col-stat-a col-zone-divider">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
-      '<td class="col-stat-info">' + statCellOrDash(perGame(s.oreb, gp), 1) + '</td>' +
-      '<td class="col-stat-info">' + statCellOrDash(perGame(s.dreb, gp), 1) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(perGame(s.ast, gp), 1) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(perGame(s.stl, gp), 1) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(perGame(s.blk, gp), 1) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(perGame(s.to, gp), 1) + '</td>' +
+      '<td class="col-stat-info col-cat13">' + pctCellOrDash(tpPct) + '</td>' +
+      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + statCellOrDash(perGame(s.pts, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-cat9">' + statCellOrDash(perGame(s.reb, gp), 1) + '</td>' +
+      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.oreb, gp), 1) + '</td>' +
+      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.dreb, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-cat9 col-cat13">' + statCellOrDash(perGame(s.ast, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-cat9 col-cat13">' + statCellOrDash(perGame(s.stl, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-cat9 col-cat13">' + statCellOrDash(perGame(s.blk, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-cat9 col-cat13">' + statCellOrDash(perGame(s.to, gp), 1) + '</td>' +
       '<td class="center col-action"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
     '</tr>';
   }).join('');
@@ -3859,10 +3885,11 @@ function _wlPid(item){ return (typeof item === 'string') ? item : (item && item.
 // applied, so the modes can never stack. 'full' simply adds neither.
 function setViewMode(mode){
   const b = document.body;
-  b.classList.remove('view-matts-take','view-nine-cat');
-  if(mode === 'matts-take')     b.classList.add('view-matts-take');
-  else if(mode === 'nine-cat')  b.classList.add('view-nine-cat');
-  else                          mode = 'full';
+  b.classList.remove('view-matts-take','view-nine-cat','view-thirteen-cat');
+  if(mode === 'matts-take')          b.classList.add('view-matts-take');
+  else if(mode === 'nine-cat')       b.classList.add('view-nine-cat');
+  else if(mode === 'thirteen-cat')   b.classList.add('view-thirteen-cat');
+  else                               mode = 'full';
   const sel = document.getElementById('view-mode-select');
   if(sel){ sel.value = mode; sel.classList.toggle('active', mode !== 'full'); }
   if(typeof fitTables === 'function'){ try{ fitTables(); }catch(e){} }
