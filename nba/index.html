@@ -332,6 +332,7 @@ table.watch-list tbody td .pos-stack{display:grid;grid-template-columns:repeat(2
 table.watch-list thead th.col-player,table.watch-list tbody td.col-player{width:180px;text-align:left}
 table.watch-list tbody .player-name{font-size:12px;font-weight:800}
 table.watch-list thead th.col-team{width:38px;text-align:right}
+table.watch-list thead th.col-exp{width:32px;text-align:right}   /* EXP_COL_NBA_V1, football's width */
 table.watch-list thead th.col-age{width:32px;text-align:right}
 table.watch-list thead th.col-delta{width:44px;text-align:right}
 table.watch-list thead th.col-type{width:60px;text-align:right}
@@ -1003,6 +1004,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="left col-player" data-sort="name">Player <span class="sort-arrow">↕</span></th>
         <th class="col-team" data-sort="team">Team <span class="sort-arrow">↕</span></th>
         <th class="col-age" data-sort="age">Age <span class="sort-arrow">↕</span></th>
+        <th class="col-exp" data-sort="exp" title="Years of NBA experience (R for rookies)">Exp <span class="sort-arrow">↕</span></th>
         <th class="col-delta" data-sort="delta">+/– <span class="sort-arrow">↕</span></th>
         <th class="col-type" data-sort="type">Type <span class="sort-arrow">↕</span></th>
         <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
@@ -1173,7 +1175,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <tr id="rankings-head-row"></tr>
       </thead>
       <tbody id="rankings-body">
-        <tr><td colspan="29" class="empty-state"><strong>PG rankings are loading</strong>Player data may still be loading — give it a moment.</td></tr>
+        <tr><td colspan="30" class="empty-state"><strong>PG rankings are loading</strong>Player data may still be loading — give it a moment.</td></tr>
       </tbody>
     </table>
   </div>
@@ -2505,7 +2507,7 @@ function renderRankings(){
   var statusEl = document.getElementById('rankings-status');
   if(!tbody) return;
   if(!_playerDB){
-    tbody.innerHTML = '<tr><td colspan="29" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="30" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
     return;
   }
   // _rankings[pos] is the source of truth for ORDER. First render with no saved order seeds from the
@@ -2596,6 +2598,12 @@ function _rankCol_age(){ return { key:'age', label:'Age', tdClass:'',
 // RANK_STATS_PARITY_V1: GP was tagged col-stat-a (a scoring category) here while the watch list
 // has always had it as col-stat-info. Harmless when it only meant a text colour, visible the moment
 // the category wash shipped. Now informational in both places.
+// EXP_COL_NBA_V1 — the rankings half. Same two helpers as the watch list, so the two tables
+// cannot drift. Missing sinks via Infinity, matching _rankCol_age, because exp defaults to
+// ascending for the same reason age does: the useful question is "who is new", not "who is old".
+function _rankCol_exp(){ return { key:'exp', label:'Exp', headClass:'col-exp', tdClass:'',
+  num:function(pid){ var v=_nbaExpNum(_playerDB[pid]); return (v==null||isNaN(v))?Infinity:v; },
+  render:function(pid,p){ var x=_nbaExpLabel(p); return (x==null)?'—':x; } }; }
 function _rankCol_gp(){ return { key:'gp', label:'GP', tdClass:'col-stat-info col-zone-divider', headClass:'col-stat col-stat-info col-zone-divider',
   num:function(pid){ var s=_statsRow(pid)||{}; return (s.gp==null)?-1:Number(s.gp); },
   render:function(pid){ var s=_statsRow(pid)||{}; return statCellOrDash(s.gp,0); } }; }
@@ -2703,7 +2711,7 @@ function _rankColsFor(pos){
   // col-stat-a  = scoring category, teal header, carries the category wash.
   // col-stat-info = informational, grey header, no wash.
   // TOV was renamed TO to match the watch list. The field behind it is unchanged.
-  return [ _rankCol_notebadge(), _rankCol_note(), _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(),
+  return [ _rankCol_notebadge(), _rankCol_note(), _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(), _rankCol_exp(),
     _rankCol_gp(),
     _rankCol_min(),
     _rankPctCol('fgpct','FG%','fgm','fga','col-stat-a col-zone-divider'),
@@ -2756,7 +2764,7 @@ var _rankSortDir = 'desc';
 function _rankSortBy(field){
   if(!field) return;
   if(_rankSortField === field){ _rankSortDir = (_rankSortDir === 'desc') ? 'asc' : 'desc'; }
-  else { _rankSortField = field; _rankSortDir = (field === 'age') ? 'asc' : 'desc'; }
+  else { _rankSortField = field; _rankSortDir = (field === 'age' || field === 'exp') ? 'asc' : 'desc'; }   // EXP_COL_NBA_V1
   renderRankings();
 }
 function _rankWireSortHeaders(){
@@ -3371,6 +3379,33 @@ function perGame(total, gp){
 // compute exact age to one decimal from the birthdate; if a record has no
 // birth_date we fall back to the rounded p.age (no fake ".0" decimal on a guess).
 // nbaDecimalAge -> display string; nbaDecimalAgeNum -> Number|null for sorting.
+// EXP_COL_NBA_V1 (2026-08-05, the Dude, from Matt's 8/5 ask). Years of NBA experience.
+// Matt's reasoning, 30:08: "you can have a twenty four year old and an eighteen year old both on
+// their first season", so age alone does not tell you what you think it does. The column sits
+// right beside Age for exactly that reason.
+//
+// SOURCE: Sleeper's years_exp, already present in the player payload this page loads and simply
+// never read until now. Verified live before building: 2,062 of 2,105 players carry it, values run
+// 0 to 22, LeBron 22 / SGA 7 / Wembanyama 2. No server change and no container rebuild.
+//
+// PATTERN: ported from FOOTBALL (EXP_FILL_V1, 2026-06-28), not from baseball. Baseball is normally
+// the reference implementation, but its experienceLabel() is computed from Chadwick's
+// mlb_played_first/last plus MLB rookie thresholds (50 IP, 130 AB, the cup-of-coffee rule). None of
+// that exists in basketball. Football and basketball both read Sleeper, so football's is the version
+// that actually transfers. Same output vocabulary either way: a number, R for a rookie, em dash when
+// unknown.
+//
+// Two functions, one recipe, so the cell and the sort can never disagree. That split is deliberate:
+// Bug #38 tonight was caused by one number being formatted in one place and raw in another.
+function _nbaExpNum(p){
+  var e = p && p.years_exp;
+  return (e != null && e !== '') ? Number(e) : null;   // null sinks to the bottom on sort
+}
+function _nbaExpLabel(p){
+  var n = _nbaExpNum(p);
+  if(n == null || isNaN(n)) return null;               // null = caller renders the em dash
+  return (n === 0) ? 'R' : String(n);                  // 0 means rookie, same as football
+}
 function nbaDecimalAge(p){
   if(p && p.birth_date){
     const birth = new Date(p.birth_date);
@@ -3464,6 +3499,8 @@ function renderWatchList(){
       '<td class="left col-player"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _noteBadgeHtml(pid) + '</td>' +
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
+      // EXP_COL_NBA_V1 — placeholder class when unknown, matching football's cell exactly.
+      (function(){ var _x = _nbaExpLabel(p); return _x == null ? '<td class="placeholder">—</td>' : '<td>' + _x + '</td>'; })() +
       renderDeltaCell(pid) +   // WL_DELTA_V1 -- live +/- vs previous publish
       _wlTypeCellHtml(pid) +   // TYPE_TAGS_SEED_V1 -- emoji chips
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
@@ -4844,6 +4881,7 @@ function sortValueFor(field, p, s, pid){
     case 'pos':      return p.position || 'zzz';
     case 'team':     return p.team || 'zzz';
     case 'age':      return nbaDecimalAgeNum(p);  // NBA_DECIMAL_AGE_V1 — sort by precise age, matching the column
+    case 'exp':      return _nbaExpNum(p);        // EXP_COL_NBA_V1 — null sinks, same rule as every other missing value
     case 'gp':       return (s.gp || 0);          // raw games count
     // NBA_FULL_STATS_V1 — sort by the PER-GAME value the column displays.
     case 'pts':      return perGame(s.pts, s.gp);
