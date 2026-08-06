@@ -63,14 +63,17 @@
      forces both stat groups to plain black lower down and that rule still wins on
      specificity, so day mode is deliberately unchanged. */
   --stat-teal:#62f9f4;
-  /* STAT_TWIN_V1 (2026-08-05, the Dude's call). The informational (non scoring category)
-     stats were grey, which read as 'switched off' rather than as a deliberate group.
-     This is baseball's hitter green, taken from that page's --stat-hitter NIGHT value
-     (#86efac) rather than re-picked by eye, so the two sports share one green. Baseball
-     defines --stat-hitter twice: green at night, red (#b91c1c) in day mode. The Dude asked
-     for the green one. NIGHT ONLY, matching STAT_TEAL_V1 above: day mode already renders
-     these columns in its own flat palette and those rules still win on specificity. */
-  --stat-info-green:#86efac;
+  /* STAT_CAT_WASH_V1 (2026-08-05, the Dude's call, sample B). The nine scoring categories are
+     marked by a WASH BEHIND THE NUMBER, not by the colour of the number itself. His reasoning,
+     and it was the right call: font colour was doing two jobs at once and the green/teal pair
+     clashed. So every number is now the one teal and the background carries the meaning.
+     The green experiment earlier tonight is fully reverted, nothing references it.
+     One token, two values, so night and day switch automatically:
+       NIGHT 10% of the teal itself, so the wash and the number are the same hue (13.0:1).
+       DAY   9% black, because day mode renders these numbers flat black and a teal wash
+             under black text goes muddy. Strength picked to read as strongly as the night
+             wash does. Both measured, not guessed. */
+  --stat-cat-wash:rgba(98,249,244,0.10);
   --leather-light:#c2410c;  /* lighter accent */
   --header-grad-1:#080c10;--header-grad-2:#0d1520;
 }
@@ -89,6 +92,7 @@ body.day-mode{
   --text:#1a1a1a;--text2:#333333;--text3:#666666;
   --turquoise:#0e7490;--turquoise2:#155e75;
   --court-bright:#ea580c;   /* darken the light-orange accent so stars/arrows read on light */
+  --stat-cat-wash:rgba(0,0,0,0.09);  /* STAT_CAT_WASH_V1: grey wash for day, see :root */
   --header-grad-1:#f4f5f8;--header-grad-2:#e5e7ec;
 }
 /* Watch List two-tone stat columns -> plain black in day mode. */
@@ -102,6 +106,16 @@ body.day-mode #rankings-table tbody td.col-stat-b .stat-cell,
 body.day-mode #rankings-table tbody .stat-cell{color:#1a1a1a !important}
 /* Player pop-up (From the Logo) header matches the light page in day mode. */
 body.day-mode #ftl-overlay .ftl-header{background:linear-gradient(135deg,#f4f5f8 0%,#e5e7ec 50%,#f4f5f8 100%);}
+/* STAT_CAT_WASH_V1 day mode, card half. Mirrors the table exactly: numbers flat black, the
+   category wash switches to grey through the --stat-cat-wash token, category labels dark,
+   informational labels grey. Without these the card would have kept night's teal on a light
+   background, which is the failure the table's own day rules were written to avoid. */
+body.day-mode #ftl-overlay .ftl-statbar{background:var(--surface2);border-color:var(--border2);}
+body.day-mode #ftl-overlay .ftl-statcell{border-right-color:var(--border);}
+body.day-mode #ftl-overlay .ftl-statcell .ftl-statval{color:#1a1a1a;}
+body.day-mode #ftl-overlay .ftl-statcell.cat .ftl-statlabel{color:#1a1a1a;}
+body.day-mode #ftl-overlay .ftl-statcell.info .ftl-statlabel{color:#6b7280;}
+body.day-mode #ftl-overlay .ftl-statcell .ftl-statval.na{color:#6b7280;}
 /* Day/night toggle button. */
 #theme-toggle{background:transparent;border:1px solid var(--border2);color:var(--text);font-size:14px;cursor:pointer;padding:4px 10px;border-radius:6px;line-height:1;transition:all 0.15s;user-select:none}
 #theme-toggle:hover{background:var(--surface2);border-color:var(--court)}
@@ -344,19 +358,22 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
    so a percentage can be judged against its volume, but make them visibly NOT
    scoring categories. Basketball Monster is the model he named — attempts are
    present but deliberately uncoloured. Grey, slightly dimmed, still sortable. */
-table.watch-list thead th.col-stat-info{color:var(--stat-info-green) !important;font-weight:600}
-/* STAT_TWIN_V1: opacity was 0.78 to make the grey read as dimmed. Green is a chosen
-   colour, not a dimmed state, and the player card has no dimming to match, so it is 1. */
-table.watch-list tbody td.col-stat-info{color:var(--stat-info-green);opacity:1}
+table.watch-list thead th.col-stat-info{color:var(--text3) !important;font-weight:600}
+/* STAT_CAT_WASH_V1: opacity was 0.78 to dim the grey numbers. Every number is now the same
+   teal and the wash marks the categories instead, so there is nothing left to dim. */
+table.watch-list tbody td.col-stat-info{color:var(--stat-teal);opacity:1}
 /* The VALUE is a <span class="stat-cell"> with its own colour (#fb923c orange by
    default, overridden to teal for col-stat-a/-b). Colouring the <td> alone does
    nothing — the span wins. So the informational span is targeted directly, the
    same way the teal ones are two rules below. */
-table.watch-list tbody td.col-stat-info .stat-cell{color:var(--stat-info-green);font-weight:600}
+table.watch-list tbody td.col-stat-info .stat-cell{color:var(--stat-teal);font-weight:600}
 table.watch-list thead th.col-stat-info:hover{filter:brightness(1.4)}
 body.day-mode table.watch-list thead th.col-stat-info{color:#6b7280 !important}
 body.day-mode table.watch-list tbody td.col-stat-info{color:#6b7280}
-body.day-mode table.watch-list tbody td.col-stat-info .stat-cell{color:#6b7280}
+body.day-mode table.watch-list tbody td.col-stat-info .stat-cell{color:#1a1a1a}
+/* STAT_CAT_WASH_V1 day mode: the Dude's call is black numbers on white with a grey wash.
+   Headers keep the day split (category dark, informational grey); only the NUMBERS go black. */
+body.day-mode table.watch-list tbody td.col-stat-info{color:#1a1a1a}
 table.watch-list thead th.col-stat{width:40px;text-align:right}
 /* STAT_HEADER_COLORS_V1 (2026-06-07) — two-tone orange, applied to BOTH the header AND the
    data cells so each column reads as one color group. col-stat-a = counting (light orange),
@@ -364,6 +381,10 @@ table.watch-list thead th.col-stat{width:40px;text-align:right}
 table.watch-list thead th.col-stat-a{color:var(--stat-teal) !important}
 table.watch-list thead th.col-stat-b{color:var(--stat-teal) !important}
 table.watch-list thead th.col-stat-a:hover,table.watch-list thead th.col-stat-b:hover{filter:brightness(1.3)}
+/* STAT_CAT_WASH_V1: the wash that marks a scoring category. On the td rather than the tr, so it
+   still shows over the row hover background. Informational columns get nothing at all. */
+table.watch-list thead th.col-stat-a,table.watch-list thead th.col-stat-b{background:var(--stat-cat-wash)}
+table.watch-list tbody td.col-stat-a,table.watch-list tbody td.col-stat-b{background:var(--stat-cat-wash)}
 td.col-stat-a .stat-cell{color:var(--stat-teal)}
 td.col-stat-b .stat-cell{color:var(--stat-teal)}
 table.watch-list thead th.col-action,table.watch-list tbody td.col-action{width:62px;text-align:center}
@@ -523,16 +544,19 @@ body.compact-mode #nbamain-wrap th.col-note,body.compact-mode #nbamain-wrap td.c
 #ftl-overlay .ftl-statlabel{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:9px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
 #ftl-overlay .ftl-statval{font-size:15px;font-weight:700;color:#fb923c;line-height:1;}
 #ftl-overlay .ftl-statval.na{color:var(--text3);font-weight:500;}
-/* STAT_TWIN_V1 (2026-08-05). The card's stat block is now a TWIN of the watch-list table:
-   same 19 stats, same order, same colours. In the table the header and the number beneath it
-   always share one colour, so the card colours its label and value together too. Categories
-   take the same teal as th.col-stat-a; informational take the same green as th.col-stat-info.
-   The .na rule above still wins for missing data, so an em dash never gets painted as if it
-   were a real number. */
-#ftl-overlay .ftl-statcell.cat .ftl-statlabel,
-#ftl-overlay .ftl-statcell.cat .ftl-statval{color:var(--stat-teal);}
-#ftl-overlay .ftl-statcell.info .ftl-statlabel,
-#ftl-overlay .ftl-statcell.info .ftl-statval{color:var(--stat-info-green);}
+/* STAT_CAT_WASH_V1 (2026-08-05). The card's stat block is a TWIN of the watch-list table:
+   same 19 stats, same order, same labels, same colours, same wash. Three rules, mirroring
+   exactly what the table does a few hundred lines up:
+     every number is --stat-teal, informational included,
+     the nine scoring categories carry --stat-cat-wash behind them,
+     category LABELS are teal and informational labels stay grey (the Dude's B1 pick, and it
+     is what the live table already did, so this is the smaller change).
+   The .na rule stays last so missing data keeps its grey em dash and never gets painted as
+   though it were a real number. */
+#ftl-overlay .ftl-statcell .ftl-statval{color:var(--stat-teal);}
+#ftl-overlay .ftl-statcell.cat{background:var(--stat-cat-wash);}
+#ftl-overlay .ftl-statcell.cat .ftl-statlabel{color:var(--stat-teal);}
+#ftl-overlay .ftl-statcell.info .ftl-statlabel{color:var(--text3);}
 #ftl-overlay .ftl-statcell .ftl-statval.na{color:var(--text3);}
 @media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:34px}#ftl-overlay .ftl-photo{width:130px;height:130px}}
 
