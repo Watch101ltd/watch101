@@ -4861,6 +4861,13 @@ function _ftlStatCell(label, val){
 // Format a per-game number to 1 decimal, strip a trailing .0, em-dash when null.
 function _ftlPG(total, gp){ const v = perGame(total, gp); return (v == null) ? null : v.toFixed(1); } // POINTZERO_V1 (2026-06-28): keep trailing .0 to match the table
 function _ftlPct(makes, att){ const v = pctOrNull(makes, att); return (v == null) ? null : v.toFixed(1); }
+// MIN_CARD_FORMAT_V1 (2026-08-05, Bug #38). _nbaMpg returns a RAW number on purpose so the
+// column sorts can compare it. Every other cell in this card formats at the point of display
+// (_ftlPG, _ftlPct) and the two table renders wrap it in statCellOrDash(v, 1). This cell was the
+// only display call site with no formatter on it, so it printed 33.220588235294116 and, being far
+// too wide for a 54px flex cell, wrapped onto its own line and stretched full width. Same shape as
+// its siblings: null stays null so _ftlStatCell renders the em dash.
+function _ftlMin(s){ const v = _nbaMpg(s); return (v == null) ? null : v.toFixed(1); }
 
 // ============================================================================
 // MATTSTAKE_RANKHIST_V1 (August 2, 2026 -- Walter, per the Dude).
@@ -5053,7 +5060,7 @@ function openFromTheLogo(pid){
     _ftlStatCell('ORB', _ftlPG(s.oreb, gp)) + _ftlStatCell('DRB', _ftlPG(s.dreb, gp)) +
     _ftlStatCell('AST', _ftlPG(s.ast, gp)) + _ftlStatCell('STL', _ftlPG(s.stl, gp)) +
     _ftlStatCell('BLK', _ftlPG(s.blk, gp)) + _ftlStatCell('TOV', _ftlPG(s.to, gp)) +
-    _ftlStatCell('MIN', _nbaMpg(s));   // NINE_CAT_V1 — PF removed (Matt: never, anywhere), MPG added to match the table
+    _ftlStatCell('MIN', _ftlMin(s));   // NINE_CAT_V1 — PF removed (Matt: never, anywhere), MPG added to match the table
   const shooting = _ftlStatCell('FGA', _ftlPG(s.fga, gp)) + _ftlStatCell('FG', _ftlPG(s.fgm, gp)) +
     _ftlStatCell('FG%', _ftlPct(s.fgm, s.fga)) +
     _ftlStatCell('3PA', _ftlPG(s.tpa, gp)) + _ftlStatCell('3P', _ftlPG(s.tpm, gp)) +
