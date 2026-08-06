@@ -551,10 +551,45 @@ body.readonly-mode .priority-stars{pointer-events:none;}
 body.readonly-mode .wl-note-cell{cursor:default;}
 
 
-#compact-toggle-btn.active{background:var(--court);color:#0d1117;border-color:var(--court);}
-body.compact-mode #nbamain-wrap th:nth-child(n+11):nth-child(-n+32),
-body.compact-mode #nbamain-wrap td:nth-child(n+11):nth-child(-n+32){display:none !important;}
-body.compact-mode #nbamain-wrap th.col-note,body.compact-mode #nbamain-wrap td.col-note{max-width:none;width:55%;white-space:normal;}
+/* ═══ VIEW_MODES_NBA_V1 (2026-08-05, the Dude) ═══════════════════════════════════════════════
+   TWO named compact modes behind one dropdown, replacing the single Compact toggle. His design,
+   arrived at by reading the 8/5 tape together rather than working from the meeting summary, which
+   had it wrong. The summary said "GP and MIN stay visible in compact", which sounds like a tweak
+   to the existing button. The tape said the Dude was describing a DIFFERENT view entirely.
+     FULL VIEW   no class. Everything.
+     MATT'S TAKE the old compact, renamed. Ownership + every stat gone, so his notes, emoji tags
+                 and priority stars take the page. Note column stretches to 55%.
+     NINE CAT    new. Hides ONLY the informational stat columns, so GP, MIN and the nine scoring
+                 categories sit in an unbroken row. Eleven columns of real scoring information.
+   WHAT NEITHER MODE EVER HIDES, the Dude's explicit instruction: Team, Age, Exp, +/-, Type,
+   Priority, Note. "Those are going to be shown no matter what compact button you hit."
+   Nine Cat also leaves the three OWNERSHIP columns up, because they are not stats and "this is
+   only compacting the stats." Matt's Take still hides them, unchanged from its old behaviour.
+   🪨 BOTH MODES ARE CLASS DRIVEN, NOT nth-child. The old rule was positional and it silently broke
+   the SAME EVENING when the Exp column was inserted at position 7 and shifted everything right by
+   one, so compact began hiding the Note column. A positional rule encodes "nothing before me will
+   ever change", which is false on a table Matt keeps requesting columns for. These selectors do
+   not care where a column sits.
+   ⏭️ 13-CAT: the Dude's "nine or thirteen depending on the page" needs col-stat-info to become
+   dynamic, since FGM/FTM/3P%/ORB/DRB are categories under 13-cat. The category model already knows
+   that; the column classes are still static markup. When the 13-cat swap ships, Nine Cat follows
+   for free because it reads the same class. */
+#view-mode-select{background:var(--surface);color:var(--text);border:1px solid var(--border2);
+  border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit;cursor:pointer;outline:none;}
+#view-mode-select.active{background:var(--court);color:#0d1117;border-color:var(--court);font-weight:700;}
+
+/* MATT'S TAKE — ownership and every stat column, whatever its group. */
+body.view-matts-take #nbamain-wrap th.col-yrank,     body.view-matts-take #nbamain-wrap td.col-yrank,
+body.view-matts-take #nbamain-wrap th.col-yowned,    body.view-matts-take #nbamain-wrap td.col-yowned,
+body.view-matts-take #nbamain-wrap th.col-cbsowned,  body.view-matts-take #nbamain-wrap td.col-cbsowned,
+body.view-matts-take #nbamain-wrap th.col-stat-info, body.view-matts-take #nbamain-wrap td.col-stat-info,
+body.view-matts-take #nbamain-wrap th.col-stat-a,    body.view-matts-take #nbamain-wrap td.col-stat-a,
+body.view-matts-take #nbamain-wrap th.col-stat-b,    body.view-matts-take #nbamain-wrap td.col-stat-b{display:none !important;}
+body.view-matts-take #nbamain-wrap th.col-note,body.view-matts-take #nbamain-wrap td.col-note{max-width:none;width:55%;white-space:normal;}
+
+/* NINE CAT — informational stats only, minus the GP and MIN exemption Matt asked for. */
+body.view-nine-cat #nbamain-wrap th.col-stat-info:not(.col-ninecat-keep),
+body.view-nine-cat #nbamain-wrap td.col-stat-info:not(.col-ninecat-keep){display:none !important;}
 
 #ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin:0 0 10px 2px;}
 #ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
@@ -935,7 +970,11 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
   <div class="toolbar-right">
     <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
-    <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: hide the stat and ownership columns and stretch the Note column so Matt's notes take center stage.">&#8596; Compact</button>
+    <select id="view-mode-select" onchange="setViewMode(this.value)" title="Full View shows everything. Matt's Take hides the stats and ownership so his notes, tags and stars take center stage. Nine Cat hides the informational stats, leaving GP, MIN and the nine scoring categories.">
+      <option value="full" selected>&#8596; Full View</option>
+      <option value="matts-take">&#8596; Matt's Take</option>
+      <option value="nine-cat">&#8596; Nine Cat</option>
+    </select>
     <button class="btn btn-outline" id="export-btn" onclick="exportXLSXDownload()" title="Download the current list as an Excel (.xlsx) file">&#128228; Export</button>
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of players">&#127991;&#65039; Tier</button>
     <div class="count-badge" id="count-badge">0 players</div>
@@ -1030,8 +1069,8 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-yrank col-zone-divider" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info col-zone-divider" data-sort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info" data-sort="min" title="Minutes per game — informational, not a scoring category">MIN <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-ninecat-keep col-zone-divider" data-sort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-ninecat-keep" data-sort="min" title="Minutes per game — informational, not a scoring category">MIN <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a col-zone-divider" data-sort="fgpct" title="Field goal % — scoring category">FG% <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info" data-sort="fgm" title="Field goals made per game — informational in 9-cat, a scoring category in 13-cat">FGM <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info" data-sort="fga" title="Field goals attempted per game — informational, not a scoring category">FGA <span class="sort-arrow">↕</span></th>
@@ -3123,8 +3162,8 @@ function renderNbaPlayers(){
       '<td class="col-yrank col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +
       '<td class="col-yowned ' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +
       '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +
-      '<td class="col-stat-info col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
-      '<td class="col-stat-info">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
+      '<td class="col-stat-info col-ninecat-keep col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
+      '<td class="col-stat-info col-ninecat-keep">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
       '<td class="col-stat-a col-zone-divider">' + pctCellOrDash(fgPct) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fga, gp), 1) + '</td>' +
@@ -3526,8 +3565,8 @@ function renderWatchList(){
       '<td class="col-yrank col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="col-yowned ' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +   // Y!Owned (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +   // CBS Owned (NBA_CBS_OWNERSHIP_V1 / CBS_OWNED_PCT_V1)
-      '<td class="col-stat-info col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
-      '<td class="col-stat-info">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
+      '<td class="col-stat-info col-ninecat-keep col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
+      '<td class="col-stat-info col-ninecat-keep">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
       '<td class="col-stat-a col-zone-divider">' + pctCellOrDash(fgPct) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fga, gp), 1) + '</td>' +
@@ -3816,10 +3855,23 @@ function _wlPid(item){ return (typeof item === 'string') ? item : (item && item.
 // stretches to fill the freed space. Not persisted across reloads, same as
 // baseball. fitTables() is called when this sport has it (NBA auto-shrink).
 // ============================================================================
-function toggleCompactMode(el){
-  const on = document.body.classList.toggle('compact-mode');
-  if(el){ el.classList.toggle('active', on); }
+// VIEW_MODES_NBA_V1 — three states, one dropdown. Both mode classes are removed before either is
+// applied, so the modes can never stack. 'full' simply adds neither.
+function setViewMode(mode){
+  const b = document.body;
+  b.classList.remove('view-matts-take','view-nine-cat');
+  if(mode === 'matts-take')     b.classList.add('view-matts-take');
+  else if(mode === 'nine-cat')  b.classList.add('view-nine-cat');
+  else                          mode = 'full';
+  const sel = document.getElementById('view-mode-select');
+  if(sel){ sel.value = mode; sel.classList.toggle('active', mode !== 'full'); }
   if(typeof fitTables === 'function'){ try{ fitTables(); }catch(e){} }
+}
+// Kept as a thin shim: anything still calling the old toggle lands on Matt's Take, which is what
+// the old button did. Cheaper than hunting for callers that may not exist.
+function toggleCompactMode(el){
+  const goingOn = !document.body.classList.contains('view-matts-take');
+  setViewMode(goingOn ? 'matts-take' : 'full');
 }
 
 // WL_NOTES_V1 (August 2, 2026 -- Walter, per the Dude). Checklist item 2.
