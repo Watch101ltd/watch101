@@ -2724,6 +2724,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
       <div class="pool-search-wrap">
         <span class="pool-search-icon">⌕</span>
         <input type="text" id="pool-search" placeholder="Jump to player..." oninput="poolSearchInput(this.value)" autocomplete="off">
+        <span id="pool-spotlight-clear" onclick="clearPoolSpotlight()" title="Show all players again" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text3);font-weight:700;padding:2px 6px;">✕</span>
         <div class="pool-dropdown" id="pool-dropdown"></div>
       </div>
       <div class="pool-filter-tabs">
@@ -12165,6 +12166,13 @@ function updatePoolClusterChip(){
 
 // ---- POOL POSITION FILTER ----
 function setPoolPos(pos, el){
+  // SPOTLIGHT_V1 — a manual tab click means "back to browsing"; release the spotlight
+  // quietly (no extra render — this function renders at the end anyway).
+  if(typeof _poolSpotlight !== 'undefined' && _poolSpotlight != null){
+    _poolSpotlight = null;
+    const _c = document.getElementById('pool-spotlight-clear'); if(_c) _c.style.display = 'none';
+    const _i = document.getElementById('pool-search'); if(_i) _i.value = '';
+  }
   poolPosFilter = pos;
   document.querySelectorAll('#pool-wrap .pool-filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
@@ -12323,6 +12331,15 @@ function renderPool(){
   if(poolSearchFilter){
     const q = normalize(poolSearchFilter);
     list = list.filter(p => normalize(p.name).includes(q) || (p.team||'').toLowerCase().includes(poolSearchFilter.toLowerCase()));
+  }
+
+  // SPOTLIGHT_V1 (Aug 6, 2026 — Bug #45). When a player was picked from Jump to
+  // player, the pool shows ONLY his row. Placed AFTER every other filter and it
+  // REPLACES the list wholesale, on purpose: "find me this guy" should never lose
+  // to a position tab or a Min-IP box — that blind spot was half of the old bug.
+  if(typeof _poolSpotlight !== 'undefined' && _poolSpotlight != null){
+    const _sp = poolPlayers.find(p => p.mlb_id === _poolSpotlight);
+    list = _sp ? [_sp] : [];
   }
 
   // --- Pool cluster-sort mode (click any position badge to group by it) ---
@@ -12627,6 +12644,13 @@ function renderPool(){
 
 // ---- POOL SEARCH — shows a name dropdown; selecting jumps to that player ----
 function poolSearchInput(val){
+  // SPOTLIGHT_V1 — typing anything releases the spotlight and brings the full list back.
+  if(typeof _poolSpotlight !== 'undefined' && _poolSpotlight != null){
+    _poolSpotlight = null;
+    const _c = document.getElementById('pool-spotlight-clear');
+    if(_c) _c.style.display = 'none';
+    renderPool();
+  }
   const dd = document.getElementById('pool-dropdown');
   if(!val || val.length < 2){
     dd.classList.remove('open');
@@ -12647,31 +12671,35 @@ function poolSearchInput(val){
   dd.classList.add('open');
 }
 
-// ---- JUMP TO PLAYER — switches tab and scrolls the list to that row ----
+// ---- JUMP TO PLAYER — SPOTLIGHT_V1 (Aug 6, 2026 — Bug #45, found by Matt; redesign per the Dude).
+// The OLD version switched the position tab, waited exactly ONE animation frame, then
+// scrolled to the row. Two failure modes, both intermittent by nature: (a) the re-render
+// often takes longer than one frame, so the row lookup found nothing and silently gave up
+// at the top of a fresh render — which reads as "the page just refreshed"; (b) any active
+// pool filter (tab, team, Min AB/IP, age, owned) could exclude the player so his row never
+// existed at all. The scroll animation is also gone by the Dude's call ("hokey... too busy").
+// NEW behavior: picking a player SPOTLIGHTS him — the pool renders just his row, instantly.
+// The ✕ in the search box, typing anything, or clicking a position tab restores the list.
+var _poolSpotlight = null;  // var on purpose: hoisted+initialized-safe for renderPool/setPoolPos which sit earlier in the file
 function jumpToPoolPlayer(mlbId){
   const dd = document.getElementById('pool-dropdown');
   dd.classList.remove('open');
-  document.getElementById('pool-search').value = '';
-
   const player = poolPlayers.find(p => p.mlb_id === mlbId);
   if(!player) return;
-
-  // Switch to the right position tab (Hitters or Pitchers)
-  const isPit = isPitcherPos(player.primaryPos);
-  const btnId = isPit ? 'pool-pos-pitcher' : 'pool-pos-hitter';
-  const btn = document.getElementById(btnId);
-  if(btn) setPoolPos(isPit ? 'PITCHER' : 'HITTER', btn);
-
-  // Wait one frame for the table to re-render, then scroll to the row
-  requestAnimationFrame(() => {
-    const row = document.querySelector(`#pool-tbody tr[data-mlb-id="${mlbId}"]`);
-    if(row){
-      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Brief highlight so the eye finds the row instantly
-      row.style.background = 'var(--surface3)';
-      setTimeout(() => { row.style.background = ''; }, 1500);
-    }
-  });
+  _poolSpotlight = mlbId;
+  const inp = document.getElementById('pool-search');
+  if(inp) inp.value = player.name;
+  const clr = document.getElementById('pool-spotlight-clear');
+  if(clr) clr.style.display = 'block';
+  renderPool();
+}
+function clearPoolSpotlight(){
+  _poolSpotlight = null;
+  const inp = document.getElementById('pool-search');
+  if(inp) inp.value = '';
+  const clr = document.getElementById('pool-spotlight-clear');
+  if(clr) clr.style.display = 'none';
+  renderPool();
 }
 
 // Close dropdowns when clicking outside
