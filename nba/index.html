@@ -517,6 +517,25 @@ body.day-mode .must-watch-flash{color:#b91c1c !important;}
 #ftl-overlay .ftl-up-row .up-date{min-width:74px;color:var(--text1,#fff);font-weight:700;}
 #ftl-overlay .ftl-up-row .up-vs{color:var(--text3);font-size:11px;text-transform:uppercase;min-width:20px;}
 #ftl-overlay .ftl-up-row .up-opp{font-weight:800;color:var(--court);letter-spacing:0.03em;}
+/* CALENDAR_STRIP_NBA_V1 (Aug 6, 2026 -- the Dude's redesign of Upcoming Games, replacing the
+   next-7 list for EVERYONE, per his call: one layout, no per-list branching. Two rows, each a
+   fantasy week anchored Monday through Sunday. Row 1 = this week (played days dimmed), row 2 =
+   next week. Home games read "vs OPP" and carry the stronger treatment; away games read "@ OPP".
+   Today wears the gold ring. Each row ends in a games-count badge, which is the whole point:
+   Matt reads "3 games next week, 4 the week after" without counting cells. */
+#ftl-overlay .ftl-cal-week{display:flex;align-items:stretch;gap:4px;margin-bottom:6px;}
+#ftl-overlay .ftl-cal-day{flex:1;min-width:0;border:1px solid var(--border2);border-radius:6px;padding:5px 2px 6px;text-align:center;background:var(--surface2);}
+#ftl-overlay .ftl-cal-dow{display:block;font-size:9px;letter-spacing:0.08em;color:var(--text3);text-transform:uppercase;}
+#ftl-overlay .ftl-cal-date{display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px;}
+#ftl-overlay .ftl-cal-opp{display:block;font-size:11px;font-weight:800;color:var(--court);letter-spacing:0.02em;white-space:nowrap;}
+#ftl-overlay .ftl-cal-opp.away{font-weight:600;color:var(--text2);}
+#ftl-overlay .ftl-cal-off{display:block;font-size:11px;color:var(--text3);}
+#ftl-overlay .ftl-cal-day.past{opacity:0.38;}
+#ftl-overlay .ftl-cal-day.today{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;}
+#ftl-overlay .ftl-cal-badge{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:64px;border:1px solid var(--border2);border-radius:6px;padding:4px 6px;background:var(--surface2);}
+#ftl-overlay .ftl-cal-badge .n{font-size:16px;font-weight:800;color:var(--gold);line-height:1.1;}
+#ftl-overlay .ftl-cal-badge .t{font-size:9px;letter-spacing:0.06em;color:var(--text3);text-transform:uppercase;text-align:center;}
+#ftl-overlay .ftl-cal-weeklabel{font-size:10px;letter-spacing:0.08em;color:var(--text3);text-transform:uppercase;margin:2px 0 4px;}
 /* CAREER_POPUP_V1 (Aug 2, 2026) -- Career by Season popup, baseball's cp styles in this sport's accent. */
 #career-popup-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:10002;backdrop-filter:blur(4px);}
 #career-popup-backdrop.cp-open{display:block;}
@@ -4379,30 +4398,76 @@ async function _ftlRenderNbaGames(pid){
     if (_ftlCurrentPid === pid) prevEl.innerHTML = '<div class="ftl-gl-note">Game log unavailable right now.</div>';
   }
 
-  // ---- Upcoming 7 ----
+  // ---- CALENDAR_STRIP_NBA_V1 (Aug 6, 2026) -- two-week Mon-Sun calendar, replacing the
+  // old next-7 list for every list type (the Dude's call: one default layout, no per-list
+  // branching on the card). Row 1 = the current fantasy week with already-played days
+  // dimmed; row 2 = next week. Badges carry the per-week game counts, which is the number
+  // Matt actually wants ("plays 3 next week, 4 the week after"). LOCAL dates throughout:
+  // the old list used toISOString() (UTC), which after ~7-8 PM Eastern rolls to tomorrow
+  // and would have mis-dimmed tonight's game; _ftlLocalISO avoids that trap on purpose.
   try {
-    if (!team){ nextEl.innerHTML = '<div class="ftl-gl-note">No team — no schedule.</div>'; return; }
+    if (!team){ nextEl.innerHTML = '<div class="ftl-gl-note">No team, no schedule.</div>'; return; }
     const season = _ftlNbaSeason();
     const both = await Promise.all([
       _ftlFetchNbaSchedule(season).catch(function(){ return []; }),
       _ftlFetchNbaSchedule(season + 1).catch(function(){ return []; })
     ]);
     if (_ftlCurrentPid !== pid) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const upcoming = both[0].concat(both[1]).filter(function(g){
-      return g && g.date && g.date >= today && g.status !== 'complete' && g.status !== 'canceled'
-          && (g.home === team || g.away === team);
-    }).sort(function(a, b){ return a.date < b.date ? -1 : 1; }).slice(0, 7);
-    if (!upcoming.length){
-      nextEl.innerHTML = '<div class="ftl-gl-note">No upcoming games on the schedule yet — next season\'s slate lands here the day the league publishes it.</div>';
-    } else {
-      nextEl.innerHTML = upcoming.map(function(g){
-        const home = (g.home === team);
-        return '<div class="ftl-up-row"><span class="up-date">' + _ftlGlDate(g.date) + '</span>'
-             + '<span class="up-vs">' + (home ? 'vs' : '@') + '</span>'
-             + '<span class="up-opp">' + (home ? g.away : g.home) + '</span></div>';
-      }).join('');
+
+    const _ftlLocalISO = function(d){
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    };
+    const now = new Date();
+    const todayISO = _ftlLocalISO(now);
+    // Monday of the current week (getDay(): Sun=0 .. Sat=6)
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    const lastISO = _ftlLocalISO(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 13));
+    const mondayISO = _ftlLocalISO(monday);
+
+    // Every game for this team inside the two-week window, INCLUDING already-played
+    // ones from earlier this week (they render dimmed, keeping the week honest).
+    const byDate = {};
+    both[0].concat(both[1]).forEach(function(g){
+      if (!g || !g.date || g.status === 'canceled') return;
+      if (g.date < mondayISO || g.date > lastISO) return;
+      if (g.home !== team && g.away !== team) return;
+      byDate[g.date] = g;
+    });
+
+    if (!Object.keys(byDate).length){
+      nextEl.innerHTML = '<div class="ftl-gl-note">No games on the schedule in the next two weeks. Next season\'s slate lands here the day the league publishes it.</div>';
+      return;
     }
+
+    const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const weekHtml = function(weekStartOffset, label){
+      let cells = '';
+      let count = 0;
+      for (let i = 0; i < 7; i++){
+        const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + weekStartOffset + i);
+        const iso = _ftlLocalISO(d);
+        const g = byDate[iso];
+        const isPast = iso < todayISO;
+        const isToday = iso === todayISO;
+        let inner;
+        if (g){
+          const home = (g.home === team);
+          const opp = home ? g.away : g.home;
+          inner = '<span class="ftl-cal-opp' + (home ? '' : ' away') + '">' + (home ? 'vs ' : '@ ') + opp + '</span>';
+          count++; // badge = the week's TOTAL games, played included; the dimming tells the rest
+        } else {
+          inner = '<span class="ftl-cal-off">&middot;</span>';
+        }
+        cells += '<div class="ftl-cal-day' + (isPast && !isToday ? ' past' : '') + (isToday ? ' today' : '') + '">'
+               + '<span class="ftl-cal-dow">' + DOW[i] + '</span>'
+               + '<span class="ftl-cal-date">' + d.getDate() + '</span>'
+               + inner + '</div>';
+      }
+      const badge = '<div class="ftl-cal-badge"><span class="n">' + count + '</span><span class="t">' + (count === 1 ? 'game' : 'games') + '</span></div>';
+      return '<div class="ftl-cal-weeklabel">' + label + '</div><div class="ftl-cal-week">' + cells + badge + '</div>';
+    };
+
+    nextEl.innerHTML = weekHtml(0, 'This Week') + weekHtml(7, 'Next Week');
   } catch(e){
     if (_ftlCurrentPid === pid) nextEl.innerHTML = '<div class="ftl-gl-note">Schedule unavailable right now.</div>';
   }
@@ -5521,7 +5586,7 @@ bootstrap();
     </div>
     <div class="ftl-take-card">
       <div class="ftl-take-title">Upcoming Games</div>
-      <div class="ftl-take-hint" style="margin:0 0 10px">Next 7 on the schedule</div>
+      <div class="ftl-take-hint" style="margin:0 0 10px">Two week schedule, Monday to Sunday</div>
       <div id="ftl-nextgames-body"><div class="ftl-gl-note">Loading&#8230;</div></div>
     </div>
   </div>
