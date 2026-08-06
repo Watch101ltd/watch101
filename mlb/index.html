@@ -4549,8 +4549,14 @@ async function refreshTeamsFromMLB(){
     if(!tRes.ok){ console.warn('[TEAM_REFRESH_V1] teams fetch HTTP '+tRes.status+' — skipped'); return; }
     const tData = await tRes.json();
     const TEAM_ID_TO_ABBR = {};
+    // DEMOTION_AUTOTOGGLE_V1 — the same teams response also tells us each
+    // club's LEVEL via sport.id (1=MLB, 11=AAA, 12=AA, 13=A). Recording it
+    // costs nothing and gives the site a live "current level" per player.
+    const TEAM_ID_TO_LEVEL = {};
+    const SPORT_TO_LEVEL = { 1:'MLB', 11:'AAA', 12:'AA', 13:'A' };
     (tData.teams||[]).forEach(t=>{
       if(!t || !t.id) return;
+      if(t.sport && SPORT_TO_LEVEL[t.sport.id]) TEAM_ID_TO_LEVEL[t.id] = SPORT_TO_LEVEL[t.sport.id];
       if(t.sport && t.sport.id === 1){ if(t.abbreviation) TEAM_ID_TO_ABBR[t.id] = t.abbreviation; }
       else if(t.parentOrgId){ const a = orgIdToAbbr(t.parentOrgId); if(a) TEAM_ID_TO_ABBR[t.id] = a; }
     });
@@ -4564,6 +4570,7 @@ async function refreshTeamsFromMLB(){
     }
     // (3) compare + heal
     const moves = [];
+    const levelMoved = [];  // DEMOTION_AUTOTOGGLE_V1
     (players||[]).forEach(p=>{
       if(!p || !p.mlb_id) return;
       const per = byId[String(p.mlb_id)];
@@ -4571,9 +4578,35 @@ async function refreshTeamsFromMLB(){
       if(!ct || !ct.id) return;
       const abbr = (ct.parentOrgId ? (orgIdToAbbr(ct.parentOrgId)||'') : '') || TEAM_ID_TO_ABBR[ct.id] || '';
       if(abbr && p.team !== abbr){ moves.push((p.name||p.mlb_id)+': '+(p.team||'—')+' → '+abbr); p.team = abbr; }
+      // DEMOTION_AUTOTOGGLE_V1 — stamp the player's CURRENT level from his
+      // current club. Unknown club level (FA, rookie ball, etc.) = no stamp,
+      // nothing changes. The resolver reads p.currentLevel to flip demoted
+      // players to their MiLB sample by default.
+      const lvl = TEAM_ID_TO_LEVEL[ct.id];
+      if(lvl && p.currentLevel !== lvl){
+        levelMoved.push((p.name||p.mlb_id)+': '+(p.currentLevel||'?')+' → '+lvl);
+        p.currentLevel = lvl;
+      }
     });
-    if(moves.length){
-      console.log('[TEAM_REFRESH_V1] healed '+moves.length+' team(s): '+moves.join(', '));
+    // DEMOTION_AUTOTOGGLE_V1 — a level change flips which sample the
+    // resolver picks, so re-apply flat fields for the affected players
+    // (same guard + KBB recompute as SAMPLE_BACKFILL) before repainting.
+    if(levelMoved.length){
+      console.log('[DEMOTION_AUTOTOGGLE_V1] level changed for '+levelMoved.length+' player(s): '+levelMoved.join(', '));
+      (players||[]).forEach(p=>{
+        if(!p || !p.mlb_id) return;
+        if(_sampleToggle[p.mlb_id]) return; // explicit user toggle always wins
+        if(typeof _applyActiveSampleToFlatFields === 'function'){
+          try{
+            _applyActiveSampleToFlatFields(p, 'watch');
+            p.kbb_ratio = (typeof p.bb_pit === 'number' && p.bb_pit > 0 && p.k != null) ? +(p.k / p.bb_pit).toFixed(2) : null;
+            p.k_per_9 = (typeof p.ip === 'number' && p.ip > 0 && p.k != null) ? +((p.k * 9) / p.ip).toFixed(2) : null;
+          }catch(e){}
+        }
+      });
+    }
+    if(moves.length || levelMoved.length){
+      if(moves.length) console.log('[TEAM_REFRESH_V1] healed '+moves.length+' team(s): '+moves.join(', '));
       try{ applyCBS(players); }catch(e){}
       try{ renderTable(); }catch(e){}
       try{ saveData({silent:true}); }catch(e){}
@@ -15923,6 +15956,14 @@ function _resolveActiveSample(p, tableName){
   if(explicit === 'MLB' || explicit === 'MiLB') return explicit;
   // Legacy boolean format from earlier session toggles — true means MLB.
   if(explicit === true) return 'MLB';
+  // DEMOTION_AUTOTOGGLE_V1 (Aug 6, 2026 — Bug #43, found by Matt via Sproat).
+  // A player whose CURRENT club is a minors club shows his MiLB sample by
+  // default — the flip IS the site's "he got sent down" signal. Sits below
+  // the explicit toggle (a hand toggle always wins) and above the table
+  // default (which would otherwise show stale MLB numbers forever).
+  // p.currentLevel is stamped by TEAM_REFRESH_V1 from live MLB data; if it
+  // was never stamped (API down) or he has no MiLB sample, fall through.
+  if((p.currentLevel === 'AAA' || p.currentLevel === 'AA' || p.currentLevel === 'A') && p.statsMilb) return 'MiLB';
   // No explicit choice yet — use table default, but only if the
   // corresponding sample actually exists on the player record. Falls
   // back to whichever sample DOES exist if the default isn't available.
