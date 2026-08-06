@@ -342,15 +342,23 @@ table.watch-list tbody td .pos-stack{display:grid;grid-template-columns:repeat(2
 table.watch-list thead th.col-player,table.watch-list tbody td.col-player{width:180px;text-align:left}
 table.watch-list tbody .player-name{font-size:12px;font-weight:800}
 table.watch-list thead th.col-team{width:38px;text-align:left}
-table.watch-list thead th.col-exp{width:32px;text-align:left}   /* EXP_COL_NBA_V1, football's width */
+/* CENTRE_FOUR_NBA_V1 (2026-08-05, the Dude, straight after seeing LEFT_JUSTIFY_NBA_V1 live).
+   These four sit centred rather than left. They are short, fixed-width identifiers (a rank, a
+   year count, two percentages) rather than a column of decimals you scan down, so centring reads
+   better under a wide header than left does.
+   NOTE the tbody selectors: these body cells did NOT carry their column class before, they took
+   width from the header and alignment from the base rule. A header-only rule would have centred
+   the label and left the number hard left. The classes were added to the renders to make this
+   work, in all three tables. */
+table.watch-list thead th.col-exp,table.watch-list tbody td.col-exp{width:32px;text-align:center}
 table.watch-list thead th.col-age{width:32px;text-align:left}
 table.watch-list thead th.col-delta{width:44px;text-align:left}
 table.watch-list thead th.col-type{width:60px;text-align:left}
 table.watch-list thead th.col-priority{width:88px;text-align:left}
 table.watch-list thead th.col-note{width:144px;text-align:left}
-table.watch-list thead th.col-yrank{width:44px;text-align:left}
-table.watch-list thead th.col-yowned{width:50px;text-align:left}
-table.watch-list thead th.col-cbsowned{width:50px;text-align:left}
+table.watch-list thead th.col-yrank,table.watch-list tbody td.col-yrank{width:44px;text-align:center}
+table.watch-list thead th.col-yowned,table.watch-list tbody td.col-yowned{width:50px;text-align:center}
+table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned{width:50px;text-align:center}
 /* RANKINGS_NOTES_NBA_V1 (2026-06-29 — PC Walter, per Matt via the Dude): editable Note column +
    note badge on the rankings tabs, mirroring baseball's main-list Notes. */
 #rankings-table th.col-note,#rankings-table td.col-note{width:160px;max-width:160px;text-align:left;overflow:hidden}
@@ -2611,7 +2619,7 @@ function _rankCol_age(){ return { key:'age', label:'Age', tdClass:'',
 // EXP_COL_NBA_V1 — the rankings half. Same two helpers as the watch list, so the two tables
 // cannot drift. Missing sinks via Infinity, matching _rankCol_age, because exp defaults to
 // ascending for the same reason age does: the useful question is "who is new", not "who is old".
-function _rankCol_exp(){ return { key:'exp', label:'Exp', headClass:'col-exp', tdClass:'',
+function _rankCol_exp(){ return { key:'exp', label:'Exp', headClass:'col-exp', tdClass:'col-exp',
   num:function(pid){ var v=_nbaExpNum(_playerDB[pid]); return (v==null||isNaN(v))?Infinity:v; },
   render:function(pid,p){ var x=_nbaExpLabel(p); return (x==null)?'—':x; } }; }
 function _rankCol_gp(){ return { key:'gp', label:'GP', tdClass:'col-stat-info col-zone-divider', headClass:'col-stat col-stat-info col-zone-divider',
@@ -2626,13 +2634,13 @@ function _rankCol_min(){ return { key:'min', label:'MIN', tdClass:'col-stat-info
 // for the NBA Rankings tabs, matching the Watch List. NO data pipeline yet (no Yahoo API, no CBS scrape
 // for NBA) — these render em-dash placeholders for now, exactly like the Watch List does. When the data
 // layer ships, swap the render() bodies to read the real lookups (and wire num() for sorting).
-function _rankCol_yrank(){ return { key:'yrank', label:'Y!Rank', headClass:'col-zone-divider', tdClass:'col-zone-divider',
+function _rankCol_yrank(){ return { key:'yrank', label:'Y!Rank', headClass:'col-yrank col-zone-divider', tdClass:'col-yrank col-zone-divider',
   num:function(pid){ var y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?Number(y.yahoo_rank):Infinity; },
   render:function(pid){ var y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?y.yahoo_rank:'—'; } }; }
-function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', tdClass:'',
+function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', headClass:'col-yowned', tdClass:'col-yowned',
   num:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):-1; },
   render:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Math.round(y.roster_pct)+'%':'—'; } }; }
-function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Owned', tdClass:'',
+function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Owned', headClass:'col-cbsowned', tdClass:'col-cbsowned',
   num:function(pid){ var v=_cbsForNum(pid); return v==null?-1:v; },   // owned%: higher=better, missing sinks
   render:function(pid){ var v=_cbsForNum(pid); return v==null?'—':v+'%'; } }; }
 // ── RANKINGS_NOTES_NBA_V1 (2026-06-29) ───────────────────────────────────────
@@ -3112,9 +3120,9 @@ function renderNbaPlayers(){
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       // OWNERSHIP_COLS_NBA_V1 + NBA_YAHOO_OWNERSHIP_V1 + NBA_CBS_OWNERSHIP_V1 — all three now live.
-      '<td class="col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +
-      '<td class="' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +
-      '<td class="' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +
+      '<td class="col-yrank col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +
+      '<td class="col-yowned ' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +
+      '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +
       '<td class="col-stat-info col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
       '<td class="col-stat-a col-zone-divider">' + pctCellOrDash(fgPct) + '</td>' +
@@ -3510,14 +3518,14 @@ function renderWatchList(){
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       // EXP_COL_NBA_V1 — placeholder class when unknown, matching football's cell exactly.
-      (function(){ var _x = _nbaExpLabel(p); return _x == null ? '<td class="placeholder">—</td>' : '<td>' + _x + '</td>'; })() +
+      (function(){ var _x = _nbaExpLabel(p); return _x == null ? '<td class="col-exp placeholder">—</td>' : '<td class="col-exp">' + _x + '</td>'; })() +
       renderDeltaCell(pid) +   // WL_DELTA_V1 -- live +/- vs previous publish
       _wlTypeCellHtml(pid) +   // TYPE_TAGS_SEED_V1 -- emoji chips
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       _wlNoteCellHtml(pid) +   // WL_NOTES_V1 -- live Note column
-      '<td class="col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
-      '<td class="' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +   // Y!Owned (NBA_YAHOO_OWNERSHIP_V1)
-      '<td class="' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +   // CBS Owned (NBA_CBS_OWNERSHIP_V1 / CBS_OWNED_PCT_V1)
+      '<td class="col-yrank col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
+      '<td class="col-yowned ' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +   // Y!Owned (NBA_YAHOO_OWNERSHIP_V1)
+      '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +   // CBS Owned (NBA_CBS_OWNERSHIP_V1 / CBS_OWNED_PCT_V1)
       '<td class="col-stat-info col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
       '<td class="col-stat-a col-zone-divider">' + pctCellOrDash(fgPct) + '</td>' +
