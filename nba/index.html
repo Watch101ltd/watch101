@@ -599,7 +599,10 @@ body.view-matts-take #nbamain-wrap th.col-note,body.view-matts-take #nbamain-wra
    would count every rebound twice. So 13-cat is not 9-cat plus four, it swaps one out and adds
    five. Both sets were counted in code, 9 and 13.
    With the columns in their existing order, both views come out CONTIGUOUS once the hidden ones
-   drop, so the teal run is unbroken in each. No reordering was needed. */
+   drop, so the teal run is unbroken in each. No reordering was needed.
+   PCT_THIRD_V1 (Aug 6): groups reordered to makes/attempts/percent per Matt. Contiguity held:
+   13 CAT shows FGM FG% (FGA hidden) and FTM FT% (FTA hidden), 9 CAT shows only the percents.
+   Divider handling for 9 CAT lives on col-pct-div (see its CSS block). */
 body.view-nine-cat #nbamain-wrap th.col-stat:not(.col-cat9):not(.col-cat-always),
 body.view-nine-cat #nbamain-wrap td.col-stat-a:not(.col-cat9):not(.col-cat-always),
 body.view-nine-cat #nbamain-wrap td.col-stat-b:not(.col-cat9):not(.col-cat-always),
@@ -615,6 +618,17 @@ body.view-thirteen-cat #nbamain-wrap td.col-stat-info:not(.col-cat13):not(.col-c
    GP and MIN are NOT col-cat13, so they correctly keep their grey header and no wash. */
 body.view-thirteen-cat #nbamain-wrap th.col-cat13{color:var(--stat-teal) !important;background:var(--stat-cat-wash);}
 body.view-thirteen-cat #nbamain-wrap td.col-cat13{background:var(--stat-cat-wash);}
+
+/* PCT_THIRD_V1 (Aug 6, 2026 — Matt's ask): stat groups now read makes, attempts, percent
+   (FGM FGA FG% / FTM FTA FT% — threes already read 3PM 3PA 3P%). The gold group divider
+   rides the group's FIRST column, now FGM / FTM. In 9 CAT both makes and attempts hide and
+   the PERCENT leads the visible group, so col-pct-div paints the same gold divider on the
+   percent column in that view only. Full view and 13 CAT keep their divider via FGM/FTM,
+   which are visible in both. */
+body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wrap td.col-pct-div{
+  border-left:2px solid rgba(196,127,0,0.55);
+  padding-left:7px;
+}
 
 #ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin:0 0 10px 2px;}
 #ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
@@ -1106,12 +1120,12 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info col-cat-always col-zone-divider" data-sort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info col-cat-always" data-sort="min" title="Minutes per game — informational, not a scoring category">MIN <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a col-zone-divider col-cat9 col-cat13" data-sort="fgpct" title="Field goal % — scoring category">FG% <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info col-cat13" data-sort="fgm" title="Field goals made per game — informational in 9-cat, a scoring category in 13-cat">FGM <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-zone-divider col-cat13" data-sort="fgm" title="Field goals made per game — informational in 9-cat, a scoring category in 13-cat">FGM <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info" data-sort="fga" title="Field goals attempted per game — informational, not a scoring category">FGA <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a col-zone-divider col-cat9 col-cat13" data-sort="ftpct" title="Free throw % — scoring category">FT% <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-info col-cat13" data-sort="ftm" title="Free throws made per game — informational in 9-cat, a scoring category in 13-cat">FTM <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-pct-div col-cat9 col-cat13" data-sort="fgpct" title="Field goal % — scoring category">FG% <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-info col-zone-divider col-cat13" data-sort="ftm" title="Free throws made per game — informational in 9-cat, a scoring category in 13-cat">FTM <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info" data-sort="fta" title="Free throws attempted per game — informational, not a scoring category">FTA <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-pct-div col-cat9 col-cat13" data-sort="ftpct" title="Free throw % — scoring category">FT% <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a col-zone-divider col-cat9 col-cat13" data-sort="tpm" title="3-pointers made per game — scoring category">3PM <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info" data-sort="tpa" title="3-pointers attempted per game — informational, not a scoring category">3PA <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info col-cat13" data-sort="tppct" title="3-point % — informational in 9-cat, a scoring category in 13-cat">3P% <span class="sort-arrow">↕</span></th>
@@ -1220,12 +1234,12 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info col-zone-divider" data-npsort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info" data-npsort="min" title="Minutes per game — informational, not a scoring category">MIN <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-a col-zone-divider" data-npsort="fgpct" title="Field goal % — scoring category">FG% <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-info" data-npsort="fgm" title="Field goals made per game — informational in 9-cat, a scoring category in 13-cat">FGM <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-info col-zone-divider" data-npsort="fgm" title="Field goals made per game — informational in 9-cat, a scoring category in 13-cat">FGM <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info" data-npsort="fga" title="Field goals attempted per game — informational, not a scoring category">FGA <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-a col-zone-divider" data-npsort="ftpct" title="Free throw % — scoring category">FT% <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-info" data-npsort="ftm" title="Free throws made per game — informational in 9-cat, a scoring category in 13-cat">FTM <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a col-pct-div" data-npsort="fgpct" title="Field goal % — scoring category">FG% <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-info col-zone-divider" data-npsort="ftm" title="Free throws made per game — informational in 9-cat, a scoring category in 13-cat">FTM <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info" data-npsort="fta" title="Free throws attempted per game — informational, not a scoring category">FTA <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a col-pct-div" data-npsort="ftpct" title="Free throw % — scoring category">FT% <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a col-zone-divider" data-npsort="tpm" title="3-pointers made per game — scoring category">3PM <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info" data-npsort="tpa" title="3-pointers attempted per game — informational, not a scoring category">3PA <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info" data-npsort="tppct" title="3-point % — informational in 9-cat, a scoring category in 13-cat">3P% <span class="sort-arrow">↕</span></th>
@@ -2799,19 +2813,19 @@ function _rankColsFor(pos){
   // looked like the same site. Only the stat block changed; the columns to the left of it are
   // untouched by his instruction ("just the stats part").
   // Order, lifted from the watch list header rather than retyped:
-  //   GP MIN | FG% FGM FGA | FT% FTM FTA | 3PM 3PA 3P% | PTS REB ORB DRB AST STL BLK TO
+  //   GP MIN | FGM FGA FG% | FTM FTA FT% | 3PM 3PA 3P% | PTS REB ORB DRB AST STL BLK TO  (PCT_THIRD_V1)
   // col-stat-a  = scoring category, teal header, carries the category wash.
   // col-stat-info = informational, grey header, no wash.
   // TOV was renamed TO to match the watch list. The field behind it is unchanged.
   return [ _rankCol_notebadge(), _rankCol_note(), _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(), _rankCol_exp(),
     _rankCol_gp(),
     _rankCol_min(),
-    _rankPctCol('fgpct','FG%','fgm','fga','col-stat-a col-zone-divider'),
-    _rankStatCol('fgm','FGM','fgm','col-stat-info'),
+    _rankStatCol('fgm','FGM','fgm','col-stat-info col-zone-divider'),
     _rankStatCol('fga','FGA','fga','col-stat-info'),
-    _rankPctCol('ftpct','FT%','ftm','fta','col-stat-a col-zone-divider'),
-    _rankStatCol('ftm','FTM','ftm','col-stat-info'),
+    _rankPctCol('fgpct','FG%','fgm','fga','col-stat-a'),
+    _rankStatCol('ftm','FTM','ftm','col-stat-info col-zone-divider'),
     _rankStatCol('fta','FTA','fta','col-stat-info'),
+    _rankPctCol('ftpct','FT%','ftm','fta','col-stat-a'),
     _rankStatCol('tpm','3PM','tpm','col-stat-a col-zone-divider'),
     _rankStatCol('tpa','3PA','tpa','col-stat-info'),
     _rankPctCol('tppct','3P%','tpm','tpa','col-stat-info'),
@@ -3199,12 +3213,12 @@ function renderNbaPlayers(){
       '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +
       '<td class="col-stat-info col-cat-always col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-info col-cat-always">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
-      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + pctCellOrDash(fgPct) + '</td>' +
-      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
+      '<td class="col-stat-info col-cat13 col-zone-divider">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fga, gp), 1) + '</td>' +
-      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + pctCellOrDash(ftPct) + '</td>' +
-      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.ftm, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-pct-div col-cat9 col-cat13">' + pctCellOrDash(fgPct) + '</td>' +
+      '<td class="col-stat-info col-cat13 col-zone-divider">' + statCellOrDash(perGame(s.ftm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fta, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-pct-div col-cat9 col-cat13">' + pctCellOrDash(ftPct) + '</td>' +
       '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + statCellOrDash(perGame(s.tpm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.tpa, gp), 1) + '</td>' +
       '<td class="col-stat-info col-cat13">' + pctCellOrDash(tpPct) + '</td>' +
@@ -3602,12 +3616,12 @@ function renderWatchList(){
       '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +   // CBS Owned (NBA_CBS_OWNERSHIP_V1 / CBS_OWNED_PCT_V1)
       '<td class="col-stat-info col-cat-always col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
       '<td class="col-stat-info col-cat-always">' + statCellOrDash(_nbaMpg(s), 1) + '</td>' +
-      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + pctCellOrDash(fgPct) + '</td>' +
-      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
+      '<td class="col-stat-info col-cat13 col-zone-divider">' + statCellOrDash(perGame(s.fgm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fga, gp), 1) + '</td>' +
-      '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + pctCellOrDash(ftPct) + '</td>' +
-      '<td class="col-stat-info col-cat13">' + statCellOrDash(perGame(s.ftm, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-pct-div col-cat9 col-cat13">' + pctCellOrDash(fgPct) + '</td>' +
+      '<td class="col-stat-info col-cat13 col-zone-divider">' + statCellOrDash(perGame(s.ftm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.fta, gp), 1) + '</td>' +
+      '<td class="col-stat-a col-pct-div col-cat9 col-cat13">' + pctCellOrDash(ftPct) + '</td>' +
       '<td class="col-stat-a col-zone-divider col-cat9 col-cat13">' + statCellOrDash(perGame(s.tpm, gp), 1) + '</td>' +
       '<td class="col-stat-info">' + statCellOrDash(perGame(s.tpa, gp), 1) + '</td>' +
       '<td class="col-stat-info col-cat13">' + pctCellOrDash(tpPct) + '</td>' +
@@ -5334,19 +5348,19 @@ function openFromTheLogo(pid){
   // 'cat'  = one of the nine scoring categories, teal, matches th.col-stat-a.
   // 'info' = informational, green, matches th.col-stat-info.
   // Order is lifted from the table header left to right, not re-invented here:
-  //   GP MIN | FG% FGM FGA | FT% FTM FTA | 3PM 3PA 3P% | PTS REB ORB DRB AST STL BLK TO
+  //   GP MIN | FGM FGA FG% | FTM FTA FT% | 3PM 3PA 3P% | PTS REB ORB DRB AST STL BLK TO  (PCT_THIRD_V1)
   // Three labels were renamed to match the table exactly: FG became FGM, 3P became 3PM,
   // TOV became TO. The underlying fields are unchanged. PF stays removed site wide, per Matt
   // ("never, anywhere"), carried over from NINE_CAT_V1.
   const statRow1 =
     _ftlStatCell('GP',  (s.gp != null ? s.gp : null), 'info') +
     _ftlStatCell('MIN', _ftlMin(s),                   'info') +
-    _ftlStatCell('FG%', _ftlPct(s.fgm, s.fga),        'cat')  +
     _ftlStatCell('FGM', _ftlPG(s.fgm, gp),            'info') +
     _ftlStatCell('FGA', _ftlPG(s.fga, gp),            'info') +
-    _ftlStatCell('FT%', _ftlPct(s.ftm, s.fta),        'cat')  +
+    _ftlStatCell('FG%', _ftlPct(s.fgm, s.fga),        'cat')  +
     _ftlStatCell('FTM', _ftlPG(s.ftm, gp),            'info') +
     _ftlStatCell('FTA', _ftlPG(s.fta, gp),            'info') +
+    _ftlStatCell('FT%', _ftlPct(s.ftm, s.fta),        'cat')  +
     _ftlStatCell('3PM', _ftlPG(s.tpm, gp),            'cat')  +
     _ftlStatCell('3PA', _ftlPG(s.tpa, gp),            'info') +
     _ftlStatCell('3P%', _ftlPct(s.tpm, s.tpa),        'info');
