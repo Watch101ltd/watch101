@@ -1173,7 +1173,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <tr id="rankings-head-row"></tr>
       </thead>
       <tbody id="rankings-body">
-        <tr><td colspan="17" class="empty-state"><strong>PG rankings are loading</strong>Player data may still be loading — give it a moment.</td></tr>
+        <tr><td colspan="29" class="empty-state"><strong>PG rankings are loading</strong>Player data may still be loading — give it a moment.</td></tr>
       </tbody>
     </table>
   </div>
@@ -2505,7 +2505,7 @@ function renderRankings(){
   var statusEl = document.getElementById('rankings-status');
   if(!tbody) return;
   if(!_playerDB){
-    tbody.innerHTML = '<tr><td colspan="17" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="29" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
     return;
   }
   // _rankings[pos] is the source of truth for ORDER. First render with no saved order seeds from the
@@ -2579,21 +2579,31 @@ function renderRankings(){
 // NBA_RANKINGS_STATS_V1 — the 9-cat per-game column set, same on every position tab. Every stat
 // column clickable to sort (the Dude's standing rule). Per-game via perGame(); percentages true ratios.
 function _rankStatCol(key,label,field,tdClass){
-  return { key:key, label:label, tdClass:(tdClass||'col-stat-a'),
+  var td = (tdClass||'col-stat-a');
+  return { key:key, label:label, tdClass:td, headClass:'col-stat ' + td,
     num:function(pid){ var s=_statsRow(pid)||{}; var gp=Number(s.gp)||0; var v=s[field]; if(v==null||gp<=0) return -1; return Number(v)/gp; },
     render:function(pid){ var s=_statsRow(pid)||{}; var gp=Number(s.gp)||0; return statCellOrDash(perGame(s[field],gp),1); } };
 }
-function _rankPctCol(key,label,mk,att){
-  return { key:key, label:label, tdClass:'col-stat-b',
+function _rankPctCol(key,label,mk,att,tdClass){
+  var td = (tdClass||'col-stat-b');
+  return { key:key, label:label, tdClass:td, headClass:'col-stat ' + td,
     num:function(pid){ var s=_statsRow(pid)||{}; var v=pctOrNull(s[mk],s[att]); return v==null?-1:v; },
     render:function(pid){ var s=_statsRow(pid)||{}; return pctCellOrDash(pctOrNull(s[mk],s[att])); } };
 }
 function _rankCol_age(){ return { key:'age', label:'Age', tdClass:'',
   num:function(pid){ var a=nbaDecimalAgeNum(_playerDB[pid]); return (a==null||isNaN(a))?Infinity:a; },
   render:function(pid,p){ return nbaDecimalAge(p); } }; }
-function _rankCol_gp(){ return { key:'gp', label:'GP', tdClass:'col-stat-a col-zone-divider',
+// RANK_STATS_PARITY_V1: GP was tagged col-stat-a (a scoring category) here while the watch list
+// has always had it as col-stat-info. Harmless when it only meant a text colour, visible the moment
+// the category wash shipped. Now informational in both places.
+function _rankCol_gp(){ return { key:'gp', label:'GP', tdClass:'col-stat-info col-zone-divider', headClass:'col-stat col-stat-info col-zone-divider',
   num:function(pid){ var s=_statsRow(pid)||{}; return (s.gp==null)?-1:Number(s.gp); },
   render:function(pid){ var s=_statsRow(pid)||{}; return statCellOrDash(s.gp,0); } }; }
+// RANK_STATS_PARITY_V1: minutes per game. Uses the same _nbaMpg helper the watch list and the
+// player card use, so all three read one recipe (sp / gp / 60) rather than three copies of it.
+function _rankCol_min(){ return { key:'min', label:'MIN', tdClass:'col-stat-info', headClass:'col-stat col-stat-info',
+  num:function(pid){ var v=_nbaMpg(_statsRow(pid)); return (v==null)?-1:v; },
+  render:function(pid){ return statCellOrDash(_nbaMpg(_statsRow(pid)),1); } }; }
 // OWNERSHIP_COLS_NBA_V1 (2026-06-26 — PC Walter, per the Dude): Y!Rank / Y!Owned / CBS Owned columns
 // for the NBA Rankings tabs, matching the Watch List. NO data pipeline yet (no Yahoo API, no CBS scrape
 // for NBA) — these render em-dash placeholders for now, exactly like the Watch List does. When the data
@@ -2683,11 +2693,36 @@ function _rankCol_notebadge(){ return { key:'notebadge', label:'', headClass:'co
 // ── /RANKINGS_NOTES_NBA_V1 ───────────────────────────────────────────────────
 function _rankColsFor(pos){
   // OWNERSHIP_COLS_NBA_V1 — Y!Rank/Y!Owned/CBS Owned lead the stat block on every tab (placeholders for now).
-  return [ _rankCol_notebadge(), _rankCol_note(), _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(), _rankCol_gp(),
-    _rankPctCol('fgpct','FG%','fgm','fga'), _rankPctCol('ftpct','FT%','ftm','fta'),
-    _rankStatCol('pts','PTS','pts'), _rankStatCol('tpm','3PM','tpm'),
-    _rankStatCol('reb','REB','reb'), _rankStatCol('ast','AST','ast'),
-    _rankStatCol('stl','STL','stl'), _rankStatCol('blk','BLK','blk'), _rankStatCol('to','TOV','to') ];
+  // RANK_STATS_PARITY_V1 (2026-08-05, the Dude's call). The rankings stat block now carries the
+  // SAME 19 stats as the watch list, in the SAME order, with the SAME classification and the same
+  // gold zone dividers. It was 10 stats in a different order, which is why the two tables never
+  // looked like the same site. Only the stat block changed; the columns to the left of it are
+  // untouched by his instruction ("just the stats part").
+  // Order, lifted from the watch list header rather than retyped:
+  //   GP MIN | FG% FGM FGA | FT% FTM FTA | 3PM 3PA 3P% | PTS REB ORB DRB AST STL BLK TO
+  // col-stat-a  = scoring category, teal header, carries the category wash.
+  // col-stat-info = informational, grey header, no wash.
+  // TOV was renamed TO to match the watch list. The field behind it is unchanged.
+  return [ _rankCol_notebadge(), _rankCol_note(), _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(),
+    _rankCol_gp(),
+    _rankCol_min(),
+    _rankPctCol('fgpct','FG%','fgm','fga','col-stat-a col-zone-divider'),
+    _rankStatCol('fgm','FGM','fgm','col-stat-info'),
+    _rankStatCol('fga','FGA','fga','col-stat-info'),
+    _rankPctCol('ftpct','FT%','ftm','fta','col-stat-a col-zone-divider'),
+    _rankStatCol('ftm','FTM','ftm','col-stat-info'),
+    _rankStatCol('fta','FTA','fta','col-stat-info'),
+    _rankStatCol('tpm','3PM','tpm','col-stat-a col-zone-divider'),
+    _rankStatCol('tpa','3PA','tpa','col-stat-info'),
+    _rankPctCol('tppct','3P%','tpm','tpa','col-stat-info'),
+    _rankStatCol('pts','PTS','pts','col-stat-a col-zone-divider'),
+    _rankStatCol('reb','REB','reb','col-stat-a'),
+    _rankStatCol('oreb','ORB','oreb','col-stat-info'),
+    _rankStatCol('dreb','DRB','dreb','col-stat-info'),
+    _rankStatCol('ast','AST','ast','col-stat-a'),
+    _rankStatCol('stl','STL','stl','col-stat-a'),
+    _rankStatCol('blk','BLK','blk','col-stat-a'),
+    _rankStatCol('to','TO','to','col-stat-a') ];
 }
 function _rankRenderHead(cols){
   var headRow = document.getElementById('rankings-head-row');
