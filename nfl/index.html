@@ -636,8 +636,19 @@ body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.c
 #ftl-overlay .ftl-chart-dot{fill:var(--turf);}
 #ftl-overlay .ftl-chart-foot{display:flex;justify-content:space-between;border-top:1px dashed var(--border2);margin-top:10px;padding-top:10px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);}
 #ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;margin:0 0 10px 2px;}
-#ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;gap:0;margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
-#ftl-overlay .ftl-statcell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 10px;min-width:54px;flex:1;border-right:1px solid var(--border);text-align:center;}
+/* STATGRID_V1 (Aug 6, 2026 — Bug #46, found by the Dude at zoom on SGA's card). Was
+   flex+wrap with min-width:54px cells: when zoom shrinks the width, flex EVICTS the cells
+   that no longer fit onto an orphan row (3PA + 3P% first) instead of shrinking anyone.
+   Grid with equal auto-columns shrinks every cell together and CANNOT wrap — two rows
+   stay two rows at any zoom, any cell count, no hardcoded column number. */
+#ftl-overlay .ftl-statbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
+#ftl-overlay .ftl-statcell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 10px;min-width:0;border-right:1px solid var(--border);text-align:center;}  /* STATGRID_V1: min-width 54px→0 so grid can shrink cells equally; flex:1 dropped (grid sizes columns now) */
+/* OWNROW_CARD_V1 (Aug 6, 2026 — the Dude: "mirror their cousin"). Baseball's card carries a
+   middle row of its own — Yahoo rank, Yahoo roster %%, CBS %% — separate, alone, values WHITE.
+   Ported to this twin. Same never-wrap grid as STATGRID_V1. Values white via the override
+   below; labels keep the standard grey treatment, matching baseball's row. */
+#ftl-overlay .ftl-ownbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
+#ftl-overlay .ftl-ownbar .ftl-statval{color:var(--text1,#fff);}
 #ftl-overlay .ftl-statcell:last-child{border-right:none;}
 #ftl-overlay .ftl-statlabel{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:9px;letter-spacing:0.1em;color:var(--text3);text-transform:uppercase;margin-bottom:4px;}
 #ftl-overlay .ftl-statval{font-size:15px;font-weight:700;color:#22c55e;line-height:1;}
@@ -4792,8 +4803,18 @@ function openFromTheLogo(pid){
   const rushing = _ftlStatCell('RU YD', _ftlNum(s.rush_yd)) + _ftlStatCell('RU TD', _ftlNum(s.rush_td));
   const receiving = _ftlStatCell('REC', _ftlNum(s.rec)) + _ftlStatCell('RE YD', _ftlNum(s.rec_yd)) + _ftlStatCell('RE TD', _ftlNum(s.rec_td));
   // QUADRANTS_V1 (Aug 2, 2026): one compact stat strip in the hero, baseball-style.
+  // OWNROW_CARD_V1 (Aug 6, 2026) — baseball's ownership row, ported per the Dude:
+  // Y!RK / Y!ROS%% / CBS%%, its own row, white values. Same lookups the table rows use.
+  const _oyr = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(pid, 'yahoo_rank') : null;
+  const _oro = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(pid, 'roster_pct') : null;
+  const _ocb = (typeof _cbsLookupNum === 'function') ? _cbsLookupNum(pid) : null;
+  const ownRow =
+    _ftlStatCell('Y!RK',   (_oyr != null) ? _oyr : null) +
+    _ftlStatCell('Y!ROS%', (_oro != null) ? Math.round(_oro) + '%' : null) +
+    _ftlStatCell('CBS%',   (_ocb != null) ? _ocb + '%' : null);
   document.getElementById('ftl-statwrap').innerHTML =
-    '<div class="ftl-statbar">' + fantasy + passing + rushing + receiving + '</div>';
+    '<div class="ftl-statbar">' + fantasy + passing + rushing + receiving + '</div>' +
+    '<div class="ftl-ownbar">' + ownRow + '</div>';
 
   // Header note reflects the year the page is showing (offseason shows last season).
   const hr = document.getElementById('ftl-header-right');
