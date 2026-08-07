@@ -493,6 +493,9 @@ table.watch-list thead th .sort-arrow{opacity:0.4;font-size:8px;margin-left:1px}
 table.watch-list thead th[data-sort]{cursor:pointer;user-select:none}
 table.watch-list thead th[data-sort]:hover{color:var(--text)}
 table.watch-list thead th[data-sort]:hover .sort-arrow{opacity:0.9}
+/* SCORING_ENGINE_NFL_V1 -- Variant D scoring box in the FPts header (mockup 2026-08-06) */
+.fpts-scoring-select{background:var(--surface);border:1px solid var(--border2);color:var(--gold);font-size:10px;font-weight:700;border-radius:6px;padding:2px 4px;font-family:inherit;cursor:pointer;outline:none;text-transform:none;letter-spacing:0;margin-left:6px;vertical-align:middle}
+.fpts-scoring-select.nondefault{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
 table.watch-list tbody td{
   padding:10px 8px;font-size:13px;text-align:right;
   border-bottom:1px solid var(--border);vertical-align:middle;
@@ -1072,6 +1075,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-yrank col-zone-divider" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-fpts col-zone-divider" data-sort="fpts">FPts <span class="sort-arrow">↕</span><select id="wl-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
         <th class="col-stat col-stat-b col-zone-divider" data-sort="payd">PaYd <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="patd">PaTD <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b col-zone-divider" data-sort="ruatt">RuAtt <span class="sort-arrow">↕</span></th>
@@ -1081,7 +1085,6 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-stat col-stat-a" data-sort="rec">Rec <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="reyd">ReYd <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="retd">ReTD <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="fpts">FPts <span class="sort-arrow">↕</span></th>
         <th class="col-action">Action</th>
       </tr>
     </thead>
@@ -1246,6 +1249,72 @@ function toggleFilterPanel(titleEl){
 // CONFIG
 // ──────────────────────────────────────────────────────────────────────────
 const SERVER_URL = 'https://nfl-nas.fantasywatch101.com';
+
+// ============================================================================
+// SCORING_ENGINE_NFL_V1 (2026-08-06 -- PC Walter, per the Dude; Matt 8/3 + 8/5 tapes).
+// ----------------------------------------------------------------------------
+// Football scoring systems. Sleeper precomputes pts_std / pts_half_ppr / pts_ppr
+// and the NAS server whitelists all three through BOTH the season and daterange
+// payloads (server.js STAT_SUM_KEYS) -- so no new API calls, no new endpoints,
+// the NAS cache stays the only go-between (the Dude confirmed this requirement
+// mid-build). The dropdown lives IN the FPts column header (Variant D, mockup
+// approved off 05 Research/football_scoring_header_samples_v2_2026-08-06.html).
+// Changing it recalculates ONLY the FPts column: sort, MIN FPTS filter, CSV
+// export and cell paint all read _fptsOf(s) instead of raw pts_half_ppr.
+// DEFAULTS: every list defaults to half PPR until Matt delivers his per-list
+// systems (8/3 tape -- he owes the numbers; List of Integrity = half PPR is
+// already right). Reader override persists in localStorage. The star marks the
+// default in the menu; leaving the default puts a gold ring on the box.
+// COMPACT_MODE_V1 note: its nth-child(n+12):nth-child(-n+24) ranges were
+// re-checked for the FPts move (col 24 -> col 15 of 25, the drag handle is col 1):
+// both old and new positions fall inside the hidden span, ranges still correct.
+// CAREER rows only sum pts_half_ppr (CAREER_STAT_KEYS_NFL), so _fptsOf derives:
+// std = half - rec/2, ppr = half + rec/2 (exact -- the pts fields are linear in rec).
+// ============================================================================
+const NFL_SCORING_SYSTEMS = {
+  std:  { label: 'STD',        field: 'pts_std' },
+  half: { label: '½ PPR', field: 'pts_half_ppr' },
+  ppr:  { label: 'PPR',        field: 'pts_ppr' }
+};
+const NFL_SCORING_DEFAULT = 'half';
+const NFL_SCORING_LS_KEY = 'fw101_nfl_scoring_v1';
+let _scoringSystem = NFL_SCORING_DEFAULT;
+try { const _ssSaved = localStorage.getItem(NFL_SCORING_LS_KEY); if(_ssSaved && NFL_SCORING_SYSTEMS[_ssSaved]) _scoringSystem = _ssSaved; } catch(e) {}
+function _fptsOf(s){
+  if(!s) return null;
+  const sys = NFL_SCORING_SYSTEMS[_scoringSystem] || NFL_SCORING_SYSTEMS[NFL_SCORING_DEFAULT];
+  let v = s[sys.field];
+  if(v == null && s.pts_half_ppr != null){
+    const rec = Number(s.rec) || 0;
+    if(_scoringSystem === 'std') v = Number(s.pts_half_ppr) - 0.5 * rec;
+    else if(_scoringSystem === 'ppr') v = Number(s.pts_half_ppr) + 0.5 * rec;
+    else v = s.pts_half_ppr;
+  }
+  return v;
+}
+function _scoringOptionsHtml(){
+  return Object.keys(NFL_SCORING_SYSTEMS).map(function(k){
+    return '<option value="' + k + '"' + (k === _scoringSystem ? ' selected' : '') + '>' +
+           NFL_SCORING_SYSTEMS[k].label + (k === NFL_SCORING_DEFAULT ? ' ★' : '') + '</option>';
+  }).join('');
+}
+function _scoringSyncSelects(){
+  document.querySelectorAll('.fpts-scoring-select').forEach(function(sel){
+    sel.innerHTML = _scoringOptionsHtml();
+    sel.value = _scoringSystem;
+    sel.classList.toggle('nondefault', _scoringSystem !== NFL_SCORING_DEFAULT);
+    sel.title = 'Scoring system. List default: ' + NFL_SCORING_SYSTEMS[NFL_SCORING_DEFAULT].label + ' ★';
+  });
+}
+function _scoringChanged(val){
+  if(!NFL_SCORING_SYSTEMS[val]) return;
+  _scoringSystem = val;
+  try { localStorage.setItem(NFL_SCORING_LS_KEY, val); } catch(e) {}
+  _scoringSyncSelects();
+  if(typeof renderWatchList === 'function'){ try { renderWatchList(); } catch(e) {} }
+}
+_scoringSyncSelects();
+// ======================== /SCORING_ENGINE_NFL_V1 ============================
 
 // YAHOO_DATA_V1 (May 15, 2026) — browser hits the Cloudflare Worker for Yahoo
 // data, not the NAS directly. Worker enforces 4-hour cooldown lockout + 10/24h
@@ -1418,7 +1487,7 @@ function _wlPassesFilter(pid){
   const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
   if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
   const s=_statsRow(pid);
-  if(F.minFpts!=null && (Number(s.pts_half_ppr)||0) < F.minFpts) return false;
+  if(F.minFpts!=null && (Number(_fptsOf(s))||0) < F.minFpts) return false;
   if(F.minGames!=null && (Number(s.gp)||0) < F.minGames) return false;
   // POSITION_FILTER_V1 (2026-06-06) — single NFL position, match ANY checked. (Kickers intentionally have no box.)
   if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) return false;
@@ -2537,6 +2606,7 @@ function renderWatchList(){
       '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? " class=\"col-zone-divider\"" : " class=\"placeholder col-zone-divider\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
+      '<td class="col-stat-a col-fpts col-zone-divider">' + statCellOrDash(_fptsOf(s), 1) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.rush_att) + '</td>' +
@@ -2546,7 +2616,6 @@ function renderWatchList(){
       '<td class="col-stat-a">' + statCellOrDash(s.rec) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_yd) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_td) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
       '<td class="center"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
     '</tr>';
   }).join('');
@@ -2677,8 +2746,8 @@ function closeListInfoOverlay(){
 // the ACTIVE watch list in its current order using the page's own stat totals and
 // ownership lookups, so the file always matches what the table shows.
 function _exportRows(){
-  var headers = ['Rank','Player','Position','Team','Age','EXP','Y! Rank','Y! Owned %','CBS Owned %',
-                 'PaYd','PaTD','RuAtt','RuYd','RuTD','Tgt','Rec','ReYd','ReTD','FPTS','GP','Priority','Type Tags','Note'];
+  var headers = ['Rank','Player','Position','Team','Age','EXP','Y! Rank','Y! Owned %','CBS Owned %','FPTS',
+                 'PaYd','PaTD','RuAtt','RuYd','RuTD','Tgt','Rec','ReYd','ReTD','GP','Priority','Type Tags','Note'];
   var rows = [];
   for(var i=0; i<_watchList.length; i++){
     var it = _watchList[i] || {};
@@ -2696,9 +2765,10 @@ function _exportRows(){
       (age==null) ? '' : age,
       (p.years_exp != null && p.years_exp !== '') ? (Number(p.years_exp) === 0 ? 'R' : p.years_exp) : '',
       (yr!=null) ? yr : '', (yo!=null) ? Math.round(yo) : '', (cv!=null) ? cv : '',
+      (function(){ var fp=_fptsOf(s); return (fp!=null) ? Math.round(Number(fp)*10)/10 : ''; })(),
       s.pass_yd || '', s.pass_td || '', s.rush_att || '', s.rush_yd || '', s.rush_td || '',
       s.rec_tgt || '', s.rec || '', s.rec_yd || '', s.rec_td || '',
-      (s.pts_half_ppr!=null) ? Math.round(Number(s.pts_half_ppr)*10)/10 : '', s.gp || '',
+      s.gp || '',
       it.priority || 0, tags, (it.note!=null) ? String(it.note) : ''
     ]);
   }
@@ -4301,7 +4371,7 @@ function sortValueFor(field, p, s, pid){
     case 'pos':      return p.position || 'zzz';
     case 'team':     return p.team || 'zzz';
     case 'age':      return nflDecimalAgeNum(p);  // NFL_DECIMAL_AGE_V1 — sort by precise age, matching the column
-    case 'fpts':     return (s.pts_half_ppr || 0);
+    case 'fpts':     return (_fptsOf(s) || 0);
     case 'payd':     return (s.pass_yd || 0);
     case 'patd':     return (s.pass_td || 0);
     case 'ruatt':    return (s.rush_att || 0);
