@@ -3810,7 +3810,9 @@ function _cpColsFor(p){
     default: mid = []; break;
   }
   mid.forEach(function(m){ cols.push(statCol(m[0], m[1])); });
-  cols.push({ label: 'FPts', render: function(r){ return _cpDec1(_cpG(r.stats, 'pts_half_ppr')); }, sortVal: function(r){ return _cpG(r.stats, 'pts_half_ppr'); } });
+  // SCORING_ENGINE_NFL_V1: career FPts follows the active scoring system. Career rows carry only
+  // pts_half_ppr + rec (CAREER_STAT_KEYS_NFL), so _fptsOf's derivation path does the math exactly.
+  cols.push({ label: 'FPts', render: function(r){ return _cpDec1(_fptsOf(r.stats, p)); }, sortVal: function(r){ return _fptsOf(r.stats, p); } });
   return cols;
 }
 
@@ -4703,8 +4705,9 @@ async function _ftlRenderScheduleResults(pid){
     let statCells = '';
     if (s) {
       for (const c of cols) statCells += _ftlSchedStatCell(s[c[1]]);
-      const fp = Number(s.pts_half_ppr);
-      statCells += (isFinite(fp) && s.pts_half_ppr != null) ? '<td>' + fp.toFixed(1) + '</td>' : '<td class="fs-dash">—</td>';
+      const fpv = _fptsOf(s, p);  // SCORING_ENGINE_NFL_V1: weekly FPts follows the active scoring system
+      const fp = Number(fpv);
+      statCells += (isFinite(fp) && fpv != null) ? '<td>' + fp.toFixed(1) + '</td>' : '<td class="fs-dash">—</td>';
       rows += '<tr><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + statCells + '</tr>';
     } else if (played) {
       // Team played, no stat line recorded for him -- DNP, grayed like baseball's log.
@@ -4903,7 +4906,7 @@ function openFromTheLogo(pid){
 
   // Stat boxes — match the football table (season totals): fantasy points, then passing,
   // rushing, receiving. Empty stat -> em-dash.
-  const fantasy = _ftlStatCell('FPTS', _ftlNum(s.pts_half_ppr, 1));
+  const fantasy = _ftlStatCell('FPTS', _ftlNum(_fptsOf(s, p), 1));  // SCORING_ENGINE_NFL_V1: card FPTS follows the active scoring system
   const passing = _ftlStatCell('PA YD', _ftlNum(s.pass_yd)) + _ftlStatCell('PA TD', _ftlNum(s.pass_td));
   const rushing = _ftlStatCell('RU YD', _ftlNum(s.rush_yd)) + _ftlStatCell('RU TD', _ftlNum(s.rush_td));
   const receiving = _ftlStatCell('REC', _ftlNum(s.rec)) + _ftlStatCell('RE YD', _ftlNum(s.rec_yd)) + _ftlStatCell('RE TD', _ftlNum(s.rec_td));
