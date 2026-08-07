@@ -801,7 +801,7 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
   #nbawl-filter-panel{display:none !important;}
   .toolbar-right{display:none !important;}
   #status-bar{display:none !important;}
-  div:has(> #nbawl-instant-daterange){display:none !important;}
+  /* PHONE_GLOWUP_TWINS_V1 (2026-08-07): the date-range dropdown now SHOWS on phone (baseball shows its Season Stats box; the twins match). June's hide rule removed here. */
   .header{flex-wrap:wrap;}
   /* note-star rows */
   .pc-row{display:flex;align-items:stretch;gap:10px;padding:11px 12px;border-bottom:1px solid var(--border);background:var(--surface);cursor:pointer;}
@@ -813,6 +813,10 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
   .pc-meta{font-size:10px;color:var(--text3);font-weight:600;margin-top:2px;}
   .pc-stars{color:var(--court-bright);letter-spacing:1px;}
   .pc-stars .off{color:#3a4656;}
+  .pc-stars .half{opacity:.55;}
+  .pc-prio{font-size:11px;line-height:1;}
+  .pc-delta{font-size:13px;font-weight:800;text-align:right;}
+  .pc-note-empty{color:var(--text3);font-style:normal;opacity:.6;}
   .pc-meta .pos-badge{font-size:8px;padding:1px 4px;vertical-align:1px;}
   .pc-note{font-size:12px;color:var(--text2);font-style:italic;font-weight:600;line-height:1.3;margin-top:5px;
            background:rgba(240,165,0,0.06);border-left:2px solid var(--gold);border-radius:3px;padding:5px 8px;}
@@ -3691,22 +3695,62 @@ function _renderPhoneList(sortedIds){
     if(!p) return '';
     var originalIdx = _wlIndexOf(pid);
     var rank = (originalIdx >= 0) ? (originalIdx + 1) : '—';
-    var priority = (originalIdx >= 0) ? _wlPriority(_watchList[originalIdx]) : 0;
+    var item = (originalIdx >= 0) ? _watchList[originalIdx] : null;
+    var priority = item ? _wlPriority(item) : 0;
     var name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
     var team = p.team || '—';
     var age = ''; try { age = (typeof nbaDecimalAge==='function') ? nbaDecimalAge(p) : (p.age||''); } catch(e){ age = p.age || ''; }
     var posHtml = ''; try { posHtml = (typeof _nbaPosBadges==='function') ? _nbaPosBadges(p) : ('<span class="pos-badge">'+escapeHtml(p.position||'?')+'</span>'); } catch(e){ posHtml = ''; }
+    /* PHONE_GLOWUP_TWINS_V1 (2026-08-07) — baseball's current phone row treatment ported to the twins.
+       Stars stay INERT on purpose (the table's stars are clickable admin controls), and are half-aware
+       like baseball's. Everything below is hide-when-empty: no data, no element. */
     var stars = '';
-    if(priority > 0){
-      stars = '<span class="pc-stars">';
-      for(var n = 1; n <= 5; n++){ stars += '<span class="' + (n <= priority ? 'on' : 'off') + '">★</span>'; }
-      stars += '</span>';
-    }
+    try {
+      var _pv = Number(priority); if(isNaN(_pv) || _pv < 0) _pv = 0; if(_pv > 5) _pv = 5;
+      if(_pv > 0){
+        stars = '<span class="pc-stars">';
+        for(var _n = 1; _n <= 5; _n++){
+          var _c = (_pv >= _n) ? 'on' : ((_pv >= _n - 0.5) ? 'half' : 'off');
+          stars += '<span class="' + _c + '">★</span>';
+        }
+        stars += '</span>';
+      }
+    } catch(e){}
+    var emojis = '';
+    try {
+      if(typeof _wlTypeTags==='function' && typeof _typeTagById==='function'){
+        var _tags = _wlTypeTags(item);
+        for(var _e = 0; _e < _tags.length; _e++){ var _d = _typeTagById(_tags[_e]); if(_d && _d.emoji) emojis += _d.emoji; }
+      }
+    } catch(e){}
+    var prio = emojis ? (' <span class="pc-prio">' + emojis + '</span>') : '';
+    var mustFlash = '';
+    try { mustFlash = (typeof _mustWatchFlashClass==='function') ? _mustWatchFlashClass(pid) : ''; } catch(e){}
+    var nameHtml = mustFlash
+      ? ('<span class="' + mustFlash.trim() + '">' + escapeHtml(name) + '</span>')
+      : escapeHtml(name);
     var noteHtml = '';
     try {
-      var item = (originalIdx >= 0) ? _watchList[originalIdx] : null;
       var noteVal = (item && item.note) ? String(item.note) : ((p.note != null) ? String(p.note) : '');
-      if(noteVal && noteVal.trim()) noteHtml = '<div class="pc-note">' + escapeHtml(noteVal) + '</div>';
+      var _split = (typeof _splitNoteAndUrl==='function') ? _splitNoteAndUrl(noteVal) : { text: noteVal, url: '' };
+      var _txt = (_split.text || '').trim();
+      var _badge = (typeof _renderNoteLinkBadge==='function') ? _renderNoteLinkBadge(_split.url) : '';
+      noteHtml = _txt
+        ? ('<div class="pc-note">' + escapeHtml(_txt) + _badge + '</div>')
+        : '<div class="pc-note"><span class="pc-note-empty">No note yet</span></div>';
+    } catch(e){}
+    var deltaHtml = '';
+    try {
+      if(item && item.is_new_this_publish === true){
+        deltaHtml = '<div class="pc-delta"><span class="rdelta-new-badge">🆕</span></div>';
+      } else if(typeof _wlDeltaFor==='function'){
+        var _dv = _wlDeltaFor(pid);
+        if(_dv != null && _dv !== 0){
+          deltaHtml = (_dv > 0)
+            ? '<div class="pc-delta" style="color:var(--green)">+' + _dv + '</div>'
+            : '<div class="pc-delta" style="color:var(--red)">' + _dv + '</div>';
+        }
+      }
     } catch(e){}
     var railInner = '';
     try {
@@ -3717,12 +3761,14 @@ function _renderPhoneList(sortedIds){
         railInner += (railInner ? '<br>' : '') + 'CBS <b>' + _cbsLookupFmt(pid) + '</b>';
       }
     } catch(e){}
-    var rail = railInner ? '<div class="pc-rail"><div class="pc-own">' + railInner + '</div></div>' : '';
+    var rail = (deltaHtml || railInner)
+      ? ('<div class="pc-rail">' + deltaHtml + (railInner ? ('<div class="pc-own">' + railInner + '</div>') : '') + '</div>')
+      : '';
     var _pidAttr = String(pid).replace(/"/g,'&quot;');
     return '<div class="pc-row" data-pid="' + escapeHtml(pid) + '" onclick="_phoneRowTap(&quot;' + _pidAttr + '&quot;)">'
       + '<div class="pc-rank">' + rank + '</div>'
       + '<div class="pc-main">'
-        + '<div class="pc-nm">' + escapeHtml(name) + '</div>'
+        + '<div class="pc-nm">' + nameHtml + prio + '</div>'
         + '<div class="pc-meta">' + escapeHtml(team) + ' · ' + posHtml + (age ? (' · ' + age) : '') + (stars ? (' ' + stars) : '') + '</div>'
         + noteHtml
       + '</div>'
