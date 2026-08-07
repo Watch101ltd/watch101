@@ -1262,7 +1262,7 @@ const SERVER_URL = 'https://nfl-nas.fantasywatch101.com';
 // mid-build). The dropdown lives IN the FPts column header (Variant D, mockup
 // approved off 05 Research/football_scoring_header_samples_v2_2026-08-06.html).
 // Changing it recalculates ONLY the FPts column: sort, MIN FPTS filter, CSV
-// export and cell paint all read _fptsOf(s) instead of raw pts_half_ppr.
+// export and cell paint all read _fptsOf(s, p) instead of raw pts_half_ppr.
 // DEFAULTS (amended by the Dude, 8/6 late evening, after Phase 2 verify): every
 // list opens on ITS OWN default, ALWAYS -- page load and list switch both snap the
 // dropdown back to the list default. The reader's pick lives only while they sit on
@@ -1281,7 +1281,8 @@ const SERVER_URL = 'https://nfl-nas.fantasywatch101.com';
 const NFL_SCORING_SYSTEMS = {
   std:  { label: 'STD',        field: 'pts_std' },
   half: { label: '½ PPR', field: 'pts_half_ppr' },
-  ppr:  { label: 'PPR',        field: 'pts_ppr' }
+  ppr:  { label: 'PPR',        field: 'pts_ppr' },
+  teprem: { label: 'TE Prem',  field: 'pts_ppr' }  // full PPR base + extra half per TE catch (special-cased in _fptsOf)
 };
 const NFL_SCORING_DEFAULT = 'half';
 const NFL_SCORING_LIST_DEFAULTS = {};  // listId -> system key; fills when Matt delivers per-list systems
@@ -1293,15 +1294,23 @@ function _scoringResetToListDefault(listId){
   _scoringSystem = _scoringDefaultFor(_scoringActiveListId);
   _scoringSyncSelects();
 }
-function _fptsOf(s){
+function _fptsOf(s, p){
   if(!s) return null;
   const sys = NFL_SCORING_SYSTEMS[_scoringSystem] || NFL_SCORING_SYSTEMS[NFL_SCORING_DEFAULT];
   let v = s[sys.field];
   if(v == null && s.pts_half_ppr != null){
-    const rec = Number(s.rec) || 0;
-    if(_scoringSystem === 'std') v = Number(s.pts_half_ppr) - 0.5 * rec;
-    else if(_scoringSystem === 'ppr') v = Number(s.pts_half_ppr) + 0.5 * rec;
+    // Derivation for payloads that only carry half PPR (career rows): exact, the pts fields are linear in rec.
+    const rec0 = Number(s.rec) || 0;
+    if(sys.field === 'pts_std') v = Number(s.pts_half_ppr) - 0.5 * rec0;
+    else if(sys.field === 'pts_ppr') v = Number(s.pts_half_ppr) + 0.5 * rec0;
     else v = s.pts_half_ppr;
+  }
+  // TE_PREM (8/6, the Dude): full PPR base + an extra half point per TIGHT END catch (TE earns 1.5/rec).
+  // Every call site passes the player record p (audited 8/6) so sort/filter/paint/export always agree
+  // about who is a TE. Non-TEs and rec-less rows (QB, DEF) get plain PPR -- premium adds zero.
+  if(_scoringSystem === 'teprem' && v != null){
+    const isTE = !!(p && (p.position === 'TE' || (p.fantasy_positions && p.fantasy_positions.indexOf('TE') !== -1)));
+    if(isTE) v = Number(v) + 0.5 * (Number(s.rec) || 0);
   }
   return v;
 }
@@ -1502,7 +1511,7 @@ function _wlPassesFilter(pid){
   const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
   if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
   const s=_statsRow(pid);
-  if(F.minFpts!=null && (Number(_fptsOf(s))||0) < F.minFpts) return false;
+  if(F.minFpts!=null && (Number(_fptsOf(s, p))||0) < F.minFpts) return false;
   if(F.minGames!=null && (Number(s.gp)||0) < F.minGames) return false;
   // POSITION_FILTER_V1 (2026-06-06) — single NFL position, match ANY checked. (Kickers intentionally have no box.)
   if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) return false;
@@ -1784,8 +1793,8 @@ function _rankStatCol(key,label,field,tdClass,decimals){
 // col-fpts on the td so the watch-list centering rule reaches the rankings cells too.
 function _rankCol_fpts(){
   return { key:'fpts', label:'FPTS', tdClass:'col-stat-a col-fpts',
-    num:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=_fptsOf(s); return (v==null)?-1:Number(v); },
-    render:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=_fptsOf(s);
+    num:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var p=(typeof _playerDB!=='undefined'&&_playerDB)?_playerDB[pid]:null; var v=_fptsOf(s, p); return (v==null)?-1:Number(v); },
+    render:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var p=(typeof _playerDB!=='undefined'&&_playerDB)?_playerDB[pid]:null; var v=_fptsOf(s, p);
       return (v==null) ? '<span class="placeholder">—</span>' : statCellOrDash(v, 1); } };
 }
 
@@ -2158,7 +2167,7 @@ function _npStatValue(field, p, s, pid){
     case 'pos':  return p.position || 'zzz';
     case 'team': return p.team || 'zzz';
     case 'age':  return nflDecimalAgeNum(p);
-    case 'fpts': return (_fptsOf(s) || 0);
+    case 'fpts': return (_fptsOf(s, p) || 0);
     case 'payd': return (s.pass_yd || 0);
     case 'patd': return (s.pass_td || 0);
     case 'ruatt': return (s.rush_att || 0);
@@ -2203,7 +2212,7 @@ function _npSortedIds(){
     if(F.team && F.team !== 'ALL' && p.team !== F.team) continue;
     if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) continue;  // POSITION_FILTER_V1
     const s = _statsRow(id);
-    if(F.minFpts != null && (Number(_fptsOf(s))||0) < F.minFpts) continue;
+    if(F.minFpts != null && (Number(_fptsOf(s, p))||0) < F.minFpts) continue;
     if(F.minGames != null && (Number(s.gp)||0) < F.minGames) continue;   // s.gp inert in offseason
     if(F.ageMin != null || F.ageMax != null){
       const a = nflDecimalAgeNum(p);
@@ -2288,7 +2297,7 @@ function renderNflPlayers(){
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       // CBS_OWNED_NFLPLAYERS_V1 (2026-06-17) — CBS rostered% column, same lookup the watch list uses.
       '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
-      '<td class="col-stat-a col-fpts col-zone-divider">' + statCellOrDash(_fptsOf(s), 1) + '</td>' +
+      '<td class="col-stat-a col-fpts col-zone-divider">' + statCellOrDash(_fptsOf(s, p), 1) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.rush_att) + '</td>' +
@@ -2631,7 +2640,7 @@ function renderWatchList(){
       '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? " class=\"col-zone-divider\"" : " class=\"placeholder col-zone-divider\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
-      '<td class="col-stat-a col-fpts col-zone-divider">' + statCellOrDash(_fptsOf(s), 1) + '</td>' +
+      '<td class="col-stat-a col-fpts col-zone-divider">' + statCellOrDash(_fptsOf(s, p), 1) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.rush_att) + '</td>' +
@@ -2790,7 +2799,7 @@ function _exportRows(){
       (age==null) ? '' : age,
       (p.years_exp != null && p.years_exp !== '') ? (Number(p.years_exp) === 0 ? 'R' : p.years_exp) : '',
       (yr!=null) ? yr : '', (yo!=null) ? Math.round(yo) : '', (cv!=null) ? cv : '',
-      (function(){ var fp=_fptsOf(s); return (fp!=null) ? Math.round(Number(fp)*10)/10 : ''; })(),
+      (function(){ var fp=_fptsOf(s, p); return (fp!=null) ? Math.round(Number(fp)*10)/10 : ''; })(),
       s.pass_yd || '', s.pass_td || '', s.rush_att || '', s.rush_yd || '', s.rush_td || '',
       s.rec_tgt || '', s.rec || '', s.rec_yd || '', s.rec_td || '',
       s.gp || '',
@@ -4397,7 +4406,7 @@ function sortValueFor(field, p, s, pid){
     case 'pos':      return p.position || 'zzz';
     case 'team':     return p.team || 'zzz';
     case 'age':      return nflDecimalAgeNum(p);  // NFL_DECIMAL_AGE_V1 — sort by precise age, matching the column
-    case 'fpts':     return (_fptsOf(s) || 0);
+    case 'fpts':     return (_fptsOf(s, p) || 0);
     case 'payd':     return (s.pass_yd || 0);
     case 'patd':     return (s.pass_td || 0);
     case 'ruatt':    return (s.rush_att || 0);
