@@ -1263,10 +1263,15 @@ const SERVER_URL = 'https://nfl-nas.fantasywatch101.com';
 // approved off 05 Research/football_scoring_header_samples_v2_2026-08-06.html).
 // Changing it recalculates ONLY the FPts column: sort, MIN FPTS filter, CSV
 // export and cell paint all read _fptsOf(s) instead of raw pts_half_ppr.
-// DEFAULTS: every list defaults to half PPR until Matt delivers his per-list
-// systems (8/3 tape -- he owes the numbers; List of Integrity = half PPR is
-// already right). Reader override persists in localStorage. The star marks the
-// default in the menu; leaving the default puts a gold ring on the box.
+// DEFAULTS (amended by the Dude, 8/6 late evening, after Phase 2 verify): every
+// list opens on ITS OWN default, ALWAYS -- page load and list switch both snap the
+// dropdown back to the list default. The reader's pick lives only while they sit on
+// that list; it is deliberately NOT persisted (no localStorage). His words: the List
+// of Integrity should never, ever open on the wrong system. Per-list defaults live in
+// NFL_SCORING_LIST_DEFAULTS (empty = everything half PPR until Matt's numbers arrive).
+// The star marks the active list's default; leaving it puts a gold ring on the box.
+// _scoringActiveListId is the engine's OWN copy of the active list id: the engine runs
+// before `let currentListId` executes, and touching a let in its dead zone throws.
 // COMPACT_MODE_V1 note: its nth-child(n+12):nth-child(-n+24) ranges were
 // re-checked for the FPts move (col 24 -> col 15 of 25, the drag handle is col 1):
 // both old and new positions fall inside the hidden span, ranges still correct.
@@ -1279,9 +1284,15 @@ const NFL_SCORING_SYSTEMS = {
   ppr:  { label: 'PPR',        field: 'pts_ppr' }
 };
 const NFL_SCORING_DEFAULT = 'half';
-const NFL_SCORING_LS_KEY = 'fw101_nfl_scoring_v1';
+const NFL_SCORING_LIST_DEFAULTS = {};  // listId -> system key; fills when Matt delivers per-list systems
+var _scoringActiveListId = 'integrity-nfl';  // the page always boots on Integrity
 let _scoringSystem = NFL_SCORING_DEFAULT;
-try { const _ssSaved = localStorage.getItem(NFL_SCORING_LS_KEY); if(_ssSaved && NFL_SCORING_SYSTEMS[_ssSaved]) _scoringSystem = _ssSaved; } catch(e) {}
+function _scoringDefaultFor(listId){ return NFL_SCORING_LIST_DEFAULTS[listId] || NFL_SCORING_DEFAULT; }
+function _scoringResetToListDefault(listId){
+  _scoringActiveListId = listId || _scoringActiveListId;
+  _scoringSystem = _scoringDefaultFor(_scoringActiveListId);
+  _scoringSyncSelects();
+}
 function _fptsOf(s){
   if(!s) return null;
   const sys = NFL_SCORING_SYSTEMS[_scoringSystem] || NFL_SCORING_SYSTEMS[NFL_SCORING_DEFAULT];
@@ -1297,21 +1308,21 @@ function _fptsOf(s){
 function _scoringOptionsHtml(){
   return Object.keys(NFL_SCORING_SYSTEMS).map(function(k){
     return '<option value="' + k + '"' + (k === _scoringSystem ? ' selected' : '') + '>' +
-           NFL_SCORING_SYSTEMS[k].label + (k === NFL_SCORING_DEFAULT ? ' ★' : '') + '</option>';
+           NFL_SCORING_SYSTEMS[k].label + (k === _scoringDefaultFor(_scoringActiveListId) ? ' ★' : '') + '</option>';
   }).join('');
 }
 function _scoringSyncSelects(){
   document.querySelectorAll('.fpts-scoring-select').forEach(function(sel){
     sel.innerHTML = _scoringOptionsHtml();
     sel.value = _scoringSystem;
-    sel.classList.toggle('nondefault', _scoringSystem !== NFL_SCORING_DEFAULT);
-    sel.title = 'Scoring system. List default: ' + NFL_SCORING_SYSTEMS[NFL_SCORING_DEFAULT].label + ' ★';
+    var _sdef = _scoringDefaultFor(_scoringActiveListId);
+    sel.classList.toggle('nondefault', _scoringSystem !== _sdef);
+    sel.title = 'Scoring system. List default: ' + NFL_SCORING_SYSTEMS[_sdef].label + ' ★';
   });
 }
 function _scoringChanged(val){
   if(!NFL_SCORING_SYSTEMS[val]) return;
-  _scoringSystem = val;
-  try { localStorage.setItem(NFL_SCORING_LS_KEY, val); } catch(e) {}
+  _scoringSystem = val;  // session-only; the list default reasserts on every list load (the Dude, 8/6)
   _scoringSyncSelects();
   if(typeof renderWatchList === 'function'){ try { renderWatchList(); } catch(e) {} }
   if(typeof renderNflPlayers === 'function'){ try { renderNflPlayers(); } catch(e) {} }
@@ -3202,6 +3213,7 @@ async function switchActiveList(newId){
   if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
   currentListId = newId;
   LIST_ID = newId;
+  if(typeof _scoringResetToListDefault === 'function'){ try { _scoringResetToListDefault(newId); } catch(e) {} }  // SCORING_ENGINE_NFL_V1: every list opens on ITS default, never the last reader pick (the Dude, 8/6)
   var sel = document.getElementById('list-switcher'); if(sel && sel.value !== newId) sel.value = newId;
   // BUG36_SWITCHER_LEAVES_RANKINGS_V1 (2026-08-05, PC Walter). LATENT here, live on
   // basketball: the Dude found the NBA switcher dead after visiting rankings (8/4 gave
