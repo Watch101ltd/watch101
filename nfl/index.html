@@ -1168,6 +1168,7 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-yrank col-zone-divider" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
           <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a col-fpts col-zone-divider" data-npsort="fpts">FPts <span class="sort-arrow">↕</span><select id="np-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
           <th class="col-stat col-stat-b col-zone-divider" data-npsort="payd">PaYd <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="patd">PaTD <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b col-zone-divider" data-npsort="ruatt">RuAtt <span class="sort-arrow">↕</span></th>
@@ -1177,7 +1178,6 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-stat col-stat-a" data-npsort="rec">Rec <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="reyd">ReYd <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="retd">ReTD <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-a" data-npsort="fpts">FPts <span class="sort-arrow">↕</span></th>
           <th class="center col-action">Add</th>
         </tr>
       </thead>
@@ -1314,6 +1314,8 @@ function _scoringChanged(val){
   try { localStorage.setItem(NFL_SCORING_LS_KEY, val); } catch(e) {}
   _scoringSyncSelects();
   if(typeof renderWatchList === 'function'){ try { renderWatchList(); } catch(e) {} }
+  if(typeof renderNflPlayers === 'function'){ try { renderNflPlayers(); } catch(e) {} }
+  if(typeof renderRankings === 'function'){ try { renderRankings(); } catch(e) {} }
 }
 _scoringSyncSelects();
 // ======================== /SCORING_ENGINE_NFL_V1 ============================
@@ -1767,7 +1769,14 @@ function _rankStatCol(key,label,field,tdClass,decimals){
     render:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=s?s[field]:null;
       return (v==null) ? '<span class="placeholder">—</span>' : statCellOrDash(v, (decimals!=null?decimals:undefined)); } };
 }
-function _rankCol_fpts(){ return _rankStatCol('fpts','FPTS','pts_half_ppr','col-stat-a',1); }
+// SCORING_ENGINE_NFL_V1: FPTS goes through _fptsOf (was hardwired pts_half_ppr).
+// col-fpts on the td so the watch-list centering rule reaches the rankings cells too.
+function _rankCol_fpts(){
+  return { key:'fpts', label:'FPTS', tdClass:'col-stat-a col-fpts',
+    num:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=_fptsOf(s); return (v==null)?-1:Number(v); },
+    render:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=_fptsOf(s);
+      return (v==null) ? '<span class="placeholder">—</span>' : statCellOrDash(v, 1); } };
+}
 
 // The per-position column lists. Y!Rank, Y!Owned, FPTS, Age on every tab (the Dude's call).
 // ── RANKINGS_NOTES_NFL_V1 (2026-06-29) ───────────────────────────────────────
@@ -1855,11 +1864,11 @@ function _rankColsFor(pos){
   // Includes CBS Owned to match the NFL Players page. FPTS stays rightmost.
   if(pos === 'Overall'){
     var tgt  = _rankStatCol('tgt','TGT','rec_tgt','col-stat-a');
-    return [_rankCol_notebadge(), _rankCol_note(), yrank, yowned, cbs, age, paYd, paTd, ruAtt, ruYd, ruTd, tgt, rec, reYd, reTd, fpts];
+    return [_rankCol_notebadge(), _rankCol_note(), yrank, yowned, cbs, fpts, age, paYd, paTd, ruAtt, ruYd, ruTd, tgt, rec, reYd, reTd];  // SCORING_ENGINE_NFL_V1: FPTS after ownership (Matt 8/3, supersedes FPTS_LAST_V1)
   }
-  if(pos === 'QB')  return [_rankCol_notebadge(), _rankCol_note(), yrank, yowned, cbs, age, paYd, paTd, ruAtt, ruYd, ruTd, fpts];
-  if(pos === 'RB')  return [_rankCol_notebadge(), _rankCol_note(), yrank, yowned, cbs, age, ruAtt, ruYd, ruTd, rec, reYd, reTd, fpts];
-  if(pos === 'WR' || pos === 'TE') return [_rankCol_notebadge(), _rankCol_note(), yrank, yowned, cbs, age, rec, reYd, reTd, ruAtt, ruYd, ruTd, fpts];
+  if(pos === 'QB')  return [_rankCol_notebadge(), _rankCol_note(), yrank, yowned, cbs, fpts, age, paYd, paTd, ruAtt, ruYd, ruTd];  // SCORING_ENGINE_NFL_V1
+  if(pos === 'RB')  return [_rankCol_notebadge(), _rankCol_note(), yrank, yowned, cbs, fpts, age, ruAtt, ruYd, ruTd, rec, reYd, reTd];  // SCORING_ENGINE_NFL_V1
+  if(pos === 'WR' || pos === 'TE') return [_rankCol_notebadge(), _rankCol_note(), yrank, yowned, cbs, fpts, age, rec, reYd, reTd, ruAtt, ruYd, ruTd];  // SCORING_ENGINE_NFL_V1
   // NFLVERSE_DEF_STATS_V1 (June 10, 2026 — PC Walter, per the Dude): the DEF columns are BACK.
   // Sleeper's team-DST row still only carries FPTS + def_td (the June 9 data ceiling, proven via
   // console), but the SERVER now merges nflverse team-defense SEASON stats into the same stats row
@@ -1875,7 +1884,7 @@ function _rankColsFor(pos){
   var dSafety = _rankStatCol('def_safety','SAFETY','def_safety','col-stat-b');
   var dTd     = _rankStatCol('def_td','DEF TD','def_td','col-stat-b');
   var yrankDef = _rankCol_yrank('yahoo_def_rank');  // YAHOO_DEF_RANKS_V1 — rank among defenses
-  return [_rankCol_notebadge(), _rankCol_note(), yrankDef, yowned, cbs, dInt, dSack, dFumRec, dSafety, dTd, fpts];  // FPTS_LAST_V1 — FPTS rightmost
+  return [_rankCol_notebadge(), _rankCol_note(), yrankDef, yowned, cbs, fpts, dInt, dSack, dFumRec, dSafety, dTd];  // SCORING_ENGINE_NFL_V1: FPTS after ownership (Matt 8/3, supersedes FPTS_LAST_V1)
 }
 
 // Build the thead per the active position's columns. Fixed leading cols (handle/Rank/Pos/Player) + dynamic
@@ -1888,10 +1897,13 @@ function _rankRenderHead(cols){
               '<th class="col-pos">Pos</th>' +
               '<th class="left col-player">Player</th>';
   var statHeads = cols.map(function(c){
+    // SCORING_ENGINE_NFL_V1: the FPTS header carries the scoring box (Variant D), same as the other tables.
+    var extra = (c.key === 'fpts') ? '<select class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select>' : '';
     return '<th class="' + (c.headClass||'') + '" data-ranksort="' + c.key + '" style="cursor:pointer">' +
-           c.label + ' <span class="sort-arrow" style="opacity:.4">↕</span></th>';
+           c.label + ' <span class="sort-arrow" style="opacity:.4">↕</span>' + extra + '</th>';
   }).join('');
   headRow.innerHTML = fixed + statHeads;
+  if(typeof _scoringSyncSelects === 'function'){ try { _scoringSyncSelects(); } catch(e) {} }  // repopulate the box every tab paint
 }
 
 // A SORTED VIEW of the manual order (copy — never mutates _rankings[pos]). Sort by the active stat column.
@@ -2135,7 +2147,7 @@ function _npStatValue(field, p, s, pid){
     case 'pos':  return p.position || 'zzz';
     case 'team': return p.team || 'zzz';
     case 'age':  return nflDecimalAgeNum(p);
-    case 'fpts': return (s.pts_half_ppr || 0);
+    case 'fpts': return (_fptsOf(s) || 0);
     case 'payd': return (s.pass_yd || 0);
     case 'patd': return (s.pass_td || 0);
     case 'ruatt': return (s.rush_att || 0);
@@ -2180,7 +2192,7 @@ function _npSortedIds(){
     if(F.team && F.team !== 'ALL' && p.team !== F.team) continue;
     if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) continue;  // POSITION_FILTER_V1
     const s = _statsRow(id);
-    if(F.minFpts != null && (Number(s.pts_half_ppr)||0) < F.minFpts) continue;
+    if(F.minFpts != null && (Number(_fptsOf(s))||0) < F.minFpts) continue;
     if(F.minGames != null && (Number(s.gp)||0) < F.minGames) continue;   // s.gp inert in offseason
     if(F.ageMin != null || F.ageMax != null){
       const a = nflDecimalAgeNum(p);
@@ -2265,6 +2277,7 @@ function renderNflPlayers(){
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       // CBS_OWNED_NFLPLAYERS_V1 (2026-06-17) — CBS rostered% column, same lookup the watch list uses.
       '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
+      '<td class="col-stat-a col-fpts col-zone-divider">' + statCellOrDash(_fptsOf(s), 1) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.pass_yd) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.rush_att) + '</td>' +
@@ -2274,7 +2287,6 @@ function renderNflPlayers(){
       '<td class="col-stat-a">' + statCellOrDash(s.rec) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_yd) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_td) + '</td>' +
-      '<td class="col-stat-a">' + statCellOrDash(s.pts_half_ppr, 1) + '</td>' +
       '<td class="center col-action">' + (onList
           ? '<button class="np-add-btn added" disabled>✓ Added</button>'
           : '<button class="np-add-btn" onclick="npAddToList(' + _pidJson + ', this)">+ Add</button>') + '</td>' +
