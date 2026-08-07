@@ -5402,6 +5402,16 @@ function renderDelta(p){
   // The baseline slides forward every publish (this file becomes the next
   // publish's comparison point). The old publish_count_since_new counter is dead.
   // Manual override: the Deep Cut "Show as NEW" button sets is_new_this_publish.
+  // DELTA_101_BOUNDARY_V1 (2026-08-07, Bug #48 — the Dude's rule): rank 102+ is the bench,
+  // not the list. No +/- there at all. A baseline outside the 101 means the player was never
+  // ON the list, so crossing inside is a debut (🆕), never a +N — which caps every legal move
+  // at +100 (101st to 1st), exactly as the math of a 101-player list demands.
+  if(p.rank != null && p.rank > 101){
+    return '<span class="stat-na">\u2014</span>';
+  }
+  if(p.prev_rank != null && p.prev_rank > 101){
+    return '<span class="rdelta-new-badge rdelta-new-blue" title="New to the 101 (came in from outside the list)">🆕 NEW</span>';
+  }
   if(p.is_new_this_publish === true){
     return '<span class="rdelta-new-badge rdelta-new-blue" title="New on this published list">🆕 NEW</span>';
   }
