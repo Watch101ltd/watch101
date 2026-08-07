@@ -3748,7 +3748,7 @@ function _renderPhoneList(sortedIds){
     } catch(e){}
     var deltaHtml = '';
     try {
-      if(item && item.is_new_this_publish === true){
+      if(typeof _wlShowsNewBadge==='function' && _wlShowsNewBadge(pid)){
         deltaHtml = '<div class="pc-delta"><span class="rdelta-new-badge">🆕</span></div>';
       } else if(typeof _wlDeltaFor==='function'){
         var _dv = _wlDeltaFor(pid);
@@ -4898,18 +4898,33 @@ function _ftlSetShowAsNew(checkboxEl){
   _ftlUpdateShowNewHint(on);
 }
 
+/* DELTA_101_BOUNDARY_V1 (2026-08-07, Bug #48 — the Dude's rule): rank 102+ is the bench,
+   not the list. The +/- measures movement INSIDE the 101 only, which caps every legal move
+   at +100 (101st to 1st). A baseline outside the 101 means the player was never ON the
+   list — crossing inside is a debut (🆕 via _wlShowsNewBadge), never a number. */
+const WL_101_BOUNDARY = 101;
 function _wlDeltaFor(pid){
   const idx = _wlIndexOf(pid);
   if(idx < 0) return null;
+  if(idx + 1 > WL_101_BOUNDARY) return null;               // on the bench right now: no +/- at all
   const it = _watchList[idx];
   if(!it || typeof it !== 'object' || it.prev_rank == null) return null;
+  if(Number(it.prev_rank) > WL_101_BOUNDARY) return null;  // baseline was the bench: debut, not a move
   return Number(it.prev_rank) - (idx + 1);   // positive = moved up
 }
-function renderDeltaCell(pid){
+/* One rulebook for the 🆕 badge so the table cell and the phone row can never disagree.
+   True only INSIDE the 101: stamped new by the publish baseline, OR crossed in from the bench. */
+function _wlShowsNewBadge(pid){
   const idx = _wlIndexOf(pid);
-  const it = (idx >= 0) ? _watchList[idx] : null;
-  if(it && typeof it === 'object' && it.is_new_this_publish === true){
-    return '<td class="col-delta-cell"><span class="rdelta-new-badge" title="New on this published list">🆕 NEW</span></td>';
+  if(idx < 0 || idx + 1 > WL_101_BOUNDARY) return false;   // the bench shows nothing, not even 🆕
+  const it = _watchList[idx];
+  if(!it || typeof it !== 'object') return false;
+  if(it.is_new_this_publish === true) return true;
+  return it.prev_rank != null && Number(it.prev_rank) > WL_101_BOUNDARY;
+}
+function renderDeltaCell(pid){
+  if(_wlShowsNewBadge(pid)){
+    return '<td class="col-delta-cell"><span class="rdelta-new-badge" title="New to the published 101">🆕 NEW</span></td>';
   }
   const delta = _wlDeltaFor(pid);
   if(delta == null) return '<td class="placeholder col-delta-cell">—</td>';
