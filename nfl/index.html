@@ -5221,6 +5221,17 @@ function _ftlStatsRow(pid){
   return (w && w[pid]) || {};
 }
 async function _ftlDateRangeChange(sel){
+  // PREV_SEASONS_CARD_V1 (2026-08-08 - PC Walter, per the Dude): baseball's
+  // PREVIOUS_SEASONS_V1 special case, cloned. "Previous Seasons" is NOT a date
+  // range - it opens the career-by-season popup and the dropdown reverts to the
+  // committed range. Intercept BEFORE the range logic, exactly like baseball's
+  // onOverlayDateRangeChange. The Career by Season BUTTON was removed in the same
+  // pass (the Dude's call: one door to the popup, via the dropdown, like baseball).
+  if(sel.value === 'previous_seasons'){
+    sel.value = _ftlDateRange;   // revert to the committed range (season on a fresh open)
+    if(typeof openCareerPopup === 'function') openCareerPopup();
+    return;
+  }
   _ftlDateRange = sel.value;
   sel.classList.toggle('daterange-active', _ftlDateRange !== 'season');
   if(_ftlDateRange !== 'season'){ await _ensureDateRangeStats(); }
@@ -5980,8 +5991,8 @@ function _yahooLookupFmt(pid, field, isPercent){
       <div class="ftl-name" id="ftl-name"></div>
       <div class="ftl-sub" id="ftl-sub"></div>
       <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num"></span></div>
-      <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label> <button class="btn btn-outline" id="ftl-career-btn" onclick="openCareerPopup()" style="margin-top:8px;margin-left:10px" title="Season-by-season career stats">&#128202; Career by Season</button></div>
-      <div class="ftl-daterange-wrap"><span class="ftl-daterange-label">Stats For:</span><select id="ftl-daterange-select" class="ftl-daterange-select" onchange="_ftlDateRangeChange(this)" title="Stat window shown on this card — resets to Season on open"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select></div>
+      <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label></div>
+      <div class="ftl-daterange-wrap"><span class="ftl-daterange-label">Stats For:</span><select id="ftl-daterange-select" class="ftl-daterange-select" onchange="_ftlDateRangeChange(this)" title="Stat window shown on this card — resets to Season on open"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option><option value="previous_seasons">Previous Seasons</option></select></div>
     </div>
     <div class="ftl-herostats"><!-- BUG49_PHASE2: baseball hero pattern -->
       <div id="ftl-deeplinks-wrap" style="display:none">
