@@ -3370,7 +3370,18 @@ async function saveRankings(pos){
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ players: players, manual: _rankManual[pos] === true })  // NBA_RANKINGS_LIVE_SEED_V1
     });
-    if(res.ok){ if(statusEl) statusEl.textContent = '✓ ' + pos + ' rankings saved (' + players.length + ').'; }
+    if(res.ok){
+      if(statusEl) statusEl.textContent = '✓ ' + pos + ' rankings saved (' + players.length + ').';
+      // RANK_TEAL_V1 - a drag save refreshes the teal line too (staging, right now)
+      try {
+        var _elRs = document.getElementById('logo-sub');
+        var _rvS = document.getElementById('rankings-view');
+        if(_elRs && _rvS && _rvS.style.display !== 'none'){
+          var _snRs = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dynasty/Keeper Rankings' : 'Redraft Rankings';
+          _elRs.textContent = _snRs + ' [STAGING] \u2014 Staged: ' + new Date().toLocaleString();
+        }
+      } catch(_teS){}
+    }
     else { if(statusEl) statusEl.textContent = '⚠ ' + pos + ' rankings save returned HTTP ' + res.status + ' — saved to this browser.'; }
   } catch(e){
     console.warn('[NBA_RANKINGS_SAVE_V1] NAS save failed for ' + pos + ':', e);
@@ -3393,6 +3404,12 @@ async function loadRankingsFromNAS(){
   // files in List Data/_Approval Tools promote staging -> production per SET.
   var _rkFan = false;
   try { _rkFan = (typeof _isReadOnlyMode === 'function') && !!_isReadOnlyMode(); } catch(e){ _rkFan = false; }
+  // RANK_TEAL_V1 (2026-08-08 - the Dude's catch, same day as TEAL_STAMP_TWINS_V1):
+  // the teal logo-sub line must correspond to WHATEVER you're on - and picking a
+  // rankings entry leaves currentListId parked on the last real list, so the line
+  // kept quoting that list. The loader now tracks the newest stamp across the
+  // set's positions and writes the teal line itself when the rankings view is up.
+  var _rkNewestIso = null, _rkNewestLocal = null, _rkNewestEnv = null;
   _rankLoadLocal();
   _rankNotesLoadLocal();   // RANKINGS_NOTES_NBA_V1
   var positions = ['Overall','PG','SG','SF','PF','C'];
@@ -3401,13 +3418,19 @@ async function loadRankingsFromNAS(){
     var listId = _rankListId(pos);   // DYNASTY_RANKINGS_V1 (set-aware NAS id)
     try {
       var _rkEnvs = _rkFan ? ['list', 'list-staging'] : ['list-staging'];   // RANKINGS_PUBLISH_V1
-      var res = null;
+      var res = null, _rkEnvHit = null;
       for(var _re = 0; _re < _rkEnvs.length; _re++){
         var _rkTry = await fetch(SERVER_URL + '/' + _rkEnvs[_re] + '/' + listId, {cache:'no-cache'});
-        if(_rkTry.ok){ res = _rkTry; break; }
+        if(_rkTry.ok){ res = _rkTry; _rkEnvHit = _rkEnvs[_re]; break; }
       }
       if(res && res.ok){
         var data = await res.json();
+        // RANK_TEAL_V1 - track the newest stamp across the set for the teal line
+        try {
+          var _rkIso = (data && data.data && data.data.saved_at) || (data && data.saved_at) || null;
+          var _rkLoc = (data && data.data && data.data.saved_at_local) || _rkIso;
+          if(_rkIso && (!_rkNewestIso || _rkIso > _rkNewestIso)){ _rkNewestIso = _rkIso; _rkNewestLocal = _rkLoc; _rkNewestEnv = _rkEnvHit; }
+        } catch(_te){}
         var payload = (data && data.data && Array.isArray(data.data.players)) ? data.data
                     : (data && Array.isArray(data.players)) ? data : null;
         var players = payload ? payload.players : null;
@@ -3423,6 +3446,25 @@ async function loadRankingsFromNAS(){
       }
     } catch(e){ /* no saved ranking yet for this position — renderRankings will seed it */ }
   }
+  // RANK_TEAL_V1 - write the teal line for the rankings view (baseball's stampWord
+  // rule: env 'list' = Published:, staging = Staged: + [STAGING] badge).
+  try {
+    var _rvT = document.getElementById('rankings-view');
+    if(_rvT && _rvT.style.display !== 'none'){
+      var _elRk = document.getElementById('logo-sub');
+      if(_elRk){
+        var _setNm = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dynasty/Keeper Rankings' : 'Redraft Rankings';
+        if(_rkNewestLocal){
+          var _wRk = (_rkNewestEnv === 'list') ? 'Published:' : 'Staged:';
+          var _bRk = (_rkNewestEnv === 'list') ? '' : ' [STAGING]';
+          var _tsRk = (String(_rkNewestLocal).indexOf('T') > -1) ? new Date(_rkNewestLocal).toLocaleString() : _rkNewestLocal;
+          _elRk.textContent = _setNm + _bRk + ' \u2014 ' + _wRk + ' ' + _tsRk;
+        } else {
+          _elRk.textContent = _setNm + ' \u2014 not yet saved';
+        }
+      }
+    }
+  } catch(_te2){}
   if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankings();
 }
 // ══════════ /NBA_RANKINGS_PAGE_V1 ══════════
