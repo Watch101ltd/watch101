@@ -476,6 +476,37 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-take-plabel{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--court);font-weight:700;margin-right:10px;}
 #ftl-overlay .ftl-chartwrap{width:100%;}
 #ftl-overlay #ftl-rank-chart{width:100%;height:auto;display:block;}
+/* MOVEMENT_MODE_TWINS_V1 (2026-08-08) - launcher button (baseball's ppo-movement-mode-btn) + h2 row */
+#ftl-overlay .ftl-h2-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+#ftl-overlay .ftl-movement-mode-btn{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;background:transparent;border:1px solid var(--gold,#f5c518);border-radius:16px;font-family:'Nunito Sans',sans-serif;font-size:12px;font-weight:800;letter-spacing:0.04em;color:var(--gold,#f5c518);cursor:pointer;transition:background 0.12s ease,color 0.12s ease,opacity 0.12s ease;}
+#ftl-overlay .ftl-movement-mode-btn:hover:not(:disabled){background:var(--gold,#f5c518);color:#000;}
+#ftl-overlay .ftl-movement-mode-btn:disabled{opacity:0.4;cursor:not-allowed;border-style:dashed;}
+#ftl-overlay .ftl-movement-mode-btn .ftl-mm-icon{font-size:10px;line-height:1;}
+/* MOVEMENT_MODE_TWINS_V1 - overlay, baseball's #movement-mode-overlay CSS byte-for-byte */
+#movement-mode-overlay{display:none;position:fixed;inset:0;z-index:10001;background:var(--bg,#0b0f14);flex-direction:column;}
+#movement-mode-overlay.mm-open{display:flex;}
+#movement-mode-overlay .mm-bar{display:flex;align-items:center;gap:14px;padding:12px 20px;background:rgba(0,0,0,0.3);border-bottom:1px solid var(--border,#2a3645);flex:0 0 auto;}
+#movement-mode-overlay .mm-title{font-family:'Bowlby One',sans-serif;font-size:16px;letter-spacing:.04em;color:var(--gold,#f5c518);flex:0 0 auto;}
+#movement-mode-overlay .mm-date{font-size:12px;color:var(--text2,#9fb0c0);letter-spacing:.05em;text-transform:uppercase;flex:1 1 auto;text-align:center;}
+#movement-mode-overlay .mm-fname{font-size:14px;font-weight:800;color:#fff;}
+#movement-mode-overlay .mm-rank{font-size:24px;font-weight:800;color:var(--gold,#f5c518);font-variant-numeric:tabular-nums;min-width:54px;text-align:right;}
+#movement-mode-overlay .mm-ctrls{display:flex;gap:6px;align-items:center;flex:0 0 auto;}
+#movement-mode-overlay .mm-btn{background:transparent;border:1px solid var(--border,#2a3645);border-radius:8px;color:var(--text2,#9fb0c0);padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+#movement-mode-overlay .mm-btn:hover{border-color:var(--gold,#f5c518);color:var(--gold,#f5c518);}
+#movement-mode-overlay .mm-btn.mm-active{border-color:var(--gold,#f5c518);color:var(--gold,#f5c518);}
+#movement-mode-overlay .mm-board-wrap{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;position:relative;padding:12px 24px;}
+#movement-mode-overlay .mm-board{position:relative;max-width:760px;margin:0 auto;}
+#movement-mode-overlay .mm-row{position:absolute;left:0;right:0;height:34px;display:grid;grid-template-columns:54px 1fr 74px 70px;align-items:center;gap:10px;padding:4px 12px;border-radius:7px;transition:transform var(--mm-step,2000ms) cubic-bezier(.4,0,.2,1),opacity 700ms ease;will-change:transform,opacity;}
+#movement-mode-overlay .mm-rk{font-weight:800;color:var(--text3,#6b7c8c);font-variant-numeric:tabular-nums;text-align:right;font-size:13px;}
+#movement-mode-overlay .mm-nm{color:var(--text,#e8e8e8);font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#movement-mode-overlay .mm-tm{color:var(--text2,#9fb0c0);font-size:12px;text-align:right;}
+#movement-mode-overlay .mm-ps{color:var(--text3,#6b7c8c);font-size:11px;text-transform:uppercase;text-align:right;}
+#movement-mode-overlay .mm-row.mm-bg{opacity:.92;background:var(--surface2,#1a2330);border:1px solid var(--border,#2a3645);}
+#movement-mode-overlay .mm-row.mm-focal{opacity:1;background:linear-gradient(90deg,rgba(245,197,24,.14),rgba(245,197,24,.03));border:1.5px solid var(--gold,#f5c518);box-shadow:0 0 10px rgba(245,197,24,.18);z-index:5;}
+#movement-mode-overlay .mm-row.mm-focal .mm-rk{color:var(--gold,#f5c518);font-size:15px;}
+#movement-mode-overlay .mm-row.mm-focal .mm-nm{color:#fff;font-weight:800;}
+#movement-mode-overlay .mm-row.mm-focal .mm-tm{color:var(--gold,#f5c518);font-weight:700;}
+#movement-mode-overlay .mm-msg{padding:40px;text-align:center;color:var(--text2,#9fb0c0);font-size:14px;}
 #ftl-overlay .ftl-chart-grid{stroke:var(--border2);stroke-width:1;}
 #ftl-overlay .ftl-chart-axis{stroke:var(--text3);stroke-width:1;}
 #ftl-overlay .ftl-chart-label{fill:var(--text3);font-size:11px;}
@@ -3683,6 +3714,106 @@ document.addEventListener('click', function(e){
   window.addEventListener('resize', hideMenu);
 })();
 
+// ============================================================================
+// MOVEMENT_MODE_TWINS_V1 (2026-08-08 - PC Walter, per the Dude): baseball's
+// MOVEMENT_MODE_V2 engine, cloned. Ported DRY on his order - the twins have no
+// published lists yet, so there is no data to test on; the replay fills up as
+// publishing starts. Adaptations, deliberate: keys are pid not mlb_id; the
+// twins' snapshots ship only pid+rank (their saved lists are minimal), so
+// name/team/pos resolve at render time from _playerDB; fetch goes straight to
+// SERVER_URL (no Worker proxy on the twins). MM_MAX stays baseball's 101 -
+// players ranked past 101 clamp to the bottom row, same as baseball's board.
+// SERVER SIDE: needs /list/:listId/history (MOVEMENT_MODE_HISTORY_NBA/NFL_V1,
+// added to server.js the same day) - LIVE AFTER THE DUDE'S NEXT CONTAINER
+// REBUILD. Until then the fetch fails into the graceful "could not load" panel.
+// ============================================================================
+(function(){
+  var MM_ROW_H = 38, MM_MAX = 101, MM_HOLD = 1000;
+  var mmStep = 2000, mmSnaps = [], mmFocal = null, mmTimers = [];
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function yFor(r){r=Number(r);if(!isFinite(r)||r<1)r=1;if(r>MM_MAX)r=MM_MAX;return (r-1)*MM_ROW_H;}
+  function clearTimers(){mmTimers.forEach(clearTimeout);mmTimers=[];}
+  function mmResolve(pid){
+    var p = (typeof _playerDB !== 'undefined' && _playerDB) ? _playerDB[pid] : null;
+    return {
+      name: p ? (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()) : ('Player ' + pid),
+      team: p ? (p.team || '\u2014') : '\u2014',
+      pos:  p ? (p.position || '') : ''
+    };
+  }
+  function buildRows(){
+    var board=document.getElementById('mm-board');if(!board)return;
+    var seen={};mmSnaps.forEach(function(s){(s.players||[]).forEach(function(p){if(p&&p.pid!=null)seen[String(p.pid)]=p;});});
+    var html='';
+    Object.keys(seen).forEach(function(pid){
+      var p=seen[pid],isF=(pid===String(mmFocal)),r=mmResolve(pid);
+      html+='<div class="mm-row '+(isF?'mm-focal':'mm-bg')+'" id="mmr-'+esc(pid)+'" style="transform:translateY('+yFor(p.rank)+'px);opacity:0;">'
+        +'<span class="mm-rk" id="mmrk-'+esc(pid)+'">#'+esc(p.rank)+'</span>'
+        +'<span class="mm-nm">'+esc(r.name)+'</span>'
+        +'<span class="mm-tm">'+esc(r.team)+'</span>'
+        +'<span class="mm-ps">'+esc(r.pos)+'</span></div>';
+    });
+    board.style.height=(MM_MAX*MM_ROW_H)+'px';board.innerHTML=html;
+  }
+  function applySnap(i,animate){
+    var s=mmSnaps[i];if(!s)return;var present={};(s.players||[]).forEach(function(p){if(p&&p.pid!=null)present[String(p.pid)]=p;});
+    document.querySelectorAll('#movement-mode-overlay .mm-row').forEach(function(row){
+      var pid=row.id.replace('mmr-','');var p=present[pid];
+      if(p){row.style.opacity=(pid===String(mmFocal))?'1':'0.92';row.style.transform='translateY('+yFor(p.rank)+'px)';var rk=document.getElementById('mmrk-'+pid);if(rk)rk.textContent='#'+p.rank;}
+      else{row.style.opacity='0';}
+    });
+    var fp=present[String(mmFocal)];
+    var dEl=document.getElementById('mm-date'),rEl=document.getElementById('mm-rank'),nEl=document.getElementById('mm-fname');
+    if(dEl)dEl.textContent=s.label||'';
+    if(rEl)rEl.textContent=fp?('#'+fp.rank):'#\u2014';
+    if(nEl)nEl.textContent=fp?mmResolve(String(mmFocal)).name:'\u2014';
+    var wrap=document.getElementById('mm-wrap');
+    if(fp&&wrap){var y=yFor(fp.rank)-(wrap.clientHeight/2)+(MM_ROW_H/2);wrap.scrollTo({top:y<0?0:y,behavior:animate?'smooth':'auto'});}
+  }
+  function run(){
+    clearTimers();
+    document.documentElement.style.setProperty('--mm-step',mmStep+'ms');
+    if(!mmSnaps.length){return;}
+    var rows=document.querySelectorAll('#movement-mode-overlay .mm-row');
+    rows.forEach(function(r){r.style.transition='none';});
+    applySnap(0,false);
+    var b=document.getElementById('mm-board');if(b)void b.offsetHeight;
+    rows.forEach(function(r){r.style.transition='';});
+    var delay=MM_HOLD;
+    for(var i=1;i<mmSnaps.length;i++){(function(idx){mmTimers.push(setTimeout(function(){applySnap(idx,true);},delay));})(i);delay+=mmStep+MM_HOLD;}
+  }
+  window.mmSetSpeed=function(ms){mmStep=ms;['3000','2000','1200'].forEach(function(v){var el=document.getElementById('mm-spd-'+v);if(el)el.classList.toggle('mm-active',String(ms)===v);});run();};
+  window.mmReplay=function(){run();};
+  window.closeMovementMode=function(){clearTimers();var ov=document.getElementById('movement-mode-overlay');if(ov)ov.classList.remove('mm-open');document.body.style.overflow='';};
+  window.openMovementMode=async function(){
+    var btn=document.getElementById('ftl-movement-mode-btn');
+    var pid=btn&&btn.dataset?btn.dataset.pid:null;
+    if(!pid){return;}
+    mmFocal=String(pid);
+    var listId=(typeof currentListId!=='undefined'&&currentListId)?currentListId:'';
+    var ov=document.getElementById('movement-mode-overlay');
+    var board=document.getElementById('mm-board');
+    if(board)board.innerHTML='<div class="mm-msg">Loading rank history\u2026</div>';
+    if(ov){ov.classList.add('mm-open');document.body.style.overflow='hidden';}
+    try{
+      var res=await fetch(SERVER_URL+'/list/'+encodeURIComponent(listId)+'/history?limit=5&player='+encodeURIComponent(mmFocal),{cache:'no-cache'});
+      if(!res.ok)throw new Error('history fetch '+res.status);
+      var data=await res.json();
+      mmSnaps=(data.snapshots||[]).map(function(s){
+        return {label:(s.label||s.saved_at||''),players:(s.players||[]).map(function(p){return {pid:String(p.pid),rank:p.rank};})};
+      });
+    }catch(e){
+      if(board)board.innerHTML='<div class="mm-msg">Replay unavailable \u2014 could not load history.<br><span style="font-size:12px;opacity:.7">'+esc(e.message)+'</span></div>';
+      return;
+    }
+    if(mmSnaps.length<2){if(board)board.innerHTML='<div class="mm-msg">Not enough published history yet for this player.</div>';return;}
+    buildRows();
+    requestAnimationFrame(function(){requestAnimationFrame(run);});
+  };
+  document.addEventListener('keydown',function(e){if((e.key==='Escape'||e.keyCode===27)){var ov=document.getElementById('movement-mode-overlay');if(ov&&ov.classList.contains('mm-open'))closeMovementMode();}});
+})();
+
+
 function renderNbaPlayers(){
   const tbody = document.getElementById('nba-players-body');
   const statusEl = document.getElementById('nbaplayers-status');
@@ -5912,6 +6043,20 @@ async function _ftlRenderRankHistory(pid){
     return a.time < b.time ? -1 : (a.time > b.time ? 1 : 0);
   });
 
+  // MOVEMENT_MODE_TWINS_V1 - baseball's button gating, verbatim rule: 0-1 published
+  // points = stays disabled; 2+ = unlocks. Focal pid stashed on the button dataset.
+  var mmBtn = document.getElementById('ftl-movement-mode-btn');
+  if(mmBtn){
+    mmBtn.dataset.pid = String(pid);
+    if(points.length >= 2){
+      mmBtn.disabled = false;
+      mmBtn.title = 'Replay rank movement over the last ' + points.length + ' published points';
+    } else {
+      mmBtn.disabled = true;
+      mmBtn.title = 'Needs 2+ published points before Movement Mode unlocks';
+    }
+  }
+
   if (!points.length){
     svg.innerHTML = '<text x="400" y="110" text-anchor="middle" class="ftl-chart-label">No rank history yet.</text>';
     if (oldestLbl) oldestLbl.textContent = '—';
@@ -6222,7 +6367,7 @@ bootstrap();
       <div class="ftl-take-typebody" id="ftl-take-typebody"><em>Type tag emojis land here once the Dude and Matt pick this sport's vocabulary.</em></div>
     </div>
     <div class="ftl-take-card">
-      <div class="ftl-take-title">101 Rank History</div>
+      <div class="ftl-h2-row"><div class="ftl-take-title">101 Rank History</div><button id="ftl-movement-mode-btn" class="ftl-movement-mode-btn" type="button" disabled title="Needs 2+ published points before Movement Mode unlocks" onclick="openMovementMode()"><span class="ftl-mm-icon">&#9654;</span> Movement Mode</button></div>
       <div class="ftl-chartwrap"><svg id="ftl-rank-chart" viewBox="0 0 800 220" preserveAspectRatio="xMidYMid meet"></svg></div>
       <div class="ftl-chart-foot"><span id="ftl-chart-oldest">&#8212;</span><span id="ftl-chart-latest">&#8212;</span></div>
     </div>
@@ -6242,6 +6387,23 @@ bootstrap();
 </div>
 
 <!-- CAREER_POPUP_V1 (Aug 2, 2026) -- Career by Season, baseball's popup ported. -->
+<!-- MOVEMENT_MODE_TWINS_V1 (2026-08-08) - baseball's replay overlay, cloned. -->
+<div id="movement-mode-overlay" role="dialog" aria-modal="true" aria-label="Movement Mode replay">
+  <div class="mm-bar">
+    <span class="mm-title">&#9654; Movement Mode</span>
+    <span class="mm-date" id="mm-date">&mdash;</span>
+    <span class="mm-fname" id="mm-fname">&mdash;</span>
+    <span class="mm-rank" id="mm-rank">#&mdash;</span>
+    <span class="mm-ctrls">
+      <button class="mm-btn" id="mm-spd-3000" type="button" onclick="mmSetSpeed(3000)">Slowest</button>
+      <button class="mm-btn mm-active" id="mm-spd-2000" type="button" onclick="mmSetSpeed(2000)">Slow</button>
+      <button class="mm-btn" id="mm-spd-1200" type="button" onclick="mmSetSpeed(1200)">Faster</button>
+      <button class="mm-btn" type="button" onclick="mmReplay()">&#9654; Replay</button>
+      <button class="mm-btn" type="button" onclick="closeMovementMode()">&times; Close</button>
+    </span>
+  </div>
+  <div class="mm-board-wrap" id="mm-wrap"><div class="mm-board" id="mm-board"></div></div>
+</div>
 <div id="career-popup-backdrop" onclick="closeCareerPopup()"></div>
 <div id="career-popup" role="dialog" aria-modal="true" aria-label="Career by season">
   <div class="cp-header">
