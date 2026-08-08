@@ -3908,6 +3908,42 @@ async function switchActiveList(newId){
   if(np && np.style.display !== 'none' && typeof renderNflPlayers === 'function') renderNflPlayers();  // refresh the pool's ✓ Added pills against the new list
 }
 
+// HA_NOTIFY_TWINS_V1 (2026-08-08 - PC Walter, per the Dude): baseball's
+// HA_NOTIFY_ON_SAVE_V1 (April 25), cloned. When Matt clicks the manual Save
+// button and the staging write succeeds, fire-and-forget POST to Home Assistant
+// -> push notification on the Dude's phone. The silent autosaves (every drag /
+// add / note -> autoSaveTo*NAS + local saves) NEVER ping - only the manual Save,
+// which is the twins' "Save to Excel" moment (the teal line even calls it that).
+// Failure mode: swallow everything, never block the Save flow. Same Nabu Casa
+// endpoint as baseball; per-list webhook ids below. HA-side YAML for the NEW
+// webhooks: Memory (Claude)/03 System Documentation/HA_MattSavedList_TWINS_YAML_2026-08-08.md
+// - the notification does NOT exist until the Dude pastes those into HA.
+const _HA_WEBHOOK_BASE = 'https://m83l7x3jyktd45rufvqex1j2rtns2db0.ui.nabu.casa/api/webhook';
+const _HA_WEBHOOK_BY_LIST = {
+  'integrity-nfl':    'matt_saved_integrity_nfl',
+  'ffpc-redraft-nfl': 'matt_saved_ffpc_redraft_nfl',
+  'sfb16-nfl':        'matt_saved_sfb16_nfl',
+  'empire-nfl':       'matt_saved_empire_nfl',
+  'dynasty-nfl':      'matt_saved_dynasty_nfl',
+};
+function _notifyHomeAssistantOnSave(listId){
+  try {
+    const slug = (listId || '').toString().toLowerCase();
+    const hookId = _HA_WEBHOOK_BY_LIST[slug];
+    if(!hookId){
+      console.warn('[HA_NOTIFY_TWINS_V1] no webhook mapped for listId:', listId);
+      return;
+    }
+    fetch(_HA_WEBHOOK_BASE + '/' + hookId, {
+      method: 'POST',
+      mode: 'no-cors',     // fire-and-forget, we never read the response
+      keepalive: true,     // survive page navigation if the user clicks away
+    }).catch(() => {});    // silently swallow network errors - never block Save
+  } catch(e){
+    console.warn('[HA_NOTIFY_TWINS_V1] notify call threw:', e);
+  }
+}
+
 async function saveList(){
   if(_blockIfReadOnly('saveList')) return;
   const statusEl = document.getElementById('status-bar');
@@ -3953,6 +3989,7 @@ async function saveList(){
     ));
     await writable.close();
     statusEl.textContent = '✓ Saved ' + _watchList.length + ' players as ' + fileName + ' (Synology Drive Client will sync it up).';
+    _notifyHomeAssistantOnSave(currentListId);   // HA_NOTIFY_TWINS_V1 - manual Save only; autosaves never ping
   } catch(e){
     if(e.name === 'AbortError'){
       statusEl.textContent = 'Save cancelled. Watch list still saved to browser localStorage.';
