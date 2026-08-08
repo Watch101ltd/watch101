@@ -542,6 +542,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-daterange-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:10px;letter-spacing:0.12em;color:var(--text3);text-transform:uppercase;}
 #ftl-overlay .ftl-daterange-select{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em;}
 #ftl-overlay .ftl-daterange-select.daterange-active{border-color:var(--gold);color:var(--gold);}
+#logo-sub{color:var(--turquoise2,#0891b2);}  /* TEAL_STAMP_TWINS_V1 (2026-08-08): logo-sub is now baseball's teal last-updated line */
 #ftl-overlay .ftl-statwrap{padding:0;}  /* QUADRANTS_V1: stats live in the hero now (BUG49_PHASE2: column sizing moved up to .ftl-herostats) */
 /* SCHEDULE_RESULTS_V1 (Aug 2, 2026) -- Schedule / Results table in In the Pocket. */
 #ftl-overlay .ftl-schedwrap{padding:0 1.5rem 1.5rem;}
@@ -998,7 +999,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <!-- LIST_CHROME_V1 (2026-08-03) — big active-list title + tagline, baseball's LIST_PICKER_HEADER_V2 pattern in NFL colors. Updated by _updateYearLabels(). -->
     <div id="active-list-title" style="font-size:16px;font-weight:800;color:#4ade80;letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4);margin-top:4px">List of Integrity</div>
     <div id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">The flagship 101</div>
-    <div class="logo-sub" id="logo-sub">Watch List · Loading…</div>
+    <div class="logo-sub" id="logo-sub">Not yet saved</div>
     </div><!-- /list-title-stack -->
   </div>
   <div class="header-right">
@@ -2409,8 +2410,9 @@ function _npUpdateSortArrows(){
 // other label strings are built fresh inside their functions and pick up
 // STATS_YEAR's current value naturally.
 function _updateYearLabels(){
-  const sub = document.getElementById('logo-sub');
-  if(sub) sub.textContent = STATS_YEAR + ' Stats';   // LIST_CHROME_V1 — the list name moved up into the big title
+  // TEAL_STAMP_TWINS_V1 (2026-08-08 - PC Walter, per the Dude): the year label is RETIRED -
+  // logo-sub is now baseball's teal save/publish stamp line, written by loadListFromStorage
+  // and the autosave hook. (Was: STATS_YEAR + ' Stats', LIST_CHROME_V1.)
   // LIST_CHROME_V1 — big active-list title + tagline (baseball's LIST_PICKER_HEADER_V2 pattern)
   const al = (typeof _activeList === 'function') ? _activeList() : null;
   const t = document.getElementById('active-list-title');
@@ -3627,6 +3629,19 @@ async function loadListFromStorage(){
         _tiersLoadedOk = true;
         _tiersPersistLocal();
         console.log('[loadList] loaded ' + players.length + ' players from ' + env + ' (' + (body.filename || '') + ')' + (currentTiers.length ? (' + ' + currentTiers.length + ' tiers') : ''));
+        // TEAL_STAMP_TWINS_V1: baseball's STAGING_VS_PROD_V1 + PUBLISHED_LABEL_V1 labels.
+        // Timestamp precedence mirrors baseball's loader (saved_at_local first); envelope
+        // ISO stamps get formatted to locale. Label keys off WHICH endpoint served.
+        try {
+          const _tsRaw = (body.data && body.data.saved_at_local) || body.saved_at || (body.data && body.data.saved_at) || null;
+          const _ts = (_tsRaw && String(_tsRaw).indexOf('T') > -1) ? new Date(_tsRaw).toLocaleString() : _tsRaw;
+          const _alT = (typeof _activeList === 'function') ? _activeList() : null;
+          const _nmT = (_alT && _alT.name) ? _alT.name : '';
+          const _word = (env === 'list') ? 'Published:' : 'Staged:';
+          const _badge = (env === 'list') ? '' : ' [STAGING]';
+          const _elT = document.getElementById('logo-sub');
+          if(_elT) _elT.textContent = _nmT + _badge + ' — ' + (_ts ? (_word + ' ' + _ts) : 'Loaded');
+        } catch(_e){}
         return;
       }
     } catch(e){
@@ -3639,6 +3654,13 @@ async function loadListFromStorage(){
     if(!raw) return;
     const arr = JSON.parse(raw);
     if(Array.isArray(arr)) _watchList = arr;
+    // TEAL_STAMP_TWINS_V1: baseball's 404-fallback stamp - the browser-local save time.
+    try {
+      const _lsTs = localStorage.getItem(_wlStorageKey() + '_saved');
+      const _alF = (typeof _activeList === 'function') ? _activeList() : null;
+      const _elF = document.getElementById('logo-sub');
+      if(_elF) _elF.textContent = ((_alF && _alF.name) ? _alF.name : '') + ' — ' + (_lsTs ? ('local draft (this browser): ' + _lsTs) : 'not yet saved');
+    } catch(_e){}
   } catch(e){
     console.warn('[loadListFromStorage] localStorage fallback failed:', e);
   }
@@ -4694,6 +4716,17 @@ let _nflNasSaving = false;
 async function autoSaveToNflNAS(){
   if(_blockIfReadOnly('autoSaveToNAS')) return;
   _nflSaveLocal();  // local copy first — always succeeds, instant
+  // TEAL_STAMP_TWINS_V1: baseball's saveData teal write - editing surface only, every
+  // mutation, exactly baseball's PUBLISHED_LABEL_V1 gate (fans never see editor language).
+  try {
+    if(_isStagingEnvironment()){
+      const _now = new Date().toLocaleString();
+      try { localStorage.setItem(_wlStorageKey() + '_saved', _now); } catch(_e2){}
+      const _alS = (typeof _activeList === 'function') ? _activeList() : null;
+      const _elS = document.getElementById('logo-sub');
+      if(_elS) _elS.textContent = ((_alS && _alS.name) ? _alS.name : '') + ' — local draft saved: ' + _now + ' (use "Save to Excel" to publish)';
+    }
+  } catch(_e){}
   if(_nflNasSaving) return;  // coalesce rapid mutations; the latest list is what posts
   _nflNasSaving = true;
   const statusEl = document.getElementById('status-bar');
