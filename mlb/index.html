@@ -20669,6 +20669,25 @@ document.addEventListener('keydown', function(e){
            +   '<span class="rc-label">' + d.label + '</span>'
            + '</button>';
     }
+    // RC_LISTS_SECTION_V1 (2026-08-08 - PC Walter, per the Dude): every list reachable by
+    // right-click - the second door alongside the gold dropdown, which stays. Fan rules
+    // inherited from HIDE_DUDES_LIST_ON_FAN_VIEW_V1: backendOnly lists (The Dude's List)
+    // never show to fans, same as the Demotion Tank item above. The CURRENT list is
+    // omitted only when the main view is showing (the menu's omit-the-active-page rule);
+    // with an overlay open it stays clickable as "take me back to that list's page".
+    if(typeof WATCH_LISTS !== 'undefined' && WATCH_LISTS.length){
+      html += '<div style="height:1px;background:var(--border);margin:4px 0;"></div>';
+      html += '<div class="rc-menu-header">Lists</div>';
+      for(var j=0; j<WATCH_LISTS.length; j++){
+        var L = WATCH_LISTS[j];
+        if(isFan && L.backendOnly) continue;
+        if(L.id === currentListId && mainIsActive) continue;
+        html += '<button class="rc-menu-item" data-dest="list:' + L.id + '">'
+             +   '<span class="rc-emoji">\u2B50</span>'
+             +   '<span class="rc-label">' + L.name + '</span>'
+             + '</button>';
+      }
+    }
     menu.innerHTML = html;
   }
 
@@ -20744,6 +20763,24 @@ document.addEventListener('keydown', function(e){
         try { showQuickEditPopup(pid, x, y); }
         catch(err){ console.warn('[QUICK_EDIT_POPUP_V1] open failed:', err); }
       }
+      return;
+    }
+    // RC_LISTS_SECTION_V1 - list destinations: close any overlay (land on the main
+    // list view), then run the same switch the gold dropdown runs, then keep the
+    // dropdown's selection in sync so both doors always agree.
+    if(destId && destId.indexOf('list:') === 0){
+      var listIdRc = destId.slice(5);
+      hideMenu();
+      var Lrc = (typeof WATCH_LISTS !== 'undefined') ? WATCH_LISTS.find(function(l){ return l.id === listIdRc; }) : null;
+      var _fanNow = false;
+      try { _fanNow = (typeof _isReadOnlyMode === 'function') && !!_isReadOnlyMode(); } catch(e){ _fanNow = false; }
+      if(!Lrc || (_fanNow && Lrc.backendOnly)) return;   // belt-and-suspenders fan gate
+      try { if(typeof poolActive      !== 'undefined' && poolActive      && typeof closePlayerPool    === 'function') closePlayerPool(); } catch(e){}
+      try { if(typeof leadersActive   !== 'undefined' && leadersActive   && typeof closeLeagueLeaders === 'function') closeLeagueLeaders(); } catch(e){}
+      try { if(typeof prospectsActive !== 'undefined' && prospectsActive && typeof closeProspects    === 'function') closeProspects(); } catch(e){}
+      try { if(typeof tankActive      !== 'undefined' && tankActive      && typeof closeHoldingTank  === 'function') closeHoldingTank(); } catch(e){}
+      try { if(typeof switchActiveList === 'function') switchActiveList(listIdRc); } catch(err){ console.warn('[RC_LISTS_SECTION_V1] switch failed:', err); }
+      try { var _lsRc = document.getElementById('list-switcher'); if(_lsRc) _lsRc.value = listIdRc; } catch(e){}
       return;
     }
     var dest = null;
