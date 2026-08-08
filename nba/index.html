@@ -1237,7 +1237,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="status-bar-wl" id="nbaplayers-status">NBA Players — loading the full league pool…</div>
   <!-- NBAP_POOL_SEARCH_V1 (June 9, 2026 — PC Walter, per the Dude + Matt). In-place name search for the
        pool. Instant (oninput). NBA pool has no row cap (~560 players) so it searches the whole pool. -->
-  <div style="margin:8px 16px 0 16px"><div class="search-wrap" style="max-width:420px"><span class="search-icon">⌕</span><input id="nbap-search" class="search-input" type="text" placeholder="Search the player pool by name..." autocomplete="off" oninput="renderNbaPlayers()"></div></div>
+  <div style="margin:8px 16px 0 16px"><div class="search-wrap" style="max-width:420px"><span class="search-icon">⌕</span><input id="nbap-search" class="search-input" type="text" placeholder="Jump to player..." autocomplete="off" oninput="npPoolSearchInput(this.value)"><span id="np-spotlight-clear" onclick="clearNpSpotlight()" title="Show all players again" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text3);font-weight:700;padding:2px 6px;">✕</span><div class="search-results" id="np-search-results"></div></div></div>
   <!-- NBA_POOL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — STAT FILTERING box modeled on
        baseball's pool box. Functional where NBA has data: Team / Min PTS / Age / Max %Owned (Y!).
        Date Range + Max %Owned (CBS) are present for VISUAL consistency with baseball but inert
@@ -3472,6 +3472,76 @@ function _npSortedIds(){
   return ids;
 }
 
+// ============================================================================
+// SPOTLIGHT_TWINS_V1 (2026-08-08 - PC Walter, per the Dude): baseball's verified
+// SPOTLIGHT_V1 (Bug #45, 8/6) ported to the NBA pool. Baseball's pool box is
+// jump-only; the twins' box ALSO live-filters the table - that behavior is KEPT,
+// and baseball's dropdown picker + spotlight ride on top. Picking a name renders
+// JUST that row, overriding every filter. The X in the box or typing
+// anything releases the spotlight and brings the full pool back.
+// ============================================================================
+var _npSpotlight = null;
+function npPoolSearchInput(val){
+  if(_npSpotlight != null){
+    _npSpotlight = null;
+    var _c0 = document.getElementById('np-spotlight-clear');
+    if(_c0) _c0.style.display = 'none';
+  }
+  renderNbaPlayers();   // the twins' live filter, unchanged
+  var dd = document.getElementById('np-search-results');
+  if(!dd) return;
+  if(!val || val.trim().length < 2){ dd.classList.remove('open'); return; }
+  var q = _foldSearch(val.trim());
+  var matches = [];
+  for(var id in _playerDB){
+    var p = _playerDB[id];
+    if(!p || !p.position || !p.team) continue;   // the pool's own "real player" reality filter
+    var nm = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
+    if(nm && _foldSearch(nm).indexOf(q) > -1){
+      matches.push({ pid:String(id), name:nm, team:p.team, pos:p.position });
+      if(matches.length >= 12) break;   // baseball caps the picker at 12
+    }
+  }
+  if(!matches.length){
+    dd.innerHTML = '<div class="search-result-item"><span class="sri-name" style="color:var(--text3)">No players found</span></div>';
+    dd.classList.add('open');
+    return;
+  }
+  dd.innerHTML = matches.map(function(m){
+    return '<div class="search-result-item" data-np-jump="' + escapeHtml(m.pid) + '">' +
+           '<span class="sri-name">' + escapeHtml(m.name) + '</span> ' +
+           '<span style="font-size:11px;color:var(--text3)">' + escapeHtml(m.team) + ' · ' + escapeHtml(m.pos) + '</span></div>';
+  }).join('');
+  dd.classList.add('open');
+}
+function jumpToNpPlayer(pid){
+  var dd = document.getElementById('np-search-results');
+  if(dd) dd.classList.remove('open');
+  var p = _playerDB && _playerDB[pid];
+  if(!p) return;
+  _npSpotlight = pid;
+  var inp = document.getElementById('nbap-search');
+  if(inp) inp.value = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
+  var clr = document.getElementById('np-spotlight-clear');
+  if(clr) clr.style.display = 'block';
+  renderNbaPlayers();
+}
+function clearNpSpotlight(){
+  _npSpotlight = null;
+  var inp = document.getElementById('nbap-search');
+  if(inp) inp.value = '';
+  var clr = document.getElementById('np-spotlight-clear');
+  if(clr) clr.style.display = 'none';
+  renderNbaPlayers();
+}
+document.addEventListener('click', function(e){
+  var _t = e.target && e.target.closest ? e.target.closest('[data-np-jump]') : null;
+  if(_t){ jumpToNpPlayer(_t.getAttribute('data-np-jump')); return; }
+  var dd = document.getElementById('np-search-results');
+  if(dd && dd.classList.contains('open') && !(e.target.closest && (e.target.closest('#np-search-results') || e.target.closest('#nbap-search')))){
+    dd.classList.remove('open');
+  }
+});
 function renderNbaPlayers(){
   const tbody = document.getElementById('nba-players-body');
   const statusEl = document.getElementById('nbaplayers-status');
@@ -3481,7 +3551,12 @@ function renderNbaPlayers(){
     return;
   }
   if(typeof _npBuildTeamSelect === 'function') _npBuildTeamSelect();  // NBA_POOL_STATFILTER_V1
-  const ids = _npSortedIds();
+  let ids = _npSortedIds();
+  // SPOTLIGHT_TWINS_V1: baseball's Bug #45 rule - the spotlighted player REPLACES the list
+  // wholesale, after every other filter, so "find me this guy" never loses to a filter box.
+  if(typeof _npSpotlight !== 'undefined' && _npSpotlight != null){
+    ids = (_playerDB && _playerDB[_npSpotlight]) ? [_npSpotlight] : [];
+  }
   // NBA_POOL_STATFILTER_V1 — show filtered-vs-total when any functional filter is active.
   const _fActive = _npFilters && (_npFilters.team!=='ALL' || (_npFilters.statRows && _npFilters.statRows.length) || _npFilters.minGames!=null || _npFilters.ageMin!=null || _npFilters.ageMax!=null || _npFilters.maxOwned!=null || _npFilters.maxCbsOwned!=null || (_npFilters.posPositions && _npFilters.posPositions.length));  // posPositions added 2026-08-04: a position-only filter DID filter, but the count line said "612 NBA players" instead of "Showing N filtered". Same gate family as NBA_MIN_GAMES_FILTER_V1 and POSITION_FILTER_V1.
   if(statusEl) statusEl.textContent = (_fActive ? ('Showing ' + ids.length.toLocaleString() + ' filtered') : (ids.length.toLocaleString() + ' NBA players')) + ' · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='yrank'?' (Yahoo rank)':'');
