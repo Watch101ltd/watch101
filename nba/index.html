@@ -1457,6 +1457,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="rank-subnav-btn" data-rankpos="SF" onclick="switchRankPos('SF', this)">SF</button>
     <button class="rank-subnav-btn" data-rankpos="PF" onclick="switchRankPos('PF', this)">PF</button>
     <button class="rank-subnav-btn" data-rankpos="C" onclick="switchRankPos('C', this)">C</button>
+    <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="doneRankingNotify(this)" title="Ping Jay's phone that this rankings pass is finished" style="margin-left:14px">✅ Done Ranking</button>
   </div>
   <div class="table-wrap" id="nbarankings-wrap">
     <table class="watch-list" id="rankings-table">
@@ -3385,6 +3386,13 @@ function _rankLoadLocal(){
   } catch(e){ console.warn('[NBA_RANKINGS_LOAD_V1] localStorage load failed:', e); }
 }
 async function loadRankingsFromNAS(){
+  // RANKINGS_PUBLISH_V1 (2026-08-08 - PC Walter, per the Dude): env-aware source,
+  // baseball's split - FANS (Cloudflare) read approved Production first, falling
+  // back to staging until the first approval; the GitHub backend reads staging
+  // only, so Matt always sees his newest drags. The Jay_Approve_*_Rankings.bat
+  // files in List Data/_Approval Tools promote staging -> production per SET.
+  var _rkFan = false;
+  try { _rkFan = (typeof _isReadOnlyMode === 'function') && !!_isReadOnlyMode(); } catch(e){ _rkFan = false; }
   _rankLoadLocal();
   _rankNotesLoadLocal();   // RANKINGS_NOTES_NBA_V1
   var positions = ['Overall','PG','SG','SF','PF','C'];
@@ -3392,8 +3400,13 @@ async function loadRankingsFromNAS(){
     var pos = positions[i];
     var listId = _rankListId(pos);   // DYNASTY_RANKINGS_V1 (set-aware NAS id)
     try {
-      var res = await fetch(SERVER_URL + '/list-staging/' + listId, {cache:'no-cache'});
-      if(res.ok){
+      var _rkEnvs = _rkFan ? ['list', 'list-staging'] : ['list-staging'];   // RANKINGS_PUBLISH_V1
+      var res = null;
+      for(var _re = 0; _re < _rkEnvs.length; _re++){
+        var _rkTry = await fetch(SERVER_URL + '/' + _rkEnvs[_re] + '/' + listId, {cache:'no-cache'});
+        if(_rkTry.ok){ res = _rkTry; break; }
+      }
+      if(res && res.ok){
         var data = await res.json();
         var payload = (data && data.data && Array.isArray(data.data.players)) ? data.data
                     : (data && Array.isArray(data.players)) ? data : null;
@@ -4645,6 +4658,18 @@ function _notifyHomeAssistantOnSave(listId){
   } catch(e){
     console.warn('[HA_NOTIFY_TWINS_V1] notify call threw:', e);
   }
+}
+
+// RANKINGS_PUBLISH_V1 - the Done Ranking button's ping. Rankings auto-save on every
+// drag, so there is no natural manual-save moment to notify on (pinging per drag
+// would be spam). Matt clicks Done Ranking when a pass is finished; webhook picked
+// by the active SET. Same fire-and-forget never-block rules as the list notify.
+function doneRankingNotify(btn){
+  try {
+    var hook = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'matt_saved_nba_dyn_rankings' : 'matt_saved_nba_rankings';
+    fetch(_HA_WEBHOOK_BASE + '/' + hook, { method: 'POST', mode: 'no-cors', keepalive: true }).catch(function(){});
+    if(btn){ var _o = btn.textContent; btn.textContent = '\u2713 Jay pinged'; setTimeout(function(){ btn.textContent = _o; }, 2500); }
+  } catch(e){ console.warn('[RANKINGS_PUBLISH_V1] ping failed:', e); }
 }
 
 async function saveList(){
