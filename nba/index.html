@@ -437,18 +437,21 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-close{position:absolute;top:14px;right:16px;z-index:1010;width:40px;height:40px;border-radius:50%;background:rgba(13,17,23,0.85);border:1px solid var(--border2);color:var(--text2);font-size:22px;font-weight:300;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;backdrop-filter:blur(6px);}
 #ftl-overlay .ftl-close:hover{background:var(--court);border-color:var(--court);color:#fff;transform:scale(1.05);}
 #ftl-overlay .ftl-header{background:linear-gradient(135deg,#080c10 0%,#0d1520 50%,#080c10 100%);border-bottom:1px solid var(--court-deep);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
-#ftl-overlay .ftl-logo{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:26px;letter-spacing:0.04em;line-height:1;color:var(--court);text-transform:uppercase;}
+#ftl-overlay .ftl-logo{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:28px;letter-spacing:0.06em;line-height:1;color:var(--court);text-transform:uppercase;}
 #ftl-overlay .ftl-logo-sub{font-size:10px;letter-spacing:0.25em;color:var(--court-bright);text-transform:uppercase;margin-top:4px}
 #ftl-overlay .ftl-header-right{font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase}
 #ftl-overlay .ftl-hero{padding:2rem 1.5rem;display:flex;gap:28px;align-items:flex-start;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;}
 #ftl-overlay .ftl-photo{width:180px;height:180px;border-radius:50%;border:3px solid var(--court);object-fit:cover;object-position:center top;background:var(--surface2);flex-shrink:0;}
 #ftl-overlay .ftl-meta{flex:1;min-width:260px}
-#ftl-overlay .ftl-name{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:44px;letter-spacing:0.03em;color:var(--text);line-height:1;}
+#ftl-overlay .ftl-name{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:48px;letter-spacing:0.04em;color:var(--text);line-height:1;}
 #ftl-overlay .ftl-sub{font-size:14px;color:var(--text2);margin-top:10px;letter-spacing:0.04em;}
 #ftl-overlay .ftl-sub .sep{color:var(--border2);margin:0 8px}
 #ftl-overlay .ftl-rank{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:6px 14px;background:#c2410c33;border:1px solid var(--court-deep);border-radius:6px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--court-bright);font-weight:700;}
 #ftl-overlay .ftl-rank .num{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:16px;letter-spacing:0.04em}
-#ftl-overlay .ftl-statwrap{flex:1 1 420px;min-width:300px;align-self:center;padding:0;}  /* QUADRANTS_V1: stats live in the hero now */
+#ftl-overlay .ftl-herostats{flex:2;min-width:320px;display:flex;flex-direction:column;gap:10px;align-self:flex-end;}  /* BUG49_PHASE2: clone of baseball's .ppo-hero-stats — right column holds Latest News + the stat block */
+#ftl-overlay .ftl-deeplinks-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:18px;letter-spacing:0.06em;color:var(--gold);text-align:right;margin-bottom:6px;line-height:1;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks-label */
+#ftl-overlay .ftl-deeplinks{display:flex;gap:6px;justify-content:flex-end;margin-bottom:6px;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks */
+#ftl-overlay .ftl-statwrap{padding:0;}  /* QUADRANTS_V1: stats live in the hero now (BUG49_PHASE2: column sizing moved up to .ftl-herostats) */
 /* MATTSTAKE_RANKHIST_V1 (Aug 2, 2026) -- Matt's Take + 101 Rank History cards. */
 #ftl-overlay .ftl-takewrap{display:flex;gap:16px;padding:0 1.5rem 1.5rem;flex-wrap:wrap;}
 #ftl-overlay .ftl-take-card{flex:1 1 340px;min-width:0;background:var(--surface2,rgba(255,255,255,0.02));border:1px solid var(--border2);border-radius:10px;padding:16px 18px;}
@@ -5265,15 +5268,17 @@ function _rwSlug(s){
 function _ftlRenderRwLink(pid){
   var el = document.getElementById('ftl-rw-link');
   if(!el) return;
+  var wrap = document.getElementById('ftl-deeplinks-wrap');  /* BUG49_PHASE2 */
   var p = (typeof _playerDB !== 'undefined' && _playerDB) ? _playerDB[pid] : null;
   var id = p ? p.rotowire_id : null;
-  if(id == null || id === ''){ el.style.display = 'none'; return; }
+  if(id == null || id === ''){ el.style.display = 'none'; if(wrap) wrap.style.display = 'none'; return; }
   var nm = (p.full_name || ((p.first_name || '') + ' ' + (p.last_name || ''))).trim();
   var slug = _rwSlug(nm);
-  if(!slug){ el.style.display = 'none'; return; }
+  if(!slug){ el.style.display = 'none'; if(wrap) wrap.style.display = 'none'; return; }
   el.href  = 'https://www.rotowire.com/basketball/player/' + slug + '-' + encodeURIComponent(id);
   el.title = 'Open ' + (nm || 'player') + ' on RotoWire';
   el.style.display = 'inline-flex';
+  if(wrap) wrap.style.display = '';  /* BUG49_PHASE2: Latest News block shows only when RW resolves */
 }
 function _ftlStatCell(label, val, kind){
   const na = (val == null);
@@ -5632,7 +5637,7 @@ bootstrap();
       <div class="ftl-logo">From the Logo</div>
       <div class="ftl-logo-sub">Watch101NBA Player Card</div>
     </div>
-    <div class="ftl-header-right">2025 Per-Game Stats</div>
+    <div class="ftl-header-right">Watch 101 Player Card</div>
   </div>
   <section class="ftl-hero">
     <img class="ftl-photo" id="ftl-photo" src="" alt=""
@@ -5641,9 +5646,15 @@ bootstrap();
       <div class="ftl-name" id="ftl-name"></div>
       <div class="ftl-sub" id="ftl-sub"></div>
       <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num"></span></div>
-      <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label> <button class="btn btn-outline" id="ftl-career-btn" onclick="openCareerPopup()" style="margin-top:8px;margin-left:10px" title="Season-by-season career stats">&#128202; Career by Season</button><a class="ftl-rw-link" id="ftl-rw-link" href="#" target="_blank" rel="noopener" style="display:none" title="Open on RotoWire">RW</a></div>
+      <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label> <button class="btn btn-outline" id="ftl-career-btn" onclick="openCareerPopup()" style="margin-top:8px;margin-left:10px" title="Season-by-season career stats">&#128202; Career by Season</button></div>
     </div>
-    <div class="ftl-statwrap" id="ftl-statwrap"></div>
+    <div class="ftl-herostats"><!-- BUG49_PHASE2: baseball hero pattern -->
+      <div id="ftl-deeplinks-wrap" style="display:none">
+        <div class="ftl-deeplinks-label">Latest News</div>
+        <div class="ftl-deeplinks"><a class="ftl-rw-link" id="ftl-rw-link" href="#" target="_blank" rel="noopener" style="display:none" title="Open on RotoWire">RW</a></div>
+      </div>
+      <div class="ftl-statwrap" id="ftl-statwrap"></div>
+    </div>
   </section>
   <div class="ftl-takewrap">
     <div class="ftl-take-card">
