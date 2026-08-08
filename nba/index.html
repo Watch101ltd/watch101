@@ -451,6 +451,10 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-herostats{flex:2;min-width:320px;display:flex;flex-direction:column;gap:10px;align-self:flex-end;}  /* BUG49_PHASE2: clone of baseball's .ppo-hero-stats — right column holds Latest News + the stat block */
 #ftl-overlay .ftl-deeplinks-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:18px;letter-spacing:0.06em;color:var(--gold);text-align:right;margin-bottom:6px;line-height:1;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks-label */
 #ftl-overlay .ftl-deeplinks{display:flex;gap:6px;justify-content:flex-end;margin-bottom:6px;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks */
+#ftl-overlay .ftl-daterange-wrap{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap;}  /* FTL_DATERANGE_V1: baseball's .ppo-daterange-wrap */
+#ftl-overlay .ftl-daterange-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:10px;letter-spacing:0.12em;color:var(--text3);text-transform:uppercase;}
+#ftl-overlay .ftl-daterange-select{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em;}
+#ftl-overlay .ftl-daterange-select.daterange-active{border-color:var(--gold);color:var(--gold);}
 #ftl-overlay .ftl-statwrap{padding:0;}  /* QUADRANTS_V1: stats live in the hero now (BUG49_PHASE2: column sizing moved up to .ftl-herostats) */
 /* MATTSTAKE_RANKHIST_V1 (Aug 2, 2026) -- Matt's Take + 101 Rank History cards. */
 #ftl-overlay .ftl-takewrap{display:flex;gap:16px;padding:0 1.5rem 1.5rem;flex-wrap:wrap;}
@@ -5461,10 +5465,34 @@ async function _ftlRenderRankHistory(pid){
   if (latestLbl) latestLbl.textContent = 'Latest: ' + points[n - 1].date + ' · Rank ' + points[n - 1].rank;
 }
 
-function openFromTheLogo(pid){
+// FTL_DATERANGE_V1 (2026-08-08 — PC Walter, per the Dude): baseball's Deep Cut "Stats For"
+// dropdown, ported. The card keeps its OWN range (_ftlDateRange), resets to Season on every
+// fresh open, and no longer reads the page's global _dateRange — before this, the card called
+// _statsRow() and silently followed the MAIN page's date-range pick while its header claimed
+// season stats: the exact bleed baseball cured with DEEPCUT_DATERANGE_ISOLATION_V1 (6/25).
+// Isolation contract, both directions: _applyInstantDateRange syncs only its own two ids so it
+// cannot touch this select, and _ftlDateRangeChange re-renders ONLY the card (keepRange=true).
+let _ftlDateRange = 'season';
+function _ftlStatsRow(pid){
+  if(_ftlDateRange === 'season'){ return (_seasonStats && _seasonStats[pid]) || {}; }
+  const w = _dateRangeStats && _dateRangeStats.windows && _dateRangeStats.windows[_ftlDateRange];
+  return (w && w[pid]) || {};
+}
+async function _ftlDateRangeChange(sel){
+  _ftlDateRange = sel.value;
+  sel.classList.toggle('daterange-active', _ftlDateRange !== 'season');
+  if(_ftlDateRange !== 'season'){ await _ensureDateRangeStats(); }
+  if(_ftlCurrentPid != null) openFromTheLogo(_ftlCurrentPid, true);
+}
+function openFromTheLogo(pid, _keepRange){
   const p = _playerDB && _playerDB[pid];
   if(!p) return;
-  const s = _statsRow(pid) || {};
+  if(!_keepRange){
+    _ftlDateRange = 'season';
+    const _drSel = document.getElementById('ftl-daterange-select');
+    if(_drSel){ _drSel.value = 'season'; _drSel.classList.remove('daterange-active'); }
+  }
+  const s = _ftlStatsRow(pid) || {};
   const gp = Number(s.gp) || 0;
 
   // Photo from the Sleeper CDN, built from player_id (confirmed working 2026-06-07).
@@ -5647,6 +5675,7 @@ bootstrap();
       <div class="ftl-sub" id="ftl-sub"></div>
       <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num"></span></div>
       <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label> <button class="btn btn-outline" id="ftl-career-btn" onclick="openCareerPopup()" style="margin-top:8px;margin-left:10px" title="Season-by-season career stats">&#128202; Career by Season</button></div>
+      <div class="ftl-daterange-wrap"><span class="ftl-daterange-label">Stats For:</span><select id="ftl-daterange-select" class="ftl-daterange-select" onchange="_ftlDateRangeChange(this)" title="Stat window shown on this card — resets to Season on open"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select></div>
     </div>
     <div class="ftl-herostats"><!-- BUG49_PHASE2: baseball hero pattern -->
       <div id="ftl-deeplinks-wrap" style="display:none">
