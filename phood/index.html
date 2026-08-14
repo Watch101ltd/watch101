@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch101PHOOD — FOUNDATION v2</title>
+<title>Watch101PHOOD — FOUNDATION v3</title>
 <!-- ============================================================
      PHOOD_FOUNDATION_V2 — rebuilt 2026-08-14 by PC Walter after the Dude's
      review of v1: (1) it did not look like the baseball site, and (2) it used
@@ -147,6 +147,51 @@ tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-
 .legend{margin:1.5rem 0 0;font-size:12px;color:var(--text3);line-height:1.8;font-weight:400}
 .legend b{color:var(--text2)}
 @media (max-width:768px){ .logo{font-size:34px} td.take{min-width:160px} }
+
+/* ===== TIERS_V1 CSS — ported from the twins (NBA source, lines 586-639) ===== */
+/* TIERS_V1 STAGE 1 (2026-08-03) — spacer rows give each tier tab its own visual home
+   (baseball's TIER_SPACER_ROW_V1); swatches are the modal's color palette ring. */
+.tier-spacer-row { height: 28px; background: transparent; pointer-events: none; }
+.tier-spacer-row td { border: none !important; padding: 0 !important; background: transparent !important; }
+.tier-swatch { width:32px; height:32px; border-radius:50%; border:2px solid var(--border); cursor:pointer; padding:0; transition:transform 0.1s, box-shadow 0.1s; }
+.tier-swatch:hover { transform:scale(1.1); }
+.tier-swatch.selected { border-color:#eab308; box-shadow:0 0 0 3px rgba(234,179,8,0.35); transform:scale(1.1); }
+
+/* TIER_DRAG (STAGE 2, 2026-08-08) - armed-state pulse, baseball's TIER_PULSE_OPACITY_V1 build:
+   glow painted ONCE on a ::after overlay, only OPACITY animates (compositor-only).
+   NEVER animate box-shadow on the box itself - that was baseball's 33x tier-drag lag. */
+@keyframes tier-armed-fade {
+  0%   { opacity: 0; }
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.tier-bracket-box.tier-armed {
+  pointer-events: auto !important;
+  cursor: grab;
+}
+.tier-bracket-box.tier-armed:active {
+  cursor: grabbing;
+}
+.tier-bracket-box.tier-armed::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 14px #ffc107, 0 0 28px rgba(255,193,7,0.7), inset 0 0 10px rgba(255,193,7,0.35);
+  opacity: 0;
+  animation: tier-armed-fade 1.5s ease-in-out infinite;
+  will-change: opacity;
+}
+body.day-mode .tier-bracket-box.tier-armed::after {
+/* toolbar buttons — twins' .btn family (NBA source, lines 193-206 + btn-gold) */
+.btn{padding:7px 14px;border-radius:6px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;border:1px solid;transition:all 0.15s;letter-spacing:0.05em}
+.btn-outline{background:transparent;color:var(--text2);border-color:var(--border2)}
+.btn-outline:hover{background:var(--surface2);color:var(--text);border-color:var(--text3)}
+.btn-gold{background:var(--gold);color:#000;border-color:var(--gold);font-weight:500}
+.btn-gold:hover{background:#fbbf24;border-color:#fbbf24}
+/* READONLY_V1 — fans never see admin controls (twins' rule, verbatim) */
+body.readonly-mode .backend-only{display:none !important;}
 
 /* ===== SITE_CHROME_V1 ported from home.html 2026-07-29 20:45 by Walter. =====
    Only w101- namespaced rules came across, so nothing can collide with the
@@ -306,7 +351,7 @@ tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-
   <div class="logo-wrap">
     <div class="logo" title="Watch101 PHOOD"><img class="logo-img" src="images/watch101_food_logo_FINAL.png" alt="Watch101"><span class="logo-phood">PHOOD</span></div>
     <div class="list-title-stack">
-      <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4)">Philadelphia Restaurants &amp; Bars</span><br><span style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">Ones to watch — not a best-of</span><br><span style="font-size:11px;color:var(--turquoise2);margin-top:3px;display:inline-block">FOUNDATION BUILD v2 — 2026-08-14 — SAMPLE DATA</span></div>
+      <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4)">Philadelphia Restaurants &amp; Bars</span><br><span style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">Ones to watch — not a best-of</span><br><span style="font-size:11px;color:var(--turquoise2);margin-top:3px;display:inline-block">FOUNDATION BUILD v3 — 2026-08-14 — SAMPLE DATA</span></div>
     </div>
   </div>
   <div class="header-right"></div>
@@ -315,7 +360,7 @@ tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-
 <div class="toolbar">
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
-    <input id="phood-search" type="text" placeholder="Search spots or neighborhoods..." oninput="applySearch()">
+    <input id="player-search" type="text" placeholder="Search spots or neighborhoods..." oninput="renderWatchList()">
   </div>
   <div class="filter-tabs">
     <button class="filter-tab active" onclick="setCat('all',this)">All</button>
@@ -324,6 +369,8 @@ tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-
     <button class="filter-tab" onclick="setCat('dess',this)">🍰 Desserts</button>
   </div>
   <div class="toolbar-right">
+    <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of spots">&#127991;&#65039; Tier</button>
+    <button class="btn btn-gold backend-only" id="save-btn" onclick="autoSaveToPhoodNAS()" title="Saves to this browser for now — server save comes with the PHOOD server">💾 Save</button>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
   </div>
 </div>
@@ -346,7 +393,7 @@ tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-
           <th class="l" data-col="take">Matt's Take<span class="arrow" id="ar-take"></span></th>
         </tr>
       </thead>
-      <tbody id="phood-body"></tbody>
+      <tbody id="watch-list-body"></tbody>
     </table>
   </div>
 
@@ -377,6 +424,65 @@ tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-
   </div>
 </footer>
 <!-- ===================== SITE_CHROME_V1 FOOTER MARKUP END ===================== -->
+<!-- TIERS_V1 STAGE 1 (2026-08-03) — backend-only Create/Edit Tier modal, baseball's
+     Phase C adapted to the twins' self-contained overlay idiom. Stage 2 adds the
+     "Draggable as a group" row here. Opened by the 🏷️ Tier toolbar button (admin)
+     or by clicking a tier's label tab (admin); fans never see either entry point. -->
+<div id="create-tier-modal" onclick="if(event.target===this)closeCreateTierModal()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:20px 22px">
+    <h2 id="tier-modal-title" style="margin:0 0 10px 0;font-size:17px;color:var(--text)">🏷️ Create a Tier</h2>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5">
+      Draws a colored bracket around a contiguous range of players on the current list.
+      Brackets hide automatically when the list is filtered or sorted, and reappear when
+      the list returns to its saved order. Each list keeps its own tiers.
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Tier Name *</label>
+      <input type="text" id="tier-name" placeholder="e.g. Elite, Sleepers, Avoid" autocomplete="off" maxlength="40" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Color *</label>
+      <input type="hidden" id="tier-color" value="">
+      <div id="tier-color-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+        <button type="button" class="tier-swatch" data-color="red"    style="background:#ef4444" onclick="selectTierColor('red')"    title="Red"></button>
+        <button type="button" class="tier-swatch" data-color="orange" style="background:#f97316" onclick="selectTierColor('orange')" title="Orange"></button>
+        <button type="button" class="tier-swatch" data-color="gold"   style="background:#eab308" onclick="selectTierColor('gold')"   title="Gold"></button>
+        <button type="button" class="tier-swatch" data-color="green"  style="background:#22c55e" onclick="selectTierColor('green')"  title="Green"></button>
+        <button type="button" class="tier-swatch" data-color="blue"   style="background:#3b82f6" onclick="selectTierColor('blue')"   title="Blue"></button>
+        <button type="button" class="tier-swatch" data-color="purple" style="background:#a855f7" onclick="selectTierColor('purple')" title="Purple"></button>
+        <button type="button" class="tier-swatch" data-color="pink"   style="background:#ec4899" onclick="selectTierColor('pink')"   title="Pink"></button>
+        <button type="button" class="tier-swatch" data-color="gray"   style="background:#94a3b8" onclick="selectTierColor('gray')"   title="Gray"></button>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Start Spot *</label>
+        <select id="tier-start" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 8px;font-size:13px;font-family:inherit;outline:none;cursor:pointer"><option value="">Select…</option></select>
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">End Spot *</label>
+        <select id="tier-end" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 8px;font-size:13px;font-family:inherit;outline:none;cursor:pointer"><option value="">Select…</option></select>
+      </div>
+    </div>
+        <!-- TIER_DRAG (STAGE 2): edit-mode-only checkbox, baseball's exact control. Ticking it
+         arms the tier as draggable-as-a-group; modal auto-closes on tick. -->
+    <div id="tier-drag-row" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;background:rgba(255,59,59,0.08);border:1px solid rgba(255,59,59,0.25)">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text)">
+        <input type="checkbox" id="tier-drag-checkbox" style="width:16px;height:16px;cursor:pointer;accent-color:#ef4444" onchange="_onTierDragCheckboxChanged()">
+        <span><strong>Draggable as a group</strong> - tick this, then drop the whole tier somewhere new on the list. Auto-disarms after the drop.</span>
+      </label>
+    </div>
+    <div id="tier-error" style="display:none;color:#ef4444;font-size:12px;margin-bottom:8px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+      <button id="tier-delete-btn" style="display:none;background:#7f1d1d;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer" onclick="deleteTierFromModal()">🗑️ Delete Tier</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-outline" onclick="closeCreateTierModal()">Cancel</button>
+        <button id="tier-save-btn" style="background:var(--court,#ea580c);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer" onclick="saveTierFromModal()">Create Tier</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ===========================================================================
    SITE_CHROME_V1 SCRIPT. Lift this with the nav.
@@ -459,116 +565,745 @@ document.addEventListener('keydown',function(e){
 </script>
 <script>
 
-var PHOOD = [
-  {tier:"🍽️ The Main List — Ones to Watch"},
-  {rank:1, stars:5, cat:"rest", name:"Kalaya",              vibe:"🔥🥇", hood:"Fishtown",          addr:"TBD"},
-  {rank:2, stars:5, cat:"rest", name:"Zahav",               vibe:"🥇",   hood:"Society Hill",      addr:"TBD"},
-  {rank:3, stars:4, cat:"rest", name:"Angelo's Pizzeria",   vibe:"🔥💰", hood:"Bella Vista",       addr:"TBD"},
-  {rank:4, stars:4, cat:"rest", name:"Laser Wolf",          vibe:"🔥",   hood:"Kensington",        addr:"TBD"},
-  {rank:5, stars:4, cat:"rest", name:"John's Roast Pork",   vibe:"💰🥇", hood:"South Philly",      addr:"TBD"},
-  {rank:6, stars:4, cat:"rest", name:"Suraya",              vibe:"🍸",   hood:"Fishtown",          addr:"TBD"},
-  {rank:7, stars:3, cat:"rest", name:"Vernick Food & Drink",vibe:"🍸",   hood:"Rittenhouse",       addr:"TBD"},
-  {tier:"🍺 Bars & Breweries — The Wider Net"},
-  {rank:8,  stars:4, cat:"bar", name:"Monk's Café",         vibe:"🍺🌙", hood:"Rittenhouse",       addr:"TBD"},
-  {rank:9,  stars:4, cat:"bar", name:"Human Robot",         vibe:"🍺🆕", hood:"Kensington",        addr:"TBD"},
-  {rank:10, stars:3, cat:"bar", name:"Yards Brewing Co.",   vibe:"🍺",   hood:"Northern Liberties",addr:"TBD"},
-  {rank:11, stars:3, cat:"bar", name:"Victory Brewing",     vibe:"🍺",   hood:"Downingtown (worth the drive)", addr:"TBD"},
-  {tier:"🍰 Killer Desserts & Ice Cream"},
-  {rank:12, stars:4, cat:"dess", name:"Franklin Fountain",  vibe:"🍰",   hood:"Old City",          addr:"TBD"},
-  {rank:13, stars:4, cat:"dess", name:"John's Water Ice",   vibe:"🍰💰", hood:"Bella Vista",       addr:"TBD"},
-  {rank:14, stars:3, cat:"dess", name:"Termini Bros",       vibe:"🍰",   hood:"South Philly",      addr:"TBD"}
+/* ============================================================================
+   PHOOD ENGINE v3 (2026-08-14) — twins-shaped so baseball's ported code runs
+   unmodified. Same names the sports pages use: _watchList, _playerDB,
+   renderWatchList, _sortField, #player-search, _wlFilterActive, and rows carry
+   data-phood-pid the way NBA rows carry data-nba-pid.
+   Persistence: localStorage for now; autoSaveToPhoodNAS becomes the server
+   POST when PHOOD gets its server, same road the twins took.
+   ============================================================================ */
+var currentListId = 'phood-main';
+function _wlStorageKey(){ return 'phood_watchlist_' + currentListId; }
+
+var PHOOD_SEED = [
+  {pid:'r1',  stars:5, cat:'rest', name:"Kalaya",               vibe:'🔥🥇', hood:'Fishtown',           addr:'TBD'},
+  {pid:'r2',  stars:5, cat:'rest', name:"Zahav",                vibe:'🥇',   hood:'Society Hill',       addr:'TBD'},
+  {pid:'r3',  stars:4, cat:'rest', name:"Angelo's Pizzeria",    vibe:'🔥💰', hood:'Bella Vista',        addr:'TBD'},
+  {pid:'r4',  stars:4, cat:'rest', name:"Laser Wolf",           vibe:'🔥',   hood:'Kensington',         addr:'TBD'},
+  {pid:'r5',  stars:4, cat:'rest', name:"John's Roast Pork",    vibe:'💰🥇', hood:'South Philly',       addr:'TBD'},
+  {pid:'r6',  stars:4, cat:'rest', name:"Suraya",               vibe:'🍸',   hood:'Fishtown',           addr:'TBD'},
+  {pid:'r7',  stars:3, cat:'rest', name:"Vernick Food & Drink", vibe:'🍸',   hood:'Rittenhouse',        addr:'TBD'},
+  {pid:'r8',  stars:4, cat:'bar',  name:"Monk's Café",          vibe:'🍺🌙', hood:'Rittenhouse',        addr:'TBD'},
+  {pid:'r9',  stars:4, cat:'bar',  name:"Human Robot",          vibe:'🍺🆕', hood:'Kensington',         addr:'TBD'},
+  {pid:'r10', stars:3, cat:'bar',  name:"Yards Brewing Co.",    vibe:'🍺',   hood:'Northern Liberties', addr:'TBD'},
+  {pid:'r11', stars:3, cat:'bar',  name:"Victory Brewing",      vibe:'🍺',   hood:'Downingtown (worth the drive)', addr:'TBD'},
+  {pid:'r12', stars:4, cat:'dess', name:"Franklin Fountain",    vibe:'🍰',   hood:'Old City',           addr:'TBD'},
+  {pid:'r13', stars:4, cat:'dess', name:"John's Water Ice",     vibe:'🍰💰', hood:'Bella Vista',        addr:'TBD'},
+  {pid:'r14', stars:3, cat:'dess', name:"Termini Bros",         vibe:'🍰',   hood:'South Philly',       addr:'TBD'}
+];
+var PHOOD_SEED_TIERS = [
+  {id:'tier_seed_1', name:'The Main List — Ones to Watch',  color:'red',  start_pid:'r1',  end_pid:'r7',  created_at:'2026-08-14'},
+  {id:'tier_seed_2', name:'Bars & Breweries — The Wider Net', color:'gold', start_pid:'r8',  end_pid:'r11', created_at:'2026-08-14'},
+  {id:'tier_seed_3', name:'Killer Desserts & Ice Cream',    color:'blue', start_pid:'r12', end_pid:'r14', created_at:'2026-08-14'}
 ];
 
-var state = {cat:"all", q:"", sortCol:null, sortDir:1};
+let _watchList = [];
+let _playerDB = {};          // pid -> {full_name} so the ported tier modal reads names unmodified
+var _sortField = null;
+var _sortDir = 1;
+var _filterCat = 'all';
+function _wlFilterActive(){ return _filterCat !== 'all'; }
+
+function autoSaveToPhoodNAS(){
+  /* localStorage now; becomes the server POST when PHOOD gets its server. */
+  try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
+  try { localStorage.setItem(_tiersLsKey(), JSON.stringify(Array.isArray(currentTiers) ? currentTiers : [])); } catch(e){}
+}
+function loadListFromStorage(){
+  var list = null, tiers = null;
+  try { var raw = localStorage.getItem(_wlStorageKey()); if(raw){ var a = JSON.parse(raw); if(Array.isArray(a) && a.length) list = a; } } catch(e){}
+  try { var rawT = localStorage.getItem(_tiersLsKey()); if(rawT){ var t = JSON.parse(rawT); if(Array.isArray(t) && t.length) tiers = t; } } catch(e){}
+  _watchList = list || PHOOD_SEED.map(function(p){ return Object.assign({}, p); });
+  currentTiers = tiers || PHOOD_SEED_TIERS.map(function(t){ return Object.assign({}, t); });
+  _playerDB = {};
+  _watchList.forEach(function(p){ _playerDB[p.pid] = { full_name: p.name }; });
+}
 
 function starHtml(n){
   var h = '<span class="priority-stars">';
   for (var i = 1; i <= 5; i++) h += '<span class="pstar-slot' + (i <= n ? ' full' : '') + '"></span>';
   return h + '</span>';
 }
-function rowHtml(p){
-  return '<tr>'
-    + '<td class="c"><span class="rank-cell">' + p.rank + '</span></td>'
-    + '<td class="c" >' + starHtml(p.stars) + '</td>'
+function _rowHtml(p, rank){
+  return '<tr data-phood-pid="' + p.pid + '">'
+    + '<td class="c"><span class="rank-cell">' + rank + '</span></td>'
+    + '<td class="c">' + starHtml(p.stars) + '</td>'
     + '<td class="l"><span class="player-name">' + p.name + '</span></td>'
     + '<td class="l vibe">' + p.vibe + '</td>'
     + '<td class="l">' + p.hood + '</td>'
     + '<td class="l">' + p.addr + '</td>'
     + '<td class="c"><a class="pill" href="#" onclick="return false;" title="Menu link goes here">MENU</a></td>'
     + '<td class="c"><a class="pill ig" href="#" onclick="return false;" title="Instagram / pictures link goes here">📸 PICS</a></td>'
-    + '<td class="l take">— Matt\'s write-up goes here —</td>'
+    + '<td class="l take">— Matt&#39;s write-up goes here —</td>'
     + '</tr>';
 }
-function currentRows(){
-  return PHOOD.filter(function(p){
-    if (p.tier) return false;
-    if (state.cat !== "all" && p.cat !== state.cat) return false;
-    if (state.q && (p.name + " " + p.hood).toLowerCase().indexOf(state.q) === -1) return false;
-    return true;
-  });
-}
-function render(){
-  var html = "", flatMode = state.sortCol || state.cat !== "all" || state.q;
-  if (!flatMode){
-    for (var i = 0; i < PHOOD.length; i++){
-      var p = PHOOD[i];
-      html += p.tier ? '<tr class="tier-row"><td colspan="9">' + p.tier + '</td></tr>' : rowHtml(p);
-    }
-  } else {
-    var rows = currentRows();
-    if (state.sortCol){
-      var col = state.sortCol, num = (col === "rank" || col === "stars");
-      rows.sort(function(a,b){
-        return (num ? (a[col] - b[col]) : String(a[col]).localeCompare(String(b[col]))) * state.sortDir;
-      });
-    }
-    for (var j = 0; j < rows.length; j++) html += rowHtml(rows[j]);
+function renderWatchList(){
+  var q = '';
+  var search = document.getElementById('player-search');
+  if(search && search.value) q = search.value.trim().toLowerCase();
+  var rows = _watchList.slice();
+  if(_filterCat !== 'all') rows = rows.filter(function(p){ return p.cat === _filterCat; });
+  if(q) rows = rows.filter(function(p){ return (p.name + ' ' + p.hood).toLowerCase().indexOf(q) !== -1; });
+  if(_sortField !== null){
+    var f = _sortField, num = (f === 'stars');
+    rows.sort(function(a,b){
+      return (num ? (a[f] - b[f]) : String(a[f]).localeCompare(String(b[f]))) * _sortDir;
+    });
   }
-  document.getElementById("phood-body").innerHTML = html;
+  var html = '';
+  for(var i = 0; i < rows.length; i++){
+    html += _rowHtml(rows[i], _watchList.indexOf(rows[i]) + 1);   /* rank = saved order, like the twins */
+  }
+  document.getElementById('watch-list-body').innerHTML = html;
+  _setSortArrows();
+  try { renderTiers(); } catch(e){}      /* the twins' paint hook — tiers repaint after every table paint */
 }
-function setArrow(){
-  var ars = document.querySelectorAll("th .arrow"), i;
-  for (i = 0; i < ars.length; i++) ars[i].textContent = "";
-  if (state.sortCol){
-    var el = document.getElementById("ar-" + state.sortCol);
-    if (el) el.textContent = state.sortDir === 1 ? "▲" : "▼";
+function _setSortArrows(){
+  var ars = document.querySelectorAll('th .arrow'), i;
+  for(i = 0; i < ars.length; i++) ars[i].textContent = '';
+  if(_sortField !== null){
+    var el = document.getElementById('ar-' + _sortField);
+    if(el) el.textContent = _sortDir === 1 ? '▲' : '▼';
   }
 }
 function sortBy(col){
-  if (col === "rank"){ state.sortCol = null; state.sortDir = 1; }        /* # = back to Matt's order */
-  else if (state.sortCol === col){ state.sortDir = -state.sortDir; }
-  else { state.sortCol = col; state.sortDir = 1; }
-  setArrow(); render();
+  if(col === 'rank' || col === _sortField && _sortDir === -1){ _sortField = null; _sortDir = 1; }
+  else if(_sortField === col){ _sortDir = -_sortDir; }
+  else { _sortField = col; _sortDir = 1; }
+  renderWatchList();
 }
 function setCat(cat, btn){
-  state.cat = cat;
-  var tabs = document.querySelectorAll(".filter-tab"), i;
-  for (i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
-  btn.classList.add("active");
-  render();
-}
-function applySearch(){
-  state.q = document.getElementById("phood-search").value.trim().toLowerCase();
-  render();
+  _filterCat = cat;
+  var tabs = document.querySelectorAll('.filter-tab'), i;
+  for(i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+  if(btn) btn.classList.add('active');
+  renderWatchList();
 }
 function toggleTheme(){
   var isDay = document.body.classList.toggle('day-mode');
   try { localStorage.setItem('watch101-theme', isDay ? 'day' : 'night'); } catch(e){}
   var btn = document.getElementById('theme-toggle');
-  if (btn){
+  if(btn){
     btn.textContent = isDay ? '☀️' : '🌙';
     btn.title = isDay ? 'Switch to night mode' : 'Switch to day mode';
   }
 }
-(function(){
-  var ths = document.querySelectorAll("thead th"), i;
-  for (i = 0; i < ths.length; i++){
-    (function(th){ th.addEventListener("click", function(){ sortBy(th.getAttribute("data-col")); }); })(ths[i]);
+
+/* ---- READONLY_V1/V2 — ported verbatim from the twins ---- */
+function _isReadOnlyMode(){
+  try {
+    const host = (window.location && window.location.hostname) || '';
+    return !host.toLowerCase().includes('github');
+  } catch(e){ return false; }
+}
+function _blockIfReadOnly(actionName){
+  try {
+    if(_isReadOnlyMode()){
+      console.log('[READONLY_V2] blocked admin action: ' + (actionName || 'unknown') + ' (read-only mode)');
+      return true;
+    }
+  } catch(e){ /* fail-open so staging editing never breaks */ }
+  return false;
+}
+function _applyReadOnlyBodyClass(){
+  try {
+    if(_isReadOnlyMode() && document.body){
+      document.body.classList.add('readonly-mode');
+      console.log('[READONLY_V1] read-only mode active — admin controls hidden');
+    }
+  } catch(e){ console.warn('[READONLY_V1] could not apply body class:', e); }
+}
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', _applyReadOnlyBodyClass); }
+else { _applyReadOnlyBodyClass(); }
+
+/* (twins' hideBackendListsOnFanView not ported -- PHOOD has no list switcher yet) */
+
+// TIERS_V1 STAGE 1 (2026-08-03 — PC Walter, per the Dude). Baseball's editorial
+// tier system ported: data model + anti-wipe guard + save/load + bracket render
+// + Create/Edit/Delete modal. STAGE 2 (group drag + armed pulse) and STAGE 3
+// (removal self-heal hardening) come later — see the parity checklist item 19.
+// Tier shape matches the public-cut trim script: { id, name, color, start_pid,
+// end_pid, created_at }. Order-anchored to the ACTIVE list, per list.
+// ============================================================================
+const TIER_COLOR_HEX = {
+  red:'#ef4444', orange:'#f97316', gold:'#eab308', green:'#22c55e',
+  blue:'#3b82f6', purple:'#a855f7', pink:'#ec4899', gray:'#94a3b8'
+};
+let currentTiers = [];
+// TIERS_SNAPSHOT_GUARD_V1 — baseball's May 22 lesson, ported whole: tiers got
+// silently wiped TWICE in one day by saves that ran while currentTiers was
+// empty for the wrong reason. An empty tiers save is only trusted after an
+// EXPLICIT user action (create/edit/delete). Otherwise rescue from the load
+// snapshot or localStorage.
+let _tiersLoadedOk = false;
+let _tiersSnapshotAtLoad = [];
+let _tiersUserMutated = false;
+let _tierEditingId = null;
+
+function _tiersLsKey(){ return _wlStorageKey() + '_tiers'; }
+
+function _tiersForSave(){
+  try {
+    if(Array.isArray(currentTiers) && currentTiers.length > 0) return currentTiers;
+    if(_tiersUserMutated) return [];   // the user really deleted them all
+    if(Array.isArray(_tiersSnapshotAtLoad) && _tiersSnapshotAtLoad.length > 0){
+      console.warn('[TIERS_SNAPSHOT_GUARD_V1] refusing to save empty tiers with no user action — rescued from the load snapshot.');
+      return _tiersSnapshotAtLoad.slice();
+    }
+    try {
+      const raw = localStorage.getItem(_tiersLsKey());
+      if(raw){ const arr = JSON.parse(raw); if(Array.isArray(arr) && arr.length){ console.warn('[TIERS_SNAPSHOT_GUARD_V1] rescued tiers from localStorage.'); return arr; } }
+    } catch(e){}
+    return [];
+  } catch(e){ return Array.isArray(currentTiers) ? currentTiers : []; }
+}
+function _tiersPersistLocal(){
+  try { localStorage.setItem(_tiersLsKey(), JSON.stringify(Array.isArray(currentTiers) ? currentTiers : [])); } catch(e){}
+}
+
+// ---- Modal (baseball Phase C/E, adapted to the twins' overlay idiom) ----
+function _tierPopulateForm(tierToEdit){
+  var nameEl  = document.getElementById('tier-name');
+  var colorEl = document.getElementById('tier-color');
+  var startEl = document.getElementById('tier-start');
+  var endEl   = document.getElementById('tier-end');
+  var errEl   = document.getElementById('tier-error');
+  if(nameEl)  nameEl.value  = '';
+  if(colorEl) colorEl.value = '';
+  if(errEl){  errEl.style.display = 'none'; errEl.textContent = ''; }
+  document.querySelectorAll('#tier-color-swatches .tier-swatch.selected')
+    .forEach(function(b){ b.classList.remove('selected'); });
+  if(startEl && endEl && Array.isArray(_watchList)){
+    var optsHtml = '<option value="">Select…</option>';
+    _watchList.forEach(function(it, idx){
+      var pid = it && it.pid;
+      if(pid == null) return;
+      var p = (_playerDB && _playerDB[pid]) || {};
+      var nm = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || ('(pid ' + pid + ')');
+      var label = '#' + (idx + 1) + '  ' + nm;
+      optsHtml += '<option value="' + String(pid).replace(/"/g,'&quot;') + '">' + label.replace(/</g,'&lt;') + '</option>';
+    });
+    startEl.innerHTML = optsHtml;
+    endEl.innerHTML   = optsHtml;
   }
-  render();
-  if (document.body.classList.contains('day-mode')){
+  if(tierToEdit){
+    if(nameEl)  nameEl.value  = tierToEdit.name || '';
+    if(startEl) startEl.value = String(tierToEdit.start_pid || '');
+    if(endEl)   endEl.value   = String(tierToEdit.end_pid || '');
+    if(tierToEdit.color) selectTierColor(tierToEdit.color);
+  }
+}
+function _tierConfigureMode(isEdit){
+  var title   = document.getElementById('tier-modal-title');
+  var saveBtn = document.getElementById('tier-save-btn');
+  var delBtn  = document.getElementById('tier-delete-btn');
+  if(title)   title.textContent   = isEdit ? '🏷️ Edit Tier' : '🏷️ Create a Tier';
+  if(saveBtn) saveBtn.textContent = isEdit ? 'Save Changes' : 'Create Tier';
+  if(delBtn)  delBtn.style.display = isEdit ? '' : 'none';
+}
+
+// ============================================================================
+// TIER_DRAG_NBA_V1 (2026-08-08 - PC Walter, per the Dude): TIERS_V1 STAGE 2.
+// Baseball's TIER_DRAG_V1 ported whole, with TIER_PULSE_OPACITY_V1 baked in
+// (the 6/11 lag fix: the armed pulse animates OPACITY on a ::after overlay,
+// compositor-only. NEVER animate box-shadow on the box itself - 33x drag lag).
+// Arm via the "Draggable as a group" checkbox in the Edit Tier modal (edit
+// mode only). The bracket box gets pointer-events:auto + a gold pulse; drag it
+// and the whole block of players moves as a unit; auto-disarm after drop, Esc,
+// or an outside click. Adapted from baseball's players[]-index model to the
+// twins' _watchList/_wlPid pid model. Tier anchors (start_pid/end_pid) travel
+// WITH the block, so tier membership never needs restamping after a move.
+// ============================================================================
+let _armedTierId = null;
+let _tierDragPayload = null;   // { tierId, playerIds:[...], startIdx, endIdx } during a drag
+
+function _tierDragRowSync(show){
+  var row = document.getElementById('tier-drag-row');
+  if(row) row.style.display = show ? '' : 'none';
+  var cb = document.getElementById('tier-drag-checkbox');
+  if(cb) cb.checked = false;
+}
+function _onTierDragCheckboxChanged(){
+  try {
+    var cb = document.getElementById('tier-drag-checkbox');
+    var ticked = !!(cb && cb.checked);
+    if(!ticked) return;            // unticking does nothing - modal stays open
+    var tid = _tierEditingId;
+    if(!tid){ console.warn('[TIER_DRAG_NBA_V1] checkbox ticked with no _tierEditingId - ignoring'); return; }
+    closeCreateTierModal();        // auto-close, baseball's behavior
+    armTier(tid);
+  } catch(e){ console.warn('[TIER_DRAG_NBA_V1] _onTierDragCheckboxChanged failed:', e); }
+}
+function _tierGetBoxEl(tierId){
+  return document.querySelector('.tier-bracket-box[data-tier-id="' + String(tierId).replace(/"/g,'\\"') + '"]');
+}
+function _wlTierIdx(pidVal){
+  return _watchList.findIndex(function(item){ return String(_wlPid(item)) === String(pidVal); });
+}
+function armTier(tierId){
+  if(_blockIfReadOnly('armTier')) return;
+  if(!tierId) return;
+  if(_armedTierId && _armedTierId !== tierId) disarmTier();
+  var box = _tierGetBoxEl(tierId);
+  if(!box){
+    console.warn('[TIER_DRAG_NBA_V1] cannot arm - tier box not in DOM (list filtered or sorted?):', tierId);
+    alert('Cannot arm this tier right now - make sure the list is in its default rank order (no sort, filter, or search active), then try again.');
+    return;
+  }
+  _armedTierId = tierId;
+  box.classList.add('tier-armed');
+  box.setAttribute('draggable', 'true');
+  box._tdv1_ondragstart = function(e){ tierDragStart(e, tierId); };
+  box._tdv1_ondragend   = function(e){ tierDragEnd(e); };
+  box.addEventListener('dragstart', box._tdv1_ondragstart);
+  box.addEventListener('dragend',   box._tdv1_ondragend);
+  console.log('[TIER_DRAG_NBA_V1] armed:', tierId);
+}
+function disarmTier(){
+  if(!_armedTierId) return;
+  var box = _tierGetBoxEl(_armedTierId);
+  if(box){
+    box.classList.remove('tier-armed');
+    box.removeAttribute('draggable');
+    if(box._tdv1_ondragstart) box.removeEventListener('dragstart', box._tdv1_ondragstart);
+    if(box._tdv1_ondragend)   box.removeEventListener('dragend',   box._tdv1_ondragend);
+    box._tdv1_ondragstart = null;
+    box._tdv1_ondragend = null;
+  }
+  console.log('[TIER_DRAG_NBA_V1] disarmed:', _armedTierId);
+  _armedTierId = null;
+  _tierDragPayload = null;
+}
+function tierDragStart(e, tierId){
+  try {
+    var tier = (Array.isArray(currentTiers) ? currentTiers : []).find(function(t){ return t && t.id === tierId; });
+    if(!tier){ console.warn('[TIER_DRAG_NBA_V1] dragstart - tier not found:', tierId); return; }
+    var startIdx = _wlTierIdx(tier.start_pid);
+    var endIdx   = _wlTierIdx(tier.end_pid);
+    if(startIdx < 0 || endIdx < 0 || endIdx < startIdx){
+      console.warn('[TIER_DRAG_NBA_V1] dragstart - invalid range, aborting drag');
+      e.preventDefault();
+      return;
+    }
+    var ids = [];
+    for(var i = startIdx; i <= endIdx; i++) ids.push(String(_wlPid(_watchList[i])));
+    _tierDragPayload = { tierId: tierId, playerIds: ids, startIdx: startIdx, endIdx: endIdx };
+    if(e.dataTransfer){
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', 'tier:' + tierId); } catch(_){}
+      // No setDragImage - the gold drop bar + rank pill do the visual work (baseball's DROP_INDICATOR unification).
+    }
+    console.log('[TIER_DRAG_NBA_V1] dragstart - tier', tierId, 'players:', ids.length);
+  } catch(err){ console.warn('[TIER_DRAG_NBA_V1] tierDragStart failed:', err); }
+}
+function tierDragEnd(e){
+  if(_armedTierId) disarmTier();
+  if(typeof _hideDropIndicator === 'function') _hideDropIndicator();
+}
+function _tierIndexInOtherTier(idx, excludeTierId){
+  if(!Array.isArray(currentTiers)) return null;
+  for(var i = 0; i < currentTiers.length; i++){
+    var t = currentTiers[i];
+    if(!t || t.id === excludeTierId) continue;
+    var sIdx = _wlTierIdx(t.start_pid);
+    var eIdx = _wlTierIdx(t.end_pid);
+    if(sIdx < 0 || eIdx < 0) continue;
+    if(idx >= sIdx && idx <= eIdx) return { tierId: t.id, startIdx: sIdx, endIdx: eIdx };
+  }
+  return null;
+}
+// Tier drags ride a capturing dragover/drop pair on the tbody so the existing
+// row handlers stay untouched (baseball's interceptor pattern).
+(function _wireTierDropInterceptor(){
+  function attach(){
+    var tbody = document.getElementById('watch-list-body');
+    if(!tbody) return false;
+    if(tbody._tdv1_wired) return true;
+    tbody._tdv1_wired = true;
+    tbody.addEventListener('dragover', function(e){
+      if(!_tierDragPayload) return;
+      e.preventDefault();
+      if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      try {
+        var row = e.target && e.target.closest ? e.target.closest('tr[data-phood-pid]') : null;
+        if(!row) return;
+        var tgtIdx = _wlTierIdx(row.getAttribute('data-phood-pid'));
+        if(tgtIdx < 0) return;
+        var rect = row.getBoundingClientRect();
+        var midpoint = rect.top + (rect.height / 2);
+        var above = (e.clientY < midpoint);
+        if(typeof _positionDropIndicatorBar === 'function') _positionDropIndicatorBar(row, above);
+        var srcStart = _tierDragPayload.startIdx;
+        var srcEnd   = _tierDragPayload.endIdx;
+        var tierLen  = (srcEnd - srcStart + 1);
+        var insertAt = above ? tgtIdx : tgtIdx + 1;
+        if(srcStart < insertAt) insertAt -= tierLen;
+        var destRank = insertAt + 1;
+        if(destRank < 1) destRank = 1;
+        if(typeof _showDropIndicatorPill === 'function') _showDropIndicatorPill(e.clientX, e.clientY, destRank);
+      } catch(_pillErr){ /* pill is cosmetic */ }
+    }, true);
+    tbody.addEventListener('drop', async function(e){
+      if(!_tierDragPayload) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if(typeof _hideDropIndicator === 'function') _hideDropIndicator();
+      var row = e.target && e.target.closest ? e.target.closest('tr[data-phood-pid]') : null;
+      if(!row){ disarmTier(); return; }
+      var dropIdx = _wlTierIdx(row.getAttribute('data-phood-pid'));
+      if(dropIdx < 0){ disarmTier(); return; }
+      await tierDrop(dropIdx);
+    }, true);
+    return true;
+  }
+  if(!attach()){
+    var poll = setInterval(function(){ if(attach()) clearInterval(poll); }, 250);
+  }
+})();
+async function tierDrop(dropIdx){
+  if(_blockIfReadOnly('tierDrop')){ disarmTier(); return; }
+  if(!_tierDragPayload){ disarmTier(); return; }
+  var payload = _tierDragPayload;
+  var tier = (Array.isArray(currentTiers) ? currentTiers : []).find(function(t){ return t && t.id === payload.tierId; });
+  if(!tier){ disarmTier(); return; }
+  var srcIndices = payload.playerIds.map(function(pid){ return _wlTierIdx(pid); });
+  if(srcIndices.some(function(i){ return i < 0; })){
+    console.warn('[TIER_DRAG_NBA_V1] tierDrop - some players missing from list, aborting');
+    disarmTier();
+    return;
+  }
+  srcIndices.sort(function(a,b){ return a-b; });
+  var srcStart = srcIndices[0];
+  var srcEnd   = srcIndices[srcIndices.length - 1];
+  if(dropIdx >= srcStart && dropIdx <= srcEnd){
+    console.log('[TIER_DRAG_NBA_V1] drop inside own range - no-op');
+    disarmTier();
+    return;
+  }
+  var collision = _tierIndexInOtherTier(dropIdx, payload.tierId);
+  if(collision){
+    if(dropIdx - collision.startIdx < collision.endIdx - dropIdx){ dropIdx = collision.startIdx; }
+    else { dropIdx = collision.endIdx + 1; }
+    console.log('[TIER_DRAG_NBA_V1] drop collided with tier', collision.tierId, '- snapped to idx', dropIdx);
+  }
+  if(typeof snapshotForUndo === 'function') snapshotForUndo();
+  var block = [];
+  for(var i = srcEnd; i >= srcStart; i--){ block.unshift(_watchList.splice(i, 1)[0]); }
+  var adjDropIdx = dropIdx;
+  if(dropIdx > srcEnd) adjDropIdx = dropIdx - block.length;
+  if(adjDropIdx < 0) adjDropIdx = 0;
+  if(adjDropIdx > _watchList.length) adjDropIdx = _watchList.length;
+  _watchList.splice.apply(_watchList, [adjDropIdx, 0].concat(block));
+  // start_pid/end_pid still point at the same players - they moved WITH the block.
+  if(typeof renderWatchList === 'function') renderWatchList();
+  if(typeof renderTiers === 'function') renderTiers();
+  try { if(typeof autoSaveToPhoodNAS === 'function') await autoSaveToPhoodNAS(); }
+  catch(err){ console.warn('[TIER_DRAG_NBA_V1] autosave after tier drop failed:', err); }
+  console.log('[TIER_DRAG_NBA_V1] tier moved:', payload.tierId, '- ' + block.length + ' players to idx', adjDropIdx);
+  disarmTier();
+}
+// Disarm escape hatches: click outside the armed tier box, or press Escape (baseball's pair).
+document.addEventListener('click', function(e){
+  if(!_armedTierId) return;
+  var box = _tierGetBoxEl(_armedTierId);
+  if(!box) return;
+  if(box.contains(e.target)) return;
+  var tab = document.querySelector('.tier-bracket-tab[data-tier-id="' + String(_armedTierId).replace(/"/g,'\\"') + '"]');
+  if(tab && tab.contains(e.target)) return;
+  var modal = document.getElementById('create-tier-modal');
+  if(modal && modal.contains(e.target)) return;
+  disarmTier();
+}, true);
+document.addEventListener('keydown', function(e){
+  if(!_armedTierId) return;
+  if(e.key === 'Escape' || e.key === 'Esc'){ e.preventDefault(); disarmTier(); }
+});
+
+function openCreateTierModal(){
+  if(_blockIfReadOnly('openCreateTierModal')) return;
+  try {
+    _tierEditingId = null;
+    _tierPopulateForm(null);
+    _tierConfigureMode(false);
+    _tierDragRowSync(false);   // TIER_DRAG: create mode - row hidden, checkbox reset
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.style.display = 'flex';
+    setTimeout(function(){ var n = document.getElementById('tier-name'); if(n) n.focus(); }, 50);
+  } catch(e){ console.warn('[TIERS_V1] openCreateTierModal failed:', e); }
+}
+function openEditTierModal(tierId){
+  if(_blockIfReadOnly('openEditTierModal')) return;
+  try {
+    var tier = (Array.isArray(currentTiers) ? currentTiers : []).find(function(t){ return t && t.id === tierId; });
+    if(!tier){ console.warn('[TIERS_V1] openEditTierModal — tier not found:', tierId); return; }
+    _tierEditingId = tierId;
+    _tierPopulateForm(tier);
+    _tierConfigureMode(true);
+    _tierDragRowSync(true);    // TIER_DRAG: edit mode - row shown, checkbox reset
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.style.display = 'flex';
+    setTimeout(function(){ var n = document.getElementById('tier-name'); if(n) n.focus(); }, 50);
+  } catch(e){ console.warn('[TIERS_V1] openEditTierModal failed:', e); }
+}
+function selectTierColor(color){
+  try {
+    var hidden = document.getElementById('tier-color');
+    if(hidden) hidden.value = color;
+    document.querySelectorAll('#tier-color-swatches .tier-swatch')
+      .forEach(function(b){
+        if(b.getAttribute('data-color') === color) b.classList.add('selected');
+        else b.classList.remove('selected');
+      });
+  } catch(e){ console.warn('[TIERS_V1] selectTierColor failed:', e); }
+}
+async function saveTierFromModal(){
+  if(_blockIfReadOnly('saveTierFromModal')) return;
+  var errEl = document.getElementById('tier-error');
+  function showErr(msg){ if(errEl){ errEl.textContent = msg; errEl.style.display = 'block'; } }
+  try {
+    var name  = (document.getElementById('tier-name').value || '').trim();
+    var color = (document.getElementById('tier-color').value || '').trim();
+    var startId = document.getElementById('tier-start').value;
+    var endId   = document.getElementById('tier-end').value;
+    if(!name)    { showErr('Tier name is required.'); return; }
+    if(!color)   { showErr('Pick a color from the palette.'); return; }
+    if(!startId) { showErr('Pick a Start Player.'); return; }
+    if(!endId)   { showErr('Pick an End Player.'); return; }
+    var startIdx = _wlIndexOf(startId);
+    var endIdx   = _wlIndexOf(endId);
+    if(startIdx < 0 || endIdx < 0){ showErr('Could not find one of the selected players. Try reopening the modal.'); return; }
+    if(endIdx < startIdx){ showErr('End Player must be the same as or below the Start Player on the list.'); return; }
+    if(!Array.isArray(currentTiers)) currentTiers = [];
+    if(_tierEditingId){
+      var existing = currentTiers.find(function(t){ return t && t.id === _tierEditingId; });
+      if(!existing){ showErr('Could not find the tier to update. It may have been deleted in another tab.'); return; }
+      existing.name = name;
+      existing.color = color;
+      existing.start_pid = String(startId);
+      existing.end_pid   = String(endId);
+      existing.updated_at = new Date().toISOString();
+      _tiersUserMutated = true;
+    } else {
+      currentTiers.push({
+        id: 'tier_' + Date.now(),
+        name: name,
+        color: color,
+        start_pid: String(startId),
+        end_pid: String(endId),
+        created_at: new Date().toISOString(),
+        created_by: 'matt'
+      });
+      _tiersUserMutated = true;
+    }
+    _tiersPersistLocal();
+    try { if(typeof autoSaveToPhoodNAS === 'function'){ await autoSaveToPhoodNAS(); } } catch(e){ console.warn('[TIERS_V1] autosave failed:', e); }
+    closeCreateTierModal();
+    try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){}
+  } catch(e){
+    console.warn('[TIERS_V1] saveTierFromModal failed:', e);
+    showErr('Something went wrong. Check the console for details.');
+  }
+}
+async function deleteTierFromModal(){
+  if(_blockIfReadOnly('deleteTierFromModal')) return;
+  if(!_tierEditingId) return;
+  try {
+    var idx = (Array.isArray(currentTiers) ? currentTiers : []).findIndex(function(t){ return t && t.id === _tierEditingId; });
+    if(idx < 0){ closeCreateTierModal(); return; }
+    var doomed = currentTiers[idx];
+    var ok = confirm('Delete tier "' + (doomed.name || '(untitled)') + '"?\n\nThe players stay on the list — only the colored bracket disappears. This cannot be undone.');
+    if(!ok) return;
+    currentTiers.splice(idx, 1);
+    _tiersUserMutated = true;
+    _tiersPersistLocal();
+    try { if(typeof autoSaveToPhoodNAS === 'function'){ await autoSaveToPhoodNAS(); } } catch(e){ console.warn('[TIERS_V1] autosave after delete failed:', e); }
+    closeCreateTierModal();
+    try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){}
+  } catch(e){ console.warn('[TIERS_V1] deleteTierFromModal failed:', e); }
+}
+function closeCreateTierModal(){
+  try {
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.style.display = 'none';
+    _tierEditingId = null;
+  } catch(e){}
+}
+
+// ---- Render subsystem (baseball's overlay + spacer rows + self-heal resolver) ----
+function _tiersDefaultOrder(){
+  // Brackets only make sense in the saved rank order: any sort, search, or
+  // stat filter scrambles rows, so hide the boxes until the list is back.
+  try {
+    if(typeof _sortField !== 'undefined' && _sortField !== null) return false;
+    var search = document.getElementById('player-search');
+    if(search && search.value && search.value.trim() !== '') return false;
+    if(typeof _wlFilterActive === 'function' && _wlFilterActive()) return false;
+    return true;
+  } catch(e){ return false; }
+}
+function _tiersClearOverlay(){
+  var layer = document.getElementById('tier-overlay-layer');
+  if(layer) layer.innerHTML = '';
+}
+function _tiersClearSpacerRows(){
+  var tbody = document.getElementById('watch-list-body');
+  if(!tbody) return;
+  var spacers = tbody.querySelectorAll('tr.tier-spacer-row');
+  for(var i = 0; i < spacers.length; i++){ spacers[i].parentNode.removeChild(spacers[i]); }
+}
+// TIER_SELFHEAL_V1 (baseball June 8, ported): one shared resolver so the spacer
+// and the box always agree. Both anchors must survive on the CURRENT table or
+// the tier draws nothing (no orphan gaps).
+function _tiersResolveRange(tier){
+  var tbody = document.getElementById('watch-list-body');
+  if(!tbody || !tier) return null;
+  var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-phood-pid]'));
+  if(rows.length === 0) return null;
+  var idOf = function(r){ return String(r.getAttribute('data-phood-pid')); };
+  var startId = String(tier.start_pid);
+  var endId   = String(tier.end_pid);
+  var si = -1, ei = -1;
+  for(var i=0;i<rows.length;i++){ if(idOf(rows[i])===startId){ si=i; break; } }
+  for(var j=0;j<rows.length;j++){ if(idOf(rows[j])===endId){ ei=j; } }
+  if(si !== -1 && ei !== -1 && si <= ei){ return { startRow: rows[si], endRow: rows[ei] }; }
+  return null;
+}
+function _tiersInjectSpacerRows(){
+  _tiersClearSpacerRows();
+  if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
+  if(!_tiersDefaultOrder()) return;
+  var tbody = document.getElementById('watch-list-body');
+  if(!tbody) return;
+  var firstRow = tbody.querySelector('tr[data-phood-pid]');
+  if(!firstRow) return;
+  var colCount = firstRow.children.length;
+  currentTiers.forEach(function(tier){
+    try {
+      var range = _tiersResolveRange(tier);
+      if(!range || !range.startRow) return;
+      var spacer = document.createElement('tr');
+      spacer.className = 'tier-spacer-row';
+      spacer.setAttribute('data-tier-spacer-for', String(tier.id));
+      var td = document.createElement('td');
+      td.colSpan = colCount;
+      spacer.appendChild(td);
+      tbody.insertBefore(spacer, range.startRow);
+    } catch(e){ console.warn('[TIER_SPACER_ROW_V1] spacer inject failed:', tier, e); }
+  });
+}
+function _tiersGetOrCreateLayer(){
+  var tbody = document.getElementById('watch-list-body');
+  if(!tbody) return null;
+  var table = tbody.closest('table');
+  if(!table) return null;
+  var anchor = table.parentElement;
+  if(!anchor) return null;
+  var cs = window.getComputedStyle(anchor);
+  if(cs.position === 'static') anchor.style.position = 'relative';
+  var layer = document.getElementById('tier-overlay-layer');
+  if(!layer){
+    layer = document.createElement('div');
+    layer.id = 'tier-overlay-layer';
+    layer.style.cssText = 'position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;z-index:5';
+    anchor.appendChild(layer);
+  } else if(layer.parentElement !== anchor){
+    anchor.appendChild(layer);
+  }
+  return { layer: layer, anchor: anchor };
+}
+function renderTiers(){
+  _tiersClearOverlay();
+  try { _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_SPACER_ROW_V1] inject crashed:', e); }
+  if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
+  if(!_tiersDefaultOrder()){ try { _tiersClearSpacerRows(); } catch(e){} return; }
+  var ctx = _tiersGetOrCreateLayer();
+  if(!ctx) return;
+  var layer = ctx.layer;
+  var anchor = ctx.anchor;
+  var anchorRect = anchor.getBoundingClientRect();
+  currentTiers.forEach(function(tier){
+    try {
+      var _range = _tiersResolveRange(tier);
+      if(!_range) return;
+      var startRow = _range.startRow, endRow = _range.endRow;
+      if(!startRow || !endRow) return;
+      var sRect = startRow.getBoundingClientRect();
+      var eRect = endRow.getBoundingClientRect();
+      var top    = sRect.top - anchorRect.top + anchor.scrollTop;
+      var bottom = eRect.bottom - anchorRect.top + anchor.scrollTop;
+      var height = bottom - top;
+      if(height <= 0) return;
+      var hex = TIER_COLOR_HEX[tier.color] || '#94a3b8';
+      var tbodyRect = document.getElementById('watch-list-body').getBoundingClientRect();
+      var boxLeft   = tbodyRect.left  - anchorRect.left + anchor.scrollLeft;
+      var boxRight  = tbodyRect.right - anchorRect.left + anchor.scrollLeft;
+      var boxWidth  = boxRight - boxLeft;
+      var pad = 4;
+      var box = document.createElement('div');
+      box.className = 'tier-bracket-box';
+      box.setAttribute('data-tier-id', tier.id);
+      box.style.cssText =
+        'position:absolute;top:' + (top - pad) + 'px;left:' + (boxLeft - pad) + 'px;' +
+        'width:' + (boxWidth + pad * 2) + 'px;height:' + (height + pad * 2) + 'px;' +
+        'border:3px solid ' + hex + ';border-radius:6px;' +
+        'box-shadow:0 0 8px ' + hex + '55, inset 0 0 4px ' + hex + '22;' +
+        'background:transparent;pointer-events:none;box-sizing:border-box;';
+      box.title = tier.name;
+      var tab = document.createElement('div');
+      tab.className = 'tier-bracket-tab';
+      tab.setAttribute('data-tier-id', tier.id);
+      tab.textContent = tier.name;
+      var spacerRow = document.querySelector('tr.tier-spacer-row[data-tier-spacer-for="' + String(tier.id).replace(/"/g,'\\"') + '"]');
+      var tabTop, tabRadius, tabShadow;
+      if(spacerRow){
+        var spacerRect = spacerRow.getBoundingClientRect();
+        tabTop = (spacerRect.top - anchorRect.top + anchor.scrollTop) + 5;
+        tabRadius = '4px';
+        tabShadow = '0 1px 4px ' + hex + '55';
+      } else {
+        var firstTbodyRow = document.querySelector('#watch-list-body tr[data-phood-pid]');
+        if(firstTbodyRow && firstTbodyRow === startRow){
+          tabTop = (top + height + pad - 2); tabRadius = '0 0 6px 6px'; tabShadow = '0 1px 4px ' + hex + '55';
+        } else {
+          tabTop = (top - pad - 14); tabRadius = '6px 6px 0 0'; tabShadow = '0 -1px 4px ' + hex + '55';
+        }
+      }
+      tab.style.cssText =
+        'position:absolute;top:' + tabTop + 'px;left:' + (boxLeft - pad) + 'px;' +
+        'background:' + hex + ';color:#fff;font-family:"Nunito Sans",sans-serif;' +
+        'font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;' +
+        'padding:2px 10px;border-radius:' + tabRadius + ';box-shadow:' + tabShadow + ';' +
+        'pointer-events:auto;cursor:pointer;white-space:nowrap;';
+      var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+      if(isFan){
+        tab.title = 'Tier: ' + tier.name;
+        tab.style.cursor = 'default';
+      } else {
+        tab.title = 'Tier: ' + tier.name + ' — click to edit or delete';
+        (function(tid){
+          tab.addEventListener('click', function(ev){ ev.stopPropagation(); openEditTierModal(tid); });
+        })(tier.id);
+      }
+      layer.appendChild(box);
+      layer.appendChild(tab);
+    } catch(e){ console.warn('[TIERS_V1] failed to render tier:', tier, e); }
+  });
+}
+window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} });
+
+/* ---- init ---- */
+(function(){
+  var ths = document.querySelectorAll('thead th'), i;
+  for(i = 0; i < ths.length; i++){
+    (function(th){ th.addEventListener('click', function(){ sortBy(th.getAttribute('data-col')); }); })(ths[i]);
+  }
+  loadListFromStorage();
+  _applyReadOnlyBodyClass();
+  renderWatchList();
+  if(document.body.classList.contains('day-mode')){
     var btn = document.getElementById('theme-toggle');
-    if (btn){ btn.textContent = '☀️'; }
+    if(btn){ btn.textContent = '☀️'; }
   }
 })();
 
