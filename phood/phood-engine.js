@@ -108,7 +108,12 @@ async function loadListFromStorage(){
       if(d && Array.isArray(d.spots) && d.spots.length){
         list = d.spots;
         if(Array.isArray(d.tiers)) tiers = d.tiers;
-        stamp = 'Loaded from NAS (' + (payload.environment || '?') + ', saved ' + (d.saved_at_local || payload.saved_at || '?') + ')';
+        /* STAMP_TZ_V1 (2026-08-14): format the save time CLIENT-side from the ISO
+           stamp so it reads in the viewer's timezone — the container's clock is UTC
+           and its saved_at_local was showing four hours ahead of the Dude's wall. */
+        var _when = '?';
+        try { if(payload.saved_at || d.saved_at) _when = new Date(payload.saved_at || d.saved_at).toLocaleString(); } catch(e){}
+        stamp = 'Loaded from NAS (' + (payload.environment || '?') + ', saved ' + _when + ')';
       }
     }
   } catch(e){ console.warn('[PHOOD_NAS_V1] NAS load failed, falling back:', e); }
