@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watch101PHOOD — FOUNDATION v1</title>
+<!-- ============================================================
+     PHOOD_FOUNDATION_V1 — built 2026-08-14 by PC Walter.
+     Watch101/phood — Philadelphia Restaurants & Bars, Matt's idea
+     from the 7/29 + 7/30 meetings. Cloned off baseball's chrome
+     (SITE_CHROME_V1 nav, same CSS variable system, same dark look).
+     EVERYTHING BELOW THE HEADER IS SAMPLE DATA for Matt to react to.
+     No server, no live data — static foundation on purpose.
+     Colour accents pulled from the finalized restaurant logo family
+     (navy #06193e, checker red #d4111b) — FIRST PASS, not a decision.
+     ============================================================ -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=Bowlby+One&family=Noto+Serif:wght@600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c10;--surface:#0d1117;--surface2:#131920;--surface3:#1a2330;
+  --border:#1e2d3d;--border2:#253545;
+  --gold:#f0a500;--gold2:#c47f00;
+  --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --turquoise:#06b6d4;--turquoise2:#0891b2;
+  --text:#ffffff;--text2:#e2e8f0;--text3:#94a3b8;
+  /* PHOOD accents — from the finalized restaurant logo family */
+  --phood-navy:#06193e;--phood-red:#d4111b;--phood-red-soft:#de4148;
+  --title-red:#d4111b;
+  --header-grad-1:#0d1117;--header-grad-2:#131920;
+  --nba-accent:#f97316;--mlb-accent:#1d4ed8;--nfl-accent:#15803d;
+}
+body.day-mode{
+  --bg:#f4f5f7;--surface:#ffffff;--surface2:#eef0f3;--surface3:#e4e7ec;
+  --border:#d4d9e0;--border2:#c2c9d3;
+  --text:#111827;--text2:#26303e;--text3:#5b6675;
+  --header-grad-1:#ffffff;--header-grad-2:#eef0f3;
+}
+body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif;font-size:14px}
+
+/* ================= SITE CHROME (cloned from baseball) ================= */
+.w101-nav{
+  background:linear-gradient(135deg,var(--header-grad-1) 0%,var(--header-grad-2) 50%,var(--header-grad-1) 100%);
+  border-bottom:1px solid var(--title-red);
+  position:static;top:0;z-index:900;
+}
+.w101-nav-inner{max-width:1240px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.w101-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.w101-brand-word{font-family:'Bowlby One',sans-serif;font-size:26px;letter-spacing:.04em;color:var(--title-red);line-height:1}
+.w101-brand img{height:34px;width:auto;display:block}
+.w101-menu{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-left:auto}
+.w101-menu a,.w101-menu button{
+  font-family:'Noto Serif',serif;font-size:15px;font-weight:600;
+  color:var(--text2);background:none;border:none;cursor:pointer;
+  padding:9px 13px;border-radius:6px;text-decoration:none;
+  transition:background .15s,color .15s;white-space:nowrap;
+}
+.w101-menu a:hover,.w101-menu button:hover{background:var(--surface2);color:var(--text)}
+.w101-drop{position:relative}
+.w101-drop>button::after{content:' \25BE';font-size:11px;opacity:.7}
+.w101-drop-panel{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:210px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+  box-shadow:0 12px 34px rgba(0,0,0,.45);overflow:hidden;padding:5px;z-index:1000;
+}
+.w101-drop.open .w101-drop-panel{display:block}
+.w101-drop-panel a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:5px;font-size:15px}
+.w101-drop-panel a span.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.w101-theme{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text2);
+  width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:15px;line-height:1;
+}
+
+/* ============ PHOOD signature: the checker strip Matt liked ============ */
+.checker-strip{
+  height:12px;
+  background:repeating-conic-gradient(var(--phood-navy) 0% 25%, #ffffff 0% 50%);
+  background-size:24px 24px;
+  border-bottom:2px solid var(--phood-red);
+}
+
+/* ====================== PAGE HEADER ====================== */
+.header{max-width:1240px;margin:0 auto;padding:22px 20px 10px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;cursor:default}
+.logo-watch{font-family:'Bowlby One',sans-serif;font-size:40px;color:var(--title-red);letter-spacing:.03em}
+.logo img{height:56px;width:auto}
+.logo-phood{font-family:'Bowlby One',sans-serif;font-size:40px;color:var(--text);letter-spacing:.06em}
+.list-sub{display:flex;flex-direction:column;gap:3px;margin-left:8px}
+.list-title{font-size:18px;font-weight:800;color:var(--gold);letter-spacing:.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.list-subtitle{font-size:11px;color:var(--text2);opacity:.85;letter-spacing:.08em;text-transform:uppercase}
+.build-stamp{font-size:11px;color:var(--turquoise2)}
+.header-note{
+  max-width:1240px;margin:8px auto 0;padding:10px 20px;
+}
+.sample-banner{
+  background:var(--surface2);border:1px dashed var(--gold2);border-radius:8px;
+  padding:10px 14px;font-size:13px;color:var(--text2);line-height:1.5;
+}
+.sample-banner b{color:var(--gold)}
+
+/* ====================== TABLE ====================== */
+.table-wrap{max-width:1240px;margin:14px auto 40px;padding:0 20px}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+thead th{
+  position:sticky;top:0;z-index:10;
+  background:var(--surface3);color:var(--text2);
+  font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  padding:11px 10px;text-align:left;white-space:nowrap;
+  border-bottom:2px solid var(--phood-red);
+  cursor:pointer;user-select:none;
+}
+thead th:hover{color:var(--text);background:var(--border)}
+thead th .arrow{font-size:10px;opacity:.8;margin-left:4px}
+tbody td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
+tbody tr.place:hover{background:var(--surface2)}
+td.rank{font-weight:900;color:var(--text3);width:44px;text-align:center}
+td.stars{white-space:nowrap;letter-spacing:1px;width:110px}
+td.name{font-weight:800;font-size:15px;color:var(--text);white-space:nowrap}
+td.vibe{font-size:16px;letter-spacing:2px;white-space:nowrap}
+td.hood{color:var(--text2);white-space:nowrap}
+td.addr{color:var(--text3);white-space:nowrap}
+td.take{color:var(--text3);font-style:italic;min-width:220px}
+.pill{
+  display:inline-block;background:linear-gradient(135deg,var(--gold) 0%,#c9a227 100%);
+  color:#1a1a1a;font-weight:800;font-size:11px;letter-spacing:.04em;
+  padding:4px 10px;border-radius:6px;text-decoration:none;white-space:nowrap;
+}
+.pill.ig{background:var(--surface3);color:var(--text2);border:1px solid var(--border2)}
+body.day-mode .pill.ig{background:var(--surface2)}
+
+/* Tier divider rows — sport pages carry these at full-strength accent.
+   PHOOD first pass uses the logo red. */
+tr.tier-row td{
+  background:var(--phood-navy);color:#ffffff;
+  font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;
+  padding:9px 12px;border-top:2px solid var(--phood-red);border-bottom:2px solid var(--phood-red);
+}
+body.day-mode tr.tier-row td{color:#ffffff}
+
+.legend{
+  max-width:1240px;margin:0 auto 50px;padding:0 20px;font-size:12px;color:var(--text3);line-height:1.7;
+}
+.legend b{color:var(--text2)}
+footer{
+  border-top:1px solid var(--border);padding:18px 20px 30px;text-align:center;
+  font-size:12px;color:var(--text3);
+}
+@media (max-width:768px){
+  .logo-watch,.logo-phood{font-size:28px}
+  .logo img{height:40px}
+  td.addr,td.take{white-space:normal}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SITE NAV (SITE_CHROME_V1 clone, links go up one level) ============ -->
+<header class="w101-nav">
+  <div class="w101-nav-inner">
+    <a class="w101-brand" href="../" title="Watch101 home">
+      <span class="w101-brand-word">Watch</span>
+      <img src="images/Watch101_Restaurant_NavyField_512.png" alt="101 PHOOD">
+    </a>
+    <nav class="w101-menu">
+      <div class="w101-drop" id="drop-lists">
+        <button type="button" onclick="w101Drop('drop-lists',event)" aria-haspopup="true">The Lists</button>
+        <div class="w101-drop-panel">
+          <a href="../nba/"><span class="dot" style="background:var(--nba-accent)"></span>Watch101NBA</a>
+          <a href="../mlb/"><span class="dot" style="background:var(--mlb-accent)"></span>Watch101MLB</a>
+          <a href="../nfl/"><span class="dot" style="background:var(--nfl-accent)"></span>Watch101NFL</a>
+          <a href="./"><span class="dot" style="background:var(--phood-red)"></span>Watch101PHOOD</a>
+        </div>
+      </div>
+      <a href="../about.html">About Us</a>
+      <a href="../updates.html">Updates</a>
+      <a href="../contact.html">Contact</a>
+      <button class="w101-theme" id="theme-toggle" onclick="toggleDay()" title="Toggle day / night mode">🌙</button>
+    </nav>
+  </div>
+</header>
+
+<!-- The checkered pattern Matt called out on 8/3: "I like the checkered pattern" -->
+<div class="checker-strip"></div>
+
+<div class="header">
+  <div class="logo">
+    <span class="logo-watch">Watch</span>
+    <img src="images/Watch101_Restaurant_WhiteField_512.png" alt="101" id="logo-img">
+    <span class="logo-phood">PHOOD</span>
+  </div>
+  <div class="list-sub">
+    <span class="list-title">Philadelphia Restaurants &amp; Bars</span>
+    <span class="list-subtitle">Ones to Watch — not a best-of ranking</span>
+    <span class="build-stamp">FOUNDATION BUILD v1 — 2026-08-14</span>
+  </div>
+</div>
+
+<div class="header-note">
+  <div class="sample-banner">
+    <b>SAMPLE DATA.</b> Every restaurant, tier name, star count, emoji and link below is placeholder
+    scaffolding so the columns have something to hold. Matt replaces all of it from his notes app.
+    The write-up column is his voice — nothing is pre-written in it on purpose.
+  </div>
+</div>
+
+<div class="table-wrap">
+<table id="phood-table">
+  <thead>
+    <tr>
+      <th data-col="rank" data-type="num" title="Click to restore list order">#<span class="arrow" id="ar-rank"></span></th>
+      <th data-col="stars" data-type="num">Stars<span class="arrow" id="ar-stars"></span></th>
+      <th data-col="name" data-type="str">Spot<span class="arrow" id="ar-name"></span></th>
+      <th data-col="vibe" data-type="str">Tags<span class="arrow" id="ar-vibe"></span></th>
+      <th data-col="hood" data-type="str">Neighborhood<span class="arrow" id="ar-hood"></span></th>
+      <th data-col="addr" data-type="str">Address<span class="arrow" id="ar-addr"></span></th>
+      <th data-col="menu" data-type="str">Menu<span class="arrow" id="ar-menu"></span></th>
+      <th data-col="pics" data-type="str">Pics<span class="arrow" id="ar-pics"></span></th>
+      <th data-col="take" data-type="str">Matt's Take<span class="arrow" id="ar-take"></span></th>
+    </tr>
+  </thead>
+  <tbody id="phood-body"><!-- rows rendered by JS --></tbody>
+</table>
+</div>
+
+<div class="legend">
+  <b>How the list works (same rules as the player lists):</b> spots move up, down, or off entirely.
+  A review drops from Klein or LaBan, a place gets hot, a visit disappoints — the list reacts.<br>
+  <b>Tags are placeholder vocabulary</b> — the emoji set is Matt's decision, same as the sports.
+  Sample set used here: 🔥 hot right now · 🆕 new / just opened · 🍺 brewery · 🍰 dessert stop ·
+  🌙 late night · 💰 cheap eats · 🍸 cocktails · 🥇 must-visit.<br>
+  <b>Geographic rule from the 7/29 tape:</b> restaurants stay Philadelphia; bars &amp; breweries deliberately
+  cast a wider net so the ones worth a drive make the cut.<br>
+  <b>Sorting:</b> click any column header. Click <b>#</b> to return to Matt's list order with the tiers showing.
+</div>
+
+<footer>
+  Watch101PHOOD · Foundation build for Matt to react to · Nothing here is final
+</footer>
+
+<script>
+/* ============================================================
+   PHOOD_FOUNDATION_V1 script.
+   Data lives in one array so Matt's real list can drop straight in.
+   tier:"..." rows are section dividers, same idea as the player lists.
+   ============================================================ */
+var PHOOD = [
+  {tier:"🍽️ The Main List — Ones to Watch"},
+  {rank:1, stars:5, name:"Kalaya",             vibe:"🔥🥇",   hood:"Fishtown",          addr:"TBD", take:""},
+  {rank:2, stars:5, name:"Zahav",              vibe:"🥇",     hood:"Society Hill",      addr:"TBD", take:""},
+  {rank:3, stars:4, name:"Angelo's Pizzeria",  vibe:"🔥💰",   hood:"Bella Vista",       addr:"TBD", take:""},
+  {rank:4, stars:4, name:"Laser Wolf",         vibe:"🔥",     hood:"Kensington",        addr:"TBD", take:""},
+  {rank:5, stars:4, name:"John's Roast Pork",  vibe:"💰🥇",   hood:"South Philly",      addr:"TBD", take:""},
+  {rank:6, stars:4, name:"Suraya",             vibe:"🍸",     hood:"Fishtown",          addr:"TBD", take:""},
+  {rank:7, stars:3, name:"Vernick Food & Drink", vibe:"🍸",   hood:"Rittenhouse",       addr:"TBD", take:""},
+
+  {tier:"🍺 Bars & Breweries — The Wider Net"},
+  {rank:8,  stars:4, name:"Monk's Café",       vibe:"🍺🌙",   hood:"Rittenhouse",       addr:"TBD", take:""},
+  {rank:9,  stars:4, name:"Human Robot",       vibe:"🍺🆕",   hood:"Kensington",        addr:"TBD", take:""},
+  {rank:10, stars:3, name:"Yards Brewing Co.", vibe:"🍺",     hood:"Northern Liberties", addr:"TBD", take:""},
+  {rank:11, stars:3, name:"Victory Brewing",   vibe:"🍺",     hood:"Downingtown (worth the drive)", addr:"TBD", take:""},
+
+  {tier:"🍰 Killer Desserts & Ice Cream"},
+  {rank:12, stars:4, name:"Franklin Fountain", vibe:"🍰",     hood:"Old City",          addr:"TBD", take:""},
+  {rank:13, stars:4, name:"John's Water Ice",  vibe:"🍰💰",   hood:"Bella Vista",       addr:"TBD", take:""},
+  {rank:14, stars:3, name:"Termini Bros",      vibe:"🍰",     hood:"South Philly",      addr:"TBD", take:""}
+];
+
+var sortState = {col:null, dir:1};
+
+function starStr(n){ return "⭐".repeat(n); }
+
+function rowHtml(p){
+  var take = p.take ? p.take : "— Matt's write-up goes here —";
+  return '<tr class="place">'
+    + '<td class="rank">' + p.rank + '</td>'
+    + '<td class="stars" data-v="' + p.stars + '">' + starStr(p.stars) + '</td>'
+    + '<td class="name">' + p.name + '</td>'
+    + '<td class="vibe">' + p.vibe + '</td>'
+    + '<td class="hood">' + p.hood + '</td>'
+    + '<td class="addr">' + p.addr + '</td>'
+    + '<td><a class="pill" href="#" onclick="return false;" title="Menu link goes here">MENU</a></td>'
+    + '<td><a class="pill ig" href="#" onclick="return false;" title="Instagram / pictures link goes here">📸 PICS</a></td>'
+    + '<td class="take">' + take + '</td>'
+    + '</tr>';
+}
+
+function render(list, withTiers){
+  var html = "";
+  for (var i = 0; i < list.length; i++){
+    var p = list[i];
+    if (p.tier){
+      if (withTiers) html += '<tr class="tier-row"><td colspan="9">' + p.tier + '</td></tr>';
+      continue;
+    }
+    html += rowHtml(p);
+  }
+  document.getElementById("phood-body").innerHTML = html;
+}
+
+function clearArrows(){
+  var ars = document.querySelectorAll(".arrow");
+  for (var i = 0; i < ars.length; i++) ars[i].textContent = "";
+}
+
+function sortBy(col, type){
+  clearArrows();
+  if (col === "rank"){        /* # restores Matt's list order, tiers visible */
+    sortState = {col:null, dir:1};
+    render(PHOOD, true);
+    return;
+  }
+  if (sortState.col === col){ sortState.dir = -sortState.dir; }
+  else { sortState = {col:col, dir:1}; }
+
+  var flat = PHOOD.filter(function(p){ return !p.tier; }).slice();
+  flat.sort(function(a,b){
+    var va = a[col], vb = b[col];
+    if (type === "num"){ return (va - vb) * sortState.dir; }
+    return String(va).localeCompare(String(vb)) * sortState.dir;
+  });
+  document.getElementById("ar-" + col).textContent = sortState.dir === 1 ? "▲" : "▼";
+  render(flat, false);
+}
+
+/* wire up headers */
+(function(){
+  var ths = document.querySelectorAll("thead th");
+  for (var i = 0; i < ths.length; i++){
+    (function(th){
+      th.addEventListener("click", function(){
+        sortBy(th.getAttribute("data-col"), th.getAttribute("data-type"));
+      });
+    })(ths[i]);
+  }
+  render(PHOOD, true);
+})();
+
+/* nav dropdown, same behaviour as the sport pages */
+function w101Drop(id, ev){
+  ev.stopPropagation();
+  var d = document.getElementById(id);
+  d.classList.toggle("open");
+}
+document.addEventListener("click", function(){
+  var d = document.getElementById("drop-lists");
+  if (d) d.classList.remove("open");
+});
+
+/* day / night toggle */
+function toggleDay(){
+  document.body.classList.toggle("day-mode");
+  document.getElementById("theme-toggle").textContent =
+    document.body.classList.contains("day-mode") ? "🌞" : "🌙";
+}
+</script>
+</body>
+</html>
