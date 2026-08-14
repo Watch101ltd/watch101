@@ -135,11 +135,48 @@ async function loadListFromStorage(){
   _setStamp(stamp || 'Sample data — not yet saved', true);
 }
 
-function starHtml(n){
-  var h = '<span class="priority-stars">';
-  for (var i = 1; i <= 5; i++) h += '<span class="pstar-slot' + (i <= n ? ' full' : '') + '"></span>';
-  return h + '</span>';
+/* PRIORITY_STARS_V1 (2026-08-14) — ported from the twins' renderPriorityStars +
+   setPriority + global .pstar click delegator. Adaptations: the value lives in
+   item.stars (PHOOD's field), and a set SAVES to the NAS immediately — every
+   other PHOOD mutation saves on the spot, stars should not be the odd one out.
+   Same-value click clears to zero, the twins' law. */
+function renderPriorityStars(pid, currentPriority){
+  var html = '<span class="priority-stars" data-pid="' + _esc(pid) + '">';
+  for(var n = 1; n <= 5; n++){
+    var filled = (n <= currentPriority) ? ' filled' : '';
+    html += '<span class="pstar' + filled + '" data-value="' + n + '" title="Priority ' + n + ' of 5">\u2605</span>';
+  }
+  html += '</span>';
+  return html;
 }
+function setPriority(pid, newPriority){
+  if(_blockIfReadOnly('setPriority')) return;
+  var idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  var entry = _watchList[idx];
+  var current = entry.stars || 0;
+  var finalValue = (current === newPriority) ? 0 : newPriority;
+  _watchList[idx] = Object.assign({}, entry, { stars: finalValue });
+  renderWatchList();
+  /* PRIORITY_CARD_SYNC_V1 pattern carried: repaint every widget wearing this pid,
+     so any future surface (card popup, quick edit) stays honest for free. */
+  try {
+    document.querySelectorAll('.priority-stars[data-pid="' + pid + '"]').forEach(function(w){
+      w.outerHTML = renderPriorityStars(pid, finalValue);
+    });
+  } catch(_e){}
+  autoSaveToPhoodNAS();
+}
+document.addEventListener('click', function(e){
+  var star = e.target.closest ? e.target.closest('.priority-stars .pstar') : null;
+  if(!star) return;
+  var wrap = star.closest('.priority-stars');
+  if(!wrap) return;
+  var pid = wrap.getAttribute('data-pid');
+  var value = parseInt(star.getAttribute('data-value'), 10);
+  if(!pid || !value) return;
+  setPriority(pid, value);
+});
 function _dragEnabled(){
   /* Same gate as the twins: rank order only (no sort), admin only. */
   if(_sortField !== null) return false;
@@ -160,7 +197,7 @@ function _rowHtml(p, rank){
     + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span></td>'
     + '<td class="l">' + p.hood + '</td>'
     + '<td class="l vibe">' + p.vibe + '</td>'
-    + '<td class="c">' + starHtml(p.stars) + '</td>'
+    + '<td class="c">' + renderPriorityStars(p.pid, p.stars || 0) + '</td>'
     + '<td class="l take">' + (p.take ? _esc(p.take) : '— Matt&#39;s write-up goes here —') + '</td>'
     + '<td class="l">' + p.addr + '</td>'
     + (p.menu ? '<td class="c"><a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">MENU</a></td>'
