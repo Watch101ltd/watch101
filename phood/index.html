@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Watch101PHOOD — FOUNDATION v1</title>
+<title>Watch101PHOOD — FOUNDATION v2</title>
 <!-- ============================================================
-     PHOOD_FOUNDATION_V1 — built 2026-08-14 by PC Walter.
-     Watch101/phood — Philadelphia Restaurants & Bars, Matt's idea
-     from the 7/29 + 7/30 meetings. Cloned off baseball's chrome
-     (SITE_CHROME_V1 nav, same CSS variable system, same dark look).
-     EVERYTHING BELOW THE HEADER IS SAMPLE DATA for Matt to react to.
-     No server, no live data — static foundation on purpose.
-     Colour accents pulled from the finalized restaurant logo family
-     (navy #06193e, checker red #d4111b) — FIRST PASS, not a decision.
+     PHOOD_FOUNDATION_V2 — rebuilt 2026-08-14 by PC Walter after the Dude's
+     review of v1: (1) it did not look like the baseball site, and (2) it used
+     the wrong logo. v2 clones baseball's actual chrome: the real :root and
+     day-mode variable blocks, the real .header / .toolbar / table CSS values
+     from mlb/index.html, SITE_CHROME_V1 nav + footer + script lifted verbatim
+     (hrefs adapted), and the finalized food logo from FINALIZED LOGOS 2026-08-06
+     (watch101_food_logo_FINAL.png — red gingham W, navy outline, fork+knife).
+     Sample data throughout. Static on purpose, no server.
      ============================================================ -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=Bowlby+One&family=Noto+Serif:wght@600;700&display=swap');
@@ -22,29 +22,163 @@
   --border:#1e2d3d;--border2:#253545;
   --gold:#f0a500;--gold2:#c47f00;
   --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --indigo:#6366f1;--indigo2:#4338ca;
   --turquoise:#06b6d4;--turquoise2:#0891b2;
+  --title-blue:#1d4ed8;--title-red:#dc2626;
   --text:#ffffff;--text2:#e2e8f0;--text3:#94a3b8;
-  /* PHOOD accents — from the finalized restaurant logo family */
-  --phood-navy:#06193e;--phood-red:#d4111b;--phood-red-soft:#de4148;
-  --title-red:#d4111b;
-  --header-grad-1:#0d1117;--header-grad-2:#131920;
-  --nba-accent:#f97316;--mlb-accent:#1d4ed8;--nfl-accent:#15803d;
+  /* Stat-role variables (change per mode for red/blue pair).
+     HITTER_RED_LIGHTEN_V1 (May 19, 2026) — TRIED AND ROLLED BACK.
+     Briefly lightened hitter red from #ef4444 to coral #f87171
+     (Tailwind red-400) to mirror the pitcher blue lift. Dude eyeballed
+     it on staging — verdict was "easier on eyes but too washed out,
+     harder to read." Reverted to the original #ef4444 the same session.
+     Backup of the lighter version sits at
+     Watch 101 HTML (Archive)/index_2026-05-19_1143_pre-coral-red.html
+     if anyone ever wants to re-evaluate. Do NOT re-propose lightening
+     this variable without checking with the Dude — he tested it and
+     said no. */
+  /* HITTER_VIOLET_V1 + PITCHER_GREEN_V1 (May 27, 2026 evening — PC Walter, per
+     JP + Matt). Original palette was #ef4444 red / #38bdf8 sky-blue. Matt
+     flagged red as hard to read on dark mode (5/27 Riverside meeting).
+     Tried coral / orange / pink in earlier sessions, all rejected.
+     5/27 PM: swapped hitter to #c4b5fd light violet. First attempt paired
+     it with the old sky blue, but JP said violet + sky-blue read too similar
+     — both cool pastels with similar luminance. Swapped pitcher to #86efac
+     light green for maximum color-wheel separation (violet sits opposite
+     yellow-green; green sits opposite red-violet). Dark-mode-friendly,
+     distinctive, doesn't clash with gold accents.
+     Day mode unchanged: #b91c1c / #1d4ed8 (Matt confirmed day mode is fine).
+     Full palette history + revert targets in:
+     Memory (Claude)/03 System Documentation/STAT_COLOR_PALETTE_HISTORY.md */
+  --stat-hitter:#86efac;--stat-pitcher:#38bdf8;
+  /* Header gradient stops — used by .header background */
+  --header-grad-1:#080c10;--header-grad-2:#0d1520;
+  /* OWNED_PLAYERS_V2 (2026-07-30, the Dude's call). V1 drew a thin gold outline
+     round an owned player's row. Matt could not tell owned from unowned at a
+     glance, because the table is already full of lines and one more line reads
+     as just another line. His words: "if it's all black and it's just lines,
+     it's hard to tell all the way through," and he asked for the grey fill he
+     uses in his own spreadsheets. So the row is now FILLED, not outlined.
+     The rule in both modes is the same: an owned row is LIGHTER than what is
+     around it. Night lifts black to grey. Day lifts grey to white, which is the
+     ceiling, so do not look for something lighter in day mode, there isn't any. */
+  --owned-row:#253545;--owned-row-hover:#2f4258;
 }
+/* ============ DAY MODE OVERRIDES ============
+   When <body> has class "day-mode", these variables replace the :root values.
+   Night-mode defaults above still apply until the toggle flips. */
 body.day-mode{
-  --bg:#f4f5f7;--surface:#ffffff;--surface2:#eef0f3;--surface3:#e4e7ec;
-  --border:#d4d9e0;--border2:#c2c9d3;
-  --text:#111827;--text2:#26303e;--text3:#5b6675;
-  --header-grad-1:#ffffff;--header-grad-2:#eef0f3;
+  /* DAYMODE_COOL_GRAY_V1 (April 24, 2026) — cool gray palette, card-on-paper contrast.
+     First attempt was warm paper (#ebe8df) — the Dude hated it, too beige.
+     Pivoted to cool gray: neutral, slightly cool undertone, no yellow/beige cast.
+       --bg        = light cool gray page background
+       --surface   = slightly lighter cool-white for cards/rows (card ON page)
+       --surface2  = muted cool gray for buttons/search boxes
+       --surface3  = slightly deeper cool gray for rare uses
+     Text stays dark. Still not pure white anywhere — that was the blinding problem. */
+  --bg:#e9ebef;--surface:#f4f5f8;--surface2:#dde0e5;--surface3:#cdd1d7;
+  --border:#c2c6cc;--border2:#a5aab2;
+  --gold:#a16207;--gold2:#854d0e;
+  --turquoise:#000000;--turquoise2:#000000;
+  --title-blue:#1d4ed8;--title-red:#b91c1c;
+  --text:#1a1a1a;--text2:#333333;--text3:#666666;
+  /* HITTER_RED_LIGHTEN_V1 (May 19, 2026) — TRIED AND ROLLED BACK (day-mode pair).
+     See night-mode breadcrumb above for the full story. */
+  --stat-hitter:#b91c1c;--stat-pitcher:#1d4ed8;
+  --header-grad-1:#f4f5f8;--header-grad-2:#e5e7ec;
+  --owned-row:#ffffff;--owned-row-hover:#eef1f6;
 }
-body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif;font-size:14px}
 
-/* ================= SITE CHROME (cloned from baseball) ================= */
+/* PHOOD accents — from watch101_food_logo_FINAL.png (gingham red, navy outline) */
+:root{--phood-red:#d4111b;--phood-red-soft:#de4148;--phood-navy:#06193e}
+
+/* ================= PHOOD page styles — cloned from mlb/index.html ================= */
+body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif;font-size:14px;font-weight:700;min-height:100vh;overflow-x:hidden}
+.header{background:linear-gradient(135deg,var(--header-grad-1) 0%,var(--header-grad-2) 50%,var(--header-grad-1) 100%);border-bottom:1px solid var(--title-red);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;z-index:100}
+.logo-wrap{display:flex;align-items:baseline;gap:12px}
+.logo{font-family:'Bowlby One',sans-serif;font-size:64px;letter-spacing:0.08em;line-height:1;display:flex;align-items:center;gap:0.15em}
+.logo-img{height:1.5em;width:auto;display:block;flex-shrink:0}
+.logo .logo-phood{color:var(--phood-red)}
+.logo-sub{font-family:'Nunito Sans',sans-serif;font-size:10px;letter-spacing:0.2em;color:var(--turquoise);text-transform:uppercase}
+.header-right{display:flex;align-items:center;gap:14px}
+.list-title-stack{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+#theme-toggle{background:transparent;border:1px solid var(--border2);color:var(--text);font-size:14px;cursor:pointer;padding:4px 10px;border-radius:6px;line-height:1;transition:all 0.15s;user-select:none}
+#theme-toggle:hover{background:var(--surface2);border-color:var(--gold)}
+.toolbar{padding:0.75rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--title-red);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:200px;max-width:320px}
+.search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 12px 7px 32px;font-size:13px;color:var(--text);font-family:'Nunito Sans',sans-serif;outline:none}
+.search-wrap input:focus{border-color:var(--gold2)}
+.search-wrap input::placeholder{color:var(--text3)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px}
+.filter-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.filter-tab{padding:6px 12px;border-radius:5px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);transition:all 0.15s;letter-spacing:0.05em}
+.filter-tab.active{background:var(--indigo2);color:#fff;border-color:var(--indigo)}
+.filter-tab:hover:not(.active){color:var(--text2)}
+.toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.main{padding:0 1.5rem 3rem}
+.table-wrap{overflow-x:auto}
+.table-wrap thead{position:sticky;top:0;z-index:10}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:1180px;margin-top:1rem}
+th{padding:5px 4px;font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--text);text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface);overflow:hidden;border-bottom:2px solid var(--phood-red)}
+th.l{text-align:left}
+th:hover{color:var(--gold)}
+th .arrow{font-size:9px;margin-left:2px}
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s}
+tbody tr:hover{background:var(--surface2)}
+td{padding:5px 4px;font-size:11px;vertical-align:middle;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+td.l{text-align:left}
+td.c{text-align:center}
+.rank-cell{display:flex;align-items:center;justify-content:center;gap:2px}
+.player-name{font-weight:500;font-size:14px;color:var(--text);white-space:nowrap}
+.priority-stars{display:inline-flex;gap:1px;font-size:14px;line-height:1;cursor:default;user-select:none;vertical-align:middle;}
+.priority-stars .pstar-slot{position:relative;display:inline-block;width:14px;height:14px;color:#3a3f4a;}
+.priority-stars .pstar-slot::before{content:'\2605';position:absolute;left:0;top:0;width:100%;height:100%;color:inherit;}
+.priority-stars .pstar-slot.full::before{color:#fbbf24;}
+body.day-mode .priority-stars .pstar-slot{color:#cbd2dc}
+td.vibe{font-size:15px;letter-spacing:2px}
+td.take{color:var(--text3);font-style:italic;white-space:normal;min-width:230px;font-weight:400}
+.pill{display:inline-block;background:linear-gradient(135deg,var(--gold) 0%,#c9a227 100%);color:#1a1a1a;font-weight:800;font-size:10px;letter-spacing:0.04em;padding:3px 9px;border-radius:5px;text-decoration:none;white-space:nowrap}
+.pill.ig{background:var(--surface3);color:var(--text2);border:1px solid var(--border2)}
+tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;text-align:left;padding:7px 10px;border-top:2px solid var(--phood-red);border-bottom:2px solid var(--phood-red)}
+/* The gingham strip — the checkered pattern off the real food logo */
+.checker-strip{height:14px;background:repeating-linear-gradient(90deg,rgba(212,17,27,0.85) 0 12px,rgba(212,17,27,0) 12px 24px),repeating-linear-gradient(0deg,rgba(212,17,27,0.85) 0 7px,rgba(212,17,27,0) 7px 14px),#ffffff;border-bottom:2px solid var(--phood-navy)}
+.sample-banner{margin:1rem 0 0;background:var(--surface2);border:1px dashed var(--gold2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2);line-height:1.5;font-weight:400}
+.sample-banner b{color:var(--gold)}
+.legend{margin:1.5rem 0 0;font-size:12px;color:var(--text3);line-height:1.8;font-weight:400}
+.legend b{color:var(--text2)}
+@media (max-width:768px){ .logo{font-size:34px} td.take{min-width:160px} }
+
+/* ===== SITE_CHROME_V1 ported from home.html 2026-07-29 20:45 by Walter. =====
+   Only w101- namespaced rules came across, so nothing can collide with the
+   tracker's own class names. Every colour is an existing theme var, so day mode
+   keeps working. The tracker's own #theme-toggle stays in charge of the theme;
+   the hub's duplicate button was stripped on purpose.
+   TOMORROW, when this file becomes mlb/index.html, the nav and footer hrefs need
+   a ../ prefix: about.html, contact.html, updates.html, home.html, nfl/, nba/.
+   The Baseball entry is already ./ and needs no change. ===== */
+:root{--mlb-accent:#1d4ed8;--nfl-accent:#15803d;--nba-accent:#f97316}
+/* =========================================================================
+   SITE_CHROME_V1  NAV START
+   Lift this whole block (CSS + the <header> markup) into the list pages.
+   Sticky from 768px up, static below, per the Dude 2026-07-29.
+   ========================================================================= */
 .w101-nav{
   background:linear-gradient(135deg,var(--header-grad-1) 0%,var(--header-grad-2) 50%,var(--header-grad-1) 100%);
   border-bottom:1px solid var(--title-red);
   position:static;top:0;z-index:900;
 }
-.w101-nav-inner{max-width:1240px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+/* NAV_STATIC_V1 (2026-07-30, the Dude's call, fixes Bug #24).
+   The nav used to go position:sticky from 768px up. That put it on the same
+   strip of screen as the tables' OWN sticky column header, and the nav won, so
+   scrolling into a long list left you with columns of numbers and no labels.
+   His decision: the stat columns are the ones that need to stay put, the site
+   nav does not. So the nav scrolls away and you go back to the top to reach it.
+   DO NOT re-add position:sticky to .w101-nav without solving the column header
+   collision first. Removing this line is what fixed the bug. */
+.w101-nav-inner{
+  max-width:1240px;margin:0 auto;padding:14px 20px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
 .w101-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
 .w101-brand-word{font-family:'Bowlby One',sans-serif;font-size:26px;letter-spacing:.04em;color:var(--title-red);line-height:1}
 .w101-brand img{height:34px;width:auto;display:block}
@@ -56,111 +190,93 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif
   transition:background .15s,color .15s;white-space:nowrap;
 }
 .w101-menu a:hover,.w101-menu button:hover{background:var(--surface2);color:var(--text)}
+/* dropdown */
 .w101-drop{position:relative}
 .w101-drop>button::after{content:' \25BE';font-size:11px;opacity:.7}
 .w101-drop-panel{
   display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:210px;
   background:var(--surface);border:1px solid var(--border2);border-radius:8px;
-  box-shadow:0 12px 34px rgba(0,0,0,.45);overflow:hidden;padding:5px;z-index:1000;
+  box-shadow:0 12px 34px rgba(0,0,0,.45);overflow:hidden;padding:5px;
+  /* Bug #47 (2026-08-07): the panel had NO z-index, so later nav elements (Subscribe, socials)
+     painted OVER it and read as "transparency". The background was always opaque. */
+  z-index:1000;
 }
 .w101-drop.open .w101-drop-panel{display:block}
 .w101-drop-panel a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:5px;font-size:15px}
 .w101-drop-panel a span.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.w101-sub{
+  font-family:'Noto Serif',serif;font-weight:700;font-size:15px;
+  background:var(--gold);color:#000;border:1px solid var(--gold);
+  padding:9px 16px;border-radius:6px;cursor:pointer;text-decoration:none;white-space:nowrap;
+}
+.w101-sub:hover{background:#fbbf24;border-color:#fbbf24}
+.w101-sub.pending{opacity:.62;cursor:default}
 .w101-theme{
   background:var(--surface2);border:1px solid var(--border);color:var(--text2);
   width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:15px;line-height:1;
 }
-
-/* ============ PHOOD signature: the checker strip Matt liked ============ */
-.checker-strip{
-  height:12px;
-  background:repeating-conic-gradient(var(--phood-navy) 0% 25%, #ffffff 0% 50%);
-  background-size:24px 24px;
-  border-bottom:2px solid var(--phood-red);
+/* social row. Top and prominent, the Dude's call over Matt's bottom placement. */
+.w101-social{display:flex;align-items:center;gap:7px}
+.w101-social a{
+  width:34px;height:34px;border-radius:7px;display:grid;place-items:center;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text2);text-decoration:none;transition:transform .12s,background .15s,color .15s;
+}
+.w101-social a:hover{background:var(--title-red);color:#fff;transform:translateY(-2px)}
+.w101-social a svg{width:17px;height:17px;fill:currentColor;display:block}
+.w101-social a.pending{opacity:.45}
+.w101-social a.pending:hover{background:var(--surface2);color:var(--text2);transform:none}
+/* ---------------- footer, four bands ---------------- */
+.w101-foot{margin-top:64px;border-top:1px solid var(--border);background:var(--surface)}
+.w101-foot-inner{max-width:1240px;margin:0 auto;padding:32px 20px 26px;text-align:center}
+.w101-foot-links{display:flex;justify-content:center;gap:8px 22px;flex-wrap:wrap;margin-bottom:20px}
+.w101-foot-links a{color:var(--text2);text-decoration:none;font-size:15px;font-weight:600}
+.w101-foot-links a:hover{color:var(--gold)}
+.w101-foot .w101-social{justify-content:center;margin-bottom:20px}
+.w101-copy{font-size:13px;color:var(--text3);font-family:'Nunito Sans',sans-serif;margin-bottom:14px}
+.w101-top{
+  background:none;border:1px solid var(--border2);color:var(--text3);
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:.13em;
+  padding:9px 17px;border-radius:6px;cursor:pointer;text-transform:uppercase;
+}
+.w101-top:hover{color:var(--text);border-color:var(--text3)}
+@media(max-width:620px){
+  .w101-nav-inner{gap:12px}
+  .w101-menu{width:100%;margin-left:0;justify-content:center}
+  .w101-social{width:100%;justify-content:center;order:5}
+  .hero{padding-top:36px}
 }
 
-/* ====================== PAGE HEADER ====================== */
-.header{max-width:1240px;margin:0 auto;padding:22px 20px 10px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.logo{display:flex;align-items:center;gap:10px;cursor:default}
-.logo-watch{font-family:'Bowlby One',sans-serif;font-size:40px;color:var(--title-red);letter-spacing:.03em}
-.logo img{height:56px;width:auto}
-.logo-phood{font-family:'Bowlby One',sans-serif;font-size:40px;color:var(--text);letter-spacing:.06em}
-.list-sub{display:flex;flex-direction:column;gap:3px;margin-left:8px}
-.list-title{font-size:18px;font-weight:800;color:var(--gold);letter-spacing:.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,.4)}
-.list-subtitle{font-size:11px;color:var(--text2);opacity:.85;letter-spacing:.08em;text-transform:uppercase}
-.build-stamp{font-size:11px;color:var(--turquoise2)}
-.header-note{
-  max-width:1240px;margin:8px auto 0;padding:10px 20px;
-}
-.sample-banner{
-  background:var(--surface2);border:1px dashed var(--gold2);border-radius:8px;
-  padding:10px 14px;font-size:13px;color:var(--text2);line-height:1.5;
-}
-.sample-banner b{color:var(--gold)}
-
-/* ====================== TABLE ====================== */
-.table-wrap{max-width:1240px;margin:14px auto 40px;padding:0 20px}
-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-thead th{
-  position:sticky;top:0;z-index:10;
-  background:var(--surface3);color:var(--text2);
-  font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
-  padding:11px 10px;text-align:left;white-space:nowrap;
-  border-bottom:2px solid var(--phood-red);
-  cursor:pointer;user-select:none;
-}
-thead th:hover{color:var(--text);background:var(--border)}
-thead th .arrow{font-size:10px;opacity:.8;margin-left:4px}
-tbody td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
-tbody tr.place:hover{background:var(--surface2)}
-td.rank{font-weight:900;color:var(--text3);width:44px;text-align:center}
-td.stars{white-space:nowrap;letter-spacing:1px;width:110px}
-td.name{font-weight:800;font-size:15px;color:var(--text);white-space:nowrap}
-td.vibe{font-size:16px;letter-spacing:2px;white-space:nowrap}
-td.hood{color:var(--text2);white-space:nowrap}
-td.addr{color:var(--text3);white-space:nowrap}
-td.take{color:var(--text3);font-style:italic;min-width:220px}
-.pill{
-  display:inline-block;background:linear-gradient(135deg,var(--gold) 0%,#c9a227 100%);
-  color:#1a1a1a;font-weight:800;font-size:11px;letter-spacing:.04em;
-  padding:4px 10px;border-radius:6px;text-decoration:none;white-space:nowrap;
-}
-.pill.ig{background:var(--surface3);color:var(--text2);border:1px solid var(--border2)}
-body.day-mode .pill.ig{background:var(--surface2)}
-
-/* Tier divider rows — sport pages carry these at full-strength accent.
-   PHOOD first pass uses the logo red. */
-tr.tier-row td{
-  background:var(--phood-navy);color:#ffffff;
-  font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;
-  padding:9px 12px;border-top:2px solid var(--phood-red);border-bottom:2px solid var(--phood-red);
-}
-body.day-mode tr.tier-row td{color:#ffffff}
-
-.legend{
-  max-width:1240px;margin:0 auto 50px;padding:0 20px;font-size:12px;color:var(--text3);line-height:1.7;
-}
-.legend b{color:var(--text2)}
-footer{
-  border-top:1px solid var(--border);padding:18px 20px 30px;text-align:center;
-  font-size:12px;color:var(--text3);
-}
-@media (max-width:768px){
-  .logo-watch,.logo-phood{font-size:28px}
-  .logo img{height:40px}
-  td.addr,td.take{white-space:normal}
-}
 </style>
 </head>
 <body>
 
-<!-- ============ SITE NAV (SITE_CHROME_V1 clone, links go up one level) ============ -->
+<script>
+/* EARLY THEME INIT — runs before any visible content paints.
+   NIGHT_DEFAULT_V1 (June 10, 2026 — PC Walter, per the Dude): NIGHT is the
+   default, always. Day mode applies ONLY when the user explicitly chose it
+   (saved 'day' in localStorage via the toggle). The old OS color-scheme
+   fallback is gone — it was forcing day mode on phones whose OS reports
+   "prefers light," which is exactly how the Dude got stuck in day mode
+   with the toggle hidden. */
+(function(){
+  try {
+    var saved = localStorage.getItem('watch101-theme');
+    var isDay = (saved === 'day');
+    if (isDay) document.body.classList.add('day-mode');
+  } catch(e) { /* localStorage blocked — default to night */ }
+})();
+</script>
+
+<!-- ===================== SITE_CHROME_V1 NAV MARKUP START ===================== -->
 <header class="w101-nav">
   <div class="w101-nav-inner">
+
     <a class="w101-brand" href="../" title="Watch101 home">
       <span class="w101-brand-word">Watch</span>
-      <img src="images/Watch101_Restaurant_NavyField_512.png" alt="101 PHOOD">
+      <img src="data:image/png;base64,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" alt="101">
     </a>
+
     <nav class="w101-menu">
       <div class="w101-drop" id="drop-lists">
         <button type="button" onclick="w101Drop('drop-lists',event)" aria-haspopup="true">The Lists</button>
@@ -172,186 +288,290 @@ footer{
         </div>
       </div>
       <a href="../about.html">About Us</a>
-      <a href="../updates.html">Updates</a>
+      <a href="../updates.html" id="nav-updates">Updates</a>
       <a href="../contact.html">Contact</a>
-      <button class="w101-theme" id="theme-toggle" onclick="toggleDay()" title="Toggle day / night mode">🌙</button>
+      <a class="w101-sub" id="subscribe-btn" href="#">Subscribe</a>
+      <!-- theme toggle omitted: the tracker header already owns #theme-toggle -->
     </nav>
+
+    <div class="w101-social" id="social-row"></div>
   </div>
 </header>
+<!-- ====================== SITE_CHROME_V1 NAV MARKUP END ====================== -->
 
-<!-- The checkered pattern Matt called out on 8/3: "I like the checkered pattern" -->
+<!-- The gingham checker strip — the pattern off the real food logo, the one Matt liked -->
 <div class="checker-strip"></div>
 
 <div class="header">
-  <div class="logo">
-    <span class="logo-watch">Watch</span>
-    <img src="images/Watch101_Restaurant_WhiteField_512.png" alt="101" id="logo-img">
-    <span class="logo-phood">PHOOD</span>
+  <div class="logo-wrap">
+    <div class="logo" title="Watch101 PHOOD"><img class="logo-img" src="images/watch101_food_logo_FINAL.png" alt="Watch101"><span class="logo-phood">PHOOD</span></div>
+    <div class="list-title-stack">
+      <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4)">Philadelphia Restaurants &amp; Bars</span><br><span style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">Ones to watch — not a best-of</span><br><span style="font-size:11px;color:var(--turquoise2);margin-top:3px;display:inline-block">FOUNDATION BUILD v2 — 2026-08-14 — SAMPLE DATA</span></div>
+    </div>
   </div>
-  <div class="list-sub">
-    <span class="list-title">Philadelphia Restaurants &amp; Bars</span>
-    <span class="list-subtitle">Ones to Watch — not a best-of ranking</span>
-    <span class="build-stamp">FOUNDATION BUILD v1 — 2026-08-14</span>
+  <div class="header-right"></div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input id="phood-search" type="text" placeholder="Search spots or neighborhoods..." oninput="applySearch()">
+  </div>
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="setCat('all',this)">All</button>
+    <button class="filter-tab" onclick="setCat('rest',this)">🍽️ Restaurants</button>
+    <button class="filter-tab" onclick="setCat('bar',this)">🍺 Bars &amp; Breweries</button>
+    <button class="filter-tab" onclick="setCat('dess',this)">🍰 Desserts</button>
+  </div>
+  <div class="toolbar-right">
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
   </div>
 </div>
 
-<div class="header-note">
-  <div class="sample-banner">
-    <b>SAMPLE DATA.</b> Every restaurant, tier name, star count, emoji and link below is placeholder
-    scaffolding so the columns have something to hold. Matt replaces all of it from his notes app.
-    The write-up column is his voice — nothing is pre-written in it on purpose.
+<div class="main">
+  <div class="sample-banner"><b>SAMPLE DATA.</b> Every spot, tier, star count, emoji and link below is placeholder scaffolding so the columns have something to hold. Matt replaces all of it from his notes app. The write-up column is his voice — nothing is pre-written in it on purpose.</div>
+
+  <div class="table-wrap">
+    <table id="phood-table">
+      <thead>
+        <tr>
+          <th class="c" data-col="rank" title="Click to restore Matt's list order" style="text-align:center;width:44px">#<span class="arrow" id="ar-rank"></span></th>
+          <th data-col="stars" style="text-align:center;width:100px">Stars<span class="arrow" id="ar-stars"></span></th>
+          <th class="l" data-col="name">Spot<span class="arrow" id="ar-name"></span></th>
+          <th class="l" data-col="vibe">Tags<span class="arrow" id="ar-vibe"></span></th>
+          <th class="l" data-col="hood">Neighborhood<span class="arrow" id="ar-hood"></span></th>
+          <th class="l" data-col="addr">Address<span class="arrow" id="ar-addr"></span></th>
+          <th data-col="menu" style="text-align:center;width:70px">Menu</th>
+          <th data-col="pics" style="text-align:center;width:80px">Pics</th>
+          <th class="l" data-col="take">Matt's Take<span class="arrow" id="ar-take"></span></th>
+        </tr>
+      </thead>
+      <tbody id="phood-body"></tbody>
+    </table>
+  </div>
+
+  <div class="legend">
+    <b>How the list works (same rules as the player lists):</b> spots move up, down, or off entirely. A review drops from Klein or LaBan, a place gets hot, a visit disappoints — the list reacts.<br>
+    <b>Tags are placeholder vocabulary</b> — the emoji set is Matt's call, same as the sports. Sample set: 🔥 hot right now · 🆕 new / just opened · 🍺 brewery · 🍰 dessert stop · 🌙 late night · 💰 cheap eats · 🍸 cocktails · 🥇 must-visit.<br>
+    <b>Geographic rule from the 7/29 tape:</b> restaurants stay Philadelphia; bars &amp; breweries deliberately cast a wider net so the ones worth a drive make the cut.<br>
+    <b>Sorting:</b> click any column header. Click <b>#</b> to return to Matt's list order with the tiers showing. Filtering or searching flattens the tiers while active.
   </div>
 </div>
 
-<div class="table-wrap">
-<table id="phood-table">
-  <thead>
-    <tr>
-      <th data-col="rank" data-type="num" title="Click to restore list order">#<span class="arrow" id="ar-rank"></span></th>
-      <th data-col="stars" data-type="num">Stars<span class="arrow" id="ar-stars"></span></th>
-      <th data-col="name" data-type="str">Spot<span class="arrow" id="ar-name"></span></th>
-      <th data-col="vibe" data-type="str">Tags<span class="arrow" id="ar-vibe"></span></th>
-      <th data-col="hood" data-type="str">Neighborhood<span class="arrow" id="ar-hood"></span></th>
-      <th data-col="addr" data-type="str">Address<span class="arrow" id="ar-addr"></span></th>
-      <th data-col="menu" data-type="str">Menu<span class="arrow" id="ar-menu"></span></th>
-      <th data-col="pics" data-type="str">Pics<span class="arrow" id="ar-pics"></span></th>
-      <th data-col="take" data-type="str">Matt's Take<span class="arrow" id="ar-take"></span></th>
-    </tr>
-  </thead>
-  <tbody id="phood-body"><!-- rows rendered by JS --></tbody>
-</table>
-</div>
-
-<div class="legend">
-  <b>How the list works (same rules as the player lists):</b> spots move up, down, or off entirely.
-  A review drops from Klein or LaBan, a place gets hot, a visit disappoints — the list reacts.<br>
-  <b>Tags are placeholder vocabulary</b> — the emoji set is Matt's decision, same as the sports.
-  Sample set used here: 🔥 hot right now · 🆕 new / just opened · 🍺 brewery · 🍰 dessert stop ·
-  🌙 late night · 💰 cheap eats · 🍸 cocktails · 🥇 must-visit.<br>
-  <b>Geographic rule from the 7/29 tape:</b> restaurants stay Philadelphia; bars &amp; breweries deliberately
-  cast a wider net so the ones worth a drive make the cut.<br>
-  <b>Sorting:</b> click any column header. Click <b>#</b> to return to Matt's list order with the tiers showing.
-</div>
-
-<footer>
-  Watch101PHOOD · Foundation build for Matt to react to · Nothing here is final
+<!-- ==================== SITE_CHROME_V1 FOOTER MARKUP START ==================== -->
+<footer class="w101-foot">
+  <div class="w101-foot-inner">
+    <div class="w101-foot-links">
+      <a href="../">Home</a>
+      <a href="../nba/">Watch101NBA</a>
+      <a href="../mlb/">Watch101MLB</a>
+      <a href="../nfl/">Watch101NFL</a>
+      <a href="./">Watch101PHOOD</a>
+      <a href="../about.html">About Us</a>
+      <a href="../updates.html">Updates</a>
+      <a href="../contact.html">Contact</a>
+    </div>
+    <div class="w101-social" id="social-row-foot"></div>
+    <p class="w101-copy">Copyright &copy; 2026 Watch101. All rights reserved.</p>
+    <button class="w101-top" type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back to top</button>
+  </div>
 </footer>
-
+<!-- ===================== SITE_CHROME_V1 FOOTER MARKUP END ===================== -->
 <script>
-/* ============================================================
-   PHOOD_FOUNDATION_V1 script.
-   Data lives in one array so Matt's real list can drop straight in.
-   tier:"..." rows are section dividers, same idea as the player lists.
-   ============================================================ */
+/* ===========================================================================
+   SITE_CHROME_V1 SCRIPT. Lift this with the nav.
+
+   🔧 THE ONLY PART YOU EVER NEED TO EDIT IS THE CONFIG BLOCK BELOW.
+   Fill in a URL and that icon or button turns on by itself. Leave it empty
+   and it renders dimmed and unclickable, which is deliberate: Matt wanted the
+   social links visible early to put pressure on himself to finish the accounts.
+   =========================================================================== */
+var W101 = {
+  // Paste the real URLs here as Matt creates the accounts. Empty string = dimmed.
+  substack : '',
+  social   : {
+    x        : '',
+    instagram: '',
+    facebook : '',
+    bluesky  : '',
+    youtube  : '',
+    linkedin : ''
+  }
+};
+
+/* --- tiny inline SVG icons, so there is no icon font or external request --- */
+var W101_ICONS = {
+  x:'<svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.4l-5-6.6L5.8 22H2.7l8.1-9.3L1.5 2H8l4.7 6.2zm-1.1 18h1.8L6.3 3.8H4.4z"/></svg>',
+  instagram:'<svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.07 1.2.05 1.8.25 2.2.42.6.22 1 .5 1.5.94.44.44.72.85.94 1.45.17.43.37 1.05.42 2.25.06 1.28.07 1.68.07 4.9s0 3.6-.07 4.9c-.05 1.2-.25 1.8-.42 2.2-.22.6-.5 1-.94 1.5-.44.44-.85.72-1.45.94-.43.17-1.05.37-2.25.42-1.28.06-1.68.07-4.9.07s-3.6 0-4.9-.07c-1.2-.05-1.8-.25-2.2-.42-.6-.22-1-.5-1.5-.94-.44-.44-.72-.85-.94-1.45-.17-.43-.37-1.05-.42-2.25C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.9c.05-1.2.25-1.8.42-2.2.22-.6.5-1 .94-1.5.44-.44.85-.72 1.45-.94.43-.17 1.05-.37 2.25-.42C8.4 2.2 8.8 2.2 12 2.2zm0 1.98c-3.14 0-3.5.01-4.74.07-.95.04-1.47.2-1.81.33-.46.18-.78.39-1.12.73-.34.34-.55.66-.73 1.12-.13.34-.29.86-.33 1.81-.06 1.24-.07 1.6-.07 4.74s.01 3.5.07 4.74c.04.95.2 1.47.33 1.81.18.46.39.78.73 1.12.34.34.66.55 1.12.73.34.13.86.29 1.81.33 1.24.06 1.6.07 4.74.07s3.5-.01 4.74-.07c.95-.04 1.47-.2 1.81-.33.46-.18.78-.39 1.12-.73.34-.34.55-.66.73-1.12.13-.34.29-.86.33-1.81.06-1.24.07-1.6.07-4.74s-.01-3.5-.07-4.74c-.04-.95-.2-1.47-.33-1.81a3.02 3.02 0 00-.73-1.12 3.02 3.02 0 00-1.12-.73c-.34-.13-.86-.29-1.81-.33-1.24-.06-1.6-.07-4.74-.07zM12 7.9a4.1 4.1 0 110 8.2 4.1 4.1 0 010-8.2zm0 1.98a2.12 2.12 0 100 4.24 2.12 2.12 0 000-4.24zm5.23-2.2a.96.96 0 11-1.92 0 .96.96 0 011.92 0z"/></svg>',
+  facebook:'<svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 10-11.56 9.88v-7H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.88h-2.33v7A10 10 0 0022 12z"/></svg>',
+  bluesky:'<svg viewBox="0 0 24 24"><path d="M6.2 4.2C8.5 5.9 11 9.5 12 11.4c1-1.9 3.5-5.5 5.8-7.2 1.7-1.2 4.2-2.2 4.2 1 0 .6-.4 4.9-.6 5.6-.7 2.4-3.1 3-5.3 2.6 3.8.7 4.8 2.9 2.7 5.1-3.9 4.1-5.6-1-6-2.3-.1-.4-.2-.6-.3-.6s-.2.2-.3.6c-.4 1.3-2.1 6.4-6 2.3-2.1-2.2-1.1-4.4 2.7-5.1-2.2.4-4.6-.2-5.3-2.6C2.4 10.1 2 5.8 2 5.2c0-3.2 2.5-2.2 4.2-1z"/></svg>',
+  youtube:'<svg viewBox="0 0 24 24"><path d="M23 12s0-3.2-.4-4.7c-.2-.9-.9-1.5-1.7-1.7C19.3 5.2 12 5.2 12 5.2s-7.3 0-8.9.4c-.8.2-1.5.8-1.7 1.7C1 8.8 1 12 1 12s0 3.2.4 4.7c.2.9.9 1.5 1.7 1.7 1.6.4 8.9.4 8.9.4s7.3 0 8.9-.4c.8-.2 1.5-.8 1.7-1.7.4-1.5.4-4.7.4-4.7zM9.8 15.3V8.7l6 3.3z"/></svg>',
+  linkedin:'<svg viewBox="0 0 24 24"><path d="M20.4 20.4h-3.6v-5.6c0-1.3-.5-2.2-1.7-2.2-.9 0-1.4.6-1.7 1.2-.1.2-.1.5-.1.8v5.8H9.7s.05-9.4 0-10.4h3.6v1.5c.5-.7 1.3-1.8 3.2-1.8 2.3 0 4 1.5 4 4.8v6zM5.9 8.6h-.02c-1.2 0-2-.8-2-1.8s.8-1.8 2.05-1.8c1.2 0 1.98.8 2 1.8 0 1-.78 1.8-2.03 1.8zM7.7 20.4H4.1V10h3.6z"/></svg>'
+};
+var W101_LABELS = {x:'X',instagram:'Instagram',facebook:'Facebook',bluesky:'Bluesky',youtube:'YouTube',linkedin:'LinkedIn'};
+
+/* build the social rows from config, top and footer */
+(function(){
+  var html='';
+  for (var k in W101.social){
+    if(!W101_ICONS[k]) continue;
+    var url=(W101.social[k]||'').trim();
+    html += url
+      ? '<a href="'+url+'" target="_blank" rel="noopener" title="'+W101_LABELS[k]+'" aria-label="'+W101_LABELS[k]+'">'+W101_ICONS[k]+'</a>'
+      : '<a class="pending" href="#" title="'+W101_LABELS[k]+' account is not up yet" aria-label="'+W101_LABELS[k]+' coming soon" onclick="return false">'+W101_ICONS[k]+'</a>';
+  }
+  ['social-row','social-row-foot'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.innerHTML=html;
+  });
+})();
+
+/* wire the Subscribe buttons. No Substack URL yet = dimmed and honest. */
+(function(){
+  var url=(W101.substack||'').trim();
+  ['subscribe-btn','subscribe-btn-2'].forEach(function(id){
+    var b=document.getElementById(id); if(!b) return;
+    if(url){ b.href=url; b.target='_blank'; b.rel='noopener'; }
+    else{
+      b.classList.add('pending');
+      b.href='#';
+      b.title='The newsletter is not open yet. Check back shortly.';
+      b.onclick=function(){ return false; };
+    }
+  });
+})();
+
+/* dropdown. Click to open, click anywhere else or press Escape to close. */
+function w101Drop(id,ev){
+  if(ev) ev.stopPropagation();
+  var d=document.getElementById(id); if(!d) return;
+  var open=d.classList.contains('open');
+  document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+  if(!open) d.classList.add('open');
+}
+document.addEventListener('click',function(){
+  document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+});
+
+/* theme toggle omitted on purpose: the tracker page owns toggleTheme(). */
+</script>
+<script>
+
 var PHOOD = [
   {tier:"🍽️ The Main List — Ones to Watch"},
-  {rank:1, stars:5, name:"Kalaya",             vibe:"🔥🥇",   hood:"Fishtown",          addr:"TBD", take:""},
-  {rank:2, stars:5, name:"Zahav",              vibe:"🥇",     hood:"Society Hill",      addr:"TBD", take:""},
-  {rank:3, stars:4, name:"Angelo's Pizzeria",  vibe:"🔥💰",   hood:"Bella Vista",       addr:"TBD", take:""},
-  {rank:4, stars:4, name:"Laser Wolf",         vibe:"🔥",     hood:"Kensington",        addr:"TBD", take:""},
-  {rank:5, stars:4, name:"John's Roast Pork",  vibe:"💰🥇",   hood:"South Philly",      addr:"TBD", take:""},
-  {rank:6, stars:4, name:"Suraya",             vibe:"🍸",     hood:"Fishtown",          addr:"TBD", take:""},
-  {rank:7, stars:3, name:"Vernick Food & Drink", vibe:"🍸",   hood:"Rittenhouse",       addr:"TBD", take:""},
-
+  {rank:1, stars:5, cat:"rest", name:"Kalaya",              vibe:"🔥🥇", hood:"Fishtown",          addr:"TBD"},
+  {rank:2, stars:5, cat:"rest", name:"Zahav",               vibe:"🥇",   hood:"Society Hill",      addr:"TBD"},
+  {rank:3, stars:4, cat:"rest", name:"Angelo's Pizzeria",   vibe:"🔥💰", hood:"Bella Vista",       addr:"TBD"},
+  {rank:4, stars:4, cat:"rest", name:"Laser Wolf",          vibe:"🔥",   hood:"Kensington",        addr:"TBD"},
+  {rank:5, stars:4, cat:"rest", name:"John's Roast Pork",   vibe:"💰🥇", hood:"South Philly",      addr:"TBD"},
+  {rank:6, stars:4, cat:"rest", name:"Suraya",              vibe:"🍸",   hood:"Fishtown",          addr:"TBD"},
+  {rank:7, stars:3, cat:"rest", name:"Vernick Food & Drink",vibe:"🍸",   hood:"Rittenhouse",       addr:"TBD"},
   {tier:"🍺 Bars & Breweries — The Wider Net"},
-  {rank:8,  stars:4, name:"Monk's Café",       vibe:"🍺🌙",   hood:"Rittenhouse",       addr:"TBD", take:""},
-  {rank:9,  stars:4, name:"Human Robot",       vibe:"🍺🆕",   hood:"Kensington",        addr:"TBD", take:""},
-  {rank:10, stars:3, name:"Yards Brewing Co.", vibe:"🍺",     hood:"Northern Liberties", addr:"TBD", take:""},
-  {rank:11, stars:3, name:"Victory Brewing",   vibe:"🍺",     hood:"Downingtown (worth the drive)", addr:"TBD", take:""},
-
+  {rank:8,  stars:4, cat:"bar", name:"Monk's Café",         vibe:"🍺🌙", hood:"Rittenhouse",       addr:"TBD"},
+  {rank:9,  stars:4, cat:"bar", name:"Human Robot",         vibe:"🍺🆕", hood:"Kensington",        addr:"TBD"},
+  {rank:10, stars:3, cat:"bar", name:"Yards Brewing Co.",   vibe:"🍺",   hood:"Northern Liberties",addr:"TBD"},
+  {rank:11, stars:3, cat:"bar", name:"Victory Brewing",     vibe:"🍺",   hood:"Downingtown (worth the drive)", addr:"TBD"},
   {tier:"🍰 Killer Desserts & Ice Cream"},
-  {rank:12, stars:4, name:"Franklin Fountain", vibe:"🍰",     hood:"Old City",          addr:"TBD", take:""},
-  {rank:13, stars:4, name:"John's Water Ice",  vibe:"🍰💰",   hood:"Bella Vista",       addr:"TBD", take:""},
-  {rank:14, stars:3, name:"Termini Bros",      vibe:"🍰",     hood:"South Philly",      addr:"TBD", take:""}
+  {rank:12, stars:4, cat:"dess", name:"Franklin Fountain",  vibe:"🍰",   hood:"Old City",          addr:"TBD"},
+  {rank:13, stars:4, cat:"dess", name:"John's Water Ice",   vibe:"🍰💰", hood:"Bella Vista",       addr:"TBD"},
+  {rank:14, stars:3, cat:"dess", name:"Termini Bros",       vibe:"🍰",   hood:"South Philly",      addr:"TBD"}
 ];
 
-var sortState = {col:null, dir:1};
+var state = {cat:"all", q:"", sortCol:null, sortDir:1};
 
-function starStr(n){ return "⭐".repeat(n); }
-
+function starHtml(n){
+  var h = '<span class="priority-stars">';
+  for (var i = 1; i <= 5; i++) h += '<span class="pstar-slot' + (i <= n ? ' full' : '') + '"></span>';
+  return h + '</span>';
+}
 function rowHtml(p){
-  var take = p.take ? p.take : "— Matt's write-up goes here —";
-  return '<tr class="place">'
-    + '<td class="rank">' + p.rank + '</td>'
-    + '<td class="stars" data-v="' + p.stars + '">' + starStr(p.stars) + '</td>'
-    + '<td class="name">' + p.name + '</td>'
-    + '<td class="vibe">' + p.vibe + '</td>'
-    + '<td class="hood">' + p.hood + '</td>'
-    + '<td class="addr">' + p.addr + '</td>'
-    + '<td><a class="pill" href="#" onclick="return false;" title="Menu link goes here">MENU</a></td>'
-    + '<td><a class="pill ig" href="#" onclick="return false;" title="Instagram / pictures link goes here">📸 PICS</a></td>'
-    + '<td class="take">' + take + '</td>'
+  return '<tr>'
+    + '<td class="c"><span class="rank-cell">' + p.rank + '</span></td>'
+    + '<td class="c" >' + starHtml(p.stars) + '</td>'
+    + '<td class="l"><span class="player-name">' + p.name + '</span></td>'
+    + '<td class="l vibe">' + p.vibe + '</td>'
+    + '<td class="l">' + p.hood + '</td>'
+    + '<td class="l">' + p.addr + '</td>'
+    + '<td class="c"><a class="pill" href="#" onclick="return false;" title="Menu link goes here">MENU</a></td>'
+    + '<td class="c"><a class="pill ig" href="#" onclick="return false;" title="Instagram / pictures link goes here">📸 PICS</a></td>'
+    + '<td class="l take">— Matt\'s write-up goes here —</td>'
     + '</tr>';
 }
-
-function render(list, withTiers){
-  var html = "";
-  for (var i = 0; i < list.length; i++){
-    var p = list[i];
-    if (p.tier){
-      if (withTiers) html += '<tr class="tier-row"><td colspan="9">' + p.tier + '</td></tr>';
-      continue;
+function currentRows(){
+  return PHOOD.filter(function(p){
+    if (p.tier) return false;
+    if (state.cat !== "all" && p.cat !== state.cat) return false;
+    if (state.q && (p.name + " " + p.hood).toLowerCase().indexOf(state.q) === -1) return false;
+    return true;
+  });
+}
+function render(){
+  var html = "", flatMode = state.sortCol || state.cat !== "all" || state.q;
+  if (!flatMode){
+    for (var i = 0; i < PHOOD.length; i++){
+      var p = PHOOD[i];
+      html += p.tier ? '<tr class="tier-row"><td colspan="9">' + p.tier + '</td></tr>' : rowHtml(p);
     }
-    html += rowHtml(p);
+  } else {
+    var rows = currentRows();
+    if (state.sortCol){
+      var col = state.sortCol, num = (col === "rank" || col === "stars");
+      rows.sort(function(a,b){
+        return (num ? (a[col] - b[col]) : String(a[col]).localeCompare(String(b[col]))) * state.sortDir;
+      });
+    }
+    for (var j = 0; j < rows.length; j++) html += rowHtml(rows[j]);
   }
   document.getElementById("phood-body").innerHTML = html;
 }
-
-function clearArrows(){
-  var ars = document.querySelectorAll(".arrow");
-  for (var i = 0; i < ars.length; i++) ars[i].textContent = "";
-}
-
-function sortBy(col, type){
-  clearArrows();
-  if (col === "rank"){        /* # restores Matt's list order, tiers visible */
-    sortState = {col:null, dir:1};
-    render(PHOOD, true);
-    return;
+function setArrow(){
+  var ars = document.querySelectorAll("th .arrow"), i;
+  for (i = 0; i < ars.length; i++) ars[i].textContent = "";
+  if (state.sortCol){
+    var el = document.getElementById("ar-" + state.sortCol);
+    if (el) el.textContent = state.sortDir === 1 ? "▲" : "▼";
   }
-  if (sortState.col === col){ sortState.dir = -sortState.dir; }
-  else { sortState = {col:col, dir:1}; }
-
-  var flat = PHOOD.filter(function(p){ return !p.tier; }).slice();
-  flat.sort(function(a,b){
-    var va = a[col], vb = b[col];
-    if (type === "num"){ return (va - vb) * sortState.dir; }
-    return String(va).localeCompare(String(vb)) * sortState.dir;
-  });
-  document.getElementById("ar-" + col).textContent = sortState.dir === 1 ? "▲" : "▼";
-  render(flat, false);
 }
-
-/* wire up headers */
+function sortBy(col){
+  if (col === "rank"){ state.sortCol = null; state.sortDir = 1; }        /* # = back to Matt's order */
+  else if (state.sortCol === col){ state.sortDir = -state.sortDir; }
+  else { state.sortCol = col; state.sortDir = 1; }
+  setArrow(); render();
+}
+function setCat(cat, btn){
+  state.cat = cat;
+  var tabs = document.querySelectorAll(".filter-tab"), i;
+  for (i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
+  btn.classList.add("active");
+  render();
+}
+function applySearch(){
+  state.q = document.getElementById("phood-search").value.trim().toLowerCase();
+  render();
+}
+function toggleTheme(){
+  var isDay = document.body.classList.toggle('day-mode');
+  try { localStorage.setItem('watch101-theme', isDay ? 'day' : 'night'); } catch(e){}
+  var btn = document.getElementById('theme-toggle');
+  if (btn){
+    btn.textContent = isDay ? '☀️' : '🌙';
+    btn.title = isDay ? 'Switch to night mode' : 'Switch to day mode';
+  }
+}
 (function(){
-  var ths = document.querySelectorAll("thead th");
-  for (var i = 0; i < ths.length; i++){
-    (function(th){
-      th.addEventListener("click", function(){
-        sortBy(th.getAttribute("data-col"), th.getAttribute("data-type"));
-      });
-    })(ths[i]);
+  var ths = document.querySelectorAll("thead th"), i;
+  for (i = 0; i < ths.length; i++){
+    (function(th){ th.addEventListener("click", function(){ sortBy(th.getAttribute("data-col")); }); })(ths[i]);
   }
-  render(PHOOD, true);
+  render();
+  if (document.body.classList.contains('day-mode')){
+    var btn = document.getElementById('theme-toggle');
+    if (btn){ btn.textContent = '☀️'; }
+  }
 })();
 
-/* nav dropdown, same behaviour as the sport pages */
-function w101Drop(id, ev){
-  ev.stopPropagation();
-  var d = document.getElementById(id);
-  d.classList.toggle("open");
-}
-document.addEventListener("click", function(){
-  var d = document.getElementById("drop-lists");
-  if (d) d.classList.remove("open");
-});
-
-/* day / night toggle */
-function toggleDay(){
-  document.body.classList.toggle("day-mode");
-  document.getElementById("theme-toggle").textContent =
-    document.body.classList.contains("day-mode") ? "🌞" : "🌙";
-}
 </script>
 </body>
 </html>
