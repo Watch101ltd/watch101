@@ -360,7 +360,7 @@ body.readonly-mode .backend-only{display:none !important;}
           <option value="phood-bars">&#127866; Watch101PHOOD Bars &amp; Breweries</option>
         </select>
       </div>
-      <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span id="active-list-title" style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4)">PHOOD Restaurants</span><br><span id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">Philadelphia proper — ones to watch</span><br><span style="font-size:11px;color:var(--turquoise2);margin-top:3px;display:inline-block">FOUNDATION BUILD v3 — 2026-08-14 — SAMPLE DATA</span></div>
+      <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span id="active-list-title" style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4)">PHOOD Restaurants</span><br><span id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">Philadelphia proper — ones to watch</span><br><span id="list-stamp" style="font-size:11px;color:var(--turquoise2);margin-top:3px;display:inline-block">Not yet saved</span></div>
     </div>
   </div>
   <div class="header-right"></div>
@@ -644,6 +644,12 @@ var WL_LISTS = [
 ];
 var currentListId = 'phood-restaurants';
 function _wlStorageKey(){ return 'phood_watchlist_' + currentListId; }
+/* PHOOD_NAS_V1 (2026-08-14) — the plumbing. Same shape as the twins:
+   SERVER_URL points at the PHOOD container on the Synology (port 5104)
+   through the Cloudflare tunnel. Saves POST to /list-staging/:listId;
+   admin loads read _Staging, fans read Production. localStorage stays
+   as the offline fallback so the page never comes up empty. */
+var SERVER_URL = 'https://phood-nas.fantasywatch101.com';
 
 var PHOOD_SEEDS = {};
 PHOOD_SEEDS['phood-restaurants'] = [
@@ -680,21 +686,66 @@ var _sortDir = 1;
 var _filterCat = 'all';
 function _wlFilterActive(){ return _filterCat !== 'all'; }
 
-function autoSaveToPhoodNAS(){
-  /* localStorage now; becomes the server POST when PHOOD gets its server. */
+function _setStamp(txt, ok){
+  var el = document.getElementById('list-stamp');
+  if(el){ el.textContent = txt; el.style.color = ok ? 'var(--turquoise2)' : 'var(--red)'; }
+}
+async function autoSaveToPhoodNAS(){
+  /* Mirror to localStorage FIRST so nothing is ever lost if the POST fails. */
   try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
   try { localStorage.setItem(_tiersLsKey(), JSON.stringify(Array.isArray(currentTiers) ? currentTiers : [])); } catch(e){}
+  try {
+    var body = { spots: _watchList, tiers: (typeof _tiersForSave === 'function') ? _tiersForSave() : (currentTiers || []) };
+    var res = await fetch(SERVER_URL + '/list-staging/' + currentListId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if(res.ok){
+      var j = await res.json();
+      _setStamp('Saved to NAS ' + new Date().toLocaleTimeString() + ' (' + (j.spot_count != null ? j.spot_count : _watchList.length) + ' spots)', true);
+    } else {
+      _setStamp('NAS save failed (' + res.status + ') — kept in this browser', false);
+    }
+  } catch(e){
+    _setStamp('NAS unreachable — kept in this browser', false);
+    console.warn('[PHOOD_NAS_V1] save failed:', e);
+  }
 }
-function loadListFromStorage(){
-  var list = null, tiers = null;
-  try { var raw = localStorage.getItem(_wlStorageKey()); if(raw){ var a = JSON.parse(raw); if(Array.isArray(a) && a.length) list = a; } } catch(e){}
-  try { var rawT = localStorage.getItem(_tiersLsKey()); if(rawT){ var t = JSON.parse(rawT); if(Array.isArray(t) && t.length) tiers = t; } } catch(e){}
+async function loadListFromStorage(){
+  var list = null, tiers = null, stamp = null;
+  /* NAS first — admin (staging host) reads _Staging, fans read Production.
+     Same law as the twins: what fans see is what the Dude promoted. */
+  var isFan = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+  var route = isFan ? '/list/' : '/list-staging/';
+  try {
+    var res = await fetch(SERVER_URL + route + currentListId);
+    if(res.ok){
+      var payload = await res.json();
+      var d = payload && payload.data;
+      if(d && Array.isArray(d.spots) && d.spots.length){
+        list = d.spots;
+        if(Array.isArray(d.tiers)) tiers = d.tiers;
+        stamp = 'Loaded from NAS (' + (payload.environment || '?') + ', saved ' + (d.saved_at_local || payload.saved_at || '?') + ')';
+      }
+    }
+  } catch(e){ console.warn('[PHOOD_NAS_V1] NAS load failed, falling back:', e); }
+  /* localStorage fallback */
+  if(!list){
+    try { var raw = localStorage.getItem(_wlStorageKey()); if(raw){ var a = JSON.parse(raw); if(Array.isArray(a) && a.length) list = a; } } catch(e){}
+    if(list) stamp = 'Loaded from this browser — NAS not reached';
+  }
+  if(!tiers){
+    try { var rawT = localStorage.getItem(_tiersLsKey()); if(rawT){ var t = JSON.parse(rawT); if(Array.isArray(t) && t.length) tiers = t; } } catch(e){}
+  }
+  /* seeds last, so the page never comes up empty */
   var seedL = PHOOD_SEEDS[currentListId] || [];
   var seedT = PHOOD_SEED_TIERS[currentListId] || [];
   _watchList = list || seedL.map(function(p){ return Object.assign({}, p); });
   currentTiers = tiers || seedT.map(function(t){ return Object.assign({}, t); });
   _playerDB = {};
   _watchList.forEach(function(p){ _playerDB[p.pid] = { full_name: p.name }; });
+  _setStamp(stamp || 'Sample data — not yet saved', true);
 }
 
 function starHtml(n){
@@ -792,7 +843,7 @@ function _updateFilterTabs(){
   });
   wrap.innerHTML = html;
 }
-function switchActiveList(newId){
+async function switchActiveList(newId){
   if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
   currentListId = newId;
   _sortField = null; _sortDir = 1; _filterCat = 'all';
@@ -802,7 +853,7 @@ function switchActiveList(newId){
   _updateFilterTabs();
   _watchList = [];
   renderWatchList();          /* instant clear so the old list never lingers, baseball's habit */
-  loadListFromStorage();
+  await loadListFromStorage();
   renderWatchList();
 }
 
@@ -1517,15 +1568,16 @@ function renderTiers(){
 window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} });
 
 /* ---- init ---- */
-(function(){
+(async function(){
   var ths = document.querySelectorAll('thead th'), i;
   for(i = 0; i < ths.length; i++){
     (function(th){ th.addEventListener('click', function(){ sortBy(th.getAttribute('data-col')); }); })(ths[i]);
   }
-  loadListFromStorage();
   _applyReadOnlyBodyClass();
   _updateListLabels();
   _updateFilterTabs();
+  renderWatchList();          /* paint the empty shell instantly, then fill from the NAS */
+  await loadListFromStorage();
   renderWatchList();
   if(document.body.classList.contains('day-mode')){
     var btn = document.getElementById('theme-toggle');
