@@ -135,6 +135,75 @@ async function loadListFromStorage(){
   _setStamp(stamp || 'Sample data — not yet saved', true);
 }
 
+/* WL_NOTES_V1 ported (2026-08-14) — the twins' live note column, adapted to
+   PHOOD's field: the note IS Matt's Take (item.take), the same field the spot
+   editor modal writes. Two doors, one truth. URL pasted inside a take becomes
+   a 🔗 badge (twins' _splitNoteAndUrl, verbatim); fresh takes wear a 📝 badge
+   for 48 hours (NEW_NOTE_48H_V1, stamp take_saved_at, pure read-time math).
+   Deviation, deliberate: saving a take hits the NAS immediately — PHOOD's law. */
+function _splitNoteAndUrl(noteText){
+  if(noteText == null) return { text: '', url: null };
+  var t = String(noteText);
+  var m = t.match(/https?:\/\/[^\s<>"'`]+/);
+  if(!m) return { text: t, url: null };
+  var url = m[0];
+  url = url.replace(/[.,;:!?)\]}]+$/, '');
+  var stripped = t.replace(url, '').replace(/\s+/g, ' ').trim();
+  return { text: stripped, url: url };
+}
+function _renderNoteLinkBadge(url){
+  if(!url) return '';
+  var safeUrl = String(url).replace(/"/g, '&quot;');
+  return ' <a class="note-link-badge" href="' + safeUrl + '" target="_blank" rel="noopener noreferrer"'
+       + ' onclick="event.stopPropagation();" title="' + safeUrl + '" role="button">&#128279;</a>';
+}
+function _freshTakeBadge(p){
+  /* NEW_NOTE_48H_V1: badge lives while the stamp is under 48h, expires by math alone. */
+  if(!p || !p.take_saved_at) return '';
+  if((Date.now() - p.take_saved_at) > 48 * 60 * 60 * 1000) return '';
+  return ' <span class="note-badge" title="Matt\'s take updated in the last 48 hours">&#128221;</span>';
+}
+function _takeCellHtml(p){
+  var raw = (p && typeof p.take === 'string') ? p.take : '';
+  var ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+  var onclick = ro ? '' : ' onclick="event.stopPropagation();editTake(&quot;' + _esc(p.pid) + '&quot;, this)"';
+  if(!raw.trim()){
+    if(ro) return '<td class="l take placeholder">—</td>';   /* fans see a quiet dash, no invitation */
+    return '<td class="l take wl-note-cell placeholder" title="Click to add Matt\'s take"' + onclick + '><em class="note-add-hint">Add Matt\'s take...</em></td>';
+  }
+  var sp = _splitNoteAndUrl(raw);
+  return '<td class="l take wl-note-cell"' + (ro ? '' : ' title="Click to edit this take"') + onclick + '>' + _esc(sp.text) + _renderNoteLinkBadge(sp.url) + '</td>';
+}
+function editTake(pid, el){
+  if(_blockIfReadOnly('editTake')) return;
+  var idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'note-input';
+  input.value = _watchList[idx].take || '';
+  input.placeholder = 'Why is this spot on the list?';
+  el.replaceWith(input);
+  input.focus();
+  input.addEventListener('blur', function(){ _setTake(pid, input.value); });
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') input.blur(); });
+  input.addEventListener('click', function(e){ e.stopPropagation(); });
+}
+function _setTake(pid, text){
+  if(_blockIfReadOnly('_setTake')) return;
+  var idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  var cur = _watchList[idx];
+  var prev = (cur && cur.take != null) ? String(cur.take) : '';
+  var next = String(text || '');
+  _watchList[idx] = Object.assign({}, cur, { take: next });
+  /* stamp only when the text actually changes; clearing the take clears the stamp */
+  if(next.trim() && next !== prev){ _watchList[idx].take_saved_at = Date.now(); }
+  else if(!next.trim()){ delete _watchList[idx].take_saved_at; }
+  renderWatchList();
+  autoSaveToPhoodNAS();
+}
+
 /* PRIORITY_STARS_V1 (2026-08-14) — ported from the twins' renderPriorityStars +
    setPriority + global .pstar click delegator. Adaptations: the value lives in
    item.stars (PHOOD's field), and a set SAVES to the NAS immediately — every
@@ -194,11 +263,11 @@ function _rowHtml(p, rank){
     : '';
   return '<tr data-phood-pid="' + p.pid + '"' + trAttrs + '>'
     + '<td class="c' + (drag ? ' drag-handle" title="Drag to re-rank' : '') + '"><span class="rank-cell">' + (drag ? '&#9776; ' : '') + rank + '</span></td>'
-    + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span></td>'
+    + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span>' + _freshTakeBadge(p) + '</td>'
     + '<td class="l">' + p.hood + '</td>'
     + '<td class="l vibe">' + p.vibe + '</td>'
     + '<td class="c">' + renderPriorityStars(p.pid, p.stars || 0) + '</td>'
-    + '<td class="l take">' + (p.take ? _esc(p.take) : '— Matt&#39;s write-up goes here —') + '</td>'
+    + _takeCellHtml(p)
     + '<td class="l">' + p.addr + '</td>'
     + (p.menu ? '<td class="c"><a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">MENU</a></td>'
                : '<td class="c"><a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No menu link yet">MENU</a></td>')
