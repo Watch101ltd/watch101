@@ -148,6 +148,14 @@ tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-
 .legend b{color:var(--text2)}
 @media (max-width:768px){ .logo{font-size:34px} td.take{min-width:160px} }
 
+/* ===== PHOOD_DRAG_RANK_V1 — ported from NBA_DRAG_RANK_V1 + DRAG_POLISH_V1 ===== */
+tbody td.drag-handle{cursor:grab;color:var(--text2);user-select:none}
+tbody td.drag-handle:active{cursor:grabbing}
+tbody tr.phood-dragging{opacity:0.45}
+tbody tr.phood-drag-over{box-shadow:inset 0 2px 0 0 var(--phood-red)}
+#drop-indicator-bar{display:none;position:absolute;height:5px;background:var(--phood-red);border-radius:3px;z-index:9000;pointer-events:none;box-shadow:0 0 8px var(--phood-red);}
+#drop-indicator-pill{display:none;position:fixed;background:var(--phood-red);color:#fff;font-size:11px;font-weight:800;letter-spacing:0.04em;padding:3px 9px;border-radius:999px;z-index:9001;pointer-events:none;white-space:nowrap;}
+
 /* ===== TIERS_V1 CSS — ported complete from the twins (NBA source, lines 586-622) ===== */
 /* TIERS_V1 STAGE 1 (2026-08-03) — spacer rows give each tier tab its own visual home
    (baseball's TIER_SPACER_ROW_V1); swatches are the modal's color palette ring. */
@@ -373,6 +381,7 @@ body.readonly-mode .backend-only{display:none !important;}
   </div>
   <div class="filter-tabs" id="filter-tabs"></div>
   <div class="toolbar-right">
+    <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
     <button class="btn btn-gold backend-only" id="add-spot-btn" onclick="openAddSpotModal()" title="Add a restaurant, bar, or dessert spot to the list">&#10133; Add Spot</button>
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of spots">&#127991;&#65039; Tier</button>
     <button class="btn btn-gold backend-only" id="save-btn" onclick="autoSaveToPhoodNAS()" title="Saves to this browser for now — server save comes with the PHOOD server">💾 Save</button>
@@ -429,6 +438,10 @@ body.readonly-mode .backend-only{display:none !important;}
   </div>
 </footer>
 <!-- ===================== SITE_CHROME_V1 FOOTER MARKUP END ===================== -->
+<!-- DRAG_POLISH_V1 — drop indicator bar + rank pill, twins' pattern -->
+<div id="drop-indicator-bar"></div>
+<div id="drop-indicator-pill"></div>
+
 <!-- SPOT_EDITOR_V1 (2026-08-14) — Add/Edit Spot modal. No baseball equivalent to
      port (the sports pull players from stats APIs; PHOOD entries are hand-typed),
      so this is new code in the tier modal's idiom. Opened by ➕ Add Spot (admin)
@@ -753,9 +766,23 @@ function starHtml(n){
   for (var i = 1; i <= 5; i++) h += '<span class="pstar-slot' + (i <= n ? ' full' : '') + '"></span>';
   return h + '</span>';
 }
+function _dragEnabled(){
+  /* Same gate as the twins: rank order only (no sort), admin only. */
+  if(_sortField !== null) return false;
+  if(typeof _isReadOnlyMode === 'function' && _isReadOnlyMode()) return false;
+  return true;
+}
 function _rowHtml(p, rank){
-  return '<tr data-phood-pid="' + p.pid + '">'
-    + '<td class="c"><span class="rank-cell">' + rank + '</span></td>'
+  var drag = _dragEnabled();
+  var trAttrs = drag
+    ? ' draggable="true"'
+      + ' ondragstart="phoodDragStart(event,\'' + p.pid + '\')"'
+      + ' ondragover="phoodDragOver(event,\'' + p.pid + '\')"'
+      + ' ondrop="phoodDrop(event,\'' + p.pid + '\')"'
+      + ' ondragend="phoodDragEnd(event)"'
+    : '';
+  return '<tr data-phood-pid="' + p.pid + '"' + trAttrs + '>'
+    + '<td class="c' + (drag ? ' drag-handle" title="Drag to re-rank' : '') + '"><span class="rank-cell">' + (drag ? '&#9776; ' : '') + rank + '</span></td>'
     + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span></td>'
     + '<td class="l">' + p.hood + '</td>'
     + '<td class="l vibe">' + p.vibe + '</td>'
@@ -856,6 +883,139 @@ async function switchActiveList(newId){
   await loadListFromStorage();
   renderWatchList();
 }
+
+/* ============================================================================
+   PHOOD_DRAG_RANK_V1 (2026-08-14) — ported from NBA_DRAG_RANK_V1 (2026-06-05,
+   itself baseball's personalDrag model) + DRAG_POLISH_V1 (undo, drop indicator
+   bar + rank pill, edge auto-scroll). Renames: nba→phood, _wlPid(item)→item.pid,
+   autoSaveToNbaNAS→autoSaveToPhoodNAS. Rank = array position, re-derived on
+   every render; drop splices _watchList and persists to the NAS.
+   ============================================================================ */
+function _wlIndexOf(pid){ return _watchList.findIndex(function(p){ return p.pid === pid; }); }
+
+/* ---- DRAG_POLISH_V1: undo ---- */
+var _dragUndoStack = [];
+var DRAG_UNDO_LIMIT = 20;
+function snapshotForUndo(){
+  _dragUndoStack.push(_watchList.slice());
+  if(_dragUndoStack.length > DRAG_UNDO_LIMIT) _dragUndoStack.shift();
+  updateUndoButton();
+}
+function undoLastMove(){
+  if(_blockIfReadOnly('undoLastMove')) return;
+  if(_dragUndoStack.length === 0) return;
+  _watchList = _dragUndoStack.pop();
+  updateUndoButton();
+  renderWatchList();
+  autoSaveToPhoodNAS();   // persist the restore the same way the mutation persisted
+}
+function updateUndoButton(){
+  var btn = document.getElementById('undo-btn');
+  if(!btn) return;
+  var n = _dragUndoStack.length;
+  btn.disabled = (n === 0);
+  btn.title = n === 0 ? 'Nothing to undo yet' : ('Undo the last move (' + n + ' step' + (n === 1 ? '' : 's') + ' banked)');
+}
+
+/* ---- DRAG_POLISH_V1: drop indicator bar + rank pill ---- */
+function _hideDropIndicator(){
+  var bar = document.getElementById('drop-indicator-bar');
+  if(bar) bar.style.display = 'none';
+  var pill = document.getElementById('drop-indicator-pill');
+  if(pill) pill.style.display = 'none';
+}
+function _positionDropIndicatorBar(rowEl, above){
+  var bar = document.getElementById('drop-indicator-bar');
+  if(!bar || !rowEl) return;
+  var rect = rowEl.getBoundingClientRect();
+  bar.style.top = ((above ? rect.top : rect.bottom) + window.scrollY - 2) + 'px';
+  bar.style.left = (rect.left + window.scrollX) + 'px';
+  bar.style.width = rect.width + 'px';
+  bar.style.display = 'block';
+}
+function _showDropIndicatorPill(clientX, clientY, rankNum){
+  var pill = document.getElementById('drop-indicator-pill');
+  if(!pill) return;
+  pill.textContent = '→ Rank ' + rankNum;
+  pill.style.left = (clientX + 14) + 'px';
+  pill.style.top  = (clientY + 18) + 'px';
+  pill.style.display = 'block';
+}
+function _dragIndicatorOnOver(e, pid, srcPid){
+  try {
+    if(typeof _tierDragPayload !== 'undefined' && _tierDragPayload) return;   // TIER_DRAG owns indicators during a tier drag
+    if(srcPid == null || srcPid === pid){ _hideDropIndicator(); return; }
+    var si = _wlIndexOf(srcPid);
+    var ti = _wlIndexOf(pid);
+    if(si < 0 || ti < 0){ _hideDropIndicator(); return; }
+    _positionDropIndicatorBar(e.currentTarget, si > ti);   // dragging up -> lands above target; down -> below
+    _showDropIndicatorPill(e.clientX, e.clientY, ti + 1);
+  } catch(err){ /* indicator is cosmetic -- never let it break a drag */ }
+}
+
+/* ---- the drag itself ---- */
+var _phoodDragSrcPid = null;
+function phoodDragStart(e, pid){
+  if(_sortField !== null){ e.preventDefault(); return; }
+  if(_blockIfReadOnly('phoodDragStart')){ e.preventDefault(); return; }
+  _phoodDragSrcPid = pid;
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('phood-dragging');
+  try { e.dataTransfer.effectAllowed = 'move'; } catch(_){}
+}
+function phoodDragOver(e, pid){
+  if(_sortField !== null) return;
+  e.preventDefault();
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('phood-drag-over');
+  try { e.dataTransfer.dropEffect = 'move'; } catch(_){}
+  _dragIndicatorOnOver(e, pid, _phoodDragSrcPid);
+}
+function phoodDrop(e, pid){
+  e.preventDefault();
+  if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.remove('phood-drag-over');
+  if(_sortField !== null) return;                 // never reorder while a sort is active
+  if(_phoodDragSrcPid == null || _phoodDragSrcPid === pid) return;
+  var si = _wlIndexOf(_phoodDragSrcPid);
+  var ti = _wlIndexOf(pid);
+  if(si < 0 || ti < 0) return;
+  snapshotForUndo();
+  _hideDropIndicator();
+  var moved = _watchList.splice(si, 1)[0];
+  _watchList.splice(ti, 0, moved);
+  _phoodDragSrcPid = null;
+  renderWatchList();        // rank is re-derived from array position on render
+  autoSaveToPhoodNAS();
+}
+function phoodDragEnd(e){
+  _phoodDragSrcPid = null;
+  _hideDropIndicator();
+  document.querySelectorAll('tr.phood-dragging, tr.phood-drag-over').forEach(function(tr){
+    tr.classList.remove('phood-dragging'); tr.classList.remove('phood-drag-over');
+  });
+}
+document.addEventListener('dragleave', function(e){
+  if(e.target && e.target.classList && e.target.classList.contains('phood-drag-over')) e.target.classList.remove('phood-drag-over');
+});
+
+/* ---- edge auto-scroll during any HTML5 drag — baseball's scroller, ported intact ---- */
+(function(){
+  var EDGE_ZONE = 100, MAX_STEP = 20, MIN_STEP = 4, TICK_MS = 16;
+  var intervalId = null, scrollDir = 0, scrollStep = 0;
+  function stopEdgeScroll(){
+    if(intervalId){ clearInterval(intervalId); intervalId = null; }
+    scrollDir = 0; scrollStep = 0;
+  }
+  function tick(){ window.scrollBy(0, scrollDir * scrollStep); }
+  document.addEventListener('dragover', function(e){
+    var y = e.clientY, h = window.innerHeight;
+    if(y < EDGE_ZONE){ scrollDir = -1; scrollStep = Math.max(MIN_STEP, Math.round(MAX_STEP * (1 - y / EDGE_ZONE))); }
+    else if(y > h - EDGE_ZONE){ scrollDir = 1; scrollStep = Math.max(MIN_STEP, Math.round(MAX_STEP * (1 - (h - y) / EDGE_ZONE))); }
+    else { stopEdgeScroll(); return; }
+    if(!intervalId) intervalId = setInterval(tick, TICK_MS);
+  });
+  document.addEventListener('drop', stopEdgeScroll);
+  document.addEventListener('dragend', stopEdgeScroll);
+})();
+
 
 /* ============================================================================
    SPOT_EDITOR_V1 (2026-08-14) — Add/Edit/Remove spots. New code (no baseball
