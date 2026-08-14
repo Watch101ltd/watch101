@@ -371,6 +371,7 @@ body.readonly-mode .backend-only{display:none !important;}
     <button class="filter-tab" onclick="setCat('dess',this)">🍰 Desserts</button>
   </div>
   <div class="toolbar-right">
+    <button class="btn btn-gold backend-only" id="add-spot-btn" onclick="openAddSpotModal()" title="Add a restaurant, bar, or dessert spot to the list">&#10133; Add Spot</button>
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of spots">&#127991;&#65039; Tier</button>
     <button class="btn btn-gold backend-only" id="save-btn" onclick="autoSaveToPhoodNAS()" title="Saves to this browser for now — server save comes with the PHOOD server">💾 Save</button>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
@@ -426,6 +427,62 @@ body.readonly-mode .backend-only{display:none !important;}
   </div>
 </footer>
 <!-- ===================== SITE_CHROME_V1 FOOTER MARKUP END ===================== -->
+<!-- SPOT_EDITOR_V1 (2026-08-14) — Add/Edit Spot modal. No baseball equivalent to
+     port (the sports pull players from stats APIs; PHOOD entries are hand-typed),
+     so this is new code in the tier modal's idiom. Opened by ➕ Add Spot (admin)
+     or by clicking a spot's name in the table (admin). Fans see neither. -->
+<div id="spot-modal" onclick="if(event.target===this)closeSpotModal()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;max-width:520px;width:100%;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,0.55)">
+    <h3 id="spot-modal-title" style="font-size:17px;font-weight:800;margin-bottom:14px;color:var(--text)">&#10133; Add a Spot</h3>
+    <div id="spot-modal-error" style="display:none;background:#2a0a0a;color:var(--red);border:1px solid #7f1d1d;border-radius:6px;padding:8px 12px;font-size:12px;margin-bottom:12px"></div>
+    <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Name *</label>
+    <input id="spot-name" type="text" placeholder="e.g. Kalaya" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+    <div style="display:flex;gap:12px">
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Category *</label>
+        <select id="spot-cat" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+          <option value="rest">&#127869;&#65039; Restaurant</option>
+          <option value="bar">&#127866; Bar / Brewery</option>
+          <option value="dess">&#127856; Dessert / Ice Cream</option>
+        </select>
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Priority</label>
+        <div id="spot-stars" style="padding:6px 0;font-size:20px;letter-spacing:3px;cursor:pointer;user-select:none"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Neighborhood</label>
+        <input id="spot-hood" type="text" placeholder="e.g. Fishtown" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Address</label>
+        <input id="spot-addr" type="text" placeholder="street address" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+      </div>
+    </div>
+    <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Tags (emojis)</label>
+    <input id="spot-vibe" type="text" placeholder="e.g. &#128293;&#127942;" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+    <div style="display:flex;gap:12px">
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Menu link</label>
+        <input id="spot-menu" type="text" placeholder="https://..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Pics / Instagram link</label>
+        <input id="spot-pics" type="text" placeholder="https://..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+      </div>
+    </div>
+    <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Matt's Take</label>
+    <textarea id="spot-take" rows="3" placeholder="the write-up: the dish to order, why it is on the list, what changed..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none;resize:vertical"></textarea>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:18px">
+      <button class="btn btn-gold" onclick="saveSpotFromModal()">&#128190; Save Spot</button>
+      <button class="btn btn-outline" onclick="closeSpotModal()">Cancel</button>
+      <button class="btn" id="spot-delete-btn" onclick="deleteSpotFromModal()" style="display:none;margin-left:auto;background:transparent;color:#dc2626;border-color:#7f1d1d">&#128465;&#65039; Remove from list</button>
+    </div>
+  </div>
+</div>
+
 <!-- TIERS_V1 STAGE 1 (2026-08-03) — backend-only Create/Edit Tier modal, baseball's
      Phase C adapted to the twins' self-contained overlay idiom. Stage 2 adds the
      "Draggable as a group" row here. Opened by the 🏷️ Tier toolbar button (admin)
@@ -630,14 +687,16 @@ function starHtml(n){
 function _rowHtml(p, rank){
   return '<tr data-phood-pid="' + p.pid + '">'
     + '<td class="c"><span class="rank-cell">' + rank + '</span></td>'
-    + '<td class="l"><span class="player-name">' + p.name + '</span></td>'
+    + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span></td>'
     + '<td class="l">' + p.hood + '</td>'
     + '<td class="l vibe">' + p.vibe + '</td>'
     + '<td class="c">' + starHtml(p.stars) + '</td>'
-    + '<td class="l take">— Matt&#39;s write-up goes here —</td>'
+    + '<td class="l take">' + (p.take ? _esc(p.take) : '— Matt&#39;s write-up goes here —') + '</td>'
     + '<td class="l">' + p.addr + '</td>'
-    + '<td class="c"><a class="pill" href="#" onclick="return false;" title="Menu link goes here">MENU</a></td>'
-    + '<td class="c"><a class="pill ig" href="#" onclick="return false;" title="Instagram / pictures link goes here">📸 PICS</a></td>'
+    + (p.menu ? '<td class="c"><a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">MENU</a></td>'
+               : '<td class="c"><a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No menu link yet">MENU</a></td>')
+    + (p.pics ? '<td class="c"><a class="pill ig" href="' + _esc(p.pics) + '" target="_blank" rel="noopener">📸 PICS</a></td>'
+               : '<td class="c"><a class="pill ig" href="#" onclick="return false;" style="opacity:0.45" title="No pictures link yet">📸 PICS</a></td>')
     + '</tr>';
 }
 function renderWatchList(){
@@ -691,6 +750,114 @@ function toggleTheme(){
     btn.title = isDay ? 'Switch to night mode' : 'Switch to day mode';
   }
 }
+
+/* ============================================================================
+   SPOT_EDITOR_V1 (2026-08-14) — Add/Edit/Remove spots. New code (no baseball
+   source to port: sports players come from stats APIs, PHOOD spots are typed).
+   Follows the tier modal's conventions; saves through autoSaveToPhoodNAS.
+   ============================================================================ */
+function _esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+var _spotEditingPid = null;
+var _spotModalStars = 3;
+function _spotStarsPaint(){
+  var el = document.getElementById('spot-stars');
+  if(!el) return;
+  var h = '';
+  for(var i = 1; i <= 5; i++){
+    h += '<span data-star="' + i + '" style="color:' + (i <= _spotModalStars ? '#fbbf24' : '#3a3f4a') + '">★</span>';
+  }
+  el.innerHTML = h;
+}
+function _spotStarsWire(){
+  var el = document.getElementById('spot-stars');
+  if(!el || el._wired) return;
+  el._wired = true;
+  el.addEventListener('click', function(ev){
+    var t = ev.target.closest('[data-star]');
+    if(!t) return;
+    _spotModalStars = parseInt(t.getAttribute('data-star'), 10) || 3;
+    _spotStarsPaint();
+  });
+}
+function _spotShowErr(msg){
+  var e = document.getElementById('spot-modal-error');
+  if(e){ e.textContent = msg; e.style.display = msg ? 'block' : 'none'; }
+}
+function _spotFill(p){
+  document.getElementById('spot-name').value = p ? (p.name || '') : '';
+  document.getElementById('spot-cat').value  = p ? (p.cat || 'rest') : 'rest';
+  document.getElementById('spot-hood').value = p ? (p.hood || '') : '';
+  document.getElementById('spot-addr').value = p ? (p.addr === 'TBD' ? '' : (p.addr || '')) : '';
+  document.getElementById('spot-vibe').value = p ? (p.vibe || '') : '';
+  document.getElementById('spot-menu').value = p ? (p.menu || '') : '';
+  document.getElementById('spot-pics').value = p ? (p.pics || '') : '';
+  document.getElementById('spot-take').value = p ? (p.take || '') : '';
+  _spotModalStars = p ? (p.stars || 3) : 3;
+  _spotStarsPaint(); _spotStarsWire(); _spotShowErr('');
+}
+function openAddSpotModal(){
+  if(typeof _blockIfReadOnly === 'function' && _blockIfReadOnly('openAddSpotModal')) return;
+  _spotEditingPid = null;
+  document.getElementById('spot-modal-title').innerHTML = '&#10133; Add a Spot';
+  document.getElementById('spot-delete-btn').style.display = 'none';
+  _spotFill(null);
+  document.getElementById('spot-modal').style.display = 'flex';
+}
+function openEditSpotModal(pid){
+  if(typeof _blockIfReadOnly === 'function' && _blockIfReadOnly('openEditSpotModal')) return;
+  var p = _watchList.find(function(x){ return x.pid === pid; });
+  if(!p) return;
+  _spotEditingPid = pid;
+  document.getElementById('spot-modal-title').innerHTML = '&#9999;&#65039; Edit: ' + _esc(p.name);
+  document.getElementById('spot-delete-btn').style.display = '';
+  _spotFill(p);
+  document.getElementById('spot-modal').style.display = 'flex';
+}
+function closeSpotModal(){
+  document.getElementById('spot-modal').style.display = 'none';
+  _spotEditingPid = null;
+}
+async function saveSpotFromModal(){
+  var name = document.getElementById('spot-name').value.trim();
+  if(!name){ _spotShowErr('The spot needs a name.'); return; }
+  var vals = {
+    name: name,
+    cat:  document.getElementById('spot-cat').value,
+    hood: document.getElementById('spot-hood').value.trim(),
+    addr: document.getElementById('spot-addr').value.trim() || 'TBD',
+    vibe: document.getElementById('spot-vibe').value.trim(),
+    menu: document.getElementById('spot-menu').value.trim(),
+    pics: document.getElementById('spot-pics').value.trim(),
+    take: document.getElementById('spot-take').value.trim(),
+    stars: _spotModalStars
+  };
+  if(_spotEditingPid){
+    var p = _watchList.find(function(x){ return x.pid === _spotEditingPid; });
+    if(!p){ _spotShowErr('Could not find that spot anymore.'); return; }
+    Object.assign(p, vals);
+    _playerDB[p.pid] = { full_name: p.name };
+  } else {
+    var np = Object.assign({ pid: 'r' + Date.now() }, vals);
+    _watchList.push(np);                       /* new spots land at the bottom of the list */
+    _playerDB[np.pid] = { full_name: np.name };
+  }
+  closeSpotModal();
+  renderWatchList();
+  try { await autoSaveToPhoodNAS(); } catch(e){}
+}
+async function deleteSpotFromModal(){
+  if(!_spotEditingPid) return;
+  var p = _watchList.find(function(x){ return x.pid === _spotEditingPid; });
+  if(!p) return;
+  var ok = confirm('Remove "' + p.name + '" from the list?\n\nAny tier anchored on it will stop drawing until its anchors are reset. This cannot be undone.');
+  if(!ok) return;
+  _watchList = _watchList.filter(function(x){ return x.pid !== _spotEditingPid; });
+  delete _playerDB[_spotEditingPid];
+  closeSpotModal();
+  renderWatchList();
+  try { await autoSaveToPhoodNAS(); } catch(e){}
+}
+
 
 /* ---- READONLY_V1/V2 — ported verbatim from the twins ---- */
 function _isReadOnlyMode(){
