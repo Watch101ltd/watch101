@@ -353,7 +353,14 @@ body.readonly-mode .backend-only{display:none !important;}
   <div class="logo-wrap">
     <div class="logo" title="Watch101 PHOOD"><img class="logo-img" src="images/watch101_food_logo_FINAL.png" alt="Watch101"><span class="logo-phood">PHOOD</span></div>
     <div class="list-title-stack">
-      <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4)">Philadelphia Restaurants &amp; Bars</span><br><span style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">Ones to watch — not a best-of</span><br><span style="font-size:11px;color:var(--turquoise2);margin-top:3px;display:inline-block">FOUNDATION BUILD v3 — 2026-08-14 — SAMPLE DATA</span></div>
+      <!-- LIST_PICKER_HEADER_V2 pattern, lifted from baseball: switcher stacked above the active-list title -->
+      <div class="list-picker-header" style="display:flex;align-items:center;gap:8px">
+        <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--gold) 0%,#c9a227 100%);color:#1a1a1a;border:1px solid var(--gold);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:260px">
+          <option value="phood-restaurants">&#127869;&#65039; Watch101PHOOD Restaurants</option>
+          <option value="phood-bars">&#127866; Watch101PHOOD Bars &amp; Breweries</option>
+        </select>
+      </div>
+      <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span id="active-list-title" style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4)">PHOOD Restaurants</span><br><span id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">Philadelphia proper — ones to watch</span><br><span style="font-size:11px;color:var(--turquoise2);margin-top:3px;display:inline-block">FOUNDATION BUILD v3 — 2026-08-14 — SAMPLE DATA</span></div>
     </div>
   </div>
   <div class="header-right"></div>
@@ -364,12 +371,7 @@ body.readonly-mode .backend-only{display:none !important;}
     <span class="search-icon">🔍</span>
     <input id="player-search" type="text" placeholder="Search spots or neighborhoods..." oninput="renderWatchList()">
   </div>
-  <div class="filter-tabs">
-    <button class="filter-tab active" onclick="setCat('all',this)">All</button>
-    <button class="filter-tab" onclick="setCat('rest',this)">🍽️ Restaurants</button>
-    <button class="filter-tab" onclick="setCat('bar',this)">🍺 Bars &amp; Breweries</button>
-    <button class="filter-tab" onclick="setCat('dess',this)">🍰 Desserts</button>
-  </div>
+  <div class="filter-tabs" id="filter-tabs"></div>
   <div class="toolbar-right">
     <button class="btn btn-gold backend-only" id="add-spot-btn" onclick="openAddSpotModal()" title="Add a restaurant, bar, or dessert spot to the list">&#10133; Add Spot</button>
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of spots">&#127991;&#65039; Tier</button>
@@ -632,10 +634,19 @@ document.addEventListener('keydown',function(e){
    Persistence: localStorage for now; autoSaveToPhoodNAS becomes the server
    POST when PHOOD gets its server, same road the twins took.
    ============================================================================ */
-var currentListId = 'phood-main';
+/* MULTILIST — baseball's separate-lists model. Storage and tiers key on the
+   active list id, so every list carries its own spots AND its own tiers. */
+var WL_LISTS = [
+  { id:'phood-restaurants', title:'PHOOD Restaurants',       subtitle:'Philadelphia proper — ones to watch',
+    tabs:[{cat:'all',label:'All'},{cat:'rest',label:'🍽️ Restaurants'},{cat:'dess',label:'🍰 Desserts'}] },
+  { id:'phood-bars',        title:'PHOOD Bars & Breweries',  subtitle:'The wider net — worth the drive',
+    tabs:[{cat:'all',label:'All'}] }
+];
+var currentListId = 'phood-restaurants';
 function _wlStorageKey(){ return 'phood_watchlist_' + currentListId; }
 
-var PHOOD_SEED = [
+var PHOOD_SEEDS = {};
+PHOOD_SEEDS['phood-restaurants'] = [
   {pid:'r1',  stars:5, cat:'rest', name:"Kalaya",               vibe:'🔥🥇', hood:'Fishtown',           addr:'TBD'},
   {pid:'r2',  stars:5, cat:'rest', name:"Zahav",                vibe:'🥇',   hood:'Society Hill',       addr:'TBD'},
   {pid:'r3',  stars:4, cat:'rest', name:"Angelo's Pizzeria",    vibe:'🔥💰', hood:'Bella Vista',        addr:'TBD'},
@@ -643,18 +654,23 @@ var PHOOD_SEED = [
   {pid:'r5',  stars:4, cat:'rest', name:"John's Roast Pork",    vibe:'💰🥇', hood:'South Philly',       addr:'TBD'},
   {pid:'r6',  stars:4, cat:'rest', name:"Suraya",               vibe:'🍸',   hood:'Fishtown',           addr:'TBD'},
   {pid:'r7',  stars:3, cat:'rest', name:"Vernick Food & Drink", vibe:'🍸',   hood:'Rittenhouse',        addr:'TBD'},
-  {pid:'r8',  stars:4, cat:'bar',  name:"Monk's Café",          vibe:'🍺🌙', hood:'Rittenhouse',        addr:'TBD'},
-  {pid:'r9',  stars:4, cat:'bar',  name:"Human Robot",          vibe:'🍺🆕', hood:'Kensington',         addr:'TBD'},
-  {pid:'r10', stars:3, cat:'bar',  name:"Yards Brewing Co.",    vibe:'🍺',   hood:'Northern Liberties', addr:'TBD'},
-  {pid:'r11', stars:3, cat:'bar',  name:"Victory Brewing",      vibe:'🍺',   hood:'Downingtown (worth the drive)', addr:'TBD'},
   {pid:'r12', stars:4, cat:'dess', name:"Franklin Fountain",    vibe:'🍰',   hood:'Old City',           addr:'TBD'},
   {pid:'r13', stars:4, cat:'dess', name:"John's Water Ice",     vibe:'🍰💰', hood:'Bella Vista',        addr:'TBD'},
   {pid:'r14', stars:3, cat:'dess', name:"Termini Bros",         vibe:'🍰',   hood:'South Philly',       addr:'TBD'}
 ];
-var PHOOD_SEED_TIERS = [
-  {id:'tier_seed_1', name:'The Main List — Ones to Watch',  color:'red',  start_pid:'r1',  end_pid:'r7',  created_at:'2026-08-14'},
-  {id:'tier_seed_2', name:'Bars & Breweries — The Wider Net', color:'gold', start_pid:'r8',  end_pid:'r11', created_at:'2026-08-14'},
-  {id:'tier_seed_3', name:'Killer Desserts & Ice Cream',    color:'blue', start_pid:'r12', end_pid:'r14', created_at:'2026-08-14'}
+PHOOD_SEEDS['phood-bars'] = [
+  {pid:'r8',  stars:4, cat:'bar',  name:"Monk's Café",          vibe:'🍺🌙', hood:'Rittenhouse',        addr:'TBD'},
+  {pid:'r9',  stars:4, cat:'bar',  name:"Human Robot",          vibe:'🍺🆕', hood:'Kensington',         addr:'TBD'},
+  {pid:'r10', stars:3, cat:'bar',  name:"Yards Brewing Co.",    vibe:'🍺',   hood:'Northern Liberties', addr:'TBD'},
+  {pid:'r11', stars:3, cat:'bar',  name:"Victory Brewing",      vibe:'🍺',   hood:'Downingtown (worth the drive)', addr:'TBD'}
+];
+var PHOOD_SEED_TIERS = {};
+PHOOD_SEED_TIERS['phood-restaurants'] = [
+  {id:'tier_seed_1', name:'The Main List — Ones to Watch', color:'red',  start_pid:'r1',  end_pid:'r7',  created_at:'2026-08-14'},
+  {id:'tier_seed_3', name:'Killer Desserts & Ice Cream',   color:'blue', start_pid:'r12', end_pid:'r14', created_at:'2026-08-14'}
+];
+PHOOD_SEED_TIERS['phood-bars'] = [
+  {id:'tier_seed_2', name:'The Wider Net', color:'gold', start_pid:'r8', end_pid:'r11', created_at:'2026-08-14'}
 ];
 
 let _watchList = [];
@@ -673,8 +689,10 @@ function loadListFromStorage(){
   var list = null, tiers = null;
   try { var raw = localStorage.getItem(_wlStorageKey()); if(raw){ var a = JSON.parse(raw); if(Array.isArray(a) && a.length) list = a; } } catch(e){}
   try { var rawT = localStorage.getItem(_tiersLsKey()); if(rawT){ var t = JSON.parse(rawT); if(Array.isArray(t) && t.length) tiers = t; } } catch(e){}
-  _watchList = list || PHOOD_SEED.map(function(p){ return Object.assign({}, p); });
-  currentTiers = tiers || PHOOD_SEED_TIERS.map(function(t){ return Object.assign({}, t); });
+  var seedL = PHOOD_SEEDS[currentListId] || [];
+  var seedT = PHOOD_SEED_TIERS[currentListId] || [];
+  _watchList = list || seedL.map(function(p){ return Object.assign({}, p); });
+  currentTiers = tiers || seedT.map(function(t){ return Object.assign({}, t); });
   _playerDB = {};
   _watchList.forEach(function(p){ _playerDB[p.pid] = { full_name: p.name }; });
 }
@@ -749,6 +767,43 @@ function toggleTheme(){
     btn.textContent = isDay ? '☀️' : '🌙';
     btn.title = isDay ? 'Switch to night mode' : 'Switch to day mode';
   }
+}
+
+/* MULTILIST — baseball's switchActiveList, foundation-sized. Storage is per
+   list id, tiers ride along via _tiersLsKey(), so a switch is: point at the
+   new id, reload, repaint. */
+function _updateListLabels(){
+  var l = WL_LISTS.find(function(x){ return x.id === currentListId; });
+  if(!l) return;
+  var t = document.getElementById('active-list-title');
+  var st = document.getElementById('active-list-subtitle');
+  if(t)  t.textContent  = l.title;
+  if(st) st.textContent = l.subtitle;
+  var sel = document.getElementById('list-switcher');
+  if(sel && sel.value !== currentListId) sel.value = currentListId;
+}
+function _updateFilterTabs(){
+  var l = WL_LISTS.find(function(x){ return x.id === currentListId; });
+  var wrap = document.getElementById('filter-tabs');
+  if(!l || !wrap) return;
+  var html = '';
+  l.tabs.forEach(function(tb){
+    html += '<button class="filter-tab' + (tb.cat === _filterCat ? ' active' : '') + '" onclick="setCat(\'' + tb.cat + '\',this)">' + tb.label + '</button>';
+  });
+  wrap.innerHTML = html;
+}
+function switchActiveList(newId){
+  if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
+  currentListId = newId;
+  _sortField = null; _sortDir = 1; _filterCat = 'all';
+  var search = document.getElementById('player-search');
+  if(search) search.value = '';
+  _updateListLabels();
+  _updateFilterTabs();
+  _watchList = [];
+  renderWatchList();          /* instant clear so the old list never lingers, baseball's habit */
+  loadListFromStorage();
+  renderWatchList();
 }
 
 /* ============================================================================
@@ -1469,6 +1524,8 @@ window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} 
   }
   loadListFromStorage();
   _applyReadOnlyBodyClass();
+  _updateListLabels();
+  _updateFilterTabs();
   renderWatchList();
   if(document.body.classList.contains('day-mode')){
     var btn = document.getElementById('theme-toggle');
