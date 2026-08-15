@@ -131,7 +131,8 @@ async function loadListFromStorage(){
   _watchList = list || seedL.map(function(p){ return Object.assign({}, p); });
   currentTiers = tiers || seedT.map(function(t){ return Object.assign({}, t); });
   _playerDB = {};
-  _watchList.forEach(function(p){ _playerDB[p.pid] = { full_name: p.name }; });
+  /* PHOOD_TAGS_V1: legacy emoji strings become tag ids here, once, on the way in. */
+  _watchList.forEach(function(p){ _migrateVibeToTags(p); _playerDB[p.pid] = { full_name: p.name }; });
   _setStamp(stamp || 'Sample data — not yet saved', true);
 }
 
@@ -252,15 +253,106 @@ function _dragEnabled(){
   if(typeof _isReadOnlyMode === 'function' && _isReadOnlyMode()) return false;
   return true;
 }
-/* DRINK_TAGS_V1 - Tags is a plain text box Matt types into, so every tag has to
-   be typeable. Every one is an emoji except BYO, which has no glyph. He types
-   the letters, this paints them. Escapes first, then substitutes, so the badge
-   is the only markup that can ever come out of a Matt-typed string. */
-function _vibeHtml(v){
-  if(!v) return '';
-  /* BYOB is at least as common as BYO in Philly, so both paint, and both read BYO. */
-  return _esc(String(v)).replace(/\bBYOB?\b/gi,
-    '<span class="byo-badge" title="Bring your own bottle">BYO</span>');
+/* ============================================================================
+   PHOOD_TAGS_V1 (2026-08-15) - Matt's tag vocabulary, ported to BASEBALL'S MODEL.
+   Spots store tag IDS in p.type_tags, never the emoji itself, exactly like
+   mlb/index.html TYPE_TAGS_V1. That indirection is the whole point: when Matt
+   renamed eight baseball tags on 8/5 every tagged player kept his tags, because
+   the ids never moved. Change an emoji or a label here and every spot wearing it
+   just re-renders. Retire a tag with retired:true and it leaves the picker while
+   still rendering on anyone already wearing it. Never delete an entry.
+   BYO is the one tag with no emoji - Unicode has no Y letter glyph - so it
+   carries badge:'BYO' and paints as the red chip instead.
+   ========================================================================== */
+var PHOOD_TAGS_V1 = [
+  { group:'Verdict', id:'must_visit', emoji:'🥇', label:'Must Visit', tagline:"Top of the list. Go out of your way for this one." },
+  { group:'Verdict', id:'hot_now', emoji:'🔥', label:'Hot Right Now', tagline:"The city is talking about it this month." },
+  { group:'Verdict', id:'just_opened', emoji:'🆕', label:'Just Opened', tagline:"New room. Worth seeing before the crowds find it." },
+  { group:'Food', id:'cheap_eats', emoji:'💰', label:'Cheap Eats', tagline:"You will eat well and not think about the bill." },
+  { group:'Food', id:'dessert', emoji:'🍰', label:'Dessert Stop', tagline:"Go for the sweets. Dinner optional." },
+  { group:'Food', id:'vegetarian', emoji:'🌱', label:'Vegetarian Friendly', tagline:"A real menu for people who do not eat meat." },
+  { group:'Food', id:'takeout', emoji:'🥡', label:'Takeout', tagline:"Good enough to carry home, not just eat in." },
+  { group:'Drinks', id:'cocktails', emoji:'🍸', label:'Cocktails', tagline:"A proper cocktail program, not a well pour." },
+  { group:'Drinks', id:'wine', emoji:'🍷', label:'Good Wine Selection', tagline:"The list is worth reading. Somebody built it on purpose." },
+  { group:'Drinks', id:'bar', emoji:'🥃', label:'Bar Worth Waiting At', tagline:"Show up early. The wait for your table is the good part." },
+  { group:'Drinks', id:'byo', emoji:null, label:'Bring Your Own', tagline:"No liquor license. Bring a bottle.", badge:'BYO' },
+  { group:'Drinks', id:'brewery', emoji:'🍺', label:'Brewery', tagline:"They make the beer on site." },
+  { group:'Logistics', id:'reservations', emoji:'🎟️', label:'Reservations Required', tagline:"Do not just show up. Book it." },
+  { group:'Logistics', id:'walk_ins', emoji:'🚶', label:'Walk-ins Only', tagline:"No reservations taken. Get in line." },
+  { group:'Logistics', id:'outdoor', emoji:'⛱️', label:'Outdoor Seating', tagline:"Tables outside when the weather cooperates." },
+  { group:'Logistics', id:'big_groups', emoji:'🎉', label:'Good For Big Groups', tagline:"They can seat a party without a fight." },
+  { group:'Logistics', id:'valet', emoji:'🔑', label:'Valet Parking', tagline:"Hand over the keys. Parking is somebody else's problem." },
+  { group:'Logistics', id:'late_night', emoji:'🌙', label:'Late Night', tagline:"The kitchen is still going when everywhere else has closed." }
+];
+function _phoodTagById(id){
+  for(var i=0;i<PHOOD_TAGS_V1.length;i++){ if(PHOOD_TAGS_V1[i].id===id) return PHOOD_TAGS_V1[i]; }
+  return null;
+}
+/* Legacy emoji string -> ids. The pre-8/15 spots stored p.vibe as raw emoji.
+   Runs once per spot at load, additive only: p.vibe is left on the object
+   untouched so this is reversible. */
+var _PHOOD_LEGACY_VIBE = {
+  '🔥':'hot_now', '🥇':'must_visit', '💰':'cheap_eats',
+  '🍸':'cocktails', '🍺':'brewery', '🍰':'dessert',
+  '🌙':'late_night', '🆕':'just_opened', '🍷':'wine',
+  '🥃':'bar'
+};
+function _migrateVibeToTags(p){
+  if(!p || Array.isArray(p.type_tags)) return;
+  var ids = [], v = p.vibe ? String(p.vibe) : '';
+  if(/\bBYOB?\b/i.test(v)) ids.push('byo');
+  var chars = Array.from(v.replace(/\uFE0F/g,''));
+  for(var i=0;i<chars.length;i++){
+    var id = _PHOOD_LEGACY_VIBE[chars[i]];
+    if(id && ids.indexOf(id) === -1) ids.push(id);
+  }
+  p.type_tags = ids;
+}
+/* The Tags cell. Emojis inline exactly as before, so the table does not change
+   shape; only the source of truth moved from a typed string to ids. */
+function _tagChipsHtml(p){
+  var ids = (p && Array.isArray(p.type_tags)) ? p.type_tags : [];
+  if(!ids.length) return '';
+  var out = '';
+  for(var i=0;i<ids.length;i++){
+    var d = _phoodTagById(ids[i]);
+    if(!d) continue;
+    if(d.badge) out += '<span class="byo-badge" title="' + _esc(d.tagline) + '">' + d.badge + '</span>';
+    else out += '<span class="type-chip" title="' + _esc(d.label) + '">' + d.emoji + '</span>';
+  }
+  return out;
+}
+/* Tags column sorts on its LABELS, so the order is human and stable rather than
+   whatever the emoji codepoints happen to be. */
+function _phoodSortKey(p, f){
+  if(f !== 'vibe') return p[f];
+  var ids = Array.isArray(p.type_tags) ? p.type_tags : [], labels = [];
+  for(var i=0;i<ids.length;i++){ var d=_phoodTagById(ids[i]); if(d) labels.push(d.label); }
+  return labels.sort().join(' ');
+}
+/* The picker. Baseball's ppo-type-tag-row markup, grouped so eighteen rows stay
+   scannable. Deliberate deviation from baseball: these do NOT autosave per click,
+   because they live inside a modal that already has Save Spot and Cancel. */
+function _spotTagsPickerHtml(selected){
+  var sel = Array.isArray(selected) ? selected : [], html = '', lastGroup = null;
+  for(var i=0;i<PHOOD_TAGS_V1.length;i++){
+    var t = PHOOD_TAGS_V1[i];
+    if(t.retired) continue;
+    if(t.group !== lastGroup){ html += '<div class="spot-tag-group">' + t.group + '</div>'; lastGroup = t.group; }
+    var glyph = t.badge ? '<span class="byo-badge">' + t.badge + '</span>' : t.emoji;
+    html += '<label class="ppo-type-tag-row" title="' + _esc(t.tagline) + '">'
+      + '<input type="checkbox" class="spot-tag-cb" data-tag-id="' + t.id + '"'
+      + (sel.indexOf(t.id) >= 0 ? ' checked' : '') + '>'
+      + '<span class="ppo-type-tag-emoji">' + glyph + '</span>'
+      + '<span class="ppo-type-tag-label">' + t.label + '</span>'
+      + '</label>';
+  }
+  return html;
+}
+function _readSpotTagPicker(){
+  var out = [], cbs = document.querySelectorAll('#spot-tags-picker .spot-tag-cb');
+  for(var i=0;i<cbs.length;i++){ if(cbs[i].checked) out.push(cbs[i].getAttribute('data-tag-id')); }
+  return out;
 }
 function _rowHtml(p, rank){
   var drag = _dragEnabled();
@@ -275,7 +367,7 @@ function _rowHtml(p, rank){
     + '<td class="c' + (drag ? ' drag-handle" title="Drag to re-rank' : '') + '"><span class="rank-cell">' + (drag ? '&#9776; ' : '') + rank + '</span></td>'
     + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span>' + _freshTakeBadge(p) + '</td>'
     + '<td class="l">' + p.hood + '</td>'
-    + '<td class="l vibe">' + _vibeHtml(p.vibe) + '</td>'
+    + '<td class="l vibe">' + _tagChipsHtml(p) + '</td>'
     + '<td class="c">' + renderPriorityStars(p.pid, p.stars || 0) + '</td>'
     + _takeCellHtml(p)
     + '<td class="l">' + p.addr + '</td>'
@@ -295,7 +387,8 @@ function renderWatchList(){
   if(_sortField !== null){
     var f = _sortField, num = (f === 'stars');
     rows.sort(function(a,b){
-      return (num ? (a[f] - b[f]) : String(a[f]).localeCompare(String(b[f]))) * _sortDir;
+      var av = _phoodSortKey(a,f), bv = _phoodSortKey(b,f);
+      return (num ? (av - bv) : String(av).localeCompare(String(bv))) * _sortDir;
     });
   }
   var html = '';
@@ -544,7 +637,9 @@ function _spotFill(p){
   document.getElementById('spot-cat').value  = p ? (p.cat || 'rest') : 'rest';
   document.getElementById('spot-hood').value = p ? (p.hood || '') : '';
   document.getElementById('spot-addr').value = p ? (p.addr === 'TBD' ? '' : (p.addr || '')) : '';
-  document.getElementById('spot-vibe').value = p ? (p.vibe || '') : '';
+  if(p) _migrateVibeToTags(p);
+  document.getElementById('spot-tags-picker').innerHTML =
+    _spotTagsPickerHtml(p && Array.isArray(p.type_tags) ? p.type_tags : []);
   document.getElementById('spot-menu').value = p ? (p.menu || '') : '';
   document.getElementById('spot-pics').value = p ? (p.pics || '') : '';
   document.getElementById('spot-take').value = p ? (p.take || '') : '';
@@ -581,7 +676,7 @@ async function saveSpotFromModal(){
     cat:  document.getElementById('spot-cat').value,
     hood: document.getElementById('spot-hood').value.trim(),
     addr: document.getElementById('spot-addr').value.trim() || 'TBD',
-    vibe: document.getElementById('spot-vibe').value.trim(),
+    type_tags: _readSpotTagPicker(),
     menu: document.getElementById('spot-menu').value.trim(),
     pics: document.getElementById('spot-pics').value.trim(),
     take: document.getElementById('spot-take').value.trim(),
