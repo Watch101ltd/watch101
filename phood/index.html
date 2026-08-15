@@ -144,6 +144,15 @@ td.vibe{font-size:15px;letter-spacing:2px}
    letters B+Y render as the flag of Belarus), so Matt types the three letters
    into Tags and the row builder paints them as a boxed chip, same idea as the
    NEW glyph. letter-spacing is reset because td.vibe widens the whole cell. */
+/* PHOOD_TAGS_V1 - the checkbox picker, ported from baseball ppo-type-tags-*. */
+#spot-modal .ppo-type-tags-list{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;margin-top:2px}
+#spot-modal .spot-tag-group{grid-column:1/-1;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--phood-red);font-weight:800;margin:9px 0 1px}
+#spot-modal .ppo-type-tag-row{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none;padding:3px 6px;border-radius:4px;transition:background 0.15s}
+#spot-modal .ppo-type-tag-row:hover{background:var(--surface2)}
+#spot-modal .ppo-type-tag-row input[type=checkbox]{margin:0;cursor:pointer;flex:0 0 auto}
+#spot-modal .ppo-type-tag-emoji{font-size:14px;line-height:1;width:30px;text-align:center;flex:0 0 auto}
+#spot-modal .ppo-type-tag-label{font-size:11px;color:var(--text2)}
+.type-chip{cursor:default}
 .byo-badge{display:inline-block;background:var(--phood-red);color:#fff;font-weight:800;font-size:10px;letter-spacing:0.06em;padding:2px 5px;border-radius:4px;vertical-align:2px;font-family:inherit;white-space:nowrap}
 td.take{color:var(--text3);font-style:italic;white-space:normal;min-width:230px;font-weight:400}
 /* WL_NOTES_V1 ported (NBA 577-581 + readonly rule) — Matt's Take is a live click-to-type cell */
@@ -430,7 +439,7 @@ body.readonly-mode .backend-only{display:none !important;}
 
   <div class="legend">
     <b>How the list works (same rules as the player lists):</b> spots move up, down, or off entirely. A review drops from Klein or LaBan, a place gets hot, a visit disappoints — the list reacts.<br>
-    <b>Tags are placeholder vocabulary</b> — the emoji set is Matt's call, same as the sports. Sample set: 🔥 hot right now · 🆕 new / just opened · 🍺 brewery · 🍰 dessert stop · 🌙 late night · 💰 cheap eats · 🍸 cocktails · 🥇 must-visit · 🍷 good wine selection · 🥃 bar worth waiting at · <span class="byo-badge">BYO</span> bring your own, just type the letters.<br>
+    <b>Tags are Matt's vocabulary.</b> He picks them with the checkboxes in the Add or Edit Spot box, so the set stays consistent across every spot. Current set: 🥇 must visit · 🔥 hot right now · 🆕 just opened · 💰 cheap eats · 🍰 dessert stop · 🌱 vegetarian friendly · 🥡 takeout · 🍸 cocktails · 🍷 good wine selection · 🥃 bar worth waiting at · <span class="byo-badge">BYO</span> bring your own · 🍺 brewery · 🎟️ reservations required · 🚶 walk-ins only · ⛱️ outdoor seating · 🎉 good for big groups · 🔑 valet parking · 🌙 late night.<br>
     <b>Geographic rule from the 7/29 tape:</b> restaurants stay Philadelphia; bars &amp; breweries deliberately cast a wider net so the ones worth a drive make the cut.<br>
     <b>Sorting:</b> click any column header. Click <b>#</b> to return to Matt's list order with the tiers showing. Filtering or searching flattens the tiers while active.
   </div>
@@ -493,8 +502,8 @@ body.readonly-mode .backend-only{display:none !important;}
         <input id="spot-addr" type="text" placeholder="street address" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
       </div>
     </div>
-    <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Tags (emojis)</label>
-    <input id="spot-vibe" type="text" placeholder="e.g. &#128293;&#127942; BYO" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+    <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Tags <span style="text-transform:none;letter-spacing:0;opacity:0.7">check all that apply</span></label>
+    <div id="spot-tags-picker" class="ppo-type-tags-list"></div>
     <div style="display:flex;gap:12px">
       <div style="flex:1">
         <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Menu link</label>
