@@ -252,6 +252,16 @@ function _dragEnabled(){
   if(typeof _isReadOnlyMode === 'function' && _isReadOnlyMode()) return false;
   return true;
 }
+/* DRINK_TAGS_V1 - Tags is a plain text box Matt types into, so every tag has to
+   be typeable. Every one is an emoji except BYO, which has no glyph. He types
+   the letters, this paints them. Escapes first, then substitutes, so the badge
+   is the only markup that can ever come out of a Matt-typed string. */
+function _vibeHtml(v){
+  if(!v) return '';
+  /* BYOB is at least as common as BYO in Philly, so both paint, and both read BYO. */
+  return _esc(String(v)).replace(/\bBYOB?\b/gi,
+    '<span class="byo-badge" title="Bring your own bottle">BYO</span>');
+}
 function _rowHtml(p, rank){
   var drag = _dragEnabled();
   var trAttrs = drag
@@ -265,7 +275,7 @@ function _rowHtml(p, rank){
     + '<td class="c' + (drag ? ' drag-handle" title="Drag to re-rank' : '') + '"><span class="rank-cell">' + (drag ? '&#9776; ' : '') + rank + '</span></td>'
     + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span>' + _freshTakeBadge(p) + '</td>'
     + '<td class="l">' + p.hood + '</td>'
-    + '<td class="l vibe">' + p.vibe + '</td>'
+    + '<td class="l vibe">' + _vibeHtml(p.vibe) + '</td>'
     + '<td class="c">' + renderPriorityStars(p.pid, p.stars || 0) + '</td>'
     + _takeCellHtml(p)
     + '<td class="l">' + p.addr + '</td>'
