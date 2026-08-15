@@ -139,6 +139,20 @@ td.c{text-align:center}
 .priority-stars .pstar.filled{color:#fbbf24}
 body.day-mode .priority-stars .pstar{color:#cbd2dc}
 body.readonly-mode .priority-stars{pointer-events:none;cursor:default}
+/* PRICE_COL_V1 - mirrors .priority-stars exactly. Green rather than the stars gold
+   because the two scales sit in ADJACENT columns and must not read as one thing. */
+.price-signs{display:inline-flex;gap:0;font-size:14px;line-height:1;cursor:pointer;user-select:none;vertical-align:middle;font-weight:800}
+.price-signs .psign{color:#3a3f4a;transition:color 0.1s;padding:0 1px}
+.price-signs .psign:hover{color:#86efac}
+.price-signs .psign.filled{color:#22c55e}
+/* Admins see four dim signs (dim IS the unset state, and they are clickable).
+   Fans see only what has been set, so an unpriced spot gets a quiet dash. */
+.price-signs .price-unset{display:none;color:var(--text3);font-weight:400}
+body.readonly-mode .price-signs .price-unset{display:inline}
+body.day-mode .price-signs .psign{color:#cbd2dc}
+body.day-mode .price-signs .psign.filled{color:#16a34a}
+body.readonly-mode .price-signs{pointer-events:none;cursor:default}
+body.readonly-mode .price-signs .psign:not(.filled){display:none}
 td.vibe{font-size:15px;letter-spacing:2px}
 /* DRINK_TAGS_V1 - BYO has no emoji (Unicode has no Y letter glyph, and the flag
    letters B+Y render as the flag of Belarus), so Matt types the three letters
@@ -427,6 +441,7 @@ body.readonly-mode .backend-only{display:none !important;}
           <th class="l" data-col="hood">Neighborhood<span class="arrow" id="ar-hood"></span></th>
           <th class="l" data-col="vibe">Tags<span class="arrow" id="ar-vibe"></span></th>
           <th data-col="stars" style="text-align:center;width:100px">Priority<span class="arrow" id="ar-stars"></span></th>
+          <th data-col="price" style="text-align:center;width:78px" title="How expensive it is, not how good a deal it is">Price<span class="arrow" id="ar-price"></span></th>
           <th class="l" data-col="take">Matt's Take<span class="arrow" id="ar-take"></span></th>
           <th class="l" data-col="addr">Address<span class="arrow" id="ar-addr"></span></th>
           <th data-col="menu" style="text-align:center;width:70px">Menu</th>
@@ -440,6 +455,7 @@ body.readonly-mode .backend-only{display:none !important;}
   <div class="legend">
     <b>How the list works (same rules as the player lists):</b> spots move up, down, or off entirely. A review drops from Klein or LaBan, a place gets hot, a visit disappoints — the list reacts.<br>
     <b>Tags are Matt's vocabulary.</b> He picks them with the checkboxes in the Add or Edit Spot box, so the set stays consistent across every spot. Current set: 🥇 must visit · 🔥 hot right now · 🆕 just opened · 💰 cheap eats · 🍰 dessert stop · 🌱 vegetarian friendly · 🥡 takeout · 🍸 cocktails · 🍷 good wine selection · 🥃 bar worth waiting at · <span class="byo-badge">BYO</span> bring your own · 🍺 brewery · 🎟️ reservations required · 🚶 walk-ins only · ⛱️ outdoor seating · 🎉 good for big groups · 🔑 valet parking · 🌙 late night.<br>
+    <b>Price:</b> one to four dollar signs for how expensive a spot is. Blank means nobody has priced it yet. Click the signs straight from the list to set it, same as the priority stars, and click the one you are on to clear it. This says how much it costs, not whether it is a good deal.<br>
     <b>Geographic rule from the 7/29 tape:</b> restaurants stay Philadelphia; bars &amp; breweries deliberately cast a wider net so the ones worth a drive make the cut.<br>
     <b>Sorting:</b> click any column header. Click <b>#</b> to return to Matt's list order with the tiers showing. Filtering or searching flattens the tiers while active.
   </div>
@@ -490,6 +506,10 @@ body.readonly-mode .backend-only{display:none !important;}
       <div style="flex:1">
         <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Priority</label>
         <div id="spot-stars" style="padding:6px 0;font-size:20px;letter-spacing:3px;cursor:pointer;user-select:none"></div>
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Price</label>
+        <div id="spot-price" style="padding:6px 0;font-size:20px;letter-spacing:2px;cursor:pointer;user-select:none;font-weight:800"></div>
       </div>
     </div>
     <div style="display:flex;gap:12px">
