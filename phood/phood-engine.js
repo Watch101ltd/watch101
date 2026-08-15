@@ -237,6 +237,55 @@ function setPriority(pid, newPriority){
   } catch(_e){}
   autoSaveToPhoodNAS();
 }
+/* ============================================================================
+   PRICE_COL_V1 (2026-08-15) - how expensive a spot is, one to four dollar signs.
+   A straight clone of the Priority stars directly above: same widget shape, same
+   click-to-set from the table row, same click-the-current-value-to-clear, same
+   read-only gate, same repaint-every-widget-wearing-this-pid pattern.
+   FOUR not five, per the Dude: Yelp and Google both top out at four, so a fifth
+   sign reads wrong to anyone who has ever used a restaurant list.
+   0 means NOBODY HAS PRICED IT and renders as a quiet dash. It does not mean cheap.
+   This column is EXPENSE ONLY. Value is a separate idea and will live in a tag or
+   in Matt's take, never here.
+   ========================================================================== */
+var PHOOD_PRICE_MAX = 4;
+function renderPriceSigns(pid, currentPrice){
+  var cur = currentPrice || 0;
+  var html = '<span class="price-signs" data-pid="' + _esc(pid) + '">';
+  if(!cur) html += '<span class="price-unset" title="Not priced yet">&mdash;</span>';
+  for(var n = 1; n <= PHOOD_PRICE_MAX; n++){
+    var filled = (n <= cur) ? ' filled' : '';
+    html += '<span class="psign' + filled + '" data-value="' + n + '" title="Price ' + n + ' of ' + PHOOD_PRICE_MAX + '">$</span>';
+  }
+  html += '</span>';
+  return html;
+}
+function setPrice(pid, newPrice){
+  if(_blockIfReadOnly('setPrice')) return;
+  var idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  var entry = _watchList[idx];
+  var current = entry.price || 0;
+  var finalValue = (current === newPrice) ? 0 : newPrice;   /* click the current one to clear */
+  _watchList[idx] = Object.assign({}, entry, { price: finalValue });
+  renderWatchList();
+  try {
+    document.querySelectorAll('.price-signs[data-pid="' + pid + '"]').forEach(function(w){
+      w.outerHTML = renderPriceSigns(pid, finalValue);
+    });
+  } catch(_e){}
+  autoSaveToPhoodNAS();
+}
+document.addEventListener('click', function(e){
+  var sign = e.target.closest ? e.target.closest('.price-signs .psign') : null;
+  if(!sign) return;
+  var wrap = sign.closest('.price-signs');
+  if(!wrap) return;
+  var pid = wrap.getAttribute('data-pid');
+  var value = parseInt(sign.getAttribute('data-value'), 10);
+  if(!pid || !value) return;
+  setPrice(pid, value);
+});
 document.addEventListener('click', function(e){
   var star = e.target.closest ? e.target.closest('.priority-stars .pstar') : null;
   if(!star) return;
@@ -369,6 +418,7 @@ function _rowHtml(p, rank){
     + '<td class="l">' + p.hood + '</td>'
     + '<td class="l vibe">' + _tagChipsHtml(p) + '</td>'
     + '<td class="c">' + renderPriorityStars(p.pid, p.stars || 0) + '</td>'
+    + '<td class="c">' + renderPriceSigns(p.pid, p.price || 0) + '</td>'
     + _takeCellHtml(p)
     + '<td class="l">' + p.addr + '</td>'
     + (p.menu ? '<td class="c"><a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">MENU</a></td>'
@@ -387,6 +437,15 @@ function renderWatchList(){
   if(_sortField !== null){
     var f = _sortField, num = (f === 'stars');
     rows.sort(function(a,b){
+      /* PRICE_COL_V1: unpriced spots sink to the bottom in BOTH directions rather
+         than pretending 0 is cheap. Same idea as baseball sinking nulls. */
+      if(f === 'price'){
+        var ap = a.price || 0, bp = b.price || 0;
+        if(!ap && !bp) return 0;
+        if(!ap) return 1;
+        if(!bp) return -1;
+        return (ap - bp) * _sortDir;
+      }
       var av = _phoodSortKey(a,f), bv = _phoodSortKey(b,f);
       return (num ? (av - bv) : String(av).localeCompare(String(bv))) * _sortDir;
     });
@@ -628,6 +687,30 @@ function _spotStarsWire(){
     _spotStarsPaint();
   });
 }
+var _spotModalPrice = 0;   /* 0 = not priced, deliberately NOT a default of 2 */
+function _spotPricePaint(){
+  var el = document.getElementById('spot-price');
+  if(!el) return;
+  var h = '';
+  for(var i = 1; i <= PHOOD_PRICE_MAX; i++){
+    h += '<span data-price="' + i + '" style="color:' + (i <= _spotModalPrice ? '#22c55e' : '#3a3f4a') + '">$</span>';
+  }
+  h += '<span style="font-size:11px;color:var(--text3);margin-left:8px;font-style:italic">'
+     + (_spotModalPrice ? 'click again to clear' : 'not priced yet') + '</span>';
+  el.innerHTML = h;
+}
+function _spotPriceWire(){
+  var el = document.getElementById('spot-price');
+  if(!el || el._wired) return;
+  el._wired = true;
+  el.addEventListener('click', function(ev){
+    var t = ev.target.closest('[data-price]');
+    if(!t) return;
+    var v = parseInt(t.getAttribute('data-price'), 10) || 0;
+    _spotModalPrice = (_spotModalPrice === v) ? 0 : v;
+    _spotPricePaint();
+  });
+}
 function _spotShowErr(msg){
   var e = document.getElementById('spot-modal-error');
   if(e){ e.textContent = msg; e.style.display = msg ? 'block' : 'none'; }
@@ -644,7 +727,9 @@ function _spotFill(p){
   document.getElementById('spot-pics').value = p ? (p.pics || '') : '';
   document.getElementById('spot-take').value = p ? (p.take || '') : '';
   _spotModalStars = p ? (p.stars || 3) : 3;
-  _spotStarsPaint(); _spotStarsWire(); _spotShowErr('');
+  _spotModalPrice = p ? (p.price || 0) : 0;
+  _spotStarsPaint(); _spotStarsWire();
+  _spotPricePaint(); _spotPriceWire(); _spotShowErr('');
 }
 function openAddSpotModal(){
   if(typeof _blockIfReadOnly === 'function' && _blockIfReadOnly('openAddSpotModal')) return;
@@ -680,7 +765,8 @@ async function saveSpotFromModal(){
     menu: document.getElementById('spot-menu').value.trim(),
     pics: document.getElementById('spot-pics').value.trim(),
     take: document.getElementById('spot-take').value.trim(),
-    stars: _spotModalStars
+    stars: _spotModalStars,
+    price: _spotModalPrice
   };
   if(_spotEditingPid){
     var p = _watchList.find(function(x){ return x.pid === _spotEditingPid; });
