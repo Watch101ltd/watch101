@@ -442,6 +442,12 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
 #rankings-table .rk-note .rk-note-text{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #rankings-table .rk-note:hover{border-color:var(--gold);background:var(--surface2);color:var(--gold)}
 #rankings-table .rk-note.empty{color:#475569}
+/* FANMODE_RANK_NOTES_V1 (2026-08-18, Bugs #158/#159) - fans get no click target on the
+   rankings Note column. .rk-note carries cursor:pointer + a gold hover border, so the fan
+   variant cancels both. Mirrors the watch list's read-only note cell. */
+#rankings-table .rk-note.ro{cursor:default}
+#rankings-table .rk-note.ro:hover{border-color:transparent;background:transparent;color:var(--text)}
+#rankings-table .rk-note.ro.empty,#rankings-table .rk-note.ro.empty:hover{color:#475569}
 #rankings-table .rk-note-input{width:100%;font-size:12px;font-style:italic;background:var(--surface);border:1px solid var(--gold);color:var(--text);border-radius:4px;padding:2px 6px;font-family:inherit;outline:none}
 #rankings-table th.col-notebadge,#rankings-table td.col-notebadge{width:26px;text-align:center}
 #rankings-table .rk-note-badge{display:inline-block;font-size:12px;line-height:1;cursor:pointer;opacity:.85;transition:transform 120ms ease,opacity 120ms ease}
@@ -1874,8 +1880,11 @@ function renderRankings(){
   // re-snaps to the manual order (see rankDrop). The RANK column reflects whatever order is showing.
   var manualIds = _rankings[_rankPos];
   var ids = _rankSortField ? _rankSortedView(manualIds) : manualIds;
-  var sortNote = _rankSortField ? ' · sorted by ' + _rankSortField.toUpperCase() + ' (drag a player to return to your order)' : '';
-  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players. Drag the ☰ handle to re-rank. Separate from the Watch 101 list.' + sortNote;
+  // FANMODE_RANK_NOTES_V1 (2026-08-18, Bug #159) - the drag handle column is hidden from fans by
+  // CSS, so neither of these sentences may tell them to drag anything.
+  var _roStat = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+  var sortNote = _rankSortField ? (' · sorted by ' + _rankSortField.toUpperCase() + (_roStat ? '' : ' (drag a player to return to your order)')) : '';
+  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players.' + (_roStat ? '' : ' Drag the ☰ handle to re-rank.') + ' Separate from the Watch 101 list.' + sortNote;
 
   var cols = _rankColsFor(_rankPos);
   _rankRenderHead(cols);
@@ -2005,6 +2014,15 @@ function _rankCol_note(){ return { key:'note', label:'Note', headClass:'col-note
   num:function(pid){ return _rankNoteFor(pid) ? 1 : 0; },
   render:function(pid){
     var raw = _rankNoteFor(pid); var sp = _rankSplitNote(raw);
+    // FANMODE_RANK_NOTES_V1 (2026-08-18, Bug #158) - mirror _wlNoteCellHtml's read-only branch:
+    // fans see a quiet dash on an empty note and never get a click target. The watch list has
+    // carried this cure all along ('fans see a quiet dash, no invitation'); rankings never got it.
+    var _roNote = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+    if(_roNote){
+      if(!raw) return '<div class="rk-note ro empty">\u2014</div>';
+      var _roLink = sp.url ? ('<a class="rk-note-link" href="'+escapeHtml(sp.url)+'" target="_blank" rel="noopener" title="'+escapeHtml(sp.url)+'" onclick="event.stopPropagation()">\ud83d\udd17</a>') : '';
+      return '<div class="rk-note ro" title="'+escapeHtml(raw)+'"><span class="rk-note-text">'+escapeHtml(sp.text || '')+'</span>'+_roLink+'</div>';
+    }
     var empty = raw ? '' : ' empty';
     var shown = sp.text || (raw ? '' : 'Add note...');
     var link = sp.url ? ('<a class="rk-note-link" href="'+escapeHtml(sp.url)+'" target="_blank" rel="noopener" title="'+escapeHtml(sp.url)+'" onclick="event.stopPropagation()">🔗</a>') : '';
@@ -2017,6 +2035,11 @@ function _rankCol_notebadge(){ return { key:'notebadge', label:'', headClass:'co
   render:function(pid){
     var has = !!_rankNoteFor(pid);
     var pidAttr = String(pid).replace(/"/g,'&quot;');
+    // FANMODE_RANK_NOTES_V1 (2026-08-18, Bug #158) - the pencil's tooltip literally reads
+    // 'Add note', which is the same false invitation as the cell. Fans get nothing when there
+    // is no note, and a non-clickable clipboard when there is.
+    var _roBadge = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+    if(_roBadge) return has ? '<span class="rk-note-badge" style="cursor:default" title="Matt has a note on this player">\ud83d\udccb</span>' : '';
     var icon = has ? '📋' : '📝';
     var tip = has ? 'Edit note' : 'Add note';
     return '<span class="rk-note-badge" title="'+tip+'" onclick="editRankNoteFromBadge(&quot;'+pidAttr+'&quot;,this)">'+icon+'</span>';
