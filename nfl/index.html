@@ -1362,6 +1362,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="rank-subnav-btn" data-rankpos="WR" onclick="switchRankPos('WR', this)">WR</button>
     <button class="rank-subnav-btn" data-rankpos="TE" onclick="switchRankPos('TE', this)">TE</button>
     <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
+    <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px">&#127991;&#65039; Tier</button>
     <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="doneRankingNotify(this)" title="Ping Jay's phone that this rankings pass is finished" style="margin-left:14px">✅ Done Ranking</button>
   </div>
   <div class="table-wrap" id="nflrankings-wrap">
@@ -1922,6 +1923,8 @@ function renderRankings(){
   }).join('');
   _rankWireSortHeaders();
   _rankUpdateSortArrows();
+  // RANK_TIERS_V1 - brackets are measured off real rows, so they paint after the body exists.
+  try { renderRankTiers(); } catch(e){ console.warn('[RANK_TIERS_V1] render after rankings failed:', e); }
 }
 
 // ══════════ RANKINGS_STATS_V1 (June 9, 2026 — PC Walter, per the Dude) ══════════
@@ -2218,7 +2221,7 @@ async function saveRankings(pos){
     var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; return o; });   // RANKINGS_NOTES_NFL_V1: note rides along
     var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ players: players, manual: _rankManual[pos] === true })  // RANKINGS_LIVE_SEED_V1
+      body: JSON.stringify({ players: players, manual: _rankManual[pos] === true, tiers: (typeof _rankTiersForSave === 'function' ? _rankTiersForSave(pos) : []) })  // RANKINGS_LIVE_SEED_V1 + RANK_TIERS_V1 (the server already persists a tiers array for any list id)
     });
     if(res.ok){
       if(statusEl) statusEl.textContent = '✓ ' + pos + ' rankings saved (' + players.length + ').';
@@ -2304,6 +2307,11 @@ async function loadRankingsFromNAS(){
         var payload = (data && data.data && Array.isArray(data.data.players)) ? data.data
                     : (data && Array.isArray(data.players)) ? data : null;
         var players = payload ? payload.players : null;
+        // RANK_TIERS_V1 - tiers ride the same payload. Snapshot on arrival for the anti-wipe guard.
+        try {
+          var _rtKey = ((_rankSet === 'dynasty') ? 'dynasty' : 'redraft') + '|' + pos;
+          if(payload && Array.isArray(payload.tiers)){ _rankTiers[_rtKey] = payload.tiers; _rankTiersSnapshot[_rtKey] = payload.tiers.slice(); }
+        } catch(_rtE){ console.warn('[RANK_TIERS_V1] tier hydrate failed for ' + pos + ':', _rtE); }
         if(players && players.length){
           players.forEach(function(it){ if(it && it.pid != null && it.note != null && String(it.note).trim()){ if(_rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); } });  // RANKINGS_NOTES_NFL_V1: harvest notes from NAS (manual or not)
           // RANKINGS_LIVE_SEED_V1 -- only a HAND-DRAGGED order (manual:true in the saved payload) is
@@ -3892,6 +3900,7 @@ document.addEventListener('keydown', function(e){
 function openCreateTierModal(){
   if(_blockIfReadOnly('openCreateTierModal')) return;
   try {
+    _tierSurface = 'watchlist';   // RANK_TIERS_V1 - the shared modal serves the watch list on this path
     _tierEditingId = null;
     _tierPopulateForm(null);
     _tierConfigureMode(false);
@@ -3906,6 +3915,7 @@ function openEditTierModal(tierId){
   try {
     var tier = (Array.isArray(currentTiers) ? currentTiers : []).find(function(t){ return t && t.id === tierId; });
     if(!tier){ console.warn('[TIERS_V1] openEditTierModal — tier not found:', tierId); return; }
+    _tierSurface = 'watchlist';   // RANK_TIERS_V1
     _tierEditingId = tierId;
     _tierPopulateForm(tier);
     _tierConfigureMode(true);
@@ -4160,6 +4170,340 @@ function renderTiers(){
   });
 }
 window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} });
+var _tierSurface = 'watchlist';   // RANK_TIERS_V1 - which page the shared tier modal is serving
+
+// ============================================================================
+// RANK_TIERS_V1 (2026-08-18 - PC Walter, per the Dude, for Matt). Editorial tier
+// brackets on the RANKINGS page, one independent set per position tab per rankings
+// set (Overall/QB/RB/WR/TE/DEF x redraft/dynasty = 12 collections on football).
+//
+// WHY THIS IS A CLONE AND NOT A REFACTOR: the watch list's TIERS_V1 engine is
+// welded to _watchList/_wlPid/#watch-list-body and Matt uses that page daily. This
+// is a parallel engine on the same visual language, so nothing the watch list
+// depends on is touched. The ONE piece deliberately shared is the modal DOM, routed
+// by _tierSurface through the _tierModalSave/_tierModalDelete dispatchers - a
+// duplicated modal would drift, and drift is the bug we keep re-learning.
+//
+// Tier shape matches the watch list and the public-cut trim script:
+//   { id, name, color, start_pid, end_pid, created_at }
+// Anchored to PLAYERS, not row numbers, so Matt's drags carry the bracket with them.
+// Persistence rides the existing rankings save: the NFL server's POST handler already
+// reads and stores a tiers array for ANY registered list id, so no server change and
+// no container rebuild was needed.
+// STAGE 2 (whole-tier group drag) is deliberately NOT in this pass.
+// ============================================================================
+var _rankTiers = {};            // 'set|Pos' -> [tier, ...]
+var _rankTiersSnapshot = {};    // load-time snapshot, for the anti-wipe guard
+var _rankTiersMutated = {};     // 'set|Pos' -> true once the user really edited
+var _rankTierEditingId = null;
+var RANK_TIERS_LS_KEY = 'watch101_nfl_ranktiers_v1';
+
+function _rankTierKeyFor(pos){ return ((typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'dynasty' : 'redraft') + '|' + (pos || _rankPos); }
+function _rankTierKey(){ return _rankTierKeyFor(_rankPos); }
+function _rankTiersGet(pos){ var k = _rankTierKeyFor(pos); if(!Array.isArray(_rankTiers[k])) _rankTiers[k] = []; return _rankTiers[k]; }
+
+// TIERS_SNAPSHOT_GUARD, ported whole. An empty tiers save is only trusted after an
+// EXPLICIT create/edit/delete. Otherwise rescue from the load snapshot or localStorage.
+function _rankTiersForSave(pos){
+  var k = _rankTierKeyFor(pos);
+  try {
+    var cur = _rankTiers[k];
+    if(Array.isArray(cur) && cur.length > 0) return cur;
+    if(_rankTiersMutated[k]) return [];
+    if(Array.isArray(_rankTiersSnapshot[k]) && _rankTiersSnapshot[k].length > 0){
+      console.warn('[RANK_TIERS_V1] refusing to save empty tiers with no user action - rescued from the load snapshot:', k);
+      return _rankTiersSnapshot[k].slice();
+    }
+    try {
+      var raw = localStorage.getItem(RANK_TIERS_LS_KEY);
+      if(raw){ var all = JSON.parse(raw); if(all && Array.isArray(all[k]) && all[k].length){ console.warn('[RANK_TIERS_V1] rescued tiers from localStorage:', k); return all[k]; } }
+    } catch(e){}
+    return [];
+  } catch(e){ return Array.isArray(_rankTiers[k]) ? _rankTiers[k] : []; }
+}
+function _rankTiersPersistLocal(){
+  try { localStorage.setItem(RANK_TIERS_LS_KEY, JSON.stringify(_rankTiers)); }
+  catch(e){ console.warn('[RANK_TIERS_V1] localStorage save failed:', e); }
+}
+function _rankTiersLoadLocal(){
+  try { var raw = localStorage.getItem(RANK_TIERS_LS_KEY); if(raw){ var all = JSON.parse(raw); if(all && typeof all === 'object') _rankTiers = all; } }
+  catch(e){ console.warn('[RANK_TIERS_V1] localStorage load failed:', e); }
+}
+
+// ---- Modal: shared DOM, routed by surface ----
+function _rankTierPopulateForm(tierToEdit){
+  var nameEl = document.getElementById('tier-name');
+  var colorEl = document.getElementById('tier-color');
+  var startEl = document.getElementById('tier-start');
+  var endEl = document.getElementById('tier-end');
+  var errEl = document.getElementById('tier-error');
+  if(nameEl) nameEl.value = '';
+  if(colorEl) colorEl.value = '';
+  if(errEl){ errEl.style.display = 'none'; errEl.textContent = ''; }
+  document.querySelectorAll('#tier-color-swatches .tier-swatch.selected').forEach(function(b){ b.classList.remove('selected'); });
+  // The dropdowns list THIS tab in its saved order, which is exactly what the brackets sit on.
+  var ids = (_rankings && Array.isArray(_rankings[_rankPos])) ? _rankings[_rankPos] : [];
+  if(startEl && endEl){
+    var optsHtml = '<option value="">Select…</option>';
+    ids.forEach(function(pid, idx){
+      var p = (_playerDB && _playerDB[pid]) || {};
+      var nm = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || ('(pid ' + pid + ')');
+      var label = '#' + (idx + 1) + '  ' + nm;
+      optsHtml += '<option value="' + String(pid).replace(/"/g,'&quot;') + '">' + label.replace(/</g,'&lt;') + '</option>';
+    });
+    startEl.innerHTML = optsHtml;
+    endEl.innerHTML = optsHtml;
+  }
+  if(tierToEdit){
+    if(nameEl) nameEl.value = tierToEdit.name || '';
+    if(startEl) startEl.value = String(tierToEdit.start_pid || '');
+    if(endEl) endEl.value = String(tierToEdit.end_pid || '');
+    if(tierToEdit.color) selectTierColor(tierToEdit.color);
+  }
+}
+function openCreateRankTierModal(){
+  if(_blockIfReadOnly('openCreateRankTierModal')) return;
+  try {
+    if(_rankSortField){ alert('Clear the column sort first - brackets only line up in your own order.'); return; }
+    _tierSurface = 'rankings';
+    _rankTierEditingId = null;
+    _rankTierPopulateForm(null);
+    _tierConfigureMode(false);
+    _tierDragRowSync(false);   // group drag is Stage 2 - never offer it on rankings yet
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.style.display = 'flex';
+    setTimeout(function(){ var n = document.getElementById('tier-name'); if(n) n.focus(); }, 50);
+  } catch(e){ console.warn('[RANK_TIERS_V1] openCreateRankTierModal failed:', e); }
+}
+function openEditRankTierModal(tierId){
+  if(_blockIfReadOnly('openEditRankTierModal')) return;
+  try {
+    var tier = _rankTiersGet().find(function(t){ return t && t.id === tierId; });
+    if(!tier){ console.warn('[RANK_TIERS_V1] openEditRankTierModal - tier not found:', tierId); return; }
+    _tierSurface = 'rankings';
+    _rankTierEditingId = tierId;
+    _rankTierPopulateForm(tier);
+    _tierConfigureMode(true);
+    _tierDragRowSync(false);   // Stage 2 not shipped: no group-drag row on rankings
+    var modal = document.getElementById('create-tier-modal');
+    if(modal) modal.style.display = 'flex';
+    setTimeout(function(){ var n = document.getElementById('tier-name'); if(n) n.focus(); }, 50);
+  } catch(e){ console.warn('[RANK_TIERS_V1] openEditRankTierModal failed:', e); }
+}
+async function saveRankTierFromModal(){
+  if(_blockIfReadOnly('saveRankTierFromModal')) return;
+  var errEl = document.getElementById('tier-error');
+  function showErr(msg){ if(errEl){ errEl.textContent = msg; errEl.style.display = 'block'; } }
+  try {
+    var name = (document.getElementById('tier-name').value || '').trim();
+    var color = (document.getElementById('tier-color').value || '').trim();
+    var startId = document.getElementById('tier-start').value;
+    var endId = document.getElementById('tier-end').value;
+    if(!name){ showErr('Tier name is required.'); return; }
+    if(!color){ showErr('Pick a color from the palette.'); return; }
+    if(!startId){ showErr('Pick a Start Player.'); return; }
+    if(!endId){ showErr('Pick an End Player.'); return; }
+    var ids = (_rankings && Array.isArray(_rankings[_rankPos])) ? _rankings[_rankPos] : [];
+    var startIdx = ids.findIndex(function(p){ return String(p) === String(startId); });
+    var endIdx = ids.findIndex(function(p){ return String(p) === String(endId); });
+    if(startIdx < 0 || endIdx < 0){ showErr('Could not find one of the selected players. Try reopening the window.'); return; }
+    if(endIdx < startIdx){ showErr('End Player must be the same as or below the Start Player on this tab.'); return; }
+    var key = _rankTierKey();
+    var arr = _rankTiersGet();
+    if(_rankTierEditingId){
+      var existing = arr.find(function(t){ return t && t.id === _rankTierEditingId; });
+      if(!existing){ showErr('Could not find the tier to update. It may have been deleted in another tab.'); return; }
+      existing.name = name; existing.color = color;
+      existing.start_pid = String(startId); existing.end_pid = String(endId);
+      existing.updated_at = new Date().toISOString();
+    } else {
+      arr.push({ id:'ranktier_' + Date.now(), name:name, color:color,
+                 start_pid:String(startId), end_pid:String(endId),
+                 created_at:new Date().toISOString(), created_by:'matt' });
+    }
+    _rankTiersMutated[key] = true;
+    _rankTiersPersistLocal();
+    try { if(typeof saveRankings === 'function') await saveRankings(_rankPos); } catch(e){ console.warn('[RANK_TIERS_V1] save failed:', e); }
+    closeCreateTierModal();
+    try { renderRankTiers(); } catch(e){}
+  } catch(e){
+    console.warn('[RANK_TIERS_V1] saveRankTierFromModal failed:', e);
+    showErr('Something went wrong. Check the console for details.');
+  }
+}
+async function deleteRankTierFromModal(){
+  if(_blockIfReadOnly('deleteRankTierFromModal')) return;
+  if(!_rankTierEditingId) return;
+  try {
+    var key = _rankTierKey();
+    var arr = _rankTiersGet();
+    var idx = arr.findIndex(function(t){ return t && t.id === _rankTierEditingId; });
+    if(idx < 0){ closeCreateTierModal(); return; }
+    var doomed = arr[idx];
+    var ok = confirm('Delete tier "' + (doomed.name || '(untitled)') + '"?\n\nThe players stay on the rankings - only the colored bracket disappears. This cannot be undone.');
+    if(!ok) return;
+    arr.splice(idx, 1);
+    _rankTiersMutated[key] = true;
+    _rankTiersPersistLocal();
+    try { if(typeof saveRankings === 'function') await saveRankings(_rankPos); } catch(e){ console.warn('[RANK_TIERS_V1] save after delete failed:', e); }
+    closeCreateTierModal();
+    try { renderRankTiers(); } catch(e){}
+  } catch(e){ console.warn('[RANK_TIERS_V1] deleteRankTierFromModal failed:', e); }
+}
+// Dispatchers - the modal's two buttons route by surface so one modal serves both pages.
+function _tierModalSave(){ if(_tierSurface === 'rankings') return saveRankTierFromModal(); return saveTierFromModal(); }
+function _tierModalDelete(){ if(_tierSurface === 'rankings') return deleteRankTierFromModal(); return deleteTierFromModal(); }
+
+// ---- Render: overlay boxes + spacer rows over the rankings table ----
+function _rankTiersDefaultOrder(){
+  // Brackets only make sense in the saved order. A column sort scrambles the rows,
+  // so hide the boxes until the sort is cleared. (Rankings has no search/filter bar.)
+  try { return !_rankSortField; } catch(e){ return false; }
+}
+function _rankTiersResolveRange(tier){
+  var tbody = document.getElementById('rankings-body');
+  if(!tbody || !tier) return null;
+  var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-rank-pid]'));
+  if(rows.length === 0) return null;
+  var idOf = function(r){ return String(r.getAttribute('data-rank-pid')); };
+  var startId = String(tier.start_pid), endId = String(tier.end_pid);
+  var si = -1, ei = -1;
+  for(var i=0;i<rows.length;i++){ if(idOf(rows[i])===startId){ si=i; break; } }
+  for(var j=0;j<rows.length;j++){ if(idOf(rows[j])===endId){ ei=j; } }
+  if(si !== -1 && ei !== -1 && si <= ei) return { startRow: rows[si], endRow: rows[ei] };
+  return null;   // a player who left the tab takes his bracket edge with him; render nothing rather than guess
+}
+function _rankTiersClearOverlay(){
+  try { var l = document.getElementById('rank-tier-overlay-layer'); if(l) l.innerHTML = ''; } catch(e){}
+}
+function _rankTiersClearSpacerRows(){
+  try {
+    var tbody = document.getElementById('rankings-body');
+    if(!tbody) return;
+    tbody.querySelectorAll('tr.tier-spacer-row').forEach(function(r){ r.remove(); });
+  } catch(e){}
+}
+function _rankTiersInjectSpacerRows(){
+  _rankTiersClearSpacerRows();
+  var arr = _rankTiersGet();
+  if(!arr.length || !_rankTiersDefaultOrder()) return;
+  var tbody = document.getElementById('rankings-body');
+  if(!tbody) return;
+  var firstRow = tbody.querySelector('tr[data-rank-pid]');
+  if(!firstRow) return;
+  var colCount = firstRow.children.length;
+  arr.forEach(function(tier){
+    try {
+      var range = _rankTiersResolveRange(tier);
+      if(!range || !range.startRow) return;
+      var spacer = document.createElement('tr');
+      spacer.className = 'tier-spacer-row';
+      spacer.setAttribute('data-tier-spacer-for', String(tier.id));
+      var td = document.createElement('td');
+      td.colSpan = colCount;
+      spacer.appendChild(td);
+      tbody.insertBefore(spacer, range.startRow);
+    } catch(e){ console.warn('[RANK_TIERS_V1] spacer inject failed:', tier, e); }
+  });
+}
+function _rankTiersGetOrCreateLayer(){
+  var tbody = document.getElementById('rankings-body');
+  if(!tbody) return null;
+  var table = tbody.closest('table');
+  if(!table) return null;
+  var anchor = table.parentElement;
+  if(!anchor) return null;
+  var cs = window.getComputedStyle(anchor);
+  if(cs.position === 'static') anchor.style.position = 'relative';
+  var layer = document.getElementById('rank-tier-overlay-layer');
+  if(!layer){
+    layer = document.createElement('div');
+    layer.id = 'rank-tier-overlay-layer';
+    layer.style.cssText = 'position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;z-index:5';
+    anchor.appendChild(layer);
+  } else if(layer.parentElement !== anchor){ anchor.appendChild(layer); }
+  return { layer: layer, anchor: anchor };
+}
+function renderRankTiers(){
+  _rankTiersClearOverlay();
+  try { _rankTiersInjectSpacerRows(); } catch(e){ console.warn('[RANK_TIERS_V1] inject crashed:', e); }
+  var arr = _rankTiersGet();
+  if(!arr.length) return;
+  if(!_rankTiersDefaultOrder()){ try { _rankTiersClearSpacerRows(); } catch(e){} return; }
+  var ctx = _rankTiersGetOrCreateLayer();
+  if(!ctx) return;
+  var layer = ctx.layer, anchor = ctx.anchor;
+  var anchorRect = anchor.getBoundingClientRect();
+  var tbodyEl = document.getElementById('rankings-body');
+  if(!tbodyEl) return;
+  var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+  arr.forEach(function(tier){
+    try {
+      var range = _rankTiersResolveRange(tier);
+      if(!range) return;
+      var startRow = range.startRow, endRow = range.endRow;
+      if(!startRow || !endRow) return;
+      var sRect = startRow.getBoundingClientRect(), eRect = endRow.getBoundingClientRect();
+      var top = sRect.top - anchorRect.top + anchor.scrollTop;
+      var bottom = eRect.bottom - anchorRect.top + anchor.scrollTop;
+      var height = bottom - top;
+      if(height <= 0) return;
+      var hex = TIER_COLOR_HEX[tier.color] || '#94a3b8';
+      var tbodyRect = tbodyEl.getBoundingClientRect();
+      var boxLeft = tbodyRect.left - anchorRect.left + anchor.scrollLeft;
+      var boxWidth = (tbodyRect.right - anchorRect.left + anchor.scrollLeft) - boxLeft;
+      var pad = 4;
+      var box = document.createElement('div');
+      box.className = 'tier-bracket-box';
+      box.setAttribute('data-tier-id', tier.id);
+      box.style.cssText =
+        'position:absolute;top:' + (top - pad) + 'px;left:' + (boxLeft - pad) + 'px;' +
+        'width:' + (boxWidth + pad * 2) + 'px;height:' + (height + pad * 2) + 'px;' +
+        'border:3px solid ' + hex + ';border-radius:6px;' +
+        'box-shadow:0 0 8px ' + hex + '55, inset 0 0 4px ' + hex + '22;' +
+        'background:transparent;pointer-events:none;box-sizing:border-box;';
+      box.title = tier.name;
+      var tab = document.createElement('div');
+      tab.className = 'tier-bracket-tab';
+      tab.setAttribute('data-tier-id', tier.id);
+      tab.textContent = tier.name;
+      var spacerRow = document.querySelector('#rankings-body tr.tier-spacer-row[data-tier-spacer-for="' + String(tier.id).replace(/"/g,'\\"') + '"]');
+      var tabTop, tabRadius, tabShadow;
+      if(spacerRow){
+        var spacerRect = spacerRow.getBoundingClientRect();
+        tabTop = (spacerRect.top - anchorRect.top + anchor.scrollTop) + 5;
+        tabRadius = '4px'; tabShadow = '0 1px 4px ' + hex + '55';
+      } else {
+        var firstTbodyRow = document.querySelector('#rankings-body tr[data-rank-pid]');
+        if(firstTbodyRow && firstTbodyRow === startRow){
+          tabTop = (top + height + pad - 2); tabRadius = '0 0 6px 6px'; tabShadow = '0 1px 4px ' + hex + '55';
+        } else {
+          tabTop = (top - pad - 14); tabRadius = '6px 6px 0 0'; tabShadow = '0 -1px 4px ' + hex + '55';
+        }
+      }
+      tab.style.cssText =
+        'position:absolute;top:' + tabTop + 'px;left:' + (boxLeft - pad) + 'px;' +
+        'background:' + hex + ';color:#fff;font-family:"Nunito Sans",sans-serif;' +
+        'font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;' +
+        'padding:2px 10px;border-radius:' + tabRadius + ';box-shadow:' + tabShadow + ';' +
+        'pointer-events:auto;cursor:pointer;white-space:nowrap;';
+      if(isFan){
+        tab.title = 'Tier: ' + tier.name;
+        tab.style.cursor = 'default';
+      } else {
+        tab.title = 'Tier: ' + tier.name + ' - click to edit or delete';
+        (function(tid){ tab.addEventListener('click', function(ev){ ev.stopPropagation(); openEditRankTierModal(tid); }); })(tier.id);
+      }
+      layer.appendChild(box);
+      layer.appendChild(tab);
+    } catch(e){ console.warn('[RANK_TIERS_V1] failed to render tier:', tier, e); }
+  });
+}
+window.addEventListener('resize', function(){ try { if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankTiers(); } catch(e){} });
+_rankTiersLoadLocal();
+// ============================================================================
+// /RANK_TIERS_V1
+// ============================================================================
 
 async function switchActiveList(newId){
   // NFL_RANKINGS_PARITY_V1 (2026-08-05) -- NBA's two diverts ported together. "view:*" entries
@@ -6694,10 +7038,10 @@ function _yahooLookupFmt(pid, field, isPercent){
     </div>
     <div id="tier-error" style="display:none;color:#ef4444;font-size:12px;margin-bottom:8px"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-      <button id="tier-delete-btn" style="display:none;background:#7f1d1d;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer" onclick="deleteTierFromModal()">🗑️ Delete Tier</button>
+      <button id="tier-delete-btn" style="display:none;background:#7f1d1d;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer" onclick="_tierModalDelete()">🗑️ Delete Tier</button>
       <div style="display:flex;gap:8px;margin-left:auto">
         <button class="btn btn-outline" onclick="closeCreateTierModal()">Cancel</button>
-        <button id="tier-save-btn" style="background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer" onclick="saveTierFromModal()">Create Tier</button>
+        <button id="tier-save-btn" style="background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer" onclick="_tierModalSave()">Create Tier</button>
       </div>
     </div>
   </div>
