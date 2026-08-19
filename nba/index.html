@@ -3716,6 +3716,7 @@ function renderRankings(){
     return;
   }
   var dragLocked = !!_rankSortField;  // while sorted, the view is not the saved order, so disable drag
+  var _badgeCol = _rankCol_notebadge();   // RANKINGS_WL_CLONE_NBA_V1: badge rides the player cell now, like the watch list
   tbody.innerHTML = ids.map(function(pid, i){
     var p = _playerDB[pid];
     if(!p) return '';
@@ -3736,7 +3737,7 @@ function renderRankings(){
       handleCell +
       '<td class="col-rank">' + (i+1) + '</td>' +
       '<td class="center">' + _nbaPosBadges(p) + '</td>' +
-      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span></td>' +
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span> ' + _badgeCol.render(pid) + '</td>' +   // RANKINGS_WL_CLONE_NBA_V1
       statCells +
     '</tr>';
   }).join('');
@@ -3881,19 +3882,97 @@ function _rankCol_notebadge(){ return { key:'notebadge', label:'', headClass:'co
     return '<span class="rk-note-badge" title="'+tip+'" onclick="editRankNoteFromBadge(&quot;'+pidAttr+'&quot;,this)">'+icon+'</span>';
   } }; }
 // ── /RANKINGS_NOTES_NBA_V1 ───────────────────────────────────────────────────
+
+// ══ RANKINGS_WL_CLONE_NBA_V1 (2026-08-19 -- PC Walter; football's RANKINGS_WL_CLONE_NFL_V1
+// mirrored the same evening it was VERIFIED by the Dude). Rankings tabs clone the Watch 101
+// table: Team/Age/Exp/Type/Priority/Note lead in watch-list order, then Y!Rank/Y!Owned/CBS,
+// then the RANK_STATS_PARITY_V1 stat block UNCHANGED (it already matches the watch list, the
+// Dude's verified 8/5 call). Type tags + Priority stars are RANKINGS-SCOPED, keyed by player
+// across every rankings tab, riding the rankings save payload exactly like rankings notes.
+// NOT cloned, the Dude's 8/19 calls: the +/- column and the Action/Remove column.
+var _rankTypes = {};        // pid -> array of tag ids (rankings-scoped)
+var _rankPriorities = {};   // pid -> 1..5 (absent = none)
+var RANK_TYPES_KEY = 'watch101_nba_rank_types_v1';
+var RANK_PRIO_KEY  = 'watch101_nba_rank_prio_v1';
+function _rankTypesSaveLocal(){ try { localStorage.setItem(RANK_TYPES_KEY, JSON.stringify(_rankTypes)); } catch(e){ console.warn('[RANKINGS_WL_CLONE_NBA_V1] types save failed:', e); } }
+function _rankTypesLoadLocal(){ try { var raw = localStorage.getItem(RANK_TYPES_KEY); if(raw){ var o = JSON.parse(raw); if(o && typeof o === 'object') _rankTypes = o; } } catch(e){} }
+function _rankPrioSaveLocal(){ try { localStorage.setItem(RANK_PRIO_KEY, JSON.stringify(_rankPriorities)); } catch(e){ console.warn('[RANKINGS_WL_CLONE_NBA_V1] prio save failed:', e); } }
+function _rankPrioLoadLocal(){ try { var raw = localStorage.getItem(RANK_PRIO_KEY); if(raw){ var o = JSON.parse(raw); if(o && typeof o === 'object') _rankPriorities = o; } } catch(e){} }
+function _rankTypeTagsFor(pid){ var t = _rankTypes[pid]; return Array.isArray(t) ? t : []; }
+function _rankPriorityFor(pid){ var v = Number(_rankPriorities[pid]); return (isFinite(v) && v > 0) ? Math.min(v, 5) : 0; }
+function _rankSetPriority(pid, newPriority){
+  if(_blockIfReadOnly('_rankSetPriority')) return;
+  var current = _rankPriorityFor(pid);
+  var finalValue = (current === newPriority) ? 0 : newPriority;   // click the same star = clear (the watch-list contract)
+  if(finalValue > 0) _rankPriorities[pid] = finalValue; else delete _rankPriorities[pid];
+  _rankPrioSaveLocal();
+  if(typeof saveRankings === 'function' && _rankPos) saveRankings(_rankPos);
+  renderRankings();
+}
+function _rankRenderPriorityStars(pid, currentPriority){
+  // Same markup + classes as the watch list's stars, but data-RANK-pid: the watch-list star
+  // delegator reads dataset.pid, finds none, and no-ops. The delegator below reads
+  // data-rank-pid only. body.readonly-mode .priority-stars covers fans for free.
+  var html = '<span class="priority-stars" data-rank-pid="' + escapeHtml(pid) + '">';
+  for(var n = 1; n <= 5; n++){
+    html += '<span class="pstar' + ((n <= currentPriority) ? ' filled' : '') + '" data-value="' + n + '">\u2605</span>';
+  }
+  return html + '</span>';
+}
+document.addEventListener('click', function(e){
+  var star = e.target.closest('.priority-stars .pstar');
+  if(!star) return;
+  var wrap = star.closest('.priority-stars');
+  if(!wrap || !wrap.getAttribute('data-rank-pid')) return;   // rankings stars only
+  var pid = wrap.getAttribute('data-rank-pid');
+  var value = parseInt(star.dataset.value, 10);
+  if(!pid || !value) return;
+  _rankSetPriority(pid, value);
+});
+function _ftlToggleRankTypeTag(checkboxEl){
+  if(_blockIfReadOnly('_ftlToggleRankTypeTag')) return;
+  var pid = _ftlCurrentPid;
+  if(pid == null || !checkboxEl) return;
+  var tagId = checkboxEl.dataset.tagId;
+  if(!tagId) return;
+  var tags = _rankTypeTagsFor(pid).slice();
+  var at = tags.indexOf(tagId);
+  if(checkboxEl.checked && at === -1) tags.push(tagId);
+  if(!checkboxEl.checked && at !== -1) tags.splice(at, 1);
+  if(tags.length) _rankTypes[pid] = tags; else delete _rankTypes[pid];
+  _rankTypesSaveLocal();
+  if(typeof saveRankings === 'function' && _rankPos) saveRankings(_rankPos);
+  renderRankings();
+}
+function _rankViewActive(){
+  try { var v = document.getElementById('rankings-view'); return !!(v && v.style.display !== 'none'); } catch(e){ return false; }
+}
+function _rankCol_team(){ return { key:'team', label:'Team', headClass:'col-team', tdClass:'',
+  num:function(pid){ var p=_playerDB[pid]||{}; return p.team || 'zzz'; },
+  render:function(pid,p){ return (p && p.team) ? p.team : '<span class="placeholder">—</span>'; } }; }
+function _rankCol_type(){ return { key:'type', label:'Type', headClass:'col-type', tdClass:'col-type-cell',
+  num:function(pid){ return _rankTypeTagsFor(pid).length; },
+  render:function(pid){
+    var tags=_rankTypeTagsFor(pid);
+    if(!tags.length) return '<span class="placeholder">—</span>';
+    var chips=''; for(var i=0;i<tags.length;i++){ var d=_typeTagById(tags[i]); if(d) chips += '<span class="type-chip" title="' + d.label + ' — ' + d.tagline + '">' + d.emoji + '</span>'; }
+    return '<div class="type-stack" data-rank-pid="' + String(pid).replace(/"/g,'&quot;') + '">' + (chips||'—') + '</div>';
+  } }; }
+function _rankCol_priority(){ return { key:'priority', label:'Priority', headClass:'col-priority', tdClass:'',
+  num:function(pid){ return _rankPriorityFor(pid); },
+  render:function(pid){ return _rankRenderPriorityStars(pid, _rankPriorityFor(pid)); } }; }
+// ══ /RANKINGS_WL_CLONE_NBA_V1 stores + factories ══
 function _rankColsFor(pos){
-  // OWNERSHIP_COLS_NBA_V1 — Y!Rank/Y!Owned/CBS Owned lead the stat block on every tab (placeholders for now).
-  // RANK_STATS_PARITY_V1 (2026-08-05, the Dude's call). The rankings stat block now carries the
-  // SAME 19 stats as the watch list, in the SAME order, with the SAME classification and the same
-  // gold zone dividers. It was 10 stats in a different order, which is why the two tables never
-  // looked like the same site. Only the stat block changed; the columns to the left of it are
-  // untouched by his instruction ("just the stats part").
-  // Order, lifted from the watch list header rather than retyped:
-  //   GP MIN | FGM FGA FG% | FTM FTA FT% | 3PM 3PA 3P% | PTS REB ORB DRB AST STL BLK TO  (PCT_THIRD_V1)
-  // col-stat-a  = scoring category, teal header, carries the category wash.
-  // col-stat-info = informational, grey header, no wash.
-  // TOV was renamed TO to match the watch list. The field behind it is unchanged.
-  return [ _rankCol_notebadge(), _rankCol_note(), _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(), _rankCol_age(), _rankCol_exp(),
+  // RANKINGS_WL_CLONE_NBA_V1 (2026-08-19): the lead columns now clone the Watch 101 table's
+  // ORDER -- Team, Age, Exp, Type, Priority, Note, then Y!Rank/Y!Owned/CBS Owned -- minus +/-
+  // and Action (the Dude's 8/19 calls). The note badge moved into the player cell like the
+  // watch list. The stat block below is RANK_STATS_PARITY_V1 (2026-08-05), UNTOUCHED: it
+  // already matches the watch list stat-for-stat and was verified by the Dude when it shipped.
+  var team = _rankCol_team(), age = _rankCol_age(), exp = _rankCol_exp();
+  var type = _rankCol_type(), prio = _rankCol_priority(), note = _rankCol_note();
+  age.headClass  = 'col-age';
+  note.headClass = 'left col-note';
+  return [ team, age, exp, type, prio, note, _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(),
     _rankCol_gp(),
     _rankCol_min(),
     _rankStatCol('fgm','FGM','fgm','col-stat-info col-zone-divider'),
@@ -3951,7 +4030,7 @@ function _rankSortBy(field){
   // was bouncing through another tab.
   if(field === 'rank'){ _rankSortField = null; _rankSortDir = 'desc'; renderRankings(); return; }
   if(_rankSortField === field){ _rankSortDir = (_rankSortDir === 'desc') ? 'asc' : 'desc'; }
-  else { _rankSortField = field; _rankSortDir = (field === 'age' || field === 'exp') ? 'asc' : 'desc'; }   // EXP_COL_NBA_V1
+  else { _rankSortField = field; _rankSortDir = (field === 'age' || field === 'exp' || field === 'team') ? 'asc' : 'desc'; }   // EXP_COL_NBA_V1 + RANKINGS_WL_CLONE_NBA_V1 (team reads best ascending)
   renderRankings();
 }
 function _rankWireSortHeaders(){
@@ -4042,7 +4121,7 @@ async function saveRankings(pos){
   _rankNasSaving[pos] = true;
   var statusEl = document.getElementById('rankings-status');
   try {
-    var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; return o; });   // RANKINGS_NOTES_NBA_V1: note rides along
+    var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; return o; });   // RANKINGS_NOTES_NBA_V1: note rides along. RANKINGS_WL_CLONE_NBA_V1: type_tags + priority ride the same payload (server stores player objects verbatim)
     var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ players: players, manual: _rankManual[pos] === true, tiers: (typeof _rankTiersForSave === 'function' ? _rankTiersForSave(pos) : []) })  // NBA_RANKINGS_LIVE_SEED_V1 + RANK_TIERS_V1 (the server already persists a tiers array for any list id)
@@ -4089,6 +4168,7 @@ async function loadRankingsFromNAS(){
   var _rkNewestIso = null, _rkNewestLocal = null, _rkNewestEnv = null;
   _rankLoadLocal();
   _rankNotesLoadLocal();   // RANKINGS_NOTES_NBA_V1
+  _rankTypesLoadLocal(); _rankPrioLoadLocal();   // RANKINGS_WL_CLONE_NBA_V1
   var positions = ['Overall','PG','SG','SF','PF','C'];
   for(var i=0;i<positions.length;i++){
     var pos = positions[i];
@@ -4117,7 +4197,7 @@ async function loadRankingsFromNAS(){
           if(payload && Array.isArray(payload.tiers)){ _rankTiers[_rtKey] = payload.tiers; _rankTiersSnapshot[_rtKey] = payload.tiers.slice(); }
         } catch(_rtE){ console.warn('[RANK_TIERS_V1] tier hydrate failed for ' + pos + ':', _rtE); }
         if(players && players.length){
-          players.forEach(function(it){ if(it && it.pid != null && it.note != null && String(it.note).trim()){ if(_rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); } });  // RANKINGS_NOTES_NBA_V1: harvest notes from NAS (manual or not)
+          players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; });  // RANKINGS_NOTES_NBA_V1 + RANKINGS_WL_CLONE_NBA_V1: notes, type tags and priority all harvest from the NAS payload
           // NBA_RANKINGS_LIVE_SEED_V1 -- only a HAND-DRAGGED order (manual:true in the saved payload)
           // is adopted; anything else is ignored and the tab follows the live Yahoo seed.
           if(payload.manual === true){
@@ -5782,9 +5862,9 @@ function _ensureTypeTagTooltipEl(){
   document.body.appendChild(el);
   return el;
 }
-function _showTypeTagTooltip(pid, anchorEl){
-  var idx = _wlIndexOf(pid);
-  var tags = (idx >= 0) ? _wlTypeTags(_watchList[idx]) : [];
+function _showTypeTagTooltip(pid, anchorEl, tagsOverride){
+  // RANKINGS_WL_CLONE_NBA_V1: rankings stacks pass their own tag array; watch-list callers change nothing.
+  var tags = Array.isArray(tagsOverride) ? tagsOverride : (function(){ var idx = _wlIndexOf(pid); return (idx >= 0) ? _wlTypeTags(_watchList[idx]) : []; })();
   if(!tags.length) return;
   var p = (_playerDB && _playerDB[pid]) || null;
   var nm = p ? (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()) : '(unnamed)';
@@ -5836,6 +5916,10 @@ document.addEventListener('click', function(ev){
       ev.stopPropagation();   // never let the click reach the row → no player-card open
       ev.preventDefault();
       var stack = chipOrStack.classList.contains('type-stack') ? chipOrStack : chipOrStack.closest('.type-stack');
+      // RANKINGS_WL_CLONE_NBA_V1: rankings stacks carry data-rank-pid + their own store. The
+      // must-watch pulse-dismiss below is watch-list machinery, so the rankings branch returns early.
+      var _rkStackPid = stack ? stack.getAttribute('data-rank-pid') : null;
+      if(_rkStackPid){ _showTypeTagTooltip(_rkStackPid, stack, _rankTypeTagsFor(_rkStackPid)); return; }
       var pid = stack ? stack.getAttribute('data-pid') : null;
       if(!pid){ _hideTypeTagTooltip(); return; }
       _showTypeTagTooltip(pid, stack);   // show FIRST — the dismiss below re-renders the table and detaches the anchor
@@ -5880,6 +5964,29 @@ function _ftlToggleTypeTag(checkboxEl){
 function _ftlRenderTypeTags(pid){
   const body = document.getElementById('ftl-take-typebody');
   if(!body) return;
+  // RANKINGS_WL_CLONE_NBA_V1: card opened while the RANKINGS view is up -> this panel edits the
+  // rankings-scoped tags (they follow the player across every rankings tab and ride the rankings
+  // save). The watch-list branches below are untouched and still own the list views.
+  if(typeof _rankViewActive === 'function' && _rankViewActive()){
+    const rkTags = _rankTypeTagsFor(pid);
+    if((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode()){
+      let rkChips = '';
+      rkTags.forEach(function(id){ const d = _typeTagById(id); if(d) rkChips += '<span class="type-chip" title="' + d.tagline + '">' + d.emoji + ' ' + d.label + '</span> &nbsp;'; });
+      body.innerHTML = rkChips || '<em>No type tags on this player.</em>';
+      return;
+    }
+    let rkHtml = '<div class="ftl-typegrid">';
+    for(let ri = 0; ri < TYPE_TAGS_V1.length; ri++){
+      const rt = TYPE_TAGS_V1[ri];
+      const rkOn = rkTags.indexOf(rt.id) !== -1;
+      rkHtml += '<label class="ftl-typetag"><input type="checkbox" data-tag-id="' + rt.id + '"'
+             + (rkOn ? ' checked' : '') + ' onchange="_ftlToggleRankTypeTag(this)"> '
+             + rt.emoji + ' ' + rt.label + '</label>';
+    }
+    rkHtml += '</div><div class="ftl-typegrid-note"><em>These tags live on the RANKINGS pages and follow the player across every rankings tab.</em></div>';
+    body.innerHTML = rkHtml;
+    return;
+  }
   if((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode()){
     // READONLY_V1: fans see the tags, not the checkboxes.
     const idxR = _wlIndexOf(pid);
