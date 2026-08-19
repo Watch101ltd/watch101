@@ -2644,31 +2644,6 @@ function renderTiers(){
 window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} });
 
 // ============================================================================
-// TIER_DROP_RESOLVER_V1 (2026-08-18 - PC Walter, per the Dude). Bug #160's cure.
-// THE SINGLE ANSWER to "where does this block land". Until tonight the drop
-// indicator and the drop itself each ran their own arithmetic, and they disagreed:
-// by one place on an ordinary group drag (the indicator knew which half of the row
-// the cursor was in, the drop was never told), and by HALF THE WIDTH of any tier
-// you dragged across (the drop snaps away from splitting a tier, the indicator had
-// no idea that happened). Measured before fixing: 260 of 520 plain combinations
-// wrong, and up to 16 places out when crossing a 32-man tier.
-//
-// Deliberately pure and surface-agnostic so baseball's players[], the twins'
-// _watchList and the rankings _rankings[pos] all feed it identically and cannot
-// drift apart again. Both the indicator and the drop call THIS and nothing else.
-//
-//   srcStart/srcEnd - the dragged block's current position
-//   tgtIdx          - row the cursor is over, in the CURRENT (pre-move) order
-//   above           - cursor is in the TOP half of that row
-//   ranges          - [{id,startIdx,endIdx}] for every OTHER tier
-// Returns { insertAt, destRank, noop, snappedTo }.
-//
-// ⚑ BEHAVIOUR CHANGE, the Dude's call 2026-08-18: the bottom half of a row now
-// means BELOW that man. The old drop always inserted above, which is why the very
-// bottom of a list could not be reached by a group drag at all.
-// ============================================================================
-
-// ============================================================================
 // TIER_DROP_EDGE_V1 (2026-08-18 - PC Walter, per the Dude, who found it in ten
 // seconds of real dragging that no test of mine would ever have caught).
 //
@@ -2696,6 +2671,32 @@ function _tierDropEdge(tbody, rowSel, clientY){
     return null;
   } catch(e){ return null; }
 }
+
+// ============================================================================
+// TIER_DROP_RESOLVER_V1 (2026-08-18 - PC Walter, per the Dude). Bug #160's cure.
+// THE SINGLE ANSWER to "where does this block land". Until tonight the drop
+// indicator and the drop itself each ran their own arithmetic, and they disagreed:
+// by one place on an ordinary group drag (the indicator knew which half of the row
+// the cursor was in, the drop was never told), and by HALF THE WIDTH of any tier
+// you dragged across (the drop snaps away from splitting a tier, the indicator had
+// no idea that happened). Measured before fixing: 260 of 520 plain combinations
+// wrong, and up to 16 places out when crossing a 32-man tier.
+//
+// Deliberately pure and surface-agnostic so baseball's players[], the twins'
+// _watchList and the rankings _rankings[pos] all feed it identically and cannot
+// drift apart again. Both the indicator and the drop call THIS and nothing else.
+//
+//   srcStart/srcEnd - the dragged block's current position
+//   tgtIdx          - row the cursor is over, in the CURRENT (pre-move) order
+//   above           - cursor is in the TOP half of that row
+//   ranges          - [{id,startIdx,endIdx}] for every OTHER tier
+// Returns { insertAt, destRank, noop, snappedTo }.
+//
+// ⚑ BEHAVIOUR CHANGE, the Dude's call 2026-08-18: the bottom half of a row now
+// means BELOW that man. The old drop always inserted above, which is why the very
+// bottom of a list could not be reached by a group drag at all.
+// ============================================================================
+
 
 function resolveTierDrop(srcStart, srcEnd, tgtIdx, above, ranges, listLen){
   var blockLen = (srcEnd - srcStart + 1);
@@ -4752,8 +4753,6 @@ function closeLegend(){
 document.addEventListener('keydown', function(e){
   if(e.key==='Escape'){ var m=document.getElementById('legend-modal'); if(m && m.classList.contains('open')) closeLegend(); }
 });
-
-
 
 
 function renderNbaPlayers(){
