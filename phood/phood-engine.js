@@ -1007,17 +1007,107 @@ function tierDragEnd(e){
   if(_armedTierId) disarmTier();
   if(typeof _hideDropIndicator === 'function') _hideDropIndicator();
 }
-function _tierIndexInOtherTier(idx, excludeTierId){
-  if(!Array.isArray(currentTiers)) return null;
+// ============================================================================
+// TIER_DROP_EDGE_V1 (2026-08-18 - PC Walter, per the Dude, who found it in ten
+// seconds of real dragging that no test of mine would ever have caught).
+//
+// Bug #160's fix made the bottom of a list reachable IN THEORY. In practice it
+// was not: it required the bottom half of the LAST row, about eighteen pixels,
+// and overshooting even slightly past that row made `closest('tr[...]')` return
+// null, at which point the drop was silently thrown away. So the natural gesture,
+// drag past the end of the list, did nothing, and the careful gesture landed on
+// the top half and put the block back where it started. His words: "it's always
+// leaving one player below the tier, no matter how much I try to lower it."
+//
+// Dragging past either end of the list now means exactly what it looks like.
+// Returns {row, above} or null when the cursor is genuinely inside the table,
+// in which case the caller's own row lookup wins.
+// ============================================================================
+function _tierDropEdge(tbody, rowSel, clientY){
+  try {
+    if(!tbody) return null;
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll(rowSel));
+    if(!rows.length) return null;
+    var lastR = rows[rows.length - 1].getBoundingClientRect();
+    if(clientY >= lastR.bottom) return { row: rows[rows.length - 1], above: false };
+    var firstR = rows[0].getBoundingClientRect();
+    if(clientY <= firstR.top) return { row: rows[0], above: true };
+    return null;
+  } catch(e){ return null; }
+}
+
+// ============================================================================
+// TIER_DROP_RESOLVER_V1 (2026-08-18 - PC Walter, per the Dude). Bug #160's cure.
+// THE SINGLE ANSWER to "where does this block land". Until tonight the drop
+// indicator and the drop itself each ran their own arithmetic, and they disagreed:
+// by one place on an ordinary group drag (the indicator knew which half of the row
+// the cursor was in, the drop was never told), and by HALF THE WIDTH of any tier
+// you dragged across (the drop snaps away from splitting a tier, the indicator had
+// no idea that happened). Measured before fixing: 260 of 520 plain combinations
+// wrong, and up to 16 places out when crossing a 32-man tier.
+//
+// Deliberately pure and surface-agnostic so baseball's players[], the twins'
+// _watchList and the rankings _rankings[pos] all feed it identically and cannot
+// drift apart again. Both the indicator and the drop call THIS and nothing else.
+//
+//   srcStart/srcEnd - the dragged block's current position
+//   tgtIdx          - row the cursor is over, in the CURRENT (pre-move) order
+//   above           - cursor is in the TOP half of that row
+//   ranges          - [{id,startIdx,endIdx}] for every OTHER tier
+// Returns { insertAt, destRank, noop, snappedTo }.
+//
+// ⚑ BEHAVIOUR CHANGE, the Dude's call 2026-08-18: the bottom half of a row now
+// means BELOW that man. The old drop always inserted above, which is why the very
+// bottom of a list could not be reached by a group drag at all.
+// ============================================================================
+
+
+function resolveTierDrop(srcStart, srcEnd, tgtIdx, above, ranges, listLen){
+  var blockLen = (srcEnd - srcStart + 1);
+  var insertAt = above ? tgtIdx : tgtIdx + 1;
+  if(insertAt < 0) insertAt = 0;
+  if(insertAt > listLen) insertAt = listLen;
+  // Anywhere from its own start to just past its own end puts the block back where it was.
+  if(insertAt >= srcStart && insertAt <= srcEnd + 1){
+    return { insertAt: srcStart, destRank: srcStart + 1, noop: true, snappedTo: null };
+  }
+  // Never cut another tier in half. An insertion point STRICTLY inside one gets pushed
+  // to the nearer edge; landing exactly ON an edge is already outside it and is left alone.
+  var snappedTo = null;
+  for(var i = 0; i < (ranges || []).length; i++){
+    var r = ranges[i];
+    if(!r) continue;
+    if(insertAt > r.startIdx && insertAt <= r.endIdx){
+      insertAt = ((insertAt - r.startIdx) < ((r.endIdx + 1) - insertAt)) ? r.startIdx : (r.endIdx + 1);
+      snappedTo = r.id;
+      break;
+    }
+  }
+  // The snap can land the block exactly back where it started (it was already sitting
+  // against that tier's edge). Re-check, so a no-op cannot slip through as a real move
+  // and trigger a pointless save. Found by testing, not by reading.
+  if(insertAt >= srcStart && insertAt <= srcEnd + 1){
+    return { insertAt: srcStart, destRank: srcStart + 1, noop: true, snappedTo: snappedTo };
+  }
+  var adj = (insertAt > srcEnd) ? (insertAt - blockLen) : insertAt;
+  if(adj < 0) adj = 0;
+  return { insertAt: insertAt, destRank: adj + 1, noop: false, snappedTo: snappedTo };
+}
+
+// TIER_DROP_RESOLVER_V1 (Bug #160) - every OTHER tier as plain index ranges for the
+// shared resolver. Replaces _tierIndexInOtherTier, whose only caller was tierDrop.
+function _wlTierOtherRanges(excludeTierId){
+  var out = [];
+  if(!Array.isArray(currentTiers)) return out;
   for(var i = 0; i < currentTiers.length; i++){
     var t = currentTiers[i];
     if(!t || t.id === excludeTierId) continue;
     var sIdx = _wlTierIdx(t.start_pid);
     var eIdx = _wlTierIdx(t.end_pid);
     if(sIdx < 0 || eIdx < 0) continue;
-    if(idx >= sIdx && idx <= eIdx) return { tierId: t.id, startIdx: sIdx, endIdx: eIdx };
+    out.push({ id: t.id, startIdx: sIdx, endIdx: eIdx });
   }
-  return null;
+  return out;
 }
 // Tier drags ride a capturing dragover/drop pair on the tbody so the existing
 // row handlers stay untouched (baseball's interceptor pattern).
@@ -1033,21 +1123,19 @@ function _tierIndexInOtherTier(idx, excludeTierId){
       if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
       try {
         var row = e.target && e.target.closest ? e.target.closest('tr[data-phood-pid]') : null;
+        // TIER_DROP_EDGE_V1 - past either end of the list counts as that end.
+        var _edge = row ? null : _tierDropEdge(document.getElementById('watch-list-body'), 'tr[data-phood-pid]', e.clientY);
+        if(!row && _edge) row = _edge.row;
         if(!row) return;
         var tgtIdx = _wlTierIdx(row.getAttribute('data-phood-pid'));
         if(tgtIdx < 0) return;
         var rect = row.getBoundingClientRect();
-        var midpoint = rect.top + (rect.height / 2);
-        var above = (e.clientY < midpoint);
+        var above = _edge ? _edge.above : (e.clientY < rect.top + (rect.height / 2));
         if(typeof _positionDropIndicatorBar === 'function') _positionDropIndicatorBar(row, above);
-        var srcStart = _tierDragPayload.startIdx;
-        var srcEnd   = _tierDragPayload.endIdx;
-        var tierLen  = (srcEnd - srcStart + 1);
-        var insertAt = above ? tgtIdx : tgtIdx + 1;
-        if(srcStart < insertAt) insertAt -= tierLen;
-        var destRank = insertAt + 1;
-        if(destRank < 1) destRank = 1;
-        if(typeof _showDropIndicatorPill === 'function') _showDropIndicatorPill(e.clientX, e.clientY, destRank);
+        // TIER_DROP_RESOLVER_V1 (Bug #160) - the pill asks the same resolver the drop will ask.
+        var _res = resolveTierDrop(_tierDragPayload.startIdx, _tierDragPayload.endIdx, tgtIdx, above,
+                                   _wlTierOtherRanges(_tierDragPayload.tierId), _watchList.length);
+        if(typeof _showDropIndicatorPill === 'function') _showDropIndicatorPill(e.clientX, e.clientY, _res.destRank);
       } catch(_pillErr){ /* pill is cosmetic */ }
     }, true);
     tbody.addEventListener('drop', async function(e){
@@ -1056,10 +1144,15 @@ function _tierIndexInOtherTier(idx, excludeTierId){
       e.stopPropagation();
       if(typeof _hideDropIndicator === 'function') _hideDropIndicator();
       var row = e.target && e.target.closest ? e.target.closest('tr[data-phood-pid]') : null;
+      // TIER_DROP_EDGE_V1 - past either end counts as that end, instead of a discarded drop.
+      var _edge = row ? null : _tierDropEdge(document.getElementById('watch-list-body'), 'tr[data-phood-pid]', e.clientY);
+      if(!row && _edge) row = _edge.row;
       if(!row){ disarmTier(); return; }
       var dropIdx = _wlTierIdx(row.getAttribute('data-phood-pid'));
       if(dropIdx < 0){ disarmTier(); return; }
-      await tierDrop(dropIdx);
+      var _dRect = row.getBoundingClientRect();
+      var _dAbove = _edge ? _edge.above : (e.clientY < _dRect.top + (_dRect.height / 2));
+      await tierDrop(dropIdx, _dAbove);
     }, true);
     return true;
   }
@@ -1067,7 +1160,7 @@ function _tierIndexInOtherTier(idx, excludeTierId){
     var poll = setInterval(function(){ if(attach()) clearInterval(poll); }, 250);
   }
 })();
-async function tierDrop(dropIdx){
+async function tierDrop(dropIdx, above){
   if(_blockIfReadOnly('tierDrop')){ disarmTier(); return; }
   if(!_tierDragPayload){ disarmTier(); return; }
   var payload = _tierDragPayload;
@@ -1082,22 +1175,19 @@ async function tierDrop(dropIdx){
   srcIndices.sort(function(a,b){ return a-b; });
   var srcStart = srcIndices[0];
   var srcEnd   = srcIndices[srcIndices.length - 1];
-  if(dropIdx >= srcStart && dropIdx <= srcEnd){
-    console.log('[TIER_DRAG_NBA_V1] drop inside own range - no-op');
+  // TIER_DROP_RESOLVER_V1 (Bug #160) - one resolver settles the landing spot, the no-op
+  // case and the anti-splitting snap. `above` defaults to true for any older caller.
+  var _res = resolveTierDrop(srcStart, srcEnd, dropIdx, (above !== false),
+                             _wlTierOtherRanges(payload.tierId), _watchList.length);
+  if(_res.noop){
+    console.log('[TIER_DRAG_NBA_V1] drop lands where it started - no-op');
     disarmTier();
     return;
   }
-  var collision = _tierIndexInOtherTier(dropIdx, payload.tierId);
-  if(collision){
-    if(dropIdx - collision.startIdx < collision.endIdx - dropIdx){ dropIdx = collision.startIdx; }
-    else { dropIdx = collision.endIdx + 1; }
-    console.log('[TIER_DRAG_NBA_V1] drop collided with tier', collision.tierId, '- snapped to idx', dropIdx);
-  }
+  if(_res.snappedTo) console.log('[TIER_DRAG_NBA_V1] would have split tier', _res.snappedTo, '- snapped to idx', _res.insertAt);
   if(typeof snapshotForUndo === 'function') snapshotForUndo();
-  var block = [];
-  for(var i = srcEnd; i >= srcStart; i--){ block.unshift(_watchList.splice(i, 1)[0]); }
-  var adjDropIdx = dropIdx;
-  if(dropIdx > srcEnd) adjDropIdx = dropIdx - block.length;
+  var block = _watchList.splice(srcStart, srcEnd - srcStart + 1);
+  var adjDropIdx = (_res.insertAt > srcEnd) ? (_res.insertAt - block.length) : _res.insertAt;
   if(adjDropIdx < 0) adjDropIdx = 0;
   if(adjDropIdx > _watchList.length) adjDropIdx = _watchList.length;
   _watchList.splice.apply(_watchList, [adjDropIdx, 0].concat(block));
