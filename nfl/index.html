@@ -2095,7 +2095,7 @@ function _rankRenderHead(cols){
   var headRow = document.getElementById('rankings-head-row');
   if(!headRow) return;
   var fixed = '<th class="col-handle">☰</th>' +
-              '<th class="col-rank">Rank</th>' +
+              '<th class="col-rank" data-ranksort="rank" style="cursor:pointer" title="Back to saved ranking order">Rank <span class="sort-arrow" style="opacity:.4">↕</span></th>' +   // RANK_HEADER_RESTORE_V1 (Bug #161, 2026-08-19)
               '<th class="col-pos">Pos</th>' +
               '<th class="left col-player">Player</th>';
   var statHeads = cols.map(function(c){
@@ -2129,6 +2129,11 @@ var _rankSortField = null;   // null = manual saved order; otherwise a column ke
 var _rankSortDir = 'desc';
 function _rankSortBy(field){
   if(!field) return;
+  // RANK_HEADER_RESTORE_V1 (Bug #161, 2026-08-19 -- PC Walter, per Matt via the Dude on the 8/19 call):
+  // clicking the Rank header drops any active stat sort and returns the tab to the saved manual order --
+  // the same contract the watch list's sortBy('rank') has always honored. Before this, the only way back
+  // was bouncing through another tab.
+  if(field === 'rank'){ _rankSortField = null; _rankSortDir = 'desc'; renderRankings(); return; }
   if(_rankSortField === field){ _rankSortDir = (_rankSortDir === 'desc') ? 'asc' : 'desc'; }
   else { _rankSortField = field; _rankSortDir = (field === 'yrank' || field === 'age') ? 'asc' : 'desc'; }
   renderRankings();
