@@ -389,7 +389,7 @@ table.watch-list thead th:has(+ th.col-zone-divider), table.watch-list tbody td:
   padding-right:7px;
 }
 /* PLAYER_POOL_21COL_V2 (compact, 150%-zoom-friendly) - mirrors baseball density */
-table.watch-list{min-width:1300px;table-layout:fixed}  /* BLOCK_CLONE_V1: identity block widened to baseball spec */
+table.watch-list{min-width:1376px;table-layout:fixed}  /* BLOCK_CLONE_V1: identity block widened to baseball spec. YPC_YPR_V1 (2026-08-19): +76px for the two new 38px ratio columns so laptop widths do not re-create Bug #32's header squeeze */
 /* Compact header + body padding so 23 columns fit at 150% zoom */
 table.watch-list thead th{padding:5px 2px;font-size:9px;letter-spacing:0.01em;overflow:hidden}  /* HEADER_BLEED_FIX_V1 (2026-08-04) — Matt, 8/3 meeting. Under table-layout:fixed the stat
      columns clamp to 38px once the viewport drops below the 1300px floor (a laptop at 100%,
@@ -1243,16 +1243,18 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-stat col-stat-b" data-sort="patd">PaTD <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b col-zone-divider" data-sort="ruatt">RuAtt <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="ruyd">RuYd <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-b" data-sort="ypc" title="Yards per carry — YPC_YPR_V1">YPC <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="rutd">RuTD <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a col-zone-divider" data-sort="tgt">Tgt <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="rec">Rec <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="reyd">ReYd <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a" data-sort="ypr" title="Yards per reception — YPC_YPR_V1">YPR <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="retd">ReTD <span class="sort-arrow">↕</span></th>
         <th class="col-action">Action</th>
       </tr>
     </thead>
     <tbody id="watch-list-body">
-      <tr><td colspan="23" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
+      <tr><td colspan="27" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
     </tbody>
   </table>
   <!-- PHONE_NOTE_STAR_NFL_V1 (June 10, 2026) — phone note-star list. Hidden on desktop;
@@ -1334,16 +1336,18 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-stat col-stat-b" data-npsort="patd">PaTD <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b col-zone-divider" data-npsort="ruatt">RuAtt <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="ruyd">RuYd <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-b" data-npsort="ypc" title="Yards per carry — YPC_YPR_V1">YPC <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="rutd">RuTD <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a col-zone-divider" data-npsort="tgt">Tgt <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="rec">Rec <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="reyd">ReYd <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a" data-npsort="ypr" title="Yards per reception — YPC_YPR_V1">YPR <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="retd">ReTD <span class="sort-arrow">↕</span></th>
           <th class="center col-action">Add</th>
         </tr>
       </thead>
       <tbody id="nfl-players-body">
-        <tr><td colspan="16" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
+        <tr><td colspan="19" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -2131,6 +2135,11 @@ function _rankCol_type(){ return { key:'type', label:'Type', headClass:'col-type
 function _rankCol_priority(){ return { key:'priority', label:'Priority', headClass:'col-priority', tdClass:'',
   num:function(pid){ return _rankPriorityFor(pid); },
   render:function(pid){ return _rankRenderPriorityStars(pid, _rankPriorityFor(pid)); } }; }
+function _rankRatioCol(key,label,numF,denF,tdClass){   // YPC_YPR_V1 -- efficiency ratio column
+  return { key:key, label:label, tdClass:tdClass, headClass:'col-stat ' + tdClass,
+    num:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=_ratioNum(s?s[numF]:null, s?s[denF]:null); return (v==null)?-1:v; },
+    render:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; return _ratioCellOrDash(s?s[numF]:null, s?s[denF]:null); } };
+}
 // ══ /RANKINGS_WL_CLONE_NFL_V1 stores + factories ══
 function _rankColsFor(pos){
   // RANKINGS_WL_CLONE_NFL_V1 (2026-08-19): the watch-list column set in the watch-list ORDER --
@@ -2165,10 +2174,12 @@ function _rankColsFor(pos){
               _rankStatCol('patd','PaTD','pass_td','col-stat-b'),
               _rankStatCol('ruatt','RuAtt','rush_att','col-stat-b col-zone-divider'),
               _rankStatCol('ruyd','RuYd','rush_yd','col-stat-b'),
+              _rankRatioCol('ypc','YPC','rush_yd','rush_att','col-stat-b'),   // YPC_YPR_V1
               _rankStatCol('rutd','RuTD','rush_td','col-stat-b'),
               _rankStatCol('tgt','Tgt','rec_tgt','col-stat-a col-zone-divider'),
               _rankStatCol('rec','Rec','rec','col-stat-a'),
               _rankStatCol('reyd','ReYd','rec_yd','col-stat-a'),
+              _rankRatioCol('ypr','YPR','rec_yd','rec','col-stat-a'),   // YPC_YPR_V1
               _rankStatCol('retd','ReTD','rec_td','col-stat-a') ];
   }
   stats.forEach(function(c){ c.headClass = 'col-stat ' + c.tdClass; });
@@ -2505,10 +2516,12 @@ function _npStatValue(field, p, s, pid){
     case 'patd': return (s.pass_td || 0);
     case 'ruatt': return (s.rush_att || 0);
     case 'ruyd': return (s.rush_yd || 0);
+    case 'ypc': return _ratioNum(s.rush_yd, s.rush_att);   // YPC_YPR_V1 (null sinks)
     case 'rutd': return (s.rush_td || 0);
     case 'rec':  return (s.rec || 0);
     case 'tgt':  return (s.rec_tgt || 0);
     case 'reyd': return (s.rec_yd || 0);
+    case 'ypr': return _ratioNum(s.rec_yd, s.rec);   // YPC_YPR_V1 (null sinks)
     case 'retd': return (s.rec_td || 0);
     case 'yrank':  return (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(pid, 'yahoo_rank') : null;
     case 'yowned': return (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(pid, 'roster_pct') : null;
@@ -2516,6 +2529,14 @@ function _npStatValue(field, p, s, pid){
     default: return null;
   }
 }
+
+// ══ YPC_YPR_V1 (2026-08-19 -- PC Walter, per Matt via the Dude on the 8/19 call): yards per
+// carry + yards per reception, shared by the watch list, the NFL Players pool and the rankings
+// tabs. A ratio needs a real denominator: zero (or missing) attempts renders a dash and sorts
+// to the bottom -- a 12-yard end-around cannot make a wide receiver the YPC king of the pool.
+function _ratioNum(yds, att){ var y = Number(yds), a = Number(att); return (isFinite(a) && a > 0 && isFinite(y)) ? (y / a) : null; }
+function _ratioCellOrDash(yds, att){ var v = _ratioNum(yds, att); return (v == null) ? '<span class="placeholder">—</span>' : v.toFixed(1); }
+// ══ /YPC_YPR_V1 helpers ══
 
 function _foldSearch(s){
   /* SEARCH_ACCENT_FOLD_V1 (2026-08-04) — the Doncic fix.
@@ -3036,7 +3057,7 @@ function renderNflPlayers(){
   const statusEl = document.getElementById('nflplayers-status');
   if(!tbody) return;
   if(!_playerDB){
-    tbody.innerHTML = '<tr><td colspan="13" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="19" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
     return;
   }
   if(typeof _npBuildTeamSelect === 'function') _npBuildTeamSelect();  // NFL_POOL_STATFILTER_V1
@@ -3090,10 +3111,12 @@ function renderNflPlayers(){
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.rush_att) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.rush_yd) + '</td>' +
+      '<td class="col-stat-b">' + _ratioCellOrDash(s.rush_yd, s.rush_att) + '</td>' +   // YPC_YPR_V1
       '<td class="col-stat-b">' + statCellOrDash(s.rush_td) + '</td>' +
       '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.rec_tgt) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_yd) + '</td>' +
+      '<td class="col-stat-a">' + _ratioCellOrDash(s.rec_yd, s.rec) + '</td>' +   // YPC_YPR_V1
       '<td class="col-stat-a">' + statCellOrDash(s.rec_td) + '</td>' +
       '<td class="center col-action">' + (onList
           ? '<button class="np-add-btn added" disabled>✓ Added</button>'
@@ -3359,7 +3382,7 @@ function renderWatchList(){
   const countEl = document.getElementById('count-badge');
   countEl.textContent = _watchList.length + (_watchList.length === 1 ? ' player' : ' players');
   if(_watchList.length === 0){
-    tbody.innerHTML = '<tr><td colspan="23" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="27" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
     if(typeof _renderPhoneList==='function'){ try{ _renderPhoneList([]); }catch(e){} }  // PHONE_NOTE_STAR_NFL_V1
     return;
   }
@@ -3392,7 +3415,7 @@ function renderWatchList(){
     const priority = (originalIdx >= 0) ? _wlPriority(_watchList[originalIdx]) : 0;
     if(!p){
       return '<tr>' +
-        '<td colspan="22" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
+        '<td colspan="26" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
         '<td class="center"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
       '</tr>';
     }
@@ -3434,10 +3457,12 @@ function renderWatchList(){
       '<td class="col-stat-b">' + statCellOrDash(s.pass_td) + '</td>' +
       '<td class="col-stat-b col-zone-divider">' + statCellOrDash(s.rush_att) + '</td>' +
       '<td class="col-stat-b">' + statCellOrDash(s.rush_yd) + '</td>' +
+      '<td class="col-stat-b">' + _ratioCellOrDash(s.rush_yd, s.rush_att) + '</td>' +   // YPC_YPR_V1
       '<td class="col-stat-b">' + statCellOrDash(s.rush_td) + '</td>' +
       '<td class="col-stat-a col-zone-divider">' + statCellOrDash(s.rec_tgt) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec) + '</td>' +
       '<td class="col-stat-a">' + statCellOrDash(s.rec_yd) + '</td>' +
+      '<td class="col-stat-a">' + _ratioCellOrDash(s.rec_yd, s.rec) + '</td>' +   // YPC_YPR_V1
       '<td class="col-stat-a">' + statCellOrDash(s.rec_td) + '</td>' +
       '<td class="center"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
     '</tr>';
@@ -6230,10 +6255,12 @@ function sortValueFor(field, p, s, pid){
     case 'patd':     return (s.pass_td || 0);
     case 'ruatt':    return (s.rush_att || 0);
     case 'ruyd':     return (s.rush_yd || 0);
+    case 'ypc':      return _ratioNum(s.rush_yd, s.rush_att);   // YPC_YPR_V1 (null sinks)
     case 'rutd':     return (s.rush_td || 0);
     case 'rec':      return (s.rec || 0);
     case 'tgt':      return (s.rec_tgt || 0);
     case 'reyd':     return (s.rec_yd || 0);
+    case 'ypr':      return _ratioNum(s.rec_yd, s.rec);         // YPC_YPR_V1 (null sinks)
     case 'retd':     return (s.rec_td || 0);
     case 'priority': {
       const idx = _wlIndexOf(pid || '');
