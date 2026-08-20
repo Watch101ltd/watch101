@@ -688,6 +688,12 @@ body.day-mode .inj-tag.inj-q{background:#fef3c7;color:#92400e;border:1px solid #
 @keyframes must-watch-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
 body.day-mode .must-watch-flash{color:#b91c1c !important;}
 #compact-toggle-btn.active{background:var(--turf);color:#0d1117;border-color:var(--turf);}
+/* ---- PRESENT_MODE_TWINS_V1 (2026-08-19 -- baseball's Presentation Mode, ported per Matt + the Dude's own call on the 8/19 tape: "we don't have a present mode for football and basketball, JP") ---- */
+#present-btn.active{background:var(--gold,#eab308);color:#000;border-color:var(--gold,#eab308);font-weight:600;}
+body.present-mode{cursor:zoom-in;}
+body.present-mode tbody tr td{transition:background 0.12s,color 0.12s,font-size 0.12s;}
+body.present-mode tbody tr td:hover{background:rgba(240,165,0,0.2)!important;color:var(--red,#ef4444)!important;font-size:14px!important;font-weight:700!important;position:relative;z-index:5;box-shadow:inset 0 0 0 1px var(--gold2,#b8860b);border-radius:3px;}
+body.present-mode tbody tr td:hover span{color:var(--red,#ef4444)!important;}
 body.compact-mode #nflmain-wrap th:nth-child(n+13):nth-child(-n+28),
 body.compact-mode #nflmain-wrap td:nth-child(n+13):nth-child(-n+28){display:none !important;}  /* BUG #162 FIX (2026-08-19): BYE_WEEK_COL_V1 + YPC_YPR_V1 added 3 columns and shifted every index -- the old n+12/-n+24 range ate the Note column (now col 12) and leaked ReYd/YPR/ReTD (25-27). Column map (ADP_COL_V1, 2026-08-19): 1 handle, 2 rank, 3 pos, 4 player, 5 team, 6 bye, 7 age, 8 exp, 9 delta, 10 type, 11 priority, 12 note, 13 adp, 14-16 ownership, 17 fpts, 18-28 stats, 29 action. ANY future column add/remove MUST re-check this range -- or better, convert it to class-based hiding. */
 body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.col-note{max-width:none;width:55%;white-space:normal;}
@@ -1167,6 +1173,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="toolbar-right">
     <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
     <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: hide the stat and ownership columns and stretch the Note column so Matt's notes take center stage.">&#8596; Compact</button>
+    <button class="btn btn-outline" id="present-btn" onclick="togglePresentMode()" title="Presentation mode — hover any cell to magnify and highlight it for screen-share">🔍 Present</button>  <!-- PRESENT_MODE_TWINS_V1 -->
     <a class="btn btn-outline" href="dashboard/" style="text-decoration:none;display:inline-block" title="Open the Trending dashboard">⤵️ More</a>  <!-- HDR_PARITY_TWINS_V1: moved from the top header -->
     <button class="btn btn-outline" onclick="reloadWatchList()" title="Reload the list and stats from the NAS">Refresh</button>
     <button class="btn btn-outline" id="export-btn" onclick="exportXLSXDownload()" title="Download the current list as an Excel (.xlsx) file">&#128228; Export</button>
@@ -5367,6 +5374,21 @@ if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoad
 // stretches to fill the freed space. Not persisted across reloads, same as
 // baseball. fitTables() is called when this sport has it (NBA auto-shrink).
 // ============================================================================
+// PRESENT_MODE_TWINS_V1 (2026-08-19): baseball's togglePresentMode, ported verbatim (same body
+// class, same button swap). Deliberately NOT backend-only -- baseball lists present mode among
+// its FAN_SAFE_ACTIONS, so fans get it here too. Works on every table on the page (watch list,
+// pool, rankings) because the CSS targets any tbody cell.
+var presentMode = false;
+function togglePresentMode(){
+  presentMode = !presentMode;
+  if(presentMode){ document.body.classList.add('present-mode'); }
+  else { document.body.classList.remove('present-mode'); }
+  var btn = document.getElementById('present-btn');
+  if(btn){
+    if(presentMode){ btn.classList.add('active'); btn.textContent = '🔍 Presenting'; }
+    else { btn.classList.remove('active'); btn.textContent = '🔍 Present'; }
+  }
+}
 function toggleCompactMode(el){
   const on = document.body.classList.toggle('compact-mode');
   if(el){ el.classList.toggle('active', on); }
