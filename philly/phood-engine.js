@@ -383,6 +383,25 @@ function _fmtEventDates(p){
    chrome's own social-icon path, byte-identical, so the pill matches the set.
    Sized + colored by the .pill.ig svg rule in index.html (fill:currentColor). */
 var IG_PILL_SVG = '<svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.07 1.2.05 1.8.25 2.2.42.6.22 1 .5 1.5.94.44.44.72.85.94 1.45.17.43.37 1.05.42 2.25.06 1.28.07 1.68.07 4.9s0 3.6-.07 4.9c-.05 1.2-.25 1.8-.42 2.2-.22.6-.5 1-.94 1.5-.44.44-.85.72-1.45.94-.43.17-1.05.37-2.25.42-1.28.06-1.68.07-4.9.07s-3.6 0-4.9-.07c-1.2-.05-1.8-.25-2.2-.42-.6-.22-1-.5-1.5-.94-.44-.44-.72-.85-.94-1.45-.17-.43-.37-1.05-.42-2.25C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.9c.05-1.2.25-1.8.42-2.2.22-.6.5-1 .94-1.5.44-.44.85-.72 1.45-.94.43-.17 1.05-.37 2.25-.42C8.4 2.2 8.8 2.2 12 2.2zm0 1.98c-3.14 0-3.5.01-4.74.07-.95.04-1.47.2-1.81.33-.46.18-.78.39-1.12.73-.34.34-.55.66-.73 1.12-.13.34-.29.86-.33 1.81-.06 1.24-.07 1.6-.07 4.74s.01 3.5.07 4.74c.04.95.2 1.47.33 1.81.18.46.39.78.73 1.12.34.34.66.55 1.12.73.34.13.86.29 1.81.33 1.24.06 1.6.07 4.74.07s3.5-.01 4.74-.07c.95-.04 1.47-.2 1.81-.33.46-.18.78-.39 1.12-.73.34-.34.55-.66.73-1.12.13-.34.29-.86.33-1.81.06-1.24.07-1.6.07-4.74s-.01-3.5-.07-4.74c-.04-.95-.2-1.47-.33-1.81a3.02 3.02 0 00-.73-1.12 3.02 3.02 0 00-1.12-.73c-.34-.13-.86-.29-1.81-.33-1.24-.06-1.6-.07-4.74-.07zM12 7.9a4.1 4.1 0 110 8.2 4.1 4.1 0 010-8.2zm0 1.98a2.12 2.12 0 100 4.24 2.12 2.12 0 000-4.24zm5.23-2.2a.96.96 0 11-1.92 0 .96.96 0 011.92 0z"/></svg>';
+/* EVENT_DUAL_IG_V1 (2026-08-20) — month lists only: two Instagram pills, venue +
+   artist. p.pics stays the venue link (existing saved data keeps working);
+   p.pics2 is the artist/performer, OPTIONAL by design. The empty-artist pill
+   shows DIM to Matt on the admin surface so he can see the slot, and is
+   HIDDEN from fans entirely (the Bug #158 lesson: no invitations for
+   controls or links that do not exist for you). Venue stays dim-when-empty
+   for everyone, same as every other pill on the site. */
+function _igPillPair(p){
+  var ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+  var out = '';
+  out += p.pics ? '<a class="pill ig igw" href="' + _esc(p.pics) + '" target="_blank" rel="noopener" title="Venue Instagram">' + IG_PILL_SVG + 'VENUE</a>'
+                : '<a class="pill ig igw" href="#" onclick="return false;" style="opacity:0.45" title="No venue Instagram yet">' + IG_PILL_SVG + 'VENUE</a>';
+  if(p.pics2){
+    out += ' <a class="pill ig igw" href="' + _esc(p.pics2) + '" target="_blank" rel="noopener" title="Artist / performer Instagram">' + IG_PILL_SVG + 'ARTIST</a>';
+  } else if(!ro){
+    out += ' <a class="pill ig igw" href="#" onclick="return false;" style="opacity:0.45" title="No artist Instagram yet (optional)">' + IG_PILL_SVG + 'ARTIST</a>';
+  }
+  return out;
+}
 function _eventRowHtml(p, rank){
   var drag = _dragEnabled();
   var trAttrs = drag
@@ -402,8 +421,7 @@ function _eventRowHtml(p, rank){
     + _takeCellHtml(p)
     + (p.menu ? '<td class="c"><a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">🎟️ TIX</a></td>'
                : '<td class="c"><a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No tickets link yet">🎟️ TIX</a></td>')
-    + (p.pics ? '<td class="c"><a class="pill ig" href="' + _esc(p.pics) + '" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">' + IG_PILL_SVG + '</a></td>'
-               : '<td class="c"><a class="pill ig" href="#" onclick="return false;" style="opacity:0.45" title="No Instagram link yet" aria-label="Instagram">' + IG_PILL_SVG + '</a></td>')
+    + '<td class="c" style="white-space:nowrap">' + _igPillPair(p) + '</td>'   /* EVENT_DUAL_IG_V1 */
     + (p.hype ? '<td class="c"><a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">🔥 HYPE</a></td>'
                : '<td class="c"><a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">🔥 HYPE</a></td>')
     + '</tr>';
@@ -527,7 +545,7 @@ function _renderThead(){
       + '<th class="l" data-col="vibe">Tags<span class="arrow" id="ar-vibe"></span></th>'
       + '<th class="l" data-col="take">Matt\'s Take<span class="arrow" id="ar-take"></span></th>'
       + '<th data-col="menu" style="text-align:center;width:70px">Tickets</th>'
-      + '<th data-col="pics" style="text-align:center;width:80px">Pics</th>'
+      + '<th data-col="pics" style="text-align:center;width:150px">Instagram</th>'
       + '<th data-col="hype" style="text-align:center;width:80px">Hype</th>'
       + '</tr>';
   } else {
@@ -747,6 +765,9 @@ function _spotFill(p){
   var deEl = document.getElementById('spot-date-end');   if(deEl) deEl.value = p ? (p.date_end || '') : '';
   var tsEl = document.getElementById('spot-time-start'); if(tsEl) tsEl.value = p ? (p.time_start || '') : '';   /* EVENT_TIMES_V1 */
   var teEl = document.getElementById('spot-time-end');   if(teEl) teEl.value = p ? (p.time_end || '') : '';
+  var p2Wrap = document.getElementById('spot-pics2-wrap'); if(p2Wrap) p2Wrap.style.display = _ev ? '' : 'none';   /* EVENT_DUAL_IG_V1 */
+  var p2El = document.getElementById('spot-pics2'); if(p2El) p2El.value = p ? (p.pics2 || '') : '';
+  var picsLbl = document.getElementById('spot-pics-label'); if(picsLbl) picsLbl.textContent = _ev ? 'Venue Instagram' : 'Pics / Instagram link';
   _spotShowErr('');
 }
 function openAddSpotModal(){
@@ -791,7 +812,8 @@ async function saveSpotFromModal(){
     date_start: _ds,
     date_end: _de,
     time_start: ((document.getElementById('spot-time-start') || {}).value || ''),   /* EVENT_TIMES_V1 — 'HH:MM' 24h from the input; blank = no time */
-    time_end:   ((document.getElementById('spot-time-end')   || {}).value || '')
+    time_end:   ((document.getElementById('spot-time-end')   || {}).value || ''),
+    pics2: ((document.getElementById('spot-pics2') || {}).value || '').trim()   /* EVENT_DUAL_IG_V1 — artist/performer IG, optional */
   };
   if(_spotEditingPid){
     var p = _watchList.find(function(x){ return x.pid === _spotEditingPid; });
@@ -1715,8 +1737,7 @@ function _openCalCard(pid){
   var pills = '';
   pills += p.menu ? '<a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">&#127903;&#65039; TIX</a>'
                   : '<a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No tickets link yet">&#127903;&#65039; TIX</a>';
-  pills += p.pics ? '<a class="pill ig" href="' + _esc(p.pics) + '" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">' + IG_PILL_SVG + '</a>'
-                  : '<a class="pill ig" href="#" onclick="return false;" style="opacity:0.45" title="No Instagram link yet" aria-label="Instagram">' + IG_PILL_SVG + '</a>';
+  pills += _igPillPair(p);   /* EVENT_DUAL_IG_V1 — the card is events-only, so it takes the pair */
   pills += p.hype ? '<a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">&#128293; HYPE</a>'
                   : '<a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">&#128293; HYPE</a>';
   var ov = document.createElement('div');
