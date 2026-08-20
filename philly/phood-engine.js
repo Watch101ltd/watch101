@@ -19,9 +19,9 @@
 /* MULTILIST — baseball's separate-lists model. Storage and tiers key on the
    active list id, so every list carries its own spots AND its own tiers. */
 var WL_LISTS = [
-  { id:'phood-restaurants', title:'Philly Restaurants',       subtitle:'Philadelphia proper — ones to watch',
+  { id:'phood-restaurants', title:'Philly Restaurant/Bar',       subtitle:'Philadelphia proper — ones to watch',
     tabs:[{cat:'all',label:'All'},{cat:'rest',label:'🍽️ Restaurants'},{cat:'dess',label:'🍰 Desserts'}] },
-  { id:'phood-bars',        title:'Philly Bars & Breweries',  subtitle:'The wider net — worth the drive',
+  { id:'phood-bars',        title:'Philly Brewery/Drinks',  subtitle:'The wider net — worth the drive',
     tabs:[{cat:'all',label:'All'}] }
 ];
 var currentListId = 'phood-restaurants';
@@ -205,41 +205,12 @@ function _setTake(pid, text){
   autoSaveToPhoodNAS();
 }
 
-/* PRIORITY_STARS_V1 (2026-08-14) — ported from the twins' renderPriorityStars +
-   setPriority + global .pstar click delegator. Adaptations: the value lives in
-   item.stars (PHOOD's field), and a set SAVES to the NAS immediately — every
-   other PHOOD mutation saves on the spot, stars should not be the odd one out.
-   Same-value click clears to zero, the twins' law. */
-function renderPriorityStars(pid, currentPriority){
-  var html = '<span class="priority-stars" data-pid="' + _esc(pid) + '">';
-  for(var n = 1; n <= 5; n++){
-    var filled = (n <= currentPriority) ? ' filled' : '';
-    html += '<span class="pstar' + filled + '" data-value="' + n + '" title="Priority ' + n + ' of 5">\u2605</span>';
-  }
-  html += '</span>';
-  return html;
-}
-function setPriority(pid, newPriority){
-  if(_blockIfReadOnly('setPriority')) return;
-  var idx = _wlIndexOf(pid);
-  if(idx < 0) return;
-  var entry = _watchList[idx];
-  var current = entry.stars || 0;
-  var finalValue = (current === newPriority) ? 0 : newPriority;
-  _watchList[idx] = Object.assign({}, entry, { stars: finalValue });
-  renderWatchList();
-  /* PRIORITY_CARD_SYNC_V1 pattern carried: repaint every widget wearing this pid,
-     so any future surface (card popup, quick edit) stays honest for free. */
-  try {
-    document.querySelectorAll('.priority-stars[data-pid="' + pid + '"]').forEach(function(w){
-      w.outerHTML = renderPriorityStars(pid, finalValue);
-    });
-  } catch(_e){}
-  autoSaveToPhoodNAS();
-}
+/* PRIORITY_DROP_V1 (2026-08-20) — the priority-stars renderer, setter, and click
+   delegator were removed per Matt's 8/19 call: no Priority column on the Philly page.
+   Old star values stay in the saved data untouched and are simply never read. */
 /* ============================================================================
    PRICE_COL_V1 (2026-08-15) - how expensive a spot is, one to four dollar signs.
-   A straight clone of the Priority stars directly above: same widget shape, same
+   A straight clone of the twins' priority-stars widget (dropped from this page 8/20): same widget shape, same
    click-to-set from the table row, same click-the-current-value-to-clear, same
    read-only gate, same repaint-every-widget-wearing-this-pid pattern.
    FOUR not five, per the Dude: Yelp and Google both top out at four, so a fifth
@@ -285,16 +256,6 @@ document.addEventListener('click', function(e){
   var value = parseInt(sign.getAttribute('data-value'), 10);
   if(!pid || !value) return;
   setPrice(pid, value);
-});
-document.addEventListener('click', function(e){
-  var star = e.target.closest ? e.target.closest('.priority-stars .pstar') : null;
-  if(!star) return;
-  var wrap = star.closest('.priority-stars');
-  if(!wrap) return;
-  var pid = wrap.getAttribute('data-pid');
-  var value = parseInt(star.getAttribute('data-value'), 10);
-  if(!pid || !value) return;
-  setPriority(pid, value);
 });
 function _dragEnabled(){
   /* Same gate as the twins: rank order only (no sort), admin only. */
@@ -417,7 +378,6 @@ function _rowHtml(p, rank){
     + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span>' + _freshTakeBadge(p) + '</td>'
     + '<td class="l">' + p.hood + '</td>'
     + '<td class="l vibe">' + _tagChipsHtml(p) + '</td>'
-    + '<td class="c">' + renderPriorityStars(p.pid, p.stars || 0) + '</td>'
     + '<td class="c">' + renderPriceSigns(p.pid, p.price || 0) + '</td>'
     + _takeCellHtml(p)
     + '<td class="l">' + p.addr + '</td>'
@@ -425,6 +385,8 @@ function _rowHtml(p, rank){
                : '<td class="c"><a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No menu link yet">MENU</a></td>')
     + (p.pics ? '<td class="c"><a class="pill ig" href="' + _esc(p.pics) + '" target="_blank" rel="noopener">📸 PICS</a></td>'
                : '<td class="c"><a class="pill ig" href="#" onclick="return false;" style="opacity:0.45" title="No pictures link yet">📸 PICS</a></td>')
+    + (p.hype ? '<td class="c"><a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">🔥 HYPE</a></td>'
+               : '<td class="c"><a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">🔥 HYPE</a></td>')
     + '</tr>';
 }
 function renderWatchList(){
@@ -435,7 +397,7 @@ function renderWatchList(){
   if(_filterCat !== 'all') rows = rows.filter(function(p){ return p.cat === _filterCat; });
   if(q) rows = rows.filter(function(p){ return (p.name + ' ' + p.hood).toLowerCase().indexOf(q) !== -1; });
   if(_sortField !== null){
-    var f = _sortField, num = (f === 'stars');
+    var f = _sortField, num = false;   /* PRIORITY_DROP_V1: no plain numeric sort fields left (price has its own branch) */
     rows.sort(function(a,b){
       /* PRICE_COL_V1: unpriced spots sink to the bottom in BOTH directions rather
          than pretending 0 is cheap. Same idea as baseball sinking nulls. */
@@ -666,27 +628,6 @@ document.addEventListener('dragleave', function(e){
    ============================================================================ */
 function _esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 var _spotEditingPid = null;
-var _spotModalStars = 3;
-function _spotStarsPaint(){
-  var el = document.getElementById('spot-stars');
-  if(!el) return;
-  var h = '';
-  for(var i = 1; i <= 5; i++){
-    h += '<span data-star="' + i + '" style="color:' + (i <= _spotModalStars ? '#fbbf24' : '#3a3f4a') + '">★</span>';
-  }
-  el.innerHTML = h;
-}
-function _spotStarsWire(){
-  var el = document.getElementById('spot-stars');
-  if(!el || el._wired) return;
-  el._wired = true;
-  el.addEventListener('click', function(ev){
-    var t = ev.target.closest('[data-star]');
-    if(!t) return;
-    _spotModalStars = parseInt(t.getAttribute('data-star'), 10) || 3;
-    _spotStarsPaint();
-  });
-}
 var _spotModalPrice = 0;   /* 0 = not priced, deliberately NOT a default of 2 */
 function _spotPricePaint(){
   var el = document.getElementById('spot-price');
@@ -725,10 +666,9 @@ function _spotFill(p){
     _spotTagsPickerHtml(p && Array.isArray(p.type_tags) ? p.type_tags : []);
   document.getElementById('spot-menu').value = p ? (p.menu || '') : '';
   document.getElementById('spot-pics').value = p ? (p.pics || '') : '';
+  document.getElementById('spot-hype').value = p ? (p.hype || '') : '';
   document.getElementById('spot-take').value = p ? (p.take || '') : '';
-  _spotModalStars = p ? (p.stars || 3) : 3;
   _spotModalPrice = p ? (p.price || 0) : 0;
-  _spotStarsPaint(); _spotStarsWire();
   _spotPricePaint(); _spotPriceWire(); _spotShowErr('');
 }
 function openAddSpotModal(){
@@ -764,8 +704,8 @@ async function saveSpotFromModal(){
     type_tags: _readSpotTagPicker(),
     menu: document.getElementById('spot-menu').value.trim(),
     pics: document.getElementById('spot-pics').value.trim(),
+    hype: document.getElementById('spot-hype').value.trim(),
     take: document.getElementById('spot-take').value.trim(),
-    stars: _spotModalStars,
     price: _spotModalPrice
   };
   if(_spotEditingPid){
