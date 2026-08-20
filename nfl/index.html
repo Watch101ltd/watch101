@@ -389,7 +389,7 @@ table.watch-list thead th:has(+ th.col-zone-divider), table.watch-list tbody td:
   padding-right:7px;
 }
 /* PLAYER_POOL_21COL_V2 (compact, 150%-zoom-friendly) - mirrors baseball density */
-table.watch-list{min-width:1406px;table-layout:fixed}  /* BLOCK_CLONE_V1: identity block widened to baseball spec. YPC_YPR_V1 (2026-08-19): +76px for the two new 38px ratio columns so laptop widths do not re-create Bug #32's header squeeze */
+table.watch-list{min-width:1444px;table-layout:fixed}  /* BLOCK_CLONE_V1: identity block widened to baseball spec. YPC_YPR_V1 (2026-08-19): +76px for the two new 38px ratio columns so laptop widths do not re-create Bug #32's header squeeze */
 /* Compact header + body padding so 23 columns fit at 150% zoom */
 table.watch-list thead th{padding:5px 2px;font-size:9px;letter-spacing:0.01em;overflow:hidden}  /* HEADER_BLEED_FIX_V1 (2026-08-04) — Matt, 8/3 meeting. Under table-layout:fixed the stat
      columns clamp to 38px once the viewport drops below the 1300px floor (a laptop at 100%,
@@ -427,6 +427,7 @@ table.watch-list thead th.col-player,table.watch-list tbody td:nth-child(4){widt
 table.watch-list tbody .player-name{font-size:12px;font-weight:800}
 table.watch-list thead th.col-team{width:38px;text-align:right}
 table.watch-list thead th.col-bye{width:30px;text-align:right}  /* BYE_WEEK_COL_V1 */
+table.watch-list thead th.col-adp,table.watch-list tbody td.col-adp{width:38px;text-align:right}  /* ADP_COL_V1 */
 table.watch-list tbody td.col-bye{text-align:right}  /* BYE_WEEK_COL_V1 */
 table.watch-list thead th.col-age{width:32px;text-align:right}
 table.watch-list thead th.col-exp{width:32px;text-align:right}
@@ -677,8 +678,8 @@ body.readonly-mode .wl-note-cell{cursor:default;}
 @keyframes must-watch-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
 body.day-mode .must-watch-flash{color:#b91c1c !important;}
 #compact-toggle-btn.active{background:var(--turf);color:#0d1117;border-color:var(--turf);}
-body.compact-mode #nflmain-wrap th:nth-child(n+13):nth-child(-n+27),
-body.compact-mode #nflmain-wrap td:nth-child(n+13):nth-child(-n+27){display:none !important;}  /* BUG #162 FIX (2026-08-19): BYE_WEEK_COL_V1 + YPC_YPR_V1 added 3 columns and shifted every index -- the old n+12/-n+24 range ate the Note column (now col 12) and leaked ReYd/YPR/ReTD (25-27). Column map: 1 handle, 2 rank, 3 pos, 4 player, 5 team, 6 bye, 7 age, 8 exp, 9 delta, 10 type, 11 priority, 12 note, 13-15 ownership, 16 fpts, 17-27 stats, 28 action. ANY future column add/remove MUST re-check this range -- or better, convert it to class-based hiding. */
+body.compact-mode #nflmain-wrap th:nth-child(n+13):nth-child(-n+28),
+body.compact-mode #nflmain-wrap td:nth-child(n+13):nth-child(-n+28){display:none !important;}  /* BUG #162 FIX (2026-08-19): BYE_WEEK_COL_V1 + YPC_YPR_V1 added 3 columns and shifted every index -- the old n+12/-n+24 range ate the Note column (now col 12) and leaked ReYd/YPR/ReTD (25-27). Column map (ADP_COL_V1, 2026-08-19): 1 handle, 2 rank, 3 pos, 4 player, 5 team, 6 bye, 7 age, 8 exp, 9 delta, 10 type, 11 priority, 12 note, 13 adp, 14-16 ownership, 17 fpts, 18-28 stats, 29 action. ANY future column add/remove MUST re-check this range -- or better, convert it to class-based hiding. */
 body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.col-note{max-width:none;width:55%;white-space:normal;}
 
 /* MATTSTAKE_RANKHIST_V1 (Aug 2, 2026) -- Matt's Take + 101 Rank History cards. */
@@ -1241,7 +1242,8 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-type" data-sort="type">Type <span class="sort-arrow">↕</span></th>
         <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
         <th class="left col-note">Note</th>
-        <th class="col-yrank col-zone-divider" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
+        <th class="col-adp col-zone-divider" data-sort="adp" title="Average draft position — Sleeper, follows the scoring box (ADP_COL_V1)">ADP <span class="sort-arrow">↕</span></th>
+        <th class="col-yrank" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a col-fpts col-zone-divider" data-sort="fpts">FPts <span class="sort-arrow">↕</span><select id="wl-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
@@ -1260,7 +1262,7 @@ document.addEventListener('DOMContentLoaded',function(){
       </tr>
     </thead>
     <tbody id="watch-list-body">
-      <tr><td colspan="28" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
+      <tr><td colspan="29" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
     </tbody>
   </table>
   <!-- PHONE_NOTE_STAR_NFL_V1 (June 10, 2026) — phone note-star list. Hidden on desktop;
@@ -1335,7 +1337,8 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
           <th class="col-bye" data-npsort="bye" title="Bye week — BYE_WEEK_COL_V1">Bye <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
-          <th class="col-yrank col-zone-divider" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
+          <th class="col-adp col-zone-divider" data-npsort="adp" title="Average draft position — Sleeper, follows the scoring box (ADP_COL_V1)">ADP <span class="sort-arrow">↕</span></th>
+          <th class="col-yrank" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
           <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a col-fpts col-zone-divider" data-npsort="fpts">FPts <span class="sort-arrow">↕</span><select id="np-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
@@ -1354,7 +1357,7 @@ document.addEventListener('DOMContentLoaded',function(){
         </tr>
       </thead>
       <tbody id="nfl-players-body">
-        <tr><td colspan="20" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
+        <tr><td colspan="21" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -2184,6 +2187,9 @@ function _rankRatioCol(key,label,numF,denF,tdClass){   // YPC_YPR_V1 -- efficien
     num:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=_ratioNum(s?s[numF]:null, s?s[denF]:null); return (v==null)?-1:v; },
     render:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; return _ratioCellOrDash(s?s[numF]:null, s?s[denF]:null); } };
 }
+function _rankCol_adp(){ return { key:'adp', label:'ADP', headClass:'col-adp col-zone-divider', tdClass:'col-adp col-zone-divider',   // ADP_COL_V1
+  num:function(pid){ var v=_adpFor(pid); return (v==null)?Infinity:v; },
+  render:function(pid){ return _adpCell(pid); } }; }
 function _rankCol_bye(){ return { key:'bye', label:'Bye', headClass:'col-bye', tdClass:'col-bye',   // BYE_WEEK_COL_V1
   num:function(pid){ var v=_byeFor(pid); return (v==null)?Infinity:v; },   // asc default; unknowns last
   render:function(pid){ return _byeCell(pid); } }; }
@@ -2204,9 +2210,9 @@ function _rankColsFor(pos){
   fpts.headClass   = 'col-stat col-stat-a col-fpts col-zone-divider';
   fpts.tdClass     = 'col-stat-a col-fpts col-zone-divider';
   var yr = _rankCol_yrank((pos === 'DEF') ? 'yahoo_def_rank' : undefined);   // YAHOO_DEF_RANKS_V1 preserved
-  yr.headClass = 'yh-rank col-yrank col-zone-divider';
-  yr.tdClass   = 'col-zone-divider';
-  var lead = [team, _rankCol_bye(), age, exp, type, prio, note, yr, yowned, cbs, fpts];   // BYE_WEEK_COL_V1: Bye rides after Team, watch-list order
+  yr.headClass = 'yh-rank col-yrank';   // ADP_COL_V1: zone divider moved to ADP, which now opens the market zone
+  yr.tdClass   = '';
+  var lead = [team, _rankCol_bye(), age, exp, type, prio, note, _rankCol_adp(), yr, yowned, cbs, fpts];   // BYE_WEEK_COL_V1 + ADP_COL_V1, watch-list order
   var stats;
   if(pos === 'DEF'){
     // DEF EXCEPTION (the Dude, 8/19): keep NFLVERSE_DEF_STATS_V1's block -- a DST row full of
@@ -2296,7 +2302,7 @@ function _rankSortBy(field){
   // was bouncing through another tab.
   if(field === 'rank'){ _rankSortField = null; _rankSortDir = 'desc'; renderRankings(); return; }
   if(_rankSortField === field){ _rankSortDir = (_rankSortDir === 'desc') ? 'asc' : 'desc'; }
-  else { _rankSortField = field; _rankSortDir = (field === 'yrank' || field === 'age' || field === 'exp' || field === 'team' || field === 'bye') ? 'asc' : 'desc'; }   // RANKINGS_WL_CLONE_NFL_V1: exp + team read best ascending. BYE_WEEK_COL_V1: byes too (who is off EARLIEST)
+  else { _rankSortField = field; _rankSortDir = (field === 'yrank' || field === 'age' || field === 'exp' || field === 'team' || field === 'bye' || field === 'adp') ? 'asc' : 'desc'; }   // RANKINGS_WL_CLONE_NFL_V1: exp + team read best ascending. BYE_WEEK_COL_V1: byes too (who is off EARLIEST)
   renderRankings();
 }
 function _rankWireSortHeaders(){
@@ -2583,6 +2589,7 @@ function _npStatValue(field, p, s, pid){
     case 'ruatt': return (s.rush_att || 0);
     case 'ruyd': return (s.rush_yd || 0);
     case 'ypc': return _ratioNum(s.rush_yd, s.rush_att);   // YPC_YPR_V1 (null sinks)
+    case 'adp': return _adpFor(pid);   // ADP_COL_V1 (null sinks)
     case 'rutd': return (s.rush_td || 0);
     case 'rec':  return (s.rec || 0);
     case 'tgt':  return (s.rec_tgt || 0);
@@ -3123,7 +3130,7 @@ function renderNflPlayers(){
   const statusEl = document.getElementById('nflplayers-status');
   if(!tbody) return;
   if(!_playerDB){
-    tbody.innerHTML = '<tr><td colspan="20" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="21" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
     return;
   }
   if(typeof _npBuildTeamSelect === 'function') _npBuildTeamSelect();  // NFL_POOL_STATFILTER_V1
@@ -3169,7 +3176,8 @@ function renderNflPlayers(){
       '<td>' + age + '</td>' +
       // NFL_PLAYERS_PAGE_V1 — Yahoo rank + ownership (football HAS the Yahoo pipeline,
       // unlike NBA). Same lookup the watch list uses; placeholder class when no value.
-      '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? " class=\"col-zone-divider\"" : " class=\"placeholder col-zone-divider\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
+      '<td class="col-adp col-zone-divider">' + _adpCell(pid) + '</td>' +   // ADP_COL_V1 (zone divider moved here: ADP now opens the market zone)
+      '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       // CBS_OWNED_NFLPLAYERS_V1 (2026-06-17) — CBS rostered% column, same lookup the watch list uses.
       '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
@@ -3207,7 +3215,7 @@ function npAddToList(pid, btnEl){
 function _npSortBy(field){
   if(!field) return;
   if(_npSortField === field){ _npSortDir = (_npSortDir === 'desc') ? 'asc' : 'desc'; }
-  else { _npSortField = field; _npSortDir = 'desc'; }
+  else { _npSortField = field; _npSortDir = (field === 'adp') ? 'asc' : 'desc'; }   // ADP_COL_V1: rank-like, low = early pick
   renderNflPlayers();
 }
 
@@ -3449,7 +3457,7 @@ function renderWatchList(){
   const countEl = document.getElementById('count-badge');
   countEl.textContent = _watchList.length + (_watchList.length === 1 ? ' player' : ' players');
   if(_watchList.length === 0){
-    tbody.innerHTML = '<tr><td colspan="28" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="29" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
     if(typeof _renderPhoneList==='function'){ try{ _renderPhoneList([]); }catch(e){} }  // PHONE_NOTE_STAR_NFL_V1
     return;
   }
@@ -3482,7 +3490,7 @@ function renderWatchList(){
     const priority = (originalIdx >= 0) ? _wlPriority(_watchList[originalIdx]) : 0;
     if(!p){
       return '<tr>' +
-        '<td colspan="27" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
+        '<td colspan="28" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
         '<td class="center"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
       '</tr>';
     }
@@ -3517,7 +3525,8 @@ function renderWatchList(){
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       _wlNoteCellHtml(pid) +   // WL_NOTES_V1 -- live Note column
       // YAHOO_DATA_V1: y!rank, y!owned cells. CBS_OWNED_V1: cbs owned cell (joins by name+team).
-      '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? " class=\"col-zone-divider\"" : " class=\"placeholder col-zone-divider\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
+      '<td class="col-adp col-zone-divider">' + _adpCell(pid) + '</td>' +   // ADP_COL_V1 (zone divider moved here: ADP now opens the market zone)
+      '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
       '<td class="col-stat-a col-fpts col-zone-divider">' + statCellOrDash(_fptsOf(s, p), 1) + '</td>' +
@@ -6325,6 +6334,7 @@ function sortValueFor(field, p, s, pid){
     case 'ruatt':    return (s.rush_att || 0);
     case 'ruyd':     return (s.rush_yd || 0);
     case 'ypc':      return _ratioNum(s.rush_yd, s.rush_att);   // YPC_YPR_V1 (null sinks)
+    case 'adp':      return _adpFor(pid);   // ADP_COL_V1 (null sinks)
     case 'rutd':     return (s.rush_td || 0);
     case 'rec':      return (s.rec || 0);
     case 'tgt':      return (s.rec_tgt || 0);
@@ -6363,7 +6373,7 @@ function sortBy(field){
     _sortDir = (_sortDir === 'desc') ? 'asc' : 'desc';
   } else {
     _sortField = field;
-    _sortDir = 'desc';
+    _sortDir = (field === 'adp') ? 'asc' : 'desc';   // ADP_COL_V1: rank-like, low = early pick
   }
   updateSortArrows();
   renderWatchList();
@@ -6598,6 +6608,53 @@ async function _byeLoad(){
 }
 _byeLoad();
 // ══ /BYE_WEEK_COL_V1 ══
+
+// ══ ADP_COL_V1 (2026-08-19 -- PC Walter, per Matt via the Dude on the 8/19 call) ══
+// Average draft position from SLEEPER (Matt's preferred source, twice on tape), via our own
+// NAS route /nfl/adp/:year (ADP_NFL_V1 in server.js -- needs the container rebuilt once).
+// Data is keyed by our native Sleeper player_ids, so there is NO name-matching join anywhere.
+// FORMAT-AWARE: the field follows the scoring box -- STD -> adp_std, ½PPR -> adp_half_ppr,
+// PPR + TE-Prem -> adp_ppr (Sleeper has no TE-premium ADP family; full PPR is the honest
+// nearest) -- and the DYNASTY rankings set reads the adp_dynasty_* family instead. Sleeper's
+// 999 "unranked" sentinel is stripped server-side; the front-end only ever sees real numbers.
+// ADP restored per Matt 8/19 ("that feels like a mistake" that it was removed). NFC remains
+// FORBIDDEN (their terms); Yahoo draft_analysis is a possible later addition post-countersign.
+var _adpByPid = null;
+function _adpScoringBase(){
+  var s = (typeof _scoringSystem !== 'undefined') ? _scoringSystem : 'half';
+  if(s === 'std') return 'std';
+  if(s === 'ppr' || s === 'teprem') return 'ppr';
+  return 'half_ppr';
+}
+function _adpFieldForContext(){
+  var dyn = false;
+  try { dyn = (typeof _rankViewActive === 'function' && _rankViewActive() && typeof _rankSet !== 'undefined' && _rankSet === 'dynasty'); } catch(e){}
+  return (dyn ? 'adp_dynasty_' : 'adp_') + _adpScoringBase();
+}
+function _adpFor(pid){
+  if(!_adpByPid) return null;
+  var row = _adpByPid[pid];
+  if(!row) return null;
+  var v = Number(row[_adpFieldForContext()]);
+  return (isFinite(v) && v > 0) ? v : null;
+}
+function _adpCell(pid){
+  var v = _adpFor(pid);
+  return (v == null) ? '<span class="placeholder">—</span>' : v.toFixed(1);
+}
+async function _adpLoad(){
+  try {
+    var res = await fetch(SERVER_URL + '/nfl/adp/' + _ftlSeasonYear());
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    _adpByPid = (data && data.players) || null;
+    try { if(typeof renderWatchList === 'function') renderWatchList(); } catch(e){}
+    try { if(typeof renderNflPlayers === 'function') renderNflPlayers(); } catch(e){}
+    try { if(typeof renderRankings === 'function' && typeof _rankViewActive === 'function' && _rankViewActive()) renderRankings(); } catch(e){}
+  } catch(e){ console.warn('[ADP_COL_V1] fetch failed -- ADP stays dashed (container rebuilt with ADP_NFL_V1 yet?):', e); }
+}
+_adpLoad();
+// ══ /ADP_COL_V1 ══
 
 async function _ftlRenderScheduleResults(pid){
   const wrap = document.getElementById('ftl-schedwrap');
