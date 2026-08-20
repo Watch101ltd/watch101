@@ -675,7 +675,10 @@ body.readonly-mode .wl-note-cell{cursor:default;}
 #ftl-overlay .ftl-typetag input{width:15px;height:15px;cursor:pointer;}
 #ftl-overlay .ftl-typegrid-note{font-size:11px;color:var(--text3);margin-top:8px;}
 .must-watch-flash{color:var(--red,#ef4444) !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}
-.inj-tag{color:var(--red,#ef4444);font-weight:800;font-size:9px;letter-spacing:.04em;vertical-align:super;white-space:nowrap;}  /* INJ_TAG_V1: Q/D/O/IR after the name, baseball's IL pattern */
+.inj-tag{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;padding:1px 4px;border-radius:2px;letter-spacing:0.04em;background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444;white-space:nowrap;margin-left:4px;vertical-align:middle;line-height:1.3;}  /* INJ_TAG_V1, restyled 2026-08-19 on the Dude's first look: baseball's .injury-badge geometry cloned (its il10 palette, the most readable of the red family), sized up from baseball's 8px to 10px because his exact words were "big, bold, capitalized and inside a red rectangle just like baseball" -- the first pass's small superscript letter was too hard to read */
+body.day-mode .inj-tag{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}  /* INJ_TAG_V1: day-mode, baseball's own day-mode badge palette */
+.inj-tag.inj-q{background:#78350f;color:#fcd34d;border:1px solid #f59e0b}  /* INJ_TAG_SEVERITY_V1 (2026-08-19, the Dude's call): Questionable wears baseball's DTD amber -- maybe-hurt is not the same news as out -- D/O/IR/PUP/SUS stay red */
+body.day-mode .inj-tag.inj-q{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}  /* INJ_TAG_SEVERITY_V1: baseball's day-mode DTD palette */
 @keyframes must-watch-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
 body.day-mode .must-watch-flash{color:#b91c1c !important;}
 #compact-toggle-btn.active{background:var(--turf);color:#0d1117;border-color:var(--turf);}
@@ -6688,7 +6691,8 @@ function _injTagHtml(pid){
   var inj = _injFor(pid);
   if(!inj) return '';
   var tip = inj.full + (inj.part ? (' - ' + inj.part) : '');
-  return ' <span class="inj-tag" title="' + escapeHtml(tip) + '">' + escapeHtml(inj.code) + '</span>';
+  var sev = (inj.code === 'Q') ? ' inj-q' : '';   // INJ_TAG_SEVERITY_V1: amber for maybe, red for the bad news
+  return ' <span class="inj-tag' + sev + '" title="' + escapeHtml(tip) + '">' + escapeHtml(inj.code) + '</span>';
 }
 // ══ /INJ_TAG_V1 ══
 
