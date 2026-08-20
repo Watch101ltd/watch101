@@ -577,6 +577,14 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .fs-table td.fs-result.win{color:#10b981;font-weight:600;}
 #ftl-overlay .fs-table td.fs-result.loss{color:#ec4899;font-weight:600;}
 #ftl-overlay .fs-table tr.fs-bye td,#ftl-overlay .fs-table tr.fs-dnp td{color:var(--text3);}
+#ftl-overlay .fs-table tr.fs-playoff td{background:rgba(236,72,153,0.10);}  /* SCHED_TRIO_V1: weeks 15-17, Matt's "pink or some shit" */
+#ftl-overlay .fs-table tr.fs-playoff td.fs-left:first-child{color:#f472b6;font-weight:800;}
+body.day-mode #ftl-overlay .fs-table tr.fs-playoff td{background:rgba(236,72,153,0.14);}
+body.day-mode #ftl-overlay .fs-table tr.fs-playoff td.fs-left:first-child{color:#be185d;}
+#ftl-overlay .fs-yeartoggle{margin-left:10px;font-size:10px;font-weight:800;letter-spacing:.05em;color:var(--gold,#eab308);border:1px solid var(--gold,#eab308);border-radius:10px;padding:1px 8px;cursor:pointer;text-transform:uppercase;vertical-align:middle;user-select:none;}  /* SCHED_TRIO_V1 */
+#ftl-overlay .fs-yeartoggle:hover{background:var(--gold,#eab308);color:#0d1117;}
+#ftl-overlay .fs-playoffline{font-size:11px;font-weight:700;color:#f472b6;margin:2px 0 6px 2px;}  /* SCHED_TRIO_V1 */
+body.day-mode #ftl-overlay .fs-playoffline{color:#be185d;}
 #ftl-overlay .fs-table td.fs-dash{color:var(--text3);}
 /* WL_NOTES_V1 (Aug 2, 2026) -- live Note column. */
 td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}  /* BLOCK_CLONE_V1: baseball note recipe */
@@ -3046,6 +3054,7 @@ document.addEventListener('click', function(e){
     var entry = _watchList[idx] || {};
     var p = (typeof _playerDB !== 'undefined' && _playerDB) ? _playerDB[pid] : null;
     _ftlCurrentPid = pid;   // the card's global - the ftl save handlers key off it
+    try { _ftlSchedPrior = false; } catch(e){}   // SCHED_TRIO_V1: every card opens on the current season
     var name = p ? (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()) : ('Player ' + pid);
     var meta = [];
     if(p && p.team) meta.push(p.team);
@@ -6508,8 +6517,7 @@ function _ftlNum(v, dec){
 // note and the rest of the card is unaffected.
 // ============================================================================
 let _ftlCurrentPid = null;
-let _ftlSchedCache = null;
-let _ftlSchedCacheYear = null;
+let _ftlSchedCacheMap = {};   // SCHED_TRIO_V1: per-year cache (the game-log toggle flips years; the old single-slot cache would refetch on every flip)
 const _ftlGamelogCache = {};
 
 function _ftlSeasonYear(){
@@ -6521,12 +6529,11 @@ function _ftlSeasonYear(){
 }
 
 async function _ftlFetchSchedule(year){
-  if (_ftlSchedCache && _ftlSchedCacheYear === year) return _ftlSchedCache;
+  if (_ftlSchedCacheMap[year]) return _ftlSchedCacheMap[year];
   const res = await fetch(SERVER_URL + '/nfl/schedule/' + year);
   if (!res.ok) throw new Error('schedule HTTP ' + res.status);
   const data = await res.json();
-  _ftlSchedCache = data;
-  _ftlSchedCacheYear = year;
+  _ftlSchedCacheMap[year] = data;   // SCHED_TRIO_V1
   return data;
 }
 
@@ -6696,12 +6703,29 @@ function _injTagHtml(pid){
 }
 // ══ /INJ_TAG_V1 ══
 
+// ══ SCHED_TRIO_V1 (2026-08-19 -- PC Walter, per Matt via the Dude on the 8/19 call) ══
+// Three interlocking asks, one section: (1) a toggle beside the Schedule/Results title that
+// flips the table to LAST season's game log ("I keep leaving the site for last year's game
+// log" -- Matt, on tape) -- the endpoints were already year-parameterized, so the whole
+// feature is one parameter; (2) fantasy playoff weeks 15/16/17 highlighted in their own
+// colour ("pink or some shit" -- his words) in BOTH year views, week 18 listed plain;
+// (3) a playoff-opponents line up top with home/away so nobody scrolls a whole schedule
+// to see January. Toggle state resets to the current season every time a card opens.
+var _ftlSchedPrior = false;
+function _ftlToggleSchedYear(){
+  _ftlSchedPrior = !_ftlSchedPrior;
+  if(_ftlCurrentPid != null){ try { _ftlRenderScheduleResults(_ftlCurrentPid); } catch(e){} }
+}
 async function _ftlRenderScheduleResults(pid){
   const wrap = document.getElementById('ftl-schedwrap');
   if (!wrap) return;
   const p = _playerDB && _playerDB[pid];
-  const year = _ftlSeasonYear();
-  const label = '<div class="ftl-statgroup-label">Schedule / Results — ' + year + '</div>';
+  const curYear = _ftlSeasonYear();
+  const year = _ftlSchedPrior ? (curYear - 1) : curYear;   // SCHED_TRIO_V1
+  const _togTxt = _ftlSchedPrior ? ('Back to ' + curYear) : ((curYear - 1) + ' Game Log');
+  const _togLink = '<span class="fs-yeartoggle" onclick="_ftlToggleSchedYear()" title="Flip between this season\'s schedule and last season\'s week-by-week game log">' + _togTxt + '</span>';
+  const _titleTxt = _ftlSchedPrior ? ('Game Log — ' + year) : ('Schedule / Results — ' + year);
+  const label = '<div class="ftl-statgroup-label">' + _titleTxt + _togLink + '</div>';
   if (!p || !p.team){
     // Free agent / no team: no schedule to show.
     wrap.innerHTML = label + '<div class="fs-note">No team — no schedule.</div>';
@@ -6728,15 +6752,31 @@ async function _ftlRenderScheduleResults(pid){
   }
   const cols = _ftlSchedCols(p.position);
 
+  // SCHED_TRIO_V1: the playoff-opponents line -- weeks 15-17 with home/away, current season only
+  // (in the game-log view it is history, not planning). BYE in a playoff week is worth shouting.
+  let poLine = '';
+  if(!_ftlSchedPrior){
+    const poParts = [];
+    for (let pw = 15; pw <= 17; pw++) {
+      const pg = byWeek[pw];
+      if (!pg) { poParts.push('Wk' + pw + ': BYE'); continue; }
+      const pHome = (pg.home === team);
+      poParts.push('Wk' + pw + ': ' + (pHome ? '' : '@ ') + (pHome ? pg.away : pg.home));
+    }
+    poLine = '<div class="fs-playoffline" title="Fantasy playoff weeks — the games that decide championships">🏆 Playoffs ' + poParts.join(' · ') + '</div>';
+  }
+
   let head = '<tr><th class="fs-left">WK</th><th class="fs-left">DATE</th><th class="fs-left">OPP</th><th class="fs-left">RESULT</th>';
   for (const c of cols) head += '<th>' + c[0] + '</th>';
   head += '<th>FPTS</th></tr>';
 
   let rows = '';
   for (let w = 1; w <= 18; w++) {
+    const _po = (w >= 15 && w <= 17) ? ' fs-playoff' : '';   // SCHED_TRIO_V1: weeks 15-17 wear the playoff colour; week 18 stays plain (Matt's spec)
+    const _poTr = _po ? (' class="fs-playoff"') : '';
     const g = byWeek[w];
     if (!g) {
-      rows += '<tr class="fs-bye"><td class="fs-left">' + w + '</td><td class="fs-left">—</td><td class="fs-left">BYE</td><td class="fs-left">—</td><td colspan="' + (cols.length + 1) + '"></td></tr>';
+      rows += '<tr class="fs-bye' + _po + '"><td class="fs-left">' + w + '</td><td class="fs-left">—</td><td class="fs-left">BYE</td><td class="fs-left">—</td><td colspan="' + (cols.length + 1) + '"></td></tr>';
       continue;
     }
     const home = (g.home === team);
@@ -6764,17 +6804,17 @@ async function _ftlRenderScheduleResults(pid){
       const fpv = _fptsOf(s, p);  // SCORING_ENGINE_NFL_V1: weekly FPts follows the active scoring system
       const fp = Number(fpv);
       statCells += (isFinite(fp) && fpv != null) ? '<td>' + fp.toFixed(1) + '</td>' : '<td class="fs-dash">—</td>';
-      rows += '<tr><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + statCells + '</tr>';
+      rows += '<tr' + _poTr + '><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + statCells + '</tr>';   // SCHED_TRIO_V1
     } else if (played) {
       // Team played, no stat line recorded for him -- DNP, grayed like baseball's log.
-      rows += '<tr class="fs-dnp"><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + '<td colspan="' + (cols.length + 1) + '">DNP</td></tr>';
+      rows += '<tr class="fs-dnp' + _po + '"><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + '<td colspan="' + (cols.length + 1) + '">DNP</td></tr>';
     } else {
       for (let i = 0; i < cols.length + 1; i++) statCells += '<td class="fs-dash"></td>';
-      rows += '<tr><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + statCells + '</tr>';
+      rows += '<tr' + _poTr + '><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + statCells + '</tr>';   // SCHED_TRIO_V1
     }
   }
 
-  wrap.innerHTML = label + '<div class="fs-tablewrap"><table class="fs-table"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>';
+  wrap.innerHTML = label + poLine + '<div class="fs-tablewrap"><table class="fs-table"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div>';   // SCHED_TRIO_V1
 }
 
 // ============================================================================
@@ -7048,6 +7088,7 @@ function openFromTheLogo(pid, _keepRange){
   // BUG49_PHASE2b: dynamic year note retired — header-right now carries baseball's static "Watch 101 Player Card" in the HTML.
 
   _ftlCurrentPid = pid;
+  try { _ftlSchedPrior = false; } catch(e){}   // SCHED_TRIO_V1: every card opens on the current season
   _ftlSyncOwnedCheck(pid);
   _ftlRenderRwLink(pid);   // ROTOWIRE_LINK_NFL_V1
   _ftlRenderTypeTags(pid);
