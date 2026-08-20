@@ -3334,7 +3334,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
           <button type="button" class="tier-swatch" data-color="purple" style="background:#a855f7" onclick="selectTierColor('purple')" title="Purple"></button>
           <button type="button" class="tier-swatch" data-color="pink"   style="background:#ec4899" onclick="selectTierColor('pink')"   title="Pink"></button>
           <button type="button" class="tier-swatch" data-color="gray"   style="background:#94a3b8" onclick="selectTierColor('gray')"   title="Gray"></button>
-        <!-- TIER_UNCHAINED_V1 (2026-08-19): 18 more, mirrored from the twins -->
+        <!-- TIER_UNCHAINED_V2-LITE (2026-08-19): 18 more colors; renderer untouched on baseball -->
         <button type="button" class="tier-swatch" data-color="amber"   style="background:#f59e0b" onclick="selectTierColor('amber')"   title="Amber"></button>
         <button type="button" class="tier-swatch" data-color="yellow"  style="background:#facc15" onclick="selectTierColor('yellow')"  title="Yellow"></button>
         <button type="button" class="tier-swatch" data-color="lime"    style="background:#84cc16" onclick="selectTierColor('lime')"    title="Lime"></button>
@@ -8450,8 +8450,9 @@ async function deleteTierFromModal(){
 //
 // Color palette mirrors the modal swatches.
 const TIER_COLOR_HEX = {
-  // TIER_UNCHAINED_V1 (2026-08-19 -- mirrored from the twins the same night): 8 -> 26 colors.
-  // Stored BY NAME in saved tiers; new names flow through save/load untouched; unknowns fall back gray.
+  // TIER_UNCHAINED_V2-LITE (2026-08-19): baseball gets ONLY the inert modal upgrades (no cap,
+  // 26 colors). The renderer additions were REVERTED here while isolating the page-compression
+  // symptom the Dude reported -- baseball's tier PAINTING is byte-identical to pre-8/19.
   red:'#ef4444', orange:'#f97316', gold:'#eab308', green:'#22c55e',
   blue:'#3b82f6', purple:'#a855f7', pink:'#ec4899', gray:'#94a3b8',
   amber:'#f59e0b', yellow:'#facc15', lime:'#84cc16', emerald:'#10b981',
@@ -8562,8 +8563,6 @@ function _tiersInjectSpacerRows(){
       var td = document.createElement('td');
       td.colSpan = colCount;
       spacer.appendChild(td);
-      var _shMlb = (window._tierSpacerHeights || {})['mlb:' + tier.id];   // TIER_UNCHAINED_V1: learned multi-line height
-      if(_shMlb) spacer.style.height = _shMlb + 'px';
       tbody.insertBefore(spacer, startRow);
     } catch(e){
       console.warn('[TIER_SPACER_ROW_V1] failed to inject spacer for tier:', tier, e);
@@ -8740,7 +8739,7 @@ function renderTiers(){
         'box-shadow:' + tabShadow + ';' +
         'pointer-events:auto;' +
         'cursor:pointer;' +
-        'white-space:nowrap;';   // TIER_UNCHAINED_V2: nowrap by DEFAULT (the original proven byte); the post-append check flips a genuinely-long name to wrapping with an explicit px width
+        'white-space:nowrap;';
       // TIERS_V1 (Phase F) — read-only fans see a passive tab (no edit
      // affordance, default cursor). Backend admins get the click handler
      // and a "click to edit" tooltip.
@@ -8773,26 +8772,6 @@ function renderTiers(){
 
       layer.appendChild(box);
       layer.appendChild(tab);
-      // TIER_UNCHAINED_V1: measured fit for multi-line tabs (learned spacer heights; one repaint converges).
-      try {
-        var _maxW = Math.max(220, boxWidth - 40);   // TIER_UNCHAINED_V2: wrap ONLY when the name is genuinely too long, with an EXPLICIT px width -- V1's width:max-content on the abspos tab is the suspect for baseball's mystery horizontal growth, so it is gone everywhere
-        if(tab.scrollWidth > _maxW){ tab.style.whiteSpace = 'normal'; tab.style.width = _maxW + 'px'; tab.style.lineHeight = '1.3'; }
-        var _th = tab.offsetHeight || 0;
-        var _store = (window._tierSpacerHeights = window._tierSpacerHeights || {});
-        if(spacerRow){
-          var _need = _th + 8;
-          if(_need > 28 && _store['mlb:' + tier.id] !== _need){
-            _store['mlb:' + tier.id] = _need;
-            spacerRow.style.height = _need + 'px';
-            if(!window._tierRepaintQueued){
-              window._tierRepaintQueued = true;
-              requestAnimationFrame(function(){ window._tierRepaintQueued = false; try { renderTiers(); } catch(e){} });
-            }
-          }
-        } else if(tabRadius === '6px 6px 0 0' && _th > 16){
-          tab.style.top = (top - pad - _th) + 'px';
-        }
-      } catch(e){}
     } catch(e){
       console.warn('[TIERS_V1] failed to render tier:', tier, e);
     }
