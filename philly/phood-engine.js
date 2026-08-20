@@ -492,6 +492,7 @@ function renderWatchList(){
   _setSortArrows();
   try { renderTiers(); } catch(e){}      /* the twins' paint hook — tiers repaint after every table paint */
   try { _syncCalView(); } catch(e){}     /* PHILLY_CAL_V1 — the calendar view follows every table paint */
+  try { _renderPhoneCards(rows); } catch(e){}   /* PHILLY_PHONE_V1 — cards follow every table paint, same rows */
 }
 function _setSortArrows(){
   var ars = document.querySelectorAll('th .arrow'), i;
@@ -1761,4 +1762,70 @@ function _closeCalCard(){
 function _calCardEdit(pid){
   _closeCalCard();
   openEditSpotModal(pid);
+}
+
+
+/* ============================================================================
+   PHILLY_PHONE_V1 (2026-08-20) — the phone card list, the baseball/twins process
+   applied to Philly. Mockup approved first round. One data path: renderWatchList
+   hands its OWN filtered-and-sorted rows straight in, so search, tabs, and sort
+   all work on the cards for free and the cards can never drift from the table.
+   Tap targets are the link pills themselves; tier brackets do not draw on phone,
+   same as every other page. Desktop is untouched (the media block gates all of it,
+   with the pointer:coarse laptop-ambush guard).
+   ============================================================================ */
+function _phoneSpotCard(p, rank){
+  var sp = _splitNoteAndUrl((typeof p.take === 'string') ? p.take : '');
+  var tags = _tagChipsHtml(p);
+  var addr = (p.addr && p.addr !== 'TBD') ? p.addr : '';
+  var pills = '';
+  pills += p.menu ? '<a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">MENU</a>'
+                  : '<a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No menu link yet">MENU</a>';
+  pills += p.pics ? '<a class="pill ig" href="' + _esc(p.pics) + '" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">' + IG_PILL_SVG + '</a>'
+                  : '<a class="pill ig" href="#" onclick="return false;" style="opacity:0.45" title="No Instagram link yet" aria-label="Instagram">' + IG_PILL_SVG + '</a>';
+  pills += p.hype ? '<a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">&#128293; HYPE</a>'
+                  : '<a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">&#128293; HYPE</a>';
+  return '<div class="pc-card">'
+    + '<div class="pc-r1"><span class="pc-rank">' + rank + '</span><span class="pc-nm">' + _esc(p.name) + '</span><span class="pc-hood">' + _esc(p.hood || '') + '</span></div>'
+    + (tags ? '<div class="pc-tags">' + tags + '</div>' : '')
+    + (sp.text.trim() ? '<div class="pc-take">' + _esc(sp.text) + _renderNoteLinkBadge(sp.url) + '</div>' : '<div class="pc-take empty">No take yet.</div>')
+    + (addr ? '<div class="pc-addr">&#128205; ' + _esc(addr) + '</div>' : '')
+    + '<div class="pc-pills">' + pills + '</div>'
+    + '</div>';
+}
+function _phoneEventCard(p, rank){
+  var sp = _splitNoteAndUrl((typeof p.take === 'string') ? p.take : '');
+  var tags = _tagChipsHtml(p);
+  var dates = p.date_start ? _fmtEventDates(p) : '<span class="pc-tbd">Date TBD</span>';
+  var meta = [];
+  if(p.venue) meta.push(_esc(p.venue));
+  if(p.hood)  meta.push(_esc(p.hood));
+  var pills = '';
+  pills += p.menu ? '<a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">&#127903;&#65039; TIX</a>'
+                  : '<a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No tickets link yet">&#127903;&#65039; TIX</a>';
+  pills += _igPillPair(p);   /* venue + artist, the fan/admin rules ride along */
+  pills += p.hype ? '<a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">&#128293; HYPE</a>'
+                  : '<a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">&#128293; HYPE</a>';
+  return '<div class="pc-card">'
+    + '<div class="pc-r1"><span class="pc-rank">' + rank + '</span><span class="pc-nm">' + _esc(p.name) + '</span><span class="pc-dates">' + dates + '</span></div>'
+    + (meta.length ? '<div class="pc-meta">' + meta.join(' &middot; ') + '</div>' : '')
+    + (tags ? '<div class="pc-tags">' + tags + '</div>' : '')
+    + (sp.text.trim() ? '<div class="pc-take">' + _esc(sp.text) + _renderNoteLinkBadge(sp.url) + '</div>' : '<div class="pc-take empty">No take yet.</div>')
+    + '<div class="pc-pills">' + pills + '</div>'
+    + '</div>';
+}
+function _renderPhoneCards(rows){
+  var wrap = document.getElementById('phone-card-list');
+  if(!wrap) return;
+  var ev = _isEventsList();
+  var html = '';
+  for(var i = 0; i < rows.length; i++){
+    var p = rows[i];
+    var rank = _watchList.indexOf(p) + 1;
+    html += ev ? _phoneEventCard(p, rank) : _phoneSpotCard(p, rank);
+  }
+  if(!html){
+    html = '<div class="pc-empty">' + (ev ? 'No events yet — Matt is filling this month.' : 'Nothing here yet.') + '</div>';
+  }
+  wrap.innerHTML = html;
 }
