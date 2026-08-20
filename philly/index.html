@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watch101Philly</title>
+<!-- ============================================================
+     PHOOD_FOUNDATION_V2 — rebuilt 2026-08-14 by PC Walter after the Dude's
+     review of v1: (1) it did not look like the baseball site, and (2) it used
+     the wrong logo. v2 clones baseball's actual chrome: the real :root and
+     day-mode variable blocks, the real .header / .toolbar / table CSS values
+     from mlb/index.html, SITE_CHROME_V1 nav + footer + script lifted verbatim
+     (hrefs adapted), and the finalized food logo from FINALIZED LOGOS 2026-08-06
+     (watch101_food_logo_FINAL.png — red gingham W, navy outline, fork+knife).
+     Sample data throughout. Static on purpose, no server.
+     ============================================================ -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=Bowlby+One&family=Noto+Serif:wght@600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c10;--surface:#0d1117;--surface2:#131920;--surface3:#1a2330;
+  --border:#1e2d3d;--border2:#253545;
+  --gold:#f0a500;--gold2:#c47f00;
+  --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --indigo:#6366f1;--indigo2:#4338ca;
+  --turquoise:#06b6d4;--turquoise2:#0891b2;
+  --title-blue:#1d4ed8;--title-red:#dc2626;
+  --text:#ffffff;--text2:#e2e8f0;--text3:#94a3b8;
+  /* Stat-role variables (change per mode for red/blue pair).
+     HITTER_RED_LIGHTEN_V1 (May 19, 2026) — TRIED AND ROLLED BACK.
+     Briefly lightened hitter red from #ef4444 to coral #f87171
+     (Tailwind red-400) to mirror the pitcher blue lift. Dude eyeballed
+     it on staging — verdict was "easier on eyes but too washed out,
+     harder to read." Reverted to the original #ef4444 the same session.
+     Backup of the lighter version sits at
+     Watch 101 HTML (Archive)/index_2026-05-19_1143_pre-coral-red.html
+     if anyone ever wants to re-evaluate. Do NOT re-propose lightening
+     this variable without checking with the Dude — he tested it and
+     said no. */
+  /* HITTER_VIOLET_V1 + PITCHER_GREEN_V1 (May 27, 2026 evening — PC Walter, per
+     JP + Matt). Original palette was #ef4444 red / #38bdf8 sky-blue. Matt
+     flagged red as hard to read on dark mode (5/27 Riverside meeting).
+     Tried coral / orange / pink in earlier sessions, all rejected.
+     5/27 PM: swapped hitter to #c4b5fd light violet. First attempt paired
+     it with the old sky blue, but JP said violet + sky-blue read too similar
+     — both cool pastels with similar luminance. Swapped pitcher to #86efac
+     light green for maximum color-wheel separation (violet sits opposite
+     yellow-green; green sits opposite red-violet). Dark-mode-friendly,
+     distinctive, doesn't clash with gold accents.
+     Day mode unchanged: #b91c1c / #1d4ed8 (Matt confirmed day mode is fine).
+     Full palette history + revert targets in:
+     Memory (Claude)/03 System Documentation/STAT_COLOR_PALETTE_HISTORY.md */
+  --stat-hitter:#86efac;--stat-pitcher:#38bdf8;
+  /* Header gradient stops — used by .header background */
+  --header-grad-1:#080c10;--header-grad-2:#0d1520;
+  /* OWNED_PLAYERS_V2 (2026-07-30, the Dude's call). V1 drew a thin gold outline
+     round an owned player's row. Matt could not tell owned from unowned at a
+     glance, because the table is already full of lines and one more line reads
+     as just another line. His words: "if it's all black and it's just lines,
+     it's hard to tell all the way through," and he asked for the grey fill he
+     uses in his own spreadsheets. So the row is now FILLED, not outlined.
+     The rule in both modes is the same: an owned row is LIGHTER than what is
+     around it. Night lifts black to grey. Day lifts grey to white, which is the
+     ceiling, so do not look for something lighter in day mode, there isn't any. */
+  --owned-row:#253545;--owned-row-hover:#2f4258;
+}
+/* ============ DAY MODE OVERRIDES ============
+   When <body> has class "day-mode", these variables replace the :root values.
+   Night-mode defaults above still apply until the toggle flips. */
+body.day-mode{
+  /* DAYMODE_COOL_GRAY_V1 (April 24, 2026) — cool gray palette, card-on-paper contrast.
+     First attempt was warm paper (#ebe8df) — the Dude hated it, too beige.
+     Pivoted to cool gray: neutral, slightly cool undertone, no yellow/beige cast.
+       --bg        = light cool gray page background
+       --surface   = slightly lighter cool-white for cards/rows (card ON page)
+       --surface2  = muted cool gray for buttons/search boxes
+       --surface3  = slightly deeper cool gray for rare uses
+     Text stays dark. Still not pure white anywhere — that was the blinding problem. */
+  --bg:#e9ebef;--surface:#f4f5f8;--surface2:#dde0e5;--surface3:#cdd1d7;
+  --border:#c2c6cc;--border2:#a5aab2;
+  --gold:#a16207;--gold2:#854d0e;
+  --turquoise:#000000;--turquoise2:#000000;
+  --title-blue:#1d4ed8;--title-red:#b91c1c;
+  --text:#1a1a1a;--text2:#333333;--text3:#666666;
+  /* HITTER_RED_LIGHTEN_V1 (May 19, 2026) — TRIED AND ROLLED BACK (day-mode pair).
+     See night-mode breadcrumb above for the full story. */
+  --stat-hitter:#b91c1c;--stat-pitcher:#1d4ed8;
+  --header-grad-1:#f4f5f8;--header-grad-2:#e5e7ec;
+  --owned-row:#ffffff;--owned-row-hover:#eef1f6;
+}
+
+/* PHOOD accents — from watch101_food_logo_FINAL.png (gingham red, navy outline) */
+:root{--phood-red:#d4111b;--phood-red-soft:#de4148;--phood-navy:#06193e}
+
+/* ================= PHOOD page styles — cloned from mlb/index.html ================= */
+body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif;font-size:14px;font-weight:700;min-height:100vh;overflow-x:hidden}
+.header{background:linear-gradient(135deg,var(--header-grad-1) 0%,var(--header-grad-2) 50%,var(--header-grad-1) 100%);border-bottom:1px solid var(--title-red);padding:1.25rem 1.5rem;display:flex;align-items:center;justify-content:space-between;z-index:100}
+.logo-wrap{display:flex;align-items:baseline;gap:12px}
+.logo{font-family:'Bowlby One',sans-serif;font-size:64px;letter-spacing:0.08em;line-height:1;display:flex;align-items:center;gap:0.05em}  /* PHILLY_LOGO_PARITY_V1: gap matched to the sports pages */
+.logo-img{height:1.8em;width:auto;display:block;flex-shrink:0}  /* PHILLY_LOGO_PARITY_V1: image scale matched to the sports pages */
+.logo .logo-phood{color:var(--phood-red)}
+.logo .logo-watch{color:var(--text)}  /* PHILLY_LOGO_PARITY_V1: Watch in theme text -- navy is invisible at night, and the sports pages each color Watch in a page accent */
+.logo-sub{font-family:'Nunito Sans',sans-serif;font-size:10px;letter-spacing:0.2em;color:var(--turquoise);text-transform:uppercase}
+.header-right{display:flex;align-items:center;gap:14px}
+.list-title-stack{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+#theme-toggle{background:transparent;border:1px solid var(--border2);color:var(--text);font-size:14px;cursor:pointer;padding:4px 10px;border-radius:6px;line-height:1;transition:all 0.15s;user-select:none}
+#theme-toggle:hover{background:var(--surface2);border-color:var(--gold)}
+.toolbar{padding:0.75rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--title-red);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:200px;max-width:320px}
+.search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 12px 7px 32px;font-size:13px;color:var(--text);font-family:'Nunito Sans',sans-serif;outline:none}
+.search-wrap input:focus{border-color:var(--gold2)}
+.search-wrap input::placeholder{color:var(--text3)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px}
+.filter-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.filter-tab{padding:6px 12px;border-radius:5px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);transition:all 0.15s;letter-spacing:0.05em}
+.filter-tab.active{background:var(--indigo2);color:#fff;border-color:var(--indigo)}
+.filter-tab:hover:not(.active){color:var(--text2)}
+.toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.main{padding:0 1.5rem 3rem}
+.table-wrap{overflow:visible}
+.table-wrap thead{position:sticky;top:0;z-index:10}
+table{width:100%;border-collapse:separate;border-spacing:0;margin-top:1rem}
+th{padding:5px 4px;font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--text);text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface);overflow:hidden;border-bottom:2px solid var(--phood-red)}
+th.l{text-align:left}
+th:hover{color:var(--gold)}
+th .arrow{font-size:9px;margin-left:2px}
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s}
+tbody tr:hover{background:var(--surface2)}
+td{padding:5px 4px;font-size:11px;vertical-align:middle;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+td.l{text-align:left}
+td.c{text-align:center}
+.rank-cell{display:flex;align-items:center;justify-content:center;gap:2px}
+.player-name{font-weight:500;font-size:14px;color:var(--text);white-space:nowrap}
+/* PRIORITY_STARS_V1 — the twins' interactive click-to-set widget (NBA 856-859).
+   Click star N = priority N; click the same N again = clear to zero.
+   Fans: pointer-events off via readonly-mode, display only. */
+.priority-stars{display:inline-flex;gap:1px;font-size:14px;line-height:1;cursor:pointer;user-select:none;vertical-align:middle;}
+.priority-stars .pstar{color:#3a3f4a;transition:color 0.1s;padding:0 1px;}
+.priority-stars .pstar:hover{color:#fde68a}
+.priority-stars .pstar.filled{color:#fbbf24}
+body.day-mode .priority-stars .pstar{color:#cbd2dc}
+body.readonly-mode .priority-stars{pointer-events:none;cursor:default}
+/* PRICE_COL_V1 - mirrors .priority-stars exactly. Green rather than the stars gold
+   because the two scales sit in ADJACENT columns and must not read as one thing. */
+.price-signs{display:inline-flex;gap:0;font-size:14px;line-height:1;cursor:pointer;user-select:none;vertical-align:middle;font-weight:800}
+.price-signs .psign{color:#3a3f4a;transition:color 0.1s;padding:0 1px}
+.price-signs .psign:hover{color:#86efac}
+.price-signs .psign.filled{color:#22c55e}
+/* Admins see four dim signs (dim IS the unset state, and they are clickable).
+   Fans see only what has been set, so an unpriced spot gets a quiet dash. */
+.price-signs .price-unset{display:none;color:var(--text3);font-weight:400}
+body.readonly-mode .price-signs .price-unset{display:inline}
+body.day-mode .price-signs .psign{color:#cbd2dc}
+body.day-mode .price-signs .psign.filled{color:#16a34a}
+body.readonly-mode .price-signs{pointer-events:none;cursor:default}
+body.readonly-mode .price-signs .psign:not(.filled){display:none}
+td.vibe{font-size:15px;letter-spacing:2px}
+/* DRINK_TAGS_V1 - BYO has no emoji (Unicode has no Y letter glyph, and the flag
+   letters B+Y render as the flag of Belarus), so Matt types the three letters
+   into Tags and the row builder paints them as a boxed chip, same idea as the
+   NEW glyph. letter-spacing is reset because td.vibe widens the whole cell. */
+/* PHOOD_TAGS_V1 - the checkbox picker, ported from baseball ppo-type-tags-*. */
+#spot-modal .ppo-type-tags-list{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;margin-top:2px}
+#spot-modal .spot-tag-group{grid-column:1/-1;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--phood-red);font-weight:800;margin:9px 0 1px}
+#spot-modal .ppo-type-tag-row{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none;padding:3px 6px;border-radius:4px;transition:background 0.15s}
+#spot-modal .ppo-type-tag-row:hover{background:var(--surface2)}
+#spot-modal .ppo-type-tag-row input[type=checkbox]{margin:0;cursor:pointer;flex:0 0 auto}
+#spot-modal .ppo-type-tag-emoji{font-size:14px;line-height:1;width:30px;text-align:center;flex:0 0 auto}
+#spot-modal .ppo-type-tag-label{font-size:11px;color:var(--text2)}
+.type-chip{cursor:default}
+.byo-badge{display:inline-block;background:var(--phood-red);color:#fff;font-weight:800;font-size:10px;letter-spacing:0.06em;padding:2px 5px;border-radius:4px;vertical-align:2px;font-family:inherit;white-space:nowrap}
+td.take{color:var(--text3);font-style:italic;white-space:normal;min-width:230px;font-weight:400}
+/* WL_NOTES_V1 ported (NBA 577-581 + readonly rule) — Matt's Take is a live click-to-type cell */
+.wl-note-cell{cursor:text;}
+.wl-note-cell.placeholder{cursor:pointer;}
+.note-input{width:100%;min-width:150px;box-sizing:border-box;background:var(--surface2);border:1px solid var(--phood-red);border-radius:4px;color:var(--text);font-size:12px;padding:4px 6px;font-family:inherit;font-style:normal;outline:none;}
+.note-add-hint{color:var(--text3);font-style:italic;}
+.note-link-badge{text-decoration:none;margin-left:4px;}
+.note-badge{margin-left:4px;font-size:12px;}
+body.readonly-mode .wl-note-cell{cursor:default;}
+.pill{display:inline-block;background:linear-gradient(135deg,var(--gold) 0%,#c9a227 100%);color:#1a1a1a;font-weight:800;font-size:10px;letter-spacing:0.04em;padding:3px 9px;border-radius:5px;text-decoration:none;white-space:nowrap}
+.pill.ig{background:var(--surface3);color:var(--text2);border:1px solid var(--border2)}
+tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;text-align:left;padding:7px 10px;border-top:2px solid var(--phood-red);border-bottom:2px solid var(--phood-red)}
+/* The gingham strip — the checkered pattern off the real food logo */
+.checker-strip{height:14px;background:repeating-linear-gradient(90deg,rgba(212,17,27,0.85) 0 12px,rgba(212,17,27,0) 12px 24px),repeating-linear-gradient(0deg,rgba(212,17,27,0.85) 0 7px,rgba(212,17,27,0) 7px 14px),#ffffff;border-bottom:2px solid var(--phood-navy)}
+.sample-banner{margin:1rem 0 0;background:var(--surface2);border:1px dashed var(--gold2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2);line-height:1.5;font-weight:400}
+.sample-banner b{color:var(--gold)}
+.legend{margin:1.5rem 0 0;font-size:12px;color:var(--text3);line-height:1.8;font-weight:400}
+.legend b{color:var(--text2)}
+@media (max-width:768px){ .logo{font-size:34px} td.take{min-width:160px} }
+
+/* ===== PHOOD_DRAG_RANK_V1 — ported from NBA_DRAG_RANK_V1 + DRAG_POLISH_V1 ===== */
+tbody td.drag-handle{cursor:grab;color:var(--text2);user-select:none}
+tbody td.drag-handle:active{cursor:grabbing}
+tbody tr.phood-dragging{opacity:0.45}
+tbody tr.phood-drag-over{box-shadow:inset 0 2px 0 0 var(--phood-red)}
+#drop-indicator-bar{display:none;position:absolute;height:5px;background:var(--phood-red);border-radius:3px;z-index:9000;pointer-events:none;box-shadow:0 0 8px var(--phood-red);}
+#drop-indicator-pill{display:none;position:fixed;background:var(--phood-red);color:#fff;font-size:11px;font-weight:800;letter-spacing:0.04em;padding:3px 9px;border-radius:999px;z-index:9001;pointer-events:none;white-space:nowrap;}
+
+/* ===== TIERS_V1 CSS — ported complete from the twins (NBA source, lines 586-622) ===== */
+/* TIERS_V1 STAGE 1 (2026-08-03) — spacer rows give each tier tab its own visual home
+   (baseball's TIER_SPACER_ROW_V1); swatches are the modal's color palette ring. */
+.tier-spacer-row { height: 28px; background: transparent; pointer-events: none; }
+.tier-spacer-row td { border: none !important; padding: 0 !important; background: transparent !important; }
+.tier-swatch { width:32px; height:32px; border-radius:50%; border:2px solid var(--border); cursor:pointer; padding:0; transition:transform 0.1s, box-shadow 0.1s; }
+.tier-swatch:hover { transform:scale(1.1); }
+.tier-swatch.selected { border-color:#eab308; box-shadow:0 0 0 3px rgba(234,179,8,0.35); transform:scale(1.1); }
+
+/* TIER_DRAG (STAGE 2, 2026-08-08) - armed-state pulse, baseball's TIER_PULSE_OPACITY_V1 build:
+   glow painted ONCE on a ::after overlay, only OPACITY animates (compositor-only).
+   NEVER animate box-shadow on the box itself - that was baseball's 33x tier-drag lag. */
+@keyframes tier-armed-fade {
+  0%   { opacity: 0; }
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.tier-bracket-box.tier-armed {
+  pointer-events: auto !important;
+  cursor: grab;
+}
+.tier-bracket-box.tier-armed:active {
+  cursor: grabbing;
+}
+.tier-bracket-box.tier-armed::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 14px #ffc107, 0 0 28px rgba(255,193,7,0.7), inset 0 0 10px rgba(255,193,7,0.35);
+  opacity: 0;
+  animation: tier-armed-fade 1.5s ease-in-out infinite;
+  will-change: opacity;
+}
+body.day-mode .tier-bracket-box.tier-armed::after {
+  box-shadow: 0 0 12px #d97706, 0 0 22px rgba(217,119,6,0.6), inset 0 0 8px rgba(217,119,6,0.3);
+}
+/* toolbar buttons — twins' .btn family (NBA source, lines 193-206 + btn-gold) */
+.btn{padding:7px 14px;border-radius:6px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;border:1px solid;transition:all 0.15s;letter-spacing:0.05em}
+.btn-outline{background:transparent;color:var(--text2);border-color:var(--border2)}
+.btn-outline:hover{background:var(--surface2);color:var(--text);border-color:var(--text3)}
+.btn-gold{background:var(--gold);color:#000;border-color:var(--gold);font-weight:500}
+.btn-gold:hover{background:#fbbf24;border-color:#fbbf24}
+/* READONLY_V1 — fans never see admin controls (twins' rule, verbatim) */
+body.readonly-mode .backend-only{display:none !important;}
+
+/* ===== SITE_CHROME_V1 ported from home.html 2026-07-29 20:45 by Walter. =====
+   Only w101- namespaced rules came across, so nothing can collide with the
+   tracker's own class names. Every colour is an existing theme var, so day mode
+   keeps working. The tracker's own #theme-toggle stays in charge of the theme;
+   the hub's duplicate button was stripped on purpose.
+   TOMORROW, when this file becomes mlb/index.html, the nav and footer hrefs need
+   a ../ prefix: about.html, contact.html, updates.html, home.html, nfl/, nba/.
+   The Baseball entry is already ./ and needs no change. ===== */
+:root{--mlb-accent:#1d4ed8;--nfl-accent:#15803d;--nba-accent:#f97316}
+/* =========================================================================
+   SITE_CHROME_V1  NAV START
+   Lift this whole block (CSS + the <header> markup) into the list pages.
+   Sticky from 768px up, static below, per the Dude 2026-07-29.
+   ========================================================================= */
+.w101-nav{
+  background:linear-gradient(135deg,var(--header-grad-1) 0%,var(--header-grad-2) 50%,var(--header-grad-1) 100%);
+  border-bottom:1px solid var(--title-red);
+  position:static;top:0;z-index:900;
+}
+/* NAV_STATIC_V1 (2026-07-30, the Dude's call, fixes Bug #24).
+   The nav used to go position:sticky from 768px up. That put it on the same
+   strip of screen as the tables' OWN sticky column header, and the nav won, so
+   scrolling into a long list left you with columns of numbers and no labels.
+   His decision: the stat columns are the ones that need to stay put, the site
+   nav does not. So the nav scrolls away and you go back to the top to reach it.
+   DO NOT re-add position:sticky to .w101-nav without solving the column header
+   collision first. Removing this line is what fixed the bug. */
+.w101-nav-inner{
+  max-width:1240px;margin:0 auto;padding:14px 20px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+.w101-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.w101-brand-word{font-family:'Bowlby One',sans-serif;font-size:26px;letter-spacing:.04em;color:var(--title-red);line-height:1}
+.w101-brand img{height:34px;width:auto;display:block}
+.w101-menu{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-left:auto}
+.w101-menu a,.w101-menu button{
+  font-family:'Noto Serif',serif;font-size:15px;font-weight:600;
+  color:var(--text2);background:none;border:none;cursor:pointer;
+  padding:9px 13px;border-radius:6px;text-decoration:none;
+  transition:background .15s,color .15s;white-space:nowrap;
+}
+.w101-menu a:hover,.w101-menu button:hover{background:var(--surface2);color:var(--text)}
+/* dropdown */
+.w101-drop{position:relative}
+.w101-drop>button::after{content:' \25BE';font-size:11px;opacity:.7}
+.w101-drop-panel{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:210px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+  box-shadow:0 12px 34px rgba(0,0,0,.45);overflow:hidden;padding:5px;
+  /* Bug #47 (2026-08-07): the panel had NO z-index, so later nav elements (Subscribe, socials)
+     painted OVER it and read as "transparency". The background was always opaque. */
+  z-index:1000;
+}
+.w101-drop.open .w101-drop-panel{display:block}
+.w101-drop-panel a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:5px;font-size:15px}
+.w101-drop-panel a span.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.w101-sub{
+  font-family:'Noto Serif',serif;font-weight:700;font-size:15px;
+  background:var(--gold);color:#000;border:1px solid var(--gold);
+  padding:9px 16px;border-radius:6px;cursor:pointer;text-decoration:none;white-space:nowrap;
+}
+.w101-sub:hover{background:#fbbf24;border-color:#fbbf24}
+.w101-sub.pending{opacity:.62;cursor:default}
+.w101-theme{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text2);
+  width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:15px;line-height:1;
+}
+/* social row. Top and prominent, the Dude's call over Matt's bottom placement. */
+.w101-social{display:flex;align-items:center;gap:7px}
+.w101-social a{
+  width:34px;height:34px;border-radius:7px;display:grid;place-items:center;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text2);text-decoration:none;transition:transform .12s,background .15s,color .15s;
+}
+.w101-social a:hover{background:var(--title-red);color:#fff;transform:translateY(-2px)}
+.w101-social a svg{width:17px;height:17px;fill:currentColor;display:block}
+.w101-social a.pending{opacity:.45}
+.w101-social a.pending:hover{background:var(--surface2);color:var(--text2);transform:none}
+/* ---------------- footer, four bands ---------------- */
+.w101-foot{margin-top:64px;border-top:1px solid var(--border);background:var(--surface)}
+.w101-foot-inner{max-width:1240px;margin:0 auto;padding:32px 20px 26px;text-align:center}
+.w101-foot-links{display:flex;justify-content:center;gap:8px 22px;flex-wrap:wrap;margin-bottom:20px}
+.w101-foot-links a{color:var(--text2);text-decoration:none;font-size:15px;font-weight:600}
+.w101-foot-links a:hover{color:var(--gold)}
+.w101-foot .w101-social{justify-content:center;margin-bottom:20px}
+.w101-copy{font-size:13px;color:var(--text3);font-family:'Nunito Sans',sans-serif;margin-bottom:14px}
+.w101-top{
+  background:none;border:1px solid var(--border2);color:var(--text3);
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:.13em;
+  padding:9px 17px;border-radius:6px;cursor:pointer;text-transform:uppercase;
+}
+.w101-top:hover{color:var(--text);border-color:var(--text3)}
+@media(max-width:620px){
+  .w101-nav-inner{gap:12px}
+  .w101-menu{width:100%;margin-left:0;justify-content:center}
+  .w101-social{width:100%;justify-content:center;order:5}
+  .hero{padding-top:36px}
+}
+
+</style>
+</head>
+<body>
+
+<script>
+/* EARLY THEME INIT — runs before any visible content paints.
+   NIGHT_DEFAULT_V1 (June 10, 2026 — PC Walter, per the Dude): NIGHT is the
+   default, always. Day mode applies ONLY when the user explicitly chose it
+   (saved 'day' in localStorage via the toggle). The old OS color-scheme
+   fallback is gone — it was forcing day mode on phones whose OS reports
+   "prefers light," which is exactly how the Dude got stuck in day mode
+   with the toggle hidden. */
+(function(){
+  try {
+    var saved = localStorage.getItem('watch101-theme');
+    var isDay = (saved === 'day');
+    if (isDay) document.body.classList.add('day-mode');
+  } catch(e) { /* localStorage blocked — default to night */ }
+})();
+</script>
+
+<!-- ===================== SITE_CHROME_V1 NAV MARKUP START ===================== -->
+<header class="w101-nav">
+  <div class="w101-nav-inner">
+
+    <a class="w101-brand" href="../" title="Watch101 home">
+      <span class="w101-brand-word">Watch</span>
+      <img src="data:image/png;base64,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" alt="101">
+    </a>
+
+    <nav class="w101-menu">
+      <div class="w101-drop" id="drop-lists">
+        <button type="button" onclick="w101Drop('drop-lists',event)" aria-haspopup="true">The Lists</button>
+        <div class="w101-drop-panel">
+          <a href="../nba/"><span class="dot" style="background:var(--nba-accent)"></span>Watch101NBA</a>
+          <a href="../mlb/"><span class="dot" style="background:var(--mlb-accent)"></span>Watch101MLB</a>
+          <a href="../nfl/"><span class="dot" style="background:var(--nfl-accent)"></span>Watch101NFL</a>
+          <a href="./"><span class="dot" style="background:var(--phood-red)"></span>Watch101Philly</a>
+        </div>
+      </div>
+      <a href="../about.html">About Us</a>
+      <a href="../updates.html" id="nav-updates">Updates</a>
+      <a href="../contact.html">Contact</a>
+      <a class="w101-sub" id="subscribe-btn" href="#">Subscribe</a>
+      <!-- theme toggle omitted: the tracker header already owns #theme-toggle -->
+    </nav>
+
+    <div class="w101-social" id="social-row"></div>
+  </div>
+</header>
+<!-- ====================== SITE_CHROME_V1 NAV MARKUP END ====================== -->
+
+<!-- The gingham checker strip — the pattern off the real food logo, the one Matt liked -->
+<div class="checker-strip"></div>
+
+<div class="header">
+  <div class="logo-wrap">
+    <div class="logo" title="Watch101 Philly"><span class="logo-watch">Watch</span><img class="logo-img" src="images/watch101_food_logo_FINAL.png" alt="101"><span class="logo-phood">Philly</span></div>  <!-- PHILLY_LOGO_PARITY_V1 (2026-08-19): Watch [logo] Philly, the sports pages' exact shape -->
+    <div class="list-title-stack">
+      <!-- LIST_PICKER_HEADER_V2 pattern, lifted from baseball: switcher stacked above the active-list title -->
+      <div class="list-picker-header" style="display:flex;align-items:center;gap:8px">
+        <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--gold) 0%,#c9a227 100%);color:#1a1a1a;border:1px solid var(--gold);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:260px">
+          <option value="phood-restaurants">&#127869;&#65039; Watch101Philly Restaurants</option>
+          <option value="phood-bars">&#127866; Watch101Philly Bars &amp; Breweries</option>
+        </select>
+      </div>
+      <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span id="active-list-title" style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4)">Philly Restaurants</span><br><span id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">Philadelphia proper — ones to watch</span><br><span id="list-stamp" style="font-size:11px;color:var(--turquoise2);margin-top:3px;display:inline-block">Not yet saved</span></div>
+    </div>
+  </div>
+  <div class="header-right"></div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input id="player-search" type="text" placeholder="Search spots or neighborhoods..." oninput="renderWatchList()">
+  </div>
+  <div class="filter-tabs" id="filter-tabs"></div>
+  <div class="toolbar-right">
+    <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
+    <button class="btn btn-gold backend-only" id="add-spot-btn" onclick="openAddSpotModal()" title="Add a restaurant, bar, or dessert spot to the list">&#10133; Add Spot</button>
+    <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of spots">&#127991;&#65039; Tier</button>
+    <button class="btn btn-gold backend-only" id="save-btn" onclick="autoSaveToPhoodNAS()" title="Saves to this browser for now — server save comes with the Philly server">💾 Save</button>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sample-banner"><b>SAMPLE DATA.</b> Every spot, tier, star count, emoji and link below is placeholder scaffolding so the columns have something to hold. Matt replaces all of it from his notes app. The write-up column is his voice — nothing is pre-written in it on purpose.</div>
+
+  <div class="table-wrap">
+    <table id="phood-table">
+      <thead>
+        <tr>
+          <th class="c" data-col="rank" title="Click to restore Matt's list order" style="text-align:center;width:44px">#<span class="arrow" id="ar-rank"></span></th>
+          <th class="l" data-col="name">Spot<span class="arrow" id="ar-name"></span></th>
+          <th class="l" data-col="hood">Neighborhood<span class="arrow" id="ar-hood"></span></th>
+          <th class="l" data-col="vibe">Tags<span class="arrow" id="ar-vibe"></span></th>
+          <th data-col="stars" style="text-align:center;width:100px">Priority<span class="arrow" id="ar-stars"></span></th>
+          <th data-col="price" style="text-align:center;width:78px" title="How expensive it is, not how good a deal it is">Price<span class="arrow" id="ar-price"></span></th>
+          <th class="l" data-col="take">Matt's Take<span class="arrow" id="ar-take"></span></th>
+          <th class="l" data-col="addr">Address<span class="arrow" id="ar-addr"></span></th>
+          <th data-col="menu" style="text-align:center;width:70px">Menu</th>
+          <th data-col="pics" style="text-align:center;width:80px">Pics</th>
+        </tr>
+      </thead>
+      <tbody id="watch-list-body"></tbody>
+    </table>
+  </div>
+
+  <div class="legend">
+    <b>How the list works (same rules as the player lists):</b> spots move up, down, or off entirely. A review drops from Klein or LaBan, a place gets hot, a visit disappoints — the list reacts.<br>
+    <b>Tags are Matt's vocabulary.</b> He picks them with the checkboxes in the Add or Edit Spot box, so the set stays consistent across every spot. Current set: 🥇 must visit · 🔥 hot right now · 🆕 just opened · 💰 cheap eats · 🍰 dessert stop · 🌱 vegetarian friendly · 🥡 takeout · 🍸 cocktails · 🍷 good wine selection · 🥃 bar worth waiting at · <span class="byo-badge">BYO</span> bring your own · 🍺 brewery · 🎟️ reservations required · 🚶 walk-ins only · ⛱️ outdoor seating · 🎉 good for big groups · 🔑 valet parking · 🌙 late night.<br>
+    <b>Price:</b> one to four dollar signs for how expensive a spot is. Blank means nobody has priced it yet. Click the signs straight from the list to set it, same as the priority stars, and click the one you are on to clear it. This says how much it costs, not whether it is a good deal.<br>
+    <b>Geographic rule from the 7/29 tape:</b> restaurants stay Philadelphia; bars &amp; breweries deliberately cast a wider net so the ones worth a drive make the cut.<br>
+    <b>Sorting:</b> click any column header. Click <b>#</b> to return to Matt's list order with the tiers showing. Filtering or searching flattens the tiers while active.
+  </div>
+</div>
+
+<!-- ==================== SITE_CHROME_V1 FOOTER MARKUP START ==================== -->
+<footer class="w101-foot">
+  <div class="w101-foot-inner">
+    <div class="w101-foot-links">
+      <a href="../">Home</a>
+      <a href="../nba/">Watch101NBA</a>
+      <a href="../mlb/">Watch101MLB</a>
+      <a href="../nfl/">Watch101NFL</a>
+      <a href="./">Watch101Philly</a>
+      <a href="../about.html">About Us</a>
+      <a href="../updates.html">Updates</a>
+      <a href="../contact.html">Contact</a>
+    </div>
+    <div class="w101-social" id="social-row-foot"></div>
+    <p class="w101-copy">Copyright &copy; 2026 Watch101. All rights reserved.</p>
+    <button class="w101-top" type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back to top</button>
+  </div>
+</footer>
+<!-- ===================== SITE_CHROME_V1 FOOTER MARKUP END ===================== -->
+<!-- DRAG_POLISH_V1 — drop indicator bar + rank pill, twins' pattern -->
+<div id="drop-indicator-bar"></div>
+<div id="drop-indicator-pill"></div>
+
+<!-- SPOT_EDITOR_V1 (2026-08-14) — Add/Edit Spot modal. No baseball equivalent to
+     port (the sports pull players from stats APIs; PHOOD entries are hand-typed),
+     so this is new code in the tier modal's idiom. Opened by ➕ Add Spot (admin)
+     or by clicking a spot's name in the table (admin). Fans see neither. -->
+<div id="spot-modal" onclick="if(event.target===this)closeSpotModal()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;max-width:520px;width:100%;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,0.55)">
+    <h3 id="spot-modal-title" style="font-size:17px;font-weight:800;margin-bottom:14px;color:var(--text)">&#10133; Add a Spot</h3>
+    <div id="spot-modal-error" style="display:none;background:#2a0a0a;color:var(--red);border:1px solid #7f1d1d;border-radius:6px;padding:8px 12px;font-size:12px;margin-bottom:12px"></div>
+    <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Name *</label>
+    <input id="spot-name" type="text" placeholder="e.g. Kalaya" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+    <div style="display:flex;gap:12px">
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Category *</label>
+        <select id="spot-cat" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+          <option value="rest">&#127869;&#65039; Restaurant</option>
+          <option value="bar">&#127866; Bar / Brewery</option>
+          <option value="dess">&#127856; Dessert / Ice Cream</option>
+        </select>
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Priority</label>
+        <div id="spot-stars" style="padding:6px 0;font-size:20px;letter-spacing:3px;cursor:pointer;user-select:none"></div>
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Price</label>
+        <div id="spot-price" style="padding:6px 0;font-size:20px;letter-spacing:2px;cursor:pointer;user-select:none;font-weight:800"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Neighborhood</label>
+        <input id="spot-hood" type="text" placeholder="e.g. Fishtown" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Address</label>
+        <input id="spot-addr" type="text" placeholder="street address" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+      </div>
+    </div>
+    <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Tags <span style="text-transform:none;letter-spacing:0;opacity:0.7">check all that apply</span></label>
+    <div id="spot-tags-picker" class="ppo-type-tags-list"></div>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Menu link</label>
+        <input id="spot-menu" type="text" placeholder="https://..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Pics / Instagram link</label>
+        <input id="spot-pics" type="text" placeholder="https://..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
+      </div>
+    </div>
+    <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Matt's Take</label>
+    <textarea id="spot-take" rows="3" placeholder="the write-up: the dish to order, why it is on the list, what changed..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none;resize:vertical"></textarea>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:18px">
+      <button class="btn btn-gold" onclick="saveSpotFromModal()">&#128190; Save Spot</button>
+      <button class="btn btn-outline" onclick="closeSpotModal()">Cancel</button>
+      <button class="btn" id="spot-delete-btn" onclick="deleteSpotFromModal()" style="display:none;margin-left:auto;background:transparent;color:#dc2626;border-color:#7f1d1d">&#128465;&#65039; Remove from list</button>
+    </div>
+  </div>
+</div>
+
+<!-- TIERS_V1 STAGE 1 (2026-08-03) — backend-only Create/Edit Tier modal, baseball's
+     Phase C adapted to the twins' self-contained overlay idiom. Stage 2 adds the
+     "Draggable as a group" row here. Opened by the 🏷️ Tier toolbar button (admin)
+     or by clicking a tier's label tab (admin); fans never see either entry point. -->
+<div id="create-tier-modal" onclick="if(event.target===this)closeCreateTierModal()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:20px 22px">
+    <h2 id="tier-modal-title" style="margin:0 0 10px 0;font-size:17px;color:var(--text)">🏷️ Create a Tier</h2>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5">
+      Draws a colored bracket around a contiguous range of players on the current list.
+      Brackets hide automatically when the list is filtered or sorted, and reappear when
+      the list returns to its saved order. Each list keeps its own tiers.
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Tier Name *</label>
+      <input type="text" id="tier-name" placeholder="e.g. Elite, Sleepers, Avoid" autocomplete="off" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Color *</label>
+      <input type="hidden" id="tier-color" value="">
+      <div id="tier-color-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+        <button type="button" class="tier-swatch" data-color="red"    style="background:#ef4444" onclick="selectTierColor('red')"    title="Red"></button>
+        <button type="button" class="tier-swatch" data-color="orange" style="background:#f97316" onclick="selectTierColor('orange')" title="Orange"></button>
+        <button type="button" class="tier-swatch" data-color="gold"   style="background:#eab308" onclick="selectTierColor('gold')"   title="Gold"></button>
+        <button type="button" class="tier-swatch" data-color="green"  style="background:#22c55e" onclick="selectTierColor('green')"  title="Green"></button>
+        <button type="button" class="tier-swatch" data-color="blue"   style="background:#3b82f6" onclick="selectTierColor('blue')"   title="Blue"></button>
+        <button type="button" class="tier-swatch" data-color="purple" style="background:#a855f7" onclick="selectTierColor('purple')" title="Purple"></button>
+        <button type="button" class="tier-swatch" data-color="pink"   style="background:#ec4899" onclick="selectTierColor('pink')"   title="Pink"></button>
+        <button type="button" class="tier-swatch" data-color="gray"   style="background:#94a3b8" onclick="selectTierColor('gray')"   title="Gray"></button>
+        <!-- TIER_UNCHAINED_V1 (2026-08-19): 18 more, mirrored from the twins -->
+        <button type="button" class="tier-swatch" data-color="amber"   style="background:#f59e0b" onclick="selectTierColor('amber')"   title="Amber"></button>
+        <button type="button" class="tier-swatch" data-color="yellow"  style="background:#facc15" onclick="selectTierColor('yellow')"  title="Yellow"></button>
+        <button type="button" class="tier-swatch" data-color="lime"    style="background:#84cc16" onclick="selectTierColor('lime')"    title="Lime"></button>
+        <button type="button" class="tier-swatch" data-color="emerald" style="background:#10b981" onclick="selectTierColor('emerald')" title="Emerald"></button>
+        <button type="button" class="tier-swatch" data-color="teal"    style="background:#14b8a6" onclick="selectTierColor('teal')"    title="Teal"></button>
+        <button type="button" class="tier-swatch" data-color="cyan"    style="background:#06b6d4" onclick="selectTierColor('cyan')"    title="Cyan"></button>
+        <button type="button" class="tier-swatch" data-color="sky"     style="background:#0ea5e9" onclick="selectTierColor('sky')"     title="Sky"></button>
+        <button type="button" class="tier-swatch" data-color="indigo"  style="background:#6366f1" onclick="selectTierColor('indigo')"  title="Indigo"></button>
+        <button type="button" class="tier-swatch" data-color="violet"  style="background:#8b5cf6" onclick="selectTierColor('violet')"  title="Violet"></button>
+        <button type="button" class="tier-swatch" data-color="fuchsia" style="background:#d946ef" onclick="selectTierColor('fuchsia')" title="Fuchsia"></button>
+        <button type="button" class="tier-swatch" data-color="rose"    style="background:#f43f5e" onclick="selectTierColor('rose')"    title="Rose"></button>
+        <button type="button" class="tier-swatch" data-color="crimson" style="background:#b91c1c" onclick="selectTierColor('crimson')" title="Crimson"></button>
+        <button type="button" class="tier-swatch" data-color="maroon"  style="background:#881337" onclick="selectTierColor('maroon')"  title="Maroon"></button>
+        <button type="button" class="tier-swatch" data-color="brown"   style="background:#92400e" onclick="selectTierColor('brown')"   title="Brown"></button>
+        <button type="button" class="tier-swatch" data-color="forest"  style="background:#166534" onclick="selectTierColor('forest')"  title="Forest"></button>
+        <button type="button" class="tier-swatch" data-color="navy"    style="background:#1e3a8a" onclick="selectTierColor('navy')"    title="Navy"></button>
+        <button type="button" class="tier-swatch" data-color="slate"   style="background:#64748b" onclick="selectTierColor('slate')"   title="Slate"></button>
+        <button type="button" class="tier-swatch" data-color="white"   style="background:#e2e8f0" onclick="selectTierColor('white')"   title="White"></button>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">Start Spot *</label>
+        <select id="tier-start" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 8px;font-size:13px;font-family:inherit;outline:none;cursor:pointer"><option value="">Select…</option></select>
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">End Spot *</label>
+        <select id="tier-end" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 8px;font-size:13px;font-family:inherit;outline:none;cursor:pointer"><option value="">Select…</option></select>
+      </div>
+    </div>
+        <!-- TIER_DRAG (STAGE 2): edit-mode-only checkbox, baseball's exact control. Ticking it
+         arms the tier as draggable-as-a-group; modal auto-closes on tick. -->
+    <div id="tier-drag-row" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;background:rgba(255,59,59,0.08);border:1px solid rgba(255,59,59,0.25)">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text)">
+        <input type="checkbox" id="tier-drag-checkbox" style="width:16px;height:16px;cursor:pointer;accent-color:#ef4444" onchange="_onTierDragCheckboxChanged()">
+        <span><strong>Draggable as a group</strong> - tick this, then drop the whole tier somewhere new on the list. Auto-disarms after the drop.</span>
+      </label>
+    </div>
+    <div id="tier-error" style="display:none;color:#ef4444;font-size:12px;margin-bottom:8px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+      <button id="tier-delete-btn" style="display:none;background:#7f1d1d;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer" onclick="deleteTierFromModal()">🗑️ Delete Tier</button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-outline" onclick="closeCreateTierModal()">Cancel</button>
+        <button id="tier-save-btn" style="background:var(--court,#ea580c);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer" onclick="saveTierFromModal()">Create Tier</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===========================================================================
+   SITE_CHROME_V1 SCRIPT. Lift this with the nav.
+
+   🔧 THE ONLY PART YOU EVER NEED TO EDIT IS THE CONFIG BLOCK BELOW.
+   Fill in a URL and that icon or button turns on by itself. Leave it empty
+   and it renders dimmed and unclickable, which is deliberate: Matt wanted the
+   social links visible early to put pressure on himself to finish the accounts.
+   =========================================================================== */
+var W101 = {
+  // Paste the real URLs here as Matt creates the accounts. Empty string = dimmed.
+  substack : '',
+  social   : {
+    x        : '',
+    instagram: '',
+    facebook : '',
+    bluesky  : '',
+    youtube  : '',
+    linkedin : ''
+  }
+};
+
+/* --- tiny inline SVG icons, so there is no icon font or external request --- */
+var W101_ICONS = {
+  x:'<svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.4l-5-6.6L5.8 22H2.7l8.1-9.3L1.5 2H8l4.7 6.2zm-1.1 18h1.8L6.3 3.8H4.4z"/></svg>',
+  instagram:'<svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.07 1.2.05 1.8.25 2.2.42.6.22 1 .5 1.5.94.44.44.72.85.94 1.45.17.43.37 1.05.42 2.25.06 1.28.07 1.68.07 4.9s0 3.6-.07 4.9c-.05 1.2-.25 1.8-.42 2.2-.22.6-.5 1-.94 1.5-.44.44-.85.72-1.45.94-.43.17-1.05.37-2.25.42-1.28.06-1.68.07-4.9.07s-3.6 0-4.9-.07c-1.2-.05-1.8-.25-2.2-.42-.6-.22-1-.5-1.5-.94-.44-.44-.72-.85-.94-1.45-.17-.43-.37-1.05-.42-2.25C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.9c.05-1.2.25-1.8.42-2.2.22-.6.5-1 .94-1.5.44-.44.85-.72 1.45-.94.43-.17 1.05-.37 2.25-.42C8.4 2.2 8.8 2.2 12 2.2zm0 1.98c-3.14 0-3.5.01-4.74.07-.95.04-1.47.2-1.81.33-.46.18-.78.39-1.12.73-.34.34-.55.66-.73 1.12-.13.34-.29.86-.33 1.81-.06 1.24-.07 1.6-.07 4.74s.01 3.5.07 4.74c.04.95.2 1.47.33 1.81.18.46.39.78.73 1.12.34.34.66.55 1.12.73.34.13.86.29 1.81.33 1.24.06 1.6.07 4.74.07s3.5-.01 4.74-.07c.95-.04 1.47-.2 1.81-.33.46-.18.78-.39 1.12-.73.34-.34.55-.66.73-1.12.13-.34.29-.86.33-1.81.06-1.24.07-1.6.07-4.74s-.01-3.5-.07-4.74c-.04-.95-.2-1.47-.33-1.81a3.02 3.02 0 00-.73-1.12 3.02 3.02 0 00-1.12-.73c-.34-.13-.86-.29-1.81-.33-1.24-.06-1.6-.07-4.74-.07zM12 7.9a4.1 4.1 0 110 8.2 4.1 4.1 0 010-8.2zm0 1.98a2.12 2.12 0 100 4.24 2.12 2.12 0 000-4.24zm5.23-2.2a.96.96 0 11-1.92 0 .96.96 0 011.92 0z"/></svg>',
+  facebook:'<svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 10-11.56 9.88v-7H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.88h-2.33v7A10 10 0 0022 12z"/></svg>',
+  bluesky:'<svg viewBox="0 0 24 24"><path d="M6.2 4.2C8.5 5.9 11 9.5 12 11.4c1-1.9 3.5-5.5 5.8-7.2 1.7-1.2 4.2-2.2 4.2 1 0 .6-.4 4.9-.6 5.6-.7 2.4-3.1 3-5.3 2.6 3.8.7 4.8 2.9 2.7 5.1-3.9 4.1-5.6-1-6-2.3-.1-.4-.2-.6-.3-.6s-.2.2-.3.6c-.4 1.3-2.1 6.4-6 2.3-2.1-2.2-1.1-4.4 2.7-5.1-2.2.4-4.6-.2-5.3-2.6C2.4 10.1 2 5.8 2 5.2c0-3.2 2.5-2.2 4.2-1z"/></svg>',
+  youtube:'<svg viewBox="0 0 24 24"><path d="M23 12s0-3.2-.4-4.7c-.2-.9-.9-1.5-1.7-1.7C19.3 5.2 12 5.2 12 5.2s-7.3 0-8.9.4c-.8.2-1.5.8-1.7 1.7C1 8.8 1 12 1 12s0 3.2.4 4.7c.2.9.9 1.5 1.7 1.7 1.6.4 8.9.4 8.9.4s7.3 0 8.9-.4c.8-.2 1.5-.8 1.7-1.7.4-1.5.4-4.7.4-4.7zM9.8 15.3V8.7l6 3.3z"/></svg>',
+  linkedin:'<svg viewBox="0 0 24 24"><path d="M20.4 20.4h-3.6v-5.6c0-1.3-.5-2.2-1.7-2.2-.9 0-1.4.6-1.7 1.2-.1.2-.1.5-.1.8v5.8H9.7s.05-9.4 0-10.4h3.6v1.5c.5-.7 1.3-1.8 3.2-1.8 2.3 0 4 1.5 4 4.8v6zM5.9 8.6h-.02c-1.2 0-2-.8-2-1.8s.8-1.8 2.05-1.8c1.2 0 1.98.8 2 1.8 0 1-.78 1.8-2.03 1.8zM7.7 20.4H4.1V10h3.6z"/></svg>'
+};
+var W101_LABELS = {x:'X',instagram:'Instagram',facebook:'Facebook',bluesky:'Bluesky',youtube:'YouTube',linkedin:'LinkedIn'};
+
+/* build the social rows from config, top and footer */
+(function(){
+  var html='';
+  for (var k in W101.social){
+    if(!W101_ICONS[k]) continue;
+    var url=(W101.social[k]||'').trim();
+    html += url
+      ? '<a href="'+url+'" target="_blank" rel="noopener" title="'+W101_LABELS[k]+'" aria-label="'+W101_LABELS[k]+'">'+W101_ICONS[k]+'</a>'
+      : '<a class="pending" href="#" title="'+W101_LABELS[k]+' account is not up yet" aria-label="'+W101_LABELS[k]+' coming soon" onclick="return false">'+W101_ICONS[k]+'</a>';
+  }
+  ['social-row','social-row-foot'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.innerHTML=html;
+  });
+})();
+
+/* wire the Subscribe buttons. No Substack URL yet = dimmed and honest. */
+(function(){
+  var url=(W101.substack||'').trim();
+  ['subscribe-btn','subscribe-btn-2'].forEach(function(id){
+    var b=document.getElementById(id); if(!b) return;
+    if(url){ b.href=url; b.target='_blank'; b.rel='noopener'; }
+    else{
+      b.classList.add('pending');
+      b.href='#';
+      b.title='The newsletter is not open yet. Check back shortly.';
+      b.onclick=function(){ return false; };
+    }
+  });
+})();
+
+/* dropdown. Click to open, click anywhere else or press Escape to close. */
+function w101Drop(id,ev){
+  if(ev) ev.stopPropagation();
+  var d=document.getElementById(id); if(!d) return;
+  var open=d.classList.contains('open');
+  document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+  if(!open) d.classList.add('open');
+}
+document.addEventListener('click',function(){
+  document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+});
+
+/* theme toggle omitted on purpose: the tracker page owns toggleTheme(). */
+</script>
+<script src="phood-engine.js"></script>
+</body>
+</html>
