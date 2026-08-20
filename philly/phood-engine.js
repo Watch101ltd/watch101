@@ -1814,16 +1814,52 @@ function _phoneEventCard(p, rank){
     + '<div class="pc-pills">' + pills + '</div>'
     + '</div>';
 }
+/* BUG165 (2026-08-20) — the tiers were invisible in EVERY phone card view, all pages,
+   since the June phone-cards build (the brackets measure TABLE rows, and the table is
+   hidden on phone). Fixed here card-side: resolve each tier's pid range against the
+   rows being painted and wrap those cards in a bracket box with the tier's name tab
+   and color. Same gate as desktop (_tiersDefaultOrder): sort, search, or a filter
+   hides the boxes until the saved order is back. Philly first; baseball and the
+   twins get the same treatment next, per the Dude. */
+function _phoneTierSegments(rows){
+  if(typeof _tiersDefaultOrder === 'function' && !_tiersDefaultOrder()) return [];
+  if(!Array.isArray(currentTiers) || !currentTiers.length) return [];
+  var idx = {};
+  for(var i = 0; i < rows.length; i++){ idx[String(rows[i].pid)] = i; }
+  var segs = [];
+  for(var t = 0; t < currentTiers.length; t++){
+    var tier = currentTiers[t];
+    var si = idx[String(tier.start_pid)], ei = idx[String(tier.end_pid)];
+    if(si == null || ei == null || si > ei) continue;   /* unresolved anchors: skip quietly, the self-heal rule */
+    var hex = (typeof TIER_COLOR_HEX !== 'undefined' && TIER_COLOR_HEX[tier.color]) || '#94a3b8';
+    segs.push({ si: si, ei: ei, hex: hex, name: (tier.name || 'Tier') });
+  }
+  segs.sort(function(a,b){ return a.si - b.si; });
+  return segs;
+}
 function _renderPhoneCards(rows){
   var wrap = document.getElementById('phone-card-list');
   if(!wrap) return;
   var ev = _isEventsList();
+  var segs = _phoneTierSegments(rows);
   var html = '';
+  var open = [];
   for(var i = 0; i < rows.length; i++){
+    for(var a = 0; a < segs.length; a++){
+      if(segs[a].si === i){
+        html += '<div class="pc-tierbox" style="border-color:' + segs[a].hex + ';background:' + segs[a].hex + '0d">'
+              + '<span class="pc-tiertab" style="background:' + segs[a].hex + '">' + _esc(segs[a].name) + '</span>';
+        open.push(segs[a]);
+      }
+    }
     var p = rows[i];
     var rank = _watchList.indexOf(p) + 1;
     html += ev ? _phoneEventCard(p, rank) : _phoneSpotCard(p, rank);
+    for(var b = open.length - 1; b >= 0; b--){
+      if(open[b].ei === i){ html += '</div>'; open.splice(b, 1); }
+    }
   }
+  while(open.length){ html += '</div>'; open.pop(); }   /* safety: never leave a box unclosed */
   if(!html){
     html = '<div class="pc-empty">' + (ev ? 'No events yet — Matt is filling this month.' : 'Nothing here yet.') + '</div>';
   }
