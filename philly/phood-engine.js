@@ -208,55 +208,9 @@ function _setTake(pid, text){
 /* PRIORITY_DROP_V1 (2026-08-20) — the priority-stars renderer, setter, and click
    delegator were removed per Matt's 8/19 call: no Priority column on the Philly page.
    Old star values stay in the saved data untouched and are simply never read. */
-/* ============================================================================
-   PRICE_COL_V1 (2026-08-15) - how expensive a spot is, one to four dollar signs.
-   A straight clone of the twins' priority-stars widget (dropped from this page 8/20): same widget shape, same
-   click-to-set from the table row, same click-the-current-value-to-clear, same
-   read-only gate, same repaint-every-widget-wearing-this-pid pattern.
-   FOUR not five, per the Dude: Yelp and Google both top out at four, so a fifth
-   sign reads wrong to anyone who has ever used a restaurant list.
-   0 means NOBODY HAS PRICED IT and renders as a quiet dash. It does not mean cheap.
-   This column is EXPENSE ONLY. Value is a separate idea and will live in a tag or
-   in Matt's take, never here.
-   ========================================================================== */
-var PHOOD_PRICE_MAX = 4;
-function renderPriceSigns(pid, currentPrice){
-  var cur = currentPrice || 0;
-  var html = '<span class="price-signs" data-pid="' + _esc(pid) + '">';
-  if(!cur) html += '<span class="price-unset" title="Not priced yet">&mdash;</span>';
-  for(var n = 1; n <= PHOOD_PRICE_MAX; n++){
-    var filled = (n <= cur) ? ' filled' : '';
-    html += '<span class="psign' + filled + '" data-value="' + n + '" title="Price ' + n + ' of ' + PHOOD_PRICE_MAX + '">$</span>';
-  }
-  html += '</span>';
-  return html;
-}
-function setPrice(pid, newPrice){
-  if(_blockIfReadOnly('setPrice')) return;
-  var idx = _wlIndexOf(pid);
-  if(idx < 0) return;
-  var entry = _watchList[idx];
-  var current = entry.price || 0;
-  var finalValue = (current === newPrice) ? 0 : newPrice;   /* click the current one to clear */
-  _watchList[idx] = Object.assign({}, entry, { price: finalValue });
-  renderWatchList();
-  try {
-    document.querySelectorAll('.price-signs[data-pid="' + pid + '"]').forEach(function(w){
-      w.outerHTML = renderPriceSigns(pid, finalValue);
-    });
-  } catch(_e){}
-  autoSaveToPhoodNAS();
-}
-document.addEventListener('click', function(e){
-  var sign = e.target.closest ? e.target.closest('.price-signs .psign') : null;
-  if(!sign) return;
-  var wrap = sign.closest('.price-signs');
-  if(!wrap) return;
-  var pid = wrap.getAttribute('data-pid');
-  var value = parseInt(sign.getAttribute('data-value'), 10);
-  if(!pid || !value) return;
-  setPrice(pid, value);
-});
+/* PRICE_DROP_V1 (2026-08-20) — the dollar-signs renderer, setter, and click delegator
+   removed same night as the Priority drop, per Matt: cost gets described through emoji
+   tags in the type vocabulary. Old values stay in the saved data, never read. */
 function _dragEnabled(){
   /* Same gate as the twins: rank order only (no sort), admin only. */
   if(_sortField !== null) return false;
@@ -278,6 +232,7 @@ var PHOOD_TAGS_V1 = [
   { group:'Verdict', id:'must_visit', emoji:'🥇', label:'Must Visit', tagline:"Top of the list. Go out of your way for this one." },
   { group:'Verdict', id:'hot_now', emoji:'🔥', label:'Hot Right Now', tagline:"The city is talking about it this month." },
   { group:'Verdict', id:'just_opened', emoji:'🆕', label:'Just Opened', tagline:"New room. Worth seeing before the crowds find it." },
+  { group:'Verdict', id:'worth_price', emoji:'💲', label:'Worth the Price', tagline:"Expensive, and you will not regret a dollar of it." },
   { group:'Food', id:'cheap_eats', emoji:'💰', label:'Cheap Eats', tagline:"You will eat well and not think about the bill." },
   { group:'Food', id:'dessert', emoji:'🍰', label:'Dessert Stop', tagline:"Go for the sweets. Dinner optional." },
   { group:'Food', id:'vegetarian', emoji:'🌱', label:'Vegetarian Friendly', tagline:"A real menu for people who do not eat meat." },
@@ -378,7 +333,6 @@ function _rowHtml(p, rank){
     + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span>' + _freshTakeBadge(p) + '</td>'
     + '<td class="l">' + p.hood + '</td>'
     + '<td class="l vibe">' + _tagChipsHtml(p) + '</td>'
-    + '<td class="c">' + renderPriceSigns(p.pid, p.price || 0) + '</td>'
     + _takeCellHtml(p)
     + '<td class="l">' + p.addr + '</td>'
     + (p.menu ? '<td class="c"><a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">MENU</a></td>'
@@ -397,17 +351,8 @@ function renderWatchList(){
   if(_filterCat !== 'all') rows = rows.filter(function(p){ return p.cat === _filterCat; });
   if(q) rows = rows.filter(function(p){ return (p.name + ' ' + p.hood).toLowerCase().indexOf(q) !== -1; });
   if(_sortField !== null){
-    var f = _sortField, num = false;   /* PRIORITY_DROP_V1: no plain numeric sort fields left (price has its own branch) */
+    var f = _sortField, num = false;   /* PRIORITY_DROP_V1 + PRICE_DROP_V1: no numeric sort fields left */
     rows.sort(function(a,b){
-      /* PRICE_COL_V1: unpriced spots sink to the bottom in BOTH directions rather
-         than pretending 0 is cheap. Same idea as baseball sinking nulls. */
-      if(f === 'price'){
-        var ap = a.price || 0, bp = b.price || 0;
-        if(!ap && !bp) return 0;
-        if(!ap) return 1;
-        if(!bp) return -1;
-        return (ap - bp) * _sortDir;
-      }
       var av = _phoodSortKey(a,f), bv = _phoodSortKey(b,f);
       return (num ? (av - bv) : String(av).localeCompare(String(bv))) * _sortDir;
     });
@@ -628,30 +573,6 @@ document.addEventListener('dragleave', function(e){
    ============================================================================ */
 function _esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 var _spotEditingPid = null;
-var _spotModalPrice = 0;   /* 0 = not priced, deliberately NOT a default of 2 */
-function _spotPricePaint(){
-  var el = document.getElementById('spot-price');
-  if(!el) return;
-  var h = '';
-  for(var i = 1; i <= PHOOD_PRICE_MAX; i++){
-    h += '<span data-price="' + i + '" style="color:' + (i <= _spotModalPrice ? '#22c55e' : '#3a3f4a') + '">$</span>';
-  }
-  h += '<span style="font-size:11px;color:var(--text3);margin-left:8px;font-style:italic">'
-     + (_spotModalPrice ? 'click again to clear' : 'not priced yet') + '</span>';
-  el.innerHTML = h;
-}
-function _spotPriceWire(){
-  var el = document.getElementById('spot-price');
-  if(!el || el._wired) return;
-  el._wired = true;
-  el.addEventListener('click', function(ev){
-    var t = ev.target.closest('[data-price]');
-    if(!t) return;
-    var v = parseInt(t.getAttribute('data-price'), 10) || 0;
-    _spotModalPrice = (_spotModalPrice === v) ? 0 : v;
-    _spotPricePaint();
-  });
-}
 function _spotShowErr(msg){
   var e = document.getElementById('spot-modal-error');
   if(e){ e.textContent = msg; e.style.display = msg ? 'block' : 'none'; }
@@ -668,8 +589,7 @@ function _spotFill(p){
   document.getElementById('spot-pics').value = p ? (p.pics || '') : '';
   document.getElementById('spot-hype').value = p ? (p.hype || '') : '';
   document.getElementById('spot-take').value = p ? (p.take || '') : '';
-  _spotModalPrice = p ? (p.price || 0) : 0;
-  _spotPricePaint(); _spotPriceWire(); _spotShowErr('');
+  _spotShowErr('');
 }
 function openAddSpotModal(){
   if(typeof _blockIfReadOnly === 'function' && _blockIfReadOnly('openAddSpotModal')) return;
@@ -705,8 +625,7 @@ async function saveSpotFromModal(){
     menu: document.getElementById('spot-menu').value.trim(),
     pics: document.getElementById('spot-pics').value.trim(),
     hype: document.getElementById('spot-hype').value.trim(),
-    take: document.getElementById('spot-take').value.trim(),
-    price: _spotModalPrice
+    take: document.getElementById('spot-take').value.trim()
   };
   if(_spotEditingPid){
     var p = _watchList.find(function(x){ return x.pid === _spotEditingPid; });
