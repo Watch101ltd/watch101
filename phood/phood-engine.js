@@ -833,8 +833,15 @@ else { _applyReadOnlyBodyClass(); }
 // end_pid, created_at }. Order-anchored to the ACTIVE list, per list.
 // ============================================================================
 const TIER_COLOR_HEX = {
+  // TIER_UNCHAINED_V1 (2026-08-19 -- mirrored from the twins the same night): 8 -> 26 colors.
+  // Stored BY NAME in saved tiers; new names flow through save/load untouched; unknowns fall back gray.
   red:'#ef4444', orange:'#f97316', gold:'#eab308', green:'#22c55e',
-  blue:'#3b82f6', purple:'#a855f7', pink:'#ec4899', gray:'#94a3b8'
+  blue:'#3b82f6', purple:'#a855f7', pink:'#ec4899', gray:'#94a3b8',
+  amber:'#f59e0b', yellow:'#facc15', lime:'#84cc16', emerald:'#10b981',
+  teal:'#14b8a6', cyan:'#06b6d4', sky:'#0ea5e9', indigo:'#6366f1',
+  violet:'#8b5cf6', fuchsia:'#d946ef', rose:'#f43f5e', crimson:'#b91c1c',
+  maroon:'#881337', brown:'#92400e', forest:'#166534', navy:'#1e3a8a',
+  slate:'#64748b', white:'#e2e8f0'
 };
 let currentTiers = [];
 // TIERS_SNAPSHOT_GUARD_V1 — baseball's May 22 lesson, ported whole: tiers got
@@ -1384,6 +1391,8 @@ function _tiersInjectSpacerRows(){
       var td = document.createElement('td');
       td.colSpan = colCount;
       spacer.appendChild(td);
+      var _shPh = (window._tierSpacerHeights || {})['ph:' + tier.id];   // TIER_UNCHAINED_V1: learned multi-line height
+      if(_shPh) spacer.style.height = _shPh + 'px';
       tbody.insertBefore(spacer, range.startRow);
     } catch(e){ console.warn('[TIER_SPACER_ROW_V1] spacer inject failed:', tier, e); }
   });
@@ -1470,7 +1479,7 @@ function renderTiers(){
         'background:' + hex + ';color:#fff;font-family:"Nunito Sans",sans-serif;' +
         'font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;' +
         'padding:2px 10px;border-radius:' + tabRadius + ';box-shadow:' + tabShadow + ';' +
-        'pointer-events:auto;cursor:pointer;white-space:nowrap;';
+        'pointer-events:auto;cursor:pointer;white-space:normal;width:max-content;max-width:' + Math.max(220, boxWidth - 40) + 'px;line-height:1.3;box-sizing:border-box;';   // TIER_UNCHAINED_V1: no name cap now -- width:max-content sizes to TEXT, wraps only past max-width
       var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
       if(isFan){
         tab.title = 'Tier: ' + tier.name;
@@ -1483,6 +1492,24 @@ function renderTiers(){
       }
       layer.appendChild(box);
       layer.appendChild(tab);
+      // TIER_UNCHAINED_V1: measured fit for multi-line tabs (learned spacer heights; one repaint converges).
+      try {
+        var _th = tab.offsetHeight || 0;
+        var _store = (window._tierSpacerHeights = window._tierSpacerHeights || {});
+        if(spacerRow){
+          var _need = _th + 8;
+          if(_need > 28 && _store['ph:' + tier.id] !== _need){
+            _store['ph:' + tier.id] = _need;
+            spacerRow.style.height = _need + 'px';
+            if(!window._tierRepaintQueued){
+              window._tierRepaintQueued = true;
+              requestAnimationFrame(function(){ window._tierRepaintQueued = false; try { renderTiers(); } catch(e){} });
+            }
+          }
+        } else if(tabRadius === '6px 6px 0 0' && _th > 16){
+          tab.style.top = (top - pad - _th) + 'px';
+        }
+      } catch(e){}
     } catch(e){ console.warn('[TIERS_V1] failed to render tier:', tier, e); }
   });
 }
