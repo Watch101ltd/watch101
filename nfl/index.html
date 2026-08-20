@@ -675,6 +675,7 @@ body.readonly-mode .wl-note-cell{cursor:default;}
 #ftl-overlay .ftl-typetag input{width:15px;height:15px;cursor:pointer;}
 #ftl-overlay .ftl-typegrid-note{font-size:11px;color:var(--text3);margin-top:8px;}
 .must-watch-flash{color:var(--red,#ef4444) !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}
+.inj-tag{color:var(--red,#ef4444);font-weight:800;font-size:9px;letter-spacing:.04em;vertical-align:super;white-space:nowrap;}  /* INJ_TAG_V1: Q/D/O/IR after the name, baseball's IL pattern */
 @keyframes must-watch-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
 body.day-mode .must-watch-flash{color:#b91c1c !important;}
 #compact-toggle-btn.active{background:var(--turf);color:#0d1117;border-color:var(--turf);}
@@ -1934,7 +1935,7 @@ function renderRankings(){
       '<td class="col-rank">' + (i+1) + '</td>' +
       '<td class="col-av">' + _rankAvCellHtml(pid) + '</td>' +   // AV_COL_V1
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span> ' + _badgeCol.render(pid) + '</td>' +   // RANKINGS_WL_CLONE_NFL_V1
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + ' ' + _badgeCol.render(pid) + '</td>' +   // RANKINGS_WL_CLONE_NFL_V1 + INJ_TAG_V1
       statCells +
     '</tr>';
   }).join('');
@@ -3170,7 +3171,7 @@ function renderNflPlayers(){
     const _pidJson = escapeHtml(JSON.stringify(pid));
     return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + '</td>' +   // INJ_TAG_V1
       '<td>' + team + '</td>' +
       '<td class="col-bye">' + _byeCell(pid) + '</td>' +   // BYE_WEEK_COL_V1
       '<td>' + age + '</td>' +
@@ -3514,7 +3515,7 @@ function renderWatchList(){
       _handleCell +
       '<td class="col-rank">' + rank + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _noteBadgeHtml(pid) + '</td>' +
+      '<td class="left"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _noteBadgeHtml(pid) + '</td>' +   // INJ_TAG_V1
       '<td>' + team + '</td>' +
       '<td class="col-bye">' + _byeCell(pid) + '</td>' +   // BYE_WEEK_COL_V1
       '<td>' + age + '</td>' +
@@ -6655,6 +6656,41 @@ async function _adpLoad(){
 }
 _adpLoad();
 // ══ /ADP_COL_V1 ══
+
+// ══ INJ_TAG_V1 (2026-08-19 -- PC Walter, per Matt via the Dude on the 8/19 call) ══
+// Injury designations as a small red tag AFTER the player's name (baseball's IL pattern) --
+// Q / D / O / IR, plus the real preseason statuses (PUP, SUS, etc). Matt's spec verbatim:
+// final designation only, no column, "kinda like the thing in baseball."
+// DATA, two sources, freshest first: (1) the ADP payload's inj/inj_bp fields (INJ_TAG_V1's
+// server half rides the ADP fetch, 6h cache -- inj is EXPLICIT null when healthy, so a fresh
+// "healthy" beats a stale "hurt"); (2) fallback: _playerDB's injury_status (the full Sleeper
+// blob, 24h cache) for players without an ADP row or until the container's next 6h refetch.
+// Tooltip carries the full word + body part when Sleeper has one ("Questionable - hamstring").
+// NOT a column: no Compact range change, no colspans, no width math -- the standing
+// column-change sweep does not apply, checked anyway.
+var INJ_MAP_V1 = { 'Questionable':'Q', 'Doubtful':'D', 'Out':'O', 'IR':'IR', 'PUP':'PUP', 'Sus':'SUS', 'Suspended':'SUS', 'COV':'COV', 'NA':'NA', 'DNR':'DNR' };
+function _injFor(pid){
+  var st = null, bp = null;
+  var adpRow = (_adpByPid && _adpByPid[pid]) || null;
+  if(adpRow && adpRow.inj !== undefined){
+    st = adpRow.inj;                       // explicit null = healthy per the fresher source; do NOT fall back
+    bp = adpRow.inj_bp || null;
+  } else {
+    var p = _playerDB && _playerDB[pid];
+    st = p ? (p.injury_status || null) : null;
+    bp = p ? (p.injury_body_part || null) : null;
+  }
+  if(!st) return null;
+  var code = INJ_MAP_V1[st] || String(st).toUpperCase().slice(0, 4);
+  return { code: code, full: String(st), part: bp };
+}
+function _injTagHtml(pid){
+  var inj = _injFor(pid);
+  if(!inj) return '';
+  var tip = inj.full + (inj.part ? (' - ' + inj.part) : '');
+  return ' <span class="inj-tag" title="' + escapeHtml(tip) + '">' + escapeHtml(inj.code) + '</span>';
+}
+// ══ /INJ_TAG_V1 ══
 
 async function _ftlRenderScheduleResults(pid){
   const wrap = document.getElementById('ftl-schedwrap');
