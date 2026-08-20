@@ -324,6 +324,36 @@ body.readonly-mode .backend-only{display:none !important;}
   .hero{padding-top:36px}
 }
 
+
+/* ==== PHILLY_CAL_V1 (2026-08-20) — calendar view for the month lists ==== */
+#cal-wrap{padding:0 0 12px}
+.cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:0 2px;margin-bottom:3px}
+.cal-head div{font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);text-align:center;padding:6px 0 3px;font-weight:700}
+.cal-week{position:relative;margin-bottom:3px}
+.cal-bg{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr);gap:0 2px}
+.cal-day{background:var(--surface);border:1px solid var(--border2);border-radius:4px}
+.cal-day.cal-out{background:transparent;border-color:transparent}
+.cal-day.cal-today{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.cal-fg{position:relative;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:min-content;gap:0 2px;min-height:88px;padding-bottom:6px}
+.cal-num-cell{grid-row:1;font-size:10px;color:var(--text2);padding:4px 7px;font-weight:700}
+.cal-num-cell.cal-today{color:var(--gold)}
+.cal-num-cell.cal-out{opacity:0.25}
+.cal-bar{font-size:10px;font-weight:700;color:#fff;padding:2px 6px;margin:1px 3px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,0.35);min-width:0}
+.cal-bar:hover{filter:brightness(1.18)}
+.cal-bar.cal-start{border-top-left-radius:8px;border-bottom-left-radius:8px}
+.cal-bar.cal-end{border-top-right-radius:8px;border-bottom-right-radius:8px}
+.cal-tbd{margin-top:8px;padding:8px 12px;background:var(--surface);border:1px solid var(--border2);border-radius:4px;font-size:11px;color:var(--text2)}
+.cal-tbd b{color:var(--text)}
+.cal-tbd-chip{display:inline-block;margin:2px 4px;padding:2px 9px;border:1px solid var(--border2);border-radius:10px;cursor:pointer;color:var(--text)}
+.cal-tbd-chip:hover{border-color:var(--gold)}
+.cal-empty{padding:20px;text-align:center;color:var(--text3);font-style:italic}
+#cal-card-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:220;display:flex;align-items:center;justify-content:center}
+#cal-card{background:var(--surface);border:1px solid var(--gold);border-radius:8px;max-width:440px;width:92%;padding:16px 18px;box-shadow:0 12px 40px rgba(0,0,0,0.5)}
+#cal-card h3{margin:0 0 4px;color:var(--gold);font-size:16px}
+#cal-card .cal-card-dates{font-size:12px;color:var(--phood-red);font-weight:800;margin-bottom:6px}
+#cal-card .cal-card-meta{font-size:12px;color:var(--text2);margin-bottom:8px}
+#cal-card .cal-card-take{font-size:12px;color:var(--text);margin-bottom:10px;line-height:1.5}
+#cal-card .cal-card-pills{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -411,6 +441,7 @@ body.readonly-mode .backend-only{display:none !important;}
     <button class="btn btn-gold backend-only" id="add-spot-btn" onclick="openAddSpotModal()" title="Add a restaurant, bar, or dessert spot to the list">&#10133; Add Spot</button>
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of spots">&#127991;&#65039; Tier</button>
     <button class="btn btn-gold backend-only" id="save-btn" onclick="autoSaveToPhoodNAS()" title="Saves to this browser for now — server save comes with the Philly server">💾 Save</button>
+    <button class="btn btn-outline" id="cal-toggle-btn" style="display:none" onclick="toggleCalView()" title="Switch between the ranked list and the month calendar">&#128197; Calendar</button>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
   </div>
 </div>
@@ -437,11 +468,16 @@ body.readonly-mode .backend-only{display:none !important;}
     </table>
   </div>
 
+  <!-- PHILLY_CAL_V1 (2026-08-20): the calendar view for the month lists. Hidden unless a
+       month list is active AND this visitor has toggled to calendar. Painted by
+       renderCalendar() in phood-engine.js; the toolbar button flips it. -->
+  <div id="cal-wrap" style="display:none"></div>
+
   <div class="legend">
     <b>How the list works (same rules as the player lists):</b> spots move up, down, or off entirely. A review drops from Klein or LaBan, a place gets hot, a visit disappoints — the list reacts.<br>
     <b>Tags are Matt's vocabulary.</b> He picks them with the checkboxes in the Add or Edit Spot box, so the set stays consistent across every spot. Current set: 🥇 must visit · 🔥 hot right now · 🆕 just opened · 💲 worth the price · 💰 cheap eats · 🍰 dessert stop · 🌱 vegetarian friendly · 🥡 takeout · 🍸 cocktails · 🍷 good wine selection · 🥃 bar worth waiting at · <span class="byo-badge">BYO</span> bring your own · 🍺 brewery · 🎟️ reservations required · 🚶 walk-ins only · ⛱️ outdoor seating · 🎉 good for big groups · 🔑 valet parking · 🌙 late night.<br>
     <b>Hype:</b> the third link button next to Menu and Pics &mdash; the review, article, or clip that put the spot on the list. A dim button means no link saved yet. (Working name until Matt settles it.)<br>
-    <b>The month lists:</b> Watch 101 September through December &mdash; events, openings, debuts, concerts, sports. Still a ranked 101 list, never a calendar (a separate calendar view is coming). Dates show single days or runs, and the Menu button becomes Tickets. A month marked STAGING is still being built.<br>
+    <b>The month lists:</b> Watch 101 September through December &mdash; events, openings, debuts, concerts, sports. Still a ranked 101 list at heart, and the &#128197; Calendar button in the toolbar flips the same events into a month grid. Dates show single days or runs, and the Menu button becomes Tickets. A month marked STAGING is still being built.<br>
     <b>Geographic rule from the 7/29 tape:</b> restaurants stay Philadelphia; bars &amp; breweries deliberately cast a wider net so the ones worth a drive make the cut.<br>
     <b>Sorting:</b> click any column header. Click <b>#</b> to return to Matt's list order with the tiers showing. Filtering or searching flattens the tiers while active.
   </div>
