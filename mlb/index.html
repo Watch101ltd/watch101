@@ -1751,6 +1751,10 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
   .pc-note .note-link-badge{font-style:normal;}
   .pc-note-empty{color:var(--text3);font-style:normal;opacity:.6;}
   .pc-rail{flex:0 0 52px;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-start;gap:5px;}
+  /* BUG165 (2026-08-20) — Matt's tiers on phone, Option A bracket box (mockup approved on Philly,
+     same treatment every page). Rows nest inside the box; the zebra stripe restarts per box, harmless. */
+  .pc-tierbox{border:2px solid;border-radius:12px;padding:12px 7px 7px;margin:6px 8px 12px;position:relative;}
+  .pc-tiertab{position:absolute;top:-9px;left:12px;font-size:10px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;padding:2px 10px;border-radius:6px;color:#fff;line-height:1.4;max-width:75%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .pc-delta{font-size:13px;font-weight:800;}
   .pc-own{font-size:9px;color:var(--text3);font-weight:700;text-align:right;line-height:1.3;}
   .pc-own b{color:var(--text2);}
@@ -9208,7 +9212,7 @@ function renderPhoneCards(){
   function num(v, dec){ try { return (typeof fmt==='function') ? fmt(v, dec||0) : (v==null?na:v); } catch(e){ return v==null?na:v; } }
   function avg(v){ try { return (typeof fmtAvg==='function') ? fmtAvg(v) : (v==null?na:v); } catch(e){ return v==null?na:v; } }
 
-  host.innerHTML = list.map(function(p){
+  var _cards = list.map(function(p){   /* BUG165: cards first, then the tier wrap decides the final HTML */
     var pos = ''; try { pos = (typeof posBadgesColumn==='function') ? posBadgesColumn(p.positions,'none') : ''; } catch(e){}  // PHONE_GLOWUP_V1: 'none' = colored badges, NON-clickable (the clickable ones cluster-sort)
     // PHONE_GLOWUP_V1 — INERT stars. renderPriorityStars output is a clickable ADMIN control
     // (sets priority on tap); fans on phone must not flip priority. Render plain stars instead:
@@ -9265,7 +9269,53 @@ function renderPhoneCards(){
         + '<div class="pc-own">Y! <b>'+yOwn+'</b><br>CBS <b>'+cOwn+'</b></div>'
       + '</div>'
     + '</div>';
-  }).join('');
+  });
+  host.innerHTML = _phoneTierWrapMlb(list, _cards);   /* BUG165 */
+}
+
+/* BUG165 (2026-08-20) — Matt's tiers were invisible in every phone card view since the June
+   build (brackets measure TABLE rows; the table is hidden on phone). Fixed card-side: resolve
+   each tier's mlb_id range against the SAME getFiltered() list the cards were just built from
+   and wrap those cards in a bracket box with the tier's name tab and palette color. The gate
+   is the SAME _tiersDefaultOrder() the desktop brackets use: any sort, search, position/team
+   filter, or stat filter hides the boxes until the saved order is back. Unresolvable anchors
+   skip quietly, the self-heal rule. Philly shipped and was verified first; the twins are next. */
+function _phoneTierWrapMlb(list, cards){
+  try {
+    if(typeof _tiersDefaultOrder === 'function' && !_tiersDefaultOrder()) return cards.join('');
+    if(!Array.isArray(currentTiers) || !currentTiers.length) return cards.join('');
+    var idx = {};
+    for(var i = 0; i < list.length; i++){
+      if(list[i] && list[i].mlb_id != null) idx[String(list[i].mlb_id)] = i;
+    }
+    var segs = [];
+    for(var t = 0; t < currentTiers.length; t++){
+      var tier = currentTiers[t];
+      var si = idx[String(tier.start_mlb_id)], ei = idx[String(tier.end_mlb_id)];
+      if(si == null || ei == null || si > ei) continue;
+      var hex = (typeof TIER_COLOR_HEX !== 'undefined' && TIER_COLOR_HEX[tier.color]) || '#94a3b8';
+      var nm = String(tier.name || 'Tier').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      segs.push({ si: si, ei: ei, hex: hex, name: nm });
+    }
+    if(!segs.length) return cards.join('');
+    segs.sort(function(a,b){ return a.si - b.si; });
+    var out = '', open = [];
+    for(var k = 0; k < cards.length; k++){
+      for(var a = 0; a < segs.length; a++){
+        if(segs[a].si === k){
+          out += '<div class="pc-tierbox" style="border-color:' + segs[a].hex + ';background:' + segs[a].hex + '0d">'
+               + '<span class="pc-tiertab" style="background:' + segs[a].hex + '">' + segs[a].name + '</span>';
+          open.push(segs[a]);
+        }
+      }
+      out += cards[k];
+      for(var b = open.length - 1; b >= 0; b--){
+        if(open[b].ei === k){ out += '</div>'; open.splice(b, 1); }
+      }
+    }
+    while(open.length){ out += '</div>'; open.pop(); }
+    return out;
+  } catch(e){ return cards.join(''); }
 }
 
 // Tap a card → open the Deep Cut page, exactly like clicking a name in the table.
