@@ -168,8 +168,38 @@ tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-
 .checker-strip{height:14px;background:repeating-linear-gradient(90deg,rgba(212,17,27,0.85) 0 12px,rgba(212,17,27,0) 12px 24px),repeating-linear-gradient(0deg,rgba(212,17,27,0.85) 0 7px,rgba(212,17,27,0) 7px 14px),#ffffff;border-bottom:2px solid var(--phood-navy)}
 .sample-banner{margin:1rem 0 0;background:var(--surface2);border:1px dashed var(--gold2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text2);line-height:1.5;font-weight:400}
 .sample-banner b{color:var(--gold)}
-.legend{margin:1.5rem 0 0;font-size:12px;color:var(--text3);line-height:1.8;font-weight:400}
-.legend b{color:var(--text2)}
+/* ============================================================================
+   PHILLY_KEY_V1 (2026-08-20 — the Dude's call): the bottom-of-page legend
+   paragraph is RETIRED. Its content moves into THE KEY — the same ⓘ button +
+   modal every player page uses (LEGEND_KEY_V1 recipe, baseball source).
+   Philly's CSS variables drive every color, so day mode just works with no
+   day-mode override rules. Pure show/hide, no animation.
+   ============================================================================ */
+#legend-btn{background:transparent;border:1px solid var(--border2);color:var(--text);font-size:15px;cursor:pointer;padding:4px 10px;border-radius:6px;line-height:1;opacity:0.9;transition:all .15s;user-select:none}
+#legend-btn:hover{opacity:1;background:var(--surface2);border-color:var(--gold)}
+#legend-modal{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.66);align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+#legend-modal.open{display:flex}
+.legend-panel{background:var(--surface);color:var(--text);width:100%;max-width:680px;margin:auto;border:1px solid var(--border2);border-top:4px solid var(--title-red);border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,0.5);padding:0 0 18px}
+.legend-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border2)}
+.legend-head h2{margin:0;font-size:19px;font-weight:800;color:var(--text)}
+.legend-head h2 .lg-gold{color:var(--gold)}
+#legend-close{background:transparent;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1;opacity:0.8;padding:0 2px}
+#legend-close:hover{opacity:1}
+.legend-body{padding:6px 20px 0}
+.legend-section{margin-top:18px}
+.legend-section h3{margin:0 0 8px;font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--title-blue)}
+.legend-intro{font-size:13.5px;line-height:1.5;color:var(--text2);margin:2px 0 14px}
+.legend-tip{font-size:13.5px;line-height:1.5;color:var(--gold);background:rgba(240,165,0,0.10);border-left:3px solid var(--gold);padding:8px 12px;border-radius:4px;margin:0 0 14px}
+.legend-tip b{color:var(--text)}
+.legend-section p{font-size:13.5px;line-height:1.5;color:var(--text2);margin:0 0 8px}
+.legend-section p b{color:var(--text)}
+.lg-row{display:flex;gap:11px;align-items:flex-start;padding:5px 0}
+.lg-key{flex:0 0 auto;min-width:30px;text-align:center;font-size:16px;line-height:1.4}
+.lg-def{font-size:13.5px;line-height:1.45;color:var(--text2)}
+.lg-def b{color:var(--text)}
+.lg-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px}
+@media(max-width:560px){.lg-grid{grid-template-columns:1fr}}
+/* /PHILLY_KEY_V1 css */
 @media (max-width:768px){ .logo{font-size:34px} td.take{min-width:160px} }
 
 /* ===== PHOOD_DRAG_RANK_V1 — ported from NBA_DRAG_RANK_V1 + DRAG_POLISH_V1 ===== */
@@ -368,7 +398,7 @@ body.readonly-mode .backend-only{display:none !important;}
   #phone-card-list{display:flex;flex-direction:column;gap:9px;padding:10px 10px 30px}
   .header{padding:0.9rem 1rem !important}
   .logo{font-size:28px !important;flex-wrap:wrap !important}   /* baseball's treatment; the em-scaled logo image shrinks along */
-  .toolbar-right > *:not(#theme-toggle):not(#cal-toggle-btn){display:none !important}   /* the twins' rule + PHILLY_PHONE_CAL_V1: the moon AND the calendar toggle stay */
+  .toolbar-right > *:not(#theme-toggle):not(#cal-toggle-btn):not(#legend-btn){display:none !important}   /* the twins' rule + PHILLY_PHONE_CAL_V1: the moon AND the calendar toggle stay. PHILLY_KEY_V1: the ⓘ Key stays too — fans need the decoder on phones */
   .sample-banner{margin:10px 10px 0;font-size:11px}
   .pc-card{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:10px 12px}
   .pc-r1{display:flex;align-items:baseline;gap:8px}
@@ -491,6 +521,7 @@ body.readonly-mode .backend-only{display:none !important;}
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of spots">&#127991;&#65039; Tier</button>
     <button class="btn btn-gold backend-only" id="save-btn" onclick="autoSaveToPhoodNAS()" title="Saves to this browser for now — server save comes with the Philly server">💾 Save</button>
     <button class="btn btn-outline" id="cal-toggle-btn" style="display:none" onclick="toggleCalView()" title="Switch between the ranked list and the month calendar">&#128197; Calendar</button>
+    <button id="legend-btn" onclick="openLegend()" title="What do the symbols mean? (Key)" aria-label="Open the Key">&#9432;</button>  <!-- PHILLY_KEY_V1: the twins' spot, beside the moon -->
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>
   </div>
 </div>
@@ -533,13 +564,75 @@ body.readonly-mode .backend-only{display:none !important;}
        calendar view ON A PHONE. The desktop grid (#cal-wrap) never shows under the phone media. -->
   <div id="phone-cal-agenda"></div>
 
-  <div class="legend">
-    <b>How the list works (same rules as the player lists):</b> spots move up, down, or off entirely. A review drops from Klein or LaBan, a place gets hot, a visit disappoints — the list reacts.<br>
-    <b>Tags are Matt's vocabulary.</b> He picks them with the checkboxes in the Add or Edit Spot box, so the set stays consistent across every spot. Current set: 🥇 must visit · 🔥 hot right now · 🆕 just opened · 💲 worth the price · 💰 cheap eats · 🍰 dessert stop · 🌱 vegetarian friendly · 🥡 takeout · 🍸 cocktails · 🍷 good wine selection · 🥃 bar worth waiting at · <span class="byo-badge">BYO</span> bring your own · 🍺 brewery · 🎟️ reservations required · 🚶 walk-ins only · ⛱️ outdoor seating · 🎉 good for big groups · 🔑 valet parking · 🌙 late night.<br>
-    <b>Hype:</b> the third link button next to Menu and the Instagram button &mdash; the review, article, or clip that put the spot on the list. A dim button means no link saved yet. (Working name until Matt settles it.)<br>
-    <b>The month lists:</b> Watch 101 September through December &mdash; events, openings, debuts, concerts, sports. Still a ranked 101 list at heart, and the &#128197; Calendar button in the toolbar flips the same events into a month grid. Dates show single days or runs, plus showtimes when they are set, the Menu button becomes Tickets, and Instagram splits into VENUE and ARTIST buttons (artist optional). A month marked STAGING is still being built.<br>
-    <b>Geographic rule from the 7/29 tape:</b> restaurants stay Philadelphia; bars &amp; breweries deliberately cast a wider net so the ones worth a drive make the cut.<br>
-    <b>Sorting:</b> click any column header. Click <b>#</b> to return to Matt's list order with the tiers showing. Filtering or searching flattens the tiers while active.
+  <!-- PHILLY_KEY_V1 (2026-08-20 — the Dude's call): the old .legend paragraph that lived
+       here is RETIRED. Its content — every word preserved — now lives in the Key modal
+       below, opened by the ⓘ button in the toolbar, exactly like the player pages. -->
+</div>
+
+<!-- PHILLY_KEY_V1 — the public Key modal. Opened by #legend-btn (openLegend), closed by
+     closeLegend/Esc/backdrop click. Content sourced verbatim from the retired bottom-of-page
+     legend paragraph; the tag set mirrors the Add/Edit Spot checkboxes. No invented claims. -->
+<div id="legend-modal" onclick="if(event.target===this)closeLegend()">
+  <div class="legend-panel" role="dialog" aria-modal="true" aria-labelledby="legend-title">
+    <div class="legend-head">
+      <h2 id="legend-title"><span class="lg-gold">&#9432;</span> The Key &mdash; what it all means</h2>
+      <button id="legend-close" onclick="closeLegend()" aria-label="Close">&times;</button>
+    </div>
+    <div class="legend-body">
+      <p class="legend-intro">New here? This is your decoder ring. Every emoji, color, and symbol on the list is explained below &mdash; so you always know what we&rsquo;re telling you about a spot.</p>
+      <p class="legend-tip">&#128197; <b>Tip:</b> On the month lists (September&ndash;December), the <b>Calendar</b> button in the toolbar flips the same events into a month grid &mdash; or a day-by-day agenda on your phone.</p>
+
+      <div class="legend-section">
+        <h3>How the list works</h3>
+        <p><b>Same rules as the player lists:</b> spots move up, down, or off entirely. A review drops from Klein or LaBan, a place gets hot, a visit disappoints &mdash; the list reacts.</p>
+      </div>
+
+      <div class="legend-section">
+        <h3>Spot Tags (the emoji)</h3>
+        <p><b>Tags are Matt&rsquo;s vocabulary.</b> He picks them with the checkboxes in the Add or Edit Spot box, so the set stays consistent across every spot.</p>
+        <div class="lg-grid">
+          <div class="lg-row"><span class="lg-key">🥇</span><span class="lg-def"><b>Must visit</b></span></div>
+          <div class="lg-row"><span class="lg-key">🔥</span><span class="lg-def"><b>Hot right now</b></span></div>
+          <div class="lg-row"><span class="lg-key">🆕</span><span class="lg-def"><b>Just opened</b></span></div>
+          <div class="lg-row"><span class="lg-key">💲</span><span class="lg-def"><b>Worth the price</b></span></div>
+          <div class="lg-row"><span class="lg-key">💰</span><span class="lg-def"><b>Cheap eats</b></span></div>
+          <div class="lg-row"><span class="lg-key">🍰</span><span class="lg-def"><b>Dessert stop</b></span></div>
+          <div class="lg-row"><span class="lg-key">🌱</span><span class="lg-def"><b>Vegetarian friendly</b></span></div>
+          <div class="lg-row"><span class="lg-key">🥡</span><span class="lg-def"><b>Takeout</b></span></div>
+          <div class="lg-row"><span class="lg-key">🍸</span><span class="lg-def"><b>Cocktails</b></span></div>
+          <div class="lg-row"><span class="lg-key">🍷</span><span class="lg-def"><b>Good wine selection</b></span></div>
+          <div class="lg-row"><span class="lg-key">🥃</span><span class="lg-def"><b>Bar worth waiting at</b></span></div>
+          <div class="lg-row"><span class="lg-key"><span class="byo-badge">BYO</span></span><span class="lg-def"><b>Bring your own</b></span></div>
+          <div class="lg-row"><span class="lg-key">🍺</span><span class="lg-def"><b>Brewery</b></span></div>
+          <div class="lg-row"><span class="lg-key">🎟️</span><span class="lg-def"><b>Reservations required</b></span></div>
+          <div class="lg-row"><span class="lg-key">🚶</span><span class="lg-def"><b>Walk-ins only</b></span></div>
+          <div class="lg-row"><span class="lg-key">⛱️</span><span class="lg-def"><b>Outdoor seating</b></span></div>
+          <div class="lg-row"><span class="lg-key">🎉</span><span class="lg-def"><b>Good for big groups</b></span></div>
+          <div class="lg-row"><span class="lg-key">🔑</span><span class="lg-def"><b>Valet parking</b></span></div>
+          <div class="lg-row"><span class="lg-key">🌙</span><span class="lg-def"><b>Late night</b></span></div>
+        </div>
+      </div>
+
+      <div class="legend-section">
+        <h3>Hype</h3>
+        <p>The third link button next to Menu and the Instagram button &mdash; the review, article, or clip that put the spot on the list. A dim button means no link saved yet. (Working name until Matt settles it.)</p>
+      </div>
+
+      <div class="legend-section">
+        <h3>The Month Lists</h3>
+        <p>Watch 101 September through December &mdash; events, openings, debuts, concerts, sports. Still a ranked 101 list at heart, and the &#128197; Calendar button in the toolbar flips the same events into a month grid. Dates show single days or runs, plus showtimes when they are set, the Menu button becomes Tickets, and Instagram splits into VENUE and ARTIST buttons (artist optional). A month marked STAGING is still being built.</p>
+      </div>
+
+      <div class="legend-section">
+        <h3>Geographic Rule</h3>
+        <p><b>From the 7/29 tape:</b> restaurants stay Philadelphia; bars &amp; breweries deliberately cast a wider net so the ones worth a drive make the cut.</p>
+      </div>
+
+      <div class="legend-section">
+        <h3>Sorting</h3>
+        <p>Click any column header. Click <b>#</b> to return to Matt&rsquo;s list order with the tiers showing. Filtering or searching flattens the tiers while active.</p>
+      </div>
+    </div>
   </div>
 </div>
 
