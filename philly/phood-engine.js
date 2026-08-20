@@ -438,6 +438,7 @@ function renderWatchList(){
   document.getElementById('watch-list-body').innerHTML = html;
   _setSortArrows();
   try { renderTiers(); } catch(e){}      /* the twins' paint hook — tiers repaint after every table paint */
+  try { _syncCalView(); } catch(e){}     /* PHILLY_CAL_V1 — the calendar view follows every table paint */
 }
 function _setSortArrows(){
   var ars = document.querySelectorAll('th .arrow'), i;
@@ -1524,3 +1525,177 @@ window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} 
     if(btn){ btn.textContent = '☀️'; }
   }
 })();
+
+
+/* ============================================================================
+   PHILLY_CAL_V1 (2026-08-20) — the calendar view for the month lists.
+   The ranked list stays the identity of the page (Matt's framing, 8/19 tape);
+   the calendar is a SECOND VIEW over the same saved data. The toolbar toggle
+   only appears on kind:'events' lists, and the visitor's choice is remembered
+   per list in localStorage, like the theme. Sync point: the last line of
+   renderWatchList calls _syncCalView(), so list switches, saves, edits and
+   NAS loads all repaint the calendar for free.
+   Date maths compares the ISO strings directly (YYYY-MM-DD orders correctly
+   as text), so there are no Date.parse timezone traps here. Multi-day events
+   draw as bars spanning their days, breaking at week edges; a greedy
+   first-free-lane pass stacks overlapping bars. Clicking a bar or chip opens
+   a popup card; on the admin surface the card grows an Edit button via the
+   backend-only class (fans never see it, readonly CSS hides it). Undated or
+   outside-the-month events sit in a strip below the grid so nothing Matt
+   entered ever disappears from view.
+   ============================================================================ */
+var CAL_BAR_HEX = ['#ef4444','#3b82f6','#22c55e','#a855f7','#f59e0b','#14b8a6'];  /* tier palette family, so the bars match the set */
+function _calPrefKey(){ return 'phood_calview_' + currentListId; }
+function _calViewOn(){
+  try { return localStorage.getItem(_calPrefKey()) === 'cal'; } catch(e){ return false; }
+}
+function toggleCalView(){
+  var next = _calViewOn() ? 'list' : 'cal';
+  try { localStorage.setItem(_calPrefKey(), next); } catch(e){}
+  _syncCalView();
+}
+function _syncCalView(){
+  var btn  = document.getElementById('cal-toggle-btn');
+  var tbl  = document.querySelector('.table-wrap');
+  var wrap = document.getElementById('cal-wrap');
+  if(!tbl || !wrap) return;
+  var events = _isEventsList();
+  if(btn) btn.style.display = events ? '' : 'none';
+  var showCal = events && _calViewOn();
+  tbl.style.display  = showCal ? 'none' : '';
+  wrap.style.display = showCal ? '' : 'none';
+  if(btn) btn.innerHTML = showCal ? '&#128203; List' : '&#128197; Calendar';
+  if(showCal){ renderCalendar(); } else { wrap.innerHTML = ''; }
+}
+function _listMonth(){
+  var m = /^phood-(\d{4})-(\d{2})$/.exec(currentListId);
+  if(!m) return null;
+  return { y: parseInt(m[1],10), m0: parseInt(m[2],10) - 1 };
+}
+function _calIso(y, m0, d){
+  var mm = String(m0 + 1); if(mm.length < 2) mm = '0' + mm;
+  var dd = String(d); if(dd.length < 2) dd = '0' + dd;
+  return y + '-' + mm + '-' + dd;
+}
+function renderCalendar(){
+  var wrap = document.getElementById('cal-wrap');
+  var lm = _listMonth();
+  if(!wrap) return;
+  if(!lm){ wrap.innerHTML = ''; return; }
+  var daysInMonth = new Date(lm.y, lm.m0 + 1, 0).getDate();
+  var firstDow = new Date(lm.y, lm.m0, 1).getDay();
+  var now = new Date();
+  var today = _calIso(now.getFullYear(), now.getMonth(), now.getDate());
+  var firstIso = _calIso(lm.y, lm.m0, 1);
+  var lastIso  = _calIso(lm.y, lm.m0, daysInMonth);
+  var dated = [], strip = [];
+  var i, p;
+  for(i = 0; i < _watchList.length; i++){
+    p = _watchList[i];
+    var hex = CAL_BAR_HEX[i % CAL_BAR_HEX.length];
+    if(!p.date_start){ strip.push({ p: p, why: 'Date TBD' }); continue; }
+    var s = p.date_start;
+    var eEnd = (p.date_end && p.date_end > s) ? p.date_end : s;
+    if(eEnd < firstIso || s > lastIso){ strip.push({ p: p, why: _fmtEventDates(p) }); continue; }
+    dated.push({
+      p: p, s: s, e: eEnd,
+      sDay: (s < firstIso) ? 1 : parseInt(s.slice(8),10),
+      eDay: (eEnd > lastIso) ? daysInMonth : parseInt(eEnd.slice(8),10),
+      clipS: s < firstIso, clipE: eEnd > lastIso, hex: hex
+    });
+  }
+  dated.sort(function(a,b){
+    if(a.s !== b.s) return a.s < b.s ? -1 : 1;
+    if(a.e !== b.e) return a.e > b.e ? -1 : 1;   /* longer first on ties, the calendar app habit */
+    return 0;
+  });
+  var names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var html = '<div class="cal-head">';
+  var d;
+  for(d = 0; d < 7; d++){ html += '<div>' + names[d] + '</div>'; }
+  html += '</div>';
+  var weeks = Math.ceil((firstDow + daysInMonth) / 7);
+  for(var w = 0; w < weeks; w++){
+    var weekFirstDay = w * 7 - firstDow + 1;
+    var weekLastDay  = weekFirstDay + 6;
+    var bg = '', fg = '';
+    for(var c = 0; c < 7; c++){
+      var dayNum = weekFirstDay + c;
+      var inMonth = dayNum >= 1 && dayNum <= daysInMonth;
+      var iso = inMonth ? _calIso(lm.y, lm.m0, dayNum) : null;
+      var extra = (inMonth ? '' : ' cal-out') + (iso === today ? ' cal-today' : '');
+      bg += '<div class="cal-day' + extra + '" style="grid-column:' + (c + 1) + '"></div>';
+      fg += '<div class="cal-num-cell' + extra + '" style="grid-column:' + (c + 1) + '">' + (inMonth ? dayNum : '') + '</div>';
+    }
+    var lanes = [];
+    for(var k = 0; k < dated.length; k++){
+      var ev = dated[k];
+      var segStart = Math.max(ev.sDay, weekFirstDay, 1);
+      var segEnd   = Math.min(ev.eDay, weekLastDay, daysInMonth);
+      if(segStart > segEnd) continue;
+      var li = 0;
+      while(lanes[li] !== undefined && lanes[li] >= segStart){ li++; }
+      lanes[li] = segEnd;
+      var startCol = segStart - weekFirstDay + 1;
+      var endCol   = segEnd - weekFirstDay + 1;
+      var caps = ((segStart === ev.sDay && !ev.clipS) ? ' cal-start' : '')
+               + ((segEnd === ev.eDay && !ev.clipE) ? ' cal-end' : '');
+      fg += '<div class="cal-bar' + caps + '" style="grid-column:' + startCol + ' / ' + (endCol + 1)
+          + ';grid-row:' + (li + 2) + ';background:' + ev.hex + '"'
+          + ' onclick="_openCalCard(&quot;' + _esc(ev.p.pid) + '&quot;)" title="' + _esc(ev.p.name) + '">'
+          + _esc(ev.p.name) + '</div>';
+    }
+    html += '<div class="cal-week"><div class="cal-bg">' + bg + '</div><div class="cal-fg">' + fg + '</div></div>';
+  }
+  if(strip.length){
+    var chips = '';
+    for(var t = 0; t < strip.length; t++){
+      var sc = strip[t];
+      chips += '<span class="cal-tbd-chip" onclick="_openCalCard(&quot;' + _esc(sc.p.pid) + '&quot;)">'
+             + _esc(sc.p.name) + ' &middot; ' + sc.why + '</span>';
+    }
+    html += '<div class="cal-tbd"><b>Waiting on dates or outside this month:</b> ' + chips + '</div>';
+  }
+  if(!_watchList.length){
+    html += '<div class="cal-empty">No events yet. Matt is filling this month.</div>';
+  }
+  wrap.innerHTML = html;
+}
+function _openCalCard(pid){
+  var idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  var p = _watchList[idx];
+  _closeCalCard();
+  var meta = [];
+  if(p.venue) meta.push(_esc(p.venue));
+  if(p.hood)  meta.push(_esc(p.hood));
+  var sp = _splitNoteAndUrl((typeof p.take === 'string') ? p.take : '');
+  var pills = '';
+  pills += p.menu ? '<a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">&#127903;&#65039; TIX</a>'
+                  : '<a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No tickets link yet">&#127903;&#65039; TIX</a>';
+  pills += p.pics ? '<a class="pill ig" href="' + _esc(p.pics) + '" target="_blank" rel="noopener">&#128248; PICS</a>'
+                  : '<a class="pill ig" href="#" onclick="return false;" style="opacity:0.45" title="No pictures link yet">&#128248; PICS</a>';
+  pills += p.hype ? '<a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">&#128293; HYPE</a>'
+                  : '<a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">&#128293; HYPE</a>';
+  var ov = document.createElement('div');
+  ov.id = 'cal-card-overlay';
+  ov.onclick = function(ev){ if(ev.target === ov) _closeCalCard(); };
+  ov.innerHTML = '<div id="cal-card">'
+    + '<h3>' + _esc(p.name) + '</h3>'
+    + '<div class="cal-card-dates">' + _fmtEventDates(p) + '</div>'
+    + (meta.length ? '<div class="cal-card-meta">' + meta.join(' &middot; ') + '</div>' : '')
+    + '<div class="cal-card-meta">' + _tagChipsHtml(p) + '</div>'
+    + (sp.text.trim() ? '<div class="cal-card-take">' + _esc(sp.text) + _renderNoteLinkBadge(sp.url) + '</div>' : '')
+    + '<div class="cal-card-pills">' + pills
+    + '<button class="btn btn-gold backend-only" style="margin-left:auto" onclick="_calCardEdit(&quot;' + _esc(p.pid) + '&quot;)" title="Open the event editor">Edit</button>'
+    + '</div></div>';
+  document.body.appendChild(ov);
+}
+function _closeCalCard(){
+  var ov = document.getElementById('cal-card-overlay');
+  if(ov && ov.parentNode) ov.parentNode.removeChild(ov);
+}
+function _calCardEdit(pid){
+  _closeCalCard();
+  openEditSpotModal(pid);
+}
