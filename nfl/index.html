@@ -6997,6 +6997,22 @@ function openFromTheLogo(pid, _keepRange){
   document.getElementById('ftl-name').textContent = name;
   const subParts = [ (p.team || '—'), (p.position || '—'), 'Age ' + nflDecimalAge(p) ];
   if(p.years_exp != null && p.years_exp !== '') subParts.push((Number(p.years_exp) === 0 ? 'Rookie' : (p.years_exp + ' yr exp')));
+  // HT_WT_V1 (2026-08-19 -- PC Walter, per Matt via the Dude on the 8/19 call, placement from
+  // the Dude's screenshot: the hero sub-line, right after age/exp). Both fields come from
+  // _playerDB -- Sleeper's blob carries height as INCHES-as-string on current dumps
+  // (McCaffrey "71" = 5'11", verified live 8/19) but carried feet-inches strings like 6'2"
+  // historically, so both shapes are handled. Missing data = the segment simply doesn't appear.
+  const _htRaw = (p.height != null) ? String(p.height).trim() : '';
+  let _htFmt = '';
+  if(_htRaw){
+    if(_htRaw.indexOf("'") !== -1){ _htFmt = _htRaw; }                    // legacy 6'2" shape: use as-is
+    else { const _in = Number(_htRaw); if(isFinite(_in) && _in > 0){ _htFmt = Math.floor(_in / 12) + "'" + (_in % 12) + '"'; } }
+  }
+  const _wtNum = Number(p.weight);
+  const _wtFmt = (isFinite(_wtNum) && _wtNum > 0) ? (_wtNum + ' lbs') : '';
+  if(_htFmt && _wtFmt) subParts.push(_htFmt + ' / ' + _wtFmt);
+  else if(_htFmt) subParts.push(_htFmt);
+  else if(_wtFmt) subParts.push(_wtFmt);
   document.getElementById('ftl-sub').innerHTML = subParts.join('<span class="sep">|</span>');
 
   // Watch101 rank pill — only when the player is on the watch list (his hand-ranked slot).
