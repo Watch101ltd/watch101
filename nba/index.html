@@ -256,6 +256,12 @@ a.logo-mini:hover{opacity:1;}
 .sri-name{font-size:14px;font-weight:700;color:var(--text);flex:1}
 .sri-meta{font-size:11px;color:var(--text3);font-weight:600}
 .toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+/* ---- PRESENT_MODE_TWINS_V1 (2026-08-19 -- baseball's Presentation Mode, ported per Matt + the Dude's own call on the 8/19 tape: "we don't have a present mode for football and basketball, JP") ---- */
+#present-btn.active{background:var(--gold,#eab308);color:#000;border-color:var(--gold,#eab308);font-weight:600;}
+body.present-mode{cursor:zoom-in;}
+body.present-mode tbody tr td{transition:background 0.12s,color 0.12s,font-size 0.12s;}
+body.present-mode tbody tr td:hover{background:rgba(240,165,0,0.2)!important;color:var(--red,#ef4444)!important;font-size:14px!important;font-weight:700!important;position:relative;z-index:5;box-shadow:inset 0 0 0 1px var(--gold2,#b8860b);border-radius:3px;}
+body.present-mode tbody tr td:hover span{color:var(--red,#ef4444)!important;}
 .count-badge{
   font-size:12px;color:var(--text3);background:var(--surface2);
   border:1px solid var(--border);padding:6px 12px;border-radius:5px;
@@ -1215,6 +1221,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <option value="nine-cat">&#8596; 9 Cat</option>
       <option value="thirteen-cat">&#8596; 13 Cat</option>
     </select>
+    <button class="btn btn-outline" id="present-btn" onclick="togglePresentMode()" title="Presentation mode — hover any cell to magnify and highlight it for screen-share">🔍 Present</button>  <!-- PRESENT_MODE_TWINS_V1 -->
     <button class="btn btn-outline" onclick="reloadWatchList()" title="Reload the list and stats from the NAS">Refresh</button>  <!-- HDR_PARITY_TWINS_V1: moved from the top header -->
     <button class="btn btn-outline" id="export-btn" onclick="exportXLSXDownload()" title="Download the current list as an Excel (.xlsx) file">&#128228; Export</button>
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of players">&#127991;&#65039; Tier</button>
@@ -5801,6 +5808,21 @@ function setViewMode(mode){
 }
 // Kept as a thin shim: anything still calling the old toggle lands on Matt's Take, which is what
 // the old button did. Cheaper than hunting for callers that may not exist.
+// PRESENT_MODE_TWINS_V1 (2026-08-19): baseball's togglePresentMode, ported verbatim (same body
+// class, same button swap). Deliberately NOT backend-only -- baseball lists present mode among
+// its FAN_SAFE_ACTIONS, so fans get it here too. Works on every table on the page (watch list,
+// pool, rankings) because the CSS targets any tbody cell.
+var presentMode = false;
+function togglePresentMode(){
+  presentMode = !presentMode;
+  if(presentMode){ document.body.classList.add('present-mode'); }
+  else { document.body.classList.remove('present-mode'); }
+  var btn = document.getElementById('present-btn');
+  if(btn){
+    if(presentMode){ btn.classList.add('active'); btn.textContent = '🔍 Presenting'; }
+    else { btn.classList.remove('active'); btn.textContent = '🔍 Present'; }
+  }
+}
 function toggleCompactMode(el){
   const goingOn = !document.body.classList.contains('view-matts-take');
   setViewMode(goingOn ? 'matts-take' : 'full');
