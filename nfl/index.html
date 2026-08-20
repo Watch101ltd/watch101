@@ -389,7 +389,7 @@ table.watch-list thead th:has(+ th.col-zone-divider), table.watch-list tbody td:
   padding-right:7px;
 }
 /* PLAYER_POOL_21COL_V2 (compact, 150%-zoom-friendly) - mirrors baseball density */
-table.watch-list{min-width:1376px;table-layout:fixed}  /* BLOCK_CLONE_V1: identity block widened to baseball spec. YPC_YPR_V1 (2026-08-19): +76px for the two new 38px ratio columns so laptop widths do not re-create Bug #32's header squeeze */
+table.watch-list{min-width:1406px;table-layout:fixed}  /* BLOCK_CLONE_V1: identity block widened to baseball spec. YPC_YPR_V1 (2026-08-19): +76px for the two new 38px ratio columns so laptop widths do not re-create Bug #32's header squeeze */
 /* Compact header + body padding so 23 columns fit at 150% zoom */
 table.watch-list thead th{padding:5px 2px;font-size:9px;letter-spacing:0.01em;overflow:hidden}  /* HEADER_BLEED_FIX_V1 (2026-08-04) — Matt, 8/3 meeting. Under table-layout:fixed the stat
      columns clamp to 38px once the viewport drops below the 1300px floor (a laptop at 100%,
@@ -426,6 +426,8 @@ table.watch-list tbody td .pos-badge{font-size:9px;padding:2px 5px;letter-spacin
 table.watch-list thead th.col-player,table.watch-list tbody td:nth-child(4){width:140px;text-align:left}  /* SCORING_ENGINE_NFL_V1: 180->140, real estate reclaimed for the FPts header box (the Dude's call off the first staging look) */
 table.watch-list tbody .player-name{font-size:12px;font-weight:800}
 table.watch-list thead th.col-team{width:38px;text-align:right}
+table.watch-list thead th.col-bye{width:30px;text-align:right}  /* BYE_WEEK_COL_V1 */
+table.watch-list tbody td.col-bye{text-align:right}  /* BYE_WEEK_COL_V1 */
 table.watch-list thead th.col-age{width:32px;text-align:right}
 table.watch-list thead th.col-exp{width:32px;text-align:right}
 table.watch-list thead th.col-delta{width:44px;text-align:right}
@@ -1229,6 +1231,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-pos" data-sort="pos">Pos <span class="sort-arrow">↕</span></th>
         <th class="left col-player" data-sort="name">Player <span class="sort-arrow">↕</span></th>
         <th class="col-team" data-sort="team">Team <span class="sort-arrow">↕</span></th>
+        <th class="col-bye" data-sort="bye" title="Bye week — BYE_WEEK_COL_V1">Bye <span class="sort-arrow">↕</span></th>
         <th class="col-age" data-sort="age">Age <span class="sort-arrow">↕</span></th>
         <th class="col-exp" data-sort="exp">Exp <span class="sort-arrow">↕</span></th>
         <th class="col-delta" data-sort="delta">+/– <span class="sort-arrow">↕</span></th>
@@ -1254,7 +1257,7 @@ document.addEventListener('DOMContentLoaded',function(){
       </tr>
     </thead>
     <tbody id="watch-list-body">
-      <tr><td colspan="27" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
+      <tr><td colspan="28" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>
     </tbody>
   </table>
   <!-- PHONE_NOTE_STAR_NFL_V1 (June 10, 2026) — phone note-star list. Hidden on desktop;
@@ -1327,6 +1330,7 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-pos" data-npsort="pos">Pos <span class="sort-arrow">↕</span></th>
           <th class="left col-player" data-npsort="name">Player <span class="sort-arrow">↕</span></th>
           <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
+          <th class="col-bye" data-npsort="bye" title="Bye week — BYE_WEEK_COL_V1">Bye <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
           <th class="col-yrank col-zone-divider" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
@@ -1347,7 +1351,7 @@ document.addEventListener('DOMContentLoaded',function(){
         </tr>
       </thead>
       <tbody id="nfl-players-body">
-        <tr><td colspan="19" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
+        <tr><td colspan="20" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -2140,6 +2144,9 @@ function _rankRatioCol(key,label,numF,denF,tdClass){   // YPC_YPR_V1 -- efficien
     num:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=_ratioNum(s?s[numF]:null, s?s[denF]:null); return (v==null)?-1:v; },
     render:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; return _ratioCellOrDash(s?s[numF]:null, s?s[denF]:null); } };
 }
+function _rankCol_bye(){ return { key:'bye', label:'Bye', headClass:'col-bye', tdClass:'col-bye',   // BYE_WEEK_COL_V1
+  num:function(pid){ var v=_byeFor(pid); return (v==null)?Infinity:v; },   // asc default; unknowns last
+  render:function(pid){ return _byeCell(pid); } }; }
 // ══ /RANKINGS_WL_CLONE_NFL_V1 stores + factories ══
 function _rankColsFor(pos){
   // RANKINGS_WL_CLONE_NFL_V1 (2026-08-19): the watch-list column set in the watch-list ORDER --
@@ -2159,7 +2166,7 @@ function _rankColsFor(pos){
   var yr = _rankCol_yrank((pos === 'DEF') ? 'yahoo_def_rank' : undefined);   // YAHOO_DEF_RANKS_V1 preserved
   yr.headClass = 'yh-rank col-yrank col-zone-divider';
   yr.tdClass   = 'col-zone-divider';
-  var lead = [team, age, exp, type, prio, note, yr, yowned, cbs, fpts];
+  var lead = [team, _rankCol_bye(), age, exp, type, prio, note, yr, yowned, cbs, fpts];   // BYE_WEEK_COL_V1: Bye rides after Team, watch-list order
   var stats;
   if(pos === 'DEF'){
     // DEF EXCEPTION (the Dude, 8/19): keep NFLVERSE_DEF_STATS_V1's block -- a DST row full of
@@ -2232,7 +2239,7 @@ function _rankSortBy(field){
   // was bouncing through another tab.
   if(field === 'rank'){ _rankSortField = null; _rankSortDir = 'desc'; renderRankings(); return; }
   if(_rankSortField === field){ _rankSortDir = (_rankSortDir === 'desc') ? 'asc' : 'desc'; }
-  else { _rankSortField = field; _rankSortDir = (field === 'yrank' || field === 'age' || field === 'exp' || field === 'team') ? 'asc' : 'desc'; }   // RANKINGS_WL_CLONE_NFL_V1: exp + team read best ascending
+  else { _rankSortField = field; _rankSortDir = (field === 'yrank' || field === 'age' || field === 'exp' || field === 'team' || field === 'bye') ? 'asc' : 'desc'; }   // RANKINGS_WL_CLONE_NFL_V1: exp + team read best ascending. BYE_WEEK_COL_V1: byes too (who is off EARLIEST)
   renderRankings();
 }
 function _rankWireSortHeaders(){
@@ -2510,6 +2517,7 @@ function _npStatValue(field, p, s, pid){
     case 'name': return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
     case 'pos':  return p.position || 'zzz';
     case 'team': return p.team || 'zzz';
+    case 'bye': return _byeFor(pid);   // BYE_WEEK_COL_V1 (null sinks)
     case 'age':  return nflDecimalAgeNum(p);
     case 'fpts': return (_fptsOf(s, p) || 0);
     case 'payd': return (s.pass_yd || 0);
@@ -3057,7 +3065,7 @@ function renderNflPlayers(){
   const statusEl = document.getElementById('nflplayers-status');
   if(!tbody) return;
   if(!_playerDB){
-    tbody.innerHTML = '<tr><td colspan="19" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="20" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
     return;
   }
   if(typeof _npBuildTeamSelect === 'function') _npBuildTeamSelect();  // NFL_POOL_STATFILTER_V1
@@ -3099,6 +3107,7 @@ function renderNflPlayers(){
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
       '<td>' + team + '</td>' +
+      '<td class="col-bye">' + _byeCell(pid) + '</td>' +   // BYE_WEEK_COL_V1
       '<td>' + age + '</td>' +
       // NFL_PLAYERS_PAGE_V1 — Yahoo rank + ownership (football HAS the Yahoo pipeline,
       // unlike NBA). Same lookup the watch list uses; placeholder class when no value.
@@ -3382,7 +3391,7 @@ function renderWatchList(){
   const countEl = document.getElementById('count-badge');
   countEl.textContent = _watchList.length + (_watchList.length === 1 ? ' player' : ' players');
   if(_watchList.length === 0){
-    tbody.innerHTML = '<tr><td colspan="27" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="28" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
     if(typeof _renderPhoneList==='function'){ try{ _renderPhoneList([]); }catch(e){} }  // PHONE_NOTE_STAR_NFL_V1
     return;
   }
@@ -3415,7 +3424,7 @@ function renderWatchList(){
     const priority = (originalIdx >= 0) ? _wlPriority(_watchList[originalIdx]) : 0;
     if(!p){
       return '<tr>' +
-        '<td colspan="26" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
+        '<td colspan="27" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
         '<td class="center"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
       '</tr>';
     }
@@ -3441,6 +3450,7 @@ function renderWatchList(){
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _noteBadgeHtml(pid) + '</td>' +
       '<td>' + team + '</td>' +
+      '<td class="col-bye">' + _byeCell(pid) + '</td>' +   // BYE_WEEK_COL_V1
       '<td>' + age + '</td>' +
       // EXP_FILL_V1 (2026-06-28) — fill the EXP column from Sleeper years_exp (0 = Rookie -> "R").
       '<td' + (p.years_exp != null && p.years_exp !== '' ? '' : ' class="placeholder"') + '>' + (p.years_exp != null && p.years_exp !== '' ? (Number(p.years_exp) === 0 ? 'R' : p.years_exp) : '—') + '</td>' +
@@ -6249,6 +6259,7 @@ function sortValueFor(field, p, s, pid){
     case 'name':     return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
     case 'pos':      return p.position || 'zzz';
     case 'team':     return p.team || 'zzz';
+    case 'bye':      return _byeFor(pid);   // BYE_WEEK_COL_V1 (null sinks)
     case 'age':      return nflDecimalAgeNum(p);  // NFL_DECIMAL_AGE_V1 — sort by precise age, matching the column
     case 'fpts':     return (_fptsOf(s, p) || 0);
     case 'payd':     return (s.pass_yd || 0);
@@ -6485,6 +6496,50 @@ function _ftlSchedStatCell(v){
   if (v == null || !isFinite(n)) return '<td class="fs-dash">—</td>';
   return '<td>' + Math.round(n) + '</td>';
 }
+
+// ══ BYE_WEEK_COL_V1 (2026-08-19 -- PC Walter, per Matt via the Dude on the 8/19 call) ══
+// Bye Week column for the watch list, the NFL Players pool and the rankings tabs. NO new data
+// source: the season schedule already serves from OUR NAS at /nfl/schedule/:year (the same
+// endpoint + cache the player card's Schedule/Results section uses), and a bye is simply the
+// one week 1-18 a team has no game -- the exact logic the card's BYE rows have always used.
+// GUARD: a team only gets a bye number if it is missing EXACTLY ONE week. An incomplete or
+// unpublished schedule means dashes, never a guess. When the fetch lands, the visible tables
+// repaint so the column fills in.
+var _byeByTeam = null;
+function _byeFor(pid){
+  var p = _playerDB && _playerDB[pid];
+  var t = p && p.team;
+  return (t && _byeByTeam && _byeByTeam[t] != null) ? _byeByTeam[t] : null;
+}
+function _byeCell(pid){
+  var b = _byeFor(pid);
+  return (b == null) ? '<span class="placeholder">—</span>' : String(b);
+}
+async function _byeLoad(){
+  try {
+    var sched = await _ftlFetchSchedule(_ftlSeasonYear());
+    var games = (sched && sched.games) || [];
+    var weeks = {};   // team -> {week: 1}
+    games.forEach(function(g){
+      if(!g || g.status === 'canceled') return;
+      var w = Number(g.week);
+      if(!isFinite(w) || w < 1 || w > 18) return;
+      [g.home, g.away].forEach(function(t){ if(!t) return; (weeks[t] = weeks[t] || {})[w] = 1; });
+    });
+    var map = {};
+    Object.keys(weeks).forEach(function(t){
+      var missing = [];
+      for(var w = 1; w <= 18; w++){ if(!weeks[t][w]) missing.push(w); }
+      if(missing.length === 1) map[t] = missing[0];
+    });
+    _byeByTeam = map;
+    try { if(typeof renderWatchList === 'function') renderWatchList(); } catch(e){}
+    try { if(typeof renderNflPlayers === 'function') renderNflPlayers(); } catch(e){}
+    try { if(typeof renderRankings === 'function' && typeof _rankViewActive === 'function' && _rankViewActive()) renderRankings(); } catch(e){}
+  } catch(e){ console.warn('[BYE_WEEK_COL_V1] schedule fetch failed -- Bye column stays dashed:', e); }
+}
+_byeLoad();
+// ══ /BYE_WEEK_COL_V1 ══
 
 async function _ftlRenderScheduleResults(pid){
   const wrap = document.getElementById('ftl-schedwrap');
