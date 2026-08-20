@@ -1617,18 +1617,36 @@ function toggleCalView(){
   try { localStorage.setItem(_calPrefKey(), next); } catch(e){}
   _syncCalView();
 }
+/* PHILLY_PHONE_CAL_V1 (2026-08-20) — the sync now knows about phones. On a real touch
+   device the calendar takes the AGENDA form (his pick): the desktop grid never renders,
+   the phone cards hide while the agenda is up, and the toggle button works everywhere.
+   The matchMedia guard is the same laptop-ambush test the CSS uses. */
+var _agendaWasOn = false;
+var _agendaScrollPending = false;
+function _phoneMedia(){
+  try { return window.matchMedia('(max-width:600px) and (pointer:coarse)').matches; } catch(e){ return false; }
+}
 function _syncCalView(){
   var btn  = document.getElementById('cal-toggle-btn');
   var tbl  = document.querySelector('.table-wrap');
   var wrap = document.getElementById('cal-wrap');
+  var ag   = document.getElementById('phone-cal-agenda');
+  var cards = document.getElementById('phone-card-list');
   if(!tbl || !wrap) return;
   var events = _isEventsList();
   if(btn) btn.style.display = events ? '' : 'none';
   var showCal = events && _calViewOn();
+  var phone = _phoneMedia();
+  var agOn = showCal && phone;
   tbl.style.display  = showCal ? 'none' : '';
-  wrap.style.display = showCal ? '' : 'none';
+  wrap.style.display = (showCal && !phone) ? '' : 'none';
   if(btn) btn.innerHTML = showCal ? '&#128203; List' : '&#128197; Calendar';
-  if(showCal){ renderCalendar(); } else { wrap.innerHTML = ''; }
+  if(ag) ag.style.display = agOn ? 'block' : 'none';
+  if(cards) cards.style.display = agOn ? 'none' : '';
+  if(agOn && !_agendaWasOn) _agendaScrollPending = true;   /* fresh arrival: open at today */
+  _agendaWasOn = agOn;
+  if(showCal && !phone){ renderCalendar(); } else { wrap.innerHTML = ''; }
+  if(agOn){ try { _renderPhoneAgenda(); } catch(e){} } else if(ag){ ag.innerHTML = ''; }
 }
 function _listMonth(){
   var m = /^phood-(\d{4})-(\d{2})$/.exec(currentListId);
@@ -1865,3 +1883,102 @@ function _renderPhoneCards(rows){
   }
   wrap.innerHTML = html;
 }
+
+
+/* ============================================================================
+   PHILLY_PHONE_CAL_V1 (2026-08-20) — the AGENDA, the calendar's phone form.
+   His pick from the two-option mockup (05 Research/phone_calendar_mockup_2026-08-20.html):
+   the month flattened into a day-by-day scroll. Date headers only for days that
+   have events; multi-day runs repeat on each covered day with "continues" after
+   their first; times in Philly red on the start day; today wears gold and the
+   view opens scrolled to it on arrival. Colors reuse CAL_BAR_HEX by saved-list
+   index, so an event's agenda edge matches its desktop bar exactly. Tap any
+   event row = the same popup card the desktop grid uses. Undated and
+   outside-the-month events keep their strip at the bottom.
+   ============================================================================ */
+function _renderPhoneAgenda(){
+  var ag = document.getElementById('phone-cal-agenda');
+  var lm = _listMonth();
+  if(!ag) return;
+  if(!lm){ ag.innerHTML = ''; return; }
+  var daysInMonth = new Date(lm.y, lm.m0 + 1, 0).getDate();
+  var now = new Date();
+  var today = _calIso(now.getFullYear(), now.getMonth(), now.getDate());
+  var firstIso = _calIso(lm.y, lm.m0, 1), lastIso = _calIso(lm.y, lm.m0, daysInMonth);
+  var MN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var dated = [], strip = [];
+  var i, p;
+  for(i = 0; i < _watchList.length; i++){
+    p = _watchList[i];
+    var hex = CAL_BAR_HEX[i % CAL_BAR_HEX.length];
+    if(!p.date_start){ strip.push({ p: p, why: 'Date TBD', hex: hex }); continue; }
+    var st = p.date_start;
+    var en = (p.date_end && p.date_end > st) ? p.date_end : st;
+    if(en < firstIso || st > lastIso){ strip.push({ p: p, why: _fmtEventDates(p), hex: hex }); continue; }
+    dated.push({
+      p: p, s: st, e: en,
+      sDay: (st < firstIso) ? 1 : parseInt(st.slice(8),10),
+      eDay: (en > lastIso) ? daysInMonth : parseInt(en.slice(8),10),
+      clipS: st < firstIso, hex: hex
+    });
+  }
+  var html = '<div class="pca-month">' + MN[lm.m0] + ' ' + lm.y + '</div>';
+  var todayDay = (today >= firstIso && today <= lastIso) ? parseInt(today.slice(8),10) : 0;
+  for(var d = 1; d <= daysInMonth; d++){
+    var evs = [];
+    for(var k = 0; k < dated.length; k++){ if(d >= dated[k].sDay && d <= dated[k].eDay) evs.push(dated[k]); }
+    if(!evs.length) continue;
+    evs.sort(function(a,b){
+      var at = (a.sDay === d && a.p.time_start) ? a.p.time_start : '99:99';
+      var bt = (b.sDay === d && b.p.time_start) ? b.p.time_start : '99:99';
+      if(at !== bt) return at < bt ? -1 : 1;
+      if(a.s !== b.s) return a.s < b.s ? -1 : 1;
+      return 0;
+    });
+    var isToday = (d === todayDay);
+    var dow = DOW[new Date(lm.y, lm.m0, d).getDay()];
+    html += '<div class="pca-day"><div class="pca-hdr' + (isToday ? ' pca-today" id="pca-today-hdr' : '') + '">'
+          + '<span class="pca-dnum">' + d + '</span><span class="pca-dow">' + dow + '</span>'
+          + (isToday ? '<span class="pca-pill">TODAY</span>' : '') + '</div>';
+    for(var q = 0; q < evs.length; q++){
+      var ev = evs[q];
+      var right;
+      if(ev.sDay === d && !ev.clipS){
+        right = (ev.s === ev.e) ? (_fmtTimeRange(ev.p) || '') : _fmtEventDates(ev.p);
+      } else {
+        right = 'continues';
+      }
+      var rcls = (right === 'continues') ? 'pca-cont' : 'pca-time';
+      html += '<div class="pca-evt" onclick="_openCalCard(&quot;' + _esc(ev.p.pid) + '&quot;)">'
+            + '<span class="pca-bar" style="background:' + ev.hex + '"></span>'
+            + '<span class="pca-nm">' + _esc(ev.p.name) + '</span>'
+            + (right ? '<span class="' + rcls + '">' + right + '</span>' : '')
+            + '</div>';
+    }
+    html += '</div>';
+  }
+  if(!dated.length){
+    html += '<div class="pc-empty">No events yet — Matt is filling this month.</div>';
+  }
+  if(strip.length){
+    var chips = '';
+    for(var t = 0; t < strip.length; t++){
+      var sc = strip[t];
+      chips += '<div class="pca-evt" onclick="_openCalCard(&quot;' + _esc(sc.p.pid) + '&quot;)">'
+             + '<span class="pca-bar" style="background:' + sc.hex + '"></span>'
+             + '<span class="pca-nm">' + _esc(sc.p.name) + '</span>'
+             + '<span class="pca-cont">' + sc.why + '</span></div>';
+    }
+    html += '<div class="pca-day"><div class="pca-hdr"><span class="pca-dow">Waiting on dates or outside this month</span></div>' + chips + '</div>';
+  }
+  ag.innerHTML = html;
+  if(_agendaScrollPending){
+    _agendaScrollPending = false;
+    try {
+      var th = document.getElementById('pca-today-hdr');
+      if(th && th.scrollIntoView) th.scrollIntoView({ block: 'start' });
+    } catch(e){}
+  }
+}
+window.addEventListener('resize', function(){ try { _syncCalView(); } catch(e){} });   /* PHILLY_PHONE_CAL_V1: rotation or window changes re-decide grid vs agenda */
