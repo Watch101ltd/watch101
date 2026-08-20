@@ -356,6 +356,36 @@ body.readonly-mode .backend-only{display:none !important;}
 #cal-card .cal-card-meta{font-size:12px;color:var(--text2);margin-bottom:8px}
 #cal-card .cal-card-take{font-size:12px;color:var(--text);margin-bottom:10px;line-height:1.5}
 #cal-card .cal-card-pills{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ==== PHILLY_PHONE_V1 (2026-08-20) — phone cards + compact header. Mockup approved first
+   round ("It looks perfect. Absolutely perfect."): 05 Research/phone_preview_philly_glowup_2026-08-20.html.
+   The (pointer:coarse) guard is MANDATORY (June's laptop-ambush lesson): cards only on real touch. ==== */
+#phone-card-list{display:none}
+@media(max-width:600px) and (pointer:coarse){
+  .table-wrap{display:none !important}
+  #cal-wrap{display:none !important}          /* the phone calendar is Phase 2 */
+  #cal-toggle-btn{display:none !important}
+  #phone-card-list{display:flex;flex-direction:column;gap:9px;padding:10px 10px 30px}
+  .header{padding:0.9rem 1rem !important}
+  .logo{font-size:28px !important;flex-wrap:wrap !important}   /* baseball's treatment; the em-scaled logo image shrinks along */
+  .toolbar-right > *:not(#theme-toggle){display:none !important}   /* the twins' rule: the moon stays */
+  .sample-banner{margin:10px 10px 0;font-size:11px}
+  .pc-card{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:10px 12px}
+  .pc-r1{display:flex;align-items:baseline;gap:8px}
+  .pc-rank{font-weight:900;color:var(--gold);font-size:15px;min-width:20px}
+  .pc-nm{font-weight:800;font-size:15px;color:var(--text);flex:1}
+  .pc-hood{font-size:11px;color:var(--text3);white-space:nowrap}
+  .pc-dates{font-size:11.5px;color:var(--phood-red);font-weight:800;white-space:nowrap}
+  .pc-tbd{color:var(--text3);font-weight:700}
+  .pc-meta{font-size:11px;color:var(--text3);margin-top:3px}
+  .pc-tags{font-size:13px;margin-top:5px;letter-spacing:2px}
+  .pc-take{font-size:12px;font-style:italic;color:var(--text2);margin-top:6px;line-height:1.45}
+  .pc-take.empty{color:#475569}
+  .pc-addr{font-size:10px;color:var(--text3);margin-top:5px}
+  .pc-pills{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}
+  .pc-pills .pill{padding:4px 10px}
+  .pc-empty{padding:20px;text-align:center;color:var(--text3);font-style:italic}
+}
 </style>
 </head>
 <body>
@@ -474,6 +504,12 @@ body.readonly-mode .backend-only{display:none !important;}
        month list is active AND this visitor has toggled to calendar. Painted by
        renderCalendar() in phood-engine.js; the toolbar button flips it. -->
   <div id="cal-wrap" style="display:none"></div>
+
+  <!-- PHILLY_PHONE_V1 (2026-08-20): the phone card list. Hidden on desktop; the media block
+       below (touch devices 600px and under ONLY, the laptop-ambush guard) hides the table and
+       calendar and shows these cards instead. Painted by _renderPhoneCards() in phood-engine.js
+       from the SAME rows renderWatchList just painted - one data path, cards can never drift. -->
+  <div id="phone-card-list"></div>
 
   <div class="legend">
     <b>How the list works (same rules as the player lists):</b> spots move up, down, or off entirely. A review drops from Klein or LaBan, a place gets hot, a visit disappoints — the list reacts.<br>
