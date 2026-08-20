@@ -22,10 +22,31 @@ var WL_LISTS = [
   { id:'phood-restaurants', title:'Philly Restaurant/Bar',       subtitle:'Philadelphia proper — ones to watch',
     tabs:[{cat:'all',label:'All'},{cat:'rest',label:'🍽️ Restaurants'},{cat:'dess',label:'🍰 Desserts'}] },
   { id:'phood-bars',        title:'Philly Brewery/Drinks',  subtitle:'The wider net — worth the drive',
+    tabs:[{cat:'all',label:'All'}] },
+  /* PHILLY_MONTHS_V1 (2026-08-20) — the "Of the Moment" month lists from the 8/19
+     meeting. kind:'events' switches the table to the event column layout (thead is
+     rendered per-kind); staged:true shows the STAGING note in the subtitle until
+     Matt says go — flipping a month live is deleting that one flag. Still ranked
+     101 lists: drag-rank, tiers (the IG tiers-of-20 drip), and tags all ride along
+     for free because everything keys on the list id. Calendar VIEW is a separate
+     build (next session), per Matt: list identity, calendar as a second view. */
+  { id:'phood-2026-09', kind:'events', staged:true, title:'Watch 101 September',
+    subtitle:'Of the Moment — events, openings, debuts, concerts, sports',
+    tabs:[{cat:'all',label:'All'}] },
+  { id:'phood-2026-10', kind:'events', staged:true, title:'Watch 101 October',
+    subtitle:'Of the Moment — events, openings, debuts, concerts, sports',
+    tabs:[{cat:'all',label:'All'}] },
+  { id:'phood-2026-11', kind:'events', staged:true, title:'Watch 101 November',
+    subtitle:'Of the Moment — events, openings, debuts, concerts, sports',
+    tabs:[{cat:'all',label:'All'}] },
+  { id:'phood-2026-12', kind:'events', staged:true, title:'Watch 101 December',
+    subtitle:'Of the Moment — events, openings, debuts, concerts, sports',
     tabs:[{cat:'all',label:'All'}] }
 ];
 var currentListId = 'phood-restaurants';
 function _wlStorageKey(){ return 'phood_watchlist_' + currentListId; }
+function _activeList(){ return WL_LISTS.find(function(x){ return x.id === currentListId; }); }
+function _isEventsList(){ var l = _activeList(); return !!(l && l.kind === 'events'); }
 /* PHOOD_NAS_V1 (2026-08-14) — the plumbing. Same shape as the twins:
    SERVER_URL points at the PHOOD container on the Synology (port 5104)
    through the Cloudflare tunnel. Saves POST to /list-staging/:listId;
@@ -319,7 +340,46 @@ function _readSpotTagPicker(){
   for(var i=0;i<cbs.length;i++){ if(cbs[i].checked) out.push(cbs[i].getAttribute('data-tag-id')); }
   return out;
 }
+/* PHILLY_MONTHS_V1 — dates render as 'Sep 12', same-month runs as 'Sep 5-28',
+   cross-month runs as 'Sep 26 - Oct 4'. Undated events show a quiet dash. */
+function _fmtEventDates(p){
+  if(!p.date_start) return '<span style="color:var(--text3)">&mdash;</span>';
+  var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function fmt(s){ var pt = s.split('-'); return M[parseInt(pt[1],10)-1] + ' ' + parseInt(pt[2],10); }
+  var out = fmt(p.date_start);
+  if(p.date_end && p.date_end !== p.date_start){
+    var a = p.date_start.split('-'), b = p.date_end.split('-');
+    out = (a[0] === b[0] && a[1] === b[1]) ? out + '-' + parseInt(b[2],10) : out + ' - ' + fmt(p.date_end);
+  }
+  return out;
+}
+function _eventRowHtml(p, rank){
+  var drag = _dragEnabled();
+  var trAttrs = drag
+    ? ' draggable="true"'
+      + ' ondragstart="phoodDragStart(event,\'' + p.pid + '\')"'
+      + ' ondragover="phoodDragOver(event,\'' + p.pid + '\')"'
+      + ' ondrop="phoodDrop(event,\'' + p.pid + '\')"'
+      + ' ondragend="phoodDragEnd(event)"'
+    : '';
+  return '<tr data-phood-pid="' + p.pid + '"' + trAttrs + '>'
+    + '<td class="c' + (drag ? ' drag-handle" title="Drag to re-rank' : '') + '"><span class="rank-cell">' + (drag ? '&#9776; ' : '') + rank + '</span></td>'
+    + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span>' + _freshTakeBadge(p) + '</td>'
+    + '<td class="c" style="white-space:nowrap">' + _fmtEventDates(p) + '</td>'
+    + '<td class="l">' + (p.venue || '') + '</td>'
+    + '<td class="l">' + (p.hood || '') + '</td>'
+    + '<td class="l vibe">' + _tagChipsHtml(p) + '</td>'
+    + _takeCellHtml(p)
+    + (p.menu ? '<td class="c"><a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">🎟️ TIX</a></td>'
+               : '<td class="c"><a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No tickets link yet">🎟️ TIX</a></td>')
+    + (p.pics ? '<td class="c"><a class="pill ig" href="' + _esc(p.pics) + '" target="_blank" rel="noopener">📸 PICS</a></td>'
+               : '<td class="c"><a class="pill ig" href="#" onclick="return false;" style="opacity:0.45" title="No pictures link yet">📸 PICS</a></td>')
+    + (p.hype ? '<td class="c"><a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">🔥 HYPE</a></td>'
+               : '<td class="c"><a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">🔥 HYPE</a></td>')
+    + '</tr>';
+}
 function _rowHtml(p, rank){
+  if(_isEventsList()) return _eventRowHtml(p, rank);
   var drag = _dragEnabled();
   var trAttrs = drag
     ? ' draggable="true"'
@@ -351,8 +411,17 @@ function renderWatchList(){
   if(_filterCat !== 'all') rows = rows.filter(function(p){ return p.cat === _filterCat; });
   if(q) rows = rows.filter(function(p){ return (p.name + ' ' + p.hood).toLowerCase().indexOf(q) !== -1; });
   if(_sortField !== null){
-    var f = _sortField, num = false;   /* PRIORITY_DROP_V1 + PRICE_DROP_V1: no numeric sort fields left */
+    var f = _sortField, num = false;   /* PRIORITY_DROP_V1 + PRICE_DROP_V1: no plain numeric fields; date has its own branch */
     rows.sort(function(a,b){
+      /* PHILLY_MONTHS_V1: chronological sort, undated events sink in BOTH directions
+         (the old price column's null-sinking idea, reused). */
+      if(f === 'date'){
+        var ad = a.date_start ? Date.parse(a.date_start) : 0, bd = b.date_start ? Date.parse(b.date_start) : 0;
+        if(!ad && !bd) return 0;
+        if(!ad) return 1;
+        if(!bd) return -1;
+        return (ad - bd) * _sortDir;
+      }
       var av = _phoodSortKey(a,f), bv = _phoodSortKey(b,f);
       return (num ? (av - bv) : String(av).localeCompare(String(bv))) * _sortDir;
     });
@@ -360,6 +429,11 @@ function renderWatchList(){
   var html = '';
   for(var i = 0; i < rows.length; i++){
     html += _rowHtml(rows[i], _watchList.indexOf(rows[i]) + 1);   /* rank = saved order, like the twins */
+  }
+  if(!html){   /* PHILLY_MONTHS_V1 — the month lists are born empty; say so nicely */
+    html = '<tr><td colspan="' + (_isEventsList() ? 10 : 9) + '" class="c" style="padding:20px;color:var(--text3);font-style:italic">'
+         + (_isEventsList() ? 'No events yet — Matt is filling this month.' : 'Nothing here yet.')
+         + '</td></tr>';
   }
   document.getElementById('watch-list-body').innerHTML = html;
   _setSortArrows();
@@ -399,13 +473,50 @@ function toggleTheme(){
 /* MULTILIST — baseball's switchActiveList, foundation-sized. Storage is per
    list id, tiers ride along via _tiersLsKey(), so a switch is: point at the
    new id, reload, repaint. */
+/* PHILLY_MONTHS_V1 — two column layouts, one table. Spots lists keep the layout
+   they have always had; events lists get Event/Dates/Venue columns and the Menu
+   slot becomes Tickets. Sort wiring survives re-render because the click listener
+   sits on the <thead> itself (delegation), not the individual <th> cells. */
+function _renderThead(){
+  var thead = document.getElementById('wl-thead');
+  if(!thead) return;
+  var h;
+  if(_isEventsList()){
+    h = '<tr>'
+      + '<th class="c" data-col="rank" title="Click to restore Matt\'s list order" style="text-align:center;width:44px">#<span class="arrow" id="ar-rank"></span></th>'
+      + '<th class="l" data-col="name">Event<span class="arrow" id="ar-name"></span></th>'
+      + '<th data-col="date" style="text-align:center;width:100px">Dates<span class="arrow" id="ar-date"></span></th>'
+      + '<th class="l" data-col="venue">Venue<span class="arrow" id="ar-venue"></span></th>'
+      + '<th class="l" data-col="hood">Neighborhood<span class="arrow" id="ar-hood"></span></th>'
+      + '<th class="l" data-col="vibe">Tags<span class="arrow" id="ar-vibe"></span></th>'
+      + '<th class="l" data-col="take">Matt\'s Take<span class="arrow" id="ar-take"></span></th>'
+      + '<th data-col="menu" style="text-align:center;width:70px">Tickets</th>'
+      + '<th data-col="pics" style="text-align:center;width:80px">Pics</th>'
+      + '<th data-col="hype" style="text-align:center;width:80px">Hype</th>'
+      + '</tr>';
+  } else {
+    h = '<tr>'
+      + '<th class="c" data-col="rank" title="Click to restore Matt\'s list order" style="text-align:center;width:44px">#<span class="arrow" id="ar-rank"></span></th>'
+      + '<th class="l" data-col="name">Spot<span class="arrow" id="ar-name"></span></th>'
+      + '<th class="l" data-col="hood">Neighborhood<span class="arrow" id="ar-hood"></span></th>'
+      + '<th class="l" data-col="vibe">Tags<span class="arrow" id="ar-vibe"></span></th>'
+      + '<th class="l" data-col="take">Matt\'s Take<span class="arrow" id="ar-take"></span></th>'
+      + '<th class="l" data-col="addr">Address<span class="arrow" id="ar-addr"></span></th>'
+      + '<th data-col="menu" style="text-align:center;width:70px">Menu</th>'
+      + '<th data-col="pics" style="text-align:center;width:80px">Pics</th>'
+      + '<th data-col="hype" style="text-align:center;width:80px">Hype</th>'
+      + '</tr>';
+  }
+  thead.innerHTML = h;
+}
 function _updateListLabels(){
   var l = WL_LISTS.find(function(x){ return x.id === currentListId; });
   if(!l) return;
   var t = document.getElementById('active-list-title');
   var st = document.getElementById('active-list-subtitle');
   if(t)  t.textContent  = l.title;
-  if(st) st.textContent = l.subtitle;
+  if(st) st.textContent = l.subtitle + (l.staged ? '  ·  STAGING — publishes when Matt says go' : '');
+  _renderThead();   /* PHILLY_MONTHS_V1 — the column layout follows the list kind */
   var sel = document.getElementById('list-switcher');
   if(sel && sel.value !== currentListId) sel.value = currentListId;
 }
@@ -589,12 +700,20 @@ function _spotFill(p){
   document.getElementById('spot-pics').value = p ? (p.pics || '') : '';
   document.getElementById('spot-hype').value = p ? (p.hype || '') : '';
   document.getElementById('spot-take').value = p ? (p.take || '') : '';
+  /* PHILLY_MONTHS_V1 — the modal wears event clothes on the month lists */
+  var _ev = _isEventsList();
+  var evRow = document.getElementById('spot-event-row'); if(evRow) evRow.style.display = _ev ? 'flex' : 'none';
+  var catRow = document.getElementById('spot-cat-row');  if(catRow) catRow.style.display = _ev ? 'none' : 'flex';
+  var ml = document.getElementById('spot-menu-label');   if(ml) ml.textContent = _ev ? 'Tickets link' : 'Menu link';
+  var vEl = document.getElementById('spot-venue');       if(vEl) vEl.value = p ? (p.venue || '') : '';
+  var dsEl = document.getElementById('spot-date-start'); if(dsEl) dsEl.value = p ? (p.date_start || '') : '';
+  var deEl = document.getElementById('spot-date-end');   if(deEl) deEl.value = p ? (p.date_end || '') : '';
   _spotShowErr('');
 }
 function openAddSpotModal(){
   if(typeof _blockIfReadOnly === 'function' && _blockIfReadOnly('openAddSpotModal')) return;
   _spotEditingPid = null;
-  document.getElementById('spot-modal-title').innerHTML = '&#10133; Add a Spot';
+  document.getElementById('spot-modal-title').innerHTML = _isEventsList() ? '&#10133; Add an Event' : '&#10133; Add a Spot';
   document.getElementById('spot-delete-btn').style.display = 'none';
   _spotFill(null);
   document.getElementById('spot-modal').style.display = 'flex';
@@ -615,17 +734,23 @@ function closeSpotModal(){
 }
 async function saveSpotFromModal(){
   var name = document.getElementById('spot-name').value.trim();
-  if(!name){ _spotShowErr('The spot needs a name.'); return; }
+  if(!name){ _spotShowErr(_isEventsList() ? 'The event needs a name.' : 'The spot needs a name.'); return; }
+  var _ds = (document.getElementById('spot-date-start') || {}).value || '';
+  var _de = (document.getElementById('spot-date-end')   || {}).value || '';
+  if(_ds && _de && _de < _ds){ _spotShowErr('The end date is before the start date.'); return; }
   var vals = {
     name: name,
-    cat:  document.getElementById('spot-cat').value,
+    cat:  _isEventsList() ? 'event' : document.getElementById('spot-cat').value,
     hood: document.getElementById('spot-hood').value.trim(),
     addr: document.getElementById('spot-addr').value.trim() || 'TBD',
     type_tags: _readSpotTagPicker(),
     menu: document.getElementById('spot-menu').value.trim(),
     pics: document.getElementById('spot-pics').value.trim(),
     hype: document.getElementById('spot-hype').value.trim(),
-    take: document.getElementById('spot-take').value.trim()
+    take: document.getElementById('spot-take').value.trim(),
+    venue: (document.getElementById('spot-venue') || {value:''}).value.trim(),
+    date_start: _ds,
+    date_end: _de
   };
   if(_spotEditingPid){
     var p = _watchList.find(function(x){ return x.pid === _spotEditingPid; });
@@ -1378,9 +1503,15 @@ window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} 
 
 /* ---- init ---- */
 (async function(){
-  var ths = document.querySelectorAll('thead th'), i;
-  for(i = 0; i < ths.length; i++){
-    (function(th){ th.addEventListener('click', function(){ sortBy(th.getAttribute('data-col')); }); })(ths[i]);
+  /* PHILLY_MONTHS_V1 — sort clicks by DELEGATION on the thead node, so the wiring
+     survives every per-kind thead re-render. The old per-<th> bindings died the
+     moment thead.innerHTML changed. */
+  var _theadEl = document.getElementById('wl-thead');
+  if(_theadEl){
+    _theadEl.addEventListener('click', function(ev){
+      var th = ev.target.closest ? ev.target.closest('th[data-col]') : null;
+      if(th) sortBy(th.getAttribute('data-col'));
+    });
   }
   _applyReadOnlyBodyClass();
   _updateListLabels();
