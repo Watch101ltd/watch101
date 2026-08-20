@@ -1625,7 +1625,24 @@ function fitTables(){
       const table = wrap.querySelector('table');
       if(!table) return;
       if(wrap.offsetParent === null){ return; }   // skip hidden surfaces
-      if(wrap.id === 'nbarankings-wrap'){ table.style.zoom = '1'; return; }  // NBA_RANKINGS_WIDTH_V1 — rankings table is deliberately narrow (packed left, like football); grow-to-fill would re-spread it
+      // RANK_AUTOSHRINK_NBA_V1 (2026-08-20 — the Dude's call; mirror of football's
+      // RANK_AUTOSHRINK_NFL_V1, verified by him the same afternoon). The old blanket
+      // exemption here (NBA_RANKINGS_WIDTH_V1, 'rankings stays packed-left') predates
+      // RANKINGS_WL_CLONE_NBA_V1: after the 8/19 clone the rankings table is the widest
+      // on the page and forced 90% browser zoom. Rankings now SHRINKS to fit like every
+      // other table — but never GROWS past 100%, so the packed-left look survives
+      // wherever the table already fits at full size (grow-to-fill stays skipped).
+      if(wrap.id === 'nbarankings-wrap'){
+        table.style.zoom = '1';                     // reset to read true natural width
+        const rAvail = wrap.clientWidth;
+        const rNatural = table.scrollWidth;
+        if(rNatural > rAvail && rAvail > 0){
+          let rScale = rAvail / rNatural;
+          if(rScale < AUTOSHRINK_MIN){ rScale = AUTOSHRINK_MIN; }
+          table.style.zoom = rScale.toFixed(4);
+        }
+        return;
+      }
       table.style.zoom = '1';                       // reset to read true natural width
       const avail = wrap.clientWidth;
       const natural = table.scrollWidth;
@@ -1644,7 +1661,7 @@ window.addEventListener('resize', fitTables);
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fitTables); } else { fitTables(); }
 (function _wireFitObserver(){
   function attach(){
-    const ids = ['watch-list-body','nba-players-body'];
+    const ids = ['watch-list-body','nba-players-body','rankings-body'];  // RANK_AUTOSHRINK_NBA_V1: rankings re-renders (tab switches, sorts, column changes) now re-fit too
     const onChange = function(){ fitTables(); };
     const obs = new MutationObserver(onChange);
     ids.forEach(function(id){
