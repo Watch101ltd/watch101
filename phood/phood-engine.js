@@ -19,9 +19,9 @@
 /* MULTILIST — baseball's separate-lists model. Storage and tiers key on the
    active list id, so every list carries its own spots AND its own tiers. */
 var WL_LISTS = [
-  { id:'phood-restaurants', title:'PHOOD Restaurants',       subtitle:'Philadelphia proper — ones to watch',
+  { id:'phood-restaurants', title:'Philly Restaurants',       subtitle:'Philadelphia proper — ones to watch',
     tabs:[{cat:'all',label:'All'},{cat:'rest',label:'🍽️ Restaurants'},{cat:'dess',label:'🍰 Desserts'}] },
-  { id:'phood-bars',        title:'PHOOD Bars & Breweries',  subtitle:'The wider net — worth the drive',
+  { id:'phood-bars',        title:'Philly Bars & Breweries',  subtitle:'The wider net — worth the drive',
     tabs:[{cat:'all',label:'All'}] }
 ];
 var currentListId = 'phood-restaurants';
