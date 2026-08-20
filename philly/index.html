@@ -388,6 +388,10 @@ body.readonly-mode .backend-only{display:none !important;}
         <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--gold) 0%,#c9a227 100%);color:#1a1a1a;border:1px solid var(--gold);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:260px">
           <option value="phood-restaurants">&#127869;&#65039; Watch101Philly Restaurant/Bar</option>
           <option value="phood-bars">&#127866; Watch101Philly Brewery/Drinks</option>
+          <option value="phood-2026-09">&#128197; Watch 101 September</option>
+          <option value="phood-2026-10">&#128197; Watch 101 October</option>
+          <option value="phood-2026-11">&#128197; Watch 101 November</option>
+          <option value="phood-2026-12">&#128197; Watch 101 December</option>
         </select>
       </div>
       <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span id="active-list-title" style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,0.4)">Philly Restaurant/Bar</span><br><span id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em;text-transform:uppercase">Philadelphia proper — ones to watch</span><br><span id="list-stamp" style="font-size:11px;color:var(--turquoise2);margin-top:3px;display:inline-block">Not yet saved</span></div>
@@ -416,7 +420,7 @@ body.readonly-mode .backend-only{display:none !important;}
 
   <div class="table-wrap">
     <table id="phood-table">
-      <thead>
+      <thead id="wl-thead">
         <tr>
           <th class="c" data-col="rank" title="Click to restore Matt's list order" style="text-align:center;width:44px">#<span class="arrow" id="ar-rank"></span></th>
           <th class="l" data-col="name">Spot<span class="arrow" id="ar-name"></span></th>
@@ -437,6 +441,7 @@ body.readonly-mode .backend-only{display:none !important;}
     <b>How the list works (same rules as the player lists):</b> spots move up, down, or off entirely. A review drops from Klein or LaBan, a place gets hot, a visit disappoints — the list reacts.<br>
     <b>Tags are Matt's vocabulary.</b> He picks them with the checkboxes in the Add or Edit Spot box, so the set stays consistent across every spot. Current set: 🥇 must visit · 🔥 hot right now · 🆕 just opened · 💲 worth the price · 💰 cheap eats · 🍰 dessert stop · 🌱 vegetarian friendly · 🥡 takeout · 🍸 cocktails · 🍷 good wine selection · 🥃 bar worth waiting at · <span class="byo-badge">BYO</span> bring your own · 🍺 brewery · 🎟️ reservations required · 🚶 walk-ins only · ⛱️ outdoor seating · 🎉 good for big groups · 🔑 valet parking · 🌙 late night.<br>
     <b>Hype:</b> the third link button next to Menu and Pics &mdash; the review, article, or clip that put the spot on the list. A dim button means no link saved yet. (Working name until Matt settles it.)<br>
+    <b>The month lists:</b> Watch 101 September through December &mdash; events, openings, debuts, concerts, sports. Still a ranked 101 list, never a calendar (a separate calendar view is coming). Dates show single days or runs, and the Menu button becomes Tickets. A month marked STAGING is still being built.<br>
     <b>Geographic rule from the 7/29 tape:</b> restaurants stay Philadelphia; bars &amp; breweries deliberately cast a wider net so the ones worth a drive make the cut.<br>
     <b>Sorting:</b> click any column header. Click <b>#</b> to return to Matt's list order with the tiers showing. Filtering or searching flattens the tiers while active.
   </div>
@@ -475,7 +480,7 @@ body.readonly-mode .backend-only{display:none !important;}
     <div id="spot-modal-error" style="display:none;background:#2a0a0a;color:var(--red);border:1px solid #7f1d1d;border-radius:6px;padding:8px 12px;font-size:12px;margin-bottom:12px"></div>
     <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Name *</label>
     <input id="spot-name" type="text" placeholder="e.g. Kalaya" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
-    <div style="display:flex;gap:12px">
+    <div id="spot-cat-row" style="display:flex;gap:12px">
       <div style="flex:1">
         <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Category *</label>
         <select id="spot-cat" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
@@ -483,6 +488,21 @@ body.readonly-mode .backend-only{display:none !important;}
           <option value="bar">&#127866; Bar / Brewery</option>
           <option value="dess">&#127856; Dessert / Ice Cream</option>
         </select>
+      </div>
+    </div>
+    <!-- PHILLY_MONTHS_V1 — event-only fields; the engine shows this row on month lists -->
+    <div id="spot-event-row" style="display:none;gap:12px">
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Start date</label>
+        <input id="spot-date-start" type="date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none;color-scheme:dark">
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">End date <span style="text-transform:none;letter-spacing:0;opacity:0.7">optional, for runs</span></label>
+        <input id="spot-date-end" type="date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none;color-scheme:dark">
+      </div>
+      <div style="flex:1">
+        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Venue</label>
+        <input id="spot-venue" type="text" placeholder="e.g. Union Transfer" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
       </div>
     </div>
     <div style="display:flex;gap:12px">
@@ -499,7 +519,7 @@ body.readonly-mode .backend-only{display:none !important;}
     <div id="spot-tags-picker" class="ppo-type-tags-list"></div>
     <div style="display:flex;gap:12px">
       <div style="flex:1">
-        <label style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Menu link</label>
+        <label id="spot-menu-label" style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 4px">Menu link</label>
         <input id="spot-menu" type="text" placeholder="https://..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none">
       </div>
       <div style="flex:1">
