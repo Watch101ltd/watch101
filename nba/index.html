@@ -643,6 +643,10 @@ body.day-mode .tier-bracket-box.tier-armed::after {
 #ftl-overlay .ftl-typetag input{width:15px;height:15px;cursor:pointer;}
 #ftl-overlay .ftl-typegrid-note{font-size:11px;color:var(--text3);margin-top:8px;}
 .must-watch-flash{color:var(--red,#ef4444) !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}
+.inj-tag{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;padding:1px 4px;border-radius:2px;letter-spacing:0.04em;background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444;white-space:nowrap;margin-left:4px;vertical-align:middle;line-height:1.3;}  /* INJ_TAG_NBA_V1: baseball's badge geometry, football's sizing */
+body.day-mode .inj-tag{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}  /* INJ_TAG_NBA_V1 day-mode */
+.inj-tag.inj-q{background:#78350f;color:#fcd34d;border:1px solid #f59e0b}  /* INJ_TAG_NBA_V1: amber for maybe (Q/GTD/P) */
+body.day-mode .inj-tag.inj-q{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}  /* INJ_TAG_NBA_V1 day-mode amber */
 @keyframes must-watch-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
 body.day-mode .must-watch-flash{color:#b91c1c !important;}
 /* NBA_GAMES_V1 (Aug 2, 2026, late evening) -- Previous / Upcoming Games cards. */
@@ -3737,7 +3741,7 @@ function renderRankings(){
       handleCell +
       '<td class="col-rank">' + (i+1) + '</td>' +
       '<td class="center">' + _nbaPosBadges(p) + '</td>' +
-      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span> ' + _badgeCol.render(pid) + '</td>' +   // RANKINGS_WL_CLONE_NBA_V1
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + ' ' + _badgeCol.render(pid) + '</td>' +   // RANKINGS_WL_CLONE_NBA_V1 + INJ_TAG_NBA_V1
       statCells +
     '</tr>';
   }).join('');
@@ -3962,6 +3966,35 @@ function _rankCol_priority(){ return { key:'priority', label:'Priority', headCla
   num:function(pid){ return _rankPriorityFor(pid); },
   render:function(pid){ return _rankRenderPriorityStars(pid, _rankPriorityFor(pid)); } }; }
 // ══ /RANKINGS_WL_CLONE_NBA_V1 stores + factories ══
+
+// ══ INJ_TAG_NBA_V1 (2026-08-19 -- PC Walter, the Dude's same-night mirror of football's
+// INJ_TAG_V1 + SEVERITY_V1, his call: "while it's fresh on our minds") ══
+// Injury designations as a small badge AFTER the player's name, baseball's .injury-badge
+// geometry, all three surfaces. DATA: _playerDB's injury_status/injury_body_part -- the NBA
+// server's /sleeper/players route serves Sleeper's UNTRIMMED blob (verified 8/19), so the
+// fields were already on the page. NO server change, NO container rebuild needed (unlike
+// football, whose tags also ride its ADP route for 6h freshness -- NBA has no ADP route yet;
+// if one ever ships, wire freshest-first the same way). Freshness = the players blob's 24h.
+// NBA severity language: AMBER = maybe (Questionable, GTD, Probable) -- load-management
+// country -- RED = the bad news (Out, Doubtful, Sus, NA, everything else).
+var INJ_MAP_NBA_V1 = { 'Questionable':'Q', 'GTD':'GTD', 'Probable':'P', 'Doubtful':'D', 'Out':'O', 'IR':'IR', 'PUP':'PUP', 'Sus':'SUS', 'Suspended':'SUS', 'COV':'COV', 'NA':'NA', 'DNR':'DNR' };
+var INJ_AMBER_NBA_V1 = { 'Q':1, 'GTD':1, 'P':1 };
+function _injFor(pid){
+  var p = _playerDB && _playerDB[pid];
+  var st = p ? (p.injury_status || null) : null;
+  if(!st) return null;
+  var bp = p.injury_body_part || null;
+  var code = INJ_MAP_NBA_V1[st] || String(st).toUpperCase().slice(0, 4);
+  return { code: code, full: String(st), part: bp };
+}
+function _injTagHtml(pid){
+  var inj = _injFor(pid);
+  if(!inj) return '';
+  var tip = inj.full + (inj.part ? (' - ' + inj.part) : '');
+  var sev = INJ_AMBER_NBA_V1[inj.code] ? ' inj-q' : '';
+  return ' <span class="inj-tag' + sev + '" title="' + escapeHtml(tip) + '">' + escapeHtml(inj.code) + '</span>';
+}
+// ══ /INJ_TAG_NBA_V1 ══
 function _rankColsFor(pos){
   // RANKINGS_WL_CLONE_NBA_V1 (2026-08-19): the lead columns now clone the Watch 101 table's
   // ORDER -- Team, Age, Exp, Type, Priority, Note, then Y!Rank/Y!Owned/CBS Owned -- minus +/-
@@ -4878,7 +4911,7 @@ function renderNbaPlayers(){
     // then percentages (FG% 3P% FT%).
     return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
       '<td class="center">' + _nbaPosBadges(p) + '</td>' +
-      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span></td>' +
+      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + '</td>' +   // INJ_TAG_NBA_V1
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       // OWNERSHIP_COLS_NBA_V1 + NBA_YAHOO_OWNERSHIP_V1 + NBA_CBS_OWNERSHIP_V1 — all three now live.
@@ -5277,7 +5310,7 @@ function renderWatchList(){
       _handleCell +
       '<td class="col-rank">' + rank + '</td>' +
       '<td class="center">' + _nbaPosBadges(p) + '</td>' +
-      '<td class="left col-player"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _noteBadgeHtml(pid) + '</td>' +
+      '<td class="left col-player"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _noteBadgeHtml(pid) + '</td>' +   // INJ_TAG_NBA_V1
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       // EXP_COL_NBA_V1 — placeholder class when unknown, matching football's cell exactly.
