@@ -1481,7 +1481,16 @@ const NFL_SCORING_SYSTEMS = {
   teprem: { label: 'TE Prem',  field: 'pts_ppr' }  // full PPR base + extra half per TE catch (special-cased in _fptsOf)
 };
 const NFL_SCORING_DEFAULT = 'half';
-const NFL_SCORING_LIST_DEFAULTS = {};  // listId -> system key; fills when Matt delivers per-list systems
+const NFL_SCORING_LIST_DEFAULTS = {
+  // SCORING_LIST_DEFAULTS_V1 (2026-08-20, from Matt's own words on the 8/19 meeting tape):
+  'integrity-nfl': 'half',        // "List of Integrity is... half PPR, that's a redraft, half PPR, twelve team league"
+  'ffpc-redraft-nfl': 'teprem',   // "FFPC... PPR normally for RBs and WRs, and then tight end premium, they get 1.5 per reception" -- the TE Prem system was built 8/6 for exactly this
+  // 'sfb16-nfl': DELIBERATELY ABSENT -- Matt: "the scoring is weird... if you were to adjust your
+  //   scoring thing, it wouldn't work... we don't need the scoring for it." Falls to the half default;
+  //   SFB16's bonuses are not modeled ON PURPOSE, do not add a system for it.
+  // 'empire-nfl': UNKNOWN -- Matt never stated Empire's scoring on the call. Friday question banked
+  //   (8/19 to-do doc). Falls to half until he answers; fill it in here when he does.
+};
 var _scoringActiveListId = 'integrity-nfl';  // the page always boots on Integrity
 let _scoringSystem = NFL_SCORING_DEFAULT;
 function _scoringDefaultFor(listId){ return NFL_SCORING_LIST_DEFAULTS[listId] || NFL_SCORING_DEFAULT; }
