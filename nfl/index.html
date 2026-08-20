@@ -451,6 +451,9 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
 #rankings-table .rk-note.ro:hover{border-color:transparent;background:transparent;color:var(--text)}
 #rankings-table .rk-note.ro.empty,#rankings-table .rk-note.ro.empty:hover{color:#475569}
 #rankings-table .rk-note-input{width:100%;font-size:12px;font-style:italic;background:var(--surface);border:1px solid var(--gold);color:var(--text);border-radius:4px;padding:2px 6px;font-family:inherit;outline:none}
+#rankings-table th.col-av,#rankings-table td.col-av{width:44px;text-align:center}  /* AV_COL_V1 */
+#rankings-table .rk-av-input{width:38px;font-size:11px;text-align:center;background:var(--surface);border:1px solid var(--gold);color:var(--text);border-radius:4px;padding:2px 3px;font-family:inherit;outline:none}  /* AV_COL_V1: Matt's dollar box */
+#rankings-table .rk-av-input::placeholder{color:var(--text3);opacity:.6}  /* AV_COL_V1 */
 #rankings-table th.col-notebadge,#rankings-table td.col-notebadge{width:26px;text-align:center}
 #rankings-table .rk-note-badge{display:inline-block;font-size:12px;line-height:1;cursor:pointer;opacity:.85;transition:transform 120ms ease,opacity 120ms ease}
 #rankings-table .rk-note-badge:hover{opacity:1;transform:scale(1.15)}
@@ -674,8 +677,8 @@ body.readonly-mode .wl-note-cell{cursor:default;}
 @keyframes must-watch-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
 body.day-mode .must-watch-flash{color:#b91c1c !important;}
 #compact-toggle-btn.active{background:var(--turf);color:#0d1117;border-color:var(--turf);}
-body.compact-mode #nflmain-wrap th:nth-child(n+12):nth-child(-n+24),
-body.compact-mode #nflmain-wrap td:nth-child(n+12):nth-child(-n+24){display:none !important;}
+body.compact-mode #nflmain-wrap th:nth-child(n+13):nth-child(-n+27),
+body.compact-mode #nflmain-wrap td:nth-child(n+13):nth-child(-n+27){display:none !important;}  /* BUG #162 FIX (2026-08-19): BYE_WEEK_COL_V1 + YPC_YPR_V1 added 3 columns and shifted every index -- the old n+12/-n+24 range ate the Note column (now col 12) and leaked ReYd/YPR/ReTD (25-27). Column map: 1 handle, 2 rank, 3 pos, 4 player, 5 team, 6 bye, 7 age, 8 exp, 9 delta, 10 type, 11 priority, 12 note, 13-15 ownership, 16 fpts, 17-27 stats, 28 action. ANY future column add/remove MUST re-check this range -- or better, convert it to class-based hiding. */
 body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.col-note{max-width:none;width:55%;white-space:normal;}
 
 /* MATTSTAKE_RANKHIST_V1 (Aug 2, 2026) -- Matt's Take + 101 Rank History cards. */
@@ -1380,7 +1383,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <tr id="rankings-head-row"></tr>
       </thead>
       <tbody id="rankings-body">
-        <tr><td colspan="8" class="empty-state"><strong>QB rankings are empty</strong>Phase 2 will add players + drag-to-rank here.</td></tr>
+        <tr><td colspan="9" class="empty-state"><strong>QB rankings are empty</strong>Phase 2 will add players + drag-to-rank here.</td></tr>
       </tbody>
     </table>
   </div>
@@ -1443,9 +1446,11 @@ const SERVER_URL = 'https://nfl-nas.fantasywatch101.com';
 // The star marks the active list's default; leaving it puts a gold ring on the box.
 // _scoringActiveListId is the engine's OWN copy of the active list id: the engine runs
 // before `let currentListId` executes, and touching a let in its dead zone throws.
-// COMPACT_MODE_V1 note: its nth-child(n+12):nth-child(-n+24) ranges were
-// re-checked for the FPts move (col 24 -> col 15 of 25, the drag handle is col 1):
-// both old and new positions fall inside the hidden span, ranges still correct.
+// COMPACT_MODE_V1 note: its nth-child ranges hide the ownership+stat block by POSITION.
+// Re-checked for the FPts move (fine), then BROKEN by BYE_WEEK_COL_V1 + YPC_YPR_V1 on
+// 2026-08-19 (Bug #162, found by the Dude within the hour): three inserted columns shifted
+// every index, Compact ate the Note column and leaked ReYd/YPR/ReTD. Range is now
+// n+13/-n+27 for the 28-column table. ANY column add/remove must re-check it.
 // CAREER rows only sum pts_half_ppr (CAREER_STAT_KEYS_NFL), so _fptsOf derives:
 // std = half - rec/2, ppr = half + rec/2 (exact -- the pts fields are linear in rec).
 // ============================================================================
@@ -1860,7 +1865,7 @@ function renderRankings(){
   var statusEl = document.getElementById('rankings-status');
   if(!tbody) return;
   if(!_playerDB){
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
     return;
   }
   // RANKINGS_DRAGRANK_V1 — _rankings[pos] is the source of truth for ORDER. Empty until seeded: the first
@@ -1898,7 +1903,7 @@ function renderRankings(){
   _rankRenderHead(cols);
 
   if(ids.length === 0){
-    tbody.innerHTML = '<tr><td colspan="' + (cols.length + 4) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="' + (cols.length + 5) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
     return;
   }
   var dragLocked = !!_rankSortField;  // while sorted, the view isn't the saved order, so disable drag
@@ -1924,6 +1929,7 @@ function renderRankings(){
     return '<tr data-rank-pid="' + escapeHtml(pid) + '"' + dragAttrs + '>' +
       handleCell +
       '<td class="col-rank">' + (i+1) + '</td>' +
+      '<td class="col-av">' + _rankAvCellHtml(pid) + '</td>' +   // AV_COL_V1
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span> ' + _badgeCol.render(pid) + '</td>' +   // RANKINGS_WL_CLONE_NFL_V1
       statCells +
@@ -2139,6 +2145,40 @@ function _rankCol_type(){ return { key:'type', label:'Type', headClass:'col-type
 function _rankCol_priority(){ return { key:'priority', label:'Priority', headClass:'col-priority', tdClass:'',
   num:function(pid){ return _rankPriorityFor(pid); },
   render:function(pid){ return _rankRenderPriorityStars(pid, _rankPriorityFor(pid)); } }; }
+// ── AV_COL_V1 (2026-08-19 -- PC Walter, per Matt via the Dude on the 8/19 call) ──
+// Auction Value: a box Matt TYPES a dollar number into, RANKINGS ONLY (his explicit call --
+// "we really only need it for the rankings"), sitting between Rank and Pos. Values are
+// rankings-scoped by pid (follow the player across tabs) and ride the rankings save payload --
+// the FOURTH passenger on the notes/tags/priority rails. Fans see a plain number, no box.
+// No re-render on save: Matt fills 50 boxes in a row, a repaint per entry would eat his focus.
+var _rankAv = {};   // pid -> number (dollars)
+var RANK_AV_KEY = 'watch101_nfl_rank_av_v1';
+function _rankAvSaveLocal(){ try { localStorage.setItem(RANK_AV_KEY, JSON.stringify(_rankAv)); } catch(e){ console.warn('[AV_COL_V1] save failed:', e); } }
+function _rankAvLoadLocal(){ try { var raw = localStorage.getItem(RANK_AV_KEY); if(raw){ var o = JSON.parse(raw); if(o && typeof o === 'object') _rankAv = o; } } catch(e){} }
+function _rankAvFor(pid){ var v = Number(_rankAv[pid]); return (isFinite(v) && v >= 0 && _rankAv[pid] != null && _rankAv[pid] !== '') ? v : null; }
+function _rankAvSet(pid, raw){
+  if(_blockIfReadOnly('_rankAvSet')) return;
+  var s = String(raw == null ? '' : raw).replace(/[$,\s]/g, '');
+  if(s === ''){ delete _rankAv[pid]; }
+  else {
+    var v = Number(s);
+    if(!isFinite(v) || v < 0){ renderRankings(); return; }   // junk input: repaint restores the last good value
+    _rankAv[pid] = Math.round(v * 10) / 10;                  // one decimal max, dollars
+  }
+  _rankAvSaveLocal();
+  if(typeof saveRankings === 'function' && _rankPos) saveRankings(_rankPos);
+}
+function _rankAvCellHtml(pid){
+  var v = _rankAvFor(pid);
+  var _ro = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+  if(_ro) return (v == null) ? '<span class="placeholder">—</span>' : escapeHtml(String(v));
+  var pidAttr = String(pid).replace(/"/g,'&quot;');
+  var val = (v == null) ? '' : String(v);
+  return '<input type="text" inputmode="decimal" class="rk-av-input" maxlength="5" value="' + escapeHtml(val) + '" placeholder="—"' +
+         ' onchange="_rankAvSet(&quot;' + pidAttr + '&quot;, this.value)"' +
+         ' onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" draggable="false">';
+}
+// ── /AV_COL_V1 ──
 function _rankRatioCol(key,label,numF,denF,tdClass){   // YPC_YPR_V1 -- efficiency ratio column
   return { key:key, label:label, tdClass:tdClass, headClass:'col-stat ' + tdClass,
     num:function(pid){ var s=(typeof _statsRow==='function')?_statsRow(pid):{}; var v=_ratioNum(s?s[numF]:null, s?s[denF]:null); return (v==null)?-1:v; },
@@ -2200,6 +2240,7 @@ function _rankRenderHead(cols){
   if(!headRow) return;
   var fixed = '<th class="col-handle">☰</th>' +
               '<th class="col-rank" data-ranksort="rank" style="cursor:pointer" title="Back to saved ranking order">Rank <span class="sort-arrow" style="opacity:.4">↕</span></th>' +   // RANK_HEADER_RESTORE_V1 (Bug #161, 2026-08-19)
+              '<th class="col-av" data-ranksort="av" style="cursor:pointer" title="Auction value — Matt&#39;s dollars, typed by hand">$ <span class="sort-arrow" style="opacity:.4">↕</span></th>' +   // AV_COL_V1
               '<th class="col-pos">Pos</th>' +
               '<th class="left col-player">Player</th>';
   var statHeads = cols.map(function(c){
@@ -2214,6 +2255,22 @@ function _rankRenderHead(cols){
 
 // A SORTED VIEW of the manual order (copy — never mutates _rankings[pos]). Sort by the active stat column.
 function _rankSortedView(manualIds){
+  // AV_COL_V1: the $ column lives in the FIXED columns, so it sorts here, not via the col
+  // config. Empty boxes sink to the bottom in BOTH directions -- an unpriced player is not
+  // "$0", he is unpriced.
+  if(_rankSortField === 'av'){
+    var viewAv = manualIds.slice();
+    var dirAv = (_rankSortDir === 'asc') ? 1 : -1;
+    viewAv.sort(function(a, b){
+      var va = _rankAvFor(a), vb = _rankAvFor(b);
+      var am = (va == null), bm = (vb == null);
+      if(am && bm) return 0;
+      if(am) return 1;
+      if(bm) return -1;
+      return (va - vb) * dirAv;
+    });
+    return viewAv;
+  }
   var cols = _rankColsFor(_rankPos);
   var col = null; for(var i=0;i<cols.length;i++){ if(cols[i].key === _rankSortField){ col = cols[i]; break; } }
   if(!col) return manualIds;
@@ -2326,7 +2383,7 @@ async function saveRankings(pos){
   _rankNasSaving[pos] = true;
   var statusEl = document.getElementById('rankings-status');
   try {
-    var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; return o; });   // RANKINGS_NOTES_NFL_V1: note rides along. RANKINGS_WL_CLONE_NFL_V1: type_tags + priority ride the same payload (server stores player objects verbatim)
+    var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; return o; });   // AV_COL_V1: av rides too   // RANKINGS_NOTES_NFL_V1: note rides along. RANKINGS_WL_CLONE_NFL_V1: type_tags + priority ride the same payload (server stores player objects verbatim)
     var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ players: players, manual: _rankManual[pos] === true, tiers: (typeof _rankTiersForSave === 'function' ? _rankTiersForSave(pos) : []) })  // RANKINGS_LIVE_SEED_V1 + RANK_TIERS_V1 (the server already persists a tiers array for any list id)
@@ -2394,6 +2451,7 @@ async function loadRankingsFromNAS(){
   _rankLoadLocal();
   _rankNotesLoadLocal();   // RANKINGS_NOTES_NFL_V1
   _rankTypesLoadLocal(); _rankPrioLoadLocal();   // RANKINGS_WL_CLONE_NFL_V1
+  _rankAvLoadLocal();   // AV_COL_V1
   var positions = ['Overall','QB','RB','WR','TE','DEF'];
   for(var i=0;i<positions.length;i++){
     var pos = positions[i];
@@ -2422,7 +2480,7 @@ async function loadRankingsFromNAS(){
           if(payload && Array.isArray(payload.tiers)){ _rankTiers[_rtKey] = payload.tiers; _rankTiersSnapshot[_rtKey] = payload.tiers.slice(); }
         } catch(_rtE){ console.warn('[RANK_TIERS_V1] tier hydrate failed for ' + pos + ':', _rtE); }
         if(players && players.length){
-          players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; });  // RANKINGS_NOTES_NFL_V1 + RANKINGS_WL_CLONE_NFL_V1: notes, type tags and priority all harvest from the NAS payload
+          players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _rankAv[it.pid]==null) _rankAv[it.pid]=_hav; });   // AV_COL_V1: av harvests too  // RANKINGS_NOTES_NFL_V1 + RANKINGS_WL_CLONE_NFL_V1: notes, type tags and priority all harvest from the NAS payload
           // RANKINGS_LIVE_SEED_V1 -- only a HAND-DRAGGED order (manual:true in the saved payload) is
           // adopted. Legacy snapshots (the frozen 2026-06-28 saves) have no flag, so they are ignored
           // and the tab falls through to the live Yahoo seed in renderRankings.
