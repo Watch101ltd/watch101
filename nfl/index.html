@@ -5667,7 +5667,24 @@ function fitTables(){
       const table = wrap.querySelector('table');
       if(!table) return;
       if(wrap.offsetParent === null){ return; }   // skip hidden surfaces
-      if(wrap.id === 'nflrankings-wrap'){ table.style.zoom = '1'; return; }  // rankings stays packed-left
+      // RANK_AUTOSHRINK_NFL_V1 (2026-08-20 — the Dude's call). The old blanket exemption
+      // here ('rankings stays packed-left') predates RANKINGS_WL_CLONE_NFL_V1: after the
+      // 8/19 clone the rankings table is the WIDEST on the page, and it was the surface
+      // still forcing him to 90% browser zoom. Rankings now SHRINKS to fit like every
+      // other table — but never GROWS past 100%, so the packed-left look (his June call:
+      // columns tight on the left, blank space on the right) survives wherever the table
+      // already fits at full size.
+      if(wrap.id === 'nflrankings-wrap'){
+        table.style.zoom = '1';                     // reset to read true natural width
+        const rAvail = wrap.clientWidth;
+        const rNatural = table.scrollWidth;
+        if(rNatural > rAvail && rAvail > 0){
+          let rScale = rAvail / rNatural;
+          if(rScale < AUTOSHRINK_MIN){ rScale = AUTOSHRINK_MIN; }
+          table.style.zoom = rScale.toFixed(4);
+        }
+        return;
+      }
       table.style.zoom = '1';                       // reset to read true natural width
       const avail = wrap.clientWidth;
       const natural = table.scrollWidth;
@@ -5686,7 +5703,7 @@ window.addEventListener('resize', fitTables);
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fitTables); } else { fitTables(); }
 (function _wireFitObserver(){
   function attach(){
-    const ids = ['watch-list-body','nfl-players-body'];
+    const ids = ['watch-list-body','nfl-players-body','rankings-body'];  // RANK_AUTOSHRINK_NFL_V1: rankings re-renders (tab switches, sorts, column changes) now re-fit too
     const onChange = function(){ fitTables(); };
     const obs = new MutationObserver(onChange);
     ids.forEach(function(id){
