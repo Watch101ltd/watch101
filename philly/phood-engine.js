@@ -588,6 +588,7 @@ function _updateFilterTabs(){
 async function switchActiveList(newId){
   if(!WL_LISTS.find(function(l){ return l.id === newId; })) return;
   currentListId = newId;
+  _calViewNow = false;      /* every list arrival starts on LIST view (Dude's rule, 8/20) */
   _sortField = null; _sortDir = 1; _filterCat = 'all';
   var search = document.getElementById('player-search');
   if(search) search.value = '';
@@ -1608,13 +1609,23 @@ window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} 
    entered ever disappears from view.
    ============================================================================ */
 var CAL_BAR_HEX = ['#ef4444','#3b82f6','#22c55e','#a855f7','#f59e0b','#14b8a6'];  /* tier palette family, so the bars match the set */
-function _calPrefKey(){ return 'phood_calview_' + currentListId; }
-function _calViewOn(){
-  try { return localStorage.getItem(_calPrefKey()) === 'cal'; } catch(e){ return false; }
-}
+/* PHILLY_CAL_V2 (2026-08-20) — the Dude changed his mind on view memory: the month
+   pages must ALWAYS open on the ranked LIST view. So the calendar choice now lives
+   in a plain variable (dies when you leave the page) instead of localStorage, and it
+   resets to list every time the visitor switches lists. The old phood_calview_* keys
+   some browsers still carry are swept out below so they can never vote again. */
+var _calViewNow = false;                 /* false = list view, the permanent default */
+try {                                    /* one-time sweep of the retired V1 keys */
+  var _calDead = [];
+  for (var _ci = 0; _ci < localStorage.length; _ci++){
+    var _ck = localStorage.key(_ci);
+    if (_ck && _ck.indexOf('phood_calview_') === 0) _calDead.push(_ck);
+  }
+  _calDead.forEach(function(k){ localStorage.removeItem(k); });
+} catch(e){}
+function _calViewOn(){ return _calViewNow; }
 function toggleCalView(){
-  var next = _calViewOn() ? 'list' : 'cal';
-  try { localStorage.setItem(_calPrefKey(), next); } catch(e){}
+  _calViewNow = !_calViewNow;
   _syncCalView();
 }
 /* PHILLY_PHONE_CAL_V1 (2026-08-20) — the sync now knows about phones. On a real touch
