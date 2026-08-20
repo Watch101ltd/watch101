@@ -1993,3 +1993,22 @@ function _renderPhoneAgenda(){
   }
 }
 window.addEventListener('resize', function(){ try { _syncCalView(); } catch(e){} });   /* PHILLY_PHONE_CAL_V1: rotation or window changes re-decide grid vs agenda */
+
+/* ============================================================================
+   PHILLY_KEY_V1 (2026-08-20 — the Dude's call) — open/close the public Key.
+   Baseball's LEGEND_KEY_V1 recipe: pure show/hide of #legend-modal, no
+   animation, no data calls. The bottom-of-page legend paragraph this replaces
+   is retired; its content lives in the modal markup in index.html.
+   ============================================================================ */
+function openLegend(){
+  var m = document.getElementById('legend-modal');
+  if(m){ m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+}
+function closeLegend(){
+  var m = document.getElementById('legend-modal');
+  if(m){ m.classList.remove('open'); document.body.style.overflow = ''; }
+}
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){ var m = document.getElementById('legend-modal'); if(m && m.classList.contains('open')) closeLegend(); }
+});
+/* /PHILLY_KEY_V1 js */
