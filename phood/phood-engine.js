@@ -1479,7 +1479,7 @@ function renderTiers(){
         'background:' + hex + ';color:#fff;font-family:"Nunito Sans",sans-serif;' +
         'font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;' +
         'padding:2px 10px;border-radius:' + tabRadius + ';box-shadow:' + tabShadow + ';' +
-        'pointer-events:auto;cursor:pointer;white-space:normal;width:max-content;max-width:' + Math.max(220, boxWidth - 40) + 'px;line-height:1.3;box-sizing:border-box;';   // TIER_UNCHAINED_V1: no name cap now -- width:max-content sizes to TEXT, wraps only past max-width
+        'pointer-events:auto;cursor:pointer;white-space:nowrap;';   // TIER_UNCHAINED_V2: nowrap by DEFAULT (the original proven byte); the post-append check flips a genuinely-long name to wrapping with an explicit px width
       var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
       if(isFan){
         tab.title = 'Tier: ' + tier.name;
@@ -1494,6 +1494,8 @@ function renderTiers(){
       layer.appendChild(tab);
       // TIER_UNCHAINED_V1: measured fit for multi-line tabs (learned spacer heights; one repaint converges).
       try {
+        var _maxW = Math.max(220, boxWidth - 40);   // TIER_UNCHAINED_V2: wrap ONLY when the name is genuinely too long, with an EXPLICIT px width -- V1's width:max-content on the abspos tab is the suspect for baseball's mystery horizontal growth, so it is gone everywhere
+        if(tab.scrollWidth > _maxW){ tab.style.whiteSpace = 'normal'; tab.style.width = _maxW + 'px'; tab.style.lineHeight = '1.3'; }
         var _th = tab.offsetHeight || 0;
         var _store = (window._tierSpacerHeights = window._tierSpacerHeights || {});
         if(spacerRow){
