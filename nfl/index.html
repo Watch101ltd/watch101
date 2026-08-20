@@ -2178,6 +2178,23 @@ function _rankNotesLoadLocal(){
   catch(e){ console.warn('[RANKINGS_NOTES_NFL_V1] localStorage load failed:', e); }
 }
 function _rankNoteFor(pid){ var v=_rankNotes[pid]; return (v!=null)?String(v):''; }
+// RANK_NOTE_BADGE_48H_V1 (2026-08-20 — the Dude's call): the rankings badge column retires
+// the every-row 📝 'Add note' pencil and the 📋 clipboard. It now works EXACTLY like the
+// watch list's NEW_NOTE_48H_V1: 📝 shows only while a note's TEXT is under 48 hours old,
+// then self-expires. Editing still lives in the Note cell click. Stamps mirror _rankNotes:
+// localStorage here, and they ride the rankings save payload as note_saved_at so freshness
+// reaches the NAS and the public site the same way the note itself does.
+var _rankNoteStamps = {};                              // pid -> ms epoch of last note TEXT change
+var RANK_NOTE_STAMP_KEY = 'watch101_nfl_rank_note_stamps_v1';
+function _rankStampsSaveLocal(){ try { localStorage.setItem(RANK_NOTE_STAMP_KEY, JSON.stringify(_rankNoteStamps)); } catch(e){} }
+function _rankStampsLoadLocal(){ try { var raw = localStorage.getItem(RANK_NOTE_STAMP_KEY); if(raw){ var o = JSON.parse(raw); if(o && typeof o==='object') _rankNoteStamps = o; } } catch(e){} }
+_rankStampsLoadLocal();
+function _rankNoteFresh(pid){
+  if(!_rankNoteFor(pid)) return false;
+  var ts = Number(_rankNoteStamps[pid]);
+  if(!isFinite(ts) || ts <= 0) return false;
+  return (Date.now() - ts) < NEW_NOTE_WINDOW_MS;       // the watch list's own 48h window
+}
 function _rankSplitNote(s){
   s = String(s||''); var m = s.match(/(https?:\/\/[^\s]+)/i);
   if(!m) return { text:s, url:'' };
@@ -2192,7 +2209,13 @@ function editRankNote(pid, el){
   el.replaceWith(input); input.focus();
   var done = function(){
     var val = input.value.trim();
+    var _prevNote = _rankNoteFor(pid);   // RANK_NOTE_BADGE_48H_V1: capture BEFORE overwrite
     if(val) _rankNotes[pid] = val; else delete _rankNotes[pid];
+    // RANK_NOTE_BADGE_48H_V1 — stamp only when the note TEXT actually changes (mirrors
+    // _setWlNote); clearing the note clears the stamp so the badge can never orphan.
+    if(val && val !== _prevNote){ _rankNoteStamps[pid] = Date.now(); }
+    if(!val){ delete _rankNoteStamps[pid]; }
+    _rankStampsSaveLocal();
     _rankNotesSaveLocal();
     if(typeof saveRankings==='function' && _rankPos) saveRankings(_rankPos);
     renderRankings();
@@ -2226,19 +2249,19 @@ function _rankCol_note(){ return { key:'note', label:'Note', headClass:'col-note
     var pidAttr = String(pid).replace(/"/g,'&quot;');
     return '<div class="rk-note'+empty+'" title="'+title+'" onclick="editRankNote(&quot;'+pidAttr+'&quot;,this)"><span class="rk-note-text">'+escapeHtml(shown)+'</span>'+link+'</div>';
   } }; }
+// RANK_NOTE_BADGE_48H_V1 (2026-08-20, the Dude's call): the every-row 📝 'Add note' pencil
+// and the 📋 clipboard are RETIRED. The badge is now purely the watch list's NEW_NOTE_48H_V1
+// fresh-note flag — 📝 while the note text is under 48h old, else nothing at all. Editing
+// lives in the Note cell click, exactly as before.
+// (Supersedes FANMODE_RANK_NOTES_V1's clipboard branch, Bug #158.)
 function _rankCol_notebadge(){ return { key:'notebadge', label:'', headClass:'col-notebadge', tdClass:'col-notebadge',
-  num:function(pid){ return _rankNoteFor(pid) ? 1 : 0; },
+  num:function(pid){ return _rankNoteFresh(pid) ? 1 : 0; },   // sort: fresh notes group together
   render:function(pid){
-    var has = !!_rankNoteFor(pid);
+    if(!_rankNoteFresh(pid)) return '';
     var pidAttr = String(pid).replace(/"/g,'&quot;');
-    // FANMODE_RANK_NOTES_V1 (2026-08-18, Bug #158) - the pencil's tooltip literally reads
-    // 'Add note', which is the same false invitation as the cell. Fans get nothing when there
-    // is no note, and a non-clickable clipboard when there is.
     var _roBadge = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
-    if(_roBadge) return has ? '<span class="rk-note-badge" style="cursor:default" title="Matt has a note on this player">\ud83d\udccb</span>' : '';
-    var icon = has ? '📋' : '📝';
-    var tip = has ? 'Edit note' : 'Add note';
-    return '<span class="rk-note-badge" title="'+tip+'" onclick="editRankNoteFromBadge(&quot;'+pidAttr+'&quot;,this)">'+icon+'</span>';
+    if(_roBadge) return '<span class="rk-note-badge" style="cursor:default" title="New note — added or changed within the last 48 hours.">📝</span>';
+    return '<span class="rk-note-badge" title="New note — added or changed within the last 48 hours. Click to edit." onclick="editRankNoteFromBadge(&quot;'+pidAttr+'&quot;,this)">📝</span>';
   } }; }
 // ── /RANKINGS_NOTES_NFL_V1 ───────────────────────────────────────────────────
 
@@ -2565,7 +2588,7 @@ async function saveRankings(pos){
   _rankNasSaving[pos] = true;
   var statusEl = document.getElementById('rankings-status');
   try {
-    var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; return o; });   // AV_COL_V1: av rides too   // RANKINGS_NOTES_NFL_V1: note rides along. RANKINGS_WL_CLONE_NFL_V1: type_tags + priority ride the same payload (server stores player objects verbatim)
+    var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankNoteStamps[pid]); if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; return o; });   // AV_COL_V1: av rides too   // RANKINGS_NOTES_NFL_V1: note rides along. RANK_NOTE_BADGE_48H_V1: its freshness stamp rides too. RANKINGS_WL_CLONE_NFL_V1: type_tags + priority ride the same payload (server stores player objects verbatim)
     var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ players: players, manual: _rankManual[pos] === true, tiers: (typeof _rankTiersForSave === 'function' ? _rankTiersForSave(pos) : []) })  // RANKINGS_LIVE_SEED_V1 + RANK_TIERS_V1 (the server already persists a tiers array for any list id)
@@ -2662,7 +2685,7 @@ async function loadRankingsFromNAS(){
           if(payload && Array.isArray(payload.tiers)){ _rankTiers[_rtKey] = payload.tiers; _rankTiersSnapshot[_rtKey] = payload.tiers.slice(); }
         } catch(_rtE){ console.warn('[RANK_TIERS_V1] tier hydrate failed for ' + pos + ':', _rtE); }
         if(players && players.length){
-          players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _rankAv[it.pid]==null) _rankAv[it.pid]=_hav; });   // AV_COL_V1: av harvests too  // RANKINGS_NOTES_NFL_V1 + RANKINGS_WL_CLONE_NFL_V1: notes, type tags and priority all harvest from the NAS payload
+          players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); var _hst=Number(it.note_saved_at); if(isFinite(_hst) && _hst>0 && _rankNoteStamps[it.pid]==null) _rankNoteStamps[it.pid]=_hst; if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _rankAv[it.pid]==null) _rankAv[it.pid]=_hav; });   // AV_COL_V1: av harvests too  // RANKINGS_NOTES_NFL_V1 + RANK_NOTE_BADGE_48H_V1 + RANKINGS_WL_CLONE_NFL_V1: notes, their freshness stamps, type tags and priority all harvest from the NAS payload
           // RANKINGS_LIVE_SEED_V1 -- only a HAND-DRAGGED order (manual:true in the saved payload) is
           // adopted. Legacy snapshots (the frozen 2026-06-28 saves) have no flag, so they are ignored
           // and the tab falls through to the live Yahoo seed in renderRankings.
