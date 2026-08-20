@@ -342,6 +342,30 @@ function _readSpotTagPicker(){
 }
 /* PHILLY_MONTHS_V1 — dates render as 'Sep 12', same-month runs as 'Sep 5-28',
    cross-month runs as 'Sep 26 - Oct 4'. Undated events show a quiet dash. */
+/* EVENT_TIMES_V1 (2026-08-20) — optional showtimes on events. Stored as 'HH:MM'
+   24h strings straight from the time inputs; blank means no time. Fans see
+   12-hour AM/PM (the Dude's pick). A range inside one meridiem compacts to
+   '7:00-10:00 PM'. Overnight runs (end before start) are legal on purpose. */
+function _fmtTime12(t){
+  if(!t) return '';
+  var pt = t.split(':');
+  var hh = parseInt(pt[0],10), mm = pt[1] || '00';
+  var ap = hh >= 12 ? 'PM' : 'AM';
+  var h12 = hh % 12; if(h12 === 0) h12 = 12;
+  return h12 + ':' + mm + ' ' + ap;
+}
+function _fmtTime12Compact(t){
+  var f = _fmtTime12(t);
+  return f.replace(':00 ', ' ');
+}
+function _fmtTimeRange(p){
+  if(!p || !p.time_start) return '';
+  var s = _fmtTime12(p.time_start);
+  if(!p.time_end) return s;
+  var eT = _fmtTime12(p.time_end);
+  if(s.slice(-2) === eT.slice(-2)) s = s.slice(0, -3);   /* both AM or both PM: drop the first meridiem */
+  return s + '-' + eT;
+}
 function _fmtEventDates(p){
   if(!p.date_start) return '<span style="color:var(--text3)">&mdash;</span>';
   var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -351,6 +375,8 @@ function _fmtEventDates(p){
     var a = p.date_start.split('-'), b = p.date_end.split('-');
     out = (a[0] === b[0] && a[1] === b[1]) ? out + '-' + parseInt(b[2],10) : out + ' - ' + fmt(p.date_end);
   }
+  var tr = _fmtTimeRange(p);   /* EVENT_TIMES_V1 — the Dates column and the popup card both read this */
+  if(tr) out += ' &middot; ' + tr;
   return out;
 }
 /* IG_PILL_V1 (2026-08-20) — Matt's Pics-to-Instagram swap. The glyph is the
@@ -424,6 +450,11 @@ function renderWatchList(){
         if(!ad && !bd) return 0;
         if(!ad) return 1;
         if(!bd) return -1;
+        if(ad === bd){   /* EVENT_TIMES_V1 — same day sorts by showtime; no time sinks last ascending */
+          var at = a.time_start || '99:99', bt = b.time_start || '99:99';
+          if(at !== bt) return (at < bt ? -1 : 1) * _sortDir;
+          return 0;
+        }
         return (ad - bd) * _sortDir;
       }
       var av = _phoodSortKey(a,f), bv = _phoodSortKey(b,f);
@@ -708,11 +739,14 @@ function _spotFill(p){
   /* PHILLY_MONTHS_V1 — the modal wears event clothes on the month lists */
   var _ev = _isEventsList();
   var evRow = document.getElementById('spot-event-row'); if(evRow) evRow.style.display = _ev ? 'flex' : 'none';
+  var tmRow = document.getElementById('spot-time-row'); if(tmRow) tmRow.style.display = _ev ? 'flex' : 'none';   /* EVENT_TIMES_V1 */
   var catRow = document.getElementById('spot-cat-row');  if(catRow) catRow.style.display = _ev ? 'none' : 'flex';
   var ml = document.getElementById('spot-menu-label');   if(ml) ml.textContent = _ev ? 'Tickets link' : 'Menu link';
   var vEl = document.getElementById('spot-venue');       if(vEl) vEl.value = p ? (p.venue || '') : '';
   var dsEl = document.getElementById('spot-date-start'); if(dsEl) dsEl.value = p ? (p.date_start || '') : '';
   var deEl = document.getElementById('spot-date-end');   if(deEl) deEl.value = p ? (p.date_end || '') : '';
+  var tsEl = document.getElementById('spot-time-start'); if(tsEl) tsEl.value = p ? (p.time_start || '') : '';   /* EVENT_TIMES_V1 */
+  var teEl = document.getElementById('spot-time-end');   if(teEl) teEl.value = p ? (p.time_end || '') : '';
   _spotShowErr('');
 }
 function openAddSpotModal(){
@@ -755,7 +789,9 @@ async function saveSpotFromModal(){
     take: document.getElementById('spot-take').value.trim(),
     venue: (document.getElementById('spot-venue') || {value:''}).value.trim(),
     date_start: _ds,
-    date_end: _de
+    date_end: _de,
+    time_start: ((document.getElementById('spot-time-start') || {}).value || ''),   /* EVENT_TIMES_V1 — 'HH:MM' 24h from the input; blank = no time */
+    time_end:   ((document.getElementById('spot-time-end')   || {}).value || '')
   };
   if(_spotEditingPid){
     var p = _watchList.find(function(x){ return x.pid === _spotEditingPid; });
@@ -1644,10 +1680,12 @@ function renderCalendar(){
       var endCol   = segEnd - weekFirstDay + 1;
       var caps = ((segStart === ev.sDay && !ev.clipS) ? ' cal-start' : '')
                + ((segEnd === ev.eDay && !ev.clipE) ? ' cal-end' : '');
+      var barLabel = _esc(ev.p.name);   /* EVENT_TIMES_V1 — single-day bars lead with the time, the calendar app habit */
+      if(ev.s === ev.e && ev.p.time_start){ barLabel = _fmtTime12Compact(ev.p.time_start) + ' ' + barLabel; }
       fg += '<div class="cal-bar' + caps + '" style="grid-column:' + startCol + ' / ' + (endCol + 1)
           + ';grid-row:' + (li + 2) + ';background:' + ev.hex + '"'
-          + ' onclick="_openCalCard(&quot;' + _esc(ev.p.pid) + '&quot;)" title="' + _esc(ev.p.name) + '">'
-          + _esc(ev.p.name) + '</div>';
+          + ' onclick="_openCalCard(&quot;' + _esc(ev.p.pid) + '&quot;)" title="' + barLabel + '">'
+          + barLabel + '</div>';
     }
     html += '<div class="cal-week"><div class="cal-bg">' + bg + '</div><div class="cal-fg">' + fg + '</div></div>';
   }
