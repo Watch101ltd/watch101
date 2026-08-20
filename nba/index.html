@@ -948,9 +948,14 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
    priority is set — each appears by itself the day its data ships on this page. (pointer:coarse) is the
    laptop-ambush guard from baseball — do not remove it. Desktop untouched. */
 #phone-card-list{display:none;}
+#rank-phone-card-list{display:none;}  /* RANK_PHONE_NBA_V1 */
 @media(max-width:600px) and (pointer:coarse){
   #watchlist-view table.watch-list{display:none !important;}
   #phone-card-list{display:block;padding:0 0 24px;}
+  /* RANK_PHONE_NBA_V1 (2026-08-20) — the rankings tabs get the same card treatment, the football
+     mirror built the same day. The position tab row (.rank-subnav) already wraps. */
+  #nbarankings-wrap{display:none !important;}
+  #rank-phone-card-list{display:block;padding:0 0 24px;}
   /* strip chrome */
   #page-nav{display:none !important;}
   #nbawl-filter-panel{display:none !important;}
@@ -1557,6 +1562,9 @@ document.addEventListener('DOMContentLoaded',function(){
       </tbody>
     </table>
   </div>
+  <!-- RANK_PHONE_NBA_V1 (2026-08-20): rankings phone cards, filled by _renderRankPhoneList()
+       from the SAME ids renderRankings just painted. Tier boxes ride along from day one. -->
+  <div id="rank-phone-card-list" aria-hidden="true"></div>
 </div><!-- /#rankings-view -->
 
 <!-- OLD_MINI_FOOTER_REMOVED_V1 (2026-07-31, the Dude's call) — the dev-era one-line footer
@@ -3940,6 +3948,7 @@ function renderRankings(){
       ? '<tr><td colspan="' + (cols.length + 4) + '" class="empty-state"><strong>No ' + _rankPos + ' players match the stat filter</strong>Loosen or reset the filter to bring the list back.</td></tr>'
       : '<tr><td colspan="' + (cols.length + 4) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
     try { renderRankTiers(); } catch(e){}   /* NBA_RANK_STATFILTER_V1: wipe tier boxes from the previous paint */
+    try { _renderRankPhoneList(ids); } catch(e){}   /* RANK_PHONE_NBA_V1 */
     return;
   }
   var dragLocked = !!_rankSortField || _rkFiltOn;  // sorted OR stat-filtered: the view is not the saved order, so disable drag (NBA_RANK_STATFILTER_V1)
@@ -3972,6 +3981,7 @@ function renderRankings(){
   _rankUpdateSortArrows();
   // RANK_TIERS_V1 - brackets are measured off real rows, so they paint after the body exists.
   try { renderRankTiers(); } catch(e){ console.warn('[RANK_TIERS_V1] render after rankings failed:', e); }
+  try { _renderRankPhoneList(ids); } catch(e){}   /* RANK_PHONE_NBA_V1 — cards follow every rankings paint */
 }
 
 // NBA_RANKINGS_STATS_V1 — the 9-cat per-game column set, same on every position tab. Every stat
@@ -5721,6 +5731,111 @@ function _phoneTierWrapWl(sortedIds, cards){
 function _phoneRowTap(pid){
   try { if(typeof openFromTheLogo==='function') openFromTheLogo(pid); }
   catch(e){ console.warn('[PHONE_NOTE_STAR_NBA_V1] tap failed', e); }
+}
+
+/* ============================================================================
+   RANK_PHONE_NBA_V1 (2026-08-20) — the rankings tabs join the phone card family,
+   mirror of the football build shipped and verified the same day. NBA differences
+   honored from THIS file's own code: no AV column (football-only), position
+   badges via _nbaPosBadges (colored multi-badges, fantasy_positions aware),
+   nbaDecimalAge, and the Yahoo/CBS lookups go through _yahooFor / _cbsForNum.
+   Cards render from the SAME ids renderRankings just painted; tier boxes ride
+   along from day one (the Bug #165 lesson). Stars INERT; tap = From the Logo. */
+function _renderRankPhoneList(ids){
+  var host = document.getElementById('rank-phone-card-list');
+  if(!host) return;
+  if(!ids || !ids.length){
+    host.innerHTML = '<div style="text-align:center;padding:18px;color:var(--text3);font-style:italic">No players to show. If a stat filter is on, loosen or reset it.</div>';
+    return;
+  }
+  var cards = ids.map(function(pid, i){
+    var p = _playerDB[pid];
+    if(!p) return '';
+    var name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
+    var age = ''; try { age = (typeof nbaDecimalAge==='function') ? (nbaDecimalAge(p) || '') : ''; } catch(e){}
+    var emojis = '';
+    try {
+      var tags = _rankTypes[pid];
+      if(Array.isArray(tags) && typeof _typeTagById==='function'){
+        for(var t = 0; t < tags.length; t++){ var d = _typeTagById(tags[t]); if(d) emojis += d.emoji; }
+      }
+    } catch(e){}
+    var inj = ''; try { inj = (typeof _injTagHtml==='function') ? _injTagHtml(pid) : ''; } catch(e){}
+    var stars = '';
+    try {
+      var pv = Number(_rankPriorities[pid] || 0);
+      if(pv > 0){
+        stars = '<span class="pc-stars">';
+        for(var n = 1; n <= 5; n++){ stars += '<span class="' + (pv >= n ? 'on' : 'off') + '">★</span>'; }
+        stars += '</span>';
+      }
+    } catch(e){}
+    var noteHtml = '';
+    try {
+      var noteRaw = _rankNoteFor(pid);
+      if(noteRaw){
+        var sp = (typeof _splitNoteAndUrl==='function') ? _splitNoteAndUrl(noteRaw) : { text: noteRaw, url: '' };
+        var badge = (typeof _renderNoteLinkBadge==='function') ? _renderNoteLinkBadge(sp.url) : '';
+        noteHtml = '<div class="pc-note">' + escapeHtml(sp.text) + badge + '</div>';
+      }
+    } catch(e){}
+    var railBits = '';
+    try {
+      var y = (typeof _yahooFor==='function') ? _yahooFor(pid) : null;
+      if(y && y.yahoo_rank != null) railBits += 'Y!# <b>' + y.yahoo_rank + '</b><br>';
+      if(y && y.roster_pct != null) railBits += 'Y! <b>' + parseFloat(y.roster_pct).toFixed(0) + '%</b><br>';
+    } catch(e){}
+    try { var cw = (typeof _cbsForNum==='function') ? _cbsForNum(pid) : null; if(cw != null) railBits += 'CBS <b>' + parseFloat(cw).toFixed(0) + '%</b>'; } catch(e){}
+    var rail = railBits ? '<div class="pc-rail"><div class="pc-own">' + railBits + '</div></div>' : '';
+    var posB = ''; try { posB = (typeof _nbaPosBadges==='function') ? _nbaPosBadges(p) : escapeHtml(p.position || '?'); } catch(e){ posB = escapeHtml(p.position || '?'); }
+    var pidAttr = escapeHtml(String(pid));
+    return '<div class="pc-row" data-rank-pid="' + pidAttr + '" onclick="_phoneRowTap(&quot;' + pidAttr + '&quot;)">'
+      + '<div class="pc-rank">' + (i + 1) + '</div>'
+      + '<div class="pc-main">'
+        + '<div class="pc-nm"><span class="player-name">' + escapeHtml(name) + '</span>' + inj + (emojis ? ' <span class="pc-prio">' + emojis + '</span>' : '') + '</div>'
+        + '<div class="pc-meta">' + escapeHtml(p.team || '') + ' · ' + posB + (age ? (' · ' + age) : '') + (stars ? (' ' + stars) : '') + '</div>'
+        + noteHtml
+      + '</div>'
+      + rail
+    + '</div>';
+  });
+  host.innerHTML = _phoneTierWrapRank(ids, cards);
+}
+function _phoneTierWrapRank(ids, cards){
+  try {
+    if(typeof _rankTiersDefaultOrder === 'function' && !_rankTiersDefaultOrder()) return cards.join('');
+    var arr = (typeof _rankTiersGet === 'function') ? _rankTiersGet(_rankPos) : [];
+    if(!Array.isArray(arr) || !arr.length) return cards.join('');
+    var idx = {};
+    for(var i = 0; i < ids.length; i++){ idx[String(ids[i])] = i; }
+    var segs = [];
+    for(var t = 0; t < arr.length; t++){
+      var tier = arr[t];
+      var si = idx[String(tier.start_pid)], ei = idx[String(tier.end_pid)];
+      if(si == null || ei == null || si > ei) continue;
+      var hex = (typeof TIER_COLOR_HEX !== 'undefined' && TIER_COLOR_HEX[tier.color]) || '#94a3b8';
+      var nm = String(tier.name || 'Tier').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      segs.push({ si: si, ei: ei, hex: hex, name: nm });
+    }
+    if(!segs.length) return cards.join('');
+    segs.sort(function(a,b){ return a.si - b.si; });
+    var out = '', open = [];
+    for(var k = 0; k < cards.length; k++){
+      for(var a = 0; a < segs.length; a++){
+        if(segs[a].si === k){
+          out += '<div class="pc-tierbox" style="border-color:' + segs[a].hex + ';background:' + segs[a].hex + '0d">'
+               + '<span class="pc-tiertab" style="background:' + segs[a].hex + '">' + segs[a].name + '</span>';
+          open.push(segs[a]);
+        }
+      }
+      out += cards[k];
+      for(var b = open.length - 1; b >= 0; b--){
+        if(open[b].ei === k){ out += '</div>'; open.splice(b, 1); }
+      }
+    }
+    while(open.length){ out += '</div>'; open.pop(); }
+    return out;
+  } catch(e){ return cards.join(''); }
 }
 
 // LIST_PERSISTENCE — server-first load with localStorage fallback; save via
