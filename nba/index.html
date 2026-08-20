@@ -954,6 +954,7 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
   /* strip chrome */
   #page-nav{display:none !important;}
   #nbawl-filter-panel{display:none !important;}
+  #nbark-filter-panel{display:none !important;}  /* NBA_RANK_STATFILTER_V1: mirror the watch-list phone rule */
   .toolbar-right > *:not(#theme-toggle){display:none !important;}  /* HDR_PARITY_TWINS_V1: baseball's PHONE_THEME_BTN_BACK_V1 — the moon lives in the toolbar now, keep it on phone */
   #status-bar{display:none !important;}
   /* PHONE_GLOWUP_TWINS_V1 (2026-08-07): the date-range dropdown now SHOWS on phone (baseball shows its Season Stats box; the twins match). June's hide rule removed here. */
@@ -1478,6 +1479,70 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px">&#127991;&#65039; Tier</button>
     <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="doneRankingNotify(this)" title="Ping Jay's phone that this rankings pass is finished" style="margin-left:14px">✅ Done Ranking</button>
   </div>
+<!-- NBA_RANK_STATFILTER_V1 (2026-08-20 — PC Walter, per the Dude) — the STAT FILTERING box +
+     instant date-range row cloned onto the RANKINGS view, the football mirror built the same day
+     (NFL_RANK_STATFILTER_V1). Structural parity with the NBA watch-list panel above: renames only
+     (wlpf->rkpf, nbawl->nbark, Wl->Rank). Filter active = drag locked + tier brackets hidden. -->
+<div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbark-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select></div>
+<div id="nbark-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+  <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
+  <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">POSITION <span style="color:var(--text3);font-weight:400">(any checked)</span></div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;min-height:32px;max-width:320px"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="rkpf-pos" value="PG" style="cursor:pointer"> PG</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="rkpf-pos" value="SG" style="cursor:pointer"> SG</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="rkpf-pos" value="SF" style="cursor:pointer"> SF</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="rkpf-pos" value="PF" style="cursor:pointer"> PF</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="rkpf-pos" value="C" style="cursor:pointer"> C</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="rkpf-pos" value="G" style="cursor:pointer"> G</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="rkpf-pos" value="F" style="cursor:pointer"> F</label></div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
+      <select id="rkpf-daterange" title="Stat window: season or trailing weeks (applies on Apply)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select>
+    </div>
+    <!-- STAT_FILTER_TRIPLET_V1 (2026-08-05, PC Walter, per the Dude). Matt's 8/3 ask ("the same
+         nine categories that I use", ~40:41) built with Matt's own mechanism (a category dropdown,
+         "less crowded on the screen", ~42:00) plus a Min/Max picker, which also answers the open
+         turnover question: TO + Max needs no decision from Matt. Three rows stack (AND). Empty
+         value = row off. Minutes rides in every pulldown (the Dude, 8/5), replacing the MIN MPG
+         box (MIN_MINUTES_FILTER_V1, retired unverified same week it shipped). Options are built at
+         runtime from NBA_CATEGORY_MODEL_V1 by _nbaBuildStatFilterSelects(); the 13-cat list gets
+         13 choices automatically on list switch, no rebuild. -->
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">STAT FILTERS <span style="color:var(--text3);font-weight:400">(stack up to three)</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:5px"><select id="rkpf-sf1cat" title="Stat category" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"></select><select id="rkpf-sf1mode" title="Minimum or maximum" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="min" selected>Min</option><option value="max">Max</option></select><input id="rkpf-sf1val" type="number" min="0" placeholder="any" style="width:60px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none"></div>
+        <div style="display:flex;align-items:center;gap:5px"><select id="rkpf-sf2cat" title="Stat category" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"></select><select id="rkpf-sf2mode" title="Minimum or maximum" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="min" selected>Min</option><option value="max">Max</option></select><input id="rkpf-sf2val" type="number" min="0" placeholder="any" style="width:60px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none"></div>
+        <div style="display:flex;align-items:center;gap:5px"><select id="rkpf-sf3cat" title="Stat category" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"></select><select id="rkpf-sf3mode" title="Minimum or maximum" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="min" selected>Min</option><option value="max">Max</option></select><input id="rkpf-sf3val" type="number" min="0" placeholder="any" style="width:60px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none"></div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN GAMES</div>
+      <input id="rkpf-games" type="number" min="0" placeholder="0" title="Minimum games played" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <input id="rkpf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        <span style="font-size:11px;color:var(--text3)">to</span>
+        <input id="rkpf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
+      <input id="rkpf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
+      <input id="rkpf-cbsowned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">TEAM</div>
+      <select id="rkpf-team" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="ALL">All Teams</option></select>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button onclick="applyNbaRankFilters()" style="background:var(--court,#ea580c);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
+      <button onclick="resetNbaRankFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── WATCH LIST TABLE ─────── -->
   <div class="table-wrap" id="nbarankings-wrap">
     <table class="watch-list" id="rankings-table">
       <thead>
@@ -1508,7 +1573,7 @@ function toggleFilterPanel(titleEl){
 }
 (function _wireCollapsibleFilters(){
   function attach(){
-    ['nbawl-filter-panel','nbap-filter-panel'].forEach(function(id){
+    ['nbawl-filter-panel','nbap-filter-panel','nbark-filter-panel'].forEach(function(id){   // NBA_RANK_STATFILTER_V1: third panel
       var panel = document.getElementById(id);
       if(!panel) return;
       var title = panel.firstElementChild;
@@ -2867,6 +2932,7 @@ function openCreateRankTierModal(){
   if(_blockIfReadOnly('openCreateRankTierModal')) return;
   try {
     if(_rankSortField){ alert('Clear the column sort first - brackets only line up in your own order.'); return; }
+    if(typeof _rankFilterActive === 'function' && _rankFilterActive()){ alert('Clear the stat filter first - brackets only line up in your own full order.'); return; }   // NBA_RANK_STATFILTER_V1
     _tierSurface = 'rankings';
     _rankTierEditingId = null;
     _rankTierPopulateForm(null);
@@ -2958,9 +3024,10 @@ function _tierModalDelete(){ if(_tierSurface === 'rankings') return deleteRankTi
 
 // ---- Render: overlay boxes + spacer rows over the rankings table ----
 function _rankTiersDefaultOrder(){
-  // Brackets only make sense in the saved order. A column sort scrambles the rows,
-  // so hide the boxes until the sort is cleared. (Rankings has no search/filter bar.)
-  try { return !_rankSortField; } catch(e){ return false; }
+  // Brackets only make sense in the saved order. A column sort scrambles the rows and a stat
+  // filter removes rows, so hide the boxes until both are cleared. (NBA_RANK_STATFILTER_V1 —
+  // the old note that rankings has no filter bar stopped being true on 2026-08-20.)
+  try { return !_rankSortField && !(typeof _rankFilterActive === 'function' && _rankFilterActive()); } catch(e){ return false; }
 }
 function _rankTiersResolveRange(tier){
   var tbody = document.getElementById('rankings-body');
@@ -3454,11 +3521,15 @@ async function _applyDateRangeFrom(selectId){
   const b = document.getElementById('nbapf-daterange');
   if(a && a.value !== _dateRange) a.value = _dateRange;
   if(b && b.value !== _dateRange) b.value = _dateRange;
+  const rk = document.getElementById('rkpf-daterange');   // NBA_RANK_STATFILTER_V1
+  if(rk && rk.value !== _dateRange) rk.value = _dateRange;
   // INSTANT_DATERANGE_V1 — keep the two outside-the-box instant dropdowns matched too.
   const ia = document.getElementById('nbawl-instant-daterange');
   const ib = document.getElementById('nbap-instant-daterange');
   if(ia && ia.value !== _dateRange) ia.value = _dateRange;
   if(ib && ib.value !== _dateRange) ib.value = _dateRange;
+  const irk = document.getElementById('nbark-instant-daterange');   // NBA_RANK_STATFILTER_V1
+  if(irk && irk.value !== _dateRange) irk.value = _dateRange;
   if(_dateRange !== 'season'){
     await _ensureDateRangeStats();
   }
@@ -3475,6 +3546,7 @@ async function _applyInstantDateRange(selectId){
   if(b && b.value !== _dateRange) b.value = _dateRange;
   if(typeof renderWatchList === 'function') renderWatchList();
   if(typeof renderNbaPlayers === 'function') renderNbaPlayers();
+  if(typeof renderRankings === 'function'){ try { renderRankings(); } catch(e){} }   // NBA_RANK_STATFILTER_V1 — rankings reads the same _dateRange; keep it live too
 }
 
 // NBA_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
@@ -3517,6 +3589,7 @@ function resetNbaWlFilters(){
   const t=document.getElementById('wlpf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('wlpf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('nbapf-daterange'); if(dr2) dr2.value='season';
+  const dr3=document.getElementById('rkpf-daterange'); if(dr3) dr3.value='season';   // NBA_RANK_STATFILTER_V1
   document.querySelectorAll('.wlpf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
   _wlFilters = { team:'ALL', statRows:[], minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
@@ -3535,6 +3608,81 @@ function _wlBuildTeamSelect(){
 // Does a watch-list pid pass the active filters? (position / team / minMpg / games / age / %owned)
 function _wlPassesFilter(pid){
   const F=_wlFilters; if(!F) return true;
+  const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
+  if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
+  const s=_statsRow(pid);
+  // STAT_FILTER_TRIPLET_V1 (2026-08-05) -- the three stat rows replace the old
+  // MIN MPG check. Null semantics carried over from MIN_MINUTES_FILTER_V1
+  // unchanged: no data = eliminated. Minutes is now just a row (cat 'min').
+  if(!_passesStatFilterRows(F.statRows, p, s, pid, 'wl')) return false;
+  if(F.minGames!=null && (Number(s.gp)||0) < F.minGames) return false;  // NBA_MIN_GAMES_FILTER_V1
+  // NBA_MULTIPOS_FILTER_V1 — match ANY of the player's fantasy_positions against the checked boxes.
+  if(F.posPositions && F.posPositions.length && !_nbaPosMatch(p, F.posPositions)) return false;
+  if(F.ageMin!=null || F.ageMax!=null){
+    const a=nbaDecimalAgeNum(p);
+    if(F.ageMin!=null && (a==null || a<F.ageMin)) return false;
+    if(F.ageMax!=null && (a==null || a>F.ageMax)) return false;
+  }
+  if(F.maxOwned!=null){   // OWNED_FILTERS_LIVE_V1 — no Yahoo owned => excluded from a max-owned filter
+    const y=(typeof _yahooFor==='function') ? _yahooFor(pid) : null;
+    const ow=(y && y.roster_pct!=null) ? Number(y.roster_pct) : null;
+    if(ow==null || ow>F.maxOwned) return false;
+  }
+  if(F.maxCbsOwned!=null){   // OWNED_FILTERS_LIVE_V1 — no CBS owned => excluded from a max-CBS filter
+    const cv=(typeof _cbsForNum==='function') ? _cbsForNum(pid) : null;
+    if(cv==null || Number(cv)>F.maxCbsOwned) return false;
+  }
+  return true;
+}
+
+// NBA_RANK_STATFILTER_V1 (2026-08-20 — PC Walter, per the Dude) — RANKINGS filter state, cloned
+// Functional: team / minMpg / age. (%Owned and date range are LIVE now, not inert --
+// that comment predates OWNED_FILTERS_LIVE_V1 and NBA_DATERANGE_DAYS_V1.)
+let _rankFilters = { team:'ALL', statRows:[], minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
+/* _nbaPosMatch and the triplet-row helpers are SHARED with the WL block above — not duplicated here. */
+let _rankTeamSelectBuilt = false;
+function _rkfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
+// NBA_MIN_GAMES_FILTER_V1 — minGames added to the gate. A "games-only" Apply must
+// register as an active filter or renderWatchList would skip the filter pass entirely
+// (the exact bug the position filter hit on 2026-06-06 — see POSITION_FILTER_V1).
+function _rankFilterActive(){ return _rankFilters && (_rankFilters.team!=='ALL' || (_rankFilters.statRows && _rankFilters.statRows.length) || _rankFilters.minGames!=null || _rankFilters.ageMin!=null || _rankFilters.ageMax!=null || _rankFilters.maxOwned!=null || _rankFilters.maxCbsOwned!=null || (_rankFilters.posPositions && _rankFilters.posPositions.length)); }
+async function applyNbaRankFilters(){
+  _rankFilters.team   = (document.getElementById('rkpf-team')||{}).value || 'ALL';
+  _rankFilters.statRows = _readStatFilterRows('rkpf');   // STAT_FILTER_TRIPLET_V1
+  _rankFilters.minGames = _rkfNum('rkpf-games');   // NBA_MIN_GAMES_FILTER_V1
+  _rankFilters.ageMin = _rkfNum('rkpf-agemin');
+  _rankFilters.ageMax = _rkfNum('rkpf-agemax');
+  _rankFilters.posPositions = Array.from(document.querySelectorAll('.rkpf-pos:checked')).map(cb => cb.value);
+  _rankFilters.maxOwned = _rkfNum('rkpf-owned');       // OWNED_FILTERS_LIVE_V1
+  _rankFilters.maxCbsOwned = _rkfNum('rkpf-cbsowned'); // OWNED_FILTERS_LIVE_V1
+  await _applyDateRangeFrom('rkpf-daterange');   // date range is Apply-gated too
+  renderRankings();
+}
+function resetNbaRankFilters(){
+  ['rkpf-games','rkpf-agemin','rkpf-agemax','rkpf-owned','rkpf-cbsowned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  _resetStatFilterRows('rkpf');   // STAT_FILTER_TRIPLET_V1
+  const t=document.getElementById('rkpf-team'); if(t) t.value='ALL';
+  const dr=document.getElementById('rkpf-daterange'); if(dr) dr.value='season';
+  const dr2=document.getElementById('nbapf-daterange'); if(dr2) dr2.value='season';
+  const dr3=document.getElementById('wlpf-daterange'); if(dr3) dr3.value='season';
+  document.querySelectorAll('.rkpf-pos').forEach(cb => { cb.checked = false; });
+  _dateRange = 'season';
+  _rankFilters = { team:'ALL', statRows:[], minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
+  renderRankings();
+}
+// Build the TEAM dropdown from the teams actually present on the watch list (no abbr guessing).
+function _rankBuildTeamSelect(){
+  if(_rankTeamSelectBuilt || !_playerDB) return;
+  const sel=document.getElementById('rkpf-team'); if(!sel) return;
+  const teams=new Set();
+  for(const id in _playerDB){ const p=_playerDB[id]; if(p && p.position && p.team) teams.add(p.team); }   // pool-style: rankings draw from the whole player DB
+  const sorted=Array.from(teams).sort();
+  sel.innerHTML='<option value="ALL">All Teams</option>'+sorted.map(t=>'<option value="'+t+'">'+t+'</option>').join('');
+  _rankTeamSelectBuilt=true;
+}
+// Does a watch-list pid pass the active filters? (position / team / minMpg / games / age / %owned)
+function _rankPassesFilter(pid){
+  const F=_rankFilters; if(!F) return true;
   const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
   if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
   const s=_statsRow(pid);
@@ -3764,20 +3912,33 @@ function renderRankings(){
   // (never mutates the saved order). Dragging clears the sort and re-snaps to the manual order.
   var manualIds = _provisional ? seed : _rankings[_rankPos];
   var ids = _rankSortField ? _rankSortedView(manualIds) : manualIds;
+  // NBA_RANK_STATFILTER_V1 (2026-08-20) — build the team dropdown once, then apply the STAT
+  // FILTERING box to the DISPLAY list only. .filter() returns a NEW array, so Matt's saved
+  // order in _rankings[_rankPos] is never touched; dragLocked below includes the filter so a
+  // drop (and its save) can never fire against a filtered view.
+  if(typeof _rankBuildTeamSelect === 'function') _rankBuildTeamSelect();
+  var _rkTotal = ids.length;
+  var _rkFiltOn = (typeof _rankFilterActive === 'function' && _rankFilterActive());
+  if(_rkFiltOn){
+    ids = ids.filter(function(pid){ return _rankPassesFilter(pid); });
+  }
   // FANMODE_RANK_NOTES_V1 (2026-08-18, Bug #159) - the drag handle column is hidden from fans by
   // CSS, so neither of these sentences may tell them to drag anything.
   var _roStat = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
   var sortNote = _rankSortField ? (' · sorted by ' + _rankSortField.toUpperCase() + (_roStat ? '' : ' (drag a player to return to your order)')) : '';
-  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players.' + (_roStat ? '' : ' Drag the ☰ handle to re-rank.') + ' Separate from the Watch101 list.' + sortNote;
+  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + (_rkFiltOn ? (ids.length + ' of ' + _rkTotal + ' players (stat filter on).') : (ids.length + ' players.')) + ((_roStat || _rkFiltOn) ? '' : ' Drag the ☰ handle to re-rank.') + ' Separate from the Watch101 list.' + sortNote;
 
   var cols = _rankColsFor(_rankPos);
   _rankRenderHead(cols);
 
   if(ids.length === 0){
-    tbody.innerHTML = '<tr><td colspan="' + (cols.length + 4) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
+    tbody.innerHTML = _rkFiltOn
+      ? '<tr><td colspan="' + (cols.length + 4) + '" class="empty-state"><strong>No ' + _rankPos + ' players match the stat filter</strong>Loosen or reset the filter to bring the list back.</td></tr>'
+      : '<tr><td colspan="' + (cols.length + 4) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
+    try { renderRankTiers(); } catch(e){}   /* NBA_RANK_STATFILTER_V1: wipe tier boxes from the previous paint */
     return;
   }
-  var dragLocked = !!_rankSortField;  // while sorted, the view is not the saved order, so disable drag
+  var dragLocked = !!_rankSortField || _rkFiltOn;  // sorted OR stat-filtered: the view is not the saved order, so disable drag (NBA_RANK_STATFILTER_V1)
   var _badgeCol = _rankCol_notebadge();   // RANKINGS_WL_CLONE_NBA_V1: badge rides the player cell now, like the watch list
   tbody.innerHTML = ids.map(function(pid, i){
     var p = _playerDB[pid];
@@ -4366,6 +4527,7 @@ function resetNbaPoolFilters(){
   const t=document.getElementById('nbapf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('nbapf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('wlpf-daterange'); if(dr2) dr2.value='season';
+  const dr3=document.getElementById('rkpf-daterange'); if(dr3) dr3.value='season';   // NBA_RANK_STATFILTER_V1
   document.querySelectorAll('.nbapf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
   _npFilters = { team:'ALL', statRows:[], minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
