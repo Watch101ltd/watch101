@@ -893,6 +893,7 @@ body.day-mode .lg-redname{color:#b91c1c;}
   /* strip chrome */
   #page-nav{display:none !important;}
   #nflwl-filter-panel{display:none !important;}
+  #nflrk-filter-panel{display:none !important;}  /* NFL_RANK_STATFILTER_V1: mirror the watch-list phone rule */
   .toolbar-right > *:not(#theme-toggle){display:none !important;}  /* HDR_PARITY_TWINS_V1: baseball's PHONE_THEME_BTN_BACK_V1 — the moon lives in the toolbar now, keep it on phone */
   #status-bar{display:none !important;}
   /* PHONE_GLOWUP_TWINS_V1 (2026-08-07): the date-range dropdown now SHOWS on phone (baseball shows its Season Stats box; the twins match). June's hide rule removed here. */
@@ -1395,6 +1396,57 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px">&#127991;&#65039; Tier</button>
     <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="doneRankingNotify(this)" title="Ping Jay's phone that this rankings pass is finished" style="margin-left:14px">✅ Done Ranking</button>
   </div>
+<!-- NFL_RANK_STATFILTER_V1 (2026-08-20 — PC Walter, per the Dude; Matt flagged the missing filter live
+     on the 8/19 call) — the STAT FILTERING box + instant date-range row cloned onto the RANKINGS view,
+     structural parity with the watch-list panel (renames only: nflwlpf->nflrkpf, nflwl->nflrk, Wl->Rank).
+     While any filter is active, drag-to-rank locks and tier brackets hide, so the frozen order is safe. -->
+<div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nflrk-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select></div>
+<div id="nflrk-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+  <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">STAT FILTERING</div>
+  <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">POSITION <span style="color:var(--text3);font-weight:400">(any checked)</span></div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;min-height:32px;max-width:300px"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflrkpf-pos" value="QB" style="cursor:pointer"> QB</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflrkpf-pos" value="RB" style="cursor:pointer"> RB</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflrkpf-pos" value="WR" style="cursor:pointer"> WR</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflrkpf-pos" value="TE" style="cursor:pointer"> TE</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflrkpf-pos" value="DEF" style="cursor:pointer"> DEF</label></div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">DATE RANGE</div>
+      <select id="nflrkpf-daterange" title="Stat window: season or trailing weeks (applies on Apply)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN FPTS</div>
+      <input id="nflrkpf-fpts" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MIN GAMES</div>
+      <input id="nflrkpf-games" type="number" min="0" placeholder="0" title="Filters by games played (s.gp). Inert in the offseason until Sleeper provides games-played." style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">AGE</div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <input id="nflrkpf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        <span style="font-size:11px;color:var(--text3)">to</span>
+        <input id="nflrkpf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#6001D2">(Y!)</span></div>
+      <input id="nflrkpf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">MAX % OWNED <span style="color:#003C7C">(CBS)</span></div>
+      <input id="nflrkpf-cbsowned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">TEAM</div>
+      <select id="nflrkpf-team" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="ALL">All Teams</option></select>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button onclick="applyNflRankFilters()" style="background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
+      <button onclick="resetNflRankFilters()" style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:13px;font-family:inherit;cursor:pointer">Reset</button>
+    </div>
+  </div>
+</div>
+
   <div class="table-wrap" id="nflrankings-wrap">
     <table class="watch-list" id="rankings-table">
       <thead>
@@ -1423,7 +1475,7 @@ function toggleFilterPanel(titleEl){
 }
 (function _wireCollapsibleFilters(){
   function attach(){
-    ['nflwl-filter-panel','nflp-filter-panel'].forEach(function(id){
+    ['nflwl-filter-panel','nflp-filter-panel','nflrk-filter-panel'].forEach(function(id){   // NFL_RANK_STATFILTER_V1: third panel
       var panel = document.getElementById(id);
       if(!panel) return;
       var title = panel.firstElementChild;
@@ -1648,11 +1700,15 @@ async function _applyDateRangeFrom(selectId){
   const b = document.getElementById('nflpf-daterange');
   if(a && a.value !== _dateRange) a.value = _dateRange;
   if(b && b.value !== _dateRange) b.value = _dateRange;
+  const rk = document.getElementById('nflrkpf-daterange');   // NFL_RANK_STATFILTER_V1
+  if(rk && rk.value !== _dateRange) rk.value = _dateRange;
   // INSTANT_DATERANGE_V1 — keep the two outside-the-box instant dropdowns matched too.
   const ia = document.getElementById('nflwl-instant-daterange');
   const ib = document.getElementById('nflp-instant-daterange');
   if(ia && ia.value !== _dateRange) ia.value = _dateRange;
   if(ib && ib.value !== _dateRange) ib.value = _dateRange;
+  const irk = document.getElementById('nflrk-instant-daterange');   // NFL_RANK_STATFILTER_V1
+  if(irk && irk.value !== _dateRange) irk.value = _dateRange;
   // load window data if we're leaving season (first time only; cached after)
   if(_dateRange !== 'season'){
     await _ensureDateRangeStats();
@@ -1672,6 +1728,7 @@ async function _applyInstantDateRange(selectId){
   if(b && b.value !== _dateRange) b.value = _dateRange;
   if(typeof renderWatchList === 'function') renderWatchList();
   if(typeof renderNflPlayers === 'function') renderNflPlayers();
+  if(typeof renderRankings === 'function'){ try { renderRankings(); } catch(e){} }   // NFL_RANK_STATFILTER_V1 — rankings reads the same _dateRange; keep it live too
 }
 
 // NFL_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — Watch101 list filter state.
@@ -1697,6 +1754,7 @@ function resetNflWlFilters(){
   const t=document.getElementById('nflwlpf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('nflwlpf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('nflpf-daterange'); if(dr2) dr2.value='season';
+  const dr3=document.getElementById('nflrkpf-daterange'); if(dr3) dr3.value='season';   // NFL_RANK_STATFILTER_V1
   document.querySelectorAll('.nflwlpf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
   _wlFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
@@ -1713,6 +1771,69 @@ function _wlBuildTeamSelect(){
 }
 function _wlPassesFilter(pid){
   const F=_wlFilters; if(!F) return true;
+  const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
+  if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
+  const s=_statsRow(pid);
+  if(F.minFpts!=null && (Number(_fptsOf(s, p))||0) < F.minFpts) return false;
+  if(F.minGames!=null && (Number(s.gp)||0) < F.minGames) return false;
+  // POSITION_FILTER_V1 (2026-06-06) — single NFL position, match ANY checked. (Kickers intentionally have no box.)
+  if(F.posPositions && F.posPositions.length && !F.posPositions.includes(p.position)) return false;
+  if(F.ageMin!=null || F.ageMax!=null){
+    const a=nflDecimalAgeNum(p);
+    if(F.ageMin!=null && (a==null || a<F.ageMin)) return false;
+    if(F.ageMax!=null && (a==null || a>F.ageMax)) return false;
+  }
+  if(F.maxOwned!=null){
+    const ow=(typeof _yahooLookupNum==='function') ? _yahooLookupNum(pid,'roster_pct') : null;
+    if(ow==null || ow>F.maxOwned) return false;
+  }
+  if(F.maxCbsOwned!=null){   // OWNED_FILTERS_LIVE_V1 — no CBS owned => excluded from a max-CBS filter
+    const cw=(typeof _cbsLookupNum==='function') ? _cbsLookupNum(pid) : null;
+    if(cw==null || cw>F.maxCbsOwned) return false;
+  }
+  return true;
+}
+
+// NFL_RANK_STATFILTER_V1 (2026-08-20 — PC Walter, per the Dude) — RANKINGS filter state, cloned
+// from the watch-list block above, renames only. Same fields, same semantics, same helpers.
+let _rankFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
+let _rankTeamSelectBuilt = false;
+function _rkfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
+function _rankFilterActive(){ return _rankFilters && (_rankFilters.team!=='ALL' || _rankFilters.minFpts!=null || _rankFilters.minGames!=null || _rankFilters.ageMin!=null || _rankFilters.ageMax!=null || _rankFilters.maxOwned!=null || _rankFilters.maxCbsOwned!=null || (_rankFilters.posPositions && _rankFilters.posPositions.length)); }
+async function applyNflRankFilters(){
+  _rankFilters.team     = (document.getElementById('nflrkpf-team')||{}).value || 'ALL';
+  _rankFilters.minFpts  = _rkfNum('nflrkpf-fpts');
+  _rankFilters.minGames = _rkfNum('nflrkpf-games');
+  _rankFilters.ageMin   = _rkfNum('nflrkpf-agemin');
+  _rankFilters.ageMax   = _rkfNum('nflrkpf-agemax');
+  _rankFilters.maxOwned = _rkfNum('nflrkpf-owned');
+  _rankFilters.maxCbsOwned = _rkfNum('nflrkpf-cbsowned');   // OWNED_FILTERS_LIVE_V1
+  _rankFilters.posPositions = Array.from(document.querySelectorAll('.nflrkpf-pos:checked')).map(cb => cb.value);
+  await _applyDateRangeFrom('nflrkpf-daterange');   // date range is Apply-gated too
+  renderRankings();
+}
+function resetNflRankFilters(){
+  ['nflrkpf-fpts','nflrkpf-games','nflrkpf-agemin','nflrkpf-agemax','nflrkpf-owned','nflrkpf-cbsowned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const t=document.getElementById('nflrkpf-team'); if(t) t.value='ALL';
+  const dr=document.getElementById('nflrkpf-daterange'); if(dr) dr.value='season';
+  const dr2=document.getElementById('nflpf-daterange'); if(dr2) dr2.value='season';
+  const dr3=document.getElementById('nflwlpf-daterange'); if(dr3) dr3.value='season';
+  document.querySelectorAll('.nflrkpf-pos').forEach(cb => { cb.checked = false; });
+  _dateRange = 'season';
+  _rankFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
+  renderRankings();
+}
+function _rankBuildTeamSelect(){
+  if(_rankTeamSelectBuilt || !_playerDB) return;
+  const sel=document.getElementById('nflrkpf-team'); if(!sel) return;
+  const teams=new Set();
+  for(const id in _playerDB){ const p=_playerDB[id]; if(p && p.position && p.team) teams.add(p.team); }   // pool-style: rankings draw from the whole player DB
+  const sorted=Array.from(teams).sort();
+  sel.innerHTML='<option value="ALL">All Teams</option>'+sorted.map(t=>'<option value="'+t+'">'+t+'</option>').join('');
+  _rankTeamSelectBuilt=true;
+}
+function _rankPassesFilter(pid){
+  const F=_rankFilters; if(!F) return true;
   const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
   if(F.team && F.team!=='ALL' && p.team!==F.team) return false;
   const s=_statsRow(pid);
@@ -1922,20 +2043,33 @@ function renderRankings(){
   // re-snaps to the manual order (see rankDrop). The RANK column reflects whatever order is showing.
   var manualIds = _rankings[_rankPos];
   var ids = _rankSortField ? _rankSortedView(manualIds) : manualIds;
+  // NFL_RANK_STATFILTER_V1 (2026-08-20) — build the team dropdown once, then apply the STAT
+  // FILTERING box to the DISPLAY list only. .filter() returns a NEW array, so Matt's saved
+  // order in _rankings[_rankPos] is never touched; dragLocked below includes the filter so a
+  // drop (and its save) can never fire against a filtered view.
+  if(typeof _rankBuildTeamSelect === 'function') _rankBuildTeamSelect();
+  var _rkTotal = ids.length;
+  var _rkFiltOn = (typeof _rankFilterActive === 'function' && _rankFilterActive());
+  if(_rkFiltOn){
+    ids = ids.filter(function(pid){ return _rankPassesFilter(pid); });
+  }
   // FANMODE_RANK_NOTES_V1 (2026-08-18, Bug #159) - the drag handle column is hidden from fans by
   // CSS, so neither of these sentences may tell them to drag anything.
   var _roStat = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
   var sortNote = _rankSortField ? (' · sorted by ' + _rankSortField.toUpperCase() + (_roStat ? '' : ' (drag a player to return to your order)')) : '';
-  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + ids.length + ' players.' + (_roStat ? '' : ' Drag the ☰ handle to re-rank.') + ' Separate from the Watch 101 list.' + sortNote;
+  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + (_rkFiltOn ? (ids.length + ' of ' + _rkTotal + ' players (stat filter on).') : (ids.length + ' players.')) + ((_roStat || _rkFiltOn) ? '' : ' Drag the ☰ handle to re-rank.') + ' Separate from the Watch 101 list.' + sortNote;
 
   var cols = _rankColsFor(_rankPos);
   _rankRenderHead(cols);
 
   if(ids.length === 0){
-    tbody.innerHTML = '<tr><td colspan="' + (cols.length + 5) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
+    tbody.innerHTML = _rkFiltOn
+      ? '<tr><td colspan="' + (cols.length + 5) + '" class="empty-state"><strong>No ' + _rankPos + ' players match the stat filter</strong>Loosen or reset the filter to bring the list back.</td></tr>'
+      : '<tr><td colspan="' + (cols.length + 5) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
+    try { renderRankTiers(); } catch(e){}   /* NFL_RANK_STATFILTER_V1: wipe tier boxes from the previous paint */
     return;
   }
-  var dragLocked = !!_rankSortField;  // while sorted, the view isn't the saved order, so disable drag
+  var dragLocked = !!_rankSortField || _rkFiltOn;  // sorted OR stat-filtered: the view isn't the saved order, so disable drag (NFL_RANK_STATFILTER_V1)
   var _badgeCol = _rankCol_notebadge();   // RANKINGS_WL_CLONE_NFL_V1: badge rides the player cell now, like the watch list
   tbody.innerHTML = ids.map(function(pid, i){
     var p = _playerDB[pid];
@@ -2587,6 +2721,7 @@ function resetNflPoolFilters(){
   const t=document.getElementById('nflpf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('nflpf-daterange'); if(dr) dr.value='season';
   const dr2=document.getElementById('nflwlpf-daterange'); if(dr2) dr2.value='season';
+  const dr3=document.getElementById('nflrkpf-daterange'); if(dr3) dr3.value='season';   // NFL_RANK_STATFILTER_V1
   document.querySelectorAll('.nflpf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = 'season';
   _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
@@ -4614,6 +4749,7 @@ function openCreateRankTierModal(){
   if(_blockIfReadOnly('openCreateRankTierModal')) return;
   try {
     if(_rankSortField){ alert('Clear the column sort first - brackets only line up in your own order.'); return; }
+    if(typeof _rankFilterActive === 'function' && _rankFilterActive()){ alert('Clear the stat filter first - brackets only line up in your own full order.'); return; }   // NFL_RANK_STATFILTER_V1
     _tierSurface = 'rankings';
     _rankTierEditingId = null;
     _rankTierPopulateForm(null);
@@ -4705,9 +4841,10 @@ function _tierModalDelete(){ if(_tierSurface === 'rankings') return deleteRankTi
 
 // ---- Render: overlay boxes + spacer rows over the rankings table ----
 function _rankTiersDefaultOrder(){
-  // Brackets only make sense in the saved order. A column sort scrambles the rows,
-  // so hide the boxes until the sort is cleared. (Rankings has no search/filter bar.)
-  try { return !_rankSortField; } catch(e){ return false; }
+  // Brackets only make sense in the saved order. A column sort scrambles the rows and a stat
+  // filter removes rows, so hide the boxes until both are cleared. (NFL_RANK_STATFILTER_V1 —
+  // the old note that rankings has no filter bar stopped being true on 2026-08-20.)
+  try { return !_rankSortField && !(typeof _rankFilterActive === 'function' && _rankFilterActive()); } catch(e){ return false; }
 }
 function _rankTiersResolveRange(tier){
   var tbody = document.getElementById('rankings-body');
