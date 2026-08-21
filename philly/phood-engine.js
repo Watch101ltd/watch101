@@ -196,20 +196,45 @@ function _takeCellHtml(p){
   var sp = _splitNoteAndUrl(raw);
   return '<td class="l take wl-note-cell"' + (ro ? '' : ' title="Click to edit this take"') + onclick + '>' + _esc(sp.text) + _renderNoteLinkBadge(sp.url) + '</td>';
 }
+/* NOTE_POPUP_PHOOD_V1 (2026-08-21 evening, the Dude: every note box on every page gets the
+   paragraph popup). Port of football's NOTE_POPUP_NFL_V1 -- behaviour, not identifiers.
+   The popup div lives in index.html; this only collects text. _setTake keeps doing ALL the
+   real work (48h stamp, render, NAS autosave). Backdrop click SAVES (the inline editor saved
+   on blur -- clicking away has always meant "keep it"). Esc cancels. Ctrl+Enter saves.
+   Enter is a newline now, this is a paragraph box. */
+var _notePopupSave = null;
+function openNotePopup(name, curText, placeholder, onSave){
+  var modal = document.getElementById('note-editor-modal');
+  var ta = document.getElementById('note-editor-textarea');
+  var title = document.getElementById('note-editor-player');
+  if(!modal || !ta || !title){ return; }
+  title.textContent = name || '';
+  ta.value = curText || '';
+  ta.placeholder = placeholder || '';
+  _notePopupSave = function(){ var v = ta.value; closeNotePopup(); onSave(v); };
+  modal.style.display = 'flex';
+  ta.focus();
+  try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){}
+}
+function closeNotePopup(){
+  var modal = document.getElementById('note-editor-modal');
+  if(modal) modal.style.display = 'none';
+  _notePopupSave = null;
+}
+function _notePopupSaveClick(){ if(_notePopupSave) _notePopupSave(); }
+function _notePopupKeydown(e){
+  if(e.key === 'Escape'){ e.stopPropagation(); closeNotePopup(); }
+  if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); _notePopupSaveClick(); }
+}
+function _notePopupBackdrop(e){ if(e.target && e.target.id === 'note-editor-modal'){ _notePopupSaveClick(); } }
 function editTake(pid, el){
   if(_blockIfReadOnly('editTake')) return;
   var idx = _wlIndexOf(pid);
   if(idx < 0) return;
-  var input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'note-input';
-  input.value = _watchList[idx].take || '';
-  input.placeholder = 'Why is this spot on the list?';
-  el.replaceWith(input);
-  input.focus();
-  input.addEventListener('blur', function(){ _setTake(pid, input.value); });
-  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') input.blur(); });
-  input.addEventListener('click', function(e){ e.stopPropagation(); });
+  /* NOTE_POPUP_PHOOD_V1: was an inline one-line <input class="note-input"> swapped into the cell. */
+  openNotePopup(_watchList[idx].name || '', _watchList[idx].take || '', 'Why is this spot on the list?', function(val){
+    _setTake(pid, val);
+  });
 }
 function _setTake(pid, text){
   if(_blockIfReadOnly('_setTake')) return;
