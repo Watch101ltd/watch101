@@ -372,7 +372,18 @@ table.watch-list{
 table.watch-list thead th{
   padding:10px 8px;text-align:right;
   font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;
-  letter-spacing:0.08em;text-transform:uppercase;
+  letter-spacing:0.08em;
+  /* TITLECASE_HEADERS_NFL_V1 (2026-08-21, Matt via the Dude). text-transform:uppercase REMOVED.
+     Matt, on the 8/21 call: "There's so much that is all caps and I just don't understand why...
+     it makes things harder to read and they take up more room." Both halves of that are true and
+     the second one is measurable -- uppercase glyphs are wider than lowercase, so this rule was
+     costing width in every single header cell on the page.
+     THE LABELS WERE ALREADY CORRECT IN THE CODE. _rankStatCol is called with 'PaYd', 'RuAtt',
+     'RuYd', 'Tgt' and the static thead reads Rank / Pos / Player / Team / Bye. This one property
+     was painting over all of it. Deleting it is the whole fix; not one label string had to change.
+     Scope: this rule covers all THREE football tables -- watch list, players pool, rankings -- so
+     they stay consistent, which is what he actually wants. Genuine acronyms keep their caps because
+     they are capitalised in the source: ADP, FPts, YPC, YPR, and the position and team codes. */
   color:var(--text3);background:var(--surface2);
   border-bottom:2px solid #16a34a;  /* SPORT_DIVIDER_COLOUR_V1 (2026-08-12, the Dude): section dividers + the header line are sport-coloured at full strength. Was gold. Superseded the 2026-06-09 'gold header line, not green' call. */
   white-space:nowrap;
@@ -469,6 +480,24 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
 #rankings-table .rk-av-input{width:100%;box-sizing:border-box;font-size:11px;text-align:center;background:var(--surface);border:1px solid var(--gold);color:var(--text);border-radius:4px;padding:2px 3px;font-family:inherit;outline:none}  /* AV_COL_V1: Matt's dollar box. AV_CLIP_FIX_V1 (2026-08-21, the Dude found it in the new fixed-size viewer): was width:38px on the default content-box, so 38 + 6 padding + 2 border = 46px of input trying to sit in a 38px hole -- col-av is 44px minus the 3px cell padding each side. Under the OLD table-layout:auto the column simply grew to swallow the overflow and nobody saw it; under table-layout:fixed + overflow:hidden the right edge got sliced off. width:100% + border-box makes the input exactly as wide as whatever col-av is, so this cannot recur if that width is ever tuned again. Do not put a pixel width back here. */
 #rankings-table .rk-av-input::placeholder{color:var(--text3);opacity:.6}  /* AV_COL_V1 */
 #rankings-table th.col-notebadge,#rankings-table td.col-notebadge{width:26px;text-align:center}
+/* GROUP_HEADERS_NFL_V1 (2026-08-21) — the Rotoworld two-row header. Matt, 8/21: "they have this
+   thing up top... rushing and then receiving... possibly second row above to help eliminate
+   redundancy underneath." The group label carries the context so the sub-label can be 3 characters,
+   which is the entire reason RuAtt/PaYd/ReYd could be retired. */
+#rankings-table thead tr#rankings-group-row th{
+  padding:2px 2px;font-size:9px;font-weight:800;letter-spacing:0.08em;text-align:center;
+  color:var(--turf);background:var(--surface2);white-space:nowrap;
+  border-bottom:1px solid var(--border2);   /* the thick green line belongs to the SUB-header row only */
+}
+#rankings-table thead tr#rankings-group-row th.rk-grp-blank{
+  color:transparent;border-bottom:1px solid transparent;
+}
+#rankings-table thead tr#rankings-group-row th.rk-grp-lbl{
+  border-left:1px solid var(--gold);        /* mirrors col-zone-divider so groups read as blocks */
+}
+#rankings-table thead tr#rankings-group-row th.rk-grp-fpts{
+  padding:1px 2px;border-left:1px solid var(--gold);
+}
 #rankings-table .rk-note-badge{display:inline-block;font-size:12px;line-height:1;cursor:pointer;opacity:.85;transition:transform 120ms ease,opacity 120ms ease}
 #rankings-table .rk-note-badge:hover{opacity:1;transform:scale(1.15)}
 #rankings-table .rk-note-link{display:inline-block;font-size:11px;line-height:1;margin-left:4px;text-decoration:none;opacity:.85;flex-shrink:0}
@@ -1478,6 +1507,11 @@ document.addEventListener('DOMContentLoaded',function(){
       <thead>
         <!-- RANKINGS_STATS_V1 (June 9, 2026 — PC Walter, per the Dude): header is built per-position
              by _rankRenderHead() so each tab shows only its appropriate stat columns. -->
+        <!-- GROUP_HEADERS_NFL_V1 (2026-08-21, Matt's ask via the Dude): Rotoworld-style group row.
+             Populated by _rankGroupRow() from the SAME cols array the sub-header uses, so its
+             colspans are DERIVED and cannot drift out of sync. Sorting is bound to
+             '#rankings-head-row th[data-ranksort]', so this row is non-sortable by construction. -->
+        <tr id="rankings-group-row"></tr>
         <tr id="rankings-head-row"></tr>
       </thead>
       <tbody id="rankings-body">
@@ -2432,25 +2466,34 @@ function _rankColsFor(pos){
   if(pos === 'DEF'){
     // DEF EXCEPTION (the Dude, 8/19): keep NFLVERSE_DEF_STATS_V1's block -- a DST row full of
     // receiving dashes helps nobody. Identity/Type/Priority/Note still clone like every tab.
-    stats = [ _rankStatCol('def_int','INT','def_int','col-stat-b col-zone-divider'),
-              _rankStatCol('def_sack','SACK','def_sack','col-stat-b'),
-              _rankStatCol('def_fum_rec','FUM REC','def_fum_rec','col-stat-b'),
-              _rankStatCol('def_safety','SAFETY','def_safety','col-stat-b'),
-              _rankStatCol('def_td','DEF TD','def_td','col-stat-b') ];
+    stats = [ _rankStatCol('def_int','Int','def_int','col-stat-b col-zone-divider'),
+              _rankStatCol('def_sack','Sack','def_sack','col-stat-b'),
+              _rankStatCol('def_fum_rec','FumRec','def_fum_rec','col-stat-b'),
+              _rankStatCol('def_safety','Safety','def_safety','col-stat-b'),
+              _rankStatCol('def_td','TD','def_td','col-stat-b') ];
   } else {
-    stats = [ _rankStatCol('payd','PaYd','pass_yd','col-stat-b col-zone-divider'),
-              _rankStatCol('patd','PaTD','pass_td','col-stat-b'),
-              _rankStatCol('ruatt','RuAtt','rush_att','col-stat-b col-zone-divider'),
-              _rankStatCol('ruyd','RuYd','rush_yd','col-stat-b'),
-              _rankRatioCol('ypc','YPC','rush_yd','rush_att','col-stat-b'),   // YPC_YPR_V1
-              _rankStatCol('rutd','RuTD','rush_td','col-stat-b'),
+    stats = [ _rankStatCol('payd','Yds','pass_yd','col-stat-b col-zone-divider'),
+              _rankStatCol('patd','TD','pass_td','col-stat-b'),
+              _rankStatCol('ruatt','Att','rush_att','col-stat-b col-zone-divider'),
+              _rankStatCol('ruyd','Yds','rush_yd','col-stat-b'),
+              _rankRatioCol('ypc','Avg','rush_yd','rush_att','col-stat-b'),   // YPC_YPR_V1
+              _rankStatCol('rutd','TD','rush_td','col-stat-b'),
               _rankStatCol('tgt','Tgt','rec_tgt','col-stat-a col-zone-divider'),
               _rankStatCol('rec','Rec','rec','col-stat-a'),
-              _rankStatCol('reyd','ReYd','rec_yd','col-stat-a'),
-              _rankRatioCol('ypr','YPR','rec_yd','rec','col-stat-a'),   // YPC_YPR_V1
-              _rankStatCol('retd','ReTD','rec_td','col-stat-a') ];
+              _rankStatCol('reyd','Yds','rec_yd','col-stat-a'),
+              _rankRatioCol('ypr','Avg','rec_yd','rec','col-stat-a'),   // YPC_YPR_V1
+              _rankStatCol('retd','TD','rec_td','col-stat-a') ];
   }
-  stats.forEach(function(c){ c.headClass = 'col-stat ' + c.tdClass; });
+  // GROUP_HEADERS_NFL_V1: tag each stat with the group it belongs to. _rankGroupRow() run-length
+  // groups these to build the row above, so colspans are DERIVED from the real column list and can
+  // never fall out of step with it. Add a stat column here and the group row updates itself.
+  var _GRP = { payd:'Passing', patd:'Passing',
+               ruatt:'Rushing', ruyd:'Rushing', ypc:'Rushing', rutd:'Rushing',
+               tgt:'Receiving', rec:'Receiving', reyd:'Receiving', ypr:'Receiving', retd:'Receiving',
+               def_int:'Defense', def_sack:'Defense', def_fum_rec:'Defense',
+               def_safety:'Defense', def_td:'Defense' };
+  stats.forEach(function(c){ c.headClass = 'col-stat ' + c.tdClass; c.group = _GRP[c.key] || null; });
+  fpts.group = '__FPTS__';   // its own cell, because Matt wants the scoring dropdown ABOVE the column
   return lead.concat(stats);
 }
 
@@ -2465,13 +2508,56 @@ function _rankRenderHead(cols){
               '<th class="col-pos">Pos</th>' +
               '<th class="left col-player">Player</th>';
   var statHeads = cols.map(function(c){
-    // SCORING_ENGINE_NFL_V1: the FPTS header carries the scoring box (Variant D), same as the other tables.
-    var extra = (c.key === 'fpts') ? '<select class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select>' : '';
+    // SCORING_ENGINE_NFL_V1 + GROUP_HEADERS_NFL_V1 (2026-08-21): the scoring box has MOVED OUT of this
+    // cell and up into the group row above -- Matt's ask, and it is a width win, because the select
+    // sitting beside the label was widening the FPts column on every row of the table.
     return '<th class="' + (c.headClass||'') + '" data-ranksort="' + c.key + '" style="cursor:pointer">' +
-           c.label + ' <span class="sort-arrow" style="opacity:.4">↕</span>' + extra + '</th>';
+           c.label + ' <span class="sort-arrow" style="opacity:.4">↕</span></th>';
   }).join('');
   headRow.innerHTML = fixed + statHeads;
+
+  // GROUP_HEADERS_NFL_V1: the row above. FIXEDCOUNT is COUNTED from the markup we just built rather
+  // than hardcoded, so adding or removing a fixed column can never silently desync the group row.
+  var groupRow = document.getElementById('rankings-group-row');
+  if(groupRow){
+    var fixedCount = (fixed.match(/<th/g) || []).length;
+    groupRow.innerHTML = _rankGroupRow(cols, fixedCount);
+  }
+
   if(typeof _scoringSyncSelects === 'function'){ try { _scoringSyncSelects(); } catch(e) {} }  // repopulate the box every tab paint
+}
+
+// GROUP_HEADERS_NFL_V1 (2026-08-21) — build the Rotoworld group row by RUN-LENGTH GROUPING the very
+// same cols array the sub-header row was built from. Nothing here is hardcoded: every colspan is
+// counted from real columns, so the two rows cannot disagree. That matters more than it sounds --
+// Constitution Rule #15 was written after a header/body count mismatch shifted every column on the
+// NBA page by one, and a hand-maintained colspan is the same class of mistake waiting to happen.
+function _rankGroupRow(cols, fixedCount){
+  var cells = [];
+  var run = null;              // the group currently being accumulated
+  var runLen = fixedCount;     // the fixed columns are ungrouped, so they seed the opening blank
+
+  function flush(){
+    if(runLen <= 0) return;
+    if(run === '__FPTS__'){
+      // Matt, 8/21: he wants the scoring dropdown ABOVE fantasy points, not beside it.
+      cells.push('<th class="rk-grp rk-grp-fpts" colspan="' + runLen + '">' +
+                 '<select class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>');
+    } else if(run){
+      cells.push('<th class="rk-grp rk-grp-lbl" colspan="' + runLen + '">' + run + '</th>');
+    } else {
+      cells.push('<th class="rk-grp rk-grp-blank" colspan="' + runLen + '"></th>');
+    }
+    run = null; runLen = 0;
+  }
+
+  cols.forEach(function(c){
+    var g = c.group || null;
+    if(g !== run){ flush(); run = g; runLen = 1; }
+    else { runLen++; }
+  });
+  flush();
+  return cells.join('');
 }
 
 // A SORTED VIEW of the manual order (copy — never mutates _rankings[pos]). Sort by the active stat column.
