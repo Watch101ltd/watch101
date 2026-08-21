@@ -435,7 +435,7 @@ table.watch-list tbody tr.nfl-drag-over{box-shadow:inset 0 2px 0 0 var(--turf,#1
 table.watch-list thead th.col-rank,table.watch-list tbody td.col-rank{width:32px;text-align:right;font-weight:800;color:var(--text2)}
 table.watch-list thead th.col-pos{width:56px;text-align:center}
 table.watch-list tbody td .pos-badge{font-size:9px;padding:2px 5px;letter-spacing:0.04em}
-table.watch-list thead th.col-player,table.watch-list tbody td:nth-child(4){width:140px;text-align:left}  /* SCORING_ENGINE_NFL_V1: 180->140, real estate reclaimed for the FPts header box (the Dude's call off the first staging look) */
+table.watch-list thead th.col-player,table.watch-list tbody td.col-player{width:140px;text-align:left}  /* NTHCHILD_LEAK_FIX_V1 (2026-08-21, found by measuring the LIVE page after the Dude said dead space remained). Was `td:nth-child(4)`, a POSITIONAL assumption that is only true on the watch list. The rankings table carries an extra $ / auction column, so its 4th cell is POS -- and a two-letter position badge was being handed a 140px player-name width. 116px of dead space in a single column, measured in the browser: rendered 140px, content needed 24px. Both surfaces render the player cell as class="left col-player", so the class is exact where the index was a guess. \U0001FAA8 A positional selector encodes the column ORDER of one surface into a rule shared by several. Use the semantic class. */  /* SCORING_ENGINE_NFL_V1: 180->140, real estate reclaimed for the FPts header box (the Dude's call off the first staging look) */
 table.watch-list tbody .player-name{font-size:12px;font-weight:800}
 table.watch-list thead th.col-team{width:38px;text-align:right}
 table.watch-list thead th.col-bye{width:30px;text-align:right}  /* BYE_WEEK_COL_V1 */
@@ -500,25 +500,54 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
    Dude. They cannot move yet: the watch list is not ported to group headers, its thead still reads
    PaYd / RuAtt / ReYd, and its FPts cell still holds the scoring dropdown -- shrinking the shared
    col-fpts to 48px today would slice that dropdown in half. Fold these in when the port lands. */
-#rankings-table col.col-handle  {width:20px}
-#rankings-table col.col-rank    {width:28px}   /* max value is 200 */
-#rankings-table col.col-av      {width:48px}   /* matches col-pos, per the Dude: same box as the badge */
-#rankings-table col.col-pos     {width:48px}   /* .pos-badge is min-width:30px + 10px padding = ~40px */
-#rankings-table col.col-player  {width:164px}  /* PLAYER_CLIP_FIX_V1 -- name + injury tag + note badge */
-#rankings-table col.col-team    {width:34px}
-#rankings-table col.col-bye     {width:26px}
-#rankings-table col.col-age     {width:30px}
-#rankings-table col.col-exp     {width:28px}
-#rankings-table col.col-type    {width:48px}
-#rankings-table col.col-priority{width:70px}   /* five stars need about 55 */
-#rankings-table col.col-note    {width:160px}  /* Matt: the note is the whole point of the page */
-#rankings-table col.col-adp     {width:34px}
-#rankings-table col.col-yrank   {width:40px}
-#rankings-table col.col-yowned  {width:50px}   /* header "Y!Owned" is wider than the data */
-#rankings-table col.col-cbsowned{width:50px}   /* header "CBS Owned" is the constraint here */
-#rankings-table col.col-fpts    {width:48px}   /* was 104. The dropdown moved to the group row. */
-#rankings-table col.col-stat    {width:38px}   /* DATA-driven, not label-driven: "4,918" needs ~32px */
+/* WIDTH_PAIRS_V1 (2026-08-21) — MEASURED on the live page, not estimated. Every number below is
+   the column's real content requirement plus headroom, read out of the rendered DOM.
+   🪨 WHY BOTH A <col> RULE AND A th/td RULE. Chrome's fixed-layout algorithm does NOT let a <colgroup>
+   width beat a cell width from the header row -- it takes the larger. The proof was in the measurement:
+   col-av and col-player obeyed the colgroup while col-fpts rendered 104px against a declared 48px, and
+   the only difference between them was that av and player happened to ALSO carry id-scoped cell rules.
+   So each column gets BOTH. The colgroup handles width where the colspan group row would otherwise
+   smear it; the id-scoped cell rule outranks the shared table.watch-list th widths. Belt and braces,
+   and neither one alone is sufficient. Measured slack before this pass: fpts 63px, pos 32px,
+   priority 27px, type 26px, on every single row of the table. */
+#rankings-table col.col-handle{width:20px}
+#rankings-table th.col-handle,#rankings-table td.col-handle{width:20px}  /* content needs 16 */
+#rankings-table col.col-rank{width:38px}
+#rankings-table th.col-rank,#rankings-table td.col-rank{width:38px}  /* content needs 36 */
+#rankings-table col.col-av{width:48px}
+#rankings-table th.col-av,#rankings-table td.col-av{width:48px}  /* content needs 19 */
+#rankings-table col.col-pos{width:44px}
+#rankings-table th.col-pos,#rankings-table td.col-pos{width:44px}  /* content needs 24 */
+#rankings-table col.col-player{width:152px}
+#rankings-table th.col-player,#rankings-table td.col-player{width:152px}  /* content needs 143 */
+#rankings-table col.col-team{width:40px}
+#rankings-table th.col-team,#rankings-table td.col-team{width:40px}  /* content needs 38 */
+#rankings-table col.col-bye{width:30px}
+#rankings-table th.col-bye,#rankings-table td.col-bye{width:30px}  /* content needs 30 */
+#rankings-table col.col-age{width:36px}
+#rankings-table th.col-age,#rankings-table td.col-age{width:36px}  /* content needs 33 */
+#rankings-table col.col-exp{width:30px}
+#rankings-table th.col-exp,#rankings-table td.col-exp{width:30px}
+#rankings-table col.col-type{width:42px}
+#rankings-table th.col-type,#rankings-table td.col-type{width:42px}  /* content needs 34 */
+#rankings-table col.col-priority{width:68px}
+#rankings-table th.col-priority,#rankings-table td.col-priority{width:68px}  /* content needs 61 */
+#rankings-table col.col-note{width:160px}
+#rankings-table th.col-note,#rankings-table td.col-note{width:160px}
+#rankings-table col.col-adp{width:38px}
+#rankings-table th.col-adp,#rankings-table td.col-adp{width:38px}
+#rankings-table col.col-yrank{width:44px}
+#rankings-table th.col-yrank,#rankings-table td.col-yrank{width:44px}
+#rankings-table col.col-yowned{width:50px}
+#rankings-table th.col-yowned,#rankings-table td.col-yowned{width:50px}
+#rankings-table col.col-cbsowned{width:52px}
+#rankings-table th.col-cbsowned,#rankings-table td.col-cbsowned{width:52px}
+#rankings-table col.col-fpts{width:50px}
+#rankings-table th.col-fpts,#rankings-table td.col-fpts{width:50px}  /* content needs 41 */
+#rankings-table col.col-stat{width:36px}
+#rankings-table th.col-stat,#rankings-table td.col-stat{width:36px}  /* content needs 27 */
 #rankings-table col.col-notebadge{width:26px}
+#rankings-table th.col-notebadge,#rankings-table td.col-notebadge{width:26px}
 
 /* AV_MATCHES_POS_V1 (2026-08-21, the Dude: "shrink the AV box down to be the same size as the position
    rectangle and make the font the same size as the letters in position"). Cloned straight off
