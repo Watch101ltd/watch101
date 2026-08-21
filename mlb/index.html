@@ -6440,23 +6440,29 @@ function fitTables(){
       if(!table) return;
       // Skip hidden surfaces (offsetParent null = not displayed).
       if(wrap.offsetParent === null){ return; }
-      // Reset zoom to 1 first so we read the TRUE natural width, not last pass's.
+      /* BUG163_QUANTIZE_V1 (2026-08-20 — PC Walter, live-diagnosed in the Dude's Chrome, the
+         second and REAL half of #163 after trigger coverage proved necessary but not sufficient.
+         THE PROOF, captured on camera: layout and hit-testing said the table spanned the full
+         2050px (elementFromPoint found table cells at x=1500..2000) while the PAINTED pixels
+         stopped at ~1730 — a Chrome compositor defect at his fractional 185% display scaling
+         (devicePixelRatio 1.854...), woken by the fitter's own micro-rewrites: load fit wrote
+         zoom 1.0063, the t+3s Statcast refit nudged it to 1.0078, and that sub-1% mid-composite
+         rewrite corrupted the paint until a window-resize jolt (his wiggle heal). Cure: make
+         every write BORING. Quantize scales to 0.05 steps so consecutive refits agree; snap
+         anything within 3% of 1 to EXACTLY 1 (a micro-grow buys nothing visible and was the
+         trigger); and never write a value the table already wears. GROW_TO_FILL_V1's spirit
+         survives for genuinely wide monitors (1.25x+ grows, now quantized stable). */
+      const prevZoom = table.style.zoom || '1';
       table.style.zoom = '1';
       const avail = wrap.clientWidth;
       const natural = table.scrollWidth;
-      if(natural <= 0 || avail <= 0){ return; }
-      if(natural <= avail){
-        // GROW_TO_FILL_V1 (June 9, 2026 — PC Walter, per The Dude). When the table is
-        // NARROWER than the container (wide monitor at 100% zoom), grow it to fill the
-        // space instead of leaving the right side blank. No ceiling — the Dude's call:
-        // bigger monitor = bigger table. Same `zoom` technique as the shrink path so
-        // sticky theads stay pinned. The shrink path below is the smush fix, untouched.
-        table.style.zoom = (avail / natural).toFixed(4);
-        return;
-      }
+      if(natural <= 0 || avail <= 0){ table.style.zoom = prevZoom; return; }
       let scale = avail / natural;
-      if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; } // clamp to floor → scroll if still too wide
-      table.style.zoom = scale.toFixed(4);
+      if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; }   // the June floor, untouched
+      scale = Math.round(scale * 20) / 20;                    // nickels: 0.70, 0.75 ... 1.25
+      if(scale > 0.97 && scale < 1.05){ scale = 1; }          // near-1 snaps to EXACTLY 1
+      const next = (scale === 1) ? '1' : scale.toFixed(2);
+      table.style.zoom = next;
     });
   });
 }
