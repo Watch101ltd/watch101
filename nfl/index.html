@@ -526,6 +526,12 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
    two sit at identical size. Gold border kept: it is an editable field and needs to look like one. */
 #rankings-table .rk-av-input{
   font-size:9px;font-weight:800;letter-spacing:0.04em;padding:2px 5px;border-radius:4px;
+  /* AV_TWO_CHAR_FLOOR_V1 (2026-08-21, the Dude: "it needs to accept two characters... it'll never be
+     three"). width:100% alone let the box collapse to nothing when the column width was not being
+     honoured. min-width is an absolute floor measured in CHARACTERS, so it holds no matter what the
+     column does: 2ch of digits + the 10px padding + 2px of border. Belt and braces alongside the
+     colgroup fix -- if a column width ever goes wrong again, this box stays usable. */
+  min-width:calc(2ch + 12px);
 }
 
 /* width:auto lets the table be exactly as wide as the colgroup declares. Without it, width:100% plus
@@ -1560,6 +1566,11 @@ document.addEventListener('DOMContentLoaded',function(){
 
   <div class="table-wrap" id="nflrankings-wrap">
     <table class="watch-list" id="rankings-table">
+      <!-- COLGROUP_WIDTHS_V1 (2026-08-21). MUST stay the first child of the table. Under
+           table-layout:fixed the browser takes column widths from the FIRST ROW, and our first row is
+           the group row whose cells carry colspan -- which smears width across everything it spans and
+           voids every per-column declaration. <colgroup> outranks that. Filled by _rankColGroup(). -->
+      <colgroup id="rankings-colgroup"></colgroup>
       <thead>
         <!-- RANKINGS_STATS_V1 (June 9, 2026 — PC Walter, per the Dude): header is built per-position
              by _rankRenderHead() so each tab shows only its appropriate stat columns. -->
@@ -2584,7 +2595,13 @@ function _rankRenderHead(cols){
   // THAT row and ignores the per-column th widths entirely. <colgroup> is the mechanism that survives
   // it. Built from the same `fixed` markup and the same cols array as both header rows.
   var cg = document.getElementById('rankings-colgroup');
-  if(cg){ cg.innerHTML = _rankColGroup(fixed, cols); }
+  if(cg){
+    // Built with createElement rather than innerHTML: <colgroup> has its own parser insertion mode and
+    // innerHTML into it is a needless gamble when the DOM API is exact.
+    var _cls = _rankColGroup(fixed, cols);
+    cg.textContent = '';
+    _cls.forEach(function(cl){ var el = document.createElement('col'); el.className = cl; cg.appendChild(el); });
+  }
 
   if(typeof _scoringSyncSelects === 'function'){ try { _scoringSyncSelects(); } catch(e) {} }  // repopulate the box every tab paint
 }
@@ -2607,13 +2624,12 @@ function _rankColGroup(fixedHtml, cols){
   var re = /<th class="([^"]*)"/g, m;
   while((m = re.exec(fixedHtml)) !== null){
     var f = m[1].match(/col-[a-z]+/);          // "left col-player" -> "col-player"
-    out.push('<col class="' + (f ? f[0] : 'col-stat') + '">');
+    out.push(f ? f[0] : 'col-stat');
   }
   cols.forEach(function(c){
-    var cls = (_RANK_COLCLASS.indexOf(c.key) >= 0) ? ('col-' + c.key) : 'col-stat';
-    out.push('<col class="' + cls + '">');
+    out.push((_RANK_COLCLASS.indexOf(c.key) >= 0) ? ('col-' + c.key) : 'col-stat');
   });
-  return out.join('');
+  return out;   // ARRAY of class names; the caller makes real <col> elements from it
 }
 
 function _rankGroupRow(cols, fixedCount){
