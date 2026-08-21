@@ -480,6 +480,62 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
 #rankings-table .rk-av-input{width:100%;box-sizing:border-box;font-size:11px;text-align:center;background:var(--surface);border:1px solid var(--gold);color:var(--text);border-radius:4px;padding:2px 3px;font-family:inherit;outline:none}  /* AV_COL_V1: Matt's dollar box. AV_CLIP_FIX_V1 (2026-08-21, the Dude found it in the new fixed-size viewer): was width:38px on the default content-box, so 38 + 6 padding + 2 border = 46px of input trying to sit in a 38px hole -- col-av is 44px minus the 3px cell padding each side. Under the OLD table-layout:auto the column simply grew to swallow the overflow and nobody saw it; under table-layout:fixed + overflow:hidden the right edge got sliced off. width:100% + border-box makes the input exactly as wide as whatever col-av is, so this cannot recur if that width is ever tuned again. Do not put a pixel width back here. */
 #rankings-table .rk-av-input::placeholder{color:var(--text3);opacity:.6}  /* AV_COL_V1 */
 #rankings-table th.col-notebadge,#rankings-table td.col-notebadge{width:26px;text-align:center}
+/* TIGHTEN_V1 + COLGROUP_WIDTHS_V1 (2026-08-21). Two problems, one root, and the root was mine.
+
+   🪨 WHY THE DECLARED WIDTHS STOPPED WORKING. Under table-layout:fixed the browser reads column
+   widths from THE FIRST ROW OF THE TABLE and ignores every later row. That first row used to be the
+   sub-header, where each th declares its own width. GROUP_HEADERS_NFL_V1 put a new first row in front
+   of it whose cells are colspan="16", colspan="4", colspan="5" -- and a spanning cell with no width of
+   its own just smears space across the columns it covers. So from the moment group headers shipped,
+   EVERY per-column width on this table was dead letter. That is why the Dude saw dead space between
+   columns and player names cut to "Jahmyr" and "Ja'Marr".
+   My first read blamed generous declarations and measured them at 1460px. The measurement was real and
+   the conclusion was wrong: I measured rules the browser had already stopped obeying.
+
+   THE FIX IS <colgroup>, which is the mechanism built for exactly this. In fixed layout, col widths
+   take priority and are read regardless of what the first row looks like. _rankColGroup() emits it from
+   the same cols array as both header rows, so it cannot drift.
+
+   ⚠ RANKINGS-SCOPED AND TEMPORARY. These belong in the shared rule so both surfaces match, per the
+   Dude. They cannot move yet: the watch list is not ported to group headers, its thead still reads
+   PaYd / RuAtt / ReYd, and its FPts cell still holds the scoring dropdown -- shrinking the shared
+   col-fpts to 48px today would slice that dropdown in half. Fold these in when the port lands. */
+#rankings-table col.col-handle  {width:20px}
+#rankings-table col.col-rank    {width:28px}   /* max value is 200 */
+#rankings-table col.col-av      {width:48px}   /* matches col-pos, per the Dude: same box as the badge */
+#rankings-table col.col-pos     {width:48px}   /* .pos-badge is min-width:30px + 10px padding = ~40px */
+#rankings-table col.col-player  {width:164px}  /* PLAYER_CLIP_FIX_V1 -- name + injury tag + note badge */
+#rankings-table col.col-team    {width:34px}
+#rankings-table col.col-bye     {width:26px}
+#rankings-table col.col-age     {width:30px}
+#rankings-table col.col-exp     {width:28px}
+#rankings-table col.col-type    {width:48px}
+#rankings-table col.col-priority{width:70px}   /* five stars need about 55 */
+#rankings-table col.col-note    {width:160px}  /* Matt: the note is the whole point of the page */
+#rankings-table col.col-adp     {width:34px}
+#rankings-table col.col-yrank   {width:40px}
+#rankings-table col.col-yowned  {width:50px}   /* header "Y!Owned" is wider than the data */
+#rankings-table col.col-cbsowned{width:50px}   /* header "CBS Owned" is the constraint here */
+#rankings-table col.col-fpts    {width:48px}   /* was 104. The dropdown moved to the group row. */
+#rankings-table col.col-stat    {width:38px}   /* DATA-driven, not label-driven: "4,918" needs ~32px */
+#rankings-table col.col-notebadge{width:26px}
+
+/* AV_MATCHES_POS_V1 (2026-08-21, the Dude: "shrink the AV box down to be the same size as the position
+   rectangle and make the font the same size as the letters in position"). Cloned straight off
+   `table.watch-list tbody td .pos-badge` -- 9px, 2px/5px padding, 0.04em tracking, 4px radius -- so the
+   two sit at identical size. Gold border kept: it is an editable field and needs to look like one. */
+#rankings-table .rk-av-input{
+  font-size:9px;font-weight:800;letter-spacing:0.04em;padding:2px 5px;border-radius:4px;
+}
+
+/* width:auto lets the table be exactly as wide as the colgroup declares. Without it, width:100% plus
+   min-width:1444px stretches it back out and hands every pixel we saved straight back as spread.
+   🪨 BEFORE YOU THINK I FLIP-FLOPPED: RANKINGS_WIDTH_V1 was retired earlier today and it also carried
+   width:auto. That was never the defect. The defect was table-layout:AUTO, which sizes each COLUMN to
+   its widest CONTENT and let the label `RUATT` set its own column width. table-layout stays FIXED here.
+   width:auto sizes the TABLE to its columns. table-layout:auto sizes the COLUMNS to their content.
+   Different property, different bug. */
+#rankings-table{width:auto;min-width:0}
 /* GROUP_HEADERS_NFL_V1 (2026-08-21) — the Rotoworld two-row header. Matt, 8/21: "they have this
    thing up top... rushing and then receiving... possibly second row above to help eliminate
    redundancy underneath." The group label carries the context so the sub-label can be 3 characters,
@@ -2524,6 +2580,12 @@ function _rankRenderHead(cols){
     groupRow.innerHTML = _rankGroupRow(cols, fixedCount);
   }
 
+  // COLGROUP_WIDTHS_V1: with a colspan row sitting first, table-layout:fixed reads its widths from
+  // THAT row and ignores the per-column th widths entirely. <colgroup> is the mechanism that survives
+  // it. Built from the same `fixed` markup and the same cols array as both header rows.
+  var cg = document.getElementById('rankings-colgroup');
+  if(cg){ cg.innerHTML = _rankColGroup(fixed, cols); }
+
   if(typeof _scoringSyncSelects === 'function'){ try { _scoringSyncSelects(); } catch(e) {} }  // repopulate the box every tab paint
 }
 
@@ -2532,6 +2594,28 @@ function _rankRenderHead(cols){
 // counted from real columns, so the two rows cannot disagree. That matters more than it sounds --
 // Constitution Rule #15 was written after a header/body count mismatch shifted every column on the
 // NBA page by one, and a hand-maintained colspan is the same class of mistake waiting to happen.
+// COLGROUP_WIDTHS_V1 (2026-08-21) — emit one <col> per real column, carrying the same col-* class the
+// CSS keys its widths off. The FIXED columns' classes are read straight out of the markup just built,
+// and the dynamic ones are derived from each column's own key, so nothing here is a hand-kept list.
+// WHY A KEY LOOKUP AND NOT A REGEX ON headClass: fpts carries headClass "col-stat col-stat-a col-fpts
+// col-zone-divider", and a naive /col-[a-z]+/ grabs "col-stat" -- it would silently hand FPts the 38px
+// stat width instead of its own. The key is unambiguous.
+var _RANK_COLCLASS = ['team','bye','age','exp','type','priority','note','adp',
+                      'yrank','yowned','cbsowned','fpts','notebadge'];
+function _rankColGroup(fixedHtml, cols){
+  var out = [];
+  var re = /<th class="([^"]*)"/g, m;
+  while((m = re.exec(fixedHtml)) !== null){
+    var f = m[1].match(/col-[a-z]+/);          // "left col-player" -> "col-player"
+    out.push('<col class="' + (f ? f[0] : 'col-stat') + '">');
+  }
+  cols.forEach(function(c){
+    var cls = (_RANK_COLCLASS.indexOf(c.key) >= 0) ? ('col-' + c.key) : 'col-stat';
+    out.push('<col class="' + cls + '">');
+  });
+  return out.join('');
+}
+
 function _rankGroupRow(cols, fixedCount){
   var cells = [];
   var run = null;              // the group currently being accumulated
