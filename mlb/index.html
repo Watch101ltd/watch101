@@ -234,6 +234,18 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito Sans',sans-serif
 .table-wrap{overflow-x:auto;padding:0 0.5rem 2rem}
 .table-wrap thead{position:sticky;top:0;z-index:10}
 table{width:100%;border-collapse:separate;border-spacing:0;min-width:1536px;margin-top:1rem;table-layout:fixed}
+/* BUG163_AUTO_LAYOUT_V1 (2026-08-20, the endgame of the longest hunt on this board). THE
+   MEASURED CRIME, live-probed with the Dude's window on his own monitor: #main-table's border
+   box laid out at 2050px while its fixed-layout COLUMN GRID resolved percentages against 1802px
+   and left ~248px of bare, cell-less table on the right — with computed padding 0, borders 0,
+   border-spacing 0. No CSS explains a fixed-table grid narrower than its own content box; this
+   is a Chrome fixed-layout defect (his 'started yesterday' matching a Chrome auto-update, which
+   is why it survived every site-side revert: tier modal, logo embed, zoom quantize, width-grow —
+   the whole night's ledger). The auto engine sizes columns then reliably stretches them to the
+   table's width — LIVE-PROVEN in-tab before this shipped: last cell 1706 -> 2058 = the edge.
+   Scoped to #main-table only tonight; the other surfaces keep fixed until each is tested. The
+   May smush protections (min-width floor + zoom shrink) are untouched and layout-mode agnostic. */
+#main-table{table-layout:auto}
 thead tr{}
 th{padding:5px 4px;font-family:'Nunito Sans',sans-serif;font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:var(--text);text-align:right;white-space:nowrap;cursor:pointer;user-select:none;background:var(--surface);overflow:hidden;border-bottom:2px solid #dc2626}
 th:hover{color:var(--gold)}
@@ -3770,6 +3782,11 @@ let _tiersUserMutated = false;
 // immediately, then watches one clean "snap to final" instead of 5 seconds of
 // jitter.
 let _renderSettled = false;
+// NOTIERS_PROBE_V1 (2026-08-20, the deep-night #163 hunt): add ?notiers to the URL and the
+// page skips ONLY the tier PAINTING (spacers + overlay). Matt's tier data is untouched and
+// untouchable by this switch - it is an X-ray, not a treatment. Compare the page with and
+// without the flag: if the gap only lives on the painted side, the tier paint is convicted.
+const _NOTIERS = (location.search.indexOf('notiers') !== -1);
 
 // ===== MULTILIST_V1 — six-list switcher (Apr 22, 2026) =====
 // Day-one design: all 6 lists are in-memory clones of the loaded 101.
@@ -9194,7 +9211,7 @@ function renderTable(){
   // never break the table render itself. Gated behind _renderSettled to
   // match the gate the legacy setTimeout used — during the load chaos we
   // still want to skip this for the same flicker-prevention reason.
-  if(_renderSettled){
+  if(_renderSettled && !_NOTIERS){   /* NOTIERS_PROBE_V1 */
     try { if(typeof _tiersInjectSpacerRows === 'function') _tiersInjectSpacerRows(); } catch(e){ console.warn('[SPACER_SYNC_INJECT_V1] sync inject crashed:', e); }
   }
   // MAIN_CLONE_STRIP_V1 (2026-05-28) — removed setTimeout(syncMainFixedHeader, 50)
@@ -9226,7 +9243,7 @@ function renderTable(){
     // of the already-present spacer. That cosmetic painting can still happen
     // at +70ms without causing the jump (it doesn't move row positions).
     setTimeout(function(){
-      try { if(typeof renderTiers === 'function') renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers crashed:', e); }
+      try { if(typeof renderTiers === 'function' && !_NOTIERS) renderTiers(); } catch(e){ console.warn('[TIERS_V1] renderTiers crashed:', e); }   /* NOTIERS_PROBE_V1 */
     }, 70);
   }
 }
