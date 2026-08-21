@@ -548,6 +548,16 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
 #rankings-table th.col-stat,#rankings-table td.col-stat{width:36px}  /* content needs 27 */
 #rankings-table col.col-notebadge{width:26px}
 #rankings-table th.col-notebadge,#rankings-table td.col-notebadge{width:26px}
+/* FITNAMES_NFL_V1 (2026-08-21, the Dude: "isn't it set up on the baseball page so the font on the name
+   shrinks if they can't fit? Can't we use a similar approach here for football?"). Yes it is, and this
+   is that pattern PORTED rather than reinvented -- the standing rule is that baseball is the reference
+   implementation and gets read FIRST for every football change.
+   .name-cell is baseball's own rule (its line 504) copied verbatim except for the gap. It is the box
+   _fitRankPlayerNames() measures: the NAME and the badges live inside it together, so shrinking the name
+   is what buys room for the Q tag instead of the tag being sliced off. */
+table.watch-list .name-cell{display:flex;flex-direction:row;align-items:center;gap:3px;flex-wrap:nowrap;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap}
+table.watch-list .name-cell .player-name{min-width:0;overflow:hidden;text-overflow:ellipsis}
+table.watch-list .name-cell .inj-tag,table.watch-list .name-cell .rk-note-badge,table.watch-list .name-cell .note-badge{flex:0 0 auto}
 
 /* AV_MATCHES_POS_V1 (2026-08-21, the Dude: "shrink the AV box down to be the same size as the position
    rectangle and make the font the same size as the letters in position"). Cloned straight off
@@ -571,24 +581,20 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
    width:auto sizes the TABLE to its columns. table-layout:auto sizes the COLUMNS to their content.
    Different property, different bug. */
 #rankings-table{width:auto;min-width:0}
-/* GROUP_HEADERS_NFL_V1 (2026-08-21) — the Rotoworld two-row header. Matt, 8/21: "they have this
-   thing up top... rushing and then receiving... possibly second row above to help eliminate
-   redundancy underneath." The group label carries the context so the sub-label can be 3 characters,
-   which is the entire reason RuAtt/PaYd/ReYd could be retired. */
-#rankings-table thead tr#rankings-group-row th{
+/* GROUP_HEADERS_NFL_V1 (2026-08-21) — the Rotoworld two-row header, SHARED by all three football
+   tables. Matt, 8/21: "they have this thing up top... rushing and then receiving... possibly second row
+   above to help eliminate redundancy underneath." The group label carries the context so the sub-label
+   can be three characters, which is the whole reason RuAtt / PaYd / ReYd could be retired.
+   Keyed on tr.grouprow, not on an id, because the Dude's standing instruction from this session is that
+   every football change lands on ALL THREE surfaces: watch list, players pool, rankings. */
+table.watch-list thead tr.grouprow th{
   padding:2px 2px;font-size:9px;font-weight:800;letter-spacing:0.08em;text-align:center;
   color:var(--turf);background:var(--surface2);white-space:nowrap;
-  border-bottom:1px solid var(--border2);   /* the thick green line belongs to the SUB-header row only */
+  border-bottom:1px solid var(--border2);   /* the thick green line stays on the SUB-header row */
 }
-#rankings-table thead tr#rankings-group-row th.rk-grp-blank{
-  color:transparent;border-bottom:1px solid transparent;
-}
-#rankings-table thead tr#rankings-group-row th.rk-grp-lbl{
-  border-left:1px solid var(--gold);        /* mirrors col-zone-divider so groups read as blocks */
-}
-#rankings-table thead tr#rankings-group-row th.rk-grp-fpts{
-  padding:1px 2px;border-left:1px solid var(--gold);
-}
+table.watch-list thead tr.grouprow th.grp-blank{color:transparent;border-bottom:1px solid transparent}
+table.watch-list thead tr.grouprow th.grp-lbl{border-left:1px solid var(--gold)}
+table.watch-list thead tr.grouprow th.grp-fpts{padding:1px 2px;border-left:1px solid var(--gold)}
 #rankings-table .rk-note-badge{display:inline-block;font-size:12px;line-height:1;cursor:pointer;opacity:.85;transition:transform 120ms ease,opacity 120ms ease}
 #rankings-table .rk-note-badge:hover{opacity:1;transform:scale(1.15)}
 #rankings-table .rk-note-link{display:inline-block;font-size:11px;line-height:1;margin-left:4px;text-decoration:none;opacity:.85;flex-shrink:0}
@@ -1393,6 +1399,16 @@ document.addEventListener('DOMContentLoaded',function(){
 <div class="table-wrap" id="nflmain-wrap">
   <table class="watch-list">
     <thead>
+      <!-- GROUP_HEADERS_NFL_V1 ported to the WATCH LIST 2026-08-21. 29 columns, counted with HTMLParser:
+           16 blank + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Action. -->
+        <tr class="grouprow">
+          <th class="grp-blank" colspan="16"></th>
+          <th class="grp-fpts" colspan="1"><select id="wl-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
+          <th class="grp-lbl" colspan="2">Passing</th>
+          <th class="grp-lbl" colspan="4">Rushing</th>
+          <th class="grp-lbl" colspan="5">Receiving</th>
+          <th class="grp-blank" colspan="1"></th>
+        </tr>
       <tr>
         <th class="col-handle">☰</th>
         <th class="col-rank" data-sort="rank">Rank <span class="sort-arrow">↕</span></th>
@@ -1410,18 +1426,18 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-yrank" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a col-fpts col-zone-divider" data-sort="fpts">FPts <span class="sort-arrow">↕</span><select id="wl-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
-        <th class="col-stat col-stat-b col-zone-divider" data-sort="payd">PaYd <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-b" data-sort="patd">PaTD <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-b col-zone-divider" data-sort="ruatt">RuAtt <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-b" data-sort="ruyd">RuYd <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-b" data-sort="ypc" title="Yards per carry — YPC_YPR_V1">YPC <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-b" data-sort="rutd">RuTD <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a col-fpts col-zone-divider" data-sort="fpts">FPts <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-b col-zone-divider" data-sort="payd">Yds <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-b" data-sort="patd">TD <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-b col-zone-divider" data-sort="ruatt">Att <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-b" data-sort="ruyd">Yds <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-b" data-sort="ypc" title="Yards per carry — YPC_YPR_V1">Avg <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-b" data-sort="rutd">TD <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a col-zone-divider" data-sort="tgt">Tgt <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a" data-sort="rec">Rec <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="reyd">ReYd <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="ypr" title="Yards per reception — YPC_YPR_V1">YPR <span class="sort-arrow">↕</span></th>
-        <th class="col-stat col-stat-a" data-sort="retd">ReTD <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a" data-sort="reyd">Yds <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a" data-sort="ypr" title="Yards per reception — YPC_YPR_V1">Avg <span class="sort-arrow">↕</span></th>
+        <th class="col-stat col-stat-a" data-sort="retd">TD <span class="sort-arrow">↕</span></th>
         <th class="col-action">Action</th>
       </tr>
     </thead>
@@ -1495,6 +1511,16 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="table-wrap" id="nflplayers-wrap">
     <table class="watch-list" id="nfl-players-table">
       <thead>
+        <!-- GROUP_HEADERS_NFL_V1 ported to the PLAYERS POOL 2026-08-21. 22 columns, counted with
+             HTMLParser: 9 blank + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Add. -->
+          <tr class="grouprow">
+            <th class="grp-blank" colspan="9"></th>
+            <th class="grp-fpts" colspan="1"><select id="np-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
+            <th class="grp-lbl" colspan="2">Passing</th>
+            <th class="grp-lbl" colspan="4">Rushing</th>
+            <th class="grp-lbl" colspan="5">Receiving</th>
+            <th class="grp-blank" colspan="1"></th>
+          </tr>
         <tr>
           <th class="col-pos" data-npsort="pos">Pos <span class="sort-arrow">↕</span></th>
           <th class="left col-player" data-npsort="name">Player <span class="sort-arrow">↕</span></th>
@@ -1505,23 +1531,23 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-yrank" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
           <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-a col-fpts col-zone-divider" data-npsort="fpts">FPts <span class="sort-arrow">↕</span><select id="np-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
-          <th class="col-stat col-stat-b col-zone-divider" data-npsort="payd">PaYd <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-b" data-npsort="patd">PaTD <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-b col-zone-divider" data-npsort="ruatt">RuAtt <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-b" data-npsort="ruyd">RuYd <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-b" data-npsort="ypc" title="Yards per carry — YPC_YPR_V1">YPC <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-b" data-npsort="rutd">RuTD <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a col-fpts col-zone-divider" data-npsort="fpts">FPts <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-b col-zone-divider" data-npsort="payd">Yds <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-b" data-npsort="patd">TD <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-b col-zone-divider" data-npsort="ruatt">Att <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-b" data-npsort="ruyd">Yds <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-b" data-npsort="ypc" title="Yards per carry — YPC_YPR_V1">Avg <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-b" data-npsort="rutd">TD <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a col-zone-divider" data-npsort="tgt">Tgt <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a" data-npsort="rec">Rec <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-a" data-npsort="reyd">ReYd <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-a" data-npsort="ypr" title="Yards per reception — YPC_YPR_V1">YPR <span class="sort-arrow">↕</span></th>
-          <th class="col-stat col-stat-a" data-npsort="retd">ReTD <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a" data-npsort="reyd">Yds <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a" data-npsort="ypr" title="Yards per reception — YPC_YPR_V1">Avg <span class="sort-arrow">↕</span></th>
+          <th class="col-stat col-stat-a" data-npsort="retd">TD <span class="sort-arrow">↕</span></th>
           <th class="center col-action">Add</th>
         </tr>
       </thead>
       <tbody id="nfl-players-body">
-        <tr><td colspan="21" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
+        <tr><td colspan="22" class="empty-state"><strong>NFL Players pool</strong>Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -1607,7 +1633,7 @@ document.addEventListener('DOMContentLoaded',function(){
              Populated by _rankGroupRow() from the SAME cols array the sub-header uses, so its
              colspans are DERIVED and cannot drift out of sync. Sorting is bound to
              '#rankings-head-row th[data-ranksort]', so this row is non-sortable by construction. -->
-        <tr id="rankings-group-row"></tr>
+        <tr id="rankings-group-row" class="grouprow"></tr>
         <tr id="rankings-head-row"></tr>
       </thead>
       <tbody id="rankings-body">
@@ -2255,7 +2281,7 @@ function renderRankings(){
       '<td class="col-rank">' + (i+1) + '</td>' +
       '<td class="col-av">' + _rankAvCellHtml(pid) + '</td>' +   // AV_COL_V1
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + ' ' + _badgeCol.render(pid) + '</td>' +   // RANKINGS_WL_CLONE_NFL_V1 + INJ_TAG_V1
+      '<td class="left col-player"><div class="name-cell"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _badgeCol.render(pid) + '</div></td>' +   // RANKINGS_WL_CLONE_NFL_V1 + INJ_TAG_V1 + FITNAMES_NFL_V1 (.name-cell wrapper is what fitting measures)
       statCells +
     '</tr>';
   }).join('');
@@ -2264,6 +2290,48 @@ function renderRankings(){
   // RANK_TIERS_V1 - brackets are measured off real rows, so they paint after the body exists.
   try { renderRankTiers(); } catch(e){ console.warn('[RANK_TIERS_V1] render after rankings failed:', e); }
   try { _renderRankPhoneList(ids); } catch(e){}   /* RANK_PHONE_NFL_V1 — cards follow every rankings paint */
+
+  // FITNAMES_NFL_V1 — shrink long names to fit instead of clipping the injury tag off the end.
+  // ⚠ THE DRAG GUARD IS NOT OPTIONAL AND IT IS NOT MINE. Baseball earned it as DRAG_LAG_FITNAMES_GUARD_V1
+  // on 2026-05-29: this pass reads scrollWidth and writes fontSize across ~70 rows, which is textbook
+  // layout thrash, and a Performance trace caught it firing mid-drag and driving Layout events from 459
+  // to 4,266. Rankings has TWO drag systems -- row drag (_rankDragSrcPid) and tier group drag
+  // (_tierDragPayload) -- so both are checked. renderRankings runs again after any drop, which fits the
+  // names once, cleanly. Porting the fix without porting its guard would import a solved bug.
+  if((typeof _rankDragSrcPid === 'undefined' || _rankDragSrcPid === null) &&
+     (typeof _tierDragPayload === 'undefined' || !_tierDragPayload)){
+    setTimeout(_fitRankPlayerNames, 60);
+  }
+}
+
+// FITNAMES_NFL_V1 (2026-08-21) — baseball's fitPlayerNames, ported. Step the name down 0.5px at a time
+// until it stops overflowing its .name-cell, or until the 9px floor. Football starts at 12px rather than
+// baseball's 14px because that is what table.watch-list tbody .player-name already sets here.
+// The 1px overflow tolerance and the iteration cap are baseball's too: the tolerance stops subpixel
+// rounding making it oscillate, and the cap means a pathological row can never spin.
+function _fitRankPlayerNames(){ _fitPlayerNamesIn('#rankings-body'); }
+
+// FITNAMES_NFL_V1 — one implementation, three surfaces (the Dude's standing instruction 2026-08-21:
+// every football change lands on the watch list, the pool AND the rankings).
+// ⚠ THE ZERO-WIDTH GUARD IS LOAD-BEARING. Only one of these tables is visible at a time, and a hidden
+// table reports clientWidth 0 -- which makes `scrollWidth > clientWidth` true forever and would grind
+// every name on the hidden surfaces down to the 9px floor, silently, where nobody would see it until
+// they switched tabs. Baseball never needed this because it only ever had one table to fit.
+function _fitPlayerNamesIn(scopeSel){
+  var els = document.querySelectorAll(scopeSel + ' .name-cell .player-name');
+  for(var i=0;i<els.length;i++){
+    var nameEl = els[i];
+    var cell = nameEl.parentElement;   // .name-cell
+    if(!cell) continue;
+    if(!cell.clientWidth) continue;    // hidden surface: measuring it would shrink every name to the floor
+    nameEl.style.fontSize = '';        // reset to the CSS default every render
+    var size = 12;
+    var safety = 12;
+    while(cell.scrollWidth > cell.clientWidth + 1 && size > 9 && safety-- > 0){
+      size -= 0.5;
+      nameEl.style.fontSize = size + 'px';
+    }
+  }
 }
 
 // ══════════ RANKINGS_STATS_V1 (June 9, 2026 — PC Walter, per the Dude) ══════════
@@ -2670,12 +2738,12 @@ function _rankGroupRow(cols, fixedCount){
     if(runLen <= 0) return;
     if(run === '__FPTS__'){
       // Matt, 8/21: he wants the scoring dropdown ABOVE fantasy points, not beside it.
-      cells.push('<th class="rk-grp rk-grp-fpts" colspan="' + runLen + '">' +
+      cells.push('<th class="grp-fpts" colspan="' + runLen + '">' +
                  '<select class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>');
     } else if(run){
-      cells.push('<th class="rk-grp rk-grp-lbl" colspan="' + runLen + '">' + run + '</th>');
+      cells.push('<th class="grp-lbl" colspan="' + runLen + '">' + run + '</th>');
     } else {
-      cells.push('<th class="rk-grp rk-grp-blank" colspan="' + runLen + '"></th>');
+      cells.push('<th class="grp-blank" colspan="' + runLen + '"></th>');
     }
     run = null; runLen = 0;
   }
@@ -3562,7 +3630,7 @@ function renderNflPlayers(){
   const statusEl = document.getElementById('nflplayers-status');
   if(!tbody) return;
   if(!_playerDB){
-    tbody.innerHTML = '<tr><td colspan="21" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="22" class="empty-state"><strong>NFL Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
     return;
   }
   if(typeof _npBuildTeamSelect === 'function') _npBuildTeamSelect();  // NFL_POOL_STATFILTER_V1
@@ -3602,7 +3670,7 @@ function renderNflPlayers(){
     const _pidJson = escapeHtml(JSON.stringify(pid));
     return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + '</td>' +   // INJ_TAG_V1
+      '<td class="left col-player"><div class="name-cell"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + '</div></td>' +   // INJ_TAG_V1 + FITNAMES_NFL_V1
       '<td>' + team + '</td>' +
       '<td class="col-bye">' + _byeCell(pid) + '</td>' +   // BYE_WEEK_COL_V1
       '<td>' + age + '</td>' +
@@ -3632,6 +3700,7 @@ function renderNflPlayers(){
   }).join('');
   if(!_npBuilt){ _npWireSortHeaders(); _npBuilt = true; }
   _npUpdateSortArrows();
+  setTimeout(function(){ _fitPlayerNamesIn('#nfl-players-body'); }, 60);   // FITNAMES_NFL_V1
 }
 
 function npAddToList(pid, btnEl){
@@ -3946,7 +4015,7 @@ function renderWatchList(){
       _handleCell +
       '<td class="col-rank">' + rank + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
-      '<td class="left"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _noteBadgeHtml(pid) + '</td>' +   // INJ_TAG_V1
+      '<td class="left col-player"><div class="name-cell"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _noteBadgeHtml(pid) + '</div></td>' +   // INJ_TAG_V1 + FITNAMES_NFL_V1 + COLPLAYER_CLASS_V1 (2026-08-21: this cell was class="left" ONLY, with no col-player -- which is exactly why the shared width rule had to reach for nth-child(4) in the first place. Now all three surfaces name the cell the same way.)
       '<td>' + team + '</td>' +
       '<td class="col-bye">' + _byeCell(pid) + '</td>' +   // BYE_WEEK_COL_V1
       '<td>' + age + '</td>' +
@@ -3980,6 +4049,14 @@ function renderWatchList(){
   if(typeof _renderPhoneList==='function'){ try{ _renderPhoneList(sortedIds); }catch(e){} }
   // TIERS_V1 — repaint tier brackets after every table paint (spacers re-inject inside renderTiers).
   try { if(typeof renderTiers === 'function') setTimeout(renderTiers, 0); } catch(e){}
+  // FITNAMES_NFL_V1 — same drag guard as rankings and for the same reason baseball earned it.
+  // Football's own names, verified against the file: the watch list drags on _nflDragSrcPid and its
+  // tier groups on _tierDragPayload. (Baseball calls these dragSrcIdx and #tbody -- porting its code
+  // means porting its BEHAVIOUR, not its identifiers.)
+  if((typeof _nflDragSrcPid === 'undefined' || _nflDragSrcPid === null) &&
+     (typeof _tierDragPayload === 'undefined' || !_tierDragPayload)){
+    setTimeout(function(){ _fitPlayerNamesIn('#watch-list-body'); }, 60);
+  }
 }
 
 // ═══════ PHONE_NOTE_STAR_NFL_V1 (June 10, 2026 — PC Walter, per the Dude, mockup-approved:
