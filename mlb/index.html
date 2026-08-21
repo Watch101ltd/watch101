@@ -6433,17 +6433,29 @@ function fitTables(){
          anything within 3% of 1 to EXACTLY 1 (a micro-grow buys nothing visible and was the
          trigger); and never write a value the table already wears. GROW_TO_FILL_V1's spirit
          survives for genuinely wide monitors (1.25x+ grows, now quantized stable). */
-      const prevZoom = table.style.zoom || '1';
+      /* WIDTH_GROW_V1 (2026-08-20, deep night — the Dude's final spec, verbatim: "I wanted the
+         stats to stretch to the right." June's GROW_TO_FILL zoomed the table using JS-measured
+         widths, and this machine's Chrome serves those measurements from the wrong world on his
+         dual-scale rig (the whole #163 saga). The escape: compute NOTHING. width:100% hands the
+         question to the layout engine itself, which always resolves the wrap's true painted
+         width — the renderer cannot lie to itself. Columns stretch (table-layout:fixed
+         distributes), stats reach the true right edge, and BRACKET_HUGS_ROWS_V1 makes the tier
+         boxes follow the stats wherever they land. The SHRINK path keeps June's zoom mechanics
+         untouched — it has worked at his daily browser zoom for months. */
       table.style.zoom = '1';
+      table.style.width = '';                        /* reset so natural width measures true */
       const avail = wrap.clientWidth;
       const natural = table.scrollWidth;
-      if(natural <= 0 || avail <= 0){ table.style.zoom = prevZoom; return; }
+      if(natural <= 0 || avail <= 0){ return; }
+      if(natural < avail){
+        table.style.width = '100%';                  /* the renderer's own arithmetic — immune to lying metrics */
+        return;
+      }
       let scale = avail / natural;
       if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; }   // the June floor, untouched
-      scale = Math.round(scale * 20) / 20;                    // nickels: 0.70, 0.75 ... 1.25
-      if(scale > 0.97 && scale < 1.05){ scale = 1; }          // near-1 snaps to EXACTLY 1
-      const next = (scale === 1) ? '1' : scale.toFixed(2);
-      table.style.zoom = next;
+      scale = Math.round(scale * 20) / 20;                    // nickels, so refits never churn micro-values
+      if(scale > 0.97){ scale = 1; }
+      table.style.zoom = (scale === 1) ? '1' : scale.toFixed(2);
     });
   });
 }
