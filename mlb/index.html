@@ -8686,9 +8686,20 @@ function renderTiers(){
       // spans every column (not just where the rows happen to start). The
       // outline floats above the table on its own layer — no row HTML
       // touched — so it never interferes with sort, drag, filter, etc.
-      var tbodyRect = document.getElementById('tbody').getBoundingClientRect();
-      var boxLeft   = tbodyRect.left  - anchorRect.left + anchor.scrollLeft;
-      var boxRight  = tbodyRect.right - anchorRect.left + anchor.scrollLeft;
+      /* BRACKET_HUGS_ROWS_V1 (2026-08-20 — the Dude's spec, in his words: "if the tier
+         brackets take up the whole screen and the stats don't, and they're disagreeing,
+         then something has to be wrong in the code." He was right. The old code asked the
+         TBODY for its width, and a tbody can be wider than the cells it actually paints
+         (Bug #163's visible face: brackets fencing a void right of the stats). The rows
+         are the honest witnesses: the box now measures the wrapped rows' OWN first and
+         last cells, so bracket and stats are one measurement and can never disagree. */
+      var _sCells = startRow.children, _eCells = endRow.children;
+      var _fCell = _sCells.length ? _sCells[0] : startRow;
+      var _sLast = _sCells.length ? _sCells[_sCells.length - 1] : startRow;
+      var _eLast = _eCells.length ? _eCells[_eCells.length - 1] : endRow;
+      var _rowRight = Math.max(_sLast.getBoundingClientRect().right, _eLast.getBoundingClientRect().right);
+      var boxLeft   = _fCell.getBoundingClientRect().left - anchorRect.left + anchor.scrollLeft;
+      var boxRight  = _rowRight - anchorRect.left + anchor.scrollLeft;
       var boxWidth  = boxRight - boxLeft;
       // Pad the box outward a few pixels so the outline doesn't kiss the
       // first/last column text — gives it the "drawn around it" feel.
