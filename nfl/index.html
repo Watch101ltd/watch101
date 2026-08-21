@@ -478,29 +478,32 @@ table.watch-list tbody td.placeholder{color:var(--text3)}
 table.watch-list tbody .remove-btn{padding:2px 6px;font-size:9px}
 table.watch-list tbody .stat-cell{font-size:11px}
 
-/* ══════════ RANKINGS_WIDTH_V1 (June 9, 2026 — PC Walter, per the Dude) ══════════
-   The shared .watch-list rule is width:100% + min-width:1150px + table-layout:fixed, which
-   makes the browser SPREAD the Rankings page's few columns edge-to-edge (eyes travel the
-   whole monitor). The Dude wants the columns packed tight on the LEFT with blank space on
-   the right. Scope a Rankings-only override: shrink-to-content table, left-aligned, with
-   comfortable per-column padding and a slightly bigger stat font. Touches ONLY #rankings-table. */
-#rankings-table{
-  width:auto;             /* shrink to content instead of stretching to 100% */
-  min-width:0;            /* kill the 1150px floor that forces the spread */
-  table-layout:auto;      /* size each column to its content, not evenly across the page */
-  margin:0;               /* sit on the left edge, blank space falls on the right */
-}
-/* The wrap no longer needs to scroll for this narrow table; keep overflow safe but don't stretch. */
-#rankings-table thead th{ padding:6px 14px; font-size:10px; }
-#rankings-table tbody td{ padding:6px 14px; font-size:13px; }
-#rankings-table tbody .stat-cell{ font-size:13px; }
-#rankings-table tbody .player-name{ font-size:13px; }
-/* Give the fixed lead columns a little breathing room but keep them snug. */
-#rankings-table thead th.col-handle, #rankings-table tbody td.col-handle{ padding:6px 6px; }
-#rankings-table thead th.col-rank,   #rankings-table tbody td.col-rank{ padding:6px 10px; }
-#rankings-table thead th.col-pos{ padding:6px 8px; }
-/* Player name column: enough to hold a full name, no more. */
-#rankings-table thead th.col-player, #rankings-table tbody td.col-player{ width:200px; max-width:200px; }
+/* ══════════ RANKINGS_WIDTH_V1 — RETIRED 2026-08-21, on the Dude's explicit call ══════════
+   WHAT IT DID: width:auto + min-width:0 + table-layout:auto + 6px/14px padding + a bigger stat font,
+   to get the "columns packed tight on the LEFT, blank space on the right" look he asked for on
+   June 9, 2026 — back when this table carried only a handful of columns.
+
+   WHY IT IS GONE: RANKINGS_WL_CLONE_NFL_V1 (2026-08-19) cloned the FULL watch-list column set onto
+   this table. There is no blank space on the right any more; it became the WIDEST table on the site.
+   Two consequences, both reported by Matt on the 8/21 call, both of them correct:
+     1. table-layout:auto sizes each column to its widest CONTENT, and in a stat column that is the
+        header label — so `RUATT` was literally setting its own column's width. His exact words:
+        "it makes this column so wide, because there are six letters with the dots after it."
+     2. 14px side padding is SEVEN TIMES the watch list's 2px header padding. Across ~26 columns that
+        is roughly 670px of pure whitespace, about half a laptop screen. His "wasted space," measured.
+
+   THE FIX IS SUBTRACTION, NOT ADDITION. #rankings-table already carries class="watch-list", and its
+   columns already carry the shared width classes (col-age, col-note, col-yrank, col-fpts and the rest —
+   see the `lead` array in _rankCols, whose own comment reads "watch-list order"). Deleting this override
+   declares ZERO new widths. It stops table-layout:auto discarding the widths that were always there.
+
+   His call, 2026-08-21: "You can retire the packed-left override now. You don't need to preserve it."
+   And the principle behind it: "I'd rather them match. I'd rather them both handle the same problem
+   in the same way." Do not reintroduce a rankings-only SIZING model without re-reading this.
+
+   ⚠ NOT part of this retirement, deliberately left alone: the #rankings-table rules ABOVE for col-av,
+   col-note and col-notebadge. Those declare widths for columns the watch list does not have, which is
+   a different thing entirely from overriding the whole table's layout model. */
 /* Yahoo/CBS header accent prefixes */
 table.watch-list thead th .y-prefix{color:#6001D2;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
 table.watch-list thead th .cbs-prefix{color:#3b82f6;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
@@ -5654,15 +5657,19 @@ function _wlPid(item){
 // fitTables() ported from the NBA page (which ported it from baseball): measure
 // each visible .table-wrap, set CSS zoom so the table fits -- columns shrink
 // together in proportion, no side-scroll. GROWS to fill when narrower. `zoom`
-// NOT transform:scale (transform breaks sticky theads). The NFL Rankings table
-// is deliberately narrow/packed-left, so it is exempted like NBA's.
+// NOT transform:scale (transform breaks sticky theads).
+// ⚠ 2026-08-21: the old line here said the NFL Rankings table "is deliberately narrow/packed-left,
+// so it is exempted like NBA's." That has been FALSE since the 8/19 clone and the exemption is gone.
+// Every .table-wrap on this page now goes through one path. See the retirement notes below.
 // ──────────────────────────────────────────────────────────────────────────
 const AUTOSHRINK_MIN = 0.70; // never shrink below 70% -- readability floor
-const RANK_AUTOSHRINK_MIN = 0.60; // RANK_FLOOR_060_V1 (2026-08-20, per the Dude — Matt's text: his laptop
-  // needs ~67% zoom to see every rankings column, and the 0.70 floor clamped JUST above that, cutting
-  // columns off. Rankings-only floor at 0.60: Matt's own working zoom proves the size readable to him.
-  // Watch list + pool keep the 0.70 floor. The STRUCTURAL fix Matt actually asked for ('compact some of
-  // these stats') is a rankings Compact mode — which columns is HIS call, on the Friday 8/21 agenda.
+// RANK_FLOOR_060_V1 — RETIRED 2026-08-21. The rankings-only 0.60 shrink floor was the 8/20 answer to
+// Matt needing ~67% browser zoom. It made the page FIT by making it SMALL, which is why he came back on
+// 8/21 carrying BOTH halves of one complaint: "it gets kind of cut off to the right" AND "why when we go
+// to the rankings did the font shrink so incredibly." Treating a WIDTH problem with ZOOM was the wrong
+// lever; the board records that honestly as Bug #166. RANKINGS_WIDTH_V1 is now retired (see the CSS), so
+// this table is genuinely narrow and shares the single 0.70 floor with every other surface.
+// One floor, one mechanism — the Dude: "I'd rather them both handle the same problem in the same way."
 let _fitRaf = null;
 function fitTables(){
   if(_fitRaf) cancelAnimationFrame(_fitRaf);
@@ -5673,24 +5680,11 @@ function fitTables(){
       const table = wrap.querySelector('table');
       if(!table) return;
       if(wrap.offsetParent === null){ return; }   // skip hidden surfaces
-      // RANK_AUTOSHRINK_NFL_V1 (2026-08-20 — the Dude's call). The old blanket exemption
-      // here ('rankings stays packed-left') predates RANKINGS_WL_CLONE_NFL_V1: after the
-      // 8/19 clone the rankings table is the WIDEST on the page, and it was the surface
-      // still forcing him to 90% browser zoom. Rankings now SHRINKS to fit like every
-      // other table — but never GROWS past 100%, so the packed-left look (his June call:
-      // columns tight on the left, blank space on the right) survives wherever the table
-      // already fits at full size.
-      if(wrap.id === 'nflrankings-wrap'){
-        table.style.zoom = '1';                     // reset to read true natural width
-        const rAvail = wrap.clientWidth;
-        const rNatural = table.scrollWidth;
-        if(rNatural > rAvail && rAvail > 0){
-          let rScale = rAvail / rNatural;
-          if(rScale < RANK_AUTOSHRINK_MIN){ rScale = RANK_AUTOSHRINK_MIN; }   // RANK_FLOOR_060_V1
-          table.style.zoom = rScale.toFixed(4);
-        }
-        return;
-      }
+      // RANK_AUTOSHRINK_NFL_V1 — SPECIAL CASE REMOVED 2026-08-21. The rankings table used to take its
+      // own branch here: its own shrink floor, and never allowed to GROW past 100%. With RANKINGS_WIDTH_V1
+      // retired it is an ordinary .watch-list table and goes down the SAME path as the watch list and the
+      // pool. If a future session finds itself about to write another `if(wrap.id === ...)` here, that is
+      // the exact shape of the bug this removal cured — read the CSS tombstone before doing it.
       table.style.zoom = '1';                       // reset to read true natural width
       const avail = wrap.clientWidth;
       const natural = table.scrollWidth;
