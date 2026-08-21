@@ -510,44 +510,66 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
    smear it; the id-scoped cell rule outranks the shared table.watch-list th widths. Belt and braces,
    and neither one alone is sufficient. Measured slack before this pass: fpts 63px, pos 32px,
    priority 27px, type 26px, on every single row of the table. */
-#rankings-table col.col-handle{width:20px}
-#rankings-table th.col-handle,#rankings-table td.col-handle{width:20px}  /* content needs 16 */
-#rankings-table col.col-rank{width:38px}
-#rankings-table th.col-rank,#rankings-table td.col-rank{width:38px}  /* content needs 36 */
-#rankings-table col.col-av{width:48px}
-#rankings-table th.col-av,#rankings-table td.col-av{width:48px}  /* content needs 19 */
-#rankings-table col.col-pos{width:44px}
-#rankings-table th.col-pos,#rankings-table td.col-pos{width:44px}  /* content needs 24 */
-#rankings-table col.col-player{width:152px}
-#rankings-table th.col-player,#rankings-table td.col-player{width:152px}  /* content needs 143 */
-#rankings-table col.col-team{width:40px}
-#rankings-table th.col-team,#rankings-table td.col-team{width:40px}  /* content needs 38 */
-#rankings-table col.col-bye{width:30px}
-#rankings-table th.col-bye,#rankings-table td.col-bye{width:30px}  /* content needs 30 */
-#rankings-table col.col-age{width:36px}
-#rankings-table th.col-age,#rankings-table td.col-age{width:36px}  /* content needs 33 */
-#rankings-table col.col-exp{width:30px}
-#rankings-table th.col-exp,#rankings-table td.col-exp{width:30px}
-#rankings-table col.col-type{width:42px}
-#rankings-table th.col-type,#rankings-table td.col-type{width:42px}  /* content needs 34 */
-#rankings-table col.col-priority{width:68px}
-#rankings-table th.col-priority,#rankings-table td.col-priority{width:68px}  /* content needs 61 */
-#rankings-table col.col-note{width:160px}
-#rankings-table th.col-note,#rankings-table td.col-note{width:160px}
-#rankings-table col.col-adp{width:38px}
-#rankings-table th.col-adp,#rankings-table td.col-adp{width:38px}
-#rankings-table col.col-yrank{width:44px}
-#rankings-table th.col-yrank,#rankings-table td.col-yrank{width:44px}
-#rankings-table col.col-yowned{width:50px}
-#rankings-table th.col-yowned,#rankings-table td.col-yowned{width:50px}
-#rankings-table col.col-cbsowned{width:52px}
-#rankings-table th.col-cbsowned,#rankings-table td.col-cbsowned{width:52px}
-#rankings-table col.col-fpts{width:50px}
-#rankings-table th.col-fpts,#rankings-table td.col-fpts{width:50px}  /* content needs 41 */
-#rankings-table col.col-stat{width:36px}
-#rankings-table th.col-stat,#rankings-table td.col-stat{width:36px}  /* content needs 27 */
-#rankings-table col.col-notebadge{width:26px}
-#rankings-table th.col-notebadge,#rankings-table td.col-notebadge{width:26px}
+/* WIDTH_PAIRS_V1 — SHARED ACROSS ALL THREE FOOTBALL TABLES (2026-08-21). Every number measured on the
+   live rendered page, not estimated. Was #rankings-table-scoped while the other two surfaces still had
+   long labels and a dropdown inside their FPts cell; both were ported today, so these belong to everyone
+   now. The Dude's standing instruction: every football change lands on watch list, pool AND rankings.
+
+   🪨 EACH COLUMN NEEDS BOTH A <col> RULE AND A CELL RULE. Chrome's fixed-layout algorithm will not let a
+   <colgroup> width beat a header-cell width, it takes the LARGER of the two. Proof from the measurement
+   pass: col-av and col-player obeyed the colgroup while col-fpts rendered 104px against a declared 48px,
+   and the only difference between them was that those two also carried cell rules. Neither mechanism is
+   sufficient on its own. The colgroup survives the colspan group row; the cell rule outranks the older
+   table.watch-list widths.
+
+   ⚠ THE `tr` IN THESE SELECTORS IS LOAD-BEARING, DO NOT TIDY IT AWAY. The older rules are written as
+   `table.watch-list thead th.col-X` and several of them sit BELOW this block in the stylesheet, so equal
+   specificity would lose on source order. Naming `tr` adds one element to the specificity count and wins
+   on merit rather than on position. An assertion caught this: the first draft of this block matched the
+   old specificity and would have shipped a col-fpts that silently stayed 104px wide.
+   Slack removed, per row, measured before this pass: fpts 63px, pos 32px, priority 27px, type 26px. */
+table.watch-list colgroup col.col-handle{width:20px}
+table.watch-list thead tr th.col-handle,table.watch-list tbody tr td.col-handle{width:20px}
+table.watch-list colgroup col.col-rank{width:38px}
+table.watch-list thead tr th.col-rank,table.watch-list tbody tr td.col-rank{width:38px}
+table.watch-list colgroup col.col-av{width:48px}
+table.watch-list thead tr th.col-av,table.watch-list tbody tr td.col-av{width:48px}
+table.watch-list colgroup col.col-pos{width:44px}
+table.watch-list thead tr th.col-pos,table.watch-list tbody tr td.col-pos{width:44px}
+table.watch-list colgroup col.col-player{width:152px}
+table.watch-list thead tr th.col-player,table.watch-list tbody tr td.col-player{width:152px}
+table.watch-list colgroup col.col-team{width:40px}
+table.watch-list thead tr th.col-team,table.watch-list tbody tr td.col-team{width:40px}
+table.watch-list colgroup col.col-bye{width:30px}
+table.watch-list thead tr th.col-bye,table.watch-list tbody tr td.col-bye{width:30px}
+table.watch-list colgroup col.col-age{width:36px}
+table.watch-list thead tr th.col-age,table.watch-list tbody tr td.col-age{width:36px}
+table.watch-list colgroup col.col-exp{width:30px}
+table.watch-list thead tr th.col-exp,table.watch-list tbody tr td.col-exp{width:30px}
+table.watch-list colgroup col.col-delta{width:38px}
+table.watch-list thead tr th.col-delta,table.watch-list tbody tr td.col-delta{width:38px}
+table.watch-list colgroup col.col-type{width:42px}
+table.watch-list thead tr th.col-type,table.watch-list tbody tr td.col-type{width:42px}
+table.watch-list colgroup col.col-priority{width:68px}
+table.watch-list thead tr th.col-priority,table.watch-list tbody tr td.col-priority{width:68px}
+table.watch-list colgroup col.col-note{width:160px}
+table.watch-list thead tr th.col-note,table.watch-list tbody tr td.col-note{width:160px}
+table.watch-list colgroup col.col-adp{width:38px}
+table.watch-list thead tr th.col-adp,table.watch-list tbody tr td.col-adp{width:38px}
+table.watch-list colgroup col.col-yrank{width:44px}
+table.watch-list thead tr th.col-yrank,table.watch-list tbody tr td.col-yrank{width:44px}
+table.watch-list colgroup col.col-yowned{width:50px}
+table.watch-list thead tr th.col-yowned,table.watch-list tbody tr td.col-yowned{width:50px}
+table.watch-list colgroup col.col-cbsowned{width:52px}
+table.watch-list thead tr th.col-cbsowned,table.watch-list tbody tr td.col-cbsowned{width:52px}
+table.watch-list colgroup col.col-fpts{width:50px}
+table.watch-list thead tr th.col-fpts,table.watch-list tbody tr td.col-fpts{width:50px}
+table.watch-list colgroup col.col-stat{width:36px}
+table.watch-list thead tr th.col-stat,table.watch-list tbody tr td.col-stat{width:36px}
+table.watch-list colgroup col.col-notebadge{width:26px}
+table.watch-list thead tr th.col-notebadge,table.watch-list tbody tr td.col-notebadge{width:26px}
+table.watch-list colgroup col.col-action{width:60px}
+table.watch-list thead tr th.col-action,table.watch-list tbody tr td.col-action{width:60px}
 /* FITNAMES_NFL_V1 (2026-08-21, the Dude: "isn't it set up on the baseball page so the font on the name
    shrinks if they can't fit? Can't we use a similar approach here for football?"). Yes it is, and this
    is that pattern PORTED rather than reinvented -- the standing rule is that baseball is the reference
@@ -1398,6 +1420,43 @@ document.addEventListener('DOMContentLoaded',function(){
 <!-- ── WATCH LIST TABLE ──────────────────────────────── -->
 <div class="table-wrap" id="nflmain-wrap">
   <table class="watch-list">
+    <!-- COLGROUP_WIDTHS_V1 ported here 2026-08-21. REQUIRED, not optional: this table's first row
+         is now the colspan group row, and under table-layout:fixed the browser takes column widths
+         from the FIRST ROW. A spanning cell smears width across everything it covers, which voids
+         every per-column declaration and collapses the Player column until ellipsis eats the name.
+         Generated from the sub-header's own classes, so the order cannot be mistyped.
+         🪨 A GROUP HEADER ROW AND A COLGROUP ARE ONE FEATURE. Never ship the first without the second. -->
+    <colgroup>
+      <col class="col-handle">
+      <col class="col-rank">
+      <col class="col-pos">
+      <col class="col-player">
+      <col class="col-team">
+      <col class="col-bye">
+      <col class="col-age">
+      <col class="col-exp">
+      <col class="col-delta">
+      <col class="col-type">
+      <col class="col-priority">
+      <col class="col-note">
+      <col class="col-adp">
+      <col class="col-yrank">
+      <col class="col-yowned">
+      <col class="col-cbsowned">
+      <col class="col-fpts">
+      <col class="col-stat">
+      <col class="col-stat">
+      <col class="col-stat">
+      <col class="col-stat">
+      <col class="col-stat">
+      <col class="col-stat">
+      <col class="col-stat">
+      <col class="col-stat">
+      <col class="col-stat">
+      <col class="col-stat">
+      <col class="col-stat">
+      <col class="col-action">
+    </colgroup>
     <thead>
       <!-- GROUP_HEADERS_NFL_V1 ported to the WATCH LIST 2026-08-21. 29 columns, counted with HTMLParser:
            16 blank + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Action. -->
@@ -1510,6 +1569,36 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
   <div class="table-wrap" id="nflplayers-wrap">
     <table class="watch-list" id="nfl-players-table">
+      <!-- COLGROUP_WIDTHS_V1 ported here 2026-08-21. REQUIRED, not optional: this table's first row
+           is now the colspan group row, and under table-layout:fixed the browser takes column widths
+           from the FIRST ROW. A spanning cell smears width across everything it covers, which voids
+           every per-column declaration and collapses the Player column until ellipsis eats the name.
+           Generated from the sub-header's own classes, so the order cannot be mistyped.
+           🪨 A GROUP HEADER ROW AND A COLGROUP ARE ONE FEATURE. Never ship the first without the second. -->
+      <colgroup>
+        <col class="col-pos">
+        <col class="col-player">
+        <col class="col-team">
+        <col class="col-bye">
+        <col class="col-age">
+        <col class="col-adp">
+        <col class="col-yrank">
+        <col class="col-yowned">
+        <col class="col-cbsowned">
+        <col class="col-fpts">
+        <col class="col-stat">
+        <col class="col-stat">
+        <col class="col-stat">
+        <col class="col-stat">
+        <col class="col-stat">
+        <col class="col-stat">
+        <col class="col-stat">
+        <col class="col-stat">
+        <col class="col-stat">
+        <col class="col-stat">
+        <col class="col-stat">
+        <col class="col-action">
+      </colgroup>
       <thead>
         <!-- GROUP_HEADERS_NFL_V1 ported to the PLAYERS POOL 2026-08-21. 22 columns, counted with
              HTMLParser: 9 blank + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Add. -->
