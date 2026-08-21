@@ -2511,13 +2511,11 @@ function _rankSplitNote(s){
 }
 function editRankNote(pid, el){
   if(_blockIfReadOnly('editRankNote')) return;
-  var input = document.createElement('input');
-  input.type='text'; input.className='rk-note-input';
-  input.value = _rankNoteFor(pid);
-  input.placeholder = "Matt's take on this player...";
-  el.replaceWith(input); input.focus();
-  var done = function(){
-    var val = input.value.trim();
+  // NOTE_POPUP_NFL_V1: was an inline <input class="rk-note-input"> swapped in place of the
+  // .rk-note div. The save logic below is the old inline editor's done() verbatim — the
+  // RANK_NOTE_BADGE_48H_V1 stamp rules are untouched; only the collection UI changed.
+  openNotePopup(pid, _rankNoteFor(pid), "Matt's take on this player...", function(v){
+    var val = String(v||'').trim();
     var _prevNote = _rankNoteFor(pid);   // RANK_NOTE_BADGE_48H_V1: capture BEFORE overwrite
     if(val) _rankNotes[pid] = val; else delete _rankNotes[pid];
     // RANK_NOTE_BADGE_48H_V1 — stamp only when the note TEXT actually changes (mirrors
@@ -2528,9 +2526,7 @@ function editRankNote(pid, el){
     _rankNotesSaveLocal();
     if(typeof saveRankings==='function' && _rankPos) saveRankings(_rankPos);
     renderRankings();
-  };
-  input.addEventListener('blur', done);
-  input.addEventListener('keydown', function(e){ if(e.key==='Enter') input.blur(); if(e.key==='Escape'){ input.value=_rankNoteFor(pid); input.blur(); } });
+  });
 }
 function editRankNoteFromBadge(pid, badgeEl){
   if(_blockIfReadOnly('editRankNoteFromBadge')) return;
@@ -7004,20 +7000,49 @@ function _setWlNote(pid, text){
   try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
   renderWatchList();
 }
+// NOTE_POPUP_NFL_V1 (2026-08-21 evening, the Dude, straight off Matt's text) — the inline
+// one-line note inputs held "maybe enough to hold two words." Clicking a note now opens a
+// paragraph-sized popup editor. ONE popup serves both note surfaces (watch list + rankings);
+// each caller passes its own onSave, so the save/stamp machinery is untouched — the popup
+// only collects text. Backdrop click SAVES because the old inline editors saved on blur:
+// clicking away has always meant "keep it," and a typed paragraph lost to a stray click
+// would be the worse surprise. Esc cancels. Ctrl+Enter saves. Enter is a newline now.
+var _notePopupSave = null;
+function openNotePopup(pid, curText, placeholder, onSave){
+  var modal = document.getElementById('note-editor-modal');
+  var ta = document.getElementById('note-editor-textarea');
+  var title = document.getElementById('note-editor-player');
+  if(!modal || !ta || !title){ return; }
+  var p = (typeof _playerDB === 'object' && _playerDB) ? _playerDB[pid] : null;
+  var nm = p ? (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()) : '';
+  title.textContent = nm || '';
+  ta.value = curText || '';
+  ta.placeholder = placeholder || '';
+  _notePopupSave = function(){ var v = ta.value; closeNotePopup(); onSave(v); };
+  modal.style.display = 'flex';
+  ta.focus();
+  try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){}
+}
+function closeNotePopup(){
+  var modal = document.getElementById('note-editor-modal');
+  if(modal) modal.style.display = 'none';
+  _notePopupSave = null;
+}
+function _notePopupSaveClick(){ if(_notePopupSave) _notePopupSave(); }
+function _notePopupKeydown(e){
+  if(e.key === 'Escape'){ e.stopPropagation(); closeNotePopup(); }
+  if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); _notePopupSaveClick(); }
+}
+function _notePopupBackdrop(e){ if(e.target && e.target.id === 'note-editor-modal'){ _notePopupSaveClick(); } }
 function editWlNote(pid, el){
   if(_blockIfReadOnly('editWlNote')) return;
   const idx = _wlIndexOf(pid);
   if(idx < 0) return;
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'note-input';
-  input.value = _wlNote(_watchList[idx]);
-  input.placeholder = 'Why is this player here?';
-  el.replaceWith(input);
-  input.focus();
-  input.addEventListener('blur', function(){ _setWlNote(pid, input.value); });
-  input.addEventListener('keydown', function(e){ if(e.key === 'Enter') input.blur(); });
-  input.addEventListener('click', function(e){ e.stopPropagation(); });
+  // NOTE_POPUP_NFL_V1: was an inline <input class="note-input"> swapped into the cell.
+  // _setWlNote still does ALL the real work (48h stamp, localStorage, re-render).
+  openNotePopup(pid, _wlNote(_watchList[idx]), 'Why is this player here?', function(val){
+    _setWlNote(pid, val);
+  });
 }
 
 function _wlPriority(item){
@@ -8586,6 +8611,21 @@ function _yahooLookupFmt(pid, field, isPercent){
      Phase C adapted to the twins' self-contained overlay idiom. Stage 2 adds the
      "Draggable as a group" row here. Opened by the 🏷️ Tier toolbar button (admin)
      or by clicking a tier's label tab (admin); fans never see either entry point. -->
+<!-- NOTE_POPUP_NFL_V1 (2026-08-21 evening) — paragraph-sized note editor shared by the watch
+     list and rankings note columns (the pool has no note column). Matt's text tonight: the old
+     inline box held "maybe enough to hold two words." Styled to match the create-tier-modal family. -->
+<div id="note-editor-modal" onclick="_notePopupBackdrop(event)" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:18px 20px;width:92vw;max-width:560px;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
+    <h2 style="margin:0 0 2px 0;font-size:16px;color:var(--text)">&#128221; Note</h2>
+    <div id="note-editor-player" style="font-size:13px;font-weight:800;color:var(--turf);margin:0 0 10px 0"></div>
+    <textarea id="note-editor-textarea" rows="7" onkeydown="_notePopupKeydown(event)" style="width:100%;box-sizing:border-box;resize:vertical;background:var(--surface2,rgba(255,255,255,0.04));border:1px solid var(--turf);border-radius:6px;color:var(--text);font-size:13px;line-height:1.5;padding:10px 12px;font-family:inherit;outline:none"></textarea>
+    <div style="font-size:11px;color:var(--text3);margin:6px 0 12px 0">Paste a link anywhere in the note and it shows as the &#128279; chip. Ctrl+Enter saves, Esc cancels, clicking outside saves.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeNotePopup()" style="background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="_notePopupSaveClick()" style="background:var(--turf);border:1px solid var(--turf);color:#0d1117;border-radius:6px;padding:6px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">Save Note</button>
+    </div>
+  </div>
+</div>
 <div id="create-tier-modal" onclick="if(event.target===this)closeCreateTierModal()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;max-width:560px;width:100%;padding:20px 22px">
     <h2 id="tier-modal-title" style="margin:0 0 10px 0;font-size:17px;color:var(--text)">🏷️ Create a Tier</h2>
