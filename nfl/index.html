@@ -5657,6 +5657,11 @@ function _wlPid(item){
 // is deliberately narrow/packed-left, so it is exempted like NBA's.
 // ──────────────────────────────────────────────────────────────────────────
 const AUTOSHRINK_MIN = 0.70; // never shrink below 70% -- readability floor
+const RANK_AUTOSHRINK_MIN = 0.60; // RANK_FLOOR_060_V1 (2026-08-20, per the Dude — Matt's text: his laptop
+  // needs ~67% zoom to see every rankings column, and the 0.70 floor clamped JUST above that, cutting
+  // columns off. Rankings-only floor at 0.60: Matt's own working zoom proves the size readable to him.
+  // Watch list + pool keep the 0.70 floor. The STRUCTURAL fix Matt actually asked for ('compact some of
+  // these stats') is a rankings Compact mode — which columns is HIS call, on the Friday 8/21 agenda.
 let _fitRaf = null;
 function fitTables(){
   if(_fitRaf) cancelAnimationFrame(_fitRaf);
@@ -5680,7 +5685,7 @@ function fitTables(){
         const rNatural = table.scrollWidth;
         if(rNatural > rAvail && rAvail > 0){
           let rScale = rAvail / rNatural;
-          if(rScale < AUTOSHRINK_MIN){ rScale = AUTOSHRINK_MIN; }
+          if(rScale < RANK_AUTOSHRINK_MIN){ rScale = RANK_AUTOSHRINK_MIN; }   // RANK_FLOOR_060_V1
           table.style.zoom = rScale.toFixed(4);
         }
         return;
