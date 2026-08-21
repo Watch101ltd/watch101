@@ -6968,6 +6968,13 @@ function _ftlNum(v, dec){
   if(v == null || !isFinite(n) || n === 0) return null;
   return (dec != null) ? n.toFixed(dec).replace(/\.0$/, '') : Math.round(n).toLocaleString();
 }
+// CARD_YPC_YPR_V1 (2026-08-21 -- PC Walter, per the Dude): the player card's own ratio
+// formatter. YPC/YPR shipped as TABLE columns on 8/19 (YPC_YPR_V1) and never reached the
+// card. This mirrors statCellOrDash's number treatment EXACTLY -- one decimal, trailing
+// ".0" stripped -- and returns null for a missing/zero denominator OR a zero result, so
+// _ftlStatCell paints the same em-dash the card already shows for an empty stat. It calls
+// the very same _ratioNum the columns call, so the card and the row can never disagree.
+function _ftlRatio(yds, att){ var v = _ratioNum(yds, att); if(v == null || v === 0) return null; return v.toFixed(1).replace(/\.0+$/, ''); }
 
 // ============================================================================
 // SCHEDULE_RESULTS_V1 (August 2, 2026 -- Walter, per the Dude).
@@ -7535,8 +7542,8 @@ function openFromTheLogo(pid, _keepRange){
   // rushing, receiving. Empty stat -> em-dash.
   const fantasy = _ftlStatCell('FPTS', _ftlNum(_fptsOf(s, p), 1));  // SCORING_ENGINE_NFL_V1: card FPTS follows the active scoring system
   const passing = _ftlStatCell('PA YD', _ftlNum(s.pass_yd)) + _ftlStatCell('PA TD', _ftlNum(s.pass_td));
-  const rushing = _ftlStatCell('RU YD', _ftlNum(s.rush_yd)) + _ftlStatCell('RU TD', _ftlNum(s.rush_td));
-  const receiving = _ftlStatCell('REC', _ftlNum(s.rec)) + _ftlStatCell('RE YD', _ftlNum(s.rec_yd)) + _ftlStatCell('RE TD', _ftlNum(s.rec_td));
+  const rushing = _ftlStatCell('RU YD', _ftlNum(s.rush_yd)) + _ftlStatCell('YPC', _ftlRatio(s.rush_yd, s.rush_att)) + _ftlStatCell('RU TD', _ftlNum(s.rush_td));   // CARD_YPC_YPR_V1: YPC sits right after RuYd, same order as the table column
+  const receiving = _ftlStatCell('REC', _ftlNum(s.rec)) + _ftlStatCell('RE YD', _ftlNum(s.rec_yd)) + _ftlStatCell('YPR', _ftlRatio(s.rec_yd, s.rec)) + _ftlStatCell('RE TD', _ftlNum(s.rec_td));   // CARD_YPC_YPR_V1: YPR right after ReYd, same as the column
   // QUADRANTS_V1 (Aug 2, 2026): one compact stat strip in the hero, baseball-style.
   // OWNROW_CARD_V1 (Aug 6, 2026) — baseball's ownership row, ported per the Dude:
   // Y!RK / Y!ROS%% / CBS%%, its own row, white values. Same lookups the table rows use.
@@ -7548,7 +7555,14 @@ function openFromTheLogo(pid, _keepRange){
     _ftlStatCell('Y!ROS%', (_oro != null) ? Math.round(_oro) + '%' : null) +
     _ftlStatCell('CBS%',   (_ocb != null) ? _ocb + '%' : null);
   document.getElementById('ftl-statwrap').innerHTML =
-    '<div class="ftl-statbar">' + fantasy + passing + rushing + receiving + '</div>' +
+    // CARD_STATROW2_V1 (2026-08-21, the Dude's call): the strip was ONE row of 8 tiles and
+    // the two new ratios would have squeezed it to 10 across. Split by group instead --
+    // fantasy + passing + rushing on top, receiving on its own row underneath, ownership
+    // below that. Same .ftl-statbar grid on both rows, so a future column add just picks a
+    // row instead of making every tile narrower. Rows do not need equal counts: the
+    // ownership row has been 3 wide tiles under an 8 tile row since OWNROW_CARD_V1.
+    '<div class="ftl-statbar">' + fantasy + passing + rushing + '</div>' +
+    '<div class="ftl-statbar">' + receiving + '</div>' +
     '<div class="ftl-ownbar">' + ownRow + '</div>';
 
   // BUG49_PHASE2b: dynamic year note retired — header-right now carries baseball's static "Watch 101 Player Card" in the HTML.
