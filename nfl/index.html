@@ -362,8 +362,14 @@ table.trending tbody td.cnt{text-align:right;color:var(--turf);font-weight:800;w
   overflow:visible;
 }
 table.watch-list{
-  width:100%;border-collapse:separate;border-spacing:0;
-  min-width:900px;background:var(--surface);
+  /* STRETCH_KILL_V1 (2026-08-21 evening, the Dude's green light): was width:100% + min-width:900px
+     (and a 1444px floor further down). width:100% dealt every leftover pixel of the container out
+     between the columns as dead space -- the pool's columns need ~990px and were being stretched to
+     1444+. width:auto sizes the TABLE to its colgroup, exactly the cure the rankings table shipped
+     earlier today as #rankings-table{width:auto;min-width:0}. table-layout stays FIXED; the colgroup
+     still rules the columns. Same property pair, now on all three surfaces. */
+  width:auto;border-collapse:separate;border-spacing:0;
+  background:var(--surface);
   border:1px solid var(--border);border-radius:8px;
   /* NFL_STICKY_HEADERS_V1 — REMOVED overflow:hidden here. It clipped the rounded corners but ALSO
      trapped position:sticky (an overflow:hidden ancestor creates a clip context sticky can't escape),
@@ -401,7 +407,7 @@ table.watch-list thead th:has(+ th.col-zone-divider), table.watch-list tbody td:
   padding-right:7px;
 }
 /* PLAYER_POOL_21COL_V2 (compact, 150%-zoom-friendly) - mirrors baseball density */
-table.watch-list{min-width:1444px;table-layout:fixed}  /* BLOCK_CLONE_V1: identity block widened to baseball spec. YPC_YPR_V1 (2026-08-19): +76px for the two new 38px ratio columns so laptop widths do not re-create Bug #32's header squeeze */
+table.watch-list{table-layout:fixed}  /* STRETCH_KILL_V1: min-width:1444px removed with the width:100% stretch above. The floor existed to stop columns clamping in the pre-colgroup era (Bug #32); under COLGROUP_WIDTHS_V1 every column holds its declared width and the table's natural width IS the colgroup sum, so the floor only manufactured spread. */  /* BLOCK_CLONE_V1: identity block widened to baseball spec. YPC_YPR_V1 (2026-08-19): +76px for the two new 38px ratio columns so laptop widths do not re-create Bug #32's header squeeze */
 /* Compact header + body padding so 23 columns fit at 150% zoom */
 table.watch-list thead th{padding:5px 2px;font-size:9px;letter-spacing:0.01em;overflow:hidden}  /* HEADER_BLEED_FIX_V1 (2026-08-04) — Matt, 8/3 meeting. Under table-layout:fixed the stat
      columns clamp to 38px once the viewport drops below the 1300px floor (a laptop at 100%,
@@ -6083,7 +6089,11 @@ function fitTables(){
       const natural = table.scrollWidth;
       if(natural <= 0 || avail <= 0){ return; }
       if(natural <= avail){
-        table.style.zoom = (avail / natural).toFixed(4);  // GROW to fill, no ceiling
+        // STRETCH_KILL_V1 (2026-08-21 evening): GROW-to-fill retired on the Dude's call. The old line
+        // magnified the table (fonts and all) until it filled the wrap, which rebuilt the spread-out
+        // look no matter how tight the columns got. Now: fits at natural size, packed left, blank
+        // space on the right on wide screens -- the Rotoworld look Matt showed on the 8/21 call.
+        // zoom was already reset to '1' above; leave it there. SHRINK below still works unchanged.
         return;
       }
       let scale = avail / natural;
