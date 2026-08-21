@@ -3329,6 +3329,21 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
      #tier-color value and adds a .selected class for visual feedback.
      Start/End player dropdowns are populated by openCreateTierModal()
      at open time so they always reflect the live players[] order. -->
+<!-- NOTE_POPUP_MLB_V1 (2026-08-21 evening) — paragraph-sized note editor. The Dude: this change
+     is wanted on EVERY page with notes. Port of football's NOTE_POPUP_NFL_V1, behaviour not
+     identifiers: baseball's own modal-overlay/modal/btn classes, baseball's single editNote flow. -->
+<div class="modal-overlay" id="note-editor-modal" onclick="_notePopupBackdrop(event)">
+  <div class="modal" style="width:560px">
+    <h2 style="margin:0 0 2px 0;font-size:16px">&#128221; Note</h2>
+    <div id="note-editor-player" style="font-size:13px;font-weight:800;color:var(--gold);margin:0 0 10px 0;font-family:'Nunito Sans',sans-serif"></div>
+    <textarea id="note-editor-textarea" rows="7" onkeydown="_notePopupKeydown(event)" style="width:100%;box-sizing:border-box;resize:vertical;background:var(--surface3);border:1px solid var(--gold2);border-radius:6px;color:var(--text);font-size:13px;line-height:1.5;padding:10px 12px;font-family:'Nunito Sans',sans-serif;outline:none"></textarea>
+    <div style="font-size:11px;color:var(--text3);margin:6px 0 12px 0;font-family:'Nunito Sans',sans-serif">Paste a link anywhere in the note and it shows as the &#128279; chip. Ctrl+Enter saves, Esc cancels, clicking outside saves.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeNotePopup()">Cancel</button>
+      <button class="btn btn-gold" onclick="_notePopupSaveClick()">Save Note</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="create-tier-modal">
   <div class="modal">
     <h2 id="tier-modal-title">🏷️ Create a Tier</h2>
@@ -10012,30 +10027,51 @@ async function confirmClear(){
   try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] confirmClear autosave failed:', e); }
 }
 
+// NOTE_POPUP_MLB_V1 (2026-08-21 evening, the Dude: every note box on every page gets the
+// paragraph popup). Port of football's NOTE_POPUP_NFL_V1 — behaviour, not identifiers.
+// The inline one-line note input held "maybe enough to hold two words" (Matt). The popup
+// only collects text; the save flow below is the old blur handler verbatim. Backdrop click
+// SAVES (the inline editor saved on blur — clicking away has always meant "keep it").
+// Esc cancels. Ctrl+Enter saves. Enter is a newline now, this is a paragraph box.
+var _notePopupSave = null;
+function openNotePopup(name, curText, placeholder, onSave){
+  var modal = document.getElementById('note-editor-modal');
+  var ta = document.getElementById('note-editor-textarea');
+  var title = document.getElementById('note-editor-player');
+  if(!modal || !ta || !title){ return; }
+  title.textContent = name || '';
+  ta.value = curText || '';
+  ta.placeholder = placeholder || '';
+  _notePopupSave = function(){ var v = ta.value; closeNotePopup(); onSave(v); };
+  modal.classList.add('open');
+  ta.focus();
+  try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){}
+}
+function closeNotePopup(){
+  var modal = document.getElementById('note-editor-modal');
+  if(modal) modal.classList.remove('open');
+  _notePopupSave = null;
+}
+function _notePopupSaveClick(){ if(_notePopupSave) _notePopupSave(); }
+function _notePopupKeydown(e){
+  if(e.key === 'Escape'){ e.stopPropagation(); closeNotePopup(); }
+  if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); _notePopupSaveClick(); }
+}
+function _notePopupBackdrop(e){ if(e.target && e.target.id === 'note-editor-modal'){ _notePopupSaveClick(); } }
 function editNote(id,el){
   if(_blockIfReadOnly('editNote')) return;
   const p=players.find(x=>x.id===id);
   if(!p) return;
-  const input=document.createElement('input');
-  input.type='text';input.className='note-input';
-  // NOTE_CLEAR_V1 (5/21 17:30 ET - PC Walter) — edit input now seeds ONLY from
-  // p.note. The 4/25 archive-seed fallback was retired because it re-injected
-  // the archived note into the input box whenever the user tried to clear
-  // a note, making it impossible to leave the cell blank. Archive history
-  // lives on Deep Cut now, separate from the live edit field.
-  input.value = (p.note != null) ? String(p.note) : '';
-  input.placeholder='Why did this player move?';
-  el.replaceWith(input);input.focus();
-  input.addEventListener('blur', async ()=>{
-    p.note=input.value;
+  // NOTE_CLEAR_V1 (5/21) still honoured: the box seeds ONLY from p.note, never the archive.
+  // NEW_NOTE_48H_V1 (June 9, 2026) still honoured: the 48h clock does NOT start here. Per the
+  // Dude it starts at PUBLISH (the approval batch stamps p.note_saved_at), so this save flow
+  // touches no timestamps — same as the inline editor it replaced.
+  openNotePopup(p.name || '', (p.note != null) ? String(p.note) : '', 'Why did this player move?', async function(v){
+    p.note=v;
     saveData();renderTable();
     // MUTATION_AUTOSAVE_V1 — note edits should persist to NAS, not just localStorage
     try { await autoSaveToNAS(); } catch(e){ console.warn('[MUTATION_AUTOSAVE_V1] editNote autosave failed:', e); }
   });
-  // NEW_NOTE_48H_V1 (June 9, 2026) — NOTE: the "new note" 48h clock does NOT start here. Per the Dude,
-  // it starts at PUBLISH (when the approval batch runs), so p.note_saved_at is stamped by the approval
-  // script, not by this in-browser save. The badge (noteBadge) reads that publish-time timestamp.
-  input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();});
 }
 
 function importFile(e){
