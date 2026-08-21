@@ -454,7 +454,19 @@ table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
 #rankings-table .rk-note.ro.empty,#rankings-table .rk-note.ro.empty:hover{color:#475569}
 #rankings-table .rk-note-input{width:100%;font-size:12px;font-style:italic;background:var(--surface);border:1px solid var(--gold);color:var(--text);border-radius:4px;padding:2px 6px;font-family:inherit;outline:none}
 #rankings-table th.col-av,#rankings-table td.col-av{width:44px;text-align:center}  /* AV_COL_V1 */
-#rankings-table .rk-av-input{width:38px;font-size:11px;text-align:center;background:var(--surface);border:1px solid var(--gold);color:var(--text);border-radius:4px;padding:2px 3px;font-family:inherit;outline:none}  /* AV_COL_V1: Matt's dollar box */
+/* PLAYER_CLIP_FIX_V1 (2026-08-21, the Dude, found in the fixed-size viewer minutes after Stage 1).
+   The rankings player cell is NOT just a name -- it renders name + injury tag + note badge
+   (see _rankRow: escapeHtml(name) + _injTagHtml(pid) + ' ' + _badgeCol.render(pid)). The shared
+   col-player is 140px, and 140 minus the 3px cell padding each side leaves 134px. A long name at
+   12px/800 runs about 125px on its own; the Q injury tag adds roughly 21px more. So Puka Nacua's
+   and McCaffrey's badges were being sliced by overflow:hidden.
+   RANKINGS-ONLY, on purpose: the watch list carries the same three-item cell at the same 140px and
+   may have a MILDER version of this -- flagged to the Dude to look at rather than quietly widened,
+   because the watch list is the surface Matt says already works and it is not mine to change on a
+   hunch. 164px covers name + tag, or name + badge, comfortably. All three at maximum name length is
+   still tight; if he reports one, widen here rather than touching the shared rule. */
+#rankings-table th.col-player,#rankings-table td.col-player{width:164px;max-width:164px}
+#rankings-table .rk-av-input{width:100%;box-sizing:border-box;font-size:11px;text-align:center;background:var(--surface);border:1px solid var(--gold);color:var(--text);border-radius:4px;padding:2px 3px;font-family:inherit;outline:none}  /* AV_COL_V1: Matt's dollar box. AV_CLIP_FIX_V1 (2026-08-21, the Dude found it in the new fixed-size viewer): was width:38px on the default content-box, so 38 + 6 padding + 2 border = 46px of input trying to sit in a 38px hole -- col-av is 44px minus the 3px cell padding each side. Under the OLD table-layout:auto the column simply grew to swallow the overflow and nobody saw it; under table-layout:fixed + overflow:hidden the right edge got sliced off. width:100% + border-box makes the input exactly as wide as whatever col-av is, so this cannot recur if that width is ever tuned again. Do not put a pixel width back here. */
 #rankings-table .rk-av-input::placeholder{color:var(--text3);opacity:.6}  /* AV_COL_V1 */
 #rankings-table th.col-notebadge,#rankings-table td.col-notebadge{width:26px;text-align:center}
 #rankings-table .rk-note-badge{display:inline-block;font-size:12px;line-height:1;cursor:pointer;opacity:.85;transition:transform 120ms ease,opacity 120ms ease}
