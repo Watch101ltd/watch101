@@ -6518,6 +6518,32 @@ if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoad
     try { if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitTables(); }); } catch(e){}
     /* Road 4: belt and suspenders — one late re-fit after the load has fully settled. */
     setTimeout(function(){ try { fitTables(); } catch(e){} }, 2000);
+    /* Road 5 — BUG163_MIXED_DPI_V1 (2026-08-20, the banner-photo verdict): on the Dude's
+       dual-monitor rig with unequal Windows scaling, Chrome windows live a double life —
+       layout computed against one monitor's scale (2072 CSS) while painting on the other
+       (2690 CSS). The table sizes itself for the small world and leaves the void on the
+       right in the big one; dragging the window re-syncs the scale, which is why his
+       wiggle always healed it. This is the programmatic wiggle: re-fit on every wake and
+       focus, AFTER Chrome has re-synced the window metrics. Two rAF turns of settling
+       time so the re-fit measures the post-sync world, not the mid-transition one. */
+    function _refitAfterSync(){
+      try {
+        requestAnimationFrame(function(){ requestAnimationFrame(function(){ fitTables(); }); });
+        setTimeout(function(){ try { fitTables(); } catch(e){} }, 400);
+      } catch(e){}
+    }
+    document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') _refitAfterSync(); });
+    window.addEventListener('focus', _refitAfterSync);
+    try {
+      if(window.matchMedia){
+        /* fires whenever the window's devicePixelRatio changes = crossed to the other monitor */
+        var _dprWatch = function(){
+          _refitAfterSync();
+          try { matchMedia('(resolution: ' + window.devicePixelRatio + 'dppx)').addEventListener('change', _dprWatch, { once: true }); } catch(e){}
+        };
+        matchMedia('(resolution: ' + window.devicePixelRatio + 'dppx)').addEventListener('change', _dprWatch, { once: true });
+      }
+    } catch(e){}
   }
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', arm); } else { arm(); }
 })();
