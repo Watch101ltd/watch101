@@ -6482,6 +6482,40 @@ if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoad
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', attach); } else { attach(); }
 })();
 
+/* BUG163_TRIGGER_COVERAGE_V1 (2026-08-20 — PC Walter, live-diagnosed IN THE BROWSER with the Dude,
+   per the banked no-blind-patch plan). WHAT THE HUNT PROVED: fitTables' math is correct every time
+   it runs (watched live at 2066px: grow to 1.0078, held). The bug class is STALE ZOOM — the only
+   re-fit triggers were tbody row mutations and window resize, so ANY width change without a row
+   change kept the old zoom forever. Proven live: toggling Compact changed natural width 1714->1131
+   and the zoom held stale (CSS class change, zero row mutations, observer blind by design). The
+   intermittent 100%-zoom left-snap (his screenshot: table at ~78% of a wide wrap = a shrink-era
+   zoom surviving into grow territory) is the same class, seeded by a mid-load width transient and
+   healed only by a window wiggle. Cure: close every staleness road. No math changes. All calls are
+   cheap — fitTables self-debounces through requestAnimationFrame. */
+(function _fitTriggerCoverage(){
+  function arm(){
+    /* Road 1: the WRAP itself changes width (scrollbar appears/leaves, late CSS, any layout shift).
+       ResizeObserver sees what window-resize never could. */
+    try {
+      if(typeof ResizeObserver === 'function'){
+        var ro = new ResizeObserver(function(){ fitTables(); });
+        document.querySelectorAll('.table-wrap').forEach(function(w){ ro.observe(w); });
+      }
+    } catch(e){}
+    /* Road 2: body class flips (Compact, view modes) change column visibility with no row mutation. */
+    try {
+      var mo = new MutationObserver(function(){ fitTables(); });
+      mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    } catch(e){}
+    /* Road 3: web fonts land after the first fit. Measured a 0px delta today, but it costs nothing
+       and covers font changes forever. */
+    try { if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitTables(); }); } catch(e){}
+    /* Road 4: belt and suspenders — one late re-fit after the load has fully settled. */
+    setTimeout(function(){ try { fitTables(); } catch(e){} }, 2000);
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', arm); } else { arm(); }
+})();
+
 // COLLAPSIBLE_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude + Matt). Make all five STAT FILTERING
 // panels collapsible. The first child div of each panel is the gold "STAT FILTERING" title row; we
 // make it clickable, prepend a +/- caret, and start every panel collapsed (hidden by default, Matt's
