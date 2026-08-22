@@ -8125,14 +8125,22 @@ async function _ftlRenderScheduleResults(pid){
   // (in the game-log view it is history, not planning). BYE in a playoff week is worth shouting.
   let poLine = '';
   if(!_ftlSchedPrior){
+    // PLAYOFFS_STRING_V1 (2026-08-22, Matt's 8/21 item 11). He typed BOTH versions out himself,
+    // so this is built to his characters rather than to an interpretation:
+    //   NOT:  PLAYOFFS WK15: @ KC · WK16: @ NYJ · WK17: DEN
+    //   YES:  Playoffs (Wk 15-17): @KC, @NYJ, DEN
+    // Four changes in one line: ONE label instead of three, the @ closes up against the team,
+    // commas instead of middots, and the week numbers collapse into a range.
+    // A BYE in a playoff week keeps its slot in the list — losing a championship week to a bye
+    // is exactly the thing this line exists to warn him about.
     const poParts = [];
     for (let pw = 15; pw <= 17; pw++) {
       const pg = byWeek[pw];
-      if (!pg) { poParts.push('Wk' + pw + ': BYE'); continue; }
+      if (!pg) { poParts.push('BYE'); continue; }
       const pHome = (pg.home === team);
-      poParts.push('Wk' + pw + ': ' + (pHome ? '' : '@ ') + (pHome ? pg.away : pg.home));
+      poParts.push((pHome ? '' : '@') + (pHome ? pg.away : pg.home));
     }
-    poLine = '<div class="fs-playoffline" title="Fantasy playoff weeks — the games that decide championships">🏆 Playoffs ' + poParts.join(' · ') + '</div>';
+    poLine = '<div class="fs-playoffline" title="Fantasy playoff weeks — the games that decide championships">Playoffs (Wk 15-17): ' + poParts.join(', ') + '</div>';
   }
 
   // GAMELOG_FPTS_FIRST_V1: FPts now sits between RESULT and the stat columns, not at the far right.
