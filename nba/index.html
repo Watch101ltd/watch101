@@ -924,6 +924,23 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
 @media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:22px}#ftl-overlay .ftl-photo{width:74px;height:74px}#ftl-overlay .ftl-cols{flex-direction:column}#ftl-overlay .ftl-takewrap{flex:1 1 auto}#ftl-overlay #ftl-gameswrap{flex-direction:column}#ftl-overlay .ftl-statwrap{overflow-x:auto}}  /* CARD_COMPACT_NBA_V1 + STATSTRIP_FULLWIDTH_NBA_V1: the 22-tile strip side-scrolls on narrow screens instead of crushing */
 
 /* POS_BADGE — basketball positions: PG/SG/SF/PF/C, plus G/F fallbacks. */
+
+/* ═══ POSBADGE_DAYMODE_V1 (2026-08-22, the Dude: "they still seem really hard to read in day mode") ═══
+   MEASURED, and the obvious diagnosis was WRONG. The text on the badge sits at 6.4–8.3:1 against
+   its own pill — excellent, roughly double what is needed. Contrast was never the problem.
+   THE REAL DEFECT: the PILL vs the ROW measured **1.12:1**. These pastel fills were designed for a
+   DARK row, where a pale chip pops. On a near-white row the fill is almost exactly the row colour,
+   so the pill stops reading as a pill and all that is left is 8–10px text floating in space.
+   THE FIX: give it an EDGE in its own text colour, and deepen the fill a step. Edge against the
+   row measures 8:1.
+   ⚑ INSET BOX-SHADOW, NOT A BORDER. A border adds geometry and the Pos column already wraps three
+   badges onto two lines for multi-position players (Mikal Bridges). Shadows and filters never
+   affect layout, so this cannot push a single row taller.
+   ⚑ DAY MODE ONLY. In night mode a pale chip on a dark row already pops — there is nothing to fix
+   and touching it would break what works.
+   ⏭️ SIZE IS A SEPARATE QUESTION, deliberately not answered here. His call: fix the edge, look at
+   it, then decide whether 8–10px also needs to grow. */
+body.day-mode .pos-badge{box-shadow:inset 0 0 0 1px currentColor;filter:saturate(1.35) brightness(0.97);}
 .pos-badge{display:inline-block;padding:3px 7px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:0.05em;}
 .pos-PG{background:#1e40af33;color:#60a5fa;border:1px solid #1e40af}
 .pos-SG{background:#0891b233;color:#22d3ee;border:1px solid #0e7490}
