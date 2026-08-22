@@ -863,6 +863,17 @@ td.col-note{width:240px;max-width:240px;overflow:hidden;white-space:nowrap;text-
   text-align:left;white-space:nowrap;
   /* NO text-transform. Bug #168: Matt types his tier names lowercase deliberately. */
 }
+/* ══════════ TIER_TINT_EDIT_V1 (2026-08-22) — THE LABEL IS THE DOOR BACK IN ══════════
+   The floating tab TIER_TINT_V1 replaced was clickable and opened the Edit Tier window.
+   The redesign kept the look and dropped the door. Matt found it the same day:
+   "he likes the look of the new tiers... but you can't click on them and edit them."
+   🪨 A REDESIGN INHERITS THE OLD THING'S JOBS, NOT JUST ITS APPEARANCE.
+   Affordance styled exactly like CARD_TYPEIN_V1's clickable rank number (line ~621) so
+   the two clickable-text behaviours on this page look like each other. Backend only:
+   openEditRankTierModal() already self-blocks via _blockIfReadOnly(), but a customer
+   should not even see a pointer. */
+body:not(.readonly-mode) #rankings-table tbody tr.tier-spacer-row td{cursor:pointer}
+body:not(.readonly-mode) #rankings-table tbody tr.tier-spacer-row:hover td{text-decoration:underline}
 /* The tint itself. Alpha lives in CSS so the colour can stay a plain rgb triplet on the row. */
 #rankings-table tbody tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.13)}
 body.day-mode #rankings-table tbody tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.16)}
@@ -5994,6 +6005,20 @@ function _rankTiersInjectSpacerRows(){
       // style, which is what shouted Matt's tier names back at him. He typed them lowercase ON PURPOSE:
       // "No. Nope, this is how I typed it. And I made sure to write lowercase." Rendered as typed now.
       td.textContent = tier.name;
+      // TIER_TINT_EDIT_V1 (2026-08-22): clicking the label opens the Edit Tier window,
+      // which is the job the old floating tab did before the tint redesign replaced it.
+      // Matt reported it missing the same day he praised the new look.
+      // Safe to bind unconditionally — openEditRankTierModal() carries its own
+      // _blockIfReadOnly() guard, and the CSS hides the pointer on the customer view.
+      // ⚑ No sort/filter guard is needed here the way openCreateRankTierModal needs one:
+      // _rankTiersInjectSpacerRows() returns early unless _rankTiersDefaultOrder() is
+      // true, so these labels do not exist at all while a column sort is active. There
+      // is no state in which a click could re-anchor a tier against a sorted order.
+      spacer.title = 'Click to edit this tier';
+      spacer.addEventListener('click', function(){
+        try { openEditRankTierModal(tier.id); }
+        catch(e){ console.warn('[TIER_TINT_EDIT_V1] could not open the tier editor:', e); }
+      });
       spacer.appendChild(td);
       // The learned-height hack is retired: the row has real content and sizes itself.
       tbody.insertBefore(spacer, range.startRow);
