@@ -592,6 +592,8 @@ table.watch-list thead tr th[data-ranksort="payd"],table.watch-list thead tr th[
 .rank-num-input{width:100%;box-sizing:border-box;font-size:11px;text-align:right;background:var(--surface);border:1px solid var(--turf);color:var(--text);border-radius:4px;padding:1px 2px;font-family:inherit;outline:none;-moz-appearance:textfield}
 .rank-num-input::-webkit-outer-spin-button,.rank-num-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}  /* RANK_TYPEIN_V1: no spinner arrows in a 36px column */
 td.col-rank.rank-editable{cursor:pointer}
+body:not(.readonly-mode) #ftl-rank-num{cursor:pointer}
+body:not(.readonly-mode) #ftl-rank-num:hover{text-decoration:underline}  /* CARD_TYPEIN_V1 */
 td.col-rank.rank-editable:hover{color:var(--turf-bright,#4ade80);text-decoration:underline}
 table.watch-list colgroup col.col-rankdel{width:34px}
 table.watch-list thead tr th.col-rankdel,table.watch-list tbody tr td.col-rankdel{width:34px}  /* RANK_HIDE_V1: the red X column, rankings only, backend only */
@@ -2588,6 +2590,49 @@ function _rankSplitNote(s){
 // rank, Enter. The typed number edits the SAVED MANUAL ORDER underneath, so it works even while
 // the view is sorted or stat-filtered -- exactly the broken loop from the call. Everyone at and
 // below the target rank shifts down one, precisely his spec.
+// CARD_TYPEIN_V1 (2026-08-22): RANK_TYPEIN_V1's twin on the player card. This one edits the
+// WATCH LIST (the 101), because that is what the pill shows -- the four-step ritual below is
+// nflDrop's, verbatim: snapshot for Undo, splice, render, autosave. Works even while the table
+// is stat-sorted (the array is edited directly; the sorted view re-derives on its own).
+function _ftlEditRank(e){
+  if(e && e.stopPropagation) e.stopPropagation();
+  if(_blockIfReadOnly('_ftlEditRank')) return;
+  var pid = _ftlCurrentPid;
+  var span = document.getElementById('ftl-rank-num');
+  if(pid == null || !span || span.querySelector('input')) return;
+  var idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  var input = document.createElement('input');
+  input.type = 'number'; input.min = '1'; input.className = 'rank-num-input';
+  input.style.width = '52px'; input.style.fontSize = '13px'; input.style.textAlign = 'center';
+  input.value = idx + 1;
+  span.textContent = ''; span.appendChild(input);
+  input.focus(); input.select();
+  var repaint = function(){ var i2 = _wlIndexOf(pid); span.textContent = '#' + (i2 >= 0 ? (i2 + 1) : '?'); };
+  var done = function(apply){
+    if(!apply){ repaint(); return; }
+    var n = parseInt(String(input.value).trim(), 10);
+    var from = _wlIndexOf(pid);
+    if(!isFinite(n) || n < 1 || from === -1){ repaint(); return; }
+    if(n > _watchList.length) n = _watchList.length;
+    if(from === n - 1){ repaint(); return; }
+    if(typeof snapshotForUndo === 'function') snapshotForUndo();          // lands on the Undo button, same as a drag
+    var moved = _watchList.splice(from, 1)[0];
+    _watchList.splice(n - 1, 0, moved);
+    renderWatchList();                                                     // rank re-derives from array position
+    if(typeof autoSaveToNflNAS === 'function') autoSaveToNflNAS();         // NFL_AUTOSAVE_NAS_V1, the drag's own persistence
+    if(typeof updateUndoButton === 'function') updateUndoButton();
+    repaint();
+  };
+  input.addEventListener('keydown', function(ev){
+    if(ev.key === 'Enter'){ ev.preventDefault(); input.removeEventListener('blur', onBlur); done(true); }
+    if(ev.key === 'Escape'){ ev.preventDefault(); input.removeEventListener('blur', onBlur); done(false); }
+    ev.stopPropagation();
+  });
+  var onBlur = function(){ done(true); };
+  input.addEventListener('blur', onBlur);
+  input.addEventListener('click', function(ev){ ev.stopPropagation(); });
+}
 function editRankNum(pid, el){
   if(_blockIfReadOnly('editRankNum')) return;
   if(el.querySelector('input')) return;               // already editing this cell
@@ -8144,6 +8189,8 @@ function openFromTheLogo(pid, _keepRange){
   document.getElementById('ftl-sub').innerHTML = subParts.join('<span class="sep">|</span>');
 
   // Watch101 rank pill — only when the player is on the watch list (his hand-ranked slot).
+  // CARD_TYPEIN_V1 (2026-08-22, the Dude): the pill's number is click-to-type for the backend,
+  // so Matt can re-rank a player from INSIDE the card instead of backing out to the list.
   const idx = _wlIndexOf(pid);
   const rankEl = document.getElementById('ftl-rank');
   if(idx >= 0){
@@ -8930,7 +8977,7 @@ function _yahooLookupFmt(pid, field, isPercent){
       <div class="ftl-sub" id="ftl-sub"></div>
       <!-- CARD_COMPACT_V1 (2026-08-21): rank pill + own pill + Stats For share one row -->
       <div class="ftl-meta-row">
-      <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num"></span></div>
+      <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num" onclick="_ftlEditRank(event)" title="Click to type a new Watch101 rank"></span></div><!-- CARD_TYPEIN_V1 -->
       <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label></div>
       </div>
       <div class="ftl-daterange-wrap"><span class="ftl-daterange-label">Stats For:</span><select id="ftl-daterange-select" class="ftl-daterange-select" onchange="_ftlDateRangeChange(this)" title="Stat window shown on this card — resets to Season on open"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option><option value="previous_seasons">Previous Seasons</option></select></div>
