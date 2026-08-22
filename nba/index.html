@@ -294,8 +294,23 @@ body.present-mode tbody tr td:hover span{color:var(--red,#ef4444)!important;}
   overflow:visible;
 }
 table.watch-list{
-  width:100%;border-collapse:separate;border-spacing:0;
-  min-width:1250px;table-layout:fixed;background:var(--surface);  /* BLOCK_CLONE_V1: identity block widened to baseball spec */
+  /* STRETCH_KILL_NBA_V1 (2026-08-22) — ported from football's STRETCH_KILL_V1 + WIDTH_SHAVE_V1.
+     WAS: width:100% + min-width:1250px. width:100% dealt every leftover pixel of the container out
+     between the columns as pure air, which is the "columns spread across the entire screen" the Dude
+     asked to stop. The min-width floor then guaranteed a minimum amount of that spread.
+     ⚠ NOT width:auto. Football tried that first and it has a trap, caught by live measurement before
+     it ever reached Matt: an auto-width table CAPS ITSELF AT ITS CONTAINER, so on any window narrower
+     than the columns' natural sum the columns compress UNEVENLY (football's note column was crushed
+     240px -> ~50px) and THEN the zoom fitter shrinks the wreckage further. A widescreen can never show
+     this; a laptop can. width:max-content holds natural size on every screen and leaves ALL fitting to
+     fitTables' proportional zoom, the one mechanism that shrinks every column by the same factor.
+     ⚑ NBA needs no <colgroup> here, unlike football. Football's colgroup exists because its first row
+     is now a colspan GROUP HEADER row, and under fixed layout a spanning cell smears the per-column
+     widths. NBA is deliberately NOT getting group headers (the Dude's call 2026-08-22 -- basketball's
+     stats are categories and Passing/Rushing/Receiving does not map), so its first row is an ordinary
+     header row and the existing th.col-* widths act as per-column floors under the auto algorithm. */
+  width:max-content;border-collapse:separate;border-spacing:0;
+  table-layout:fixed;background:var(--surface);  /* BLOCK_CLONE_V1: identity block widened to baseball spec */
   border:1px solid var(--border);border-radius:8px;
   /* NBA_STICKY_HEADERS_V1 — removed overflow:hidden (traps position:sticky; same trap fixed on football). */
 }
@@ -894,21 +909,18 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
 .rank-subnav-btn{background:var(--surface2,#161b22);color:var(--text2,#9aa4b2);border:1px solid var(--border2,#2a3240);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;font-family:'Nunito Sans',sans-serif;cursor:pointer;transition:all 0.15s}
 .rank-subnav-btn:hover{color:var(--court-bright,#fb923c);border-color:var(--court-bright,#fb923c)}
 .rank-subnav-btn.active{background:var(--court,#ea580c);color:#fff;border-color:var(--court,#ea580c)}
-/* ══════════ NBA_RANKINGS_WIDTH_V1 (June 11, 2026 — PC Walter, per the Dude) ══════════
-   Clone of football's RANKINGS_WIDTH_V1. The shared .watch-list rule is width:100% + min-width:1050px
-   + table-layout:fixed, which SPREADS the Rankings columns edge-to-edge (eyes travel the whole
-   monitor). Pack the columns tight on the LEFT, blank space on the right. Touches ONLY #rankings-table.
-   The fitTables grow-to-fill zoom is also skipped for #nbarankings-wrap (see fitTables) or it would
-   re-inflate this narrow table right back to full width. */
-#rankings-table{
-  width:auto;             /* shrink to content instead of stretching to 100% */
-  min-width:0;            /* kill the 1050px floor that forces the spread */
-  table-layout:auto;      /* size each column to its content, not evenly across the page */
-  margin:0;               /* sit on the left edge, blank space falls on the right */
-}
-#rankings-table thead th{ padding:6px 14px; font-size:10px; }
-#rankings-table tbody td{ padding:6px 14px; font-size:13px; }
-#rankings-table tbody .stat-cell{ font-size:13px; }
+/* ══════════ NBA_RANKINGS_WIDTH_V1 — RETIRED 2026-08-22 ══════════
+   A clone of football's RANKINGS_WIDTH_V1, and it carried the same defect. It used
+   **table-layout:auto**, which sizes each column to its widest CONTENT -- and in a stat column the
+   widest content is usually the HEADER LABEL, so a long label sets its own column's width. On football
+   that was Matt's exact complaint, verbatim: "it makes this column so wide, because there are six
+   letters with the dots after it." Its 14px side padding was also seven times the watch list's 2px.
+   🪨 THE DISTINCTION THAT READS LIKE A FLIP-FLOP IF YOU SKIM: width:auto was never the defect and its
+   descendant max-content is in use below. table-layout:AUTO was the defect. width sizes the TABLE;
+   table-layout sizes the COLUMNS. Different property, different bug.
+   With the shared rule above now max-content and packed left, this table needs no separate model --
+   the Dude, 2026-08-22: "I don't mind that gap on the right now. I think it looks way better that way." */
+#rankings-table{width:max-content;min-width:0}  /* mirrors the shared rule; its id outranks it, so it must be said here too */
   /* WHITESTATS_V1 (2026-06-28, per the Dude) -> SUPERSEDED BY RANKINGS_TEAL_V1 (2026-07-30).
      WHITESTATS_V1 turned these numbers WHITE because the light/dark orange was hard to read, and it
      said so itself: "Temporary look; we'll dress it up later." This is later. The Watch List and the
@@ -1626,11 +1638,11 @@ function toggleFilterPanel(titleEl){
 // (#nba-players-body), each in its own .table-wrap. Observer watches both.
 // ──────────────────────────────────────────────────────────────────────────
 const AUTOSHRINK_MIN = 0.70; // never shrink below 70% — readability floor
-const RANK_AUTOSHRINK_MIN = 0.60; // RANK_FLOOR_060_V1 (2026-08-20, per the Dude — Matt's text: his laptop
-  // needs ~67% zoom to see every rankings column, and the 0.70 floor clamped JUST above that, cutting
-  // columns off. Rankings-only floor at 0.60: Matt's own working zoom proves the size readable to him.
-  // Watch list + pool keep the 0.70 floor. The STRUCTURAL fix Matt actually asked for ('compact some of
-  // these stats') is a rankings Compact mode — which columns is HIS call, on the Friday 8/21 agenda.
+// RANK_FLOOR_060_V1 — RETIRED 2026-08-22, ported from football. The rankings-only 0.60 shrink floor
+// was the 8/20 answer to Matt needing ~67% browser zoom. It made the page FIT by making it SMALL, which
+// is why he came back on 8/21 with BOTH halves of one complaint: cut off to the right AND "why did the
+// font shrink so incredibly." Treating a WIDTH problem with ZOOM was the wrong lever. With the stretch
+// killed above, this table is genuinely narrow and shares the single 0.70 floor with every surface.
 let _fitRaf = null;
 function fitTables(){
   if(_fitRaf) cancelAnimationFrame(_fitRaf);
@@ -1641,30 +1653,21 @@ function fitTables(){
       const table = wrap.querySelector('table');
       if(!table) return;
       if(wrap.offsetParent === null){ return; }   // skip hidden surfaces
-      // RANK_AUTOSHRINK_NBA_V1 (2026-08-20 — the Dude's call; mirror of football's
-      // RANK_AUTOSHRINK_NFL_V1, verified by him the same afternoon). The old blanket
-      // exemption here (NBA_RANKINGS_WIDTH_V1, 'rankings stays packed-left') predates
-      // RANKINGS_WL_CLONE_NBA_V1: after the 8/19 clone the rankings table is the widest
-      // on the page and forced 90% browser zoom. Rankings now SHRINKS to fit like every
-      // other table — but never GROWS past 100%, so the packed-left look survives
-      // wherever the table already fits at full size (grow-to-fill stays skipped).
-      if(wrap.id === 'nbarankings-wrap'){
-        table.style.zoom = '1';                     // reset to read true natural width
-        const rAvail = wrap.clientWidth;
-        const rNatural = table.scrollWidth;
-        if(rNatural > rAvail && rAvail > 0){
-          let rScale = rAvail / rNatural;
-          if(rScale < RANK_AUTOSHRINK_MIN){ rScale = RANK_AUTOSHRINK_MIN; }   // RANK_FLOOR_060_V1
-          table.style.zoom = rScale.toFixed(4);
-        }
-        return;
-      }
+      // RANK_AUTOSHRINK_NBA_V1 — SPECIAL CASE REMOVED 2026-08-22, ported from football. The rankings
+      // table used to take its own branch here: its own shrink floor, never allowed to grow. It is now
+      // an ordinary .watch-list table down the SAME path as the watch list and the pool. If a future
+      // session finds itself writing another `if(wrap.id === ...)` here, that is the exact shape of the
+      // bug this removal cured -- read the CSS tombstone above first.
       table.style.zoom = '1';                       // reset to read true natural width
       const avail = wrap.clientWidth;
       const natural = table.scrollWidth;
       if(natural <= 0 || avail <= 0){ return; }
       if(natural <= avail){
-        table.style.zoom = (avail / natural).toFixed(4);  // GROW to fill, no ceiling
+        // STRETCH_KILL_NBA_V1 (2026-08-22): GROW-to-fill retired, ported from football. The old line
+        // magnified the whole table -- fonts included -- until it filled the wrap, which rebuilt the
+        // spread-out look no matter how tight the columns got. No amount of column work could win
+        // against it. Now: fits at natural size, packed LEFT, blank space on the right on wide screens.
+        // zoom was already reset to '1' above; leave it there. The SHRINK path below is unchanged.
         return;
       }
       let scale = avail / natural;
