@@ -482,7 +482,10 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-daterange-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:10px;letter-spacing:0.12em;color:var(--text3)}
 #ftl-overlay .ftl-daterange-select{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em;}
 #ftl-overlay .ftl-daterange-select.daterange-active{border-color:var(--gold);color:var(--gold);}
-#logo-sub{color:var(--turquoise2,#0891b2);}  /* TEAL_STAMP_TWINS_V1 (2026-08-08): logo-sub is now baseball's teal last-updated line */
+#logo-sub{color:var(--turquoise2,#0891b2);}
+/* META_ROW_V1 (2026-08-22): tagline + teal stamp on one line instead of two stacked. */
+.list-meta-row{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;}
+#active-list-subtitle:not(:empty)::after{content:'\00b7';margin-left:6px;opacity:0.55;}  /* TEAL_STAMP_TWINS_V1 (2026-08-08): logo-sub is now baseball's teal last-updated line */
 /* RIGHTCLICK_MENU_TWINS_V1 (2026-08-08) - baseball's #rc-menu styles, cloned byte-for-byte. */
 #rc-menu{position:fixed;display:none;min-width:200px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,0.45),0 0 0 1px rgba(255,255,255,0.04);z-index:1000;padding:4px;font-family:'Nunito Sans',sans-serif;}
 #rc-menu.visible{display:block;animation:rcAppear 0.12s ease-out;}
@@ -1255,8 +1258,12 @@ document.addEventListener('DOMContentLoaded',function(){
     </div><!-- /list-picker-header -->
     <!-- LIST_CHROME_V1 (2026-08-03) — big active-list title + tagline, baseball's LIST_PICKER_HEADER_V2 pattern in NBA colors. Updated by _updateYearLabels(). -->
     <div id="active-list-title" style="font-size:16px;font-weight:800;color:var(--court-bright,#fb923c);letter-spacing:0.05em;text-shadow:0 1px 2px rgba(0,0,0,0.4);margin-top:4px">12 Team Daily 9-Cat (Integrity)</div>
-    <div id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em">The flagship 101</div>
-    <div class="logo-sub" id="logo-sub">Not yet saved</div>
+    <!-- META_ROW_V1 (2026-08-22, the Dude): the tagline and the teal stamp share ONE line now.
+         They were two stacked lines, and the stamp repeated the list name that is already in the title above. -->
+    <div class="list-meta-row">
+      <div id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em">The flagship 101</div>
+      <div class="logo-sub" id="logo-sub">Not yet saved</div>
+    </div>
     </div><!-- /list-title-stack -->
   </div>
   <div class="header-right">
@@ -6064,7 +6071,7 @@ async function autoSaveToNbaNAS(){
       try { localStorage.setItem(_wlStorageKey() + '_saved', _now); } catch(_e2){}
       const _alS = (typeof _activeList === 'function') ? _activeList() : null;
       const _elS = document.getElementById('logo-sub');
-      if(_elS) _elS.textContent = ((_alS && _alS.name) ? _alS.name : '') + ' — local draft saved: ' + _now + ' (use "Save to Excel" to publish)';
+      if(_elS) _elS.textContent = 'local draft saved: ' + _now + ' (use "Save to Excel" to publish)';   // META_ROW_V1: name dropped, the title above already says it
     }
   } catch(_e){}
   if(_nbaNasSaving) return;  // coalesce rapid mutations; the latest list is what posts
@@ -6117,7 +6124,7 @@ async function loadListFromStorage(){
           const _word = (env === 'list') ? 'Published:' : 'Staged:';
           const _badge = (env === 'list') ? '' : ' [STAGING]';
           const _elT = document.getElementById('logo-sub');
-          if(_elT) _elT.textContent = _nmT + _badge + ' — ' + (_ts ? (_word + ' ' + _ts) : 'Loaded');
+          if(_elT) _elT.textContent = (_badge ? _badge.trim() + ' ' : '') + (_ts ? (_word + ' ' + _ts) : 'Loaded');   // META_ROW_V1: keep [STAGING], drop the repeated name
         } catch(_e){}
         return;
       }
@@ -6135,7 +6142,7 @@ async function loadListFromStorage(){
       const _lsTs = localStorage.getItem(_wlStorageKey() + '_saved');
       const _alF = (typeof _activeList === 'function') ? _activeList() : null;
       const _elF = document.getElementById('logo-sub');
-      if(_elF) _elF.textContent = ((_alF && _alF.name) ? _alF.name : '') + ' — ' + (_lsTs ? ('local draft (this browser): ' + _lsTs) : 'not yet saved');
+      if(_elF) _elF.textContent = (_lsTs ? ('local draft (this browser): ' + _lsTs) : 'not yet saved');   // META_ROW_V1: name dropped
     } catch(_e){}
   } catch(e){
     console.warn('[loadListFromStorage] localStorage fallback failed:', e);
