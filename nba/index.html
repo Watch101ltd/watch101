@@ -983,7 +983,11 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
   #page-nav{display:none !important;}
   #nbawl-filter-panel{display:none !important;}
   #nbark-filter-panel{display:none !important;}  /* NBA_RANK_STATFILTER_V1: mirror the watch-list phone rule */
-  .toolbar-right > *:not(#theme-toggle){display:none !important;}  /* HDR_PARITY_TWINS_V1: baseball's PHONE_THEME_BTN_BACK_V1 — the moon lives in the toolbar now, keep it on phone */
+  .toolbar-right > *:not(#theme-toggle){display:none !important;}  /* HDR_PARITY_TWINS_V1: baseball's PHONE_THEME_BTN_BACK_V1.
+     ⚠ THIS EXCEPTION IS NOW INERT (HDR_COMPACT_NBA_V1, 2026-08-22): #theme-toggle no longer lives in .toolbar-right, it moved
+     to the chrome More panel. The rule still correctly hides the rest of the toolbar on phones, but its :not() protects
+     nothing. Phone access to day/night survives because .w101-menu is width:100% at this breakpoint rather than hidden --
+     CHECKED, not assumed. Football carries the identical inert exception for the same reason. */
   #status-bar{display:none !important;}
   /* PHONE_GLOWUP_TWINS_V1 (2026-08-07): the date-range dropdown now SHOWS on phone (baseball shows its Season Stats box; the twins match). June's hide rule removed here. */
   /* PHONE_HDR_COMPACT_TWINS_V1 (2026-08-07) -- baseball's June compact-header treatment, finally
@@ -1076,6 +1080,7 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
 .w101-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
 .w101-brand-word{font-family:'Bowlby One',sans-serif;font-size:26px;letter-spacing:.04em;color:var(--court);line-height:1}
 .w101-brand img{height:34px;width:auto;display:block}
+#drop-tools-panel .btn{display:flex;width:100%;box-sizing:border-box;justify-content:flex-start;text-align:left;margin:2px 0;font-size:12px}  /* HDR_COMPACT_NBA_V1 */
 /* HDR_COMPACT_NBA_V1: the chrome carries the sister-site minis, shrunk from the old 26px header size
    to 14px, and hidden on narrow screens where The Lists dropdown already covers the trip. */
 .w101-minis{display:flex;align-items:center;gap:10px;margin-left:auto}
@@ -1181,7 +1186,23 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
       <a href="../updates.html" id="nav-updates">Updates</a>
       <a href="../contact.html">Contact</a>
       <a class="w101-sub" id="subscribe-btn" href="#">Subscribe</a>
-      <!-- theme toggle omitted: the tracker header already owns #theme-toggle -->
+      <!-- HDR_COMPACT_NBA_V1 (2026-08-22), ported from football: every toolbar button the Dude called
+           "random buttons floating all over the place" now lives under this one chrome dropdown.
+           Kept OUT in the toolbar, matching football's call: Undo, the view-mode picker (NBA's Compact
+           equivalent), Tier, the player count and Save. Elements MOVED with ids and onclick wiring
+           untouched -- nothing was retyped. NBA has no Trending link and no Yahoo badge, so this panel
+           carries six controls where football carries eight. -->
+      <div class="w101-drop" id="drop-tools">
+        <button type="button" onclick="w101Drop('drop-tools',event)" aria-haspopup="true">More</button>
+        <div class="w101-drop-panel" id="drop-tools-panel">
+          <button class="btn btn-outline" id="present-btn" onclick="togglePresentMode()" title="Presentation mode — hover any cell to magnify and highlight it for screen-share">🔍 Present</button>
+          <button class="btn btn-outline" onclick="reloadWatchList()" title="Reload the list and stats from the NAS">Refresh</button>
+          <button class="btn btn-outline" id="export-btn" onclick="exportXLSXDownload()" title="Download the current list as an Excel (.xlsx) file">&#128228; Export</button>
+          <button class="btn btn-red backend-only" onclick="clearList()">Clear All</button>
+          <button class="btn btn-outline" id="legend-btn" onclick="openLegend()" title="The Key — what every symbol on the list means">&#9432; The Key</button>
+          <button class="btn btn-outline" id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙 Day / Night</button>
+        </div>
+      </div>
     </nav>
 
     <div class="w101-minis"><!-- HDR_COMPACT_NBA_V1: the sister-site minis moved UP from the big header and shrunk 26px -> 14px.
@@ -1202,12 +1223,12 @@ function toggleTheme(){
   var isDay=document.body.classList.toggle('day-mode');
   try{localStorage.setItem('watch101-theme',isDay?'day':'night');}catch(e){}
   var b=document.getElementById('theme-toggle');
-  if(b){b.textContent=isDay?'☀️':'🌙';b.title=isDay?'Switch to night mode':'Switch to day mode';}
+  if(b){b.textContent=(isDay?'☀️':'🌙')+' Day / Night';b.title=isDay?'Switch to night mode':'Switch to day mode';}  // HDR_COMPACT_NBA_V1: the moon lives in the chrome More panel now and carries a text label
 }
 document.addEventListener('DOMContentLoaded',function(){
   var b=document.getElementById('theme-toggle');if(!b)return;
   var isDay=document.body.classList.contains('day-mode');
-  b.textContent=isDay?'☀️':'🌙';b.title=isDay?'Switch to night mode':'Switch to day mode';
+  b.textContent=(isDay?'☀️':'🌙')+' Day / Night';b.title=isDay?'Switch to night mode':'Switch to day mode';  // HDR_COMPACT_NBA_V1
 });
 </script>
 
@@ -1280,15 +1301,15 @@ document.addEventListener('DOMContentLoaded',function(){
       <option value="nine-cat">&#8596; 9 Cat</option>
       <option value="thirteen-cat">&#8596; 13 Cat</option>
     </select>
-    <button class="btn btn-outline" id="present-btn" onclick="togglePresentMode()" title="Presentation mode — hover any cell to magnify and highlight it for screen-share">🔍 Present</button>  <!-- PRESENT_MODE_TWINS_V1 -->
-    <button class="btn btn-outline" onclick="reloadWatchList()" title="Reload the list and stats from the NAS">Refresh</button>  <!-- HDR_PARITY_TWINS_V1: moved from the top header -->
-    <button class="btn btn-outline" id="export-btn" onclick="exportXLSXDownload()" title="Download the current list as an Excel (.xlsx) file">&#128228; Export</button>
+      <!-- PRESENT_MODE_TWINS_V1 -->
+      <!-- HDR_PARITY_TWINS_V1: moved from the top header -->
+    
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of players">&#127991;&#65039; Tier</button>
     <div class="count-badge" id="count-badge">0 players</div>
     <button class="btn btn-court backend-only" id="save-btn" onclick="saveList()">💾 Save</button>
-    <button class="btn btn-red backend-only" onclick="clearList()">Clear All</button>
-    <button id="legend-btn" onclick="openLegend()" title="The Key — what every symbol on the list means">&#9432;</button>  <!-- LEGEND_KEY_TWINS_V1: beside the moon, baseball's spot -->
-    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">🌙</button>  <!-- HDR_PARITY_TWINS_V1: baseball keeps the moon in the toolbar -->
+    
+      <!-- LEGEND_KEY_TWINS_V1: beside the moon, baseball's spot -->
+      <!-- HDR_PARITY_TWINS_V1: baseball keeps the moon in the toolbar -->
   </div>
 </div>
 
