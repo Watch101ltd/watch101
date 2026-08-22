@@ -2645,8 +2645,10 @@ function _ftlEditRank(e){
     if(n > _watchList.length) n = _watchList.length;
     if(from === n - 1){ repaint(); return; }
     if(typeof snapshotForUndo === 'function') snapshotForUndo();          // lands on the Undo button, same as a drag
+    _tierRepairCapture(currentTiers, _tierRepairWlIds());   // TIER_SELFREPAIR_NFL_V1
     var moved = _watchList.splice(from, 1)[0];
     _watchList.splice(n - 1, 0, moved);
+    if(_tierRepairReanchor(currentTiers, _tierRepairWlIds(), pid)){ _tiersUserMutated = true; try{ _tiersPersistLocal(); }catch(_e){} }   // TIER_SELFREPAIR_NFL_V1
     renderWatchList();                                                     // rank re-derives from array position
     if(typeof autoSaveToNflNAS === 'function') autoSaveToNflNAS();         // NFL_AUTOSAVE_NAS_V1, the drag's own persistence
     if(typeof updateUndoButton === 'function') updateUndoButton();
@@ -2693,8 +2695,10 @@ function rankTypeInApply(pid, val){
   if(!isFinite(n) || n < 1 || from === -1){ renderRankings(); return; }   // nonsense typed, or unknown pid: repaint, change nothing
   if(n > arr.length) n = arr.length;                   // typing 999 parks him last, not off the list
   if(from === n - 1){ renderRankings(); return; }      // same spot: nothing to do
+  _tierRepairCapture(_rankTiersGet(_rankPos), _tierRepairRankIds());   // TIER_SELFREPAIR_NFL_V1
   arr.splice(from, 1);
   arr.splice(n - 1, 0, pid);
+  if(_tierRepairReanchor(_rankTiersGet(_rankPos), _tierRepairRankIds(), pid)){ _rankTiersMutated[_rankTierKeyFor(_rankPos)] = true; try{ _rankTiersPersistLocal(); }catch(_e){} }   // TIER_SELFREPAIR_NFL_V1
   _rankManual[_rankPos] = true;   // a typed rank claims this tab exactly like a hand-drag (RANKINGS_LIVE_SEED_V1)
   var statusEl = document.getElementById('rankings-status');
   if(statusEl){
@@ -3199,8 +3203,10 @@ function rankDrop(e, pid){
   var ti = arr.indexOf(pid);
   if(si < 0 || ti < 0) return;
   _hideDropIndicator();   // DRAG_POLISH_V1 addendum
+  _tierRepairCapture(_rankTiersGet(_rankPos), _tierRepairRankIds());   // TIER_SELFREPAIR_NFL_V1
   var moved = arr.splice(si, 1)[0];
   arr.splice(ti, 0, moved);
+  if(_tierRepairReanchor(_rankTiersGet(_rankPos), _tierRepairRankIds(), moved)){ _rankTiersMutated[_rankTierKeyFor(_rankPos)] = true; try{ _rankTiersPersistLocal(); }catch(_e){} }   // TIER_SELFREPAIR_NFL_V1
   _rankDragSrcPid = null;
   _rankSortField = null;  // RANKINGS_STATS_V1 — a drag IS the ranking; snap the view back to the manual order
   _rankManual[_rankPos] = true;  // RANKINGS_LIVE_SEED_V1 -- a real hand-drag claims this tab (must flip BEFORE renderRankings)
@@ -4832,6 +4838,104 @@ let _tiersSnapshotAtLoad = [];
 let _tiersUserMutated = false;
 let _tierEditingId = null;
 
+/* =========================================================================
+   TIER_SELFREPAIR_NFL_V1 (2026-08-22) — Matt's bug: drag a player ABOVE his own
+   tier leader and he falls out of the tier.
+
+   ROOT CAUSE, and it is not the drag code. A tier is stored as TWO ANCHORS
+   (start_pid / end_pid), not a member list — everyone BETWEEN the anchors is a
+   member. So moving a player above the start anchor does not "eject" him; he
+   walks out from under the bookend and the anchors never move to follow.
+
+   Ported from baseball's TIER_DRAG_SELFREPAIR_V1 (mlb/index.html ~11386), which
+   Matt demonstrated working correctly on the baseball page during the 8/21 call.
+   Baseball is the reference implementation — Working Principle, and it held again.
+
+   THE CONTRACT: capture BEFORE the splice, re-anchor AFTER.
+     - members are remembered from the OLD order
+     - the moved player leaves his old tier
+     - he JOINS a tier only if he landed INSIDE that tier's surviving span
+     - anchors are re-derived from the survivors, so the tier keeps its people
+     - a tier with no survivors is dropped
+   Generic over both football tier stores: the watch list (currentTiers over
+   _watchList) and the rankings (_rankTiersGet(pos) over _rankings[pos]).
+   ========================================================================= */
+var _tierRepairSnapshot = null;
+function _tierRepairWlIds(){ try { return _watchList.map(function(it){ return String(_wlPid(it)); }); } catch(e){ return []; } }
+function _tierRepairRankIds(){ try { return (_rankings[_rankPos] || []).map(function(x){ return String(x); }); } catch(e){ return []; } }
+function _tierRepairCapture(tiers, orderIds){
+  _tierRepairSnapshot = null;
+  try {
+    if(!Array.isArray(tiers) || tiers.length === 0) return;
+    var idxOf = {}; for(var i=0;i<orderIds.length;i++){ idxOf[orderIds[i]] = i; }
+    var snap = [];
+    for(var t=0;t<tiers.length;t++){
+      var tier = tiers[t]; if(!tier){ snap.push(null); continue; }
+      var sI = idxOf[String(tier.start_pid)], eI = idxOf[String(tier.end_pid)];
+      var members = [];
+      if(sI != null && eI != null && sI <= eI){ for(var k=sI;k<=eI;k++){ members.push(orderIds[k]); } }
+      snap.push({ id: tier.id, members: members });
+    }
+    _tierRepairSnapshot = snap;
+  } catch(e){ console.warn('[TIER_SELFREPAIR_NFL_V1] capture failed:', e); _tierRepairSnapshot = null; }
+}
+function _tierRepairReanchor(tiers, orderIds, movedPid){
+  try {
+    if(!Array.isArray(tiers) || tiers.length === 0) return false;
+    if(!_tierRepairSnapshot) return false;
+    var moved = (movedPid == null) ? null : String(movedPid);
+    var idxOf = {}; for(var i=0;i<orderIds.length;i++){ idxOf[orderIds[i]] = i; }
+    var movedIdx = (moved == null) ? null : idxOf[moved];
+    var changed = false, survivors = [];
+    for(var t=0;t<tiers.length;t++){
+      var tier = tiers[t]; if(!tier){ changed = true; continue; }
+      var snap = null;
+      for(var q=0;q<_tierRepairSnapshot.length;q++){ var sn=_tierRepairSnapshot[q]; if(sn && sn.id === tier.id){ snap = sn; break; } }
+      var memberSet = {};
+      if(snap){ for(var m=0;m<snap.members.length;m++){ memberSet[snap.members[m]] = true; } }
+      var wasMember = (moved != null && memberSet[moved] === true);      // recorded BEFORE we drop him
+      if(moved != null && memberSet[moved]){ delete memberSet[moved]; }   // he left his old spot
+      var idxs = [];
+      for(var mk in memberSet){ if(Object.prototype.hasOwnProperty.call(memberSet, mk)){ var ix = idxOf[mk]; if(ix != null) idxs.push(ix); } }
+      idxs.sort(function(a,b){ return a-b; });
+      // MEMBERSHIP RULE, and the second half is the whole point of Matt's bug.
+      //  - an OUTSIDER joins only if he landed strictly INSIDE the surviving span.
+      //  - an EXISTING MEMBER also keeps his seat if he landed flush against either
+      //    END of it. Promoting yourself to the top of your own tier is RE-ORDERING,
+      //    not leaving. Without this, dragging a man above his own tier leader drops
+      //    him, because removing him moves the span's top down to the man below.
+      //    (Matt, 8/21 call, 29:06: Swift above Jacobs leaves the tier.)
+      if(moved != null && movedIdx != null && idxs.length > 0){
+        var _top = idxs[0], _bot = idxs[idxs.length-1];
+        var _inside = (movedIdx >= _top && movedIdx <= _bot);
+        var _edge   = wasMember && (movedIdx === _top - 1 || movedIdx === _bot + 1);
+        if(_inside || _edge){
+          memberSet[moved] = true; idxs.push(movedIdx); idxs.sort(function(a,b){ return a-b; });
+        }
+      }
+      // NEVER DELETE A TIER WE COULD NOT READ. If capture found no members for this
+      // tier (its anchors were not in this order at all — a removed player, a tab it
+      // does not belong to, corrupt saved data) then LEAVE IT EXACTLY AS IT IS.
+      // Only a tier that genuinely HAD members and lost every one of them is dropped.
+      // Silently destroying one of Matt's tiers over a data quirk is a far worse bug
+      // than the one this function exists to fix.
+      if(idxs.length === 0){
+        if(!snap || snap.members.length === 0){ survivors.push(tier); continue; }
+        changed = true; continue;
+      }
+      var ns = String(orderIds[idxs[0]]), ne = String(orderIds[idxs[idxs.length-1]]);
+      if(String(tier.start_pid) !== ns || String(tier.end_pid) !== ne){
+        tier.start_pid = ns; tier.end_pid = ne; tier.updated_at = new Date().toISOString(); changed = true;
+      }
+      survivors.push(tier);
+    }
+    // IN PLACE: callers hold live references (_rankTiers[key], currentTiers).
+    if(survivors.length !== tiers.length){ tiers.length = 0; for(var z=0;z<survivors.length;z++){ tiers.push(survivors[z]); } }
+    _tierRepairSnapshot = null;
+    if(changed) console.log('[TIER_SELFREPAIR_NFL_V1] re-anchored after move of', moved, '- tiers now:', tiers.length);
+    return changed;
+  } catch(e){ console.warn('[TIER_SELFREPAIR_NFL_V1] reanchor failed:', e); _tierRepairSnapshot = null; return false; }
+}
 function _tiersLsKey(){ return _wlStorageKey() + '_tiers'; }
 
 function _tiersForSave(){
@@ -7388,8 +7492,10 @@ function nflDrop(e, pid){
   if(si < 0 || ti < 0) return;
   snapshotForUndo();   // DRAG_POLISH_V1 -- bank the pre-move order
   _hideDropIndicator();
+  _tierRepairCapture(currentTiers, _tierRepairWlIds());   // TIER_SELFREPAIR_NFL_V1
   const [moved] = _watchList.splice(si, 1);
   _watchList.splice(ti, 0, moved);
+  if(_tierRepairReanchor(currentTiers, _tierRepairWlIds(), _wlPid(moved))){ _tiersUserMutated = true; try{ _tiersPersistLocal(); }catch(_e){} }   // TIER_SELFREPAIR_NFL_V1
   _nflDragSrcPid = null;
   renderWatchList();        // rank is re-derived from array position on render
   autoSaveToNflNAS();       // NFL_AUTOSAVE_NAS_V1 — persist the new order to the NAS
