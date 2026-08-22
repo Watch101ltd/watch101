@@ -11421,6 +11421,7 @@ function _tierDragReanchor(movedMlbId){
       // Start from the captured members, MINUS the moved player (he left his old position).
       var memberSet = {};
       if(snap){ for(var m=0;m<snap.members.length;m++){ memberSet[snap.members[m]] = true; } }
+      var wasMember = (moved != null && memberSet[moved] === true);   // TIER_SELFREPAIR_AMEND_V1: recorded BEFORE we drop him
       if(moved != null && memberSet[moved]){ delete memberSet[moved]; }
       // RULE 2: if the moved player LANDED inside this tier's CURRENT span (between its
       // surviving top & bottom in the new order), add him as a member.
@@ -11428,13 +11429,28 @@ function _tierDragReanchor(movedMlbId){
       var idxs = [];
       for(var mk in memberSet){ if(memberSet.hasOwnProperty(mk)){ var ix = idxOf[mk]; if(ix != null) idxs.push(ix); } }
       idxs.sort(function(a,b){ return a-b; });
+      // TIER_SELFREPAIR_AMEND_V1 (2026-08-22) — RULE 2 WAS TOO STRICT AND IT REPRODUCED MATT'S BUG HERE TOO.
+      // Proven by simulation against this very function: tier Jacobs/Swift/Gibbs, drag Swift to the top,
+      // survivors then START at Jacobs, so Swift sits one slot ABOVE the span and was dropped.
+      //   - an OUTSIDER joins only if he landed strictly INSIDE the surviving span
+      //   - an EXISTING MEMBER also keeps his seat flush against either END of it
+      // Promoting yourself to the top of your own tier is RE-ORDERING, not leaving.
       if(moved != null && movedIdx != null && idxs.length > 0){
-        if(movedIdx >= idxs[0] && movedIdx <= idxs[idxs.length-1]){
+        var _top = idxs[0], _bot = idxs[idxs.length-1];
+        var _inside = (movedIdx >= _top && movedIdx <= _bot);
+        var _edge   = wasMember && (movedIdx === _top - 1 || movedIdx === _bot + 1);
+        if(_inside || _edge){
           memberSet[moved] = true; idxs.push(movedIdx); idxs.sort(function(a,b){ return a-b; });
         }
       }
       // Re-derive anchors from the surviving (+maybe joined) members.
-      if(idxs.length === 0){ changed = true; continue; } // tier emptied -> drop it
+      // TIER_SELFREPAIR_AMEND_V1: NEVER DELETE A TIER WE COULD NOT READ. If capture found no
+      // members (anchors absent from this order — removed player, corrupt save) LEAVE IT ALONE.
+      // Only a tier that genuinely HAD members and lost every one is dropped.
+      if(idxs.length === 0){
+        if(!snap || snap.members.length === 0){ survivors.push(tier); continue; }
+        changed = true; continue;
+      }
       var newStartId = String(players[idxs[0]].mlb_id);
       var newEndId   = String(players[idxs[idxs.length-1]].mlb_id);
       if(String(tier.start_mlb_id) !== newStartId || String(tier.end_mlb_id) !== newEndId){
