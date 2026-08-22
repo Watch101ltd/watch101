@@ -508,6 +508,23 @@ tr.row-minor-stats td.yahoo-rank * {
 .badge-row{display:flex;flex-wrap:wrap;gap:2px;align-items:center}
 .player-team{font-size:11px;color:var(--text);font-family:'Nunito Sans',sans-serif}
 
+
+/* ═══ POSBADGE_DAYMODE_V1 (2026-08-22, the Dude: "they still seem really hard to read in day mode") ═══
+   MEASURED, and the obvious diagnosis was WRONG. The text on the badge sits at 6.4–8.3:1 against
+   its own pill — excellent, roughly double what is needed. Contrast was never the problem.
+   THE REAL DEFECT: the PILL vs the ROW measured **1.12:1**. These pastel fills were designed for a
+   DARK row, where a pale chip pops. On a near-white row the fill is almost exactly the row colour,
+   so the pill stops reading as a pill and all that is left is 8–10px text floating in space.
+   THE FIX: give it an EDGE in its own text colour, and deepen the fill a step. Edge against the
+   row measures 8:1.
+   ⚑ INSET BOX-SHADOW, NOT A BORDER. A border adds geometry and the Pos column already wraps three
+   badges onto two lines for multi-position players (Mikal Bridges). Shadows and filters never
+   affect layout, so this cannot push a single row taller.
+   ⚑ DAY MODE ONLY. In night mode a pale chip on a dark row already pops — there is nothing to fix
+   and touching it would break what works.
+   ⏭️ SIZE IS A SEPARATE QUESTION, deliberately not answered here. His call: fix the edge, look at
+   it, then decide whether 8–10px also needs to grow. */
+body.day-mode .pos-badge{box-shadow:inset 0 0 0 1px currentColor;filter:saturate(1.35) brightness(0.97);}
 .pos-badge{display:inline-block;padding:1px 3px;border-radius:2px;font-size:8px;font-family:'Nunito Sans',sans-serif;font-weight:600;margin:0;line-height:1.4;letter-spacing:0.02em}
 .pos-cell{padding:2px 6px;text-align:left;vertical-align:middle}
 .pos-stack{display:grid;grid-template-columns:repeat(2, auto);gap:1px;justify-content:flex-start;align-items:center;width:auto}
