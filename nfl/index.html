@@ -572,14 +572,23 @@ table.watch-list colgroup col.col-adp{width:38px}
 table.watch-list thead tr th.col-adp,table.watch-list tbody tr td.col-adp{width:38px}
 table.watch-list colgroup col.col-yrank{width:44px}
 table.watch-list thead tr th.col-yrank,table.watch-list tbody tr td.col-yrank{width:44px}
-table.watch-list colgroup col.col-yowned{width:50px}
-table.watch-list thead tr th.col-yowned,table.watch-list tbody tr td.col-yowned{width:50px}
-table.watch-list colgroup col.col-cbsowned{width:52px}
-table.watch-list thead tr th.col-cbsowned,table.watch-list tbody tr td.col-cbsowned{width:52px}
+table.watch-list colgroup col.col-yowned{width:58px}
+table.watch-list thead tr th.col-yowned,table.watch-list tbody tr td.col-yowned{width:58px}  /* YDS_WIDTH_V1: room for the label + the floated arrow */
+table.watch-list colgroup col.col-cbsowned{width:64px}
+table.watch-list thead tr th.col-cbsowned,table.watch-list tbody tr td.col-cbsowned{width:64px}  /* YDS_WIDTH_V1: CBS Owned was wrapping its arrow onto a second line */
 table.watch-list colgroup col.col-fpts{width:50px}
 table.watch-list thead tr th.col-fpts,table.watch-list tbody tr td.col-fpts{width:50px}
 table.watch-list colgroup col.col-stat{width:32px}
 table.watch-list thead tr th.col-stat,table.watch-list tbody tr td.col-stat{width:32px}
+/* YDS_WIDTH_V1 (2026-08-22, the Dude): the three yardage columns are the only stats that reach FOUR
+   digits (RuYd/ReYd ~1,600 and PaYd ~4,900 -- passing yards go four digits too, which is why it is
+   three columns and not his named two). At the shared 32px stat floor a "1,223" sat 6px off its
+   neighbor. 48px floor, keyed on the sort attributes so it lands on exactly these columns on all
+   three surfaces (watch list data-sort, pool data-npsort, rankings data-ranksort). The tr keeps
+   specificity level with the pair rules; source order below them settles the tie. */
+table.watch-list thead tr th[data-sort="payd"],table.watch-list thead tr th[data-sort="ruyd"],table.watch-list thead tr th[data-sort="reyd"],
+table.watch-list thead tr th[data-npsort="payd"],table.watch-list thead tr th[data-npsort="ruyd"],table.watch-list thead tr th[data-npsort="reyd"],
+table.watch-list thead tr th[data-ranksort="payd"],table.watch-list thead tr th[data-ranksort="ruyd"],table.watch-list thead tr th[data-ranksort="reyd"]{width:48px}
 table.watch-list colgroup col.col-notebadge{width:24px}
 table.watch-list thead tr th.col-notebadge,table.watch-list tbody tr td.col-notebadge{width:24px}
 table.watch-list colgroup col.col-action{width:60px}
@@ -681,11 +690,11 @@ table.watch-list tbody .stat-cell{font-size:11px}
 /* Yahoo/CBS header accent prefixes */
 table.watch-list thead th .y-prefix{color:#6001D2;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
 table.watch-list thead th .cbs-prefix{color:#3b82f6;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
-table.watch-list thead th .sort-arrow{opacity:0.4;font-size:8px;margin-left:0;float:left}  /* ARROW_ALIGN_V1 (2026-08-22, the Dude's eye): the in-flow arrow after the label was eating the cell's right edge, pushing every right-justified label ~12px left of its own numbers -- with 3-char labels in 32px columns the headers read as LEFT-justified. Floating the arrow to the cell's left lets the label hug the right edge exactly like the numbers below it. */
+table.watch-list thead th .sort-arrow{opacity:0;font-size:8px;margin-left:0;float:left}  /* ARROW_ALIGN_V1 + YDS_WIDTH_V1: at rest the floated arrows read as stray glyphs between the tight columns (the Dude's screenshot), so they now appear on hover only -- the pointer cursor and titles still say "clickable", and every column stays sortable */  /* ARROW_ALIGN_V1 (2026-08-22, the Dude's eye): the in-flow arrow after the label was eating the cell's right edge, pushing every right-justified label ~12px left of its own numbers -- with 3-char labels in 32px columns the headers read as LEFT-justified. Floating the arrow to the cell's left lets the label hug the right edge exactly like the numbers below it. */
 table.watch-list thead th.left .sort-arrow{float:right;margin-right:0}  /* ARROW_ALIGN_V1: mirror image for the left-justified Player and Note headers -- label hugs left, arrow parks right */
-table.watch-list thead th[data-sort]{cursor:pointer;user-select:none}
+table.watch-list thead th[data-sort],table.watch-list thead th[data-npsort],table.watch-list thead th[data-ranksort]{cursor:pointer;user-select:none}
 table.watch-list thead th[data-sort]:hover{color:var(--text)}
-table.watch-list thead th[data-sort]:hover .sort-arrow{opacity:0.9}
+table.watch-list thead th[data-sort]:hover .sort-arrow,table.watch-list thead th[data-npsort]:hover .sort-arrow,table.watch-list thead th[data-ranksort]:hover .sort-arrow{opacity:0.9}  /* YDS_WIDTH_V1: hover reveal covers all three surfaces' sort attributes */
 /* SCORING_ENGINE_NFL_V1 -- Variant D scoring box in the FPts header (mockup 2026-08-06) */
 .fpts-scoring-select{max-width:64px;background:var(--surface);border:1px solid var(--border2);color:var(--gold);font-size:9px;font-weight:700;border-radius:6px;padding:1px 3px;font-family:inherit;cursor:pointer;outline:none;text-transform:none;letter-spacing:0;margin-left:4px;vertical-align:middle}
 .fpts-scoring-select.nondefault{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
@@ -2810,8 +2819,8 @@ function _rankRenderHead(cols){
   var headRow = document.getElementById('rankings-head-row');
   if(!headRow) return;
   var fixed = '<th class="col-handle">☰</th>' +
-              '<th class="col-rank" data-ranksort="rank" style="cursor:pointer" title="Back to saved ranking order">Rank <span class="sort-arrow" style="opacity:.4">↕</span></th>' +   // RANK_HEADER_RESTORE_V1 (Bug #161, 2026-08-19)
-              '<th class="col-av" data-ranksort="av" style="cursor:pointer" title="Auction value — Matt&#39;s dollars, typed by hand">$ <span class="sort-arrow" style="opacity:.4">↕</span></th>' +   // AV_COL_V1
+              '<th class="col-rank" data-ranksort="rank" style="cursor:pointer" title="Back to saved ranking order">Rank <span class="sort-arrow">↕</span></th>' +   // RANK_HEADER_RESTORE_V1 (Bug #161, 2026-08-19)
+              '<th class="col-av" data-ranksort="av" style="cursor:pointer" title="Auction value — Matt&#39;s dollars, typed by hand">$ <span class="sort-arrow">↕</span></th>' +   // AV_COL_V1
               '<th class="col-pos">Pos</th>' +
               '<th class="left col-player">Player</th>';
   var statHeads = cols.map(function(c){
@@ -2819,7 +2828,7 @@ function _rankRenderHead(cols){
     // cell and up into the group row above -- Matt's ask, and it is a width win, because the select
     // sitting beside the label was widening the FPts column on every row of the table.
     return '<th class="' + (c.headClass||'') + '" data-ranksort="' + c.key + '" style="cursor:pointer">' +
-           c.label + ' <span class="sort-arrow" style="opacity:.4">↕</span></th>';
+           c.label + ' <span class="sort-arrow">↕</span></th>';
   }).join('');
   headRow.innerHTML = fixed + statHeads;
 
