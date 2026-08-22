@@ -953,6 +953,10 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
 #rankings-table tbody .player-name{ font-size:13px; }
 #rankings-table thead th.col-handle, #rankings-table tbody td.col-handle{ padding:6px 6px; }
 #rankings-table thead th.col-rank,   #rankings-table tbody td.col-rank{ padding:6px 10px; }
+/* AV_COL_NBA_V1 (2026-08-22) — football's auction-value column, ported. Set-aware from birth. */
+#rankings-table th.col-av,#rankings-table td.col-av{width:44px;text-align:center}
+#rankings-table .rk-av-input{width:100%;box-sizing:border-box;font-size:11px;text-align:center;background:var(--surface);border:1px solid var(--gold);color:var(--text);border-radius:4px;padding:1px 2px;font-family:inherit;outline:none}
+#rankings-table .rk-av-input::placeholder{color:var(--text3);opacity:.6}
 #rankings-table thead th.col-pos{ padding:6px 8px; }
 #rankings-table thead th.col-player, #rankings-table tbody td.col-player{ width:200px; max-width:200px; }
 .np-on-list{color:var(--court,#ea580c);font-weight:800}
@@ -1641,7 +1645,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <tr id="rankings-head-row"></tr>
       </thead>
       <tbody id="rankings-body">
-        <tr><td colspan="30" class="empty-state"><strong>PG rankings are loading</strong>Player data may still be loading — give it a moment.</td></tr>
+        <tr><td colspan="31" class="empty-state"><strong>PG rankings are loading</strong>Player data may still be loading — give it a moment.</td></tr>
       </tbody>
     </table>
   </div>
@@ -4226,7 +4230,7 @@ function renderRankings(){
   var statusEl = document.getElementById('rankings-status');
   if(!tbody) return;
   if(!_playerDB){
-    tbody.innerHTML = '<tr><td colspan="30" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="31" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
     return;
   }
   // _rankings[pos] is the source of truth for ORDER. First render with no saved order seeds from the
@@ -4279,8 +4283,8 @@ function renderRankings(){
 
   if(ids.length === 0){
     tbody.innerHTML = _rkFiltOn
-      ? '<tr><td colspan="' + (cols.length + 4) + '" class="empty-state"><strong>No ' + _rankPos + ' players match the stat filter</strong>Loosen or reset the filter to bring the list back.</td></tr>'
-      : '<tr><td colspan="' + (cols.length + 4) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
+      ? '<tr><td colspan="' + (cols.length + 5) + '" class="empty-state"><strong>No ' + _rankPos + ' players match the stat filter</strong>Loosen or reset the filter to bring the list back.</td></tr>'
+      : '<tr><td colspan="' + (cols.length + 5) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
     try { renderRankTiers(); } catch(e){}   /* NBA_RANK_STATFILTER_V1: wipe tier boxes from the previous paint */
     try { _renderRankPhoneList(ids); } catch(e){}   /* RANK_PHONE_NBA_V1 */
     return;
@@ -4308,6 +4312,7 @@ function renderRankings(){
       handleCell +
       (_rkRo ? ('<td class="col-rank">' + (i+1) + '</td>')
              : ('<td class="col-rank rank-editable" title="Click to type a new rank -- works even while sorted" onclick="event.stopPropagation();editRankNum(&quot;' + _pidAttr + '&quot;,this)">' + (i+1) + '</td>')) +   // RANK_TYPEIN_NBA_V1
+      '<td class="col-av">' + _rankAvCellHtml(pid) + '</td>' +   // AV_COL_NBA_V1
       '<td class="center">' + _nbaPosBadges(p) + '</td>' +
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + ' ' + _badgeCol.render(pid) + '</td>' +   // RANKINGS_WL_CLONE_NBA_V1 + INJ_TAG_NBA_V1
       statCells +
@@ -4616,7 +4621,8 @@ function _rankRenderHead(cols){
   var headRow = document.getElementById('rankings-head-row');
   if(!headRow) return;
   var fixed = '<th class="col-handle">☰</th>' +
-              '<th class="col-rank" data-ranksort="rank" style="cursor:pointer" title="Back to saved ranking order">Rank <span class="sort-arrow" style="opacity:.4">↕</span></th>' +   // RANK_HEADER_RESTORE_V1 (Bug #161, 2026-08-19)
+              '<th class="col-rank" data-ranksort="rank" style="cursor:pointer" title="Back to saved ranking order">Rank <span class="sort-arrow" style="opacity:.4">↕</span></th>' +
+              '<th class="col-av" data-ranksort="av" style="cursor:pointer" title="Auction value — dollars, typed by hand">$ <span class="sort-arrow">↕</span></th>' +   // AV_COL_NBA_V1   // RANK_HEADER_RESTORE_V1 (Bug #161, 2026-08-19)
               '<th class="col-pos">Pos</th>' +
               '<th class="left col-player">Player</th>';
   var statHeads = cols.map(function(c){
@@ -4625,7 +4631,73 @@ function _rankRenderHead(cols){
   }).join('');
   headRow.innerHTML = fixed + statHeads;
 }
+// ── AV_COL_NBA_V1 (2026-08-22) — Auction Value, ported from football at the Dude's request ──
+// A box the user TYPES a dollar number into, RANKINGS ONLY, sitting between Rank and Pos.
+// SET-AWARE FROM DAY ONE: redraft and dynasty keep separate numbers (Matt's 8/21 item 8 —
+// "Jeremiah Love is worth more in dynasty than redraft"). Football shipped this flat on 8/19
+// and had to be split on 8/22; basketball skips that mistake entirely.
+// The value follows a player across POSITION tabs within a set: type it once.
+var _rankAv = { redraft: {}, dynasty: {} };   // set -> pid -> number (dollars)
+function _rankAvBucket(){
+  var k = ((typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'dynasty' : 'redraft');
+  if(!_rankAv[k] || typeof _rankAv[k] !== 'object') _rankAv[k] = {};
+  return _rankAv[k];
+}
+var RANK_AV_KEY_V2 = 'watch101_nba_rank_av_v2';
+function _rankAvSaveLocal(){ try { localStorage.setItem(RANK_AV_KEY_V2, JSON.stringify(_rankAv)); } catch(e){ console.warn('[AV_COL_NBA_V1] save failed:', e); } }
+function _rankAvLoadLocal(){
+  try {
+    var raw = localStorage.getItem(RANK_AV_KEY_V2);
+    if(raw){
+      var o = JSON.parse(raw);
+      if(o && typeof o === 'object'){
+        _rankAv = { redraft: (o.redraft && typeof o.redraft === 'object') ? o.redraft : {},
+                    dynasty: (o.dynasty && typeof o.dynasty === 'object') ? o.dynasty : {} };
+      }
+    }
+  } catch(e){ console.warn('[AV_COL_NBA_V1] load failed:', e); }
+}
+function _rankAvFor(pid){ var b = _rankAvBucket(); var v = Number(b[pid]); return (isFinite(v) && v >= 0 && b[pid] != null && b[pid] !== '') ? v : null; }
+function _rankAvSet(pid, raw){
+  if(_blockIfReadOnly('_rankAvSet')) return;
+  var s = String(raw == null ? '' : raw).replace(/[$,\s]/g, '');
+  var _b = _rankAvBucket();
+  if(s === ''){ delete _b[pid]; }
+  else {
+    var v = Number(s);
+    if(!isFinite(v) || v < 0){ renderRankings(); return; }   // junk: repaint restores the last good value
+    _b[pid] = Math.round(v * 10) / 10;                       // one decimal max, dollars
+  }
+  _rankAvSaveLocal();
+  if(typeof saveRankings === 'function' && _rankPos) saveRankings(_rankPos);
+}
+function _rankAvCellHtml(pid){
+  var v = _rankAvFor(pid);
+  var _ro = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+  if(_ro) return (v == null) ? '<span class="placeholder">—</span>' : escapeHtml(String(v));
+  var pidAttr = String(pid).replace(/"/g,'&quot;');
+  var val = (v == null) ? '' : String(v);
+  return '<input type="text" inputmode="decimal" class="rk-av-input" maxlength="5" value="' + escapeHtml(val) + '" placeholder="—"' +
+         ' onchange="_rankAvSet(&quot;' + pidAttr + '&quot;, this.value)"' +
+         ' onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" draggable="false">';
+}
+// ── /AV_COL_NBA_V1 ──
 function _rankSortedView(manualIds){
+  // AV_COL_NBA_V1: the $ column is a FIXED column, so it sorts here rather than through the col
+  // config. Empty boxes sink in BOTH directions — an unpriced player is not "$0", he is unpriced.
+  if(_rankSortField === 'av'){
+    var viewAv = manualIds.slice();
+    var dirAv = (_rankSortDir === 'asc') ? 1 : -1;
+    viewAv.sort(function(a, b){
+      var va = _rankAvFor(a), vb = _rankAvFor(b);
+      var am = (va == null), bm = (vb == null);
+      if(am && bm) return 0;
+      if(am) return 1;
+      if(bm) return -1;
+      return (va - vb) * dirAv;
+    });
+    return viewAv;
+  }
   var cols = _rankColsFor(_rankPos);
   var col = null; for(var i=0;i<cols.length;i++){ if(cols[i].key === _rankSortField){ col = cols[i]; break; } }
   if(!col) return manualIds;
@@ -4742,7 +4814,7 @@ async function saveRankings(pos){
   _rankNasSaving[pos] = true;
   var statusEl = document.getElementById('rankings-status');
   try {
-    var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankNoteStamps[pid]); if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; return o; });   // RANKINGS_NOTES_NBA_V1: note rides along. RANK_NOTE_BADGE_48H_V1: its freshness stamp rides too. RANKINGS_WL_CLONE_NBA_V1: type_tags + priority ride the same payload (server stores player objects verbatim)
+    var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankNoteStamps[pid]); if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; return o; });   /* AV_COL_NBA_V1 rides the payload */   // RANKINGS_NOTES_NBA_V1: note rides along. RANK_NOTE_BADGE_48H_V1: its freshness stamp rides too. RANKINGS_WL_CLONE_NBA_V1: type_tags + priority ride the same payload (server stores player objects verbatim)
     var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ players: players, manual: _rankManual[pos] === true, tiers: (typeof _rankTiersForSave === 'function' ? _rankTiersForSave(pos) : []) })  // NBA_RANKINGS_LIVE_SEED_V1 + RANK_TIERS_V1 (the server already persists a tiers array for any list id)
@@ -4789,6 +4861,7 @@ async function loadRankingsFromNAS(){
   var _rkNewestIso = null, _rkNewestLocal = null, _rkNewestEnv = null;
   _rankLoadLocal();
   _rankNotesLoadLocal();   // RANKINGS_NOTES_NBA_V1
+  _rankAvLoadLocal();      // AV_COL_NBA_V1
   _rankTypesLoadLocal(); _rankPrioLoadLocal();   // RANKINGS_WL_CLONE_NBA_V1
   var positions = ['Overall','PG','SG','SF','PF','C'];
   for(var i=0;i<positions.length;i++){
@@ -4818,7 +4891,7 @@ async function loadRankingsFromNAS(){
           if(payload && Array.isArray(payload.tiers)){ _rankTiers[_rtKey] = payload.tiers; _rankTiersSnapshot[_rtKey] = payload.tiers.slice(); }
         } catch(_rtE){ console.warn('[RANK_TIERS_V1] tier hydrate failed for ' + pos + ':', _rtE); }
         if(players && players.length){
-          players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); var _hst=Number(it.note_saved_at); if(isFinite(_hst) && _hst>0 && _rankNoteStamps[it.pid]==null) _rankNoteStamps[it.pid]=_hst; if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; });  // RANKINGS_NOTES_NBA_V1 + RANK_NOTE_BADGE_48H_V1 + RANKINGS_WL_CLONE_NBA_V1: notes, their freshness stamps, type tags and priority all harvest from the NAS payload
+          players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); var _hst=Number(it.note_saved_at); if(isFinite(_hst) && _hst>0 && _rankNoteStamps[it.pid]==null) _rankNoteStamps[it.pid]=_hst; if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); var _avB=_rankAvBucket(); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _avB[it.pid]==null) _avB[it.pid]=_hav; });   /* AV_COL_NBA_V1: harvest into the set being loaded */  // RANKINGS_NOTES_NBA_V1 + RANK_NOTE_BADGE_48H_V1 + RANKINGS_WL_CLONE_NBA_V1: notes, their freshness stamps, type tags and priority all harvest from the NAS payload
           // NBA_RANKINGS_LIVE_SEED_V1 -- only a HAND-DRAGGED order (manual:true in the saved payload)
           // is adopted; anything else is ignored and the tab follows the live Yahoo seed.
           if(payload.manual === true){
