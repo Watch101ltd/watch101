@@ -675,6 +675,117 @@ td.col-note{width:144px;max-width:144px;overflow:hidden;white-space:nowrap;text-
    (baseball's TIER_SPACER_ROW_V1); swatches are the modal's color palette ring. */
 .tier-spacer-row { height: 28px; background: transparent; pointer-events: none; }
 .tier-spacer-row td { border: none !important; padding: 0 !important; background: transparent !important; }
+/* ══════════ TIER_TINT_V1 (2026-08-22, the Dude's design) — RANKINGS ONLY ══════════
+   Tiers stop being an absolutely-positioned overlay and become a tinted background plus a coloured
+   line and label, entirely in flow. Nothing is measured, so nothing can drift under zoom.
+   Scoped to #rankings-table on purpose: the watch list keeps its boxes, per Matt's preference for
+   moving whole groups there. The two .tier-spacer-row rules ABOVE still serve the watch list. */
+#rankings-table tbody tr.tier-spacer-row{height:auto;background:transparent;pointer-events:auto}
+#rankings-table tbody tr.tier-spacer-row td{
+  border:none !important;
+  border-top:2px solid rgb(var(--tier-rgb,148,163,184)) !important;   /* the LINE at the top of the tier */
+  padding:9px 6px 3px 6px !important;
+  background:transparent !important;
+  color:rgb(var(--tier-rgb,148,163,184));
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:0.06em;
+  text-align:left;white-space:nowrap;
+  /* NO text-transform. Bug #168: Matt types his tier names lowercase deliberately. */
+}
+/* ══════════ TIER_TINT_EDIT_V1 (2026-08-22) — THE LABEL IS THE DOOR BACK IN ══════════
+   The floating tab TIER_TINT_V1 replaced was clickable and opened the Edit Tier window.
+   The redesign kept the look and dropped the door. Matt found it the same day:
+   "he likes the look of the new tiers... but you can't click on them and edit them."
+   🪨 A REDESIGN INHERITS THE OLD THING'S JOBS, NOT JUST ITS APPEARANCE.
+   Affordance styled exactly like CARD_TYPEIN_V1's clickable rank number (line ~621) so
+   the two clickable-text behaviours on this page look like each other. Backend only:
+   openEditRankTierModal() already self-blocks via _blockIfReadOnly(), but a customer
+   should not even see a pointer. */
+body:not(.readonly-mode) #rankings-table tbody tr.tier-spacer-row td{cursor:pointer}
+body:not(.readonly-mode) #rankings-table tbody tr.tier-spacer-row:hover td{text-decoration:underline}
+/* ══════════ TIER_TINT_DRAG_V1 (2026-08-22) — THE ARMED LABEL ══════════
+   Group drag used to arm the floating overlay box. TIER_TINT_V1 deleted that box and
+   nothing replaced it, so arming had been silently dead. The LABEL ROW is the handle now.
+   ⚠️ THE GLOW GOES ON THE td, NOT THE tr. A <tr> is not a reliable positioning context,
+   so an ::after pinned to it lands in the wrong place. The td is made position:relative
+   only while armed, so nothing about the resting layout changes.
+   🪨 OPACITY IS THE ONLY THING THAT ANIMATES. Never animate box-shadow on the element
+   itself — that was baseball's 33x tier-drag lag, and this page shares that CSS. The glow
+   is painted once and faded, which the compositor handles without touching layout.
+   Reuses the existing @keyframes tier-armed-fade rather than adding a second one. */
+#rankings-table tbody tr.tier-spacer-row.tier-armed td{
+  position:relative;cursor:grab;
+  background:rgba(255,193,7,0.14) !important;
+  border-top-color:#ffc107 !important;
+  color:#ffc107;
+}
+#rankings-table tbody tr.tier-spacer-row.tier-armed:active td{cursor:grabbing}
+#rankings-table tbody tr.tier-spacer-row.tier-armed td::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  box-shadow:0 0 14px #ffc107, inset 0 0 10px rgba(255,193,7,0.35);
+  opacity:0;animation:tier-armed-fade 1.5s ease-in-out infinite;will-change:opacity;
+}
+body.day-mode #rankings-table tbody tr.tier-spacer-row.tier-armed td{
+  background:rgba(217,119,6,0.16) !important;border-top-color:#d97706 !important;color:#9a5b06;
+}
+body.day-mode #rankings-table tbody tr.tier-spacer-row.tier-armed td::after{
+  box-shadow:0 0 12px #d97706, inset 0 0 8px rgba(217,119,6,0.3);
+}
+/* The tint itself. Alpha lives in CSS so the colour can stay a plain rgb triplet on the row. */
+#rankings-table tbody tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.13)}
+body.day-mode #rankings-table tbody tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.16)}
+/* ⚠ HOVER MUST STILL WIN. The tint is applied to td (a tr background loses to td painting), which
+   means the shared `tbody tr:hover` rule targeting tr would be invisible underneath it. These two
+   restore hover feedback on tiered rows -- without them a tiered row would look dead to the mouse. */
+#rankings-table tbody tr.tier-member:hover td{background:var(--surface2)}
+body.day-mode #rankings-table tbody tr.tier-member:hover td{background:var(--surface2)}
+/* ══════════ TIER_TINT_WL_V1 (2026-08-22) — THE WATCH LIST JOINS THE TINT ══════════
+   Matt picked the tinted design over the boxes and asked for it everywhere:
+   "matt likes the new tiers over the old style, so we need to change them everywhere."
+   ⚑ THIS OVERTURNS A DELIBERATE SPLIT. TIER_TINT_V1 was rankings-only because Matt had
+   said boxes suit the WATCH LIST, where he moves whole groups. That objection was about
+   GROUP DRAG, and TIER_TINT_DRAG_V1 gave the tinted label a working drag handle first —
+   the drag was rebuilt and HE AND MATT BOTH TESTED IT before this port was allowed to run.
+   ⚠️ SCOPED TO #watch-list-body, NOT .watch-list. The rankings table also carries
+   class="watch-list", so scoping by class would reach across into the other view. */
+#watch-list-body tr.tier-spacer-row{height:auto;background:transparent;pointer-events:auto}
+#watch-list-body tr.tier-spacer-row td{
+  border:none !important;
+  border-top:2px solid rgb(var(--tier-rgb,148,163,184)) !important;
+  padding:9px 6px 3px 6px !important;
+  background:transparent !important;
+  color:rgb(var(--tier-rgb,148,163,184));
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:0.06em;
+  text-align:left;white-space:nowrap;
+  /* NO text-transform. Bug #168: Matt types his tier names lowercase deliberately. */
+}
+#watch-list-body tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.13)}
+body.day-mode #watch-list-body tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.16)}
+/* ⚠ HOVER MUST STILL WIN — the tint paints the td, so a tr-level hover rule would sit
+   underneath it and a tiered row would look dead to the mouse. */
+#watch-list-body tr.tier-member:hover td{background:var(--surface2)}
+body.day-mode #watch-list-body tr.tier-member:hover td{background:var(--surface2)}
+/* click the label to edit, same affordance as the rankings side and CARD_TYPEIN_V1 */
+body:not(.readonly-mode) #watch-list-body tr.tier-spacer-row td{cursor:pointer}
+body:not(.readonly-mode) #watch-list-body tr.tier-spacer-row:hover td{text-decoration:underline}
+/* armed for group drag. Glow on the td (a <tr> is not a reliable positioning context),
+   OPACITY-only animation (box-shadow animation was baseball's 33x drag lag). */
+#watch-list-body tr.tier-spacer-row.tier-armed td{
+  position:relative;cursor:grab;
+  background:rgba(255,193,7,0.14) !important;
+  border-top-color:#ffc107 !important;color:#ffc107;
+}
+#watch-list-body tr.tier-spacer-row.tier-armed:active td{cursor:grabbing}
+#watch-list-body tr.tier-spacer-row.tier-armed td::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  box-shadow:0 0 14px #ffc107, inset 0 0 10px rgba(255,193,7,0.35);
+  opacity:0;animation:tier-armed-fade 1.5s ease-in-out infinite;will-change:opacity;
+}
+body.day-mode #watch-list-body tr.tier-spacer-row.tier-armed td{
+  background:rgba(217,119,6,0.16) !important;border-top-color:#d97706 !important;color:#9a5b06;
+}
+body.day-mode #watch-list-body tr.tier-spacer-row.tier-armed td::after{
+  box-shadow:0 0 12px #d97706, inset 0 0 8px rgba(217,119,6,0.3);
+}
 .tier-swatch { width:32px; height:32px; border-radius:50%; border:2px solid var(--border); cursor:pointer; padding:0; transition:transform 0.1s, box-shadow 0.1s; }
 .tier-swatch:hover { transform:scale(1.1); }
 .tier-swatch.selected { border-color:#eab308; box-shadow:0 0 0 3px rgba(234,179,8,0.35); transform:scale(1.1); }
@@ -2663,7 +2774,13 @@ function _onTierDragCheckboxChanged(){
   } catch(e){ console.warn('[TIER_DRAG_NBA_V1] _onTierDragCheckboxChanged failed:', e); }
 }
 function _tierGetBoxEl(tierId){
-  return document.querySelector('.tier-bracket-box[data-tier-id="' + String(tierId).replace(/"/g,'\\"') + '"]');
+  // ══════════ TIER_TINT_WL_V1 (2026-08-22) — THE HANDLE MOVED ══════════
+  // This used to find the floating '.tier-bracket-box'. The tint redesign deletes that box,
+  // so the tier LABEL ROW is the handle now: per-tier, carries the id, and sits in normal
+  // flow so it cannot drift under zoom the way the absolutely-positioned box did.
+  // ⚠️ Scoped to #watch-list-body. The RANKINGS table also carries class="watch-list", and
+  // an unscoped lookup would be one id collision away from arming the wrong view.
+  return document.querySelector('#watch-list-body tr.tier-spacer-row[data-tier-spacer-for="' + String(tierId).replace(/"/g,'\\"') + '"]');
 }
 function _wlTierIdx(pidVal){
   return _watchList.findIndex(function(item){ return String(_wlPid(item)) === String(pidVal); });
@@ -2842,8 +2959,8 @@ document.addEventListener('click', function(e){
   var box = _tierGetBoxEl(_armedTierId);
   if(!box) return;
   if(box.contains(e.target)) return;
-  var tab = document.querySelector('.tier-bracket-tab[data-tier-id="' + String(_armedTierId).replace(/"/g,'\\"') + '"]');
-  if(tab && tab.contains(e.target)) return;
+  // TIER_TINT_WL_V1: the separate floating TAB is gone - the label row IS the handle now,
+  // so box.contains() above already covers everything the tab used to.
   var modal = document.getElementById('create-tier-modal');
   if(modal && modal.contains(e.target)) return;
   disarmTier();
@@ -3020,11 +3137,24 @@ function _tiersInjectSpacerRows(){
       var spacer = document.createElement('tr');
       spacer.className = 'tier-spacer-row';
       spacer.setAttribute('data-tier-spacer-for', String(tier.id));
+      spacer.style.setProperty('--tier-rgb', _rankTierRgb(TIER_COLOR_HEX[tier.color]));
       var td = document.createElement('td');
       td.colSpan = colCount;
+      // TIER_TINT_WL_V1: this row used to be an invisible strut holding space for a floating
+      // tab. It IS the label now -- same class, same position, same insertBefore, so the
+      // drag/drop logic sees the exact row set it already coped with.
+      // NO uppercase: Bug #168, Matt types his tier names lowercase on purpose.
+      td.textContent = tier.name;
+      spacer.title = 'Click to edit this tier';
+      spacer.addEventListener('click', function(){
+        // While ARMED the label is a drag handle, not a button -- opening the editor on the
+        // same click would fight the grab and look like the arm had failed.
+        if(typeof _armedTierId !== 'undefined' && _armedTierId === tier.id) return;
+        try { openEditTierModal(tier.id); }
+        catch(e){ console.warn('[TIER_TINT_WL_V1] could not open the tier editor:', e); }
+      });
       spacer.appendChild(td);
-      var _shWl = (window._tierSpacerHeights || {})['wl:' + tier.id];   // TIER_UNCHAINED_V1: learned multi-line height
-      if(_shWl) spacer.style.height = _shWl + 'px';
+      // The learned-height hack is retired: the row has real content and sizes itself.
       tbody.insertBefore(spacer, range.startRow);
     } catch(e){ console.warn('[TIER_SPACER_ROW_V1] spacer inject failed:', tier, e); }
   });
@@ -3049,103 +3179,76 @@ function _tiersGetOrCreateLayer(){
   }
   return { layer: layer, anchor: anchor };
 }
+// ══════════ TIER_TINT_WL_V1 (2026-08-22) ══════════
+// THE OVERLAY IS GONE HERE TOO. Same cure as the rankings side: a tinted background on the
+// member rows plus a coloured line and label above them, all in normal document flow.
+//
+// 🪨 WHY THE OLD ONE BROKE. The bracket boxes were absolutely positioned from row geometry:
+//     top = sRect.top - anchorRect.top + anchor.scrollTop
+// getBoundingClientRect() returns VISUAL pixels (already multiplied by any active CSS zoom)
+// while scrollTop is in LAYOUT pixels. Adding the two made the error PROPORTIONAL TO THE
+// ZOOM, which is why boxes drifted worse with every step in. A tinted row has no geometry
+// to get wrong.
+function _tiersClearTint(){
+  try {
+    document.querySelectorAll('#watch-list-body tr.tier-member').forEach(function(r){
+      r.classList.remove('tier-member');
+      r.style.removeProperty('--tier-rgb');
+    });
+  } catch(e){}
+}
+// Every data row from startRow to endRow inclusive. Walks siblings rather than indexing, so an
+// injected label row between them is simply skipped instead of throwing the count off.
+function _tiersMemberRows(range){
+  var out = [], n = range.startRow;
+  while(n){
+    if(n.hasAttribute && n.hasAttribute('data-nba-pid')) out.push(n);
+    if(n === range.endRow) break;
+    n = n.nextElementSibling;
+  }
+  return out;
+}
 function renderTiers(){
-  _tiersClearOverlay();
-  try { _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_SPACER_ROW_V1] inject crashed:', e); }
+  _tiersClearOverlay();     // kept: empties any stale overlay layer from before TIER_TINT_WL_V1
+  _tiersClearTint();
+  try { _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_TINT_WL_V1] label inject crashed:', e); }
   if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
   if(!_tiersDefaultOrder()){ try { _tiersClearSpacerRows(); } catch(e){} return; }
-  var ctx = _tiersGetOrCreateLayer();
-  if(!ctx) return;
-  var layer = ctx.layer;
-  var anchor = ctx.anchor;
-  var anchorRect = anchor.getBoundingClientRect();
   currentTiers.forEach(function(tier){
     try {
-      var _range = _tiersResolveRange(tier);
-      if(!_range) return;
-      var startRow = _range.startRow, endRow = _range.endRow;
-      if(!startRow || !endRow) return;
-      var sRect = startRow.getBoundingClientRect();
-      var eRect = endRow.getBoundingClientRect();
-      var top    = sRect.top - anchorRect.top + anchor.scrollTop;
-      var bottom = eRect.bottom - anchorRect.top + anchor.scrollTop;
-      var height = bottom - top;
-      if(height <= 0) return;
-      var hex = TIER_COLOR_HEX[tier.color] || '#94a3b8';
-      var tbodyRect = document.getElementById('watch-list-body').getBoundingClientRect();
-      var boxLeft   = tbodyRect.left  - anchorRect.left + anchor.scrollLeft;
-      var boxRight  = tbodyRect.right - anchorRect.left + anchor.scrollLeft;
-      var boxWidth  = boxRight - boxLeft;
-      var pad = 4;
-      var box = document.createElement('div');
-      box.className = 'tier-bracket-box';
-      box.setAttribute('data-tier-id', tier.id);
-      box.style.cssText =
-        'position:absolute;top:' + (top - pad) + 'px;left:' + (boxLeft - pad) + 'px;' +
-        'width:' + (boxWidth + pad * 2) + 'px;height:' + (height + pad * 2) + 'px;' +
-        'border:3px solid ' + hex + ';border-radius:6px;' +
-        'box-shadow:0 0 8px ' + hex + '55, inset 0 0 4px ' + hex + '22;' +
-        'background:transparent;pointer-events:none;box-sizing:border-box;';
-      box.title = tier.name;
-      var tab = document.createElement('div');
-      tab.className = 'tier-bracket-tab';
-      tab.setAttribute('data-tier-id', tier.id);
-      tab.textContent = tier.name;
-      var spacerRow = document.querySelector('tr.tier-spacer-row[data-tier-spacer-for="' + String(tier.id).replace(/"/g,'\\"') + '"]');
-      var tabTop, tabRadius, tabShadow;
-      if(spacerRow){
-        var spacerRect = spacerRow.getBoundingClientRect();
-        tabTop = (spacerRect.top - anchorRect.top + anchor.scrollTop) + 5;
-        tabRadius = '4px';
-        tabShadow = '0 1px 4px ' + hex + '55';
-      } else {
-        var firstTbodyRow = document.querySelector('#watch-list-body tr[data-nba-pid]');
-        if(firstTbodyRow && firstTbodyRow === startRow){
-          tabTop = (top + height + pad - 2); tabRadius = '0 0 6px 6px'; tabShadow = '0 1px 4px ' + hex + '55';
-        } else {
-          tabTop = (top - pad - 14); tabRadius = '6px 6px 0 0'; tabShadow = '0 -1px 4px ' + hex + '55';
-        }
-      }
-      tab.style.cssText =
-        'position:absolute;top:' + tabTop + 'px;left:' + (boxLeft - pad) + 'px;' +
-        'background:' + hex + ';color:#fff;font-family:"Nunito Sans",sans-serif;' +
-        'font-size:11px;font-weight:700;letter-spacing:0.05em' +
-        'padding:2px 10px;border-radius:' + tabRadius + ';box-shadow:' + tabShadow + ';' +
-        'pointer-events:auto;cursor:pointer;white-space:nowrap;';   // TIER_UNCHAINED_V2: nowrap by DEFAULT (the original proven byte); the post-append check flips a genuinely-long name to wrapping with an explicit px width
-      var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
-      if(isFan){
-        tab.title = 'Tier: ' + tier.name;
-        tab.style.cursor = 'default';
-      } else {
-        tab.title = 'Tier: ' + tier.name + ' — click to edit or delete';
-        (function(tid){
-          tab.addEventListener('click', function(ev){ ev.stopPropagation(); openEditTierModal(tid); });
-        })(tier.id);
-      }
-      layer.appendChild(box);
-      layer.appendChild(tab);
-      // TIER_UNCHAINED_V1: measured fit for multi-line tabs (see football's comment).
-      try {
-        var _maxW = Math.max(220, boxWidth - 40);   // TIER_UNCHAINED_V2: wrap ONLY when the name is genuinely too long, with an EXPLICIT px width -- V1's width:max-content on the abspos tab is the suspect for baseball's mystery horizontal growth, so it is gone everywhere
-        if(tab.scrollWidth > _maxW){ tab.style.whiteSpace = 'normal'; tab.style.width = _maxW + 'px'; tab.style.lineHeight = '1.3'; }
-        var _th = tab.offsetHeight || 0;
-        var _store = (window._tierSpacerHeights = window._tierSpacerHeights || {});
-        if(spacerRow){
-          var _need = _th + 8;
-          if(_need > 28 && _store['wl:' + tier.id] !== _need){
-            _store['wl:' + tier.id] = _need;
-            spacerRow.style.height = _need + 'px';
-            if(!window._tierRepaintQueued){
-              window._tierRepaintQueued = true;
-              requestAnimationFrame(function(){ window._tierRepaintQueued = false; try { renderTiers(); } catch(e){} });
-            }
-          }
-        } else if(tabRadius === '6px 6px 0 0' && _th > 16){
-          tab.style.top = (top - pad - _th) + 'px';
-        }
-      } catch(e){}
-    } catch(e){ console.warn('[TIERS_V1] failed to render tier:', tier, e); }
+      var range = _tiersResolveRange(tier);
+      if(!range) return;                     // a player who left takes his edge with him
+      var rgb = _rankTierRgb(TIER_COLOR_HEX[tier.color]);
+      _tiersMemberRows(range).forEach(function(r){
+        r.classList.add('tier-member');
+        r.style.setProperty('--tier-rgb', rgb);
+      });
+    } catch(e){ console.warn('[TIER_TINT_WL_V1] failed to tint tier:', tier, e); }
   });
+  // Every render REBUILDS the label rows, which throws away the armed class and its drag
+  // listeners. The resize handler below calls this, so without a re-arm, resizing while a
+  // tier was armed would silently kill the drag while still LOOKING armed.
+  try { _tierReArmAfterRender(); } catch(e){ console.warn('[TIER_TINT_WL_V1] re-arm failed:', e); }
+}
+// Deliberately NOT armTier(): that one alerts when it cannot find the row, and an alert
+// firing on a window resize would be a bug of its own. If the tier is genuinely gone, drop
+// the arm quietly instead.
+function _tierReArmAfterRender(){
+  if(!_armedTierId) return;
+  var tid = _armedTierId;
+  var box = _tierGetBoxEl(tid);
+  if(!box){ _armedTierId = null; _tierDragPayload = null; return; }
+  if(box.classList.contains('tier-armed')) return;
+  box.classList.add('tier-armed');
+  box.setAttribute('draggable', 'true');
+  // ⚠️ THE PROPERTY NAMES MUST MATCH armTier()'s EXACTLY — it uses _tdv1_, and disarmTier()
+  // removes the listeners by reading those same two properties back off the element. Name
+  // them anything else and the handlers are never removed, so every re-arm stacks another
+  // pair on the row. (The rankings twin uses _rtd1_ for the same reason; they differ.)
+  box._tdv1_ondragstart = function(e){ tierDragStart(e, tid); };
+  box._tdv1_ondragend   = function(e){ tierDragEnd(e); };
+  box.addEventListener('dragstart', box._tdv1_ondragstart);
+  box.addEventListener('dragend',   box._tdv1_ondragend);
 }
 window.addEventListener('resize', function(){ try { renderTiers(); } catch(e){} });
 
@@ -3466,14 +3569,39 @@ function _rankTiersInjectSpacerRows(){
     try {
       var range = _rankTiersResolveRange(tier);
       if(!range || !range.startRow) return;
+      // TIER_TINT_V1: this row used to be an invisible strut holding space for a floating tab. It IS
+      // the label now -- same class, same position, same insertBefore, so the drag/drop logic sees the
+      // exact row set it already coped with. Nothing new was introduced for it to miscount.
       var spacer = document.createElement('tr');
       spacer.className = 'tier-spacer-row';
       spacer.setAttribute('data-tier-spacer-for', String(tier.id));
+      spacer.style.setProperty('--tier-rgb', _rankTierRgb(TIER_COLOR_HEX[tier.color]));
       var td = document.createElement('td');
       td.colSpan = colCount;
+      // 🪨 BUG #168 FIXED HERE. The old floating tab carried text-transform:uppercase in its inline
+      // style, which is what shouted Matt's tier names back at him. He typed them lowercase ON PURPOSE:
+      // "No. Nope, this is how I typed it. And I made sure to write lowercase." Rendered as typed now.
+      td.textContent = tier.name;
+      // TIER_TINT_EDIT_V1 (2026-08-22): clicking the label opens the Edit Tier window,
+      // which is the job the old floating tab did before the tint redesign replaced it.
+      // Matt reported it missing the same day he praised the new look.
+      // Safe to bind unconditionally — openEditRankTierModal() carries its own
+      // _blockIfReadOnly() guard, and the CSS hides the pointer on the customer view.
+      // ⚑ No sort/filter guard is needed here the way openCreateRankTierModal needs one:
+      // _rankTiersInjectSpacerRows() returns early unless _rankTiersDefaultOrder() is
+      // true, so these labels do not exist at all while a column sort is active. There
+      // is no state in which a click could re-anchor a tier against a sorted order.
+      spacer.title = 'Click to edit this tier';
+      spacer.addEventListener('click', function(){
+        // TIER_TINT_DRAG_V1: while this tier is ARMED the label is a drag handle, not a
+        // button. Opening the editor on the same click would fight the grab and would
+        // also look like the arm had failed. Escape or a click outside disarms it.
+        if(typeof _rankArmedTierId !== 'undefined' && _rankArmedTierId === tier.id) return;
+        try { openEditRankTierModal(tier.id); }
+        catch(e){ console.warn('[TIER_TINT_EDIT_V1] could not open the tier editor:', e); }
+      });
       spacer.appendChild(td);
-      var _shRk = (window._tierSpacerHeights || {})['rk:' + tier.id];   // TIER_UNCHAINED_V1: learned multi-line height
-      if(_shRk) spacer.style.height = _shRk + 'px';
+      // The learned-height hack is retired: the row has real content and sizes itself.
       tbody.insertBefore(spacer, range.startRow);
     } catch(e){ console.warn('[RANK_TIERS_V1] spacer inject failed:', tier, e); }
   });
@@ -3496,100 +3624,91 @@ function _rankTiersGetOrCreateLayer(){
   } else if(layer.parentElement !== anchor){ anchor.appendChild(layer); }
   return { layer: layer, anchor: anchor };
 }
+// ══════════ TIER_TINT_V1 (2026-08-22, the Dude's design call) ══════════
+// THE OVERLAY IS GONE. Tiers are now a TINTED BACKGROUND on the member rows plus a coloured line
+// and label above them -- all in normal document flow, nothing measured, nothing absolutely positioned.
+//
+// 🪨 WHY THE OLD ONE BROKE, AND WHY THIS CANNOT. The bracket boxes were absolutely-positioned divs
+// placed from row geometry with this arithmetic:
+//     top = sRect.top - anchorRect.top + anchor.scrollTop
+// getBoundingClientRect() returns VISUAL pixels -- already multiplied by any active CSS zoom -- while
+// scrollTop is in LAYOUT pixels, unscaled. Those two units were being added together, so the error was
+// PROPORTIONAL TO THE ZOOM FACTOR. This page stacks two zooms (the browser's, and the table's own from
+// fitTables), which is exactly why the Dude's screenshots were clean at one level and got worse with
+// every step in: boxes drifting off their rows, tabs landing on top of players, gaps opening inside.
+// A tinted row has no geometry to get wrong. Flow layout scales uniformly under zoom, by definition.
+//
+// It also lands on Matt's own fallback from the 8/21 call: "I don't need the tiers to have names. It's
+// fun. But if it's causing a problem, I just want a fucking line. That's all I really need. I don't
+// even need a box." He gets the line AND keeps the names.
+//
+// ⚑ RANKINGS ONLY, deliberately. Matt said boxes suit the WATCH LIST, where he moves whole groups, and
+// hurt on rankings where he moves one man at a time. The watch list keeps renderTiers() untouched.
+function _rankTierRgb(hex){
+  var h = String(hex||'').replace('#','');
+  if(h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  var n = parseInt(h,16);
+  if(isNaN(n)) return '148,163,184';   // slate fallback, same as TIER_COLOR_HEX's gray
+  return ((n>>16)&255) + ',' + ((n>>8)&255) + ',' + (n&255);
+}
+function _rankTiersClearTint(){
+  try {
+    document.querySelectorAll('#rankings-body tr.tier-member').forEach(function(r){
+      r.classList.remove('tier-member');
+      r.style.removeProperty('--tier-rgb');
+    });
+  } catch(e){}
+}
+// Every data row from startRow to endRow inclusive. Walks siblings rather than indexing, so an
+// injected label row between them is simply skipped instead of throwing the count off.
+function _rankTiersMemberRows(range){
+  var out = [], n = range.startRow;
+  while(n){
+    if(n.hasAttribute && n.hasAttribute('data-rank-pid')) out.push(n);
+    if(n === range.endRow) break;
+    n = n.nextElementSibling;
+  }
+  return out;
+}
 function renderRankTiers(){
-  _rankTiersClearOverlay();
-  try { _rankTiersInjectSpacerRows(); } catch(e){ console.warn('[RANK_TIERS_V1] inject crashed:', e); }
+  _rankTiersClearOverlay();     // kept: empties any stale overlay layer from before TIER_TINT_V1
+  _rankTiersClearTint();
+  try { _rankTiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_TINT_V1] label inject crashed:', e); }
   var arr = _rankTiersGet();
   if(!arr.length) return;
   if(!_rankTiersDefaultOrder()){ try { _rankTiersClearSpacerRows(); } catch(e){} return; }
-  var ctx = _rankTiersGetOrCreateLayer();
-  if(!ctx) return;
-  var layer = ctx.layer, anchor = ctx.anchor;
-  var anchorRect = anchor.getBoundingClientRect();
-  var tbodyEl = document.getElementById('rankings-body');
-  if(!tbodyEl) return;
-  var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
   arr.forEach(function(tier){
     try {
       var range = _rankTiersResolveRange(tier);
-      if(!range) return;
-      var startRow = range.startRow, endRow = range.endRow;
-      if(!startRow || !endRow) return;
-      var sRect = startRow.getBoundingClientRect(), eRect = endRow.getBoundingClientRect();
-      var top = sRect.top - anchorRect.top + anchor.scrollTop;
-      var bottom = eRect.bottom - anchorRect.top + anchor.scrollTop;
-      var height = bottom - top;
-      if(height <= 0) return;
-      var hex = TIER_COLOR_HEX[tier.color] || '#94a3b8';
-      var tbodyRect = tbodyEl.getBoundingClientRect();
-      var boxLeft = tbodyRect.left - anchorRect.left + anchor.scrollLeft;
-      var boxWidth = (tbodyRect.right - anchorRect.left + anchor.scrollLeft) - boxLeft;
-      var pad = 4;
-      var box = document.createElement('div');
-      box.className = 'tier-bracket-box';
-      box.setAttribute('data-tier-id', tier.id);
-      box.style.cssText =
-        'position:absolute;top:' + (top - pad) + 'px;left:' + (boxLeft - pad) + 'px;' +
-        'width:' + (boxWidth + pad * 2) + 'px;height:' + (height + pad * 2) + 'px;' +
-        'border:3px solid ' + hex + ';border-radius:6px;' +
-        'box-shadow:0 0 8px ' + hex + '55, inset 0 0 4px ' + hex + '22;' +
-        'background:transparent;pointer-events:none;box-sizing:border-box;';
-      box.title = tier.name;
-      var tab = document.createElement('div');
-      tab.className = 'tier-bracket-tab';
-      tab.setAttribute('data-tier-id', tier.id);
-      tab.textContent = tier.name;
-      var spacerRow = document.querySelector('#rankings-body tr.tier-spacer-row[data-tier-spacer-for="' + String(tier.id).replace(/"/g,'\\"') + '"]');
-      var tabTop, tabRadius, tabShadow;
-      if(spacerRow){
-        var spacerRect = spacerRow.getBoundingClientRect();
-        tabTop = (spacerRect.top - anchorRect.top + anchor.scrollTop) + 5;
-        tabRadius = '4px'; tabShadow = '0 1px 4px ' + hex + '55';
-      } else {
-        var firstTbodyRow = document.querySelector('#rankings-body tr[data-rank-pid]');
-        if(firstTbodyRow && firstTbodyRow === startRow){
-          tabTop = (top + height + pad - 2); tabRadius = '0 0 6px 6px'; tabShadow = '0 1px 4px ' + hex + '55';
-        } else {
-          tabTop = (top - pad - 14); tabRadius = '6px 6px 0 0'; tabShadow = '0 -1px 4px ' + hex + '55';
-        }
-      }
-      tab.style.cssText =
-        'position:absolute;top:' + tabTop + 'px;left:' + (boxLeft - pad) + 'px;' +
-        'background:' + hex + ';color:#fff;font-family:"Nunito Sans",sans-serif;' +
-        'font-size:11px;font-weight:700;letter-spacing:0.05em' +
-        'padding:2px 10px;border-radius:' + tabRadius + ';box-shadow:' + tabShadow + ';' +
-        'pointer-events:auto;cursor:pointer;white-space:nowrap;';   // TIER_UNCHAINED_V2: nowrap by DEFAULT (the original proven byte); the post-append check flips a genuinely-long name to wrapping with an explicit px width
-      if(isFan){
-        tab.title = 'Tier: ' + tier.name;
-        tab.style.cursor = 'default';
-      } else {
-        tab.title = 'Tier: ' + tier.name + ' - click to edit or delete';
-        (function(tid){ tab.addEventListener('click', function(ev){ ev.stopPropagation(); openEditRankTierModal(tid); }); })(tier.id);
-      }
-      layer.appendChild(box);
-      layer.appendChild(tab);
-      // TIER_UNCHAINED_V1: measured fit for multi-line tabs (see football's comment).
-      try {
-        var _maxW = Math.max(220, boxWidth - 40);   // TIER_UNCHAINED_V2: wrap ONLY when the name is genuinely too long, with an EXPLICIT px width -- V1's width:max-content on the abspos tab is the suspect for baseball's mystery horizontal growth, so it is gone everywhere
-        if(tab.scrollWidth > _maxW){ tab.style.whiteSpace = 'normal'; tab.style.width = _maxW + 'px'; tab.style.lineHeight = '1.3'; }
-        var _th = tab.offsetHeight || 0;
-        var _store = (window._tierSpacerHeights = window._tierSpacerHeights || {});
-        if(spacerRow){
-          var _need = _th + 8;
-          if(_need > 28 && _store['rk:' + tier.id] !== _need){
-            _store['rk:' + tier.id] = _need;
-            spacerRow.style.height = _need + 'px';
-            if(!window._tierRepaintQueued){
-              window._tierRepaintQueued = true;
-              requestAnimationFrame(function(){ window._tierRepaintQueued = false; try { renderRankTiers(); } catch(e){} });
-            }
-          }
-        } else if(tabRadius === '6px 6px 0 0' && _th > 16){
-          tab.style.top = (top - pad - _th) + 'px';
-        }
-      } catch(e){}
-    } catch(e){ console.warn('[RANK_TIERS_V1] failed to render tier:', tier, e); }
+      if(!range) return;                     // a player who left the tab takes his edge with him
+      var rgb = _rankTierRgb(TIER_COLOR_HEX[tier.color]);
+      _rankTiersMemberRows(range).forEach(function(r){
+        r.classList.add('tier-member');
+        r.style.setProperty('--tier-rgb', rgb);
+      });
+    } catch(e){ console.warn('[TIER_TINT_V1] failed to tint tier:', tier, e); }
   });
+  // TIER_TINT_DRAG_V1: every render REBUILDS the label rows, which throws away the armed
+  // class and its drag listeners. The resize handler on the next line calls this function,
+  // so without a re-arm, resizing the window while a tier was armed would silently kill the
+  // drag while still LOOKING armed. Re-attach to the fresh row instead.
+  try { _rankTierReArmAfterRender(); } catch(e){ console.warn('[TIER_TINT_DRAG_V1] re-arm failed:', e); }
+}
+// Re-attaches the armed state after a re-render. Deliberately NOT armRankTier(): that one
+// alerts when it cannot find the row, and an alert firing on a window resize would be a
+// bug of its own. If the tier is genuinely gone, drop the arm quietly instead.
+function _rankTierReArmAfterRender(){
+  if(!_rankArmedTierId) return;
+  var tid = _rankArmedTierId;
+  var box = _rankTierGetBoxEl(tid);
+  if(!box){ _rankArmedTierId = null; _rankTierDragPayload = null; return; }
+  if(box.classList.contains('tier-armed')) return;      // already wired, nothing to do
+  box.classList.add('tier-armed');
+  box.setAttribute('draggable', 'true');
+  box._rtd1_ondragstart = function(e){ rankTierDragStart(e, tid); };
+  box._rtd1_ondragend   = function(e){ rankTierDragEnd(e); };
+  box.addEventListener('dragstart', box._rtd1_ondragstart);
+  box.addEventListener('dragend',   box._rtd1_ondragend);
 }
 window.addEventListener('resize', function(){ try { if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankTiers(); } catch(e){} });
 
@@ -3612,9 +3731,23 @@ var _rankArmedTierId = null;
 var _rankTierDragPayload = null;   // { tierId, playerIds:[...], startIdx, endIdx } during a drag
 
 function _rankTierGetBoxEl(tierId){
-  // Scoped to the rankings overlay on purpose: the watch list paints boxes with the same
-  // class, and an unscoped lookup would be one id collision away from arming the wrong page.
-  return document.querySelector('#rank-tier-overlay-layer .tier-bracket-box[data-tier-id="' + String(tierId).replace(/"/g,'\\"') + '"]');
+  // ══════════ TIER_TINT_DRAG_V1 (2026-08-22) — THE HANDLE MOVED ══════════
+  // 🪨 THIS WAS A LIVE BUG. It used to look for
+  //     '#rank-tier-overlay-layer .tier-bracket-box[data-tier-id=...]'
+  // but TIER_TINT_V1 DELETED that overlay the night before. Nothing repopulates
+  // that layer — the only code in this file that builds a .tier-bracket-box is
+  // renderTiers(), the WATCH LIST renderer, which paints somewhere else entirely.
+  // So this returned null every single time, armRankTier() fell into its
+  // "cannot arm" branch, and group drag on rankings was DEAD. Worse, the alert it
+  // showed blamed a column sort, so anyone hitting it would go hunting for a sort
+  // that was not there.
+  // The tier LABEL ROW is the handle now: it is per-tier, it carries the id, and
+  // it lives in normal flow, so it cannot drift under zoom the way the old
+  // absolutely-positioned box did.
+  // Still scoped to #rankings-table on purpose — the watch list uses the same
+  // .tier-spacer-row class, and an unscoped lookup would be one id collision away
+  // from arming the wrong view.
+  return document.querySelector('#rankings-table tbody tr.tier-spacer-row[data-tier-spacer-for="' + String(tierId).replace(/"/g,'\\"') + '"]');
 }
 function _rankTierIdx(pidVal){
   // String-compared rather than indexOf: saved orders have arrived as both numbers and
@@ -3790,8 +3923,8 @@ document.addEventListener('click', function(e){
   var box = _rankTierGetBoxEl(_rankArmedTierId);
   if(!box) return;
   if(box.contains(e.target)) return;
-  var tab = document.querySelector('#rank-tier-overlay-layer .tier-bracket-tab[data-tier-id="' + String(_rankArmedTierId).replace(/"/g,'\\"') + '"]');
-  if(tab && tab.contains(e.target)) return;
+  // TIER_TINT_DRAG_V1: the separate floating TAB is gone - under the tint design the label
+  // row IS the handle, so box.contains() above already covers everything the tab used to.
   var modal = document.getElementById('create-tier-modal');
   if(modal && modal.contains(e.target)) return;
   disarmRankTier();
