@@ -2960,19 +2960,60 @@ function _rankCol_priority(){ return { key:'priority', label:'Priority', headCla
 // rankings-scoped by pid (follow the player across tabs) and ride the rankings save payload --
 // the FOURTH passenger on the notes/tags/priority rails. Fans see a plain number, no box.
 // No re-render on save: Matt fills 50 boxes in a row, a repaint per entry would eat his focus.
-var _rankAv = {};   // pid -> number (dollars)
-var RANK_AV_KEY = 'watch101_nfl_rank_av_v1';
-function _rankAvSaveLocal(){ try { localStorage.setItem(RANK_AV_KEY, JSON.stringify(_rankAv)); } catch(e){ console.warn('[AV_COL_V1] save failed:', e); } }
-function _rankAvLoadLocal(){ try { var raw = localStorage.getItem(RANK_AV_KEY); if(raw){ var o = JSON.parse(raw); if(o && typeof o === 'object') _rankAv = o; } } catch(e){} }
-function _rankAvFor(pid){ var v = Number(_rankAv[pid]); return (isFinite(v) && v >= 0 && _rankAv[pid] != null && _rankAv[pid] !== '') ? v : null; }
+// AV_SET_SPLIT_V1 (2026-08-22, the Dude, from Matt's 8/21 list item 8): redraft and dynasty
+// need their OWN auction values. Jeremiah Love is worth more in dynasty than redraft.
+// ⚑ THE NAS WAS ALREADY CORRECT. saveRankings posts to a SET-AWARE list id
+// (rankings-nfl-rb vs rankings-nfl-dyn-rb) and av rides inside that payload, so the two
+// numbers have been stored separately on the server all along. The ONLY thing that was
+// shared was this in-memory map and its single localStorage key -- which is exactly why
+// switching sets showed the wrong numbers AND wrote them back over the right ones.
+// Values still follow a player across POSITION tabs within a set: type once, per Matt.
+var _rankAv = { redraft: {}, dynasty: {} };   // set -> pid -> number (dollars)
+function _rankAvBucket(){
+  var k = ((typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'dynasty' : 'redraft');
+  if(!_rankAv[k] || typeof _rankAv[k] !== 'object') _rankAv[k] = {};
+  return _rankAv[k];
+}
+var RANK_AV_KEY = 'watch101_nfl_rank_av_v1';        // LEGACY flat shape. Read once, MIGRATED, never written again, never deleted.
+var RANK_AV_KEY_V2 = 'watch101_nfl_rank_av_v2';     // { redraft:{...}, dynasty:{...} }
+function _rankAvSaveLocal(){ try { localStorage.setItem(RANK_AV_KEY_V2, JSON.stringify(_rankAv)); } catch(e){ console.warn('[AV_SET_SPLIT_V1] save failed:', e); } }
+function _rankAvLoadLocal(){
+  try {
+    var raw2 = localStorage.getItem(RANK_AV_KEY_V2);
+    if(raw2){
+      var o2 = JSON.parse(raw2);
+      if(o2 && typeof o2 === 'object'){
+        _rankAv = { redraft: (o2.redraft && typeof o2.redraft === 'object') ? o2.redraft : {},
+                    dynasty: (o2.dynasty && typeof o2.dynasty === 'object') ? o2.dynasty : {} };
+        return;
+      }
+    }
+    // MIGRATION, one time. The old key is a FLAT pid->dollars map with no idea which set the
+    // number was typed on. It goes to REDRAFT because that is the default set and where the
+    // work was done. Dynasty starts empty and refills from its OWN NAS payload, which is the
+    // authoritative per-set record. The legacy key is left on disk untouched, so this is
+    // reversible and nothing the Dude typed can be lost by it.
+    var raw1 = localStorage.getItem(RANK_AV_KEY);
+    if(raw1){
+      var o1 = JSON.parse(raw1);
+      if(o1 && typeof o1 === 'object' && !o1.redraft && !o1.dynasty){
+        _rankAv = { redraft: o1, dynasty: {} };
+        _rankAvSaveLocal();
+        console.log('[AV_SET_SPLIT_V1] migrated ' + Object.keys(o1).length + ' legacy auction values into REDRAFT; dynasty will refill from its own NAS payload.');
+      }
+    }
+  } catch(e){ console.warn('[AV_SET_SPLIT_V1] load failed:', e); }
+}
+function _rankAvFor(pid){ var b = _rankAvBucket(); var v = Number(b[pid]); return (isFinite(v) && v >= 0 && b[pid] != null && b[pid] !== '') ? v : null; }
 function _rankAvSet(pid, raw){
   if(_blockIfReadOnly('_rankAvSet')) return;
   var s = String(raw == null ? '' : raw).replace(/[$,\s]/g, '');
-  if(s === ''){ delete _rankAv[pid]; }
+  var _b = _rankAvBucket();                                  // AV_SET_SPLIT_V1: the ACTIVE set's pot only
+  if(s === ''){ delete _b[pid]; }
   else {
     var v = Number(s);
     if(!isFinite(v) || v < 0){ renderRankings(); return; }   // junk input: repaint restores the last good value
-    _rankAv[pid] = Math.round(v * 10) / 10;                  // one decimal max, dollars
+    _b[pid] = Math.round(v * 10) / 10;                       // one decimal max, dollars
   }
   _rankAvSaveLocal();
   if(typeof saveRankings === 'function' && _rankPos) saveRankings(_rankPos);
@@ -3390,7 +3431,7 @@ async function loadRankingsFromNAS(){
           }
         } catch(_rhE){ console.warn('[RANK_HIDE_V1] hidden hydrate failed for ' + pos + ':', _rhE); }
         if(players && players.length){
-          players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); var _hst=Number(it.note_saved_at); if(isFinite(_hst) && _hst>0 && _rankNoteStamps[it.pid]==null) _rankNoteStamps[it.pid]=_hst; if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _rankAv[it.pid]==null) _rankAv[it.pid]=_hav; });   // AV_COL_V1: av harvests too  // RANKINGS_NOTES_NFL_V1 + RANK_NOTE_BADGE_48H_V1 + RANKINGS_WL_CLONE_NFL_V1: notes, their freshness stamps, type tags and priority all harvest from the NAS payload
+          players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); var _hst=Number(it.note_saved_at); if(isFinite(_hst) && _hst>0 && _rankNoteStamps[it.pid]==null) _rankNoteStamps[it.pid]=_hst; if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); var _avB=_rankAvBucket(); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _avB[it.pid]==null) _avB[it.pid]=_hav;   /* AV_SET_SPLIT_V1: harvest into the set being loaded */ });   // AV_COL_V1: av harvests too  // RANKINGS_NOTES_NFL_V1 + RANK_NOTE_BADGE_48H_V1 + RANKINGS_WL_CLONE_NFL_V1: notes, their freshness stamps, type tags and priority all harvest from the NAS payload
           // RANKINGS_LIVE_SEED_V1 -- only a HAND-DRAGGED order (manual:true in the saved payload) is
           // adopted. Legacy snapshots (the frozen 2026-06-28 saves) have no flag, so they are ignored
           // and the tab falls through to the live Yahoo seed in renderRankings.
