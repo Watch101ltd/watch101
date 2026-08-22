@@ -589,6 +589,10 @@ table.watch-list thead tr th.col-stat,table.watch-list tbody tr td.col-stat{widt
 table.watch-list thead tr th[data-sort="payd"],table.watch-list thead tr th[data-sort="ruyd"],table.watch-list thead tr th[data-sort="reyd"],
 table.watch-list thead tr th[data-npsort="payd"],table.watch-list thead tr th[data-npsort="ruyd"],table.watch-list thead tr th[data-npsort="reyd"],
 table.watch-list thead tr th[data-ranksort="payd"],table.watch-list thead tr th[data-ranksort="ruyd"],table.watch-list thead tr th[data-ranksort="reyd"]{width:48px}
+.rank-num-input{width:100%;box-sizing:border-box;font-size:11px;text-align:right;background:var(--surface);border:1px solid var(--turf);color:var(--text);border-radius:4px;padding:1px 2px;font-family:inherit;outline:none;-moz-appearance:textfield}
+.rank-num-input::-webkit-outer-spin-button,.rank-num-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}  /* RANK_TYPEIN_V1: no spinner arrows in a 36px column */
+td.col-rank.rank-editable{cursor:pointer}
+td.col-rank.rank-editable:hover{color:var(--turf-bright,#4ade80);text-decoration:underline}
 table.watch-list colgroup col.col-rankdel{width:34px}
 table.watch-list thead tr th.col-rankdel,table.watch-list tbody tr td.col-rankdel{width:34px}  /* RANK_HIDE_V1: the red X column, rankings only, backend only */
 table.watch-list colgroup col.col-notebadge{width:24px}
@@ -2440,7 +2444,7 @@ function renderRankings(){
         : '<td class="center col-handle nfl-drag-handle" title="Drag to re-rank">☰</td>';
     return '<tr data-rank-pid="' + escapeHtml(pid) + '"' + dragAttrs + '>' +
       handleCell +
-      '<td class="col-rank">' + (i+1) + '</td>' +
+      (_rkRoDel ? ('<td class="col-rank">' + (i+1) + '</td>') : ('<td class="col-rank rank-editable" title="Click to type a new rank -- works even while sorted" onclick="event.stopPropagation();editRankNum(&quot;' + _pidAttr + '&quot;,this)">' + (i+1) + '</td>')) +   // RANK_TYPEIN_V1
       '<td class="col-av">' + _rankAvCellHtml(pid) + '</td>' +   // AV_COL_V1
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><div class="name-cell"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _badgeCol.render(pid) + '</div></td>' +   // RANKINGS_WL_CLONE_NFL_V1 + INJ_TAG_V1 + FITNAMES_NFL_V1 (.name-cell wrapper is what fitting measures)
@@ -2577,6 +2581,57 @@ function _rankSplitNote(s){
   s = String(s||''); var m = s.match(/(https?:\/\/[^\s]+)/i);
   if(!m) return { text:s, url:'' };
   return { text:(s.slice(0,m.index)+s.slice(m.index+m[0].length)).replace(/\s+/g,' ').trim(), url:m[0] };
+}
+// ══════════ RANK_TYPEIN_V1 (2026-08-22, the Dude: "number one... the biggest single win").
+// Matt, 8/21 call (01:02 to 01:05): when he sorts by a stat he cannot move anyone -- he has to
+// clear the sort, find the guy again, and drag him. Now: click the Rank number, type the new
+// rank, Enter. The typed number edits the SAVED MANUAL ORDER underneath, so it works even while
+// the view is sorted or stat-filtered -- exactly the broken loop from the call. Everyone at and
+// below the target rank shifts down one, precisely his spec.
+function editRankNum(pid, el){
+  if(_blockIfReadOnly('editRankNum')) return;
+  if(el.querySelector('input')) return;               // already editing this cell
+  var arr = _rankings[_rankPos] || [];
+  var cur = arr.indexOf(pid) + 1;                     // his MANUAL rank, which may differ from the sorted view's number
+  var input = document.createElement('input');
+  input.type = 'number'; input.min = '1'; input.className = 'rank-num-input';
+  input.value = cur > 0 ? cur : '';
+  input.title = 'Type a new rank and press Enter';
+  el.textContent = ''; el.appendChild(input);
+  input.focus(); input.select();
+  var done = function(apply){
+    if(apply){ rankTypeInApply(pid, input.value); }
+    else { renderRankings(); }                        // cancel: repaint the plain number
+  };
+  input.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); input.removeEventListener('blur', onBlur); done(true); }
+    if(e.key === 'Escape'){ e.preventDefault(); input.removeEventListener('blur', onBlur); done(false); }
+    e.stopPropagation();
+  });
+  var onBlur = function(){ done(true); };
+  input.addEventListener('blur', onBlur);
+  input.addEventListener('click', function(e){ e.stopPropagation(); });
+}
+function rankTypeInApply(pid, val){
+  if(_blockIfReadOnly('rankTypeInApply')) return;
+  var arr = _rankings[_rankPos] || [];
+  var n = parseInt(String(val).trim(), 10);
+  var from = arr.indexOf(pid);
+  if(!isFinite(n) || n < 1 || from === -1){ renderRankings(); return; }   // nonsense typed, or unknown pid: repaint, change nothing
+  if(n > arr.length) n = arr.length;                   // typing 999 parks him last, not off the list
+  if(from === n - 1){ renderRankings(); return; }      // same spot: nothing to do
+  arr.splice(from, 1);
+  arr.splice(n - 1, 0, pid);
+  _rankManual[_rankPos] = true;   // a typed rank claims this tab exactly like a hand-drag (RANKINGS_LIVE_SEED_V1)
+  var statusEl = document.getElementById('rankings-status');
+  if(statusEl){
+    var p = (_playerDB && _playerDB[pid]) || {};
+    var nm = p.full_name || 'Player';
+    var sortedNote = _rankSortField ? ' (the view is sorted by ' + String(_rankSortField).toUpperCase() + ' -- click Rank to see your order)' : '';
+    statusEl.textContent = nm + ' moved to #' + n + ' in your ' + _rankPos + ' order' + sortedNote + '. Saving\u2026';
+  }
+  renderRankings();
+  saveRankings(_rankPos);
 }
 // ══════════ RANK_HIDE_V1 (2026-08-22, the Dude off Matt's 8/21 ask: "I want to get rid of
 // Jayden Higgins... they keep dynasty value, but remove them from redraft") ══════════
