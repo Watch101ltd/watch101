@@ -1630,6 +1630,8 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
    The two-tone PLAYER/PAGE spans are RETIRED. One title, one colour, all blue. His words: "I don't like the mixed
    color font, like player is in blue and pages in red... deep cut I want to be all blue. I don't want any red font." */
 #player-page-overlay .ppo-header .pp-logo{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:28px;letter-spacing:0.06em;line-height:1;color:var(--title-blue);}
+/* META_ROW_V1 (2026-08-22): tagline + stamp share one line; the stamp no longer repeats the list name above it. */
+#active-list-subtitle:not(:empty)::after{content:'\00b7';margin:0 6px;opacity:0.55;}
 #player-page-overlay .ppo-header .pp-logo-sub{font-size:10px;letter-spacing:0.25em;color:#60a5fa;margin-top:4px}  /* DEEPCUT_HEADER_PARITY_V1: blue-400 against the title's blue-700, exactly how football pairs #4ade80 against --turf */
 #player-page-overlay .ppo-header-right{font-size:10px;color:var(--text3);letter-spacing:0.1em;margin-right:48px;}  /* BUG49_PHASE2C: clear the close X */
 #player-page-overlay .ppo-hero{padding:2rem 1.5rem;display:flex;gap:28px;align-items:flex-start;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;}
@@ -2273,7 +2275,7 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
         </select>
         <button onclick="openListInfoOverlay()" title="What's the difference between these lists?" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;width:32px;height:32px;font-size:14px;font-weight:700;cursor:pointer;outline:none;font-family:'Nunito Sans',sans-serif">ℹ️</button>
       </div>
-      <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span id="active-list-title" style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-shadow:0 1px 2px rgba(0,0,0,0.4)">12 Team Daily 5x5 (Integrity)</span><br><span id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em">The flagship 101</span><br><span class="last-updated" id="last-updated" style="font-size:11px;color:var(--turquoise2);margin-top:3px;display:inline-block;">Not yet saved</span></div>
+      <div class="logo-sub" style="margin-top:4px;line-height:1.2"><span id="active-list-title" style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.05em;text-shadow:0 1px 2px rgba(0,0,0,0.4)">12 Team Daily 5x5 (Integrity)</span><br><span id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em">The flagship 101</span><span class="last-updated" id="last-updated" style="font-size:11px;color:var(--turquoise2);display:inline-block;">Not yet saved</span></div>
     </div><!-- /list-title-stack -->
   </div>
   <div class="header-right">
@@ -4708,14 +4710,14 @@ async function loadData(){
         const stampWord = isStaging ? 'Staged:' : 'Published:';
         const stamp = savedStr ? (stampWord + ' ' + savedStr) : 'Loaded';
         const envBadge = isStaging ? ' [STAGING]' : '';
-        document.getElementById('last-updated').textContent = listName + envBadge + ' — ' + stamp;
+        document.getElementById('last-updated').textContent = (envBadge ? envBadge.trim() + ' ' : '') + stamp;   // META_ROW_V1
         try {
           localStorage.setItem(lsKey, JSON.stringify(players));
           if(savedStr) localStorage.setItem(lsTime, savedStr);
         } catch(e){}
       } else {
         // Empty list response (legacy /watchlist with no players)
-        document.getElementById('last-updated').textContent = listName + ' — empty';
+        document.getElementById('last-updated').textContent = 'empty';   // META_ROW_V1
       }
     } else if(res.status === 404){
       // /list/:listId returns 404 when no JSON has been approved into Production yet.
@@ -4985,13 +4987,13 @@ async function saveData(opts){
     // when saveData() is being called from a silent background process (Pool team
     // backfill, etc.) — those callers pass {silent: true}.
     if(_isStagingEnvironment() && !(opts && opts.silent)){
-      document.getElementById('last-updated').textContent = listName + ' — local draft saved: ' + now + ' (use "Save to Excel" to publish)';
+      document.getElementById('last-updated').textContent = 'local draft saved: ' + now + ' (use "Save to Excel" to publish)';   // META_ROW_V1
     }
     // On production OR silent saves: leave the existing message in place.
   } catch(e) {
     // Same split for the error case
     if(_isStagingEnvironment() && !(opts && opts.silent)){
-      document.getElementById('last-updated').textContent = listName + ' — ⚠ could not save locally: ' + e.message;
+      document.getElementById('last-updated').textContent = '⚠ could not save locally: ' + e.message;   // META_ROW_V1
     }
   }
   renderTable();
