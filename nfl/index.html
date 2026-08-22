@@ -784,6 +784,13 @@ body.day-mode #ftl-overlay .fs-table tr.fs-playoff td{background:rgba(22,163,74,
 #ftl-overlay .fs-playoffline{font-size:12px;font-weight:800;letter-spacing:.04em;color:#4ade80;margin:2px 0 6px 2px;}  /* SCHED_TRIO_V1, recolored per the Dude: green, ALL CAPS, bold -- "real noticeable and real easy to read" */
 body.day-mode #ftl-overlay .fs-playoffline{color:var(--turf-bright,#15803d);}
 #ftl-overlay .fs-table td.fs-dash{color:var(--text3);}
+/* GAMELOG_FPTS_FIRST_V1 (2026-08-22, Matt's 8/21 item 10 via the Dude): fantasy points is the
+   most important number on the card and it was buried on the far right. Moved to sit directly
+   after RESULT, and SHADED so the eye lands on it. These two rules come AFTER the playoff-row
+   wash on purpose — equal specificity, later wins, so the FPts column stays distinct even on
+   the green playoff weeks. */
+#ftl-overlay .fs-table th.fs-fpts,#ftl-overlay .fs-table td.fs-fpts{background:rgba(234,179,8,0.12);font-weight:700;color:var(--text,#fff);}
+body.day-mode #ftl-overlay .fs-table th.fs-fpts,body.day-mode #ftl-overlay .fs-table td.fs-fpts{background:rgba(234,179,8,0.20);color:#1a1a1a;}
 /* WL_NOTES_V1 (Aug 2, 2026) -- live Note column. */
 td.col-note{width:240px;max-width:240px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}  /* WIDTH_SHAVE_V1: this max-width would silently clamp the widened note if left at 144 */  /* BLOCK_CLONE_V1: baseball note recipe */
 .wl-note-cell{cursor:text;}
@@ -8094,9 +8101,10 @@ async function _ftlRenderScheduleResults(pid){
     poLine = '<div class="fs-playoffline" title="Fantasy playoff weeks — the games that decide championships">🏆 Playoffs ' + poParts.join(' · ') + '</div>';
   }
 
-  let head = '<tr><th class="fs-left">WK</th><th class="fs-left">DATE</th><th class="fs-left">OPP</th><th class="fs-left">RESULT</th>';
+  // GAMELOG_FPTS_FIRST_V1: FPts now sits between RESULT and the stat columns, not at the far right.
+  let head = '<tr><th class="fs-left">WK</th><th class="fs-left">DATE</th><th class="fs-left">OPP</th><th class="fs-left">RESULT</th><th class="fs-fpts">FPTS</th>';
   for (const c of cols) head += '<th>' + c[0] + '</th>';
-  head += '<th>FPTS</th></tr>';
+  head += '</tr>';
 
   let rows = '';
   for (let w = 1; w <= 18; w++) {
@@ -8128,16 +8136,18 @@ async function _ftlRenderScheduleResults(pid){
     const s = log[String(w)] || null;
     let statCells = '';
     if (s) {
-      for (const c of cols) statCells += _ftlSchedStatCell(s[c[1]]);
       const fpv = _fptsOf(s, p);  // SCORING_ENGINE_NFL_V1: weekly FPts follows the active scoring system
       const fp = Number(fpv);
-      statCells += (isFinite(fp) && fpv != null) ? '<td>' + fp.toFixed(1) + '</td>' : '<td class="fs-dash">—</td>';
-      rows += '<tr' + _poTr + '><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + statCells + '</tr>';   // SCHED_TRIO_V1
+      // GAMELOG_FPTS_FIRST_V1: built FIRST and emitted BEFORE the stat cells.
+      const fpCell = (isFinite(fp) && fpv != null) ? '<td class="fs-fpts">' + fp.toFixed(1) + '</td>' : '<td class="fs-fpts fs-dash">—</td>';
+      for (const c of cols) statCells += _ftlSchedStatCell(s[c[1]]);
+      rows += '<tr' + _poTr + '><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + fpCell + statCells + '</tr>';   // SCHED_TRIO_V1
     } else if (played) {
       // Team played, no stat line recorded for him -- DNP, grayed like baseball's log.
       rows += '<tr class="fs-dnp' + _po + '"><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + '<td colspan="' + (cols.length + 1) + '">DNP</td></tr>';
     } else {
-      for (let i = 0; i < cols.length + 1; i++) statCells += '<td class="fs-dash"></td>';
+      statCells += '<td class="fs-fpts fs-dash"></td>';                                    // GAMELOG_FPTS_FIRST_V1: the FPts slot leads
+      for (let i = 0; i < cols.length; i++) statCells += '<td class="fs-dash"></td>';
       rows += '<tr' + _poTr + '><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + statCells + '</tr>';   // SCHED_TRIO_V1
     }
   }
