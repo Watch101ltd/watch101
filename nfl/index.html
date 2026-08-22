@@ -797,6 +797,30 @@ td.col-note{width:240px;max-width:240px;overflow:hidden;white-space:nowrap;text-
    (baseball's TIER_SPACER_ROW_V1); swatches are the modal's color palette ring. */
 .tier-spacer-row { height: 28px; background: transparent; pointer-events: none; }
 .tier-spacer-row td { border: none !important; padding: 0 !important; background: transparent !important; }
+/* ══════════ TIER_TINT_V1 (2026-08-22, the Dude's design) — RANKINGS ONLY ══════════
+   Tiers stop being an absolutely-positioned overlay and become a tinted background plus a coloured
+   line and label, entirely in flow. Nothing is measured, so nothing can drift under zoom.
+   Scoped to #rankings-table on purpose: the watch list keeps its boxes, per Matt's preference for
+   moving whole groups there. The two .tier-spacer-row rules ABOVE still serve the watch list. */
+#rankings-table tbody tr.tier-spacer-row{height:auto;background:transparent;pointer-events:auto}
+#rankings-table tbody tr.tier-spacer-row td{
+  border:none !important;
+  border-top:2px solid rgb(var(--tier-rgb,148,163,184)) !important;   /* the LINE at the top of the tier */
+  padding:9px 6px 3px 6px !important;
+  background:transparent !important;
+  color:rgb(var(--tier-rgb,148,163,184));
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:0.06em;
+  text-align:left;white-space:nowrap;
+  /* NO text-transform. Bug #168: Matt types his tier names lowercase deliberately. */
+}
+/* The tint itself. Alpha lives in CSS so the colour can stay a plain rgb triplet on the row. */
+#rankings-table tbody tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.13)}
+body.day-mode #rankings-table tbody tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.16)}
+/* ⚠ HOVER MUST STILL WIN. The tint is applied to td (a tr background loses to td painting), which
+   means the shared `tbody tr:hover` rule targeting tr would be invisible underneath it. These two
+   restore hover feedback on tiered rows -- without them a tiered row would look dead to the mouse. */
+#rankings-table tbody tr.tier-member:hover td{background:var(--surface2)}
+body.day-mode #rankings-table tbody tr.tier-member:hover td{background:var(--surface2)}
 .tier-swatch { width:32px; height:32px; border-radius:50%; border:2px solid var(--border); cursor:pointer; padding:0; transition:transform 0.1s, box-shadow 0.1s; }
 .tier-swatch:hover { transform:scale(1.1); }
 .tier-swatch.selected { border-color:#eab308; box-shadow:0 0 0 3px rgba(234,179,8,0.35); transform:scale(1.1); }
@@ -5706,14 +5730,21 @@ function _rankTiersInjectSpacerRows(){
     try {
       var range = _rankTiersResolveRange(tier);
       if(!range || !range.startRow) return;
+      // TIER_TINT_V1: this row used to be an invisible strut holding space for a floating tab. It IS
+      // the label now -- same class, same position, same insertBefore, so the drag/drop logic sees the
+      // exact row set it already coped with. Nothing new was introduced for it to miscount.
       var spacer = document.createElement('tr');
       spacer.className = 'tier-spacer-row';
       spacer.setAttribute('data-tier-spacer-for', String(tier.id));
+      spacer.style.setProperty('--tier-rgb', _rankTierRgb(TIER_COLOR_HEX[tier.color]));
       var td = document.createElement('td');
       td.colSpan = colCount;
+      // 🪨 BUG #168 FIXED HERE. The old floating tab carried text-transform:uppercase in its inline
+      // style, which is what shouted Matt's tier names back at him. He typed them lowercase ON PURPOSE:
+      // "No. Nope, this is how I typed it. And I made sure to write lowercase." Rendered as typed now.
+      td.textContent = tier.name;
       spacer.appendChild(td);
-      var _shRk = (window._tierSpacerHeights || {})['rk:' + tier.id];   // TIER_UNCHAINED_V1: learned multi-line height
-      if(_shRk) spacer.style.height = _shRk + 'px';
+      // The learned-height hack is retired: the row has real content and sizes itself.
       tbody.insertBefore(spacer, range.startRow);
     } catch(e){ console.warn('[RANK_TIERS_V1] spacer inject failed:', tier, e); }
   });
@@ -5736,99 +5767,69 @@ function _rankTiersGetOrCreateLayer(){
   } else if(layer.parentElement !== anchor){ anchor.appendChild(layer); }
   return { layer: layer, anchor: anchor };
 }
+// ══════════ TIER_TINT_V1 (2026-08-22, the Dude's design call) ══════════
+// THE OVERLAY IS GONE. Tiers are now a TINTED BACKGROUND on the member rows plus a coloured line
+// and label above them -- all in normal document flow, nothing measured, nothing absolutely positioned.
+//
+// 🪨 WHY THE OLD ONE BROKE, AND WHY THIS CANNOT. The bracket boxes were absolutely-positioned divs
+// placed from row geometry with this arithmetic:
+//     top = sRect.top - anchorRect.top + anchor.scrollTop
+// getBoundingClientRect() returns VISUAL pixels -- already multiplied by any active CSS zoom -- while
+// scrollTop is in LAYOUT pixels, unscaled. Those two units were being added together, so the error was
+// PROPORTIONAL TO THE ZOOM FACTOR. This page stacks two zooms (the browser's, and the table's own from
+// fitTables), which is exactly why the Dude's screenshots were clean at one level and got worse with
+// every step in: boxes drifting off their rows, tabs landing on top of players, gaps opening inside.
+// A tinted row has no geometry to get wrong. Flow layout scales uniformly under zoom, by definition.
+//
+// It also lands on Matt's own fallback from the 8/21 call: "I don't need the tiers to have names. It's
+// fun. But if it's causing a problem, I just want a fucking line. That's all I really need. I don't
+// even need a box." He gets the line AND keeps the names.
+//
+// ⚑ RANKINGS ONLY, deliberately. Matt said boxes suit the WATCH LIST, where he moves whole groups, and
+// hurt on rankings where he moves one man at a time. The watch list keeps renderTiers() untouched.
+function _rankTierRgb(hex){
+  var h = String(hex||'').replace('#','');
+  if(h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  var n = parseInt(h,16);
+  if(isNaN(n)) return '148,163,184';   // slate fallback, same as TIER_COLOR_HEX's gray
+  return ((n>>16)&255) + ',' + ((n>>8)&255) + ',' + (n&255);
+}
+function _rankTiersClearTint(){
+  try {
+    document.querySelectorAll('#rankings-body tr.tier-member').forEach(function(r){
+      r.classList.remove('tier-member');
+      r.style.removeProperty('--tier-rgb');
+    });
+  } catch(e){}
+}
+// Every data row from startRow to endRow inclusive. Walks siblings rather than indexing, so an
+// injected label row between them is simply skipped instead of throwing the count off.
+function _rankTiersMemberRows(range){
+  var out = [], n = range.startRow;
+  while(n){
+    if(n.hasAttribute && n.hasAttribute('data-rank-pid')) out.push(n);
+    if(n === range.endRow) break;
+    n = n.nextElementSibling;
+  }
+  return out;
+}
 function renderRankTiers(){
-  _rankTiersClearOverlay();
-  try { _rankTiersInjectSpacerRows(); } catch(e){ console.warn('[RANK_TIERS_V1] inject crashed:', e); }
+  _rankTiersClearOverlay();     // kept: empties any stale overlay layer from before TIER_TINT_V1
+  _rankTiersClearTint();
+  try { _rankTiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_TINT_V1] label inject crashed:', e); }
   var arr = _rankTiersGet();
   if(!arr.length) return;
   if(!_rankTiersDefaultOrder()){ try { _rankTiersClearSpacerRows(); } catch(e){} return; }
-  var ctx = _rankTiersGetOrCreateLayer();
-  if(!ctx) return;
-  var layer = ctx.layer, anchor = ctx.anchor;
-  var anchorRect = anchor.getBoundingClientRect();
-  var tbodyEl = document.getElementById('rankings-body');
-  if(!tbodyEl) return;
-  var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
   arr.forEach(function(tier){
     try {
       var range = _rankTiersResolveRange(tier);
-      if(!range) return;
-      var startRow = range.startRow, endRow = range.endRow;
-      if(!startRow || !endRow) return;
-      var sRect = startRow.getBoundingClientRect(), eRect = endRow.getBoundingClientRect();
-      var top = sRect.top - anchorRect.top + anchor.scrollTop;
-      var bottom = eRect.bottom - anchorRect.top + anchor.scrollTop;
-      var height = bottom - top;
-      if(height <= 0) return;
-      var hex = TIER_COLOR_HEX[tier.color] || '#94a3b8';
-      var tbodyRect = tbodyEl.getBoundingClientRect();
-      var boxLeft = tbodyRect.left - anchorRect.left + anchor.scrollLeft;
-      var boxWidth = (tbodyRect.right - anchorRect.left + anchor.scrollLeft) - boxLeft;
-      var pad = 4;
-      var box = document.createElement('div');
-      box.className = 'tier-bracket-box';
-      box.setAttribute('data-tier-id', tier.id);
-      box.style.cssText =
-        'position:absolute;top:' + (top - pad) + 'px;left:' + (boxLeft - pad) + 'px;' +
-        'width:' + (boxWidth + pad * 2) + 'px;height:' + (height + pad * 2) + 'px;' +
-        'border:3px solid ' + hex + ';border-radius:6px;' +
-        'box-shadow:0 0 8px ' + hex + '55, inset 0 0 4px ' + hex + '22;' +
-        'background:transparent;pointer-events:none;box-sizing:border-box;';
-      box.title = tier.name;
-      var tab = document.createElement('div');
-      tab.className = 'tier-bracket-tab';
-      tab.setAttribute('data-tier-id', tier.id);
-      tab.textContent = tier.name;
-      var spacerRow = document.querySelector('#rankings-body tr.tier-spacer-row[data-tier-spacer-for="' + String(tier.id).replace(/"/g,'\\"') + '"]');
-      var tabTop, tabRadius, tabShadow;
-      if(spacerRow){
-        var spacerRect = spacerRow.getBoundingClientRect();
-        tabTop = (spacerRect.top - anchorRect.top + anchor.scrollTop) + 5;
-        tabRadius = '4px'; tabShadow = '0 1px 4px ' + hex + '55';
-      } else {
-        var firstTbodyRow = document.querySelector('#rankings-body tr[data-rank-pid]');
-        if(firstTbodyRow && firstTbodyRow === startRow){
-          tabTop = (top + height + pad - 2); tabRadius = '0 0 6px 6px'; tabShadow = '0 1px 4px ' + hex + '55';
-        } else {
-          tabTop = (top - pad - 14); tabRadius = '6px 6px 0 0'; tabShadow = '0 -1px 4px ' + hex + '55';
-        }
-      }
-      tab.style.cssText =
-        'position:absolute;top:' + tabTop + 'px;left:' + (boxLeft - pad) + 'px;' +
-        'background:' + hex + ';color:#fff;font-family:"Nunito Sans",sans-serif;' +
-        'font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;' +
-        'padding:2px 10px;border-radius:' + tabRadius + ';box-shadow:' + tabShadow + ';' +
-        'pointer-events:auto;cursor:pointer;white-space:nowrap;';   // TIER_UNCHAINED_V2: nowrap by DEFAULT (the original proven byte); the post-append check flips a genuinely-long name to wrapping with an explicit px width
-      if(isFan){
-        tab.title = 'Tier: ' + tier.name;
-        tab.style.cursor = 'default';
-      } else {
-        tab.title = 'Tier: ' + tier.name + ' - click to edit or delete';
-        (function(tid){ tab.addEventListener('click', function(ev){ ev.stopPropagation(); openEditRankTierModal(tid); }); })(tier.id);
-      }
-      layer.appendChild(box);
-      layer.appendChild(tab);
-      // TIER_UNCHAINED_V1: same measured-fit as the watch-list renderer (see its comment).
-      try {
-        var _maxW = Math.max(220, boxWidth - 40);   // TIER_UNCHAINED_V2: wrap ONLY when the name is genuinely too long, with an EXPLICIT px width -- V1's width:max-content on the abspos tab is the suspect for baseball's mystery horizontal growth, so it is gone everywhere
-        if(tab.scrollWidth > _maxW){ tab.style.whiteSpace = 'normal'; tab.style.width = _maxW + 'px'; tab.style.lineHeight = '1.3'; }
-        var _th = tab.offsetHeight || 0;
-        var _store = (window._tierSpacerHeights = window._tierSpacerHeights || {});
-        if(spacerRow){
-          var _need = _th + 8;
-          if(_need > 28 && _store['rk:' + tier.id] !== _need){
-            _store['rk:' + tier.id] = _need;
-            spacerRow.style.height = _need + 'px';
-            if(!window._tierRepaintQueued){
-              window._tierRepaintQueued = true;
-              requestAnimationFrame(function(){ window._tierRepaintQueued = false; try { renderRankTiers(); } catch(e){} });
-            }
-          }
-        } else if(tabRadius === '6px 6px 0 0' && _th > 16){
-          tab.style.top = (top - pad - _th) + 'px';
-        }
-      } catch(e){}
-    } catch(e){ console.warn('[RANK_TIERS_V1] failed to render tier:', tier, e); }
+      if(!range) return;                     // a player who left the tab takes his edge with him
+      var rgb = _rankTierRgb(TIER_COLOR_HEX[tier.color]);
+      _rankTiersMemberRows(range).forEach(function(r){
+        r.classList.add('tier-member');
+        r.style.setProperty('--tier-rgb', rgb);
+      });
+    } catch(e){ console.warn('[TIER_TINT_V1] failed to tint tier:', tier, e); }
   });
 }
 window.addEventListener('resize', function(){ try { if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankTiers(); } catch(e){} });
