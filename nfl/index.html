@@ -656,7 +656,7 @@ table.watch-list thead th.col-stat-b{color:#4ade80 !important}
 table.watch-list thead th.col-stat-a:hover,table.watch-list thead th.col-stat-b:hover{filter:brightness(1.3)}
 td.col-stat-a .stat-cell{color:#4ade80}
 td.col-stat-b .stat-cell{color:#4ade80}
-table.watch-list thead th.col-action,table.watch-list tbody td:last-child{width:60px;text-align:center}
+table.watch-list thead th.col-action,table.watch-list tbody td.col-action{width:60px;text-align:center}  /* LASTCHILD_LEAK_FIX_V1 (2026-08-22, found by MEASURING after the Dude's screenshot): was td:last-child -- correct on the watch list and pool, whose rows END with an Action cell, but the RANKINGS rows end with receiving TD, so that stat column was wearing the Action column's 60px width and centered numbers. Same disease as NTHCHILD_LEAK_FIX_V1: a positional selector encodes one surface's column order into a shared rule. Use the semantic class. */
 table.watch-list tbody td.placeholder{color:var(--text3)}
 table.watch-list tbody .remove-btn{padding:2px 6px;font-size:9px}
 table.watch-list tbody .stat-cell{font-size:11px}
@@ -4144,7 +4144,7 @@ function renderWatchList(){
     if(!p){
       return '<tr>' +
         '<td colspan="28" class="left" style="color:var(--text3)">(unknown player_id: ' + escapeHtml(pid) + ')</td>' +
-        '<td class="center"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
+        '<td class="center col-action"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
       '</tr>';
     }
     const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
@@ -4194,7 +4194,7 @@ function renderWatchList(){
       '<td class="col-stat-a">' + statCellOrDash(s.rec_yd) + '</td>' +
       '<td class="col-stat-a">' + _ratioCellOrDash(s.rec_yd, s.rec) + '</td>' +   // YPC_YPR_V1
       '<td class="col-stat-a">' + statCellOrDash(s.rec_td) + '</td>' +
-      '<td class="center"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
+      '<td class="center col-action"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
     '</tr>';
   }).join('');
   // PHONE_NOTE_STAR_NFL_V1 — paint the phone list from the SAME ids the table just rendered (no drift).
