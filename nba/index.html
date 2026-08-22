@@ -478,7 +478,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #rc-menu .rc-menu-item:hover{background:var(--surface2);color:var(--text);}
 #rc-menu .rc-menu-item .rc-emoji{font-size:15px;line-height:1;width:18px;text-align:center;}
 #rc-menu .rc-menu-item .rc-label{flex:1;}
-#ftl-overlay .ftl-statwrap{padding:0;}  /* QUADRANTS_V1: stats live in the hero now (BUG49_PHASE2: column sizing moved up to .ftl-herostats) */
+#ftl-overlay .ftl-statwrap{padding:0;flex-basis:100%;min-width:0;}  /* STATSTRIP_FULLWIDTH_NBA_V1: was the herostats column; now its own full-width flex row in the hero */
 /* MATTSTAKE_RANKHIST_V1 (Aug 2, 2026) -- Matt's Take + 101 Rank History cards. */
 #ftl-overlay .ftl-takewrap{display:flex;flex-direction:column;gap:10px;flex:0 0 40%;min-width:280px;padding:0;}  /* CARD_COMPACT_NBA_V1: the LEFT COLUMN inside .ftl-cols; #ftl-gameswrap overrides below */
 #ftl-overlay .ftl-take-card{width:100%;box-sizing:border-box;min-width:0;background:var(--surface2,rgba(255,255,255,0.02));border:1px solid var(--border2);border-radius:10px;padding:10px 14px;}  /* CARD_COMPACT_NBA_V1 */
@@ -820,7 +820,7 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
    that no longer fit onto an orphan row (3PA + 3P% first) instead of shrinking anyone.
    Grid with equal auto-columns shrinks every cell together and CANNOT wrap — two rows
    stay two rows at any zoom, any cell count, no hardcoded column number. */
-#ftl-overlay .ftl-statbar{display:grid;grid-auto-flow:column;grid-auto-columns:auto;gap:0;margin-bottom:5px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
+#ftl-overlay .ftl-statbar{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,auto);gap:0;margin-bottom:5px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
 #ftl-overlay .ftl-statcell{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px 7px;min-width:0;border-right:1px solid var(--border);text-align:center;}  /* STATGRID_V1: min-width 54px→0 so grid can shrink cells equally; flex:1 dropped (grid sizes columns now) */
 /* OWNROW_CARD_V1 (Aug 6, 2026 — the Dude: "mirror their cousin"). Baseball's card carries a
    middle row of its own — Yahoo rank, Yahoo roster %%, CBS %% — separate, alone, values WHITE.
@@ -855,7 +855,7 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
 #ftl-overlay .ftl-statcell.cat .ftl-statlabel{color:var(--stat-teal);}
 #ftl-overlay .ftl-statcell.info .ftl-statlabel{color:var(--text3);}
 #ftl-overlay .ftl-statcell .ftl-statval.na{color:var(--text3);}
-@media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:22px}#ftl-overlay .ftl-photo{width:74px;height:74px}#ftl-overlay .ftl-cols{flex-direction:column}#ftl-overlay .ftl-takewrap{flex:1 1 auto}#ftl-overlay #ftl-gameswrap{flex-direction:column}}  /* CARD_COMPACT_NBA_V1 */
+@media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:22px}#ftl-overlay .ftl-photo{width:74px;height:74px}#ftl-overlay .ftl-cols{flex-direction:column}#ftl-overlay .ftl-takewrap{flex:1 1 auto}#ftl-overlay #ftl-gameswrap{flex-direction:column}#ftl-overlay .ftl-statwrap{overflow-x:auto}}  /* CARD_COMPACT_NBA_V1 + STATSTRIP_FULLWIDTH_NBA_V1: the 22-tile strip side-scrolls on narrow screens instead of crushing */
 
 /* POS_BADGE — basketball positions: PG/SG/SF/PF/C, plus G/F fallbacks. */
 .pos-badge{display:inline-block;padding:3px 7px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:0.05em;}
@@ -7829,12 +7829,11 @@ function openFromTheLogo(pid, _keepRange){
     _ftlStatCell('Y!ROS%', (_oyh && _oyh.roster_pct != null) ? Math.round(_oyh.roster_pct) + '%' : null, 'own') +
     _ftlStatCell('CBS%',   (_ocbs != null) ? _ocbs + '%' : null, 'own');
   document.getElementById('ftl-statwrap').innerHTML =
-    // CARD_COMPACT_NBA_V1 (2026-08-21): football went to ONE strip of 13; this sport carries 19
-    // tiles, which cannot fit one row on a laptop, so the compact shape here is TWO rows with
-    // the ownership tiles riding the end of row 2 ('own' kind = OWNROW's white values). The
-    // separate ownbar row is retired. Port the behaviour, not the tile count.
-    '<div class="ftl-statbar">' + statRow1 + '</div>' +
-    '<div class="ftl-statbar">' + statRow2 + ownRow + '</div>';
+    // STATSTRIP_FULLWIDTH_NBA_V1 (2026-08-21, the Dude, reversing CARD_COMPACT_NBA_V1's two-row
+    // shape the same hour it shipped): with the strip now spanning the card's FULL width instead
+    // of the herostats column, all 22 tiles fit one row. minmax(0,auto) columns squeeze evenly
+    // on smaller screens (STATGRID_V1's no-wrap grid, now allowed to compress).
+    '<div class="ftl-statbar">' + statRow1 + statRow2 + ownRow + '</div>';
 
   _ftlCurrentPid = pid;
   _ftlSyncOwnedCheck(pid);
@@ -7999,8 +7998,12 @@ bootstrap();
         <div class="ftl-deeplinks-label">Latest News</div>
         <div class="ftl-deeplinks"><a class="ftl-rw-link" id="ftl-rw-link" href="#" target="_blank" rel="noopener" style="display:none" title="Open on RotoWire">RW</a></div>
       </div>
-      <div class="ftl-statwrap" id="ftl-statwrap"></div>
     </div>
+    <!-- STATSTRIP_FULLWIDTH_NBA_V1 (2026-08-21, the Dude off the first NBA compact look):
+         "stretch the stats all the way across the screen... start them all the way to the
+         left margin." The strip leaves the herostats column and wraps to its own 100%-width
+         flex row inside the hero (hero already flex-wraps). One row, all 22 tiles. -->
+    <div class="ftl-statwrap" id="ftl-statwrap"></div>
   </section>
   <!-- CARD_COMPACT_NBA_V1 (2026-08-21 late evening) — football's CARD_COMPACT_V1 ported, behaviour
        not identifiers. QUADRANTS RETIRED. Matt's Take left; Previous/Upcoming Games + Rank History
