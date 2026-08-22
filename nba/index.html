@@ -483,6 +483,16 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-rank{display:inline-flex;align-items:center;gap:8px;margin-top:0;padding:4px 10px;background:#c2410c33;border:1px solid var(--court-deep);border-radius:6px;font-size:11px;letter-spacing:0.15em;color:var(--court-bright);font-weight:700;}
 #ftl-overlay .ftl-rank .num{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:16px;letter-spacing:0.04em}
 #ftl-overlay .ftl-herostats{flex:2;min-width:320px;display:flex;flex-direction:column;gap:5px;align-self:center;}  /* BUG49_PHASE2: clone of baseball's .ppo-hero-stats — right column holds Latest News + the stat block */
+/* FAN_TAGS_TOP_NBA_V1 (2026-08-22, the Dude) — football's twin, ported the same hour.
+   On the CUSTOMER view only, Priority + Type Tags are lifted out of the bottom admin block into
+   this row, filling the dead space left of the right-aligned "Latest News" label.
+   ⚑ NBA has MORE of that space than football, because STATSTRIP_FULLWIDTH_NBA_V1 (2026-08-21)
+   moved the stat strip OUT of this column to run full width — his ruling that day was that the
+   two sports differ here ON PURPOSE and must not be harmonised. */
+#ftl-overlay .ftl-heronew{display:flex;align-items:flex-start;gap:14px;}
+#ftl-overlay .ftl-tags-slot{flex:1;min-width:0;}
+#ftl-overlay .ftl-tags-slot .ftl-take-card{margin:0;padding:8px 10px;}
+#ftl-overlay .ftl-tags-slot .ftl-take-prow,#ftl-overlay .ftl-tags-slot .ftl-take-typerow{margin:2px 0 4px;}
 #ftl-overlay .ftl-deeplinks-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:18px;letter-spacing:0.06em;color:var(--gold);text-align:right;margin-bottom:6px;line-height:1;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks-label */
 #ftl-overlay .ftl-deeplinks{display:flex;gap:6px;justify-content:flex-end;margin-bottom:6px;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks */
 #ftl-overlay .ftl-daterange-wrap{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;}  /* FTL_DATERANGE_V1: baseball's .ppo-daterange-wrap */
@@ -7437,11 +7447,32 @@ function _blockIfReadOnly(actionName){
   } catch(e){ /* fail-open so staging editing never breaks */ }
   return false;
 }
+// FAN_TAGS_TOP_NBA_V1 (2026-08-22) — football's twin, ported the same hour at his request.
+// MOVES (never clones) the Priority + Type Tags card into the empty band beside "Latest News",
+// on the read-only customer view only.
+// ⚠ ONE BLOCK, TWO AUDIENCES. The same markup carries the "Backend Controls" heading, the Show as
+// NEW row and the type-tag checkbox grid. Lifting it unconditionally would drop all of that into
+// the hero on the editing side.
+// FAIL-SAFE: if any of the three elements is missing, nothing moves and the block stays where it
+// is today. A future markup change degrades to the old layout, not to a broken card.
+function _ftlLiftTagsToHero(){
+  try {
+    var slot  = document.getElementById('ftl-tags-slot');
+    var card  = document.querySelector('#ftl-adminwrap .ftl-take-card');
+    var admin = document.getElementById('ftl-adminwrap');
+    if(!slot || !card || !admin) return;
+    if(slot.contains(card)) return;                 // already lifted, never move twice
+    slot.appendChild(card);                          // MOVE — ids and handlers travel with it
+    admin.style.display = 'none';                    // the empty shell would leave a gap
+    console.log('[FAN_TAGS_TOP_NBA_V1] Priority + Type Tags lifted into the hero (read-only view)');
+  } catch(e){ console.warn('[FAN_TAGS_TOP_NBA_V1] lift failed, block stays at the bottom:', e); }
+}
 function _applyReadOnlyBodyClass(){
   try {
     if(_isReadOnlyMode() && document.body){
       document.body.classList.add('readonly-mode');
       console.log('[READONLY_V1] read-only mode active — admin controls hidden');
+      _ftlLiftTagsToHero();   // FAN_TAGS_TOP_NBA_V1
     }
   } catch(e){ console.warn('[READONLY_V1] could not apply body class:', e); }
 }
@@ -8397,9 +8428,13 @@ bootstrap();
       <div class="ftl-daterange-wrap"><span class="ftl-daterange-label">Stats For:</span><select id="ftl-daterange-select" class="ftl-daterange-select" onchange="_ftlDateRangeChange(this)" title="Stat window shown on this card — resets to Season on open"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option><option value="previous_seasons">Previous Seasons</option></select></div>
     </div>
     <div class="ftl-herostats"><!-- BUG49_PHASE2: baseball hero pattern -->
-      <div id="ftl-deeplinks-wrap" style="display:none">
-        <div class="ftl-deeplinks-label">Latest News</div>
-        <div class="ftl-deeplinks"><a class="ftl-rw-link" id="ftl-rw-link" href="#" target="_blank" rel="noopener" style="display:none" title="Open on RotoWire">RW</a></div>
+      <!-- FAN_TAGS_TOP_NBA_V1: the slot is EMPTY on the backend and stays empty. -->
+      <div class="ftl-heronew">
+        <div class="ftl-tags-slot" id="ftl-tags-slot"></div>
+        <div id="ftl-deeplinks-wrap" style="display:none">
+          <div class="ftl-deeplinks-label">Latest News</div>
+          <div class="ftl-deeplinks"><a class="ftl-rw-link" id="ftl-rw-link" href="#" target="_blank" rel="noopener" style="display:none" title="Open on RotoWire">RW</a></div>
+        </div>
       </div>
     </div>
     <!-- STATSTRIP_FULLWIDTH_NBA_V1 (2026-08-21, the Dude off the first NBA compact look):
