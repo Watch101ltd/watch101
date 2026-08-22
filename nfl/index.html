@@ -417,7 +417,7 @@ table.watch-list thead th:has(+ th.col-zone-divider), table.watch-list tbody td:
 /* PLAYER_POOL_21COL_V2 (compact, 150%-zoom-friendly) - mirrors baseball density */
 table.watch-list{table-layout:fixed}  /* STRETCH_KILL_V1: min-width:1444px removed with the width:100% stretch above. The floor existed to stop columns clamping in the pre-colgroup era (Bug #32); under COLGROUP_WIDTHS_V1 every column holds its declared width and the table's natural width IS the colgroup sum, so the floor only manufactured spread. */  /* BLOCK_CLONE_V1: identity block widened to baseball spec. YPC_YPR_V1 (2026-08-19): +76px for the two new 38px ratio columns so laptop widths do not re-create Bug #32's header squeeze */
 /* Compact header + body padding so 23 columns fit at 150% zoom */
-table.watch-list thead th{padding:5px 2px;font-size:9px;letter-spacing:0.01em;overflow:hidden}  /* HEADER_BLEED_FIX_V1 (2026-08-04) — Matt, 8/3 meeting. Under table-layout:fixed the stat
+table.watch-list thead th{padding:5px 3px;font-size:9px;letter-spacing:0.01em;overflow:hidden;white-space:nowrap}  /* ARROW_JS_QUIET_V1: side padding now MATCHES the td's 3px (the old 2px made every label sit 1px off its numbers), and nowrap means a header can never fold its label or arrow onto a second line at fractional fit-zooms */  /* HEADER_BLEED_FIX_V1 (2026-08-04) — Matt, 8/3 meeting. Under table-layout:fixed the stat
      columns clamp to 38px once the viewport drops below the 1300px floor (a laptop at 100%,
      or a wide monitor at 175%). Body cells already clipped; headers did not, so RuAtt+RuYd
      rendered as RUATTRUYD. overflow:hidden is baseball's own rule (its th carries it) and is
@@ -572,10 +572,10 @@ table.watch-list colgroup col.col-adp{width:38px}
 table.watch-list thead tr th.col-adp,table.watch-list tbody tr td.col-adp{width:38px}
 table.watch-list colgroup col.col-yrank{width:44px}
 table.watch-list thead tr th.col-yrank,table.watch-list tbody tr td.col-yrank{width:44px}
-table.watch-list colgroup col.col-yowned{width:58px}
-table.watch-list thead tr th.col-yowned,table.watch-list tbody tr td.col-yowned{width:58px}  /* YDS_WIDTH_V1: room for the label + the floated arrow */
-table.watch-list colgroup col.col-cbsowned{width:64px}
-table.watch-list thead tr th.col-cbsowned,table.watch-list tbody tr td.col-cbsowned{width:64px}  /* YDS_WIDTH_V1: CBS Owned was wrapping its arrow onto a second line */
+table.watch-list colgroup col.col-yowned{width:64px}
+table.watch-list thead tr th.col-yowned,table.watch-list tbody tr td.col-yowned{width:64px}  /* YDS_WIDTH_V1 -> ARROW_JS_QUIET_V1: 58 fit at zoom 1.0 and wrapped at the viewer fit-zoom, where 9px text rounds wider. Headroom beats precision here. */
+table.watch-list colgroup col.col-cbsowned{width:74px}
+table.watch-list thead tr th.col-cbsowned,table.watch-list tbody tr td.col-cbsowned{width:74px}  /* YDS_WIDTH_V1 -> ARROW_JS_QUIET_V1: 64 fit at zoom 1.0 and wrapped at fractional fit-zoom. 74 holds label + hover arrow at any zoom. */
 table.watch-list colgroup col.col-fpts{width:50px}
 table.watch-list thead tr th.col-fpts,table.watch-list tbody tr td.col-fpts{width:50px}
 table.watch-list colgroup col.col-stat{width:32px}
@@ -2972,7 +2972,7 @@ function _rankUpdateSortArrows(){
       arrow.style.color = 'var(--turf-bright, var(--turf))';
     } else {
       arrow.textContent = '↕';
-      arrow.style.opacity = '0.4';
+      arrow.style.opacity = '';   // ARROW_JS_QUIET_V1 (2026-08-22): inline 0.4 was bulldozing the rest-hidden CSS on every render -- inactive arrows defer to the stylesheet (0 at rest, .9 on hover); the active column keeps its painted arrow at opacity 1
       arrow.style.color = '';
     }
   });
@@ -3889,7 +3889,7 @@ function _npUpdateSortArrows(){
       arrow.style.color = 'var(--turf-bright, var(--turf))';
     } else {
       arrow.textContent = '↕';
-      arrow.style.opacity = '0.4';
+      arrow.style.opacity = '';   // ARROW_JS_QUIET_V1 (2026-08-22): inline 0.4 was bulldozing the rest-hidden CSS on every render -- inactive arrows defer to the stylesheet (0 at rest, .9 on hover); the active column keeps its painted arrow at opacity 1
       arrow.style.color = '';
     }
   });
@@ -7352,7 +7352,7 @@ function updateSortArrows(){
       arrow.style.color = 'var(--turf-bright)';
     } else {
       arrow.textContent = '\u2195';
-      arrow.style.opacity = '0.4';
+      arrow.style.opacity = '';   // ARROW_JS_QUIET_V1: same deferral as the other two updaters
       arrow.style.color = '';
     }
   });
