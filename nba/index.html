@@ -2380,6 +2380,49 @@ function _tierRepairReanchor(tiers, orderIds, movedPid){
 // ⚠ TIER_SELFREPAIR_NBA_V1 IS WIRED IN FROM BIRTH HERE. On football these two functions shipped
 // WITHOUT it and silently scrambled tiers for a day before anyone noticed. Do not add a fifth way
 // to move a player without capture-before / re-anchor-after.
+// RANK_PILL_TWO_V1 (2026-08-22) — the rankings-rank pill on the card, and its click-to-type twin.
+// ⚠ STRING-COMPARED, NOT indexOf. Saved rankings orders have arrived as BOTH numbers and strings
+// over the life of these files (see _rankTierIdx, which learned the same lesson), so a strict
+// indexOf would silently miss and the pill would just never appear.
+function _ftlRkIndexOf(pid){
+  var arr = (typeof _rankings !== 'undefined' && Array.isArray(_rankings[_rankPos])) ? _rankings[_rankPos] : [];
+  for(var i = 0; i < arr.length; i++){ if(String(arr[i]) === String(pid)) return i; }
+  return -1;
+}
+function _ftlEditRankRk(e){
+  if(e && e.stopPropagation) e.stopPropagation();
+  if(_blockIfReadOnly('_ftlEditRankRk')) return;
+  var pid = _ftlCurrentPid;
+  var span = document.getElementById('ftl-rankrk-num');
+  if(pid == null || !span || span.querySelector('input')) return;
+  var idx = _ftlRkIndexOf(pid);
+  if(idx < 0) return;
+  var input = document.createElement('input');
+  input.type = 'number'; input.min = '1'; input.className = 'rank-num-input';
+  input.style.width = '52px'; input.style.fontSize = '13px'; input.style.textAlign = 'center';
+  input.value = idx + 1;
+  span.textContent = ''; span.appendChild(input);
+  input.focus(); input.select();
+  var repaint = function(){ var i2 = _ftlRkIndexOf(pid); span.textContent = '#' + (i2 >= 0 ? (i2 + 1) : '?'); };
+  var done = function(apply){
+    if(!apply){ repaint(); return; }
+    var arr = (typeof _rankings !== 'undefined' && Array.isArray(_rankings[_rankPos])) ? _rankings[_rankPos] : [];
+    var here = _ftlRkIndexOf(pid);
+    if(here < 0){ repaint(); return; }
+    // Hand rankTypeInApply the EXACT value stored in the array, so its own indexOf cannot miss
+    // on a number-vs-string mismatch. Tier self-repair rides along inside it.
+    rankTypeInApply(arr[here], input.value);
+    repaint();
+  };
+  input.addEventListener('keydown', function(ev){
+    if(ev.key === 'Enter'){ ev.preventDefault(); input.removeEventListener('blur', onBlur); done(true); }
+    if(ev.key === 'Escape'){ ev.preventDefault(); input.removeEventListener('blur', onBlur); done(false); }
+    ev.stopPropagation();
+  });
+  var onBlur = function(){ done(true); };
+  input.addEventListener('blur', onBlur);
+  input.addEventListener('click', function(ev){ ev.stopPropagation(); });
+}
 function _ftlEditRank(e){
   if(e && e.stopPropagation) e.stopPropagation();
   if(_blockIfReadOnly('_ftlEditRank')) return;
@@ -8049,6 +8092,27 @@ function openFromTheLogo(pid, _keepRange){
     rankEl.style.display = 'none';
   }
 
+  // RANK_PILL_TWO_V1 (2026-08-22, the Dude): the card used to show ONE number, the Watch101 rank,
+  // even when you opened it FROM the rankings page where he sits somewhere completely different.
+  // Luka: #2 on the 101, #9 on the overall rankings. Two real numbers, one on screen, and no way
+  // to tell which list you were looking at. Now BOTH show.
+  // His choice of the three options offered: FOLLOW WHATEVER TAB IS OPEN. So the label tracks the
+  // active set (Redraft / Dynasty) and names the position tab whenever it is not Overall.
+  var _rkIdx = _ftlRkIndexOf(pid);
+  var _rkEl  = document.getElementById('ftl-rankrk');
+  if(_rkEl){
+    if(_rkIdx >= 0){
+      var _setWord = ((typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dynasty' : 'Redraft');
+      var _posWord = (typeof _rankPos !== 'undefined' && _rankPos && _rankPos !== 'Overall') ? (' ' + _rankPos) : '';
+      var _lbl = document.getElementById('ftl-rankrk-label');
+      if(_lbl) _lbl.textContent = _setWord + _posWord + ' Rank';
+      document.getElementById('ftl-rankrk-num').textContent = '#' + (_rkIdx + 1);
+      _rkEl.style.display = 'inline-flex';
+    } else {
+      _rkEl.style.display = 'none';   // not in this rankings tab at all: no pill rather than a lie
+    }
+  }
+
   // Stat boxes. Superseded by STAT_TWIN_V1 below: the old counting/shooting grouping is gone,
   // these now mirror the watch-list table column for column.
   // STAT_TWIN_V1 (2026-08-05, the Dude's call). These two rows are a TWIN of the watch-list
@@ -8253,6 +8317,7 @@ bootstrap();
       <div class="ftl-sub" id="ftl-sub"></div>
       <!-- CARD_COMPACT_NBA_V1 (2026-08-21): rank pill + own pill share one row -->
       <div class="ftl-meta-row">
+      <div class="ftl-rank" id="ftl-rankrk" style="display:none"><span id="ftl-rankrk-label">Redraft Rank</span> <span class="num" id="ftl-rankrk-num" onclick="_ftlEditRankRk(event)" title="Click to type a new rank on the rankings page"></span></div><!-- RANK_PILL_TWO_V1 -->
       <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num" onclick="_ftlEditRank(event)" title="Click to type a new Watch101 rank"></span></div><!-- CARD_TYPEIN_NBA_V1 -->
       <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label></div>
       </div>
