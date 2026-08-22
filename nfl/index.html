@@ -874,6 +874,34 @@ td.col-note{width:240px;max-width:240px;overflow:hidden;white-space:nowrap;text-
    should not even see a pointer. */
 body:not(.readonly-mode) #rankings-table tbody tr.tier-spacer-row td{cursor:pointer}
 body:not(.readonly-mode) #rankings-table tbody tr.tier-spacer-row:hover td{text-decoration:underline}
+/* ══════════ TIER_TINT_DRAG_V1 (2026-08-22) — THE ARMED LABEL ══════════
+   Group drag used to arm the floating overlay box. TIER_TINT_V1 deleted that box and
+   nothing replaced it, so arming had been silently dead. The LABEL ROW is the handle now.
+   ⚠️ THE GLOW GOES ON THE td, NOT THE tr. A <tr> is not a reliable positioning context,
+   so an ::after pinned to it lands in the wrong place. The td is made position:relative
+   only while armed, so nothing about the resting layout changes.
+   🪨 OPACITY IS THE ONLY THING THAT ANIMATES. Never animate box-shadow on the element
+   itself — that was baseball's 33x tier-drag lag, and this page shares that CSS. The glow
+   is painted once and faded, which the compositor handles without touching layout.
+   Reuses the existing @keyframes tier-armed-fade rather than adding a second one. */
+#rankings-table tbody tr.tier-spacer-row.tier-armed td{
+  position:relative;cursor:grab;
+  background:rgba(255,193,7,0.14) !important;
+  border-top-color:#ffc107 !important;
+  color:#ffc107;
+}
+#rankings-table tbody tr.tier-spacer-row.tier-armed:active td{cursor:grabbing}
+#rankings-table tbody tr.tier-spacer-row.tier-armed td::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  box-shadow:0 0 14px #ffc107, inset 0 0 10px rgba(255,193,7,0.35);
+  opacity:0;animation:tier-armed-fade 1.5s ease-in-out infinite;will-change:opacity;
+}
+body.day-mode #rankings-table tbody tr.tier-spacer-row.tier-armed td{
+  background:rgba(217,119,6,0.16) !important;border-top-color:#d97706 !important;color:#9a5b06;
+}
+body.day-mode #rankings-table tbody tr.tier-spacer-row.tier-armed td::after{
+  box-shadow:0 0 12px #d97706, inset 0 0 8px rgba(217,119,6,0.3);
+}
 /* The tint itself. Alpha lives in CSS so the colour can stay a plain rgb triplet on the row. */
 #rankings-table tbody tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.13)}
 body.day-mode #rankings-table tbody tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.16)}
@@ -6016,6 +6044,10 @@ function _rankTiersInjectSpacerRows(){
       // is no state in which a click could re-anchor a tier against a sorted order.
       spacer.title = 'Click to edit this tier';
       spacer.addEventListener('click', function(){
+        // TIER_TINT_DRAG_V1: while this tier is ARMED the label is a drag handle, not a
+        // button. Opening the editor on the same click would fight the grab and would
+        // also look like the arm had failed. Escape or a click outside disarms it.
+        if(typeof _rankArmedTierId !== 'undefined' && _rankArmedTierId === tier.id) return;
         try { openEditRankTierModal(tier.id); }
         catch(e){ console.warn('[TIER_TINT_EDIT_V1] could not open the tier editor:', e); }
       });
@@ -6107,6 +6139,27 @@ function renderRankTiers(){
       });
     } catch(e){ console.warn('[TIER_TINT_V1] failed to tint tier:', tier, e); }
   });
+  // TIER_TINT_DRAG_V1: every render REBUILDS the label rows, which throws away the armed
+  // class and its drag listeners. The resize handler on the next line calls this function,
+  // so without a re-arm, resizing the window while a tier was armed would silently kill the
+  // drag while still LOOKING armed. Re-attach to the fresh row instead.
+  try { _rankTierReArmAfterRender(); } catch(e){ console.warn('[TIER_TINT_DRAG_V1] re-arm failed:', e); }
+}
+// Re-attaches the armed state after a re-render. Deliberately NOT armRankTier(): that one
+// alerts when it cannot find the row, and an alert firing on a window resize would be a
+// bug of its own. If the tier is genuinely gone, drop the arm quietly instead.
+function _rankTierReArmAfterRender(){
+  if(!_rankArmedTierId) return;
+  var tid = _rankArmedTierId;
+  var box = _rankTierGetBoxEl(tid);
+  if(!box){ _rankArmedTierId = null; _rankTierDragPayload = null; return; }
+  if(box.classList.contains('tier-armed')) return;      // already wired, nothing to do
+  box.classList.add('tier-armed');
+  box.setAttribute('draggable', 'true');
+  box._rtd1_ondragstart = function(e){ rankTierDragStart(e, tid); };
+  box._rtd1_ondragend   = function(e){ rankTierDragEnd(e); };
+  box.addEventListener('dragstart', box._rtd1_ondragstart);
+  box.addEventListener('dragend',   box._rtd1_ondragend);
 }
 window.addEventListener('resize', function(){ try { if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankTiers(); } catch(e){} });
 
@@ -6128,9 +6181,23 @@ var _rankArmedTierId = null;
 var _rankTierDragPayload = null;   // { tierId, playerIds:[...], startIdx, endIdx } during a drag
 
 function _rankTierGetBoxEl(tierId){
-  // Scoped to the rankings overlay on purpose: the watch list paints boxes with the same
-  // class, and an unscoped lookup would be one id collision away from arming the wrong page.
-  return document.querySelector('#rank-tier-overlay-layer .tier-bracket-box[data-tier-id="' + String(tierId).replace(/"/g,'\\"') + '"]');
+  // ══════════ TIER_TINT_DRAG_V1 (2026-08-22) — THE HANDLE MOVED ══════════
+  // 🪨 THIS WAS A LIVE BUG. It used to look for
+  //     '#rank-tier-overlay-layer .tier-bracket-box[data-tier-id=...]'
+  // but TIER_TINT_V1 DELETED that overlay the night before. Nothing repopulates
+  // that layer — the only code in this file that builds a .tier-bracket-box is
+  // renderTiers(), the WATCH LIST renderer, which paints somewhere else entirely.
+  // So this returned null every single time, armRankTier() fell into its
+  // "cannot arm" branch, and group drag on rankings was DEAD. Worse, the alert it
+  // showed blamed a column sort, so anyone hitting it would go hunting for a sort
+  // that was not there.
+  // The tier LABEL ROW is the handle now: it is per-tier, it carries the id, and
+  // it lives in normal flow, so it cannot drift under zoom the way the old
+  // absolutely-positioned box did.
+  // Still scoped to #rankings-table on purpose — the watch list uses the same
+  // .tier-spacer-row class, and an unscoped lookup would be one id collision away
+  // from arming the wrong view.
+  return document.querySelector('#rankings-table tbody tr.tier-spacer-row[data-tier-spacer-for="' + String(tierId).replace(/"/g,'\\"') + '"]');
 }
 function _rankTierIdx(pidVal){
   // String-compared rather than indexOf: saved orders have arrived as both numbers and
@@ -6306,8 +6373,9 @@ document.addEventListener('click', function(e){
   var box = _rankTierGetBoxEl(_rankArmedTierId);
   if(!box) return;
   if(box.contains(e.target)) return;
-  var tab = document.querySelector('#rank-tier-overlay-layer .tier-bracket-tab[data-tier-id="' + String(_rankArmedTierId).replace(/"/g,'\\"') + '"]');
-  if(tab && tab.contains(e.target)) return;
+  // TIER_TINT_DRAG_V1: the separate floating TAB is gone — under the tint design the label
+  // row IS the handle, so box.contains() above already covers everything the tab used to.
+  // The old lookup was left querying an overlay that no longer exists and always found null.
   var modal = document.getElementById('create-tier-modal');
   if(modal && modal.contains(e.target)) return;
   disarmRankTier();
