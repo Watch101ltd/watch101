@@ -589,6 +589,8 @@ table.watch-list thead tr th.col-stat,table.watch-list tbody tr td.col-stat{widt
 table.watch-list thead tr th[data-sort="payd"],table.watch-list thead tr th[data-sort="ruyd"],table.watch-list thead tr th[data-sort="reyd"],
 table.watch-list thead tr th[data-npsort="payd"],table.watch-list thead tr th[data-npsort="ruyd"],table.watch-list thead tr th[data-npsort="reyd"],
 table.watch-list thead tr th[data-ranksort="payd"],table.watch-list thead tr th[data-ranksort="ruyd"],table.watch-list thead tr th[data-ranksort="reyd"]{width:48px}
+table.watch-list colgroup col.col-rankdel{width:34px}
+table.watch-list thead tr th.col-rankdel,table.watch-list tbody tr td.col-rankdel{width:34px}  /* RANK_HIDE_V1: the red X column, rankings only, backend only */
 table.watch-list colgroup col.col-notebadge{width:24px}
 table.watch-list thead tr th.col-notebadge,table.watch-list tbody tr td.col-notebadge{width:24px}
 table.watch-list colgroup col.col-action{width:60px}
@@ -1723,6 +1725,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
     <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px">&#127991;&#65039; Tier</button>
     <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="doneRankingNotify(this)" title="Ping Jay's phone that this rankings pass is finished" style="margin-left:14px">✅ Done Ranking</button>
+    <button class="btn btn-outline backend-only" id="rank-hidden-btn" onclick="openHiddenList()" style="display:none;margin-left:6px" title="Players hidden from this rankings set — click to restore">♻️ Hidden (0)</button><!-- RANK_HIDE_V1 -->
   </div>
 <!-- NFL_RANK_STATFILTER_V1 (2026-08-20 — PC Walter, per the Dude; Matt flagged the missing filter live
      on the 8/19 call) — the STAT FILTERING box + instant date-range row cloned onto the RANKINGS view,
@@ -2323,6 +2326,7 @@ function _rankingsIdsFor(pos){
       if(am && bm){ var na=(_playerDB[a].full_name||''), nb=(_playerDB[b].full_name||''); return na.localeCompare(nb); }
       if(am) return 1; if(bm) return -1; return ra - rb;
     });
+    oids = oids.filter(function(pid){ return !_rankHiddenHas(pid); });   // RANK_HIDE_V1: the seed never offers a hidden player, so the append machinery cannot resurrect him
     return oids.slice(0, _rankCap('Overall'));   // NFL_RANKINGS_PARITY_V1: set-aware
   }
   var ids = [];
@@ -2350,6 +2354,7 @@ function _rankingsIdsFor(pos){
     return ra - rb;
   });
   var cap = _rankCap(pos);   // NFL_RANKINGS_PARITY_V1: set-aware (redraft tuned, dynasty 400)
+  ids = ids.filter(function(pid){ return !_rankHiddenHas(pid); });   // RANK_HIDE_V1
   return ids.slice(0, cap);
 }
 function renderRankings(){
@@ -2404,10 +2409,11 @@ function renderRankings(){
   var cols = _rankColsFor(_rankPos);
   _rankRenderHead(cols);
 
+  var _rkRoDel = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();   // RANK_HIDE_V1
   if(ids.length === 0){
     tbody.innerHTML = _rkFiltOn
-      ? '<tr><td colspan="' + (cols.length + 5) + '" class="empty-state"><strong>No ' + _rankPos + ' players match the stat filter</strong>Loosen or reset the filter to bring the list back.</td></tr>'
-      : '<tr><td colspan="' + (cols.length + 5) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
+      ? '<tr><td colspan="' + (cols.length + (_rkRoDel ? 5 : 6)) + '" class="empty-state"><strong>No ' + _rankPos + ' players match the stat filter</strong>Loosen or reset the filter to bring the list back.</td></tr>'
+      : '<tr><td colspan="' + (cols.length + (_rkRoDel ? 5 : 6)) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
     try { renderRankTiers(); } catch(e){}   /* NFL_RANK_STATFILTER_V1: wipe tier boxes from the previous paint */
     try { _renderRankPhoneList(ids); } catch(e){}   /* RANK_PHONE_NFL_V1 */
     return;
@@ -2439,10 +2445,12 @@ function renderRankings(){
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><div class="name-cell"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _badgeCol.render(pid) + '</div></td>' +   // RANKINGS_WL_CLONE_NFL_V1 + INJ_TAG_V1 + FITNAMES_NFL_V1 (.name-cell wrapper is what fitting measures)
       statCells +
+      (_rkRoDel ? '' : '<td class="center col-rankdel backend-only"><button class="remove-btn" title="Hide from these rankings (stays in the other set)" onclick="event.stopPropagation();hideFromRankings(&quot;' + _pidAttr + '&quot;)">\u2715</button></td>') +   // RANK_HIDE_V1
     '</tr>';
   }).join('');
   _rankWireSortHeaders();
   _rankUpdateSortArrows();
+  try { _rankUpdateHiddenBtn(); } catch(e){}   // RANK_HIDE_V1: the Hidden pill follows every paint (and the set switch)
   // RANK_TIERS_V1 - brackets are measured off real rows, so they paint after the body exists.
   try { renderRankTiers(); } catch(e){ console.warn('[RANK_TIERS_V1] render after rankings failed:', e); }
   try { _renderRankPhoneList(ids); } catch(e){}   /* RANK_PHONE_NFL_V1 — cards follow every rankings paint */
@@ -2570,6 +2578,64 @@ function _rankSplitNote(s){
   if(!m) return { text:s, url:'' };
   return { text:(s.slice(0,m.index)+s.slice(m.index+m[0].length)).replace(/\s+/g,' ').trim(), url:m[0] };
 }
+// ══════════ RANK_HIDE_V1 (2026-08-22, the Dude off Matt's 8/21 ask: "I want to get rid of
+// Jayden Higgins... they keep dynasty value, but remove them from redraft") ══════════
+// ONE hidden list per rankings SET (redraft / dynasty), so hiding a player removes him from
+// EVERY tab of that set and never touches the other set. The list rides every position's save
+// payload as `hidden` and harvests back from the NEWEST-stamped payload, so it follows the NAS
+// like notes do. THE CRITICAL HALF IS THE SEED FILTER in _rankingsIdsFor: without it, the
+// append machinery (which adds any eligible player missing from a saved order) would quietly
+// resurrect every hidden player on the next render.
+var _rankHidden = {};   // 'redraft' | 'dynasty' -> array of pids
+var RANK_HIDDEN_KEY = 'watch101_nfl_rank_hidden_v1';
+function _rankHiddenSetKey(){ return (_rankSet === 'dynasty') ? 'dynasty' : 'redraft'; }
+function _rankHiddenList(){ var k = _rankHiddenSetKey(); if(!Array.isArray(_rankHidden[k])) _rankHidden[k] = []; return _rankHidden[k]; }
+function _rankHiddenHas(pid){ return _rankHiddenList().indexOf(pid) !== -1; }
+function _rankHiddenSaveLocal(){ try { localStorage.setItem(RANK_HIDDEN_KEY, JSON.stringify(_rankHidden)); } catch(e){} }
+function _rankHiddenLoadLocal(){ try { var raw = localStorage.getItem(RANK_HIDDEN_KEY); if(raw){ var o = JSON.parse(raw); if(o && typeof o === 'object') _rankHidden = o; } } catch(e){} }
+_rankHiddenLoadLocal();
+function hideFromRankings(pid){
+  if(_blockIfReadOnly('hideFromRankings')) return;
+  var p = _playerDB ? _playerDB[pid] : null;
+  var nm = p ? (p.full_name || 'this player') : 'this player';
+  var setName = (_rankSet === 'dynasty') ? 'Dynasty' : 'Redraft';
+  var other = (_rankSet === 'dynasty') ? 'Redraft' : 'Dynasty';
+  if(!confirm('Hide ' + nm + ' from the ' + setName + ' rankings?\n\nHe stays in the ' + other + ' set. Bring him back any time with the Hidden button above the table.')) return;
+  var list = _rankHiddenList();
+  if(list.indexOf(pid) === -1) list.push(pid);
+  // pull him out of every saved order in this set so the payloads stop carrying him
+  ['Overall','QB','RB','WR','TE','DEF'].forEach(function(k){
+    if(Array.isArray(_rankings[k])){ var i = _rankings[k].indexOf(pid); if(i !== -1) _rankings[k].splice(i,1); }
+  });
+  _rankHiddenSaveLocal();
+  if(typeof saveRankings === 'function' && _rankPos) saveRankings(_rankPos);
+  renderRankings();
+}
+function restoreFromRankings(pid){
+  if(_blockIfReadOnly('restoreFromRankings')) return;
+  var list = _rankHiddenList(); var i = list.indexOf(pid); if(i !== -1) list.splice(i,1);
+  _rankHiddenSaveLocal();
+  if(typeof saveRankings === 'function' && _rankPos) saveRankings(_rankPos);
+  closeHiddenList();
+  renderRankings();   // the seed-append puts him back at the bottom of each tab, ready to re-rank
+}
+function _rankUpdateHiddenBtn(){
+  var b = document.getElementById('rank-hidden-btn'); if(!b) return;
+  var n = _rankHiddenList().length;
+  b.style.display = n > 0 ? '' : 'none';
+  b.textContent = '\u267B\uFE0F Hidden (' + n + ')';
+}
+function openHiddenList(){
+  var list = _rankHiddenList();
+  var body = document.getElementById('rank-hidden-body'); var modal = document.getElementById('rank-hidden-modal');
+  if(!body || !modal) return;
+  body.innerHTML = list.length ? list.map(function(pid){
+    var p = (_playerDB && _playerDB[pid]) || {}; var nm = p.full_name || String(pid); var ps = p.position || '';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="flex:1;font-weight:700">' + escapeHtml(nm) + '</span><span style="color:var(--text3);font-size:11px">' + escapeHtml(ps) + '</span><button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="restoreFromRankings(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Restore</button></div>';
+  }).join('') : '<em style="color:var(--text3)">Nobody is hidden from this set.</em>';
+  modal.style.display = 'flex';
+}
+function closeHiddenList(){ var m = document.getElementById('rank-hidden-modal'); if(m) m.style.display = 'none'; }
 function editRankNote(pid, el){
   if(_blockIfReadOnly('editRankNote')) return;
   // NOTE_POPUP_NFL_V1: was an inline <input class="rk-note-input"> swapped in place of the
@@ -2830,14 +2896,15 @@ function _rankRenderHead(cols){
     return '<th class="' + (c.headClass||'') + '" data-ranksort="' + c.key + '" style="cursor:pointer">' +
            c.label + ' <span class="sort-arrow">↕</span></th>';
   }).join('');
-  headRow.innerHTML = fixed + statHeads;
+  var _rhRo = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();   // RANK_HIDE_V1: fans never get the X column AT ALL -- no th, no td, no col, so their table stays exactly as published
+  headRow.innerHTML = fixed + statHeads + (_rhRo ? '' : '<th class="col-rankdel backend-only" title="Hide a player from this rankings set"></th>');
 
   // GROUP_HEADERS_NFL_V1: the row above. FIXEDCOUNT is COUNTED from the markup we just built rather
   // than hardcoded, so adding or removing a fixed column can never silently desync the group row.
   var groupRow = document.getElementById('rankings-group-row');
   if(groupRow){
     var fixedCount = (fixed.match(/<th/g) || []).length;
-    groupRow.innerHTML = _rankGroupRow(cols, fixedCount);
+    groupRow.innerHTML = _rankGroupRow(cols, fixedCount) + (_rhRo ? '' : '<th class="grp-blank backend-only"></th>');   // RANK_HIDE_V1: the group row and the sub row MUST agree on column count (the campaign's lesson #1)
   }
 
   // COLGROUP_WIDTHS_V1: with a colspan row sitting first, table-layout:fixed reads its widths from
@@ -2878,6 +2945,7 @@ function _rankColGroup(fixedHtml, cols){
   cols.forEach(function(c){
     out.push((_RANK_COLCLASS.indexOf(c.key) >= 0) ? ('col-' + c.key) : 'col-stat');
   });
+  if(!((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())) out.push('col-rankdel');   // RANK_HIDE_V1: the colgroup matches the head row -- one col per column, X included, and fans get neither
   return out;   // ARRAY of class names; the caller makes real <col> elements from it
 }
 
@@ -3042,7 +3110,7 @@ async function saveRankings(pos){
     var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankNoteStamps[pid]); if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; return o; });   // AV_COL_V1: av rides too   // RANKINGS_NOTES_NFL_V1: note rides along. RANK_NOTE_BADGE_48H_V1: its freshness stamp rides too. RANKINGS_WL_CLONE_NFL_V1: type_tags + priority ride the same payload (server stores player objects verbatim)
     var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ players: players, manual: _rankManual[pos] === true, tiers: (typeof _rankTiersForSave === 'function' ? _rankTiersForSave(pos) : []) })  // RANKINGS_LIVE_SEED_V1 + RANK_TIERS_V1 (the server already persists a tiers array for any list id)
+      body: JSON.stringify({ players: players, manual: _rankManual[pos] === true, tiers: (typeof _rankTiersForSave === 'function' ? _rankTiersForSave(pos) : []), hidden: _rankHiddenList() })  // RANK_HIDE_V1: the set's hidden list rides every position's payload; harvest takes the newest stamp  // RANKINGS_LIVE_SEED_V1 + RANK_TIERS_V1 (the server already persists a tiers array for any list id)
     });
     if(res.ok){
       if(statusEl) statusEl.textContent = '✓ ' + pos + ' rankings saved (' + players.length + ').';
@@ -3104,6 +3172,7 @@ async function loadRankingsFromNAS(){
   // kept quoting that list. The loader now tracks the newest stamp across the
   // set's positions and writes the teal line itself when the rankings view is up.
   var _rkNewestIso = null, _rkNewestLocal = null, _rkNewestEnv = null;
+  var _rkHiddenNewest = null;   // RANK_HIDE_V1: hidden harvests from the newest-stamped payload only
   _rankLoadLocal();
   _rankNotesLoadLocal();   // RANKINGS_NOTES_NFL_V1
   _rankTypesLoadLocal(); _rankPrioLoadLocal();   // RANKINGS_WL_CLONE_NFL_V1
@@ -3135,6 +3204,14 @@ async function loadRankingsFromNAS(){
           var _rtKey = ((_rankSet === 'dynasty') ? 'dynasty' : 'redraft') + '|' + pos;
           if(payload && Array.isArray(payload.tiers)){ _rankTiers[_rtKey] = payload.tiers; _rankTiersSnapshot[_rtKey] = payload.tiers.slice(); }
         } catch(_rtE){ console.warn('[RANK_TIERS_V1] tier hydrate failed for ' + pos + ':', _rtE); }
+        // RANK_HIDE_V1: every payload carries the SET's hidden list; trust the newest stamp across the set
+        try {
+          if(payload && Array.isArray(payload.hidden) && _rkIso && (!_rkHiddenNewest || _rkIso > _rkHiddenNewest)){
+            _rkHiddenNewest = _rkIso;
+            _rankHidden[_rankHiddenSetKey()] = payload.hidden.slice();
+            _rankHiddenSaveLocal();
+          }
+        } catch(_rhE){ console.warn('[RANK_HIDE_V1] hidden hydrate failed for ' + pos + ':', _rhE); }
         if(players && players.length){
           players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); var _hst=Number(it.note_saved_at); if(isFinite(_hst) && _hst>0 && _rankNoteStamps[it.pid]==null) _rankNoteStamps[it.pid]=_hst; if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _rankAv[it.pid]==null) _rankAv[it.pid]=_hav; });   // AV_COL_V1: av harvests too  // RANKINGS_NOTES_NFL_V1 + RANK_NOTE_BADGE_48H_V1 + RANKINGS_WL_CLONE_NFL_V1: notes, their freshness stamps, type tags and priority all harvest from the NAS payload
           // RANKINGS_LIVE_SEED_V1 -- only a HAND-DRAGGED order (manual:true in the saved payload) is
@@ -8674,6 +8751,17 @@ function _yahooLookupFmt(pid, field, isPercent){
 <!-- NOTE_POPUP_NFL_V1 (2026-08-21 evening) — paragraph-sized note editor shared by the watch
      list and rankings note columns (the pool has no note column). Matt's text tonight: the old
      inline box held "maybe enough to hold two words." Styled to match the create-tier-modal family. -->
+<!-- RANK_HIDE_V1: the restore list for players hidden from the current rankings set -->
+<div id="rank-hidden-modal" onclick="if(event.target===this)closeHiddenList()" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:18px 20px;width:92vw;max-width:440px;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
+    <h2 style="margin:0 0 4px 0;font-size:16px;color:var(--text)">&#9851;&#65039; Hidden from Rankings</h2>
+    <div style="font-size:11px;color:var(--text3);margin:0 0 10px 0">Hidden players stay out of every tab of this set. Restore puts a player back at the bottom of the lists, ready to re-rank. The other rankings set is never affected.</div>
+    <div id="rank-hidden-body"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button onclick="closeHiddenList()" style="background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Close</button>
+    </div>
+  </div>
+</div>
 <div id="note-editor-modal" onclick="_notePopupBackdrop(event)" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
   <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:18px 20px;width:92vw;max-width:560px;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
     <h2 style="margin:0 0 2px 0;font-size:16px;color:var(--text)">&#128221; Note</h2>
