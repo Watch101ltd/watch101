@@ -1316,6 +1316,30 @@ body.day-mode .lg-redname{color:#b91c1c;}
   #ftl-overlay .ftl-hero{padding:1rem 1.1rem;gap:10px;}
   #ftl-overlay .ftl-name{font-size:24px;line-height:1.05;}
   #ftl-overlay .ftl-sub{font-size:12px;margin-top:6px;}
+  /* ══════════ CARD_STATBAR_PHONE_WRAP_V1 (2026-08-23) ══════════
+     THE PHONE LOST ITS WRAP ON 8/6 AND NOBODY LOOKED. Found by the Dude from a screenshot of
+     his own card: the ownership numbers ran together as "100%100%" and the headers collided.
+
+     TWO OF WALTER'S OWN CHANGES STACKED TO CAUSE IT.
+       8/06 STATGRID_V1 retuned the strip for the DESKTOP: flex+flex-wrap became
+            grid+grid-auto-flow:column, and the cell floor went min-width:54px -> 0.
+            🪨 THAT DELETED THE TWO PROPERTIES THAT WERE PROTECTING NARROW SCREENS. Column flow
+            means ONE ROW ALWAYS, and min-width:0 lets a cell shrink below its own contents.
+       8/21 YPC and YPR were added to the same strip. Eleven columns became THIRTEEN.
+
+     MEASURED ON THE LIVE CARD AT 390px BEFORE THE FIX: 13 cells at 26px each in a 342px strip,
+     four of them unable to fit their own text (Y!ROS% needs 41px for its label alone, RU YD
+     needs 34px for "1,202"). AFTER: 13 cells wrapping into 3 rows, every cell 60px or wider,
+     zero overflow.
+
+     ⚑ DESKTOP IS DELIBERATELY UNTOUCHED. The tight single row is what he asked for and it works
+     there. This only fires below 768px, and it needs no !important because this block already
+     sits ~120 lines below the base rules it overrides. Source order, not force.
+     🪨 THE PATTERN TO REMEMBER: this is Bug #32 again (2026-08-04), where Matt saw broken headers
+     at 100% zoom and the Dude had to reach 175% on his widescreen to reproduce it. TIGHTENING A
+     LAYOUT FOR THE WIDE CASE IS THE ACT THAT BREAKS THE NARROW ONE. Check both, every time. */
+  #ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;}
+  #ftl-overlay .ftl-statcell{min-width:60px;flex:1 0 auto;}
 }
 /* NFL_MULTILIST_V1 tweak (June 11, 2026, per the Dude) — the EXPANDED dropdown rows render on the
    browser-native white background, so the select's inherited white text was invisible. Dark text on white
