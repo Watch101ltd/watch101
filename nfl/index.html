@@ -1908,7 +1908,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="rank-subnav-btn" data-rankpos="TE" onclick="switchRankPos('TE', this)">TE</button>
     <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
     <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px">&#127991;&#65039; Tier</button>
-    <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="doneRankingNotify(this)" title="Ping Jay's phone that this rankings pass is finished" style="margin-left:14px">✅ Done Ranking</button>
+    <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="doneRankingNotify(this)" title="Saves this position's rankings to a JSON file in List Data\_Staging, then pings Jay's phone" style="margin-left:14px">💾 Done Ranking</button>
     <button class="btn btn-outline backend-only" id="rank-hidden-btn" onclick="openHiddenList()" style="display:none;margin-left:6px" title="Players hidden from this rankings set — click to restore">♻️ Hidden (0)</button><!-- RANK_HIDE_V1 -->
   </div>
 <!-- NFL_RANK_STATFILTER_V1 (2026-08-20 — PC Walter, per the Dude; Matt flagged the missing filter live
@@ -3505,6 +3505,120 @@ var RANKINGS_STORAGE_KEY = 'watch101_nfl_rankings_v2';  // v2 (RANKINGS_LIVE_SEE
 var RANKINGS_DYN_STORAGE_KEY = 'watch101_nfl_rankings_dyn_v1';
 function _rankStorageKey(){ return (_rankSet === 'dynasty') ? RANKINGS_DYN_STORAGE_KEY : RANKINGS_STORAGE_KEY; }
 function _rankListId(pos){ return 'rankings-nfl-' + (_rankSet === 'dynasty' ? 'dyn-' : '') + pos.toLowerCase(); }
+function _rankPlayersForSave(pos){
+  // RANK_FILE_SAVE_V1: lifted VERBATIM out of saveRankings() so the JSON written to disk is
+  // byte-for-byte the same shape the NAS receives. 🪨 Two pieces of code answering the same
+  // question is what caused Bug #160. There is now one.
+  return (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankNoteStamps[pid]); if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; return o; });
+}
+
+/* ══════════ RANK_FILE_SAVE_V1 (2026-08-23, the Dude's ask) ══════════
+   THE SHELVES WERE BUILT AND NOTHING WAS EVER PUT ON THEM.
+
+   On 2026-08-08 twelve staging folders were created for the rankings, one per
+   position per set, and `Jay_Approve_NFL_Rankings.bat` was written to promote
+   whatever appeared in them. **Nothing ever wrote to them.** As of 2026-08-23 all
+   twelve were still empty, so the approve batch would print "nothing saved in
+   staging" twelve times and do nothing. The Dude spotted the gap from a screenshot
+   of the folder tree: *"It looks like you've already created the subfolders as a
+   place to hold the json files. You just never created the actual save button."*
+   He was right.
+
+   🪨 THE TWO SAVE PATHS, AND WHY ONLY ONE OF THEM EXISTED HERE. The watch list has
+   `saveList()`, which writes a real JSON to a folder the user picks, and Synology
+   Drive carries it up. The rankings only ever had `saveRankings()`, which POSTs to
+   the NAS on every drag. So the rankings were saved CONTINUOUSLY and BACKED UP NEVER.
+   That is how Matt's forty two tiers came to exist in exactly one place.
+
+   ⚑ AND THE BUTTON WAS LYING. "Done Ranking" fired one Home Assistant webhook and
+   nothing else. It looked exactly like a save control, the Dude read it as one, and
+   he is the person who commissioned it. Now it actually saves, and then pings.
+
+   WHAT THIS DOES, deliberately mirroring saveList() step for step:
+     - builds the same envelope the NAS writes, so a file dropped here is
+       indistinguishable in shape from what the approve pipeline already handles
+     - asks for the `List Data\_Staging` folder ONCE per session and walks into the
+       right position subfolder itself. Twelve pickers for one ranking pass would
+       have guaranteed nobody ever used it.
+     - never touches the NAS. The rankings are already saved there. This is the
+       second copy, and a backup that can write to the source is not a backup.
+
+   ⚠️ REQUIRES CHROME OR EDGE. showDirectoryPicker does not exist in Safari, and
+   MATT IS ON A MACBOOK. If he runs Safari this degrades to a clear message and
+   saves nothing. Worth confirming with him rather than assuming.
+   ⚠️ THE FILE LANDS ON WHOEVER'S COMPUTER CLICKED IT. That is fine because Matt's
+   Mac runs Synology Drive against the same Watch 101 folder, so his save syncs up.
+   It is not fine if he ever works from a machine without it. */
+function _rankStagingFolder(pos){
+  return 'Rankings_' + ((typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dyn_' : '') + String(pos);
+}
+var _rankStagingDir = null;   // session-cached folder handle, so he picks once and not twelve times
+async function saveRankingsToFile(pos){
+  if(_blockIfReadOnly('saveRankingsToFile')) return false;
+  var statusEl = document.getElementById('rankings-status');
+  function say(m){ if(statusEl) statusEl.textContent = m; }
+  if(!window.showDirectoryPicker){
+    say('\u26a0\ufe0f This browser cannot write files to a folder. Use Chrome or Edge. Your rankings are still saved on the server.');
+    return false;
+  }
+  try {
+    var folder   = _rankStagingFolder(pos);
+    var nowIso   = new Date().toISOString();
+    var stamp    = nowIso.replace(/[:.]/g, '-').slice(0, 19);
+    var fileName = 'Watch101_NFL_' + folder + '_' + stamp + '.json';
+    var payload  = {
+      list_id: _rankListId(pos),
+      list_name: 'Watch 101 NFL - ' + pos + ' Rankings',
+      saved_at: nowIso,
+      saved_at_local: new Date().toLocaleString(),
+      source: 'NFL rankings \u2014 manual save (RANK_FILE_SAVE_V1)',
+      manual: _rankManual[pos] === true,
+      player_count: (_rankings[pos] || []).length,
+      players: _rankPlayersForSave(pos),
+      tiers: (typeof _rankTiersForSave === 'function' ? _rankTiersForSave(pos) : [])
+    };
+    /* ⚠️ THE EMPTY-FILE TRAP, caught before he ever clicked the button. `_rankings[pos]` is
+       only filled from the NAS when that position carries a HAND-DRAGGED order (manual:true).
+       A position Matt has never dragged holds an EMPTY array until its tab actually renders
+       and the live Yahoo seed fills it in. So a save fired before a tab has drawn, or on a
+       list still loading, would write a file with zero players.
+       🪨 WHY THAT WOULD BE WORSE THAN IT SOUNDS: `Jay_Approve_{SPORT}_Rankings.bat` promotes
+       the NEWEST file in each staging folder. An empty newest file becomes the promoted one
+       and a blank ranking reaches fans. Refuse instead, and say why. */
+    if(!payload.player_count){
+      say('\u26a0\ufe0f Nothing to save: this tab has no players loaded yet. Let it finish loading, then try again. Your rankings on the server are untouched.');
+      return false;
+    }
+    // A handle kept from earlier in the session can lose its permission. Re-ask rather
+    // than throw, and drop it if the answer is no so the next click re-prompts cleanly.
+    if(_rankStagingDir && _rankStagingDir.queryPermission){
+      var perm = await _rankStagingDir.queryPermission({ mode: 'readwrite' });
+      if(perm !== 'granted') perm = await _rankStagingDir.requestPermission({ mode: 'readwrite' });
+      if(perm !== 'granted') _rankStagingDir = null;
+    }
+    if(!_rankStagingDir){
+      say('Pick your List Data\\_Staging folder. You only have to do this once per session.');
+      _rankStagingDir = await window.showDirectoryPicker({ id: 'watch101-nfl-staging', mode: 'readwrite', startIn: 'documents' });
+    }
+    var dir = await _rankStagingDir.getDirectoryHandle(folder, { create: true });
+    var fh  = await dir.getFileHandle(fileName, { create: true });
+    var w   = await fh.createWritable();
+    await w.write(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+    await w.close();
+    say('\u2713 Saved ' + payload.player_count + ' players and ' + payload.tiers.length + ' tiers to _Staging\\' + folder + '\\' + fileName);
+    return true;
+  } catch(e){
+    _rankStagingDir = null;
+    if(e && e.name === 'AbortError'){
+      say('File save cancelled. Your rankings are still saved on the server.');
+    } else {
+      console.error('[RANK_FILE_SAVE_V1]', e);
+      say('\u26a0\ufe0f File save failed: ' + (e && e.message) + '. Your rankings are still saved on the server.');
+    }
+    return false;
+  }
+}
+
 function _rankSaveLocal(){
   try { localStorage.setItem(_rankStorageKey(), JSON.stringify({ orders: _rankings, manual: _rankManual })); }  // RANKINGS_LIVE_SEED_V1 + NFL_RANKINGS_PARITY_V1 (set-aware key)
   catch(e){ console.warn('[RANKINGS_SAVE_V1] localStorage save failed:', e); }
@@ -3518,7 +3632,7 @@ async function saveRankings(pos){
   _rankNasSaving[pos] = true;
   var statusEl = document.getElementById('rankings-status');
   try {
-    var players = (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankNoteStamps[pid]); if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; return o; });   // AV_COL_V1: av rides too   // RANKINGS_NOTES_NFL_V1: note rides along. RANK_NOTE_BADGE_48H_V1: its freshness stamp rides too. RANKINGS_WL_CLONE_NFL_V1: type_tags + priority ride the same payload (server stores player objects verbatim)
+    var players = _rankPlayersForSave(pos);   // RANK_FILE_SAVE_V1: one builder, shared with the file save
     var res = await fetch(SERVER_URL + '/list-staging/' + listId, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ players: players, manual: _rankManual[pos] === true, tiers: (typeof _rankTiersForSave === 'function' ? _rankTiersForSave(pos) : []), hidden: _rankHiddenList() })  // RANK_HIDE_V1: the set's hidden list rides every position's payload; harvest takes the newest stamp  // RANKINGS_LIVE_SEED_V1 + RANK_TIERS_V1 (the server already persists a tiers array for any list id)
@@ -6761,12 +6875,24 @@ function _notifyHomeAssistantOnSave(listId){
 // drag, so there is no natural manual-save moment to notify on (pinging per drag
 // would be spam). Matt clicks Done Ranking when a pass is finished; webhook picked
 // by the active SET. Same fire-and-forget never-block rules as the list notify.
-function doneRankingNotify(btn){
+async function doneRankingNotify(btn){
+  // RANK_FILE_SAVE_V1: it SAVES now, then pings. It used to only ping while looking
+  // exactly like a save button, which is how the Dude came to believe his rankings
+  // were being backed up when nothing was writing them anywhere.
+  var _restore = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = '\u2026 saving'; }
+  var _saved = false;
+  try { _saved = await saveRankingsToFile(_rankPos); }
+  catch(e){ console.warn('[RANK_FILE_SAVE_V1] file save threw:', e); }
   try {
     var hook = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'matt_saved_nfl_dyn_rankings' : 'matt_saved_nfl_rankings';
     fetch(_HA_WEBHOOK_BASE + '/' + hook, { method: 'POST', mode: 'no-cors', keepalive: true }).catch(function(){});
-    if(btn){ var _o = btn.textContent; btn.textContent = '\u2713 Jay pinged'; setTimeout(function(){ btn.textContent = _o; }, 2500); }
   } catch(e){ console.warn('[RANKINGS_PUBLISH_V1] ping failed:', e); }
+  if(btn){
+    btn.disabled = false;
+    btn.textContent = _saved ? '\u2713 Saved + Jay pinged' : '\u2713 Jay pinged';
+    setTimeout(function(){ btn.textContent = _restore; }, 3000);
+  }
 }
 
 async function saveList(){
