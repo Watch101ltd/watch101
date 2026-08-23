@@ -904,6 +904,8 @@ body.day-mode #rankings-table tbody tr.tier-spacer-row.tier-armed td::after{
 }
 /* The tint itself. Alpha lives in CSS so the colour can stay a plain rgb triplet on the row. */
 #rankings-table tbody tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.13)}
+/* TIER_NEST_V1: the depth rail, rankings side. Identical treatment to the watch list. */
+#rankings-table tbody tr.tier-member td:first-child{box-shadow:var(--tier-rail,none)}
 body.day-mode #rankings-table tbody tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.16)}
 /* ⚠ HOVER MUST STILL WIN. The tint is applied to td (a tr background loses to td painting), which
    means the shared `tbody tr:hover` rule targeting tr would be invisible underneath it. These two
@@ -931,6 +933,8 @@ body.day-mode #rankings-table tbody tr.tier-member:hover td{background:var(--sur
   /* NO text-transform. Bug #168: Matt types his tier names lowercase deliberately. */
 }
 #watch-list-body tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.13)}
+/* TIER_NEST_V1: the depth rail. One bar per tier the player sits in, outermost bar nearest the edge. */
+#watch-list-body tr.tier-member td:first-child{box-shadow:var(--tier-rail,none)}
 body.day-mode #watch-list-body tr.tier-member td{background:rgba(var(--tier-rgb,148,163,184),0.16)}
 /* ⚠ HOVER MUST STILL WIN — the tint paints the td, so a tr-level hover rule would sit
    underneath it and a tiered row would look dead to the mouse. */
@@ -4819,7 +4823,9 @@ function _phoneTierWrapWl(sortedIds, cards){
       segs.push({ si: si, ei: ei, hex: hex, name: nm });
     }
     if(!segs.length) return cards.join('');
-    segs.sort(function(a,b){ return a.si - b.si; });
+    // TIER_NEST_V1: on a tie the WIDER tier opens FIRST, otherwise two tiers starting on the same
+    // player can nest inside out and the closing tag lands on the wrong box.
+    segs.sort(function(a,b){ return (a.si - b.si) || (b.ei - a.ei); });
     var out = '', open = [];
     for(var k = 0; k < cards.length; k++){
       for(var a = 0; a < segs.length; a++){
@@ -4929,7 +4935,9 @@ function _phoneTierWrapRank(ids, cards){
       segs.push({ si: si, ei: ei, hex: hex, name: nm });
     }
     if(!segs.length) return cards.join('');
-    segs.sort(function(a,b){ return a.si - b.si; });
+    // TIER_NEST_V1: on a tie the WIDER tier opens FIRST, otherwise two tiers starting on the same
+    // player can nest inside out and the closing tag lands on the wrong box.
+    segs.sort(function(a,b){ return (a.si - b.si) || (b.ei - a.ei); });
     var out = '', open = [];
     for(var k = 0; k < cards.length; k++){
       for(var a = 0; a < segs.length; a++){
@@ -5136,6 +5144,162 @@ let _tierEditingId = null;
 var _tierRepairSnapshot = null;
 function _tierRepairWlIds(){ try { return _watchList.map(function(it){ return String(_wlPid(it)); }); } catch(e){ return []; } }
 function _tierRepairRankIds(){ try { return (_rankings[_rankPos] || []).map(function(x){ return String(x); }); } catch(e){ return []; } }
+
+/* ══════════ TIER_NO_CROSS_V1 (2026-08-23, the Dude's spec) ══════════
+   TWO SHAPES, AND ONLY ONE OF THEM IS A MISTAKE. His words: *"I never want them to cross, I only
+   want to do nesting."*
+
+     NESTING  (allowed, it is a feature)      CROSSING  (refused, it is a logic error)
+       18 |======================|              18 |==============|
+       23      |=====|                          23        |==============| 28
+
+   Matt's real RB rankings had the CROSSING kind: "Draft a WR instead" 18..24 against "Talented!
+   But probably bad offenses" 23..28, so Judkins and Dobbins belonged to both while each tier also
+   owned players the other did not. There is no honest way to shade that, because a row holds one
+   background and neither tier is the inner one. Nesting has an obvious inner and outer, so it can
+   be drawn, and TIER_NEST_V1 now draws it.
+
+   ⚠️ AN EARLIER VERSION OF THIS GUARD (TIER_NO_OVERLAP_V1, same morning) BLOCKED BOTH SHAPES AND
+   WAS REVERTED WITHIN THE HOUR. Walter built it off "no overlaps" without checking whether the
+   Dude wanted nesting, and he did: *"I don't want you to make it impossible to make a tier inside
+   a tier."* 🪨 THE LESSON IS NOT ABOUT TIERS. Two different shapes had been collapsed into one word,
+   "overlap", and a whole feature got outlawed by a vocabulary slip. When a rule is about to forbid
+   something, name exactly what it forbids and check that nothing valuable shares the name.
+
+   FAILS OPEN. Unreadable tiers, missing anchors or any thrown error let the save through: locking
+   Matt out of his own tool is worse than the shape it prevents, and a tier that could not be read
+   is left strictly alone (Bug #167's lesson). Indexes on FIRST occurrence to match _wlIndexOf and
+   findIndex, which is what the modal already validated against.
+   Returns the first offender as { kind:'cross'|'same'|'nest', tier, startIdx, endIdx }, or null.
+   A cross anywhere outranks a nest everywhere, so the real error is always the one reported. */
+function _tierSpanRelation(tiers, orderIds, startPid, endPid, ignoreId){
+  try {
+    if(!Array.isArray(tiers) || !Array.isArray(orderIds)) return null;
+    var idxOf = {};
+    for(var i = 0; i < orderIds.length; i++){
+      var k = String(orderIds[i]);
+      if(!Object.prototype.hasOwnProperty.call(idxOf, k)) idxOf[k] = i;
+    }
+    var a = idxOf[String(startPid)], b = idxOf[String(endPid)];
+    if(a == null || b == null) return null;
+    if(a > b){ var sw = a; a = b; b = sw; }
+    var nest = null;
+    for(var t = 0; t < tiers.length; t++){
+      var tier = tiers[t];
+      if(!tier) continue;
+      if(ignoreId && tier.id === ignoreId) continue;
+      var s = idxOf[String(tier.start_pid)], e = idxOf[String(tier.end_pid)];
+      if(s == null || e == null || s > e) continue;
+      if(b < s || e < a) continue;                                   // disjoint, nothing to say
+      if(a === s && b === e) return { kind:'same', tier:tier, startIdx:s, endIdx:e };
+      if((a <= s && e <= b) || (s <= a && b <= e)){                  // one sits fully within the other
+        if(!nest) nest = { kind:'nest', tier:tier, startIdx:s, endIdx:e };
+        continue;                                                    // keep looking for a real cross
+      }
+      return { kind:'cross', tier:tier, startIdx:s, endIdx:e };
+    }
+    return nest;
+  } catch(e){ console.warn('[TIER_NO_CROSS_V1] check failed, allowing the save:', e); return null; }
+}
+/* Matt-facing wording. ZERO dashes, Standing Rule #13, and American spelling to match the rest of
+   the modal ("Pick a color from the palette."). */
+function _tierRelationBlockMessage(rel){
+  var nm = String((rel.tier && rel.tier.name) || 'another tier');
+  var rng = '(ranks ' + (rel.startIdx + 1) + ' to ' + (rel.endIdx + 1) + ')';
+  if(rel.kind === 'same'){
+    return 'That is the exact same range as the tier "' + nm + '" ' + rng
+         + '. Two tiers cannot cover identical players. Change the start or the end.';
+  }
+  return 'That would cross the tier "' + nm + '" ' + rng
+       + '. Tiers can sit inside each other, but they cannot half overlap. Adjust the start or end so '
+       + 'this tier either stays clear of that one, sits fully inside it, or covers it completely.';
+}
+function _tierNestConfirm(rel){
+  var nm = String((rel.tier && rel.tier.name) || 'another tier');
+  return confirm('This puts a tier inside the tier "' + nm + '" (ranks '
+       + (rel.startIdx + 1) + ' to ' + (rel.endIdx + 1) + ').\n\n'
+       + 'That is allowed. Players in both tiers get a color bar for each one down the left edge.\n\n'
+       + 'Save it?');
+}
+
+
+/* ══════════ TIER_NEST_V1 (2026-08-23, the Dude's call, Option A "depth rail") ══════════
+   A TIER INSIDE A TIER IS A FEATURE. IT WAS JUST INVISIBLE ON THIS SURFACE.
+
+   His words: *"I like that you can make a tier inside a tier, because sometimes Matt will do
+   that. That's a cool option to be able to do, but it has to be represented by the shading on
+   the computer. The only reason I knew there was a tier inside a tier is because I viewed it
+   on my phone."*
+
+   🪨 THE OLD PAINT LOOP COULD NOT EXPRESS IT, AND THAT IS THE WHOLE BUG. It walked the tiers
+   in array order and set one background colour per row, so the LAST tier to touch a row simply
+   overwrote every tier before it. Nesting was not drawn wrong, it was UNREPRESENTABLE: a row
+   holds one background and there is nowhere to put the second colour. The phone card view draws
+   real nested boxes and cannot hide it, which is the only reason this was ever spotted.
+   ⚑ A defect that a surface is physically incapable of displaying will live forever there.
+
+   THE CURE: resolve every tier FIRST, collect the full stack of tiers each row belongs to, then
+   paint that row ONCE. Background comes from the innermost tier. Depth is shown as colour bars
+   down the left edge, outermost bar first, one per tier the player is in, so they can be counted
+   and the design keeps working at three levels deep.
+   ⚠️ SHADOW ORDER MATTERS: the FIRST box-shadow in the list paints ON TOP, so the
+   outermost tier is listed first with the NARROWEST inset and each inner tier gets a wider one.
+   Reversing the list silently hides every bar but the last.
+   The rail rides a CSS variable rather than an inline box-shadow so that clearing a render is
+   one removeProperty and the day-mode/hover rules keep control of the background. */
+var _tierPaintGen = 0;
+function _tierPaintStacks(painted){
+  try {
+    if(!Array.isArray(painted) || !painted.length) return;
+    var gen = ++_tierPaintGen;
+    // Widest span == outermost, so it is entered into every stack first.
+    painted.sort(function(a,b){ return (b.rows ? b.rows.length : 0) - (a.rows ? a.rows.length : 0); });
+    var order = [];
+    painted.forEach(function(P){
+      if(!P || !P.rows) return;
+      P.rows.forEach(function(row){
+        if(row._tierStackGen !== gen){ row._tierStackGen = gen; row._tierStack = []; order.push(row); }
+        row._tierStack.push(P.rgb);
+      });
+    });
+    order.forEach(function(row){
+      var cols = row._tierStack || [];
+      if(!cols.length) return;
+      row.classList.add('tier-member');
+      row.style.setProperty('--tier-rgb', cols[cols.length - 1]);   // innermost owns the wash
+      var rail = [];
+      for(var d = 0; d < cols.length; d++) rail.push('inset ' + ((d + 1) * 5) + 'px 0 0 rgb(' + cols[d] + ')');
+      row.style.setProperty('--tier-rail', rail.join(','));
+      if(cols.length > 1) row.classList.add('tier-nested');
+    });
+  } catch(e){ console.warn('[TIER_NEST_V1] paint failed:', e); }
+}
+/* How many OTHER tiers strictly contain this one. Drives the label indent, and the inject order
+   so that when two tiers start on the SAME player the outer label lands above the inner one.
+   Strict on width, so two tiers covering the identical span never each claim to contain the other. */
+function _tierDepthOf(tiers, orderIds, tier){
+  try {
+    if(!Array.isArray(tiers) || !Array.isArray(orderIds) || !tier) return 0;
+    var idxOf = {};
+    for(var i = 0; i < orderIds.length; i++){
+      var k = String(orderIds[i]);
+      if(!Object.prototype.hasOwnProperty.call(idxOf, k)) idxOf[k] = i;
+    }
+    var a = idxOf[String(tier.start_pid)], b = idxOf[String(tier.end_pid)];
+    if(a == null || b == null) return 0;
+    if(a > b){ var sw = a; a = b; b = sw; }
+    var depth = 0;
+    for(var q = 0; q < tiers.length; q++){
+      var o = tiers[q];
+      if(!o || o.id === tier.id) continue;
+      var s = idxOf[String(o.start_pid)], e = idxOf[String(o.end_pid)];
+      if(s == null || e == null || s > e) continue;
+      if(s <= a && b <= e && (e - s) > (b - a)) depth++;
+    }
+    return depth;
+  } catch(e){ return 0; }
+}
+
 function _tierRepairCapture(tiers, orderIds){
   _tierRepairSnapshot = null;
   try {
@@ -5558,6 +5722,23 @@ async function saveTierFromModal(){
     var endIdx   = _wlIndexOf(endId);
     if(startIdx < 0 || endIdx < 0){ showErr('Could not find one of the selected players. Try reopening the modal.'); return; }
     if(endIdx < startIdx){ showErr('End Player must be the same as or below the Start Player on the list.'); return; }
+    // TIER_NO_CROSS_V1: crossing is a logic error and is refused. Nesting is a feature and is confirmed.
+    // ⚑ AN UNCHANGED RANGE SKIPS THE CHECK ENTIRELY, and both halves of that matter. Without it,
+    // (a) opening a tier that legitimately CONTAINS another just to rename it would nag for a
+    // confirm every single time, and (b) a legacy crossing tier from before this guard existed
+    // could never be renamed or recoloured, because its own saved shape would lock him out.
+    // The guard exists to stop NEW mistakes, not to trap him inside old ones. Existing crossings
+    // are now visible anyway: TIER_NEST_V1 gives their shared players a bar for each tier.
+    var _spanUnchanged = false;
+    if(_tierEditingId && Array.isArray(currentTiers)){
+      var _cur = currentTiers.find(function(t){ return t && t.id === _tierEditingId; });
+      _spanUnchanged = !!(_cur && String(_cur.start_pid) === String(startId) && String(_cur.end_pid) === String(endId));
+    }
+    if(!_spanUnchanged){
+      var _rel = _tierSpanRelation(currentTiers, _tierRepairWlIds(), startId, endId, _tierEditingId);
+      if(_rel && (_rel.kind === 'cross' || _rel.kind === 'same')){ showErr(_tierRelationBlockMessage(_rel)); return; }
+      if(_rel && _rel.kind === 'nest' && !_tierNestConfirm(_rel)) return;
+    }
     if(!Array.isArray(currentTiers)) currentTiers = [];
     if(_tierEditingId){
       var existing = currentTiers.find(function(t){ return t && t.id === _tierEditingId; });
@@ -5662,7 +5843,13 @@ function _tiersInjectSpacerRows(){
   var firstRow = tbody.querySelector('tr[data-nfl-pid]');
   if(!firstRow) return;
   var colCount = firstRow.children.length;
-  currentTiers.forEach(function(tier){
+  // TIER_NEST_V1: outermost label is injected FIRST so that when two tiers start on the SAME
+  // player the outer name sits above the inner one, matching how the rows read below it.
+  var _ord = _tierRepairWlIds();
+  var _byDepth = currentTiers.slice().sort(function(a,b){
+    return _tierDepthOf(currentTiers, _ord, a) - _tierDepthOf(currentTiers, _ord, b);
+  });
+  _byDepth.forEach(function(tier){
     try {
       var range = _tiersResolveRange(tier);
       if(!range || !range.startRow) return;
@@ -5677,6 +5864,10 @@ function _tiersInjectSpacerRows(){
       // drag/drop logic sees the exact row set it already coped with.
       // NO uppercase: Bug #168, Matt types his tier names lowercase on purpose.
       td.textContent = tier.name;
+      // TIER_NEST_V1: step a nested tier's name in so it reads as living inside its parent.
+      // setProperty with 'important' because the shipped .tier-spacer-row td padding is !important.
+      var _d = _tierDepthOf(currentTiers, _ord, tier);
+      if(_d > 0) td.style.setProperty('padding-left', (6 + _d * 16) + 'px', 'important');
       spacer.title = 'Click to edit this tier';
       spacer.addEventListener('click', function(){
         // While ARMED the label is a drag handle, not a button -- opening the editor on the
@@ -5725,7 +5916,9 @@ function _tiersClearTint(){
   try {
     document.querySelectorAll('#watch-list-body tr.tier-member').forEach(function(r){
       r.classList.remove('tier-member');
+      r.classList.remove('tier-nested');            // TIER_NEST_V1
       r.style.removeProperty('--tier-rgb');
+      r.style.removeProperty('--tier-rail');        // TIER_NEST_V1
     });
   } catch(e){}
 }
@@ -5746,17 +5939,16 @@ function renderTiers(){
   try { _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_TINT_WL_V1] label inject crashed:', e); }
   if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
   if(!_tiersDefaultOrder()){ try { _tiersClearSpacerRows(); } catch(e){} return; }
+  // TIER_NEST_V1: resolve EVERY tier first, then paint each row ONCE with its whole stack.
+  var _painted = [];
   currentTiers.forEach(function(tier){
     try {
       var range = _tiersResolveRange(tier);
       if(!range) return;                     // a player who left takes his edge with him
-      var rgb = _rankTierRgb(TIER_COLOR_HEX[tier.color]);
-      _tiersMemberRows(range).forEach(function(r){
-        r.classList.add('tier-member');
-        r.style.setProperty('--tier-rgb', rgb);
-      });
-    } catch(e){ console.warn('[TIER_TINT_WL_V1] failed to tint tier:', tier, e); }
+      _painted.push({ rows: _tiersMemberRows(range), rgb: _rankTierRgb(TIER_COLOR_HEX[tier.color]) });
+    } catch(e){ console.warn('[TIER_NEST_V1] failed to resolve tier:', tier, e); }
   });
+  _tierPaintStacks(_painted);
   // Every render REBUILDS the label rows, which throws away the armed class and its drag
   // listeners. The resize handler below calls this, so without a re-arm, resizing while a
   // tier was armed would silently kill the drag while still LOOKING armed.
@@ -6010,6 +6202,18 @@ async function saveRankTierFromModal(){
     var endIdx = ids.findIndex(function(p){ return String(p) === String(endId); });
     if(startIdx < 0 || endIdx < 0){ showErr('Could not find one of the selected players. Try reopening the window.'); return; }
     if(endIdx < startIdx){ showErr('End Player must be the same as or below the Start Player on this tab.'); return; }
+    // TIER_NO_CROSS_V1: same rule, rankings side. `ids` is the exact order startIdx/endIdx came from.
+    // An unchanged range skips the check, same reasoning as the watch list above.
+    var _spanUnchanged = false;
+    if(_rankTierEditingId){
+      var _cur = _rankTiersGet().find(function(t){ return t && t.id === _rankTierEditingId; });
+      _spanUnchanged = !!(_cur && String(_cur.start_pid) === String(startId) && String(_cur.end_pid) === String(endId));
+    }
+    if(!_spanUnchanged){
+      var _rel = _tierSpanRelation(_rankTiersGet(), ids, startId, endId, _rankTierEditingId);
+      if(_rel && (_rel.kind === 'cross' || _rel.kind === 'same')){ showErr(_tierRelationBlockMessage(_rel)); return; }
+      if(_rel && _rel.kind === 'nest' && !_tierNestConfirm(_rel)) return;
+    }
     var key = _rankTierKey();
     var arr = _rankTiersGet();
     if(_rankTierEditingId){
@@ -6095,7 +6299,12 @@ function _rankTiersInjectSpacerRows(){
   var firstRow = tbody.querySelector('tr[data-rank-pid]');
   if(!firstRow) return;
   var colCount = firstRow.children.length;
-  arr.forEach(function(tier){
+  // TIER_NEST_V1: outermost label injected FIRST, same reasoning as the watch list.
+  var _ord = _tierRepairRankIds();
+  var _byDepth = arr.slice().sort(function(a,b){
+    return _tierDepthOf(arr, _ord, a) - _tierDepthOf(arr, _ord, b);
+  });
+  _byDepth.forEach(function(tier){
     try {
       var range = _rankTiersResolveRange(tier);
       if(!range || !range.startRow) return;
@@ -6112,6 +6321,9 @@ function _rankTiersInjectSpacerRows(){
       // style, which is what shouted Matt's tier names back at him. He typed them lowercase ON PURPOSE:
       // "No. Nope, this is how I typed it. And I made sure to write lowercase." Rendered as typed now.
       td.textContent = tier.name;
+      // TIER_NEST_V1: step a nested tier's name in so it reads as living inside its parent.
+      var _d = _tierDepthOf(arr, _ord, tier);
+      if(_d > 0) td.style.setProperty('padding-left', (6 + _d * 16) + 'px', 'important');
       // TIER_TINT_EDIT_V1 (2026-08-22): clicking the label opens the Edit Tier window,
       // which is the job the old floating tab did before the tint redesign replaced it.
       // Matt reported it missing the same day he praised the new look.
@@ -6185,7 +6397,9 @@ function _rankTiersClearTint(){
   try {
     document.querySelectorAll('#rankings-body tr.tier-member').forEach(function(r){
       r.classList.remove('tier-member');
+      r.classList.remove('tier-nested');            // TIER_NEST_V1
       r.style.removeProperty('--tier-rgb');
+      r.style.removeProperty('--tier-rail');        // TIER_NEST_V1
     });
   } catch(e){}
 }
@@ -6207,17 +6421,16 @@ function renderRankTiers(){
   var arr = _rankTiersGet();
   if(!arr.length) return;
   if(!_rankTiersDefaultOrder()){ try { _rankTiersClearSpacerRows(); } catch(e){} return; }
+  // TIER_NEST_V1: resolve EVERY tier first, then paint each row ONCE with its whole stack.
+  var _painted = [];
   arr.forEach(function(tier){
     try {
       var range = _rankTiersResolveRange(tier);
       if(!range) return;                     // a player who left the tab takes his edge with him
-      var rgb = _rankTierRgb(TIER_COLOR_HEX[tier.color]);
-      _rankTiersMemberRows(range).forEach(function(r){
-        r.classList.add('tier-member');
-        r.style.setProperty('--tier-rgb', rgb);
-      });
-    } catch(e){ console.warn('[TIER_TINT_V1] failed to tint tier:', tier, e); }
+      _painted.push({ rows: _rankTiersMemberRows(range), rgb: _rankTierRgb(TIER_COLOR_HEX[tier.color]) });
+    } catch(e){ console.warn('[TIER_NEST_V1] failed to resolve tier:', tier, e); }
   });
+  _tierPaintStacks(_painted);
   // TIER_TINT_DRAG_V1: every render REBUILDS the label rows, which throws away the armed
   // class and its drag listeners. The resize handler on the next line calls this function,
   // so without a re-arm, resizing the window while a tier was armed would silently kill the
