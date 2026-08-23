@@ -2527,7 +2527,28 @@ function switchRankPos(pos, btn){
 // Yahoo rank (best first; players with no Yahoo rank sink to the bottom). Capped per position so it's the
 // fantasy-relevant depth (~250-300 total), not 4th-string practice-squad guys. Active + on-a-team only.
 // Phase 2 still to come: drag-to-rank to override this order + persist Matt's order to the NAS.
-var RANK_POS_CAP = { Overall:1500, QB:64, RB:150, WR:175, TE:80, DEF:32 };
+var RANK_POS_CAP = { Overall:1500, QB:1500, RB:1500, WR:1500, TE:1500, DEF:32 };
+// RANK_DEPTH_UNCAPPED_V1 (2026-08-23 — Walter, per the Dude, off Matt's 8/23 call:
+// "Among running backs, it's only a hundred and fifty players. How do we get more
+// people?"). Was QB:64/RB:150/WR:175/TE:80 — the Dude's own deliberate numbers from
+// 8/21, which Matt has now outgrown twice in three days.
+//
+// ⚑ THE CAPS ARE NOT THE MECHANISM ANY MORE. Same reasoning as Overall's 1500 above:
+// this is HEADROOM, NOT A TARGET. The real limiter is the on-a-team filter in
+// _rankingsIdsFor() — only players actually on an NFL roster at a fantasy position
+// are ever offered, which is what keeps this honest rather than 11,000 rows of
+// practice-squad names. Measured 8/23 off Matt's own saved boards: Overall serves
+// 1,031, and the WR pool alone is ~420, so 175 was clipping more than half of it.
+//
+// ⚠ THIS IS ONLY SAFE BECAUSE OF RANK_TAIL_BY_ADP_V1 BELOW. Raising these numbers
+// without fixing the tail order would just have extended Matt's alphabetical run
+// from J to Z. Depth is worth having only when the deep end is in a useful order.
+// If the tail sort is ever reverted, revisit these numbers in the same breath.
+//
+// DEF STAYS 32 on purpose — there are only 32 defences, so a bigger number would be
+// noise in the file rather than depth on the page.
+// Existing saved orders are SAFE: the seed-append in renderRankings keeps Matt's
+// hand-ranked order and stacks newly eligible players underneath.
 // RANK_DEPTH_1031_V1 (2026-08-22) — OVERALL IS NOW EFFECTIVELY UNCAPPED.
 // Matt, by text: the overall board stopped at 400 and he wants to go deep on dynasty.
 // Measured off the live player DB the same day: 1,031 players are on an NFL roster at a
@@ -2574,6 +2595,46 @@ function _rankSeedName(p){
   if(p.full_name) return p.full_name;
   return ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
 }
+// ============================================================================
+// RANK_TAIL_BY_ADP_V1 (2026-08-23 — Walter, per the Dude, off Matt's 8/23 call).
+//
+// MATT'S COMPLAINT: "I see D E F H I J and it stops at J. Among running backs,
+// it's only a hundred and fifty players. How do we get more people?"
+//
+// WHAT WAS ACTUALLY WRONG — and it was NOT the cap. Only ~315 players league-wide
+// carry a Yahoo overall rank. Every tab seeds by that rank, and everyone without
+// one fell to the bottom sorted BY NAME. So the RB tab showed its ranked backs,
+// then an A-to-Z run — and the 150 cap chopped that run off mid-alphabet, at J.
+// Raising the cap alone would only have extended the alphabet to Z: more players,
+// same useless order.
+//
+// THE FIX IS THE ORDER. When two players both lack a Yahoo rank we now compare
+// their ADP — which is exactly what Matt answered when asked how he wanted the
+// deep players ranked ("what I look at by ADP or ownership percentage. I think
+// ADP"). Name is kept only as the last resort, for players with neither.
+//
+// WHY THIS MATTERS MORE THAN THE CAP: with a meaningful tail, depth stops costing
+// anything. Matt scrolls until the players stop being interesting instead of
+// hitting a wall mid-alphabet. That is what makes raising the caps safe.
+//
+// ⚠ ADP LOADS ASYNC. _adpLoad() re-renders the rankings when it lands, so the
+// first paint may use the name fallback for a moment and then settle. Guarded on
+// typeof so a failed ADP fetch degrades to exactly the old behaviour rather than
+// throwing — a dead ADP feed must never break the rankings.
+// ⚠ SEED ONLY. This orders the AUTO-SEED. Matt's hand-dragged orders are stored
+// separately and still win; newly eligible players append underneath in this order.
+// ============================================================================
+function _rankTailAdp(pid){
+  try { if(typeof _adpFor === 'function'){ var v = _adpFor(pid); if(v != null) return v; } } catch(e){}
+  return null;
+}
+function _rankTailCompare(a, b){
+  var aa = _rankTailAdp(a), ab = _rankTailAdp(b);
+  if(aa != null && ab != null && aa !== ab) return aa - ab;   // both drafted: earlier ADP first
+  if(aa != null && ab == null) return -1;                      // a real ADP beats no ADP
+  if(aa == null && ab != null) return 1;
+  return _rankSeedName(_playerDB[a]).localeCompare(_rankSeedName(_playerDB[b]));
+}
 function _rankCap(pos){ return ((_rankSet === 'dynasty') ? RANK_POS_CAP_DYN : RANK_POS_CAP)[pos] || 50; }
 function _rankingsIdsFor(pos){
   if(!_playerDB) return [];
@@ -2598,8 +2659,12 @@ function _rankingsIdsFor(pos){
         var da = _yahooLookupNum(a,'yahoo_def_rank'), dbk = _yahooLookupNum(b,'yahoo_def_rank');
         if(da == null) da = 99; if(dbk == null) dbk = 99;
         if(da !== dbk) return da - dbk;
+        return _rankSeedName(_playerDB[a]).localeCompare(_rankSeedName(_playerDB[b]));
       }
-      return _rankSeedName(_playerDB[a]).localeCompare(_rankSeedName(_playerDB[b]));
+      // RANK_TAIL_BY_ADP_V1 — bucket 2, the unranked remainder. This is the block
+      // Matt watched go alphabetical on the overall board. ADP now orders it.
+      // Bucket 1 (the 32 defences) deliberately keeps its own DST-rank ordering above.
+      return _rankTailCompare(a, b);
     });
     oids = oids.filter(function(pid){ return !_rankHiddenHas(pid); });   // RANK_HIDE_V1: the seed never offers a hidden player, so the append machinery cannot resurrect him
     return oids.slice(0, _rankCap('Overall'));   // NFL_RANKINGS_PARITY_V1: set-aware
@@ -2621,7 +2686,9 @@ function _rankingsIdsFor(pos){
     var rb = (typeof _yahooLookupNum === 'function') ? _yahooLookupNum(b,seedField) : null;
     var am = (ra==null), bm = (rb==null);
     if(am && bm){
-      return _rankSeedName(_playerDB[a]).localeCompare(_rankSeedName(_playerDB[b]));
+      // RANK_TAIL_BY_ADP_V1 — was localeCompare on the name, which is what produced
+      // Matt's "D E F H I J and it stops at J". ADP first, name only as a last resort.
+      return _rankTailCompare(a, b);
     }
     if(am) return 1;
     if(bm) return -1;
