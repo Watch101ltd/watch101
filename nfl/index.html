@@ -1045,6 +1045,35 @@ body.readonly-mode .wl-note-cell{cursor:default;}
 #ftl-overlay .ftl-typetag{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--text1,#fff);cursor:pointer;font-style:normal;}
 #ftl-overlay .ftl-typetag input{width:15px;height:15px;cursor:pointer;}
 #ftl-overlay .ftl-typegrid-note{font-size:11px;color:var(--text3);margin-top:8px;}
+/* TYPE_TAG_GROUPS_V1 (2026-08-23) — visible headings so Matt knows where to look
+   for a tag instead of scanning 29 of them. Kept DELIBERATELY TIGHT: this sits on
+   a card he and the Dude have both been trying to slim, so the heading is a small
+   caps rule rather than a boxed section. */
+#ftl-overlay .ftl-typegrid-groups{display:flex;flex-direction:column;gap:9px;padding:2px 0 0;}
+#ftl-overlay .ftl-tg-group{display:block;}
+#ftl-overlay .ftl-tg-head{
+  font-family:'Nunito Sans',sans-serif;font-size:10.5px;font-weight:800;
+  letter-spacing:.07em;text-transform:uppercase;
+  color:var(--text3);opacity:.85;
+  padding:0 0 3px;margin:0 0 2px;
+  border-bottom:1px solid rgba(255,255,255,.09);
+}
+#ftl-overlay .ftl-tg-group .ftl-typegrid{padding:3px 0 0;gap:7px 16px;}
+/* Quick-edit popup shares the builder, so it shares the look. */
+#quick-edit-popup .ftl-typegrid-groups{display:flex;flex-direction:column;gap:8px;}
+#quick-edit-popup .ftl-tg-head{
+  font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:800;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--text3);
+  padding:0 0 3px;border-bottom:1px solid rgba(255,255,255,.09);margin-bottom:3px;
+}
+/* Day mode, written now rather than found later by Matt (the card had 67
+   unreadable elements on 8/22). */
+body.day-mode #ftl-overlay .ftl-tg-head,
+body.light-mode #ftl-overlay .ftl-tg-head,
+body.day-mode #quick-edit-popup .ftl-tg-head,
+body.light-mode #quick-edit-popup .ftl-tg-head{
+  color:#555;border-bottom-color:rgba(0,0,0,.14);opacity:1;
+}
 .must-watch-flash{color:var(--red,#ef4444) !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}
 .inj-tag{display:inline-block;font-size:10px;font-weight:800;padding:1px 4px;border-radius:2px;letter-spacing:0.04em;background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444;white-space:nowrap;margin-left:4px;vertical-align:middle;line-height:1.3;}  /* INJ_TAG_V1, restyled 2026-08-19 on the Dude's first look: baseball's .injury-badge geometry cloned (its il10 palette, the most readable of the red family), sized up from baseball's 8px to 10px because his exact words were "big, bold, capitalized and inside a red rectangle just like baseball" -- the first pass's small superscript letter was too hard to read */
 body.day-mode .inj-tag{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}  /* INJ_TAG_V1: day-mode, baseball's own day-mode badge palette */
@@ -4617,16 +4646,11 @@ document.addEventListener('click', function(e){
       + '<div class="qep-body">'
       + '<div class="qep-row"><label class="ftl-shownew-pill"><input type="checkbox" onchange="_ftlSetShowAsNew(this)"' + (isNew ? ' checked' : '') + '> \uD83C\uDD95 Show as NEW</label></div>'
       + '<div class="qep-row"><span class="qep-label">Priority</span><span id="qep-stars-wrap">' + _qepStars(pid) + '</span></div>'
-      + '<div class="qep-row"><span class="qep-label">Type Tags</span><div class="ftl-typegrid">';
-    if(typeof TYPE_TAGS_V1 !== 'undefined' && Array.isArray(TYPE_TAGS_V1)){
-      for(var i=0; i<TYPE_TAGS_V1.length; i++){
-        var t = TYPE_TAGS_V1[i];
-        if(t.retired) continue;
-        var on = tags.indexOf(t.id) !== -1;
-        html += '<label class="ftl-typetag"><input type="checkbox" data-tag-id="' + t.id + '"' + (on ? ' checked' : '') + ' onchange="_ftlToggleTypeTag(this)"> ' + t.emoji + ' ' + t.label + '</label>';
-      }
-    }
-    html += '</div></div></div>';
+      + '<div class="qep-row"><span class="qep-label">Type Tags</span>';
+    // TYPE_TAG_GROUPS_V1: same grouped builder as the card, so the popup and the
+    // card can never show the tags in two different orders.
+    if(typeof _typeTagGridHtml === 'function'){ html += _typeTagGridHtml(tags, '_ftlToggleTypeTag'); }
+    html += '</div></div>';
     qep.innerHTML = html;
     // QEP_FOLLOW_SCROLL_V1: document coordinates, so the popup rides with the row.
     var docX = x + window.scrollX, docY = y + window.scrollY;
@@ -7506,62 +7530,164 @@ function toggleCompactMode(el){
 // (static CSS -- it follows re-renders for free; only re-inject on toggle).
 // ============================================================================
 const TYPE_TAGS_V1 = [
+  // ==========================================================================
+  // ORDER IS THE GROUPING, as of TYPE_TAG_GROUPS_V1 (2026-08-23). It used to be
+  // CHRONOLOGICAL — the order the waves below were added — which is why Matt saw
+  // "randomly scattered" emojis and the three injury tags landed on three
+  // different rows. Entries were MOVED here, never edited: every id, emoji,
+  // label and tagline is byte-for-byte what it was, and ids are what saved player
+  // records point at. Keep this order in step with TYPE_TAG_GROUPS_V1.
+  //
+  // The wave history that used to be interleaved, preserved:
   // UNIVERSAL_TAGS_V1 (2026-08-03 — PC Walter, per the Dude's picks from baseball's vocabulary).
   // Eight universal tags ported (emoji + label + tagline verbatim where they translate; IL Return
   // becomes IR Return for football, hot/cold windows say weeks because football is weekly).
   // Must Watch tagline swapped to baseball's exact line — the old one carried an em-dash in
   // public-facing copy (Rule 13) and all three sports should read identically anyway.
   // ⬇️ Matt's SPORT-SPECIFIC tags still land here after the 8/3 meeting (parity item 1).
-  { id: 'must_watch',       emoji: '👀', label: 'Must Watch',       tagline: "Drop everything. Read this player's notes first." },
-  { id: 'injury_promotion', emoji: '🫡', label: 'Next Man Up',       tagline: 'The starter went down. He got the call.' },
-  { id: 'ir_return',        emoji: '💫', label: 'Injury Return Soon', tagline: 'Rehab clock is ticking. Grab him before he is activated.' },
-  { id: 'hot_streak',       emoji: '🔥', label: 'Hot Streak',       tagline: 'Cooking the last few weeks. Ride it.' },
-  { id: 'cold_streak',      emoji: '❄️', label: 'Cold Streak',      tagline: 'Frozen the last few weeks. Bench him or sell him.' },
-  { id: 'probably_owned',   emoji: '😕', label: 'Likely Owned',     tagline: 'Likely already rostered in your league. Still worth watching.' },
-  { id: 'undervalued',      emoji: '🚀', label: 'Buy Low',          tagline: 'Cheap right now. Not for much longer.' },
-  { id: 'sell_high',        emoji: '🤝', label: 'Sell High',        tagline: 'Public has him too high. Trade before the regression.' },
-  { id: 'future_stash',     emoji: '🏦', label: 'Future Stash',     tagline: 'Not paying off now. Will later. Bank him.' },
-
   // ALERT_ADD_NOW_V1 (2026-08-04) — Matt's new tag from the 8/3 meeting, made possible
   // by moving Must Watch to 👀. Both of them agreed on tape: the eyes read better for
   // "watch this guy" AND it frees the siren for genuine urgency. His words: "stop
   // everything, go pick up." Added to ALL THREE sports the same day so one emoji can
   // never mean two different things depending on which page Matt is looking at.
-  { id: 'alert_add_now',    emoji: '🚨', label: 'Alert — Add Now',  tagline: 'Stop what you are doing and put in the claim.' },
-
   // MATT_VOCAB_WAVE1_V1 (2026-08-20 overnight) — first wave of Matt's football vocabulary,
   // wired from his 8/19 note DECODED AGAINST his own finalized baseball set (8/5): every
   // tag below either appears in both or was undecided in the note and settled by the
   // baseball twin (💥 Power Bat -> Power Back, 💨 Steals -> Elite Speed). Taglines are
   // baseball's verbatim where they translate, adapted where they do not. The rest of the
   // note (weather family, handcuff, committee, 🧯/🛟 mysteries...) waits on Matt Friday.
-  { id: 'short_term_answer', emoji: '⏳', label: 'Short-term Answer', tagline: 'Plugs the hole this week. Not a long-term keeper.' },
-  { id: 'injury_prone',      emoji: '🤕', label: 'Injury Prone',      tagline: 'Talented, but the body keeps interrupting.' },
-  { id: 'good_schedule',     emoji: '📅', label: 'Good Upcoming Schedule', tagline: 'Soft matchups ahead. The streaming window is open.' },
-  { id: 'rookie',            emoji: '👶', label: 'Rookie',            tagline: 'First-year player. Worth knowing before everyone else does.' },
-  { id: 'power_back',        emoji: '💥', label: 'Power Back / Goal Line', tagline: 'Short-yardage and goal-line work. The touchdowns find him.' },
-  { id: 'elite_speed',       emoji: '💨', label: 'Elite Speed',       tagline: 'Breakaway gear. One crease and he is gone.' },
-
   // MATT_VOCAB_WAVE2_V1 (2026-08-20 overnight) — the emoji-less remainder of Matt's 8/19
   // note, emojis PROPOSED BY WALTER and approved by the Dude on the spot; Matt vetoes or
   // renames any of them Friday. All collision-checked against the three sports' live sets.
   // Matt's "On IR?" tag deliberately NOT built — redundant with the live Sleeper IR badge
   // (the Dude's call, same night). Contract Year deliberately NOT Matt's 🧀 idea: cheese
   // already means Premium Velo in baseball, and one emoji never means two things.
+  // ==========================================================================
+
+  // ---- Act now ----
+  { id: 'must_watch',       emoji: '👀', label: 'Must Watch',       tagline: "Drop everything. Read this player's notes first." },
+  { id: 'alert_add_now',    emoji: '🚨', label: 'Alert — Add Now',  tagline: 'Stop what you are doing and put in the claim.' },
+
+  // ---- Buy, sell, hold ----
+  { id: 'undervalued',      emoji: '🚀', label: 'Buy Low',          tagline: 'Cheap right now. Not for much longer.' },
+  { id: 'sell_high',        emoji: '🤝', label: 'Sell High',        tagline: 'Public has him too high. Trade before the regression.' },
+  { id: 'future_stash',     emoji: '🏦', label: 'Future Stash',     tagline: 'Not paying off now. Will later. Bank him.' },
+  { id: 'immense_upside',    emoji: '📈', label: 'Immense Upside',    tagline: 'The ceiling is the moon. Draft the what-if.' },
+  { id: 'probably_owned',   emoji: '😕', label: 'Likely Owned',     tagline: 'Likely already rostered in your league. Still worth watching.' },
+
+  // ---- Form ----
+  { id: 'hot_streak',       emoji: '🔥', label: 'Hot Streak',       tagline: 'Cooking the last few weeks. Ride it.' },
+  { id: 'cold_streak',      emoji: '❄️', label: 'Cold Streak',      tagline: 'Frozen the last few weeks. Bench him or sell him.' },
+  { id: 'good_schedule',     emoji: '📅', label: 'Good Upcoming Schedule', tagline: 'Soft matchups ahead. The streaming window is open.' },
+
+  // ---- Health ----
+  { id: 'ir_return',        emoji: '💫', label: 'Injury Return Soon', tagline: 'Rehab clock is ticking. Grab him before he is activated.' },
+  { id: 'injury_prone',      emoji: '🤕', label: 'Injury Prone',      tagline: 'Talented, but the body keeps interrupting.' },
+  { id: 'banged_up',         emoji: '🩹', label: 'Banged Up / Playing Through', tagline: 'Playing hurt. Expect less until he heals.' },
+
+  // ---- Role ----
+  { id: 'injury_promotion', emoji: '🫡', label: 'Next Man Up',       tagline: 'The starter went down. He got the call.' },
+  { id: 'handcuff',          emoji: '🔗', label: 'Handcuff',          tagline: 'The insurance policy behind your starter. Pair them.' },
+  { id: 'league_winner',     emoji: '🏆', label: 'League Winner / One Injury Away', tagline: 'One injury from a league-winning role. Stash him first.' },
+  { id: 'committee_back',    emoji: '🤼', label: 'Committee Back',    tagline: 'Shares the backfield. The volume is never safe.' },
+  { id: 'short_term_answer', emoji: '⏳', label: 'Short-term Answer', tagline: 'Plugs the hole this week. Not a long-term keeper.' },
+
+  // ---- How he wins ----
+  { id: 'power_back',        emoji: '💥', label: 'Power Back / Goal Line', tagline: 'Short-yardage and goal-line work. The touchdowns find him.' },
+  { id: 'elite_speed',       emoji: '💨', label: 'Elite Speed',       tagline: 'Breakaway gear. One crease and he is gone.' },
+  { id: 'end_zone_target',   emoji: '🧲', label: 'End Zone Target',   tagline: 'The big body they look for when the field gets short.' },
+  { id: 'third_down_rb',     emoji: '🙌', label: '3rd Down / Receiving RB', tagline: 'Catches passes on money downs. PPR gold.' },
+
+  // ---- Situation ----
+  { id: 'rookie',            emoji: '👶', label: 'Rookie',            tagline: 'First-year player. Worth knowing before everyone else does.' },
+  { id: 'new_team',          emoji: '🧳', label: 'New Team',          tagline: 'New city, new scheme. The old numbers may not travel.' },
+  { id: 'contract_year',     emoji: '🤑', label: 'Contract Year',     tagline: 'Playing for the next paycheck. The motivation is real.' },
+
+  // ---- Weather ----
   { id: 'rain',              emoji: '🌧️', label: 'Rain Predicted',    tagline: 'Wet ball coming. Downgrade the passing game.' },
   { id: 'snow',              emoji: '🌨️', label: 'Snow Predicted',    tagline: 'Snow in the forecast. Ground-game weather.' },
   { id: 'windy',             emoji: '🌬️', label: 'Windy Conditions',  tagline: 'Wind is up. Deep balls and kicks get shaky.' },
   { id: 'extreme_heat',      emoji: '🥵', label: 'Extreme Heat',      tagline: 'Brutal heat in the forecast. Watch the workload.' },
-  { id: 'end_zone_target',   emoji: '🧲', label: 'End Zone Target',   tagline: 'The big body they look for when the field gets short.' },
-  { id: 'third_down_rb',     emoji: '🙌', label: '3rd Down / Receiving RB', tagline: 'Catches passes on money downs. PPR gold.' },
-  { id: 'committee_back',    emoji: '🤼', label: 'Committee Back',    tagline: 'Shares the backfield. The volume is never safe.' },
-  { id: 'league_winner',     emoji: '🏆', label: 'League Winner / One Injury Away', tagline: 'One injury from a league-winning role. Stash him first.' },
-  { id: 'handcuff',          emoji: '🔗', label: 'Handcuff',          tagline: 'The insurance policy behind your starter. Pair them.' },
-  { id: 'immense_upside',    emoji: '📈', label: 'Immense Upside',    tagline: 'The ceiling is the moon. Draft the what-if.' },
-  { id: 'banged_up',         emoji: '🩹', label: 'Banged Up / Playing Through', tagline: 'Playing hurt. Expect less until he heals.' },
-  { id: 'new_team',          emoji: '🧳', label: 'New Team',          tagline: 'New city, new scheme. The old numbers may not travel.' },
-  { id: 'contract_year',     emoji: '🤑', label: 'Contract Year',     tagline: 'Playing for the next paycheck. The motivation is real.' },
 ];
+// ============================================================================
+// TYPE_TAG_GROUPS_V1 (2026-08-23 — Walter, per the Dude).
+//
+// THE COMPLAINT, from a screenshot of the card's Backend Controls:
+// "the type emojis just being randomly scattered... when he's picking an emoji,
+// he knows where to look for it."
+// Matt on the 8/23 call: "I should have certain things together like when I'm
+// working on them." He also called out Must Watch and Alert Me as a pair.
+//
+// 🪨 IT WAS NEVER RANDOM — IT WAS CHRONOLOGICAL. The grid prints TYPE_TAGS_V1 in
+// array order, and that array grew in waves: the universal eight, then Alert,
+// then Matt's vocabulary wave 1, then wave 2. So the order records WHEN each tag
+// was added, which is meaningless to the man using it. That is why Injury Return
+// Soon, Injury Prone and Banged Up ended up on three different rows.
+//
+// ⚑ WHY A SEPARATE MAP INSTEAD OF REWRITING THE ARRAY: the array holds Matt's
+// ids, emoji, labels and taglines. Ids are referenced by every saved player
+// record, so rewriting 29 entries by hand to reorder them is a real risk for
+// zero benefit. Grouping lives here instead, keyed by id, and the array is not
+// touched at all.
+//
+// ⚠️ ANY TAG NOT LISTED BELOW STILL APPEARS — it falls into "Other" at the end.
+// A tag added in code next month can never silently vanish from the picker
+// because somebody forgot to group it. Same rule as the saved rankings order.
+//
+// ⚠️ GROUP IS A PROPERTY, NOT A POSITION. Matt can still drag tags in The Key to
+// reorder them WITHIN a group, and that ordering flows here. Moving a tag BETWEEN
+// groups stays a code change. Flagged to the Dude before this was written.
+// ============================================================================
+var TYPE_TAG_GROUPS_V1 = [
+  { label: 'Act now',        ids: ['must_watch','alert_add_now'] },
+  { label: 'Buy, sell, hold', ids: ['undervalued','sell_high','future_stash','immense_upside','probably_owned'] },
+  { label: 'Form',           ids: ['hot_streak','cold_streak','good_schedule'] },
+  { label: 'Health',         ids: ['ir_return','injury_prone','banged_up'] },
+  { label: 'Role',           ids: ['injury_promotion','handcuff','league_winner','committee_back','short_term_answer'] },
+  { label: 'How he wins',    ids: ['power_back','elite_speed','end_zone_target','third_down_rb'] },
+  { label: 'Situation',      ids: ['rookie','new_team','contract_year'] },
+  { label: 'Weather',        ids: ['rain','snow','windy','extreme_heat'] }
+];
+// Returns [{label, tags:[...]}, ...] in group order. Within a group, tags keep
+// their TYPE_TAGS_V1 order, so Matt's own drag-reorder in The Key still counts.
+function _typeTagsGrouped(){
+  var live = [], byId = {}, i;
+  for(i = 0; i < TYPE_TAGS_V1.length; i++){
+    var t = TYPE_TAGS_V1[i];
+    if(t && !t.retired){ live.push(t); byId[t.id] = t; }
+  }
+  var out = [], placed = {};
+  for(i = 0; i < TYPE_TAG_GROUPS_V1.length; i++){
+    var g = TYPE_TAG_GROUPS_V1[i], picked = [];
+    // Walk the LIVE array, not the id list, so within-group order is Matt's.
+    for(var j = 0; j < live.length; j++){
+      if(g.ids.indexOf(live[j].id) !== -1){ picked.push(live[j]); placed[live[j].id] = 1; }
+    }
+    if(picked.length) out.push({ label: g.label, tags: picked });
+  }
+  var orphans = live.filter(function(t){ return !placed[t.id]; });
+  if(orphans.length) out.push({ label: 'Other', tags: orphans });   // never lose a tag
+  return out;
+}
+// One builder for every checkbox grid on the page, so the three of them can never
+// drift apart again. `checked` is the array of ids already on the player.
+function _typeTagGridHtml(checked, onchangeFn){
+  checked = checked || [];
+  var html = '<div class="ftl-typegrid-groups">';
+  var groups = _typeTagsGrouped();
+  for(var i = 0; i < groups.length; i++){
+    html += '<div class="ftl-tg-group"><div class="ftl-tg-head">' + groups[i].label + '</div><div class="ftl-typegrid">';
+    for(var j = 0; j < groups[i].tags.length; j++){
+      var t = groups[i].tags[j];
+      var on = checked.indexOf(t.id) !== -1;
+      html += '<label class="ftl-typetag"><input type="checkbox" data-tag-id="' + t.id + '"'
+            + (on ? ' checked' : '') + ' onchange="' + onchangeFn + '(this)"> '
+            + t.emoji + ' ' + t.label + '</label>';
+    }
+    html += '</div></div>';
+  }
+  return html + '</div>';
+}
 function _typeTagById(id){
   for(let i = 0; i < TYPE_TAGS_V1.length; i++){ if(TYPE_TAGS_V1[i].id === id) return TYPE_TAGS_V1[i]; }
   return null;
@@ -7716,15 +7842,9 @@ function _ftlRenderTypeTags(pid){
       body.innerHTML = rkChips || '<em>No type tags on this player.</em>';
       return;
     }
-    let rkHtml = '<div class="ftl-typegrid">';
-    for(let ri = 0; ri < TYPE_TAGS_V1.length; ri++){
-      const rt = TYPE_TAGS_V1[ri];
-      const rkOn = rkTags.indexOf(rt.id) !== -1;
-      rkHtml += '<label class="ftl-typetag"><input type="checkbox" data-tag-id="' + rt.id + '"'
-             + (rkOn ? ' checked' : '') + ' onchange="_ftlToggleRankTypeTag(this)"> '
-             + rt.emoji + ' ' + rt.label + '</label>';
-    }
-    rkHtml += '</div><div class="ftl-typegrid-note"><em>These tags live on the RANKINGS pages and follow the player across every rankings tab.</em></div>';
+    // TYPE_TAG_GROUPS_V1: grouped with headings, one shared builder.
+    let rkHtml = _typeTagGridHtml(rkTags, '_ftlToggleRankTypeTag');
+    rkHtml += '<div class="ftl-typegrid-note"><em>These tags live on the RANKINGS pages and follow the player across every rankings tab.</em></div>';
     body.innerHTML = rkHtml;
     return;
   }
@@ -7743,15 +7863,9 @@ function _ftlRenderTypeTags(pid){
     return;
   }
   const tags = _wlTypeTags(_watchList[idx]);
-  let html = '<div class="ftl-typegrid">';
-  for(let i = 0; i < TYPE_TAGS_V1.length; i++){
-    const t = TYPE_TAGS_V1[i];
-    const on = tags.indexOf(t.id) !== -1;
-    html += '<label class="ftl-typetag"><input type="checkbox" data-tag-id="' + t.id + '"'
-          + (on ? ' checked' : '') + ' onchange="_ftlToggleTypeTag(this)"> '
-          + t.emoji + ' ' + t.label + '</label>';
-  }
-  html += '</div><div class="ftl-typegrid-note"><em>Matt\'s vocabulary, waves 1 and 2 (8/20). Final blessing and any renames land after the Friday call.</em></div>';
+  // TYPE_TAG_GROUPS_V1: grouped with headings, one shared builder.
+  let html = _typeTagGridHtml(tags, '_ftlToggleTypeTag');
+  html += '<div class="ftl-typegrid-note"><em>Matt\'s vocabulary, waves 1 and 2 (8/20). Final blessing and any renames land after the Friday call.</em></div>';
   body.innerHTML = html;
 }
 
