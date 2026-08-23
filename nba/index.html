@@ -6164,6 +6164,10 @@ function openLegend(){
         rows += '<div class="lg-row"><span class="lg-key">' + t.emoji + '</span><span class="lg-def"><b>' + t.label + '</b>' + (t.tagline ? ' <span class="lg-sub">' + t.tagline + '</span>' : '') + '</span></div>';
       }
       g.innerHTML = rows || '<div class="lg-row"><span class="lg-def"><span class="lg-sub"><em>Tag vocabulary coming soon - Matt is picking this sport\u2019s emojis.</em></span></span></div>';
+      // TAG_KEY_EDITOR_V1 hook — on the backend this turns the grid just painted
+      // above into Matt's editor. On the public site it returns immediately and
+      // the modal stays exactly as it has always been.
+      try { if(window._TAGKEY && window._TAGKEY.decorate) window._TAGKEY.decorate(g); } catch(_e){}
     }
   } catch(e){}
   var m = document.getElementById('legend-modal');
@@ -9305,5 +9309,402 @@ document.addEventListener('keydown',function(e){
 
 /* theme toggle omitted on purpose: the tracker page owns toggleTheme(). */
 </script>
+<!-- ============================================================================
+     TAG_KEY_EDITOR_V1 (August 23, 2026 — Walter, per the Dude).
+     Round two of SITE_COPY_V1. Round one gave Matt the About page; this gives
+     him The Key.
+
+     MATT, ON THE 8/23 CALL:
+       "The descriptions I did not write... 'breakaway gear, one crease and he
+        is gone.' Like I don't want Claude writing stuff for us."
+       "I need to find the page where I can change them. I don't know where it
+        is."   ← there wasn't one. Now there is, and it is The Key itself.
+       "I should have certain things together like when I'm working on them."
+        ← hence drag-to-reorder, not just text editing.
+
+     WHAT HE CAN CHANGE: the emoji, the name, the description, and the running
+     order. All four, per the Dude.
+
+     ⚠ WHAT HE CANNOT CHANGE, AND WHY IT IS NOT EVEN SHOWN: every tag carries a
+     hidden `id`, and saved player records point at those ids (item.type_tags is
+     an array of them). Rename an id and every player wearing that tag silently
+     loses it. So ids are never rendered, never editable, and never sent. The
+     editor can only ever change how a tag LOOKS, never what it IS.
+
+     ⚠ NOTHING IS DELETED OR ADDED HERE EITHER — same reason. The vocabulary
+     itself stays a code change; only its presentation is Matt's.
+
+     FAIL-SAFE, same rule as round one: the built-in vocabulary stays in the
+     page. NAS down, nothing saved, malformed file — The Key shows the shipped
+     words. This can only ever repaint the vocabulary, never empty it.
+
+     ORDERING RULE THAT MATTERS LATER: a saved order lists the ids Matt arranged.
+     Any tag NOT in that list (because we added it in code after he last saved)
+     keeps its position relative to the others and lands at the end rather than
+     vanishing. Adding a tag in code must never require Matt to re-save.
+     ============================================================================ -->
+<style>
+  /* Editor chrome for The Key. Present on every build, only ever shown on the
+     backend — .tk-editing goes on the modal and nothing else turns it on. */
+  #legend-modal .tk-bar{
+    display:none;align-items:center;gap:10px;flex-wrap:wrap;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);
+    border-left:4px solid #c8102e;border-radius:10px;
+    padding:11px 15px;margin:0 0 14px;
+  }
+  #legend-modal.tk-editing .tk-bar{display:flex}
+  .tk-bar .tk-msg{flex:1 1 240px;min-width:170px;font:400 13.5px/1.5 'Nunito Sans',sans-serif;opacity:.85}
+  .tk-bar button{font:700 13.5px/1 'Nunito Sans',sans-serif;border-radius:8px;padding:9px 15px;cursor:pointer;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:inherit}
+  .tk-bar button.tk-save{background:#c8102e;color:#fff;border-color:#c8102e}
+  .tk-bar button.tk-save:hover{filter:brightness(1.12)}
+  .tk-bar button:disabled{opacity:.5;cursor:default}
+
+  /* Rows only become interactive in editing mode. */
+  #legend-modal.tk-editing .lg-row{position:relative;border-radius:9px;transition:background .13s}
+  #legend-modal.tk-editing .lg-row:hover{background:rgba(255,255,255,.05)}
+  #legend-modal.tk-editing .lg-row.tk-drag{opacity:.4}
+  #legend-modal.tk-editing .lg-row.tk-over{box-shadow:inset 0 2px 0 #c8102e}
+  .tk-grip{display:none;cursor:grab;opacity:.4;padding:0 7px 0 2px;font-size:15px;user-select:none;flex:none}
+  #legend-modal.tk-editing .tk-grip{display:inline-block}
+  #legend-modal.tk-editing .lg-row:hover .tk-grip{opacity:.85}
+  .tk-edit{
+    display:none;position:absolute;top:5px;right:6px;z-index:3;
+    font:600 12px/1 'Nunito Sans',sans-serif;border-radius:6px;padding:5px 9px;
+    cursor:pointer;border:1px solid rgba(255,255,255,.2);
+    background:rgba(255,255,255,.09);color:inherit;
+  }
+  #legend-modal.tk-editing .lg-row:hover .tk-edit{display:inline-block}
+  .tk-fields{display:flex;flex-wrap:wrap;gap:8px;width:100%;padding:4px 0 2px}
+  .tk-fields input{
+    background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.2);
+    border-radius:7px;padding:8px 10px;color:inherit;
+    font:400 14px/1.4 'Nunito Sans',sans-serif;
+  }
+  .tk-fields input.tk-emoji{width:62px;text-align:center;font-size:19px}
+  .tk-fields input.tk-label{flex:1 1 150px;min-width:110px;font-weight:700}
+  .tk-fields input.tk-tag{flex:1 1 100%}
+  .tk-fields input:focus{outline:2px solid #c8102e;outline-offset:1px}
+  .tk-dupe{border-color:#e0a800 !important;background:rgba(224,168,0,.14) !important}
+  .tk-warn{
+    display:none;width:100%;font:600 12.5px/1.45 'Nunito Sans',sans-serif;
+    color:#ffc860;padding:2px 0 0;
+  }
+  .tk-warn.on{display:block}
+  .tk-toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:100000;
+    background:#161c25;color:#fff;border:1px solid rgba(255,255,255,.2);
+    border-radius:10px;padding:12px 20px;
+    font:600 14.5px/1.4 'Nunito Sans',sans-serif;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);max-width:88vw;
+  }
+  .tk-toast.bad{border-color:#c8102e}
+</style>
+<script>
+(function(){
+  'use strict';
+
+  /* ⚑ THE ONLY LINE THAT DIFFERS BETWEEN SPORTS. Football 'tags-nfl',
+     basketball 'tags-nba'. Both slugs were pre-registered on the NAS on
+     2026-08-23, so neither needs a container rebuild. */
+  var SLUG = 'tags-nba';
+
+  var NAS      = 'https://nfl-nas.fantasywatch101.com';
+  var ENDPOINT = NAS + '/site-copy/' + SLUG;
+
+  function isBackend(){
+    try { return ((window.location && window.location.hostname) || '').toLowerCase().indexOf('github') !== -1; }
+    catch(e){ return false; }
+  }
+  function tags(){
+    return (typeof TYPE_TAGS_V1 !== 'undefined' && Array.isArray(TYPE_TAGS_V1)) ? TYPE_TAGS_V1 : null;
+  }
+  function esc(s){
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                                     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function toast(msg, bad){
+    var t = document.createElement('div');
+    t.className = 'tk-toast' + (bad ? ' bad' : '');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, bad ? 7000 : 3600);
+  }
+
+  /* ---- applying Matt's saved copy ----------------------------------------
+     Mutates TYPE_TAGS_V1 IN PLACE. It is a const, and more importantly every
+     consumer on the page (table chips, tooltips, the card's tag picker, this
+     modal) already holds a reference to that same array and re-reads it at
+     render time. Mutating in place means all of them update together with no
+     re-wiring anywhere else in the file.                                     */
+  function applyOverrides(doc){
+    var T = tags(); if(!T || !doc || !doc.blocks || !doc.blocks.tags) return false;
+    var saved = doc.blocks.tags;
+    var items = saved.items || {};
+    var byId = {}; for(var i=0;i<T.length;i++) byId[T[i].id] = T[i];
+
+    /* 1. text + emoji, only for ids we actually ship. An id in the file that
+          no longer exists in code is ignored rather than resurrected. */
+    Object.keys(items).forEach(function(id){
+      var t = byId[id], v = items[id];
+      if(!t || !v) return;
+      if(typeof v.emoji   === 'string' && v.emoji.trim())   t.emoji   = v.emoji.trim();
+      if(typeof v.label   === 'string' && v.label.trim())   t.label   = v.label.trim();
+      if(typeof v.tagline === 'string' && v.tagline.trim()) t.tagline = v.tagline.trim();
+    });
+
+    /* 2. order. Saved ids first in Matt's sequence; anything he has never seen
+          (added in code since his last save) keeps its relative order and goes
+          after. A tag must never disappear because it postdates a save. */
+    if(Array.isArray(saved.order) && saved.order.length){
+      var seen = {}, out = [];
+      saved.order.forEach(function(id){
+        if(byId[id] && !seen[id]){ seen[id] = 1; out.push(byId[id]); }
+      });
+      T.forEach(function(t){ if(!seen[t.id]) out.push(t); });
+      if(out.length === T.length){
+        T.length = 0;
+        Array.prototype.push.apply(T, out);
+      }
+    }
+    return true;
+  }
+
+  /* Anything already painted before the copy arrived gets repainted. The Key
+     and the card's picker build at open time so they need nothing; the table's
+     emoji chips are the one thing rendered on load. */
+  function repaint(){
+    try {
+      if(typeof renderTable === 'function') { renderTable(); return; }
+      if(typeof _wlRender   === 'function') { _wlRender();   return; }
+      if(typeof render      === 'function') { render();      return; }
+    } catch(e){ /* a stale chip is cosmetic and fixes itself on the next render */ }
+  }
+
+  function load(){
+    var T = tags(); if(!T) return;
+    var dead = false;
+    var timer = setTimeout(function(){ dead = true; }, 6000);
+    fetch(ENDPOINT, { cache:'no-cache' })
+      .then(function(r){ if(!r.ok) throw new Error('not edited yet (' + r.status + ')'); return r.json(); })
+      .then(function(doc){
+        clearTimeout(timer); if(dead) return;
+        if(applyOverrides(doc)){
+          repaint();
+          console.log('[TAG_KEY_EDITOR_V1] applied Matt\'s Key, saved ' + (doc.saved_at_local || doc.saved_at || 'unknown'));
+        }
+      })
+      .catch(function(e){
+        clearTimeout(timer);
+        console.log('[TAG_KEY_EDITOR_V1] using the built-in vocabulary (' + e.message + ')');
+      });
+  }
+
+  /* ================= THE EDITOR (backend only) ============================ */
+
+  function dupeCheck(grid){
+    /* One emoji must never mean two things — that rule predates this editor and
+       is all over the tag comments. Warn loudly, but never block the save: it is
+       Matt's vocabulary and he may be mid-swap between two tags. */
+    var rows = grid.querySelectorAll('.lg-row[data-tk-id]');
+    var counts = {}, warn = grid.parentNode.querySelector('.tk-warn');
+    rows.forEach(function(r){
+      var e = (r.getAttribute('data-tk-emoji') || '').trim();
+      if(e) counts[e] = (counts[e] || 0) + 1;
+    });
+    var dupes = Object.keys(counts).filter(function(e){ return counts[e] > 1; });
+    rows.forEach(function(r){
+      var e = (r.getAttribute('data-tk-emoji') || '').trim();
+      var inp = r.querySelector('.tk-emoji');
+      var hit = e && counts[e] > 1;
+      if(inp) inp.classList.toggle('tk-dupe', !!hit);
+      r.classList.toggle('tk-dupe-row', !!hit);
+    });
+    if(warn){
+      warn.classList.toggle('on', dupes.length > 0);
+      warn.textContent = dupes.length
+        ? '⚠ ' + dupes.join(' ') + (dupes.length > 1 ? ' are each used by more than one tag.' : ' is used by more than one tag.') + ' You can still save, but one emoji meaning two things gets confusing fast.'
+        : '';
+    }
+  }
+
+  function rowHtml(t){
+    return '<span class="tk-grip" title="Drag to reorder">⠿</span>' +
+           '<span class="lg-key">' + esc(t.emoji) + '</span>' +
+           '<span class="lg-def"><b>' + esc(t.label) + '</b>' +
+             (t.tagline ? ' <span class="lg-sub">' + esc(t.tagline) + '</span>' : '') +
+           '</span>' +
+           '<button type="button" class="tk-edit">✎ Edit</button>';
+  }
+
+  function closeRow(row){
+    var t = { emoji: row.getAttribute('data-tk-emoji'),
+              label: row.getAttribute('data-tk-label'),
+              tagline: row.getAttribute('data-tk-tagline') };
+    row.innerHTML = rowHtml(t);
+    row.setAttribute('draggable','true');
+  }
+
+  function openRow(row, grid){
+    if(row.querySelector('.tk-fields')) return;
+    row.setAttribute('draggable','false');          /* no dragging mid-type */
+    row.innerHTML =
+      '<div class="tk-fields">' +
+        '<input class="tk-emoji" maxlength="8"  value="' + esc(row.getAttribute('data-tk-emoji')) + '" aria-label="Emoji">' +
+        '<input class="tk-label" maxlength="60" value="' + esc(row.getAttribute('data-tk-label')) + '" aria-label="Tag name">' +
+        '<input class="tk-tag"   maxlength="200" value="' + esc(row.getAttribute('data-tk-tagline')) + '" aria-label="Description" placeholder="What this tag means, in your words">' +
+      '</div>';
+    var em = row.querySelector('.tk-emoji'),
+        lb = row.querySelector('.tk-label'),
+        tg = row.querySelector('.tk-tag');
+
+    function sync(){
+      row.setAttribute('data-tk-emoji',   em.value);
+      row.setAttribute('data-tk-label',   lb.value);
+      row.setAttribute('data-tk-tagline', tg.value);
+      dupeCheck(grid);
+    }
+    [em,lb,tg].forEach(function(i){
+      i.addEventListener('input', sync);
+      i.addEventListener('keydown', function(e){
+        if(e.key === 'Enter'){ sync(); closeRow(row); }
+        if(e.key === 'Escape'){ closeRow(row); }
+      });
+    });
+    /* Leaving the row commits what is typed — nothing is lost by clicking away,
+       and nothing is live until Save Key is pressed anyway. */
+    row.addEventListener('focusout', function(){
+      setTimeout(function(){
+        if(row.contains(document.activeElement)) return;
+        if(row.querySelector('.tk-fields')){ sync(); closeRow(row); }
+      }, 90);
+    });
+    lb.focus();
+  }
+
+  var dragging = null;
+  function wireDrag(row, grid){
+    row.addEventListener('dragstart', function(e){
+      dragging = row; row.classList.add('tk-drag');
+      try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain',''); } catch(_){}
+    });
+    row.addEventListener('dragend', function(){
+      dragging = null;
+      grid.querySelectorAll('.lg-row').forEach(function(r){ r.classList.remove('tk-drag','tk-over'); });
+    });
+    row.addEventListener('dragover', function(e){
+      if(!dragging || dragging === row) return;
+      e.preventDefault(); row.classList.add('tk-over');
+    });
+    row.addEventListener('dragleave', function(){ row.classList.remove('tk-over'); });
+    row.addEventListener('drop', function(e){
+      if(!dragging || dragging === row) return;
+      e.preventDefault(); row.classList.remove('tk-over');
+      var rows = Array.prototype.slice.call(grid.querySelectorAll('.lg-row'));
+      grid.insertBefore(dragging, rows.indexOf(dragging) < rows.indexOf(row) ? row.nextSibling : row);
+    });
+  }
+
+  function collect(grid){
+    var order = [], items = {};
+    grid.querySelectorAll('.lg-row[data-tk-id]').forEach(function(r){
+      var id = r.getAttribute('data-tk-id');
+      order.push(id);
+      items[id] = {
+        emoji:   (r.getAttribute('data-tk-emoji')   || '').trim(),
+        label:   (r.getAttribute('data-tk-label')   || '').trim(),
+        tagline: (r.getAttribute('data-tk-tagline') || '').trim()
+      };
+    });
+    return { order: order, items: items };
+  }
+
+  function save(grid, btn){
+    var payload = collect(grid);
+    var blank = payload.order.filter(function(id){ return !payload.items[id].label; });
+    if(blank.length){ toast('Every tag needs a name. ' + blank.length + ' is blank.', true); return; }
+
+    btn.disabled = true; btn.textContent = 'Saving…';
+    fetch(ENDPOINT, {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ blocks: { tags: payload } })
+    })
+    .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
+    .then(function(res){
+      if(!res.ok) throw new Error((res.j && (res.j.detail || res.j.error)) || 'the server refused it');
+      /* Apply to the live page immediately so what he sees is what he saved. */
+      applyOverrides({ blocks: { tags: payload } });
+      repaint();
+      btn.disabled = false; btn.textContent = 'Save Key';
+      toast('Saved. The Key is live on the public site now.');
+    })
+    .catch(function(e){
+      btn.disabled = false; btn.textContent = 'Save Key';
+      toast('Not saved: ' + e.message + '. Nothing you typed is lost — press Save Key again.', true);
+    });
+  }
+
+  /* Called by openLegend AFTER it has painted the read-only grid. On the public
+     site this returns immediately and the modal is exactly as it always was. */
+  function decorate(grid){
+    if(!isBackend() || !grid) return;
+    var T = tags(); if(!T) return;
+    var modal = document.getElementById('legend-modal');
+    if(modal) modal.classList.add('tk-editing');
+
+    /* Rebuild the rows carrying their identity, skipping retired tags exactly
+       as the read-only build does. */
+    var live = T.filter(function(t){ return !t.retired; });
+    grid.innerHTML = live.map(function(t){
+      return '<div class="lg-row" draggable="true" data-tk-id="' + esc(t.id) + '"' +
+             ' data-tk-emoji="'   + esc(t.emoji)   + '"' +
+             ' data-tk-label="'   + esc(t.label)   + '"' +
+             ' data-tk-tagline="' + esc(t.tagline) + '">' + rowHtml(t) + '</div>';
+    }).join('');
+
+    grid.querySelectorAll('.lg-row').forEach(function(r){ wireDrag(r, grid); });
+    grid.addEventListener('click', function(e){
+      var b = e.target.closest && e.target.closest('.tk-edit');
+      if(b){ openRow(b.closest('.lg-row'), grid); }
+    });
+
+    /* The bar: put once, directly above the grid. */
+    if(!grid.parentNode.querySelector('.tk-bar')){
+      var bar = document.createElement('div');
+      bar.className = 'tk-bar';
+      bar.innerHTML =
+        '<span class="tk-msg"><b>Matt — this is yours.</b> Click <b>✎ Edit</b> on any tag to change its symbol, name or description. Drag the ⠿ handle to group them how you think. Then <b>Save Key</b>.</span>' +
+        '<button type="button" class="tk-revert">Undo my changes</button>' +
+        '<button type="button" class="tk-save">Save Key</button>';
+      grid.parentNode.insertBefore(bar, grid);
+      var warn = document.createElement('div');
+      warn.className = 'tk-warn';
+      grid.parentNode.insertBefore(warn, grid);
+
+      bar.querySelector('.tk-save').addEventListener('click', function(){ save(grid, this); });
+      bar.querySelector('.tk-revert').addEventListener('click', function(){
+        if(!window.confirm('Put The Key back to the version before your last save?')) return;
+        var b = this; b.disabled = true;
+        fetch(ENDPOINT + '?previous=1', { cache:'no-cache' })
+          .then(function(r){ if(!r.ok) throw new Error('there is no earlier version yet'); return r.json(); })
+          .then(function(doc){
+            applyOverrides(doc); repaint();
+            grid.innerHTML = ''; decorate(grid);
+            b.disabled = false;
+            toast('Put back. Press Save Key to make that the live version.');
+          })
+          .catch(function(e){ b.disabled = false; toast('Could not undo: ' + e.message, true); });
+      });
+    }
+    dupeCheck(grid);
+  }
+
+  window._TAGKEY = { decorate: decorate };
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load);
+  else load();
+})();
+</script>
+<!-- ======================= /TAG_KEY_EDITOR_V1 ======================= -->
+
 </body>
 </html>
