@@ -4353,14 +4353,28 @@ function switchRankPos(pos, btn){
 // NBA_RANKINGS_AUTOLOAD_V1 — each tab auto-loads every active (on-a-team) player ELIGIBLE at that
 // position, sorted by season PTS/G desc, capped at 60 per tab (the Dude's call, June 11). No
 // add-one-by-one: the field loads, Matt just ranks. Eligibility reads fantasy_positions (fan-out).
-var RANK_POS_CAP = { Overall:100, PG:60, SG:60, SF:60, PF:60, C:60 };  // OVERALL_RANK_V1: top-100 overall depth (REDRAFT set)
+var RANK_POS_CAP = { Overall:1500, PG:60, SG:60, SF:60, PF:60, C:60 };
+// RANK_DEPTH_NBA_V1 (2026-08-22) — OVERALL IS NOW EFFECTIVELY UNCAPPED, matching football.
+// Matt asked for the same depth here after the football change. Measured off the live NBA
+// player DB the same day: 592 players are on an NBA roster (484 carry a Yahoo overall rank,
+// 108 do not and fall back to points per game — a far healthier ratio than football's
+// 315/716, and NBA never had football's alphabetical-tail problem because PPG is the
+// tiebreak here).
+// ⚠️ 1500 IS HEADROOM, NOT A TARGET — same reasoning as football: 592 is TODAY'S roster
+// count and it moves with every signing and waiver. The real limiter is the on-a-team
+// filter in _rankingsIdsFor(); this number only has to stay above it.
+// ⚑ THE REDRAFT POSITION CAPS (60 each) ARE LEFT ALONE — the Dude asked for the cap on the
+// rankings, and football's redraft position caps were likewise untouched. Worth asking Matt
+// separately: NBA's 60 is much shallower than football's 150-175, and 150-251 are eligible.  // OVERALL_RANK_V1: top-100 overall depth (REDRAFT set)
 // DYNCAP_V1 (2026-08-05, PC Walter, per the Dude, same session DYNASTY_RANKINGS_V1 shipped).
 // Dynasty goes DEEP: Matt's whole case for it is that in a 300-400 player keeper league "the
 // names that decide it live at the edges." 400 across every tab -- the position tabs self-cap
 // by eligibility long before that, so 400 effectively means "everyone eligible." Redraft keeps
 // the June top-100/60 call. Costs nothing upstream: the data is already on the page; the only
 // cost is table rows, and the pool already renders ~612 fine.
-var RANK_POS_CAP_DYN = { Overall:400, PG:400, SG:400, SF:400, PF:400, C:400 };
+var RANK_POS_CAP_DYN = { Overall:1500, PG:1500, SG:1500, SF:1500, PF:1500, C:1500 };
+// RANK_DEPTH_NBA_V1: dynasty is where Matt wants the depth, so every dynasty tab gets the
+// same headroom, exactly as football's did.
 function _rankCap(pos){ return ((_rankSet === 'dynasty') ? RANK_POS_CAP_DYN : RANK_POS_CAP)[pos] || 50; }
 function _rankEligible(p, pos){
   var arr = (p && Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions
@@ -4389,6 +4403,16 @@ function _rankingsIdsFor(pos){
     var p = _playerDB[id];
     if(!p || !p.position) continue;
     if(!p.team) continue;                 // active / on-a-team only
+    // 🪨 RANK_DEPTH_NBA_V1 — DROP THE TEAM ENTRIES. Sleeper's NBA feed carries 30 rows with
+    // position 'DEF' that are not players at all: Brooklyn Nets, Utah Jazz, Oklahoma City
+    // Thunder and so on. Basketball has no defence slot, they have no Yahoo rank, no
+    // full_name, and _rankEligible() already rejects them from every position tab — so they
+    // could only ever surface on the Overall board.
+    // They were INVISIBLE while Overall was capped at 100. Verified on the live DB the day
+    // the cap was lifted: they sit at places 485-514 of 592, which is exactly where Matt
+    // would be working in a deep dynasty list. Lifting the cap without this filter would
+    // have dropped 30 team names into the middle of his rankings.
+    if(p.position === 'DEF') continue;
     // OVERALL_RANK_V1 (2026-06-26 — PC Walter, per the Dude): the Overall tab gathers EVERY position
     // into one board. Seeded by points-per-game (no Yahoo overall-rank pipeline for NBA yet — PPG is the
     // stable seed the position tabs already use). Matt drags to build his own overall board; saves to its
