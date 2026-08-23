@@ -4609,7 +4609,38 @@ function switchRankPos(pos, btn){
 // NBA_RANKINGS_AUTOLOAD_V1 — each tab auto-loads every active (on-a-team) player ELIGIBLE at that
 // position, sorted by season PTS/G desc, capped at 60 per tab (the Dude's call, June 11). No
 // add-one-by-one: the field loads, Matt just ranks. Eligibility reads fantasy_positions (fan-out).
-var RANK_POS_CAP = { Overall:1500, PG:60, SG:60, SF:60, PF:60, C:60 };
+var RANK_POS_CAP = { Overall:1500, PG:1500, SG:1500, SF:1500, PF:1500, C:1500 };
+// ============================================================================
+// RANK_DEPTH_NBA_UNCAPPED_V1 (2026-08-23 — Walter, per the Dude). Was 60 per tab.
+//
+// THE QUESTION THIS ANSWERS was left open right here in the note below on 8/22:
+// "Worth asking Matt separately: NBA's 60 is much shallower than football's
+// 150-175, and 150-251 are eligible." It carried onto the 8/21 to-do list as an
+// open question for Matt. The Dude answered it on 8/23 — he knows Matt wants the
+// same depth here — so it is done in the same pass as football rather than
+// waiting for another meeting.
+//
+// A 60 cap against a 150-251 eligible pool was hiding well over half of it.
+//
+// ⚑ NO ORDERING FIX WAS NEEDED ON THIS SPORT, AND THAT IS THE INTERESTING PART.
+// Football's tabs had NO tiebreak past the player's NAME, so lifting its caps
+// alone would only have extended Matt's alphabetical run from J to Z — the whole
+// reason RANK_TAIL_BY_ADP_V1 had to be built over there first.
+// Basketball already sorts its unranked tail by POINTS PER GAME (see the
+// comparator in _rankingsIdsFor below), with name as a last resort only. So the
+// deep end here has always been meaningful and raising the cap is safe on its own.
+// Ratios measured 8/22: NBA 484 of 592 carry a Yahoo rank; football only 315 of
+// 1,031. NBA never had the problem football had.
+//
+// ⚠️ 1500 IS HEADROOM, NOT A TARGET — same as Overall above and same as football.
+// The real limiter is the on-a-team filter in _rankingsIdsFor(), plus the
+// position-eligibility filter on each tab, plus the RANK_DEPTH_NBA_V1 rule that
+// drops Sleeper's 30 fake "team" rows (Nets, Jazz, Thunder). Those three do the
+// actual work; this number only has to stay above them.
+//
+// Existing saved orders are SAFE: the seed-append keeps Matt's hand-ranked order
+// and stacks newly eligible players underneath.
+// ============================================================================
 // RANK_DEPTH_NBA_V1 (2026-08-22) — OVERALL IS NOW EFFECTIVELY UNCAPPED, matching football.
 // Matt asked for the same depth here after the football change. Measured off the live NBA
 // player DB the same day: 592 players are on an NBA roster (484 carry a Yahoo overall rank,
