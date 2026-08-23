@@ -1908,7 +1908,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="rank-subnav-btn" data-rankpos="TE" onclick="switchRankPos('TE', this)">TE</button>
     <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
     <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px">&#127991;&#65039; Tier</button>
-    <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="doneRankingNotify(this)" title="Saves this position's rankings to a JSON file in List Data\_Staging, then pings Jay's phone" style="margin-left:14px">💾 Done Ranking</button>
+    <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="saveAllRankings(this)" title="Saves EVERY position tab of this rankings set to JSON files in List Data\_Staging, then pings Jay's phone once. It saves them all no matter which tab you are on." style="margin-left:14px">💾 Done Ranking</button>
     <button class="btn btn-outline backend-only" id="rank-hidden-btn" onclick="openHiddenList()" style="display:none;margin-left:6px" title="Players hidden from this rankings set — click to restore">♻️ Hidden (0)</button><!-- RANK_HIDE_V1 -->
   </div>
 <!-- NFL_RANK_STATFILTER_V1 (2026-08-20 — PC Walter, per the Dude; Matt flagged the missing filter live
@@ -3553,10 +3553,74 @@ function _rankStagingFolder(pos){
   return 'Rankings_' + ((typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dyn_' : '') + String(pos);
 }
 var _rankStagingDir = null;   // session-cached folder handle, so he picks once and not twelve times
+/* RANK_SAVE_ALL_V1: set when the USER closes the folder picker, as opposed to a save simply not
+   applying. Without this the Save All loop would re-open the picker for every remaining position
+   and he would have to cancel it six times to cancel it once. */
+var _rankSaveCancelled = false;
+
+/* ══════════ RANK_SAVE_ALL_V1 (2026-08-23, the Dude's ask) ══════════
+   His words: *"each ranking should have its own save button... the dynasty rankings there should
+   be a save button, and the redraft rankings there should be a save button, and it should save the
+   overall rankings and all the positionals."*
+
+   ⚑ THE PING, WHICH HE RAISED HIMSELF AND WAS RIGHT TO:
+   *"It's still important that that ping hits my phone and lets me know that Matt hit the button,
+   so I know to publish."* It fires ONCE per click, at the end, however many files were written. So
+   webhook lives in one function, _rankPingJay(), called by the single Done Ranking button.
+   🪨 Two pieces of code doing the same job is what caused Bug #160. There is one pinger.
+
+   SIX POSITIONS, ONE FOLDER PICK, ONE PING. It covers the SET currently loaded, because the page
+   throws away one set's orders when it loads the other and a button that quietly flipped sets
+   underneath Matt while he worked would be worse than a second click. Redraft, then Dynasty. */
+function _rankPingJay(){
+  try {
+    var hook = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'matt_saved_nfl_dyn_rankings' : 'matt_saved_nfl_rankings';
+    fetch(_HA_WEBHOOK_BASE + '/' + hook, { method: 'POST', mode: 'no-cors', keepalive: true }).catch(function(){});
+    return true;
+  } catch(e){ console.warn('[RANKINGS_PUBLISH_V1] ping failed:', e); return false; }
+}
+var RANK_ALL_POSITIONS = ['Overall','QB','RB','WR','TE','DEF'];
+async function saveAllRankings(btn){
+  if(_blockIfReadOnly('saveAllRankings')) return;
+  var statusEl = document.getElementById('rankings-status');
+  var restore  = btn ? btn.textContent : '';
+  var setName  = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dynasty' : 'Redraft';
+  var saved = [], skipped = [], cancelled = false;
+  if(btn) btn.disabled = true;
+  for(var i = 0; i < RANK_ALL_POSITIONS.length; i++){
+    var pos = RANK_ALL_POSITIONS[i];
+    if(btn) btn.textContent = '\u2026 ' + (i + 1) + ' of ' + RANK_ALL_POSITIONS.length;
+    var ok = false;
+    try { ok = await saveRankingsToFile(pos); }
+    catch(e){ console.warn('[RANK_SAVE_ALL_V1] ' + pos + ' threw:', e); }
+    if(ok) saved.push(pos); else skipped.push(pos);
+    // He closed the picker. Stop, rather than re-open it once per remaining position.
+    if(_rankSaveCancelled){ cancelled = true; break; }
+  }
+  _rankPingJay();
+  if(statusEl){
+    if(cancelled){
+      statusEl.textContent = 'Cancelled after ' + saved.length + ' of ' + RANK_ALL_POSITIONS.length
+        + (saved.length ? (' (' + saved.join(', ') + ' saved)') : '') + '. Everything is still safe on the server. Jay pinged.';
+    } else if(skipped.length){
+      statusEl.textContent = '\u2713 ' + setName + ': saved ' + saved.length + ' of ' + RANK_ALL_POSITIONS.length
+        + ' \u2014 ' + (saved.join(', ') || 'none') + '. SKIPPED (nothing loaded): ' + skipped.join(', ') + '. Jay pinged.';
+    } else {
+      statusEl.textContent = '\u2713 ' + setName + ': all ' + saved.length + ' saved \u2014 ' + saved.join(', ') + '. Jay pinged.';
+    }
+  }
+  if(btn){
+    btn.disabled = false;
+    btn.textContent = cancelled ? '\u2713 Stopped' : ('\u2713 ' + saved.length + '/' + RANK_ALL_POSITIONS.length + ' + pinged');
+    setTimeout(function(){ btn.textContent = restore; }, 4000);
+  }
+}
+
 async function saveRankingsToFile(pos){
   if(_blockIfReadOnly('saveRankingsToFile')) return false;
   var statusEl = document.getElementById('rankings-status');
   function say(m){ if(statusEl) statusEl.textContent = m; }
+  _rankSaveCancelled = false;   // RANK_SAVE_ALL_V1: reset per call, see the flag's declaration
   if(!window.showDirectoryPicker){
     say('\u26a0\ufe0f This browser cannot write files to a folder. Use Chrome or Edge. Your rankings are still saved on the server.');
     return false;
@@ -3610,6 +3674,7 @@ async function saveRankingsToFile(pos){
   } catch(e){
     _rankStagingDir = null;
     if(e && e.name === 'AbortError'){
+      _rankSaveCancelled = true;   // RANK_SAVE_ALL_V1: he closed the picker on purpose, stop the loop
       say('File save cancelled. Your rankings are still saved on the server.');
     } else {
       console.error('[RANK_FILE_SAVE_V1]', e);
@@ -6875,25 +6940,14 @@ function _notifyHomeAssistantOnSave(listId){
 // drag, so there is no natural manual-save moment to notify on (pinging per drag
 // would be spam). Matt clicks Done Ranking when a pass is finished; webhook picked
 // by the active SET. Same fire-and-forget never-block rules as the list notify.
-async function doneRankingNotify(btn){
-  // RANK_FILE_SAVE_V1: it SAVES now, then pings. It used to only ping while looking
-  // exactly like a save button, which is how the Dude came to believe his rankings
-  // were being backed up when nothing was writing them anywhere.
-  var _restore = btn ? btn.textContent : '';
-  if(btn){ btn.disabled = true; btn.textContent = '\u2026 saving'; }
-  var _saved = false;
-  try { _saved = await saveRankingsToFile(_rankPos); }
-  catch(e){ console.warn('[RANK_FILE_SAVE_V1] file save threw:', e); }
-  try {
-    var hook = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'matt_saved_nfl_dyn_rankings' : 'matt_saved_nfl_rankings';
-    fetch(_HA_WEBHOOK_BASE + '/' + hook, { method: 'POST', mode: 'no-cors', keepalive: true }).catch(function(){});
-  } catch(e){ console.warn('[RANKINGS_PUBLISH_V1] ping failed:', e); }
-  if(btn){
-    btn.disabled = false;
-    btn.textContent = _saved ? '\u2713 Saved + Jay pinged' : '\u2713 Jay pinged';
-    setTimeout(function(){ btn.textContent = _restore; }, 3000);
-  }
-}
+/* RANK_ONE_BUTTON_V1 (2026-08-23): doneRankingNotify() was DELETED here, not left lying around.
+   It saved only the tab you were looking at. For about ten minutes it sat next to a second
+   Save All button and the Dude killed that immediately: *"I don't want two save buttons. That's
+   super confusing. The save all button is the only save button we should have at all."*
+   🪨 HE WAS RIGHT AND THE MISTAKE WAS MINE. Two controls that both say Save, on the same toolbar,
+   doing different amounts of saving, is a question the user has to answer every single time. The
+   ONE button is #done-ranking-btn and it calls saveAllRankings(). Rule #9 run before deleting:
+   the only reference anywhere was that button's own onclick. */
 
 async function saveList(){
   if(_blockIfReadOnly('saveList')) return;
