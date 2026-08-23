@@ -5444,13 +5444,16 @@ function openListInfoOverlay(){
     var body = document.getElementById('list-info-body');
     if(body && Array.isArray(WL_LISTS)){
       body.innerHTML = WL_LISTS.filter(function(l){ return !l.backendOnly; }).map(function(l){
-        return '<div style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--turf,#16a34a);border-radius:6px">'
+        return '<div class="lb-card" data-lb-id="' + _lbEsc(l.id) + '" style="position:relative;padding:14px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--turf,#16a34a);border-radius:6px">'
           +    '<div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:2px">' + (l.emoji ? l.emoji + ' ' : '') + (l.name || l.id) + '</div>'
-          +    (l.tag ? '<div style="font-size:11px;color:var(--text3);letter-spacing:0.06em;margin-bottom:' + (l.specs ? '4px' : '8px') + '">' + l.tag + '</div>' : '')
-          +    (l.specs ? '<div style="font-size:11px;font-weight:800;color:var(--gold,#eab308);letter-spacing:0.04em;margin-bottom:8px">' + l.specs + '</div>' : '')   // POOL_SPECS_V1: the teams-x-roster pool line, gold
-          +    '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + (l.blurb || '') + '</div>'
+          +    '<div class="lb-tag" style="font-size:11px;color:var(--text3);letter-spacing:0.06em;margin-bottom:' + (l.specs ? '4px' : '8px') + ';' + (l.tag ? '' : 'display:none') + '">' + _lbEsc(l.tag || '') + '</div>'
+          +    '<div class="lb-specs" style="font-size:11px;font-weight:800;color:var(--gold,#eab308);letter-spacing:0.04em;margin-bottom:8px;' + (l.specs ? '' : 'display:none') + '">' + _lbEsc(l.specs || '') + '</div>'   // POOL_SPECS_V1: the teams-x-roster pool line, gold
+          +    '<div class="lb-blurb" style="font-size:13px;color:var(--text2);line-height:1.5">' + _lbEsc(l.blurb || '') + '</div>'
           +  '</div>';
       }).join('');
+      // LIST_BLURBS_EDITABLE_V1 hook — turns the cards just painted into Matt's
+      // editor, backend only. On the public site this returns immediately.
+      try { if(window._LISTBLURB && window._LISTBLURB.decorate) window._LISTBLURB.decorate(body); } catch(_e){}
     }
   } catch(e){ console.warn('[LIST_INFO_OVERLAY_V1] populate failed:', e); }
   overlay.style.display = 'flex';
@@ -10902,5 +10905,230 @@ document.addEventListener('keydown',function(e){
 </script>
 <!-- ======================= /TAG_KEY_EDITOR_V1 ======================= -->
 
+
+<!-- ============================================================================
+     LIST_BLURBS_EDITABLE_V1 (2026-08-23 — Walter, per the Dude). Round three of
+     SITE_COPY_V1, after the About page and The Key.
+
+     THE DUDE, spotting it himself off a screenshot of the modal:
+       "A place where you wrote a lot of stuff that I would think that Matt would
+        say that you spoke for him."
+     He is right. "No kicker advice here or anywhere on this site — you might as
+     well roll dice against a wall" is a strong opinion published under Matt's
+     name, and Matt did not write it.
+
+     WHAT MATT OWNS: the subtitle, the gold settings line, and the paragraph.
+     WHAT HE DOES NOT: the list NAME and EMOJI — the Dude's call. The name is used
+     by the list switcher and rides along inside every saved file as list_name, so
+     renaming it here would reach much further than this modal.
+     ⚠ id and folder are never shown and never sent — they are NAS routing.
+
+     FAIL-SAFE, same rule as rounds one and two: the shipped text stays in the
+     page. NAS down, nothing saved, bad file — the modal reads exactly as it does
+     today. This can only ever replace words, never remove the modal.
+     ============================================================================ -->
+<style>
+  #list-info-overlay .lb-edit{
+    position:absolute;top:8px;right:8px;z-index:3;display:none;
+    font:600 12px/1 'Nunito Sans',sans-serif;border-radius:6px;padding:5px 9px;
+    cursor:pointer;border:1px solid var(--border);background:var(--surface3,rgba(255,255,255,.09));color:var(--text2);
+  }
+  #list-info-overlay.lb-editing .lb-card:hover .lb-edit{display:inline-block}
+  #list-info-overlay.lb-editing .lb-card:hover{border-color:var(--turf,#16a34a)}
+  #list-info-overlay .lb-fields{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  #list-info-overlay .lb-fields input,#list-info-overlay .lb-fields textarea{
+    width:100%;box-sizing:border-box;background:var(--surface,rgba(0,0,0,.25));
+    border:1px solid var(--border);border-radius:7px;padding:9px 11px;color:var(--text);
+    font:400 13px/1.5 'Nunito Sans',sans-serif;
+  }
+  #list-info-overlay .lb-fields textarea{min-height:110px;resize:vertical;line-height:1.55}
+  #list-info-overlay .lb-fields .lb-f-specs{font-weight:800;letter-spacing:.04em;color:var(--gold,#eab308)}
+  #list-info-overlay .lb-fields input:focus,#list-info-overlay .lb-fields textarea:focus{outline:2px solid var(--turf,#16a34a);outline-offset:1px}
+  #list-info-overlay .lb-flabel{font:800 9.5px/1 'Nunito Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:-4px}
+  #list-info-overlay .lb-bar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:9px}
+  #list-info-overlay .lb-bar button{font:700 13px/1 'Nunito Sans',sans-serif;border-radius:7px;padding:9px 15px;cursor:pointer;border:1px solid var(--border);background:var(--surface3,rgba(255,255,255,.08));color:var(--text2)}
+  #list-info-overlay .lb-bar button.lb-save{background:var(--turf,#16a34a);color:#fff;border-color:var(--turf,#16a34a)}
+  #list-info-overlay .lb-hint{font:400 11.5px/1.45 'Nunito Sans',sans-serif;color:var(--text3);flex:1 1 200px}
+  #list-info-overlay .lb-banner{
+    background:var(--surface2);border:1px solid var(--border);border-left:4px solid var(--turf,#16a34a);
+    border-radius:7px;padding:11px 15px;margin:0 0 14px;
+    font:400 12.5px/1.55 'Nunito Sans',sans-serif;color:var(--text2);display:none;
+  }
+  #list-info-overlay.lb-editing .lb-banner{display:block}
+</style>
+<script>
+(function(){
+  'use strict';
+  var SLUG = 'lists-nfl';                                   // lists-nba/mlb/philly pre-registered
+  var NAS  = 'https://nfl-nas.fantasywatch101.com';
+  var ENDPOINT = NAS + '/site-copy/' + SLUG;
+  var FIELDS = [
+    { key:'tag',   label:'Subtitle',      el:'.lb-tag',   tag:'input' },
+    { key:'specs', label:'Settings line', el:'.lb-specs', tag:'input' },
+    { key:'blurb', label:'Description',   el:'.lb-blurb', tag:'textarea' }
+  ];
+
+  function isBackend(){
+    try { return ((window.location&&window.location.hostname)||'').toLowerCase().indexOf('github')!==-1; }
+    catch(e){ return false; }
+  }
+  // Exposed because openListInfoOverlay (defined far earlier in this file) calls it.
+  window._lbEsc = function(v){
+    return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                               .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  };
+  function toast(msg,bad){
+    var t=document.createElement('div');
+    t.style.cssText='position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:100000;'
+      +'background:#161c25;color:#fff;border:1px solid '+(bad?'#c8102e':'rgba(255,255,255,.2)')
+      +';border-radius:10px;padding:12px 20px;font:600 14px/1.4 \'Nunito Sans\',sans-serif;max-width:88vw';
+    t.textContent=msg; document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, bad?7000:3600);
+  }
+  function lists(){ return (typeof WL_LISTS!=='undefined' && Array.isArray(WL_LISTS)) ? WL_LISTS : null; }
+
+  /* ---- apply Matt's copy -------------------------------------------------
+     Mutates the WL_LISTS entries IN PLACE. The modal builds from that array at
+     open time, so nothing else on the page needs re-wiring. */
+  function applyOverrides(doc){
+    var L=lists(); if(!L||!doc||!doc.blocks||!doc.blocks.lists) return false;
+    var saved=doc.blocks.lists, byId={};
+    for(var i=0;i<L.length;i++) byId[L[i].id]=L[i];
+    Object.keys(saved).forEach(function(id){
+      var l=byId[id], v=saved[id];
+      if(!l||!v) return;
+      FIELDS.forEach(function(fd){
+        if(typeof v[fd.key]==='string') l[fd.key]=v[fd.key];   // '' is a legal clear
+      });
+    });
+    return true;
+  }
+  function load(){
+    if(!lists()) return;
+    var dead=false, timer=setTimeout(function(){ dead=true; },6000);
+    fetch(ENDPOINT,{cache:'no-cache'})
+      .then(function(r){ if(!r.ok) throw new Error('not edited yet ('+r.status+')'); return r.json(); })
+      .then(function(doc){
+        clearTimeout(timer); if(dead) return;
+        if(applyOverrides(doc)){
+          console.log('[LIST_BLURBS_EDITABLE_V1] applied Matt\'s list copy, saved '+(doc.saved_at_local||doc.saved_at||'unknown'));
+          var ov=document.getElementById('list-info-overlay');
+          if(ov && ov.style.display==='flex' && typeof openListInfoOverlay==='function') openListInfoOverlay();
+        }
+      })
+      .catch(function(e){ clearTimeout(timer); console.log('[LIST_BLURBS_EDITABLE_V1] using the shipped text ('+e.message+')'); });
+  }
+
+  /* ================= THE EDITOR (backend only) ========================== */
+  function readCard(card){
+    var o={};
+    FIELDS.forEach(function(fd){
+      var n=card.querySelector(fd.el);
+      o[fd.key]= n ? (n.textContent||'').trim() : '';
+    });
+    return o;
+  }
+  function paintCard(card,v){
+    FIELDS.forEach(function(fd){
+      var n=card.querySelector(fd.el);
+      if(!n||typeof v[fd.key]!=='string') return;
+      n.textContent=v[fd.key];
+      n.style.display = v[fd.key].trim() ? '' : 'none';
+    });
+  }
+  function closeEditor(card){
+    var ed=card.querySelector('.lb-fields'); if(ed) ed.remove();
+    var bar=card.querySelector('.lb-bar'); if(bar) bar.remove();
+    FIELDS.forEach(function(fd){
+      var n=card.querySelector(fd.el);
+      if(n) n.style.display = (n.textContent||'').trim() ? '' : 'none';
+    });
+    var b=card.querySelector('.lb-edit'); if(b) b.style.display='';
+  }
+  function openEditor(card, body){
+    if(card.querySelector('.lb-fields')) return;
+    var cur=readCard(card);
+    FIELDS.forEach(function(fd){ var n=card.querySelector(fd.el); if(n) n.style.display='none'; });
+    var eb=card.querySelector('.lb-edit'); if(eb) eb.style.display='none';
+
+    var wrap=document.createElement('div'); wrap.className='lb-fields';
+    wrap.innerHTML = FIELDS.map(function(fd){
+      var v=window._lbEsc(cur[fd.key]);
+      return '<div class="lb-flabel">'+fd.label+'</div>'
+        + (fd.tag==='textarea'
+            ? '<textarea class="lb-f-'+fd.key+'" spellcheck="true"></textarea>'
+            : '<input class="lb-f-'+fd.key+'" type="text" value="'+v+'">');
+    }).join('');
+    card.appendChild(wrap);
+    // textarea value set as a VALUE, never as markup
+    var ta=wrap.querySelector('textarea'); if(ta) ta.value=cur.blurb||'';
+
+    var bar=document.createElement('div'); bar.className='lb-bar';
+    bar.innerHTML='<button type="button" class="lb-save">Save</button>'
+      +'<button type="button" class="lb-cancel">Cancel</button>'
+      +'<span class="lb-hint">Saving puts it straight onto the public site. Leave a field empty to hide that line.</span>';
+    card.appendChild(bar);
+
+    bar.querySelector('.lb-cancel').addEventListener('click', function(){ closeEditor(card); });
+    bar.querySelector('.lb-save').addEventListener('click', function(){
+      var btn=this, v={};
+      FIELDS.forEach(function(fd){
+        var n=wrap.querySelector('.lb-f-'+fd.key);
+        v[fd.key]= n ? String(n.value||'').trim() : '';
+      });
+      if(!v.blurb){ toast('The description cannot be empty.', true); return; }
+
+      // Send EVERY list, not just this one, so the stored document is always a
+      // complete picture rather than a pile of fragments.
+      var payload={};
+      Array.prototype.forEach.call(body.querySelectorAll('.lb-card'), function(c){
+        var id=c.getAttribute('data-lb-id');
+        payload[id] = (c===card) ? v : readCard(c);
+      });
+
+      btn.disabled=true; btn.textContent='Saving…';
+      fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},
+                      body:JSON.stringify({ blocks:{ lists:payload } })})
+        .then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+        .then(function(res){
+          if(!res.ok) throw new Error((res.j&&(res.j.detail||res.j.error))||'the server refused it');
+          applyOverrides({ blocks:{ lists:payload } });
+          paintCard(card,v); closeEditor(card);
+          toast('Saved. It is live on the public site now.');
+        })
+        .catch(function(e){
+          btn.disabled=false; btn.textContent='Save';
+          toast('Not saved: '+e.message+'. Nothing you typed is lost — press Save again.', true);
+        });
+    });
+    var first=wrap.querySelector('input,textarea'); if(first) first.focus();
+  }
+
+  function decorate(body){
+    if(!isBackend()||!body) return;
+    var ov=document.getElementById('list-info-overlay');
+    if(ov) ov.classList.add('lb-editing');
+    if(!body.querySelector('.lb-banner')){
+      var b=document.createElement('div');
+      b.className='lb-banner';
+      b.innerHTML='<b>Matt — these descriptions are yours.</b> Hover a list and click <b>Edit</b> to change its subtitle, settings line or description. The name and icon stay fixed. Saving puts it on the public site straight away.';
+      body.insertBefore(b, body.firstChild);
+    }
+    Array.prototype.forEach.call(body.querySelectorAll('.lb-card'), function(card){
+      if(card.querySelector('.lb-edit')) return;
+      var btn=document.createElement('button');
+      btn.type='button'; btn.className='lb-edit'; btn.textContent='✎ Edit';
+      btn.addEventListener('click', function(){ openEditor(card, body); });
+      card.appendChild(btn);
+    });
+    console.log('[LIST_BLURBS_EDITABLE_V1] editor armed — '+body.querySelectorAll('.lb-card').length+' lists');
+  }
+
+  window._LISTBLURB = { decorate: decorate };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', load);
+  else load();
+})();
+</script>
+<!-- ==================== /LIST_BLURBS_EDITABLE_V1 ==================== -->
 </body>
 </html>
