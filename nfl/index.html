@@ -1206,7 +1206,30 @@ body.day-mode .lg-redname{color:#b91c1c;}
   font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--gold);text-decoration:none;
   margin-top:8px;margin-left:10px;vertical-align:middle;transition:background .15s,color .15s;}
 #ftl-overlay .ftl-rw-link:hover{background:var(--gold);color:#0d1117;}
-@media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:22px}#ftl-overlay .ftl-photo{width:74px;height:74px}#ftl-overlay .ftl-cols{flex-direction:column}#ftl-overlay .ftl-takewrap{flex:1 1 auto}}  /* CARD_COMPACT_V1: sizes follow the smaller base; columns stack on narrow */
+/* ══════════ CARD_SCHED_PHONE_V1 (2026-08-23) ══════════
+   THE SCHEDULE TABLE BURSTS THE CARD ON A PHONE. Found by the Dude straight after the stat-strip
+   fix: *"the schedule results at the bottom of the player page still doesn't fit."* He was right,
+   and it is a DIFFERENT fault from the stat strip, not a leftover of it.
+
+   🪨 THE CAUSE IS ONE PROPERTY THAT SILENTLY CHANGES MEANING WHEN THE AXIS FLIPS.
+   `.ftl-cols` is `display:flex; align-items:flex-start`. In the desktop's ROW layout that reads
+   "top-align the two columns", which is correct and intended. The rule below flips it to
+   `flex-direction:column` for narrow screens AND LEAVES align-items ALONE — but on a COLUMN
+   flex container align-items governs the HORIZONTAL axis, so the very same declaration now reads
+   "shrink every child to its own content width". The right column sizes itself to the widest
+   thing inside it, a 12-column schedule table, and bursts straight out of the card.
+
+   MEASURED at 390px before the fix: table 547px, card 390px, `.ftl-rightcol` inflated to 548px,
+   and `.ftl-schedwrap` carrying ZERO overflow handling (two CSS rules existed, neither mentioned
+   it). With align-items:stretch the card stops overflowing entirely.
+
+   🪨 FLIPPING flex-direction WITHOUT REVISITING align-items IS A TRAP, because the declaration
+   does not change, its MEANING does. Anywhere a media query flips an axis, re-read every
+   alignment property underneath it.
+   ⚠️ Honest limit: this was measured and reasoned, NOT seen on a phone. Walter's viewport is
+   2072px and cannot be made into one; an earlier attempt to fake it produced a bogus 50px reading
+   that was discarded rather than reported. The Dude's phone is the only faithful surface. */
+@media (max-width:880px){#ftl-overlay{width:94vw;height:88vh}#ftl-overlay .ftl-name{font-size:22px}#ftl-overlay .ftl-photo{width:74px;height:74px}#ftl-overlay .ftl-cols{flex-direction:column;align-items:stretch}#ftl-overlay .ftl-schedwrap{overflow-x:auto;min-width:0}#ftl-overlay .ftl-statwrap{overflow-x:auto}#ftl-overlay .ftl-takewrap{flex:1 1 auto}}  /* CARD_COMPACT_V1: sizes follow the smaller base; columns stack on narrow */
 .pos-badge{
   display:inline-block;padding:3px 7px;border-radius:4px;
   font-size:10px;font-weight:800;letter-spacing:0.05em;
