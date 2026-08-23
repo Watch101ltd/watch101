@@ -551,6 +551,45 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-take-title{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.03em;color:var(--court);margin-bottom:6px;}
 #ftl-overlay .ftl-take-note{font-size:13px;color:var(--text2);line-height:1.55;white-space:pre-wrap;min-height:0;text-align:left;padding:4px 2px;}  /* CARD_COMPACT_NBA_V1 */
 #ftl-overlay .ftl-take-note em{color:var(--text3);}
+/* CARD_NOTE_STACK_V1 (2026-08-23) — every note Matt holds on a player, stacked and
+   labelled by where he wrote it. 101 List always first, per the Dude. */
+#ftl-overlay .ftl-note-block{display:block;padding:0 0 9px;}
+#ftl-overlay .ftl-note-block + .ftl-note-block{
+  padding-top:9px;border-top:1px solid rgba(255,255,255,.10);
+}
+#ftl-overlay .ftl-note-tag{
+  display:inline-block;font-family:'Nunito Sans',sans-serif;font-size:10.5px;
+  font-weight:800;letter-spacing:.04em;line-height:1;
+  padding:3px 7px;margin:0 7px 5px 0;border-radius:5px;vertical-align:1px;
+  background:rgba(255,255,255,.08);color:var(--text3);white-space:nowrap;
+}
+/* The 101 note is labelled like the others so it does not look like a mistake,
+   but keeps its own accent so it still reads as the primary. */
+#ftl-overlay .ftl-note-wl   .ftl-note-tag{background:rgba(200,16,46,.20);color:#ff8a9c;}
+#ftl-overlay .ftl-note-rd   .ftl-note-tag{background:rgba(88,166,255,.16);color:#8fc3ff;}
+#ftl-overlay .ftl-note-dy   .ftl-note-tag{background:rgba(163,113,247,.18);color:#c4a6ff;}
+#ftl-overlay .ftl-note-hist .ftl-note-tag{background:rgba(255,255,255,.06);color:var(--text3);font-style:italic;}
+#ftl-overlay .ftl-note-body{display:inline;}
+/* Two notes tall, then scroll — the Dude's size call. */
+#ftl-overlay .ftl-take-note.ftl-note-scroll{max-height:190px;overflow-y:auto;padding-right:6px;}
+#ftl-overlay .ftl-take-note.ftl-note-scroll::-webkit-scrollbar{width:8px;}
+#ftl-overlay .ftl-take-note.ftl-note-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:4px;}
+/* DAY MODE. This card had 67 unreadable elements found on 8/22 — pale text on a
+   pale panel — so the day palette is written HERE at the same time as the dark one
+   rather than discovered later by Matt. body.day-mode is the card's real day class
+   (18 overlay rules use it); light-mode is covered too because both exist. */
+body.day-mode #ftl-overlay .ftl-note-block + .ftl-note-block,
+body.light-mode #ftl-overlay .ftl-note-block + .ftl-note-block{border-top-color:rgba(0,0,0,.12);}
+body.day-mode #ftl-overlay .ftl-note-tag,
+body.light-mode #ftl-overlay .ftl-note-tag{background:rgba(0,0,0,.07);color:#555;}
+body.day-mode #ftl-overlay .ftl-note-wl .ftl-note-tag,
+body.light-mode #ftl-overlay .ftl-note-wl .ftl-note-tag{background:rgba(200,16,46,.12);color:#a8102e;}
+body.day-mode #ftl-overlay .ftl-note-rd .ftl-note-tag,
+body.light-mode #ftl-overlay .ftl-note-rd .ftl-note-tag{background:rgba(11,92,204,.10);color:#0b5ccc;}
+body.day-mode #ftl-overlay .ftl-note-dy .ftl-note-tag,
+body.light-mode #ftl-overlay .ftl-note-dy .ftl-note-tag{background:rgba(106,50,190,.12);color:#6a32be;}
+body.day-mode #ftl-overlay .ftl-take-note.ftl-note-scroll::-webkit-scrollbar-thumb,
+body.light-mode #ftl-overlay .ftl-take-note.ftl-note-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.20);}
 #ftl-overlay .ftl-take-divider{border-top:1px dashed var(--border2);margin:6px 0;}
 #ftl-overlay .ftl-take-plabel{font-size:11px;letter-spacing:0.14em;color:var(--court);font-weight:700;margin-right:10px;}
 #ftl-overlay .ftl-chartwrap{width:100%;height:110px;overflow:hidden;}  /* CARD_COMPACT_NBA_V1: cap so an empty history cannot hold a quadrant-sized box */
@@ -4873,32 +4912,120 @@ function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Owned', headCl
 // Persists to localStorage AND to the NAS (piggybacked on the rankings save —
 // the /list-staging endpoint stores each player object verbatim, so the note
 // rides along and comes back on load. No server change needed).
-var _rankNotes = {};                                   // pid -> note string
-var RANK_NOTES_KEY = 'watch101_nba_rank_notes_v1';
+// ============================================================================
+// NOTE_SET_SPLIT_V1 (2026-08-23 — Walter, per the Dude). Redraft and dynasty get
+// their OWN notes, exactly as auction values did in AV_SET_SPLIT_V1 on 8/22.
+//
+// WHY: the Dude's call — "I think he's gonna want a separate set of notes for the
+// dynasty rankings." A player's dynasty case is not his redraft case.
+//
+// 🪨 WHAT WAS ACTUALLY HAPPENING, found in his live data before this was written:
+// there was only ever ONE note per player, and it was written into BOTH sets'
+// files. Proof: pid 5850 carried the byte-identical string in Rankings_Overall
+// (redraft) and Rankings_Dyn_Overall — "Possible suspension looming, large
+// workload over the years..." — because _rankPlayersForSave read one flat map no
+// matter which set it was saving. Matt could not hold a different dynasty take
+// even if he typed one; the last edit overwrote the other set silently.
+//
+// ⚑ THE NAS WAS ALREADY CORRECT, same as it was for auction values. Redraft saves
+// to Rankings_* and dynasty to Rankings_Dyn_*, each carrying its own note field.
+// The ONLY thing that was shared was this in-memory map and its localStorage key.
+//
+// Notes still follow a player across POSITION tabs WITHIN a set — a note typed on
+// the RB tab shows on Overall — because the bucket is keyed by pid, not by tab.
+// ============================================================================
+var _rankNotes = { redraft: {}, dynasty: {} };   // set -> pid -> note text
+function _rankNoteBucket(){
+  var k = ((typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'dynasty' : 'redraft');
+  if(!_rankNotes[k] || typeof _rankNotes[k] !== 'object') _rankNotes[k] = {};
+  return _rankNotes[k];
+}
+function _rankNotesOfSet(set){
+  var b = _rankNotes[(set === 'dynasty') ? 'dynasty' : 'redraft'];
+  return (b && typeof b === 'object') ? b : {};
+}
+var RANK_NOTES_KEY = 'watch101_nba_rank_notes_v1';       // LEGACY flat. Read once, MIGRATED, never written again, never deleted.
+var RANK_NOTES_KEY_V2 = 'watch101_nba_rank_notes_v2';    // { redraft:{...}, dynasty:{...} }
 function _rankNotesSaveLocal(){
-  try { localStorage.setItem(RANK_NOTES_KEY, JSON.stringify(_rankNotes)); }
-  catch(e){ console.warn('[RANKINGS_NOTES_NBA_V1] localStorage save failed:', e); }
+  try { localStorage.setItem(RANK_NOTES_KEY_V2, JSON.stringify(_rankNotes)); }
+  catch(e){ console.warn('[NOTE_SET_SPLIT_V1] localStorage save failed:', e); }
 }
 function _rankNotesLoadLocal(){
-  try { var raw = localStorage.getItem(RANK_NOTES_KEY);
-        if(raw){ var o = JSON.parse(raw); if(o && typeof o==='object') _rankNotes = o; } }
-  catch(e){ console.warn('[RANKINGS_NOTES_NBA_V1] localStorage load failed:', e); }
+  try {
+    var raw2 = localStorage.getItem(RANK_NOTES_KEY_V2);
+    if(raw2){
+      var o2 = JSON.parse(raw2);
+      if(o2 && typeof o2 === 'object'){
+        _rankNotes = { redraft: (o2.redraft && typeof o2.redraft === 'object') ? o2.redraft : {},
+                       dynasty: (o2.dynasty && typeof o2.dynasty === 'object') ? o2.dynasty : {} };
+        return;
+      }
+    }
+    // MIGRATION, ONE TIME, AND DELIBERATELY LOSSLESS. The old key is a FLAT
+    // pid->note map with no record of which set the note was typed on. It goes to
+    // REDRAFT, because redraft is the default set and it is demonstrably where the
+    // work was done — his 8/23 saves are all Rankings_*, not Rankings_Dyn_*.
+    // Dynasty starts EMPTY and refills from its OWN NAS payload, which is the
+    // authoritative per-set record. The legacy key is left on disk untouched, so
+    // this is reversible and nothing Matt typed can be lost by it.
+    var raw1 = localStorage.getItem(RANK_NOTES_KEY);
+    if(raw1){
+      var o1 = JSON.parse(raw1);
+      if(o1 && typeof o1 === 'object' && !o1.redraft && !o1.dynasty){
+        _rankNotes = { redraft: o1, dynasty: {} };
+        _rankNotesSaveLocal();
+        console.log('[NOTE_SET_SPLIT_V1] migrated ' + Object.keys(o1).length + ' legacy rankings notes into REDRAFT; dynasty will refill from its own NAS payload.');
+      }
+    }
+  }
+  catch(e){ console.warn('[NOTE_SET_SPLIT_V1] localStorage load failed:', e); }
 }
-function _rankNoteFor(pid){ var v=_rankNotes[pid]; return (v!=null)?String(v):''; }
+function _rankNoteFor(pid){ var v=_rankNoteBucket()[pid]; return (v!=null)?String(v):''; }
+// Set-explicit readers, for the player card which shows BOTH at once.
+function _rankNoteOfSet(set, pid){ var v=_rankNotesOfSet(set)[pid]; return (v!=null)?String(v):''; }
 // RANK_NOTE_BADGE_48H_V1 (2026-08-20 — the Dude's call): the rankings badge column retires
 // the every-row 📝 'Add note' pencil and the 📋 clipboard. It now works EXACTLY like the
 // watch list's NEW_NOTE_48H_V1: 📝 shows only while a note's TEXT is under 48 hours old,
 // then self-expires. Editing still lives in the Note cell click. Stamps mirror _rankNotes:
 // localStorage here, and they ride the rankings save payload as note_saved_at so freshness
 // reaches the NAS and the public site the same way the note itself does.
-var _rankNoteStamps = {};                              // pid -> ms epoch of last note TEXT change
-var RANK_NOTE_STAMP_KEY = 'watch101_nba_rank_note_stamps_v1';
-function _rankStampsSaveLocal(){ try { localStorage.setItem(RANK_NOTE_STAMP_KEY, JSON.stringify(_rankNoteStamps)); } catch(e){} }
-function _rankStampsLoadLocal(){ try { var raw = localStorage.getItem(RANK_NOTE_STAMP_KEY); if(raw){ var o = JSON.parse(raw); if(o && typeof o==='object') _rankNoteStamps = o; } } catch(e){} }
+// NOTE_SET_SPLIT_V1: the freshness stamps split with the notes they describe.
+// If they stayed flat, editing the redraft note would light the 48h badge on the
+// dynasty one too, which is the same class of bug this whole change removes.
+var _rankNoteStamps = { redraft: {}, dynasty: {} };    // set -> pid -> ms epoch of last note TEXT change
+function _rankStampBucket(){
+  var k = ((typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'dynasty' : 'redraft');
+  if(!_rankNoteStamps[k] || typeof _rankNoteStamps[k] !== 'object') _rankNoteStamps[k] = {};
+  return _rankNoteStamps[k];
+}
+var RANK_NOTE_STAMP_KEY = 'watch101_nba_rank_note_stamps_v1';      // LEGACY flat
+var RANK_NOTE_STAMP_KEY_V2 = 'watch101_nba_rank_note_stamps_v2';   // { redraft:{}, dynasty:{} }
+function _rankStampsSaveLocal(){ try { localStorage.setItem(RANK_NOTE_STAMP_KEY_V2, JSON.stringify(_rankNoteStamps)); } catch(e){} }
+function _rankStampsLoadLocal(){
+  try {
+    var raw2 = localStorage.getItem(RANK_NOTE_STAMP_KEY_V2);
+    if(raw2){
+      var o2 = JSON.parse(raw2);
+      if(o2 && typeof o2 === 'object'){
+        _rankNoteStamps = { redraft:(o2.redraft&&typeof o2.redraft==='object')?o2.redraft:{},
+                            dynasty:(o2.dynasty&&typeof o2.dynasty==='object')?o2.dynasty:{} };
+        return;
+      }
+    }
+    var raw1 = localStorage.getItem(RANK_NOTE_STAMP_KEY);   // migrate flat -> redraft, same rule as the notes
+    if(raw1){
+      var o1 = JSON.parse(raw1);
+      if(o1 && typeof o1==='object' && !o1.redraft && !o1.dynasty){
+        _rankNoteStamps = { redraft:o1, dynasty:{} };
+        _rankStampsSaveLocal();
+      }
+    }
+  } catch(e){}
+}
 _rankStampsLoadLocal();
 function _rankNoteFresh(pid){
   if(!_rankNoteFor(pid)) return false;
-  var ts = Number(_rankNoteStamps[pid]);
+  var ts = Number(_rankStampBucket()[pid]);
   if(!isFinite(ts) || ts <= 0) return false;
   return (Date.now() - ts) < NEW_NOTE_WINDOW_MS;       // the watch list's own 48h window
 }
@@ -4918,11 +5045,14 @@ function editRankNote(pid, el){
   openNotePopup(pid, _rankNoteFor(pid), "Matt's take on this player...", function(v){
     var val = String(v||'').trim();
     var _prevNote = _rankNoteFor(pid);   // RANK_NOTE_BADGE_48H_V1: capture BEFORE overwrite
-    if(val) _rankNotes[pid] = val; else delete _rankNotes[pid];
+    /* NOTE_SET_SPLIT_V1: write into the set Matt is actually looking at. */
+    var _nb = _rankNoteBucket();
+    if(val) _nb[pid] = val; else delete _nb[pid];
     // RANK_NOTE_BADGE_48H_V1 — stamp only when the note TEXT actually changes (mirrors
     // _setWlNote); clearing the note clears the stamp so the badge can never orphan.
-    if(val && val !== _prevNote){ _rankNoteStamps[pid] = Date.now(); }
-    if(!val){ delete _rankNoteStamps[pid]; }
+    var _sb = _rankStampBucket();                       /* NOTE_SET_SPLIT_V1 */
+    if(val && val !== _prevNote){ _sb[pid] = Date.now(); }
+    if(!val){ delete _sb[pid]; }
     _rankStampsSaveLocal();
     _rankNotesSaveLocal();
     if(typeof saveRankings==='function' && _rankPos) saveRankings(_rankPos);  // pushes note to NAS too
@@ -5300,7 +5430,7 @@ function _rankPlayersForSave(pos){
   // RANK_FILE_SAVE_V1: lifted VERBATIM out of saveRankings() so the JSON written to disk is
   // byte-for-byte the same shape the NAS receives. 🪨 Two pieces of code answering the same
   // question is what caused Bug #160. There is now one.
-  return (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankNoteStamps[pid]); if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; return o; });
+  return (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankStampBucket()[pid]);   /* NOTE_SET_SPLIT_V1 */ if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; return o; });
 }
 
 /* ══════════ RANK_FILE_SAVE_V1 (2026-08-23, the Dude's ask) ══════════
@@ -5565,7 +5695,7 @@ async function loadRankingsFromNAS(){
           if(payload && Array.isArray(payload.tiers)){ _rankTiers[_rtKey] = payload.tiers; _rankTiersSnapshot[_rtKey] = payload.tiers.slice(); }
         } catch(_rtE){ console.warn('[RANK_TIERS_V1] tier hydrate failed for ' + pos + ':', _rtE); }
         if(players && players.length){
-          players.forEach(function(it){ if(!it || it.pid == null) return; if(it.note != null && String(it.note).trim() && _rankNotes[it.pid]==null) _rankNotes[it.pid]=String(it.note); var _hst=Number(it.note_saved_at); if(isFinite(_hst) && _hst>0 && _rankNoteStamps[it.pid]==null) _rankNoteStamps[it.pid]=_hst; if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); var _avB=_rankAvBucket(); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _avB[it.pid]==null) _avB[it.pid]=_hav; });   /* AV_COL_NBA_V1: harvest into the set being loaded */  // RANKINGS_NOTES_NBA_V1 + RANK_NOTE_BADGE_48H_V1 + RANKINGS_WL_CLONE_NBA_V1: notes, their freshness stamps, type tags and priority all harvest from the NAS payload
+          players.forEach(function(it){ if(!it || it.pid == null) return; var _nB=_rankNoteBucket(), _sB=_rankStampBucket();   /* NOTE_SET_SPLIT_V1: harvest into the set being loaded */ if(it.note != null && String(it.note).trim() && _nB[it.pid]==null) _nB[it.pid]=String(it.note); var _hst=Number(it.note_saved_at); if(isFinite(_hst) && _hst>0 && _sB[it.pid]==null) _sB[it.pid]=_hst; if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); var _avB=_rankAvBucket(); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _avB[it.pid]==null) _avB[it.pid]=_hav; });   /* AV_COL_NBA_V1: harvest into the set being loaded */  // RANKINGS_NOTES_NBA_V1 + RANK_NOTE_BADGE_48H_V1 + RANKINGS_WL_CLONE_NBA_V1: notes, their freshness stamps, type tags and priority all harvest from the NAS payload
           // NBA_RANKINGS_LIVE_SEED_V1 -- only a HAND-DRAGGED order (manual:true in the saved payload)
           // is adopted; anything else is ignored and the tab follows the live Yahoo seed.
           if(payload.manual === true){
@@ -8670,24 +8800,73 @@ function _ftlRenderMattsTake(pid){
   const noteEl = document.getElementById('ftl-take-note');
   const starsEl = document.getElementById('ftl-take-stars');
   if (noteEl){
-    // WL_NOTES_V1: the LIVE list note wins; history is the fallback so an
-    // approved-then-removed note can still show on the card.
-    let latestNote = null;
-    const idxW = _wlIndexOf(pid);
-    if (idxW >= 0){
-      const lv = _wlNote(_watchList[idxW]);
-      if (lv && lv.trim()) latestNote = lv;
-    }
-    if (!latestNote){
+    // ========================================================================
+    // CARD_NOTE_STACK_V1 (2026-08-23 — Walter, per the Dude. Item #6 off the 8/23
+    // meeting: "Satten Says" was empty on the player card.)
+    //
+    // 🪨 THE ORIGINAL BUG: notes live in more than one store and the card read
+    // exactly one of them — the watch list. Matt was on the RANKINGS page when he
+    // clicked a player. That player was not on his watch list, so the lookup
+    // missed, history had nothing for an unpublished note, and the card printed
+    // "No notes from Matt yet." while his note sat in the row behind the card.
+    // The data was never missing. The card was looking in one drawer.
+    //
+    // WHAT IT DOES NOW, per the Dude: shows EVERY note Matt holds on this player,
+    // stacked and labelled by where he wrote it, so he can never again wonder
+    // which one he is reading or whether one is hiding.
+    //
+    //   101 List           <- the watch list note.   ALWAYS FIRST, his explicit call.
+    //   Redraft Rankings   <- _rankNotes.redraft
+    //   Dynasty Rankings   <- _rankNotes.dynasty
+    //
+    // The 101 note is labelled like the others ("so it doesn't look" odd sitting
+    // bare beside two labelled ones) but carries its own accent so it still reads
+    // as the primary.
+    //
+    // HISTORY IS STILL THE LAST RESORT and only when he holds NO live note at all
+    // — an approved-then-deleted note can still surface, exactly as before.
+    //
+    // Every lookup is typeof-guarded: if an accessor is ever renamed this degrades
+    // to showing fewer notes, never to throwing on the card.
+    // ========================================================================
+    const _cnBlocks = [];
+    try {
+      const i = _wlIndexOf(pid);
+      if (i >= 0){ const v = _wlNote(_watchList[i]); if (v && String(v).trim()) _cnBlocks.push({ kind:'wl', label:'101 List', text:String(v) }); }
+    } catch(e){}
+    try {
+      if (typeof _rankNoteOfSet === 'function'){
+        const r = _rankNoteOfSet('redraft', pid);
+        if (r && r.trim()) _cnBlocks.push({ kind:'rd', label:'Redraft Rankings', text:r });
+        const d = _rankNoteOfSet('dynasty', pid);
+        if (d && d.trim()) _cnBlocks.push({ kind:'dy', label:'Dynasty Rankings', text:d });
+      } else if (typeof _rankNoteFor === 'function'){
+        const one = _rankNoteFor(pid);                       // pre-split fallback
+        if (one && one.trim()) _cnBlocks.push({ kind:'rd', label:'Rankings', text:one });
+      }
+    } catch(e){}
+
+    if (!_cnBlocks.length){
       const hist = (_ftlNotesHistory && _ftlNotesHistory[pid]) || [];
       for (let i = hist.length - 1; i >= 0; i--) {
-        if (hist[i] && hist[i].note){ latestNote = hist[i].note; break; }
+        if (hist[i] && hist[i].note){ _cnBlocks.push({ kind:'hist', label:'Previously published', text:hist[i].note }); break; }
       }
     }
-    if (latestNote){
-      const sp = _splitNoteAndUrl(latestNote);
-      noteEl.innerHTML = escapeHtml(sp.text) + _renderNoteLinkBadge(sp.url);
+
+    if (_cnBlocks.length){
+      noteEl.innerHTML = _cnBlocks.map(function(b){
+        const sp = _splitNoteAndUrl(b.text);
+        return '<div class="ftl-note-block ftl-note-' + b.kind + '">' +
+                 '<span class="ftl-note-tag">' + escapeHtml(b.label) + '</span>' +
+                 '<span class="ftl-note-body">' + escapeHtml(sp.text) + _renderNoteLinkBadge(sp.url) + '</span>' +
+               '</div>';
+      }).join('');
+      // SCROLL, NOT GROWTH — the Dude's call: "two Satten notes with a scroll sounds
+      // perfect." One note therefore looks exactly as it does today and three never
+      // blow the card open, on a card he and Matt have both been trying to slim down.
+      noteEl.classList.toggle('ftl-note-scroll', _cnBlocks.length > 2);
     } else {
+      noteEl.classList.remove('ftl-note-scroll');
       noteEl.innerHTML = '<em>No notes from Matt yet.</em>';
     }
   }
