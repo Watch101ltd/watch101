@@ -175,7 +175,7 @@ button.go:hover{filter:brightness(1.1)}
 
       <div id="tierPick" style="display:none">
         <label>Which tier</label>
-        <select id="tierSel" onchange="render()"></select>
+        <select id="tierSel" onchange="applyTier()"></select>
       </div>
 
       <div id="statPick" style="display:none">
@@ -562,6 +562,41 @@ function goOffline(why){
   $('tpl').value='cover'; onTemplate();
 }
 
+/* TIER_PICK_FIX_V1 (2026-08-24, ~19:45 hours. The Dude found it the moment the
+   Rankings gave him 13 tiers to choose from: "no matter what I pick, it always
+   picks the elite tier.")
+
+   WHAT WAS WRONG: the tier dropdown's onchange called render(), and render()
+   only REPAINTS ROWS and TIERNAME. It never RECOMPUTES them. The membership work
+   lived in exactly one place, inside loadList(), and ran once against tier index
+   zero. So the menu moved and the post did not.
+
+   🪨 AND THE OBVIOUS FIX WAS ALSO WRONG: pointing onchange at loadList() would
+   have rebuilt the tier menu on every change, which resets the selection back to
+   the first tier and reproduces the identical symptom by a different route. The
+   membership work has to live somewhere that reads the CURRENT selection and
+   leaves the menu alone. Hence this function.
+
+   getList() and getPlayers() both read from CACHE, so switching tiers costs no
+   network traffic at all. */
+async function applyTier(){
+  if(!ONLINE) return;
+  const id=$('listSel').value;
+  try{
+    const [list,players]=await Promise.all([getList(id), getPlayers()]);
+    const tiers=list.tiers||[];
+    const idx=parseInt($('tierSel').value,10);
+    const tier=(!isNaN(idx) && idx>=0 && idx<tiers.length) ? tiers[idx] : null;
+    if(tier){
+      TIERNAME=tier.name||'';
+      ROWS=tierMembers(list,tier).map(pid=>resolveName(players,pid)).filter(Boolean)
+             .map(r=>({...r,val:null}));
+    } else { TIERNAME=''; ROWS=[]; }
+    AUTOHEAD=(SPORTS[SPORT].lists.find(l=>l[0]===id)||[])[1]||'';
+    render();
+  }catch(e){ setStatus('Could not read that tier: '+e.message, true); ROWS=[]; render(); }
+}
+
 async function loadList(){
   if(!ONLINE) return;
   const id=$('listSel').value, t=$('tpl').value;
@@ -574,16 +609,14 @@ async function loadList(){
 
     if(t==='tier'){
       const tiers=list.tiers||[];
+      const keep=$('tierSel').value;   /* re-loading the SAME list must not throw away his pick */
       $('tierSel').innerHTML = tiers.length
         ? tiers.map((x,i)=>'<option value="'+i+'">'+esc(x.name||('Tier '+(i+1)))+'</option>').join('')
         : '<option value="">no tiers on this list yet</option>';
-      const tier=tiers[+($('tierSel').value||0)];
-      if(tier){
-        TIERNAME=tier.name||'';
-        ROWS=tierMembers(list,tier).map(pid=>resolveName(players,pid)).filter(Boolean)
-               .map(r=>({...r,val:null}));
-        AUTOHEAD=listName;
-      } else { TIERNAME=''; ROWS=[]; AUTOHEAD=listName; }
+      if(keep!=='' && !isNaN(+keep) && +keep < tiers.length) $('tierSel').value = keep;
+      setStatus((list.players||[]).length+' players'+staged+'.');
+      await applyTier();
+      return;
     } else {
       const n=Math.max(3,Math.min(10,+$('countSel').value||5));
       ROWS=order.slice(0,n).map(pid=>resolveName(players,pid)).filter(Boolean).map(r=>({...r,val:null}));
