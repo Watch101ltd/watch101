@@ -61,6 +61,24 @@
      --turf-deep = darker green for hover/border
 */
 :root{
+  /* ==========================================================================
+     FONT_SWEEP_V1 (2026-08-23 — Walter, per the Dude). Matt has disliked Bowlby
+     One for weeks: "it's like block lettering, there's too much space between
+     the letters... he hates it." The Dude approved a Times-like serif after
+     seeing it on "Satten Says".
+
+     TWO VARIABLES, ON PURPOSE, so the next font decision costs one line:
+       --font-display  everything a person READS. Already switched.
+       --font-brand    the Watch101 WORDMARK only. Still Bowlby One TODAY.
+
+     ⚑ PASS 3 IS ONE LINE. When the Dude is ready to change the block lettering
+     around the logo, set --font-brand to the same stack as --font-display. That
+     is the whole change. Do NOT go hunting for .w101-brand-word again.
+     ⚠️ The 101 LOGO ITSELF IS AN IMAGE and is not affected by either variable.
+     ========================================================================== */
+  --font-display:'Noto Serif','Times New Roman',Times,serif;
+  --font-brand:'Bowlby One','Nunito Sans',sans-serif;
+
   --bg:#080c10;--surface:#0d1117;--surface2:#131920;--surface3:#1a2330;
   --border:#1e2d3d;--border2:#253545;
   --gold:#f0a500;--gold2:#c47f00;
@@ -166,7 +184,7 @@ body{
 }
 .logo-wrap{display:flex;align-items:baseline;gap:12px}
 .logo{ /* HDR_COMPACT_NFL_V1: the 64px hero wordmark markup is RETIRED from this page; rule kept, annotated */
-  font-family:'Bowlby One',sans-serif;
+  font-family:var(--font-brand);   /* FONT_SWEEP_V1: retired rule, pointed at the brand variable anyway so pass 3 cannot miss it */
   font-size:64px;
   letter-spacing:0.08em;
   line-height:1;
@@ -195,7 +213,7 @@ body{
    in the header that let the user navigate to other sports. Mirrors the
    pattern used on the baseball site. On THIS page we show baseball + NBA
    (we don't show NFL on the NFL page — the wordmark already says NFL). */
-.logo-mini{font-family:'Bowlby One',sans-serif;font-size:26px;letter-spacing:0.04em;line-height:1;display:flex;align-items:center;gap:0.1em;opacity:0.9;cursor:default;}
+.logo-mini{font-family:var(--font-brand);font-size:26px;letter-spacing:0.04em;line-height:1;display:flex;align-items:center;gap:0.1em;opacity:0.9;cursor:default;}
 a.logo-mini{cursor:pointer;text-decoration:none;}
 a.logo-mini:hover{opacity:1;}
 .logo-mini .logo-mini-img{height:1.6em;width:auto;display:block;flex-shrink:0;}
@@ -782,7 +800,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
    site and is deliberately untouched — this changes the player card's title and
    the player's name, which is what he asked for and nothing else.
    ============================================================================ */
-#ftl-overlay .ftl-logo{font-family:'Noto Serif','Times New Roman',Times,serif;font-weight:700;font-size:28px;letter-spacing:0;line-height:1.05;color:var(--turf);}
+#ftl-overlay .ftl-logo{font-family:var(--font-display);font-weight:700;font-size:28px;letter-spacing:0;line-height:1.05;color:var(--turf);}
 #ftl-overlay .ftl-logo-sub{font-size:10px;letter-spacing:0.25em;color:#4ade80;margin-top:4px}
 #ftl-overlay .ftl-header-right{font-size:10px;color:var(--text3);letter-spacing:0.1em;margin-right:48px;}  /* BUG49_PHASE2C: clear the close X */
 #ftl-overlay .ftl-hero{padding:10px 16px;display:flex;gap:14px;align-items:flex-start;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;}
@@ -790,11 +808,12 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-meta{flex:1;min-width:260px}
 /* CARD_FONT_V1: the player's name, same reasoning as .ftl-logo above. 700 rather
    than 800 — Matt's first word about the old one was "it's bolded". */
-#ftl-overlay .ftl-name{font-family:'Noto Serif','Times New Roman',Times,serif;font-weight:700;font-size:26px;letter-spacing:0;color:var(--text);line-height:1.08;}
+#ftl-overlay .ftl-name{font-family:var(--font-display);font-weight:700;font-size:26px;letter-spacing:0;color:var(--text);line-height:1.08;}
 #ftl-overlay .ftl-sub{font-size:11px;color:var(--text2);margin-top:3px;letter-spacing:0.04em;}
 #ftl-overlay .ftl-sub .sep{color:var(--border2);margin:0 8px}
 #ftl-overlay .ftl-rank{display:inline-flex;align-items:center;gap:8px;margin-top:0;padding:4px 10px;background:#16a34a33;border:1px solid var(--turf);border-radius:6px;font-size:11px;letter-spacing:0.15em;color:#4ade80;font-weight:700;}
-#ftl-overlay .ftl-rank .num{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:16px;letter-spacing:0.04em}
+#ftl-overlay .ftl-rank /* FONT_SWEEP_V1 pass 1 — numeric pills */
+.num{font-family:var(--font-display);font-weight:700;font-size:16px;letter-spacing:0}
 #ftl-overlay .ftl-herostats{flex:2;min-width:320px;display:flex;flex-direction:column;gap:5px;align-self:center;}  /* BUG49_PHASE2: clone of baseball's .ppo-hero-stats — right column holds Latest News + the stat block */
 /* FAN_TAGS_TOP_V1 (2026-08-22, the Dude): on the CUSTOMER view only, Priority + Type Tags are
    lifted out of the bottom admin block into this row, which fills the dead space to the LEFT of
@@ -805,10 +824,12 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-tags-slot{flex:1;min-width:0;}
 #ftl-overlay .ftl-tags-slot .ftl-take-card{margin:0;padding:8px 10px;}
 #ftl-overlay .ftl-tags-slot .ftl-take-prow,#ftl-overlay .ftl-tags-slot .ftl-take-typerow{margin:2px 0 4px;}
-#ftl-overlay .ftl-deeplinks-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:18px;letter-spacing:0.06em;color:var(--gold);text-align:right;margin-bottom:6px;line-height:1;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks-label */
+#ftl-overlay /* FONT_SWEEP_V1 pass 1 — "Latest News" — Matt named this one on the 8/23 call */
+.ftl-deeplinks-label{font-family:var(--font-display);font-weight:700;font-size:18px;letter-spacing:0;color:var(--gold);text-align:right;margin-bottom:6px;line-height:1;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks-label */
 #ftl-overlay .ftl-deeplinks{display:flex;gap:6px;justify-content:flex-end;margin-bottom:6px;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks */
 #ftl-overlay .ftl-daterange-wrap{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;}  /* FTL_DATERANGE_V1: baseball's .ppo-daterange-wrap */
-#ftl-overlay .ftl-daterange-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:10px;letter-spacing:0.12em;color:var(--text3)}
+#ftl-overlay /* FONT_SWEEP_V1 pass 1 — "Stats For:" — small caps label, slight air kept */
+.ftl-daterange-label{font-family:var(--font-display);font-weight:700;font-size:10px;letter-spacing:0.04em;color:var(--text3)}
 #ftl-overlay .ftl-daterange-select{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em;}
 #ftl-overlay .ftl-daterange-select.daterange-active{border-color:var(--gold);color:var(--gold);}
 #logo-sub{color:var(--turquoise2,#0891b2);}
@@ -1137,7 +1158,7 @@ body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.c
    STILL in Bowlby One, so the comparison is side by side on one screen.
    This class also carries "101 Rank History", so both headings change together.
    ============================================================================ */
-#ftl-overlay .ftl-take-title{font-family:'Noto Serif','Times New Roman',Times,serif;font-weight:700;font-size:13px;letter-spacing:0;color:var(--turf);margin-bottom:6px;}
+#ftl-overlay .ftl-take-title{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:0;color:var(--turf);margin-bottom:6px;}
 #ftl-overlay .ftl-take-note{font-size:13px;color:var(--text2);line-height:1.55;white-space:pre-wrap;min-height:0;text-align:left;padding:4px 2px;}  /* CARD_COMPACT_V1: left-aligned for paragraph notes (NOTE_POPUP_NFL_V1 made those normal) */
 #ftl-overlay .ftl-take-note em{color:var(--text3);}
 /* CARD_NOTE_STACK_V1 (2026-08-23) — every note Matt holds on a player, stacked and
@@ -1201,7 +1222,8 @@ body.light-mode #ftl-overlay .ftl-take-note.ftl-note-scroll::-webkit-scrollbar-t
 #movement-mode-overlay{display:none;position:fixed;inset:0;z-index:10001;background:var(--bg,#0b0f14);flex-direction:column;}
 #movement-mode-overlay.mm-open{display:flex;}
 #movement-mode-overlay .mm-bar{display:flex;align-items:center;gap:14px;padding:12px 20px;background:rgba(0,0,0,0.3);border-bottom:1px solid var(--border,#2a3645);flex:0 0 auto;}
-#movement-mode-overlay .mm-title{font-family:'Bowlby One',sans-serif;font-size:16px;letter-spacing:.04em;color:var(--gold,#f5c518);flex:0 0 auto;}
+#movement-mode-overlay /* FONT_SWEEP_V1 pass 1 — Movement Mode title */
+.mm-title{font-family:var(--font-display);font-weight:700;font-size:16px;letter-spacing:0;color:var(--gold,#f5c518);flex:0 0 auto;}
 #movement-mode-overlay .mm-date{font-size:12px;color:var(--text2,#9fb0c0);letter-spacing:.05em;flex:1 1 auto;text-align:center;}
 #movement-mode-overlay .mm-fname{font-size:14px;font-weight:800;color:#fff;}
 #movement-mode-overlay .mm-rank{font-size:24px;font-weight:800;color:var(--gold,#f5c518);font-variant-numeric:tabular-nums;min-width:54px;text-align:right;}
@@ -1289,7 +1311,8 @@ body.day-mode .lg-redname{color:#b91c1c;}
 #ftl-overlay .ftl-chart-line{fill:none;stroke:var(--turf);stroke-width:2;}
 #ftl-overlay .ftl-chart-dot{fill:var(--turf);}
 #ftl-overlay .ftl-chart-foot{display:flex;justify-content:space-between;border-top:1px dashed var(--border2);margin-top:10px;padding-top:10px;font-size:11px;letter-spacing:0.1em;color:var(--text3);}
-#ftl-overlay .ftl-statgroup-label{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:13px;letter-spacing:0.1em;color:var(--gold);margin:0 0 10px 2px;}
+#ftl-overlay /* FONT_SWEEP_V1 pass 1 — the stat group headers */
+.ftl-statgroup-label{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:0;color:var(--gold);margin:0 0 10px 2px;}
 /* STATGRID_V1 (Aug 6, 2026 — Bug #46, found by the Dude at zoom on SGA's card). Was
    flex+wrap with min-width:54px cells: when zoom shrinks the width, flex EVICTS the cells
    that no longer fit onto an orphan row (3PA + 3P% first) instead of shrinking anyone.
@@ -1304,7 +1327,8 @@ body.day-mode .lg-redname{color:#b91c1c;}
 #ftl-overlay .ftl-ownbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
 #ftl-overlay .ftl-ownbar .ftl-statval{color:var(--text1,#fff);}
 #ftl-overlay .ftl-statcell:last-child{border-right:none;}
-#ftl-overlay .ftl-statlabel{font-family:'Bowlby One','Nunito Sans',sans-serif;font-size:8px;letter-spacing:0.1em;color:var(--text3);margin-bottom:2px;}
+#ftl-overlay /* FONT_SWEEP_V1 pass 1 — the stat column labels — 8px, so a little air is KEPT for legibility */
+.ftl-statlabel{font-family:var(--font-display);font-weight:700;font-size:8px;letter-spacing:0.06em;color:var(--text3);margin-bottom:2px;}
 #ftl-overlay .ftl-statval{font-size:13px;font-weight:700;color:#22c55e;line-height:1;}
 #ftl-overlay .ftl-statval.na{color:var(--text3);font-weight:500;}
 /* ROTOWIRE_LINK_NFL_V1 (2026-08-05) — baseball's gold RW pill, cloned. Deliberately a PILL and
@@ -1520,7 +1544,7 @@ body.day-mode .lg-redname{color:#b91c1c;}
   display:flex;align-items:center;gap:18px;flex-wrap:wrap;
 }
 .w101-brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
-.w101-brand-word{font-family:'Bowlby One',sans-serif;font-size:26px;letter-spacing:.04em;color:var(--turf);line-height:1}
+.w101-brand-word{font-family:var(--font-brand);font-size:26px;letter-spacing:.04em;color:var(--turf);line-height:1}
 .w101-brand img{height:34px;width:auto;display:block}
 /* HDR_COMPACT_NFL_V1: the chrome carries the sister-site minis (shrunk from the old 26px header size)
    and the More tools dropdown. Minis hide on narrow screens; The Lists dropdown still covers them. */
