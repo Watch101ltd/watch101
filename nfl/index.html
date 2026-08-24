@@ -819,6 +819,16 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 body.day-mode #ftl-overlay .fs-table tr.fs-playoff td{background:rgba(22,163,74,0.16);}
 #ftl-overlay .fs-yeartoggle{margin-left:10px;font-size:10px;font-weight:800;letter-spacing:.05em;color:var(--gold,#eab308);border:1px solid var(--gold,#eab308);border-radius:10px;padding:1px 8px;cursor:pointer;vertical-align:middle;user-select:none;}  /* SCHED_TRIO_V1 */
 #ftl-overlay .fs-yeartoggle:hover{background:var(--gold,#eab308);color:#0d1117;}
+/* CARD_MOVES_V1 (2026-08-23) — "Latest News" and its RW pill share one line. */
+#ftl-overlay .ftl-newsrow{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:nowrap;}
+#ftl-overlay .ftl-newsrow .ftl-deeplinks-label{white-space:nowrap;}
+#ftl-overlay .ftl-newsrow .ftl-deeplinks{display:flex;align-items:center;gap:6px;}
+/* The playoff trio now rides the vitals line. Keeps its green so it still reads
+   as the thing it is — "real noticeable and real easy to read", the Dude's words
+   when it was recoloured — but inherits the vitals line's smaller size. */
+#ftl-overlay .ftl-sub .ftl-sub-po{font-weight:800;letter-spacing:.03em;color:#4ade80;white-space:nowrap;}
+body.day-mode #ftl-overlay .ftl-sub .ftl-sub-po,
+body.light-mode #ftl-overlay .ftl-sub .ftl-sub-po{color:var(--turf-bright,#15803d);}
 #ftl-overlay .fs-playoffline{font-size:12px;font-weight:800;letter-spacing:.04em;color:#4ade80;margin:2px 0 6px 2px;}  /* SCHED_TRIO_V1, recolored per the Dude: green, ALL CAPS, bold -- "real noticeable and real easy to read" */
 body.day-mode #ftl-overlay .fs-playoffline{color:var(--turf-bright,#15803d);}
 #ftl-overlay .fs-table td.fs-dash{color:var(--text3);}
@@ -9051,6 +9061,38 @@ function _injTagHtml(pid){
 // (3) a playoff-opponents line up top with home/away so nobody scrolls a whole schedule
 // to see January. Toggle state resets to the current season every time a card opens.
 var _ftlSchedPrior = false;
+// ============================================================================
+// CARD_MOVES_V1 (2026-08-23 — Walter, per the Dude, off his annotated screenshot).
+// The playoff trio moved OUT of its own row above the schedule and ONTO the end
+// of the player's vitals line, next to team / position / age / experience / size.
+// One row saved on a card both of them have been trying to slim all week.
+// ============================================================================
+function _ftlClearPlayoffsOnSub(){
+  try {
+    var sub = document.getElementById('ftl-sub');
+    if(!sub) return;
+    var old = sub.querySelector('.ftl-sub-po');
+    if(old){
+      var sep = old.previousElementSibling;
+      if(sep && sep.classList && sep.classList.contains('sep')) sep.remove();
+      old.remove();
+    }
+  } catch(e){}
+}
+function _ftlAppendPlayoffsToSub(text){
+  try {
+    var sub = document.getElementById('ftl-sub');
+    if(!sub || !text) return;
+    _ftlClearPlayoffsOnSub();                 // never append twice
+    var sep = document.createElement('span');
+    sep.className = 'sep'; sep.textContent = '|';
+    var span = document.createElement('span');
+    span.className = 'ftl-sub-po';
+    span.textContent = text;                  // textContent: opponent codes are data, not markup
+    span.title = 'Fantasy playoff weeks \u2014 the games that decide championships';
+    sub.appendChild(sep); sub.appendChild(span);
+  } catch(e){ /* a missing playoff line must never break the card */ }
+}
 function _ftlToggleSchedYear(){
   _ftlSchedPrior = !_ftlSchedPrior;
   if(_ftlCurrentPid != null){ try { _ftlRenderScheduleResults(_ftlCurrentPid); } catch(e){} }
@@ -9110,7 +9152,15 @@ async function _ftlRenderScheduleResults(pid){
       const pHome = (pg.home === team);
       poParts.push((pHome ? '' : '@') + (pHome ? pg.away : pg.home));
     }
-    poLine = '<div class="fs-playoffline" title="Fantasy playoff weeks — the games that decide championships">Playoffs (Wk 15-17): ' + poParts.join(', ') + '</div>';
+    // CARD_MOVES_V1 (2026-08-23): the playoff trio no longer sits on its own row
+    // above the schedule. It is APPENDED TO THE VITALS LINE instead, per the
+    // Dude's arrow on the 8/23 screenshot — killing a whole row on a card he and
+    // Matt have both been trying to slim.
+    // ⚠ WHY IT IS DONE HERE AND NOT WHERE THE VITALS ARE BUILT: the schedule is
+    // FETCHED, so the playoff opponents are not known when the hero paints. This
+    // runs after the fetch resolves and appends to the line already on screen.
+    // The old fs-playoffline div is retired, NOT hidden — nothing renders it now.
+    _ftlAppendPlayoffsToSub('Playoffs (Wk 15-17): ' + poParts.join(', '));
   }
 
   // GAMELOG_FPTS_FIRST_V1: FPts now sits between RESULT and the stat columns, not at the far right.
@@ -9449,11 +9499,24 @@ function openFromTheLogo(pid, _keepRange){
   }
   const _wtNum = Number(p.weight);
   const _wtFmt = (isFinite(_wtNum) && _wtNum > 0) ? (_wtNum + ' lbs') : '';
-  if(_htFmt && _wtFmt) subParts.push(_htFmt + ' / ' + _wtFmt);
+  // CARD_MOVES_V1 (2026-08-23): NO SLASH between height and weight. Matt on the
+  // 8/23 call, and the Dude marked it on a screenshot — he wants it to read
+  // 5'11" 210 lbs, a plain space. The pipe separators between the OTHER segments
+  // stay; this is the one pair that reads as a single fact.
+  if(_htFmt && _wtFmt) subParts.push(_htFmt + ' ' + _wtFmt);
   else if(_htFmt) subParts.push(_htFmt);
   else if(_wtFmt) subParts.push(_wtFmt);
   document.getElementById('ftl-sub').innerHTML = subParts.join('<span class="sep">|</span>');
+  _ftlClearPlayoffsOnSub();   // CARD_MOVES_V1: a fresh player starts without the previous player's playoff trio
 
+  // ==========================================================================
+  // CARD_MOVES_V1 (2026-08-23) — the playoff trio rides on the VITALS line.
+  // Two helpers rather than inline code, because the line is painted in one
+  // place and the playoff data arrives in another, asynchronously.
+  // ⚠ CLEAR BEFORE PAINT. Without _ftlClearPlayoffsOnSub the previous player's
+  // playoff opponents would linger on the next player's line until his schedule
+  // resolved — a wrong fact on screen, which is worse than a missing one.
+  // ==========================================================================
   // Watch101 rank pill — only when the player is on the watch list (his hand-ranked slot).
   // CARD_TYPEIN_V1 (2026-08-22, the Dude): the pill's number is click-to-type for the backend,
   // so Matt can re-rank a player from INSIDE the card instead of backing out to the list.
@@ -10275,7 +10338,11 @@ function _yahooLookupFmt(pid, field, isPercent){
            view moves the Priority + Type Tags card into it. -->
       <div class="ftl-heronew">
         <div class="ftl-tags-slot" id="ftl-tags-slot"></div>
-        <div id="ftl-deeplinks-wrap" style="display:none">
+        <!-- CARD_MOVES_V1 (2026-08-23): the RW pill sits ON THE SAME LINE as the
+             "Latest News" label, not stacked beneath it. Matt on the 8/23 call:
+             "latest news in this, like they can be on the same line. They
+             actually should be." Ids unchanged, so every existing wire still lands. -->
+        <div id="ftl-deeplinks-wrap" class="ftl-newsrow" style="display:none">
           <div class="ftl-deeplinks-label">Latest News</div>
           <div class="ftl-deeplinks"><a class="ftl-rw-link" id="ftl-rw-link" href="#" target="_blank" rel="noopener" style="display:none" title="Open on RotoWire">RW</a></div>
         </div>
