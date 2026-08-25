@@ -4235,7 +4235,12 @@ async function loadRankingsFromNAS(){
           var _tsRk = (String(_rkNewestLocal).indexOf('T') > -1) ? new Date(_rkNewestLocal).toLocaleString() : _rkNewestLocal;
           _elRk.textContent = _setNm + _bRk + ' \u2014 ' + _wRk + ' ' + _tsRk;
         } else {
-          _elRk.textContent = _setNm + ' \u2014 not yet saved';
+          // WATCHLIST_PUBLISH_V1 (2026-08-25) — two fixes on one line. A customer got editor
+          // wording, AND this string carried an EM DASH on a page Matt and the public both see,
+          // which Constitution Rule #13 forbids on anything public-facing. Dash gone either way.
+          _elRk.textContent = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())
+            ? 'Not published yet'
+            : (_setNm + ': not yet saved');
         }
       }
     }
@@ -5177,7 +5182,14 @@ function renderWatchList(){
   const countEl = document.getElementById('count-badge');
   countEl.textContent = _watchList.length + (_watchList.length === 1 ? ' player' : ' players');
   if(_watchList.length === 0){
-    tbody.innerHTML = '<tr><td colspan="29" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
+    // WATCHLIST_PUBLISH_V1 — a customer and an editor need different sentences here.
+    // The old single message told a CUSTOMER to "use the search bar above to add players",
+    // which they cannot do (the controls are hidden in read-only mode) and would not want to.
+    // Customer wording is the Dude's own, chosen by him. Zero dashes, per Constitution Rule #13:
+    // this string is public-facing.
+    tbody.innerHTML = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())
+      ? '<tr><td colspan="29" class="empty-state"><strong>Not published yet.</strong>Matt is building this list for the season. Check back soon.</td></tr>'
+      : '<tr><td colspan="29" class="empty-state"><strong>Your watch list is empty</strong>Use the search bar above to add players</td></tr>';
     if(typeof _renderPhoneList==='function'){ try{ _renderPhoneList([]); }catch(e){} }  // PHONE_NOTE_STAR_NFL_V1
     return;
   }
@@ -7411,7 +7423,23 @@ async function saveList(){
 // Load the watch list from the NFL server, falling back to localStorage.
 async function loadListFromStorage(){
   // Try server-side first.
-  for(const env of ['list', 'list-staging']){
+  // ── WATCHLIST_PUBLISH_V1 (2026-08-25, per the Dude) ────────────────────────────────────
+  // WAS: for(const env of ['list','list-staging']) — one order for BOTH sites, production
+  // first with a silent fall-through to staging. That fall-through is why customers were
+  // reading Matt's working copy: no watch list has ever been approved, so Production 404s
+  // for every list and everybody landed on staging.
+  //
+  // Now split exactly like RANKINGS_PUBLISH_V1 (2026-08-08) already does two hundred lines up:
+  //   CUSTOMER (Cloudflare) -> ['list']         approved Production ONLY. Never staging. No exceptions.
+  //   EDITOR   (GitHub)     -> ['list-staging'] Matt always sees his newest work.
+  //
+  // 🪨 THE EDITOR HALF MATTERS TOO, AND IT WAS THE QUIETER BUG. Production is empty today, so
+  // asking for it first happened to work. The moment a list IS approved, the old order would
+  // have handed MATT the published copy instead of his own edits, and his staged work would
+  // have appeared to vanish on every refresh. The rankings were given this split; the watch
+  // list was not. Same file, same week, one of a pair.
+  const _wlFan = (typeof _isReadOnlyMode === 'function') && !!_isReadOnlyMode();
+  for(const env of (_wlFan ? ['list'] : ['list-staging'])){
     try {
       const res = await fetch(SERVER_URL + '/' + env + '/' + LIST_ID, {cache: 'no-cache'});
       if(!res.ok) continue;
@@ -7456,7 +7484,12 @@ async function loadListFromStorage(){
       const _lsTs = localStorage.getItem(_wlStorageKey() + '_saved');
       const _alF = (typeof _activeList === 'function') ? _activeList() : null;
       const _elF = document.getElementById('logo-sub');
-      if(_elF) _elF.textContent = (_lsTs ? ('local draft (this browser): ' + _lsTs) : 'not yet saved');   // META_ROW_V1: name dropped
+      // WATCHLIST_PUBLISH_V1 (2026-08-25) — a CUSTOMER must never be shown editor language here.
+      // With the fan now reading Production only, an unpublished list lands in this fallback, and the
+      // old line printed "not yet saved" under the logo, which is Matt's vocabulary, not a visitor's.
+      if(_elF) _elF.textContent = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())
+        ? 'Not published yet'
+        : (_lsTs ? ('local draft (this browser): ' + _lsTs) : 'not yet saved');   // META_ROW_V1: name dropped
     } catch(_e){}
   } catch(e){
     console.warn('[loadListFromStorage] localStorage fallback failed:', e);
