@@ -1119,7 +1119,27 @@ body.day-mode .tier-bracket-box.tier-armed::after {
 /* READONLY_V1 (Aug 2, 2026) -- one rule hides every admin control for fans. */
 body.readonly-mode .backend-only{display:none !important;}
 body.readonly-mode table.watch-list thead th.col-handle,body.readonly-mode table.watch-list tbody td.col-handle{display:none !important;}
-body.readonly-mode table.watch-list thead th.col-action,body.readonly-mode table.watch-list tbody td:last-child{display:none !important;}
+body.readonly-mode table.watch-list thead th.col-action,body.readonly-mode table.watch-list tbody td.col-action{display:none !important;}
+/* 🚨 LASTCHILD_LEAK_FIX_V2 (2026-08-25, the Dude found it: "it's not showing the tier titles" on the LIVE Cloudflare site).
+   WAS `tbody td:last-child`. That is the SAME defect LASTCHILD_LEAK_FIX_V1 fixed on 2026-08-22 at the width rule
+   (~line 738) -- and this copy, three hundred lines below it, was missed. One selector, fixed once, left broken twice.
+   🪨 WHEN A POSITIONAL SELECTOR IS FOUND TO BE WRONG, GREP THE WHOLE FILE FOR IT BEFORE CLOSING THE BUG. The 8/22
+   note even wrote the general rule down -- "a positional selector encodes one surface's column order into a shared
+   rule, use the semantic class" -- and still only one instance got changed.
+
+   WHAT IT WAS BREAKING FOR CUSTOMERS, all three verified live in the browser on fantasywatch101.com before the fix:
+     1. EVERY TIER LABEL, rankings AND watch list. A tier label row holds exactly ONE cell, so that cell is also the
+        LAST cell. Measured: 0px tall with the text present and colour correct. Matt's tier names -- "a tier unto
+        himself", "TE is very deep this year" -- were in the page and invisible to every customer.
+     2. THE LAST STAT COLUMN OF THE RANKINGS. Rankings rows end with receiving TD (col-stat-a), not an Action cell,
+        so Brock Bowers' 7 TDs rendered display:none under a "TD" header sitting over an empty column.
+     3. THE EMPTY-STATE / "Loading players..." ROW, also a single spanned cell -- so on the customer site a failed
+        load shows a BLANK TABLE with no explanation at all. That is Bug #186 made worse on the surface that matters.
+
+   Basketball never had this bug: its equivalent rule (~line 1030 there) already targeted td.col-action. Football was
+   the odd one out, which is the reverse of the usual direction and worth remembering.
+   Verified before shipping: every action cell in this file carries col-action (colgroup, both headers, the pool's Add
+   cell at ~4895, the watch list's Remove cells at ~5194/5244), so nothing that should stay hidden is exposed. */
 body.readonly-mode .priority-stars{pointer-events:none;}
 body.readonly-mode .wl-note-cell{cursor:default;}
 
