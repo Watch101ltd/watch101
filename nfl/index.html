@@ -1916,7 +1916,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-type" data-sort="type">Type <span class="sort-arrow">↕</span></th>
         <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
         <th class="left col-note">Note</th>
-        <th class="col-adp col-zone-divider" data-sort="adp" title="Average draft position — Sleeper, follows the scoring box (ADP_COL_V1)">ADP <span class="sort-arrow">↕</span></th>
+        <th class="col-adp col-zone-divider" data-sort="adp" title="Average draft position, straight out of Sleeper’s own draft rooms. We do not calculate it. Follows the scoring box for STD, ½ PPR and PPR — each one a separate real Sleeper feed. Sleeper publishes NO TE premium ADP, so TE Prem shows nothing rather than another format’s number under the wrong label.">ADP <span class="sort-arrow">↕</span></th>
         <th class="col-yrank" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
@@ -2051,7 +2051,7 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
           <th class="col-bye" data-npsort="bye" title="Bye week — BYE_WEEK_COL_V1">Bye <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
-          <th class="col-adp col-zone-divider" data-npsort="adp" title="Average draft position — Sleeper, follows the scoring box (ADP_COL_V1)">ADP <span class="sort-arrow">↕</span></th>
+          <th class="col-adp col-zone-divider" data-npsort="adp" title="Average draft position, straight out of Sleeper’s own draft rooms. We do not calculate it. Follows the scoring box for STD, ½ PPR and PPR — each one a separate real Sleeper feed. Sleeper publishes NO TE premium ADP, so TE Prem shows nothing rather than another format’s number under the wrong label.">ADP <span class="sort-arrow">↕</span></th>
           <th class="col-yrank" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
           <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
@@ -2760,7 +2760,8 @@ function _rankSeedName(p){
 // separately and still win; newly eligible players append underneath in this order.
 // ============================================================================
 function _rankTailAdp(pid){
-  try { if(typeof _adpFor === 'function'){ var v = _adpFor(pid); if(v != null) return v; } } catch(e){}
+  // TE_PREM_ADP_HONESTY_V1: _adpForSort, NEVER _adpFor — see the note at its definition.
+  try { if(typeof _adpForSort === 'function'){ var v = _adpForSort(pid); if(v != null) return v; } } catch(e){}
   return null;
 }
 function _rankTailCompare(a, b){
@@ -9037,27 +9038,71 @@ _byeLoad();
 // ADP restored per Matt 8/19 ("that feels like a mistake" that it was removed). NFC remains
 // FORBIDDEN (their terms); Yahoo draft_analysis is a possible later addition post-countersign.
 var _adpByPid = null;
+// ══ TE_PREM_ADP_HONESTY_V1 (2026-08-24 — Walter, per the Dude) ══
+// THE DUDE: "we're already lying on the site... we're acting like we calculate it
+// for TE premium and we don't." He was right, and the lie was exactly ONE entry on
+// the scoring box.
+//
+// WHAT IS TRUE, verified live against our own /nfl/adp/2026 route the same evening:
+// Sleeper publishes TEN separate ADP families out of its own draft rooms — adp_std,
+// adp_half_ppr, adp_ppr, adp_2qb, four adp_dynasty_* variants, adp_rookie, adp_idp.
+// STD, 1/2 PPR and PPR each read their OWN real Sleeper feed and are honest.
+// Proof, McCaffrey 2026-08-24: std 4.9 / half 5.2 / ppr 5.6 — matching the site
+// exactly. WE DO NOT CALCULATE ANY OF THESE. We fetch them.
+//
+// WHAT WAS FALSE: there is NO TE-premium family at Sleeper, so TE Prem was wired to
+// adp_ppr and the full-PPR number was shown under a TE Prem label. That is Bug #182
+// in one sentence.
+//
+// HIS RULING: TE Prem shows NOTHING and says why on hover. An admitted gap beats a
+// number wearing the wrong name. STD / 1/2 PPR / PPR are deliberately UNTOUCHED —
+// freezing them all at half PPR, which was the first instinct, would have put two
+// wrong numbers on the page to remove one.
 function _adpScoringBase(){
   var s = (typeof _scoringSystem !== 'undefined') ? _scoringSystem : 'half';
+  if(s === 'teprem') return null;          // Sleeper has no TE-premium ADP. Show nothing.
   if(s === 'std') return 'std';
-  if(s === 'ppr' || s === 'teprem') return 'ppr';
+  if(s === 'ppr') return 'ppr';
   return 'half_ppr';
 }
+function _adpDynActive(){
+  try { return (typeof _rankViewActive === 'function' && _rankViewActive() && typeof _rankSet !== 'undefined' && _rankSet === 'dynasty'); } catch(e){ return false; }
+}
 function _adpFieldForContext(){
-  var dyn = false;
-  try { dyn = (typeof _rankViewActive === 'function' && _rankViewActive() && typeof _rankSet !== 'undefined' && _rankSet === 'dynasty'); } catch(e){}
-  return (dyn ? 'adp_dynasty_' : 'adp_') + _adpScoringBase();
+  var base = _adpScoringBase();
+  if(base === null) return null;
+  return (_adpDynActive() ? 'adp_dynasty_' : 'adp_') + base;
 }
 function _adpFor(pid){
   if(!_adpByPid) return null;
+  var f = _adpFieldForContext();
+  if(!f) return null;                      // TE Prem: no honest field to read
   var row = _adpByPid[pid];
   if(!row) return null;
-  var v = Number(row[_adpFieldForContext()]);
+  var v = Number(row[f]);
+  return (isFinite(v) && v > 0) ? v : null;
+}
+// 🚨 SEED ORDERING MUST NOT FOLLOW THE SCORING BOX, AND THIS IS NOT A DETAIL.
+// RANK_TAIL_BY_ADP_V1 orders every unranked player by ADP. If it read _adpFor() it
+// would go blind the moment TE Prem was selected and the entire tail would fall back
+// to ALPHABETICAL — which is precisely Matt's 8/23 complaint ("it stops at J")
+// reintroduced, invisibly, on one dropdown setting. So seeding always reads a real
+// half-PPR number no matter what the user is looking at.
+// 🪨 DISPLAY is about honesty. ORDERING is about usefulness. Different jobs.
+function _adpForSort(pid){
+  if(!_adpByPid) return null;
+  var row = _adpByPid[pid];
+  if(!row) return null;
+  var v = Number(row[_adpDynActive() ? 'adp_dynasty_half_ppr' : 'adp_half_ppr']);
   return (isFinite(v) && v > 0) ? v : null;
 }
 function _adpCell(pid){
   var v = _adpFor(pid);
-  return (v == null) ? '<span class="placeholder">—</span>' : v.toFixed(1);
+  if(v != null) return v.toFixed(1);
+  if(_adpScoringBase() === null){
+    return '<span class="placeholder" title="Sleeper publishes no TE premium ADP. We show nothing rather than hand you another format&#39;s number under a TE Prem label.">—</span>';
+  }
+  return '<span class="placeholder">—</span>';
 }
 async function _adpLoad(){
   try {
