@@ -8566,9 +8566,36 @@ function _setWlNote(pid, text){
   if(_newNote.trim() && _newNote !== _prevNote){ _watchList[idx].note_saved_at = Date.now(); }
   else if(!_newNote.trim()){ delete _watchList[idx].note_saved_at; }
   // Persist locally right away so a typed note can never be lost to a refresh.
-  // The NAS still gets it through the normal Save button -> staging -> approve.
   try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
   renderWatchList();
+  // ── NOTE_AUTOSAVE_V1 (2026-08-25, the Dude) ──────────────────────────────────────────
+  // A note now reaches the NAS the moment the popup closes, exactly like an add, a remove,
+  // a clear, a drag and a tier change already did.
+  //
+  // 🪨 THIS WAS AN OMISSION, NOT A DESIGN. autoSaveToNflNAS() has been wired to every OTHER
+  // mutation on this list for months. Notes were simply never connected, and the comment that
+  // used to sit two lines above ("The NAS still gets it through the normal Save button ->
+  // staging -> approve") described that gap as though it were intentional. It has been deleted
+  // rather than left to mislead the next reader.
+  //
+  // HOW HE FOUND IT, worth recording because the question was better than any audit: he asked
+  // whether typing a note saved instantly or waited for a button. Tracing it showed notes were
+  // the ONLY thing on the list that waited -- and that there are THREE buttons saying "Save" on
+  // this page ("Save Note", the toolbar "Save", "Done Ranking") doing three different things.
+  // 🪨 A CONFUSING INTERFACE IS OFTEN A REAL DEFECT WEARING A COSTUME. He was not confused
+  // because he misunderstood it. He was confused because it was inconsistent.
+  //
+  // FAILURE IS NOT SILENT: autoSaveToNflNAS writes localStorage first (always succeeds), then
+  // reports "⚠ NAS auto-save failed (saved to this browser)" in the status bar if the NAS is
+  // unreachable -- which matters, because on 2026-08-25 the NAS was unreachable for seven hours.
+  //
+  // ⚠️ KNOWN, ACCEPTED: that function drops a call if one is already in flight (the
+  // _nflNasSaving / _nbaNasSaving guard returns early rather than queueing). Editing two notes
+  // inside the same round-trip could leave the second out of THAT post. It self-heals, because
+  // the next mutation of any kind posts the whole current list. Not worth a queue for a popup
+  // that saves once per close.
+  try { if(typeof autoSaveToNflNAS === 'function') autoSaveToNflNAS(); }
+  catch(e){ console.warn('[NOTE_AUTOSAVE_V1] note autosave failed:', e); }
 }
 // NOTE_POPUP_NFL_V1 (2026-08-21 evening, the Dude, straight off Matt's text) — the inline
 // one-line note inputs held "maybe enough to hold two words." Clicking a note now opens a
