@@ -726,7 +726,7 @@ table.watch-list thead tr.grouprow th.grp-fpts{padding:1px 2px;border-left:1px s
 
 table.watch-list thead th.col-stat{width:32px;text-align:right}  /* WIDTH_SHAVE_V1: matches the 32px colgroup floor */
 table.watch-list thead th.col-fpts{width:104px;text-align:center}  /* FPTS_CENTER_V1 (2026-08-21, the Dude): the td.col-fpts numbers were already centered (SCORING_ENGINE_NFL_V1); the header label stayed right-aligned and sat off-axis from its own numbers. Width here is vestigial -- the WIDTH_PAIRS 50px rule outranks it -- but the alignment applies. */  /* SCORING_ENGINE_NFL_V1: label + scoring box need more than the generic stat 38px under table-layout:fixed */
-table.watch-list tbody td.col-fpts{text-align:center}  /* SCORING_ENGINE_NFL_V1: the Dude's call off staging -- points read centered, not right-justified */
+table.watch-list tbody td.col-fpts{text-align:right}  /* DECIMAL_ALIGN_V1 (2026-08-25): was center, from FPTS_CENTER_V1 (2026-08-21, his call). REVERSED because CENTRED NUMBERS CAN NEVER ALIGN THEIR DECIMAL POINTS -- centring balances each string about its own middle, so 99.7 and 328.4 sit their points in different places however many decimals they carry. Right alignment is what actually makes the column scannable, which is the thing he asked for. The HEADER label stays centred over the scoring box (see th.col-fpts). */  /* SCORING_ENGINE_NFL_V1: the Dude's call off staging -- points read centered, not right-justified */
 /* STAT_HEADER_COLORS_V1 (2026-06-07) — two-tone green, applied to BOTH the header AND the
    data cells so each column reads as one color group. col-stat-a = fantasy + receiving
    (bright green), col-stat-b = passing + rushing (night green). */
@@ -794,7 +794,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 /* FROM_THE_LOGO_V1 — names clickable to open the player detail overlay */
 .player-name.ftl-clickable{cursor:pointer;}
 .player-name.ftl-clickable:hover{color:var(--turf);text-decoration:underline;}
-.stat-cell{font-weight:700;color:#22c55e;font-family:'Nunito Sans',sans-serif}
+.stat-cell{font-weight:700;color:#22c55e;font-family:'Nunito Sans',sans-serif;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1}  /* DECIMAL_ALIGN_V1 (2026-08-25) — THE QUIET THIRD PIECE, and without it the other two only half work. Nunito Sans ships PROPORTIONAL figures: a 1 is narrower than an 8. So even right-aligned with matching decimals, 111.1 and 888.8 land their points a hair apart and the column still reads crooked. Tabular figures force every digit to the same width. font-feature-settings is the belt-and-braces fallback for older engines. */
 .stat-zero{color:var(--text3);font-weight:400}
 
 /* ══════════ FROM THE LOGO — player detail overlay (FROM_THE_LOGO_V1, 2026-06-07) ══════════
@@ -7468,7 +7468,15 @@ function statCellOrDash(val, decimals){
   // change. A whole-number stat formatted with toFixed(1) showed a useless ".0"; drop
   // a trailing ".0" only — a real fraction like 12.5 is left untouched. Matches
   // baseball's no-junk-zero style. (On NFL this mainly cleans the half-PPR points col.)
-  if(decimals != null) formatted = formatted.replace(/\.0+$/, '');
+  /* DECIMAL_ALIGN_V1 (2026-08-25) — the strip that used to live here is GONE, deliberately.
+     It was STRIP_TRAILING_ZERO_V1 (2026-06-06, the Dude's own call, mirroring basketball) and it
+     removed a trailing ".0" so a whole number read "272" instead of "272.0".
+     REVERSED at Matt's request, and the REASON matters more than the request: a column is scanned
+     VERTICALLY. When one value drops its decimal it also changes width, the decimal point slides
+     out of the line, and the eye loses the column. Every value carrying exactly one decimal is what
+     puts the points in a straight line.
+     🪨 DO NOT "TIDY" THIS BACK. The junk zero is the entire point. It only affects FPts and the Avg
+     ratio columns -- every other stat column passes no decimals argument and stays whole. */
   return '<span class="stat-cell">' + formatted + '</span>';
 }
 function escapeHtml(s){
@@ -8952,7 +8960,9 @@ function _ftlStatCell(label, val, cls){
 function _ftlNum(v, dec){
   const n = Number(v);
   if(v == null || !isFinite(n) || n === 0) return null;
-  return (dec != null) ? n.toFixed(dec).replace(/\.0$/, '') : Math.round(n).toLocaleString();
+  return (dec != null) ? n.toFixed(dec) : Math.round(n).toLocaleString();   /* DECIMAL_ALIGN_V1 (2026-08-25): .replace(/\.0$/,'') removed. The card shows the same
+     numbers as the table and a value reading 272 in one place and 272.0 in the other is exactly the
+     kind of mismatch Matt finds. His call: show it in both. */
 }
 // CARD_YPC_YPR_V1 (2026-08-21 -- PC Walter, per the Dude): the player card's own ratio
 // formatter. YPC/YPR shipped as TABLE columns on 8/19 (YPC_YPR_V1) and never reached the
@@ -8960,7 +8970,7 @@ function _ftlNum(v, dec){
 // ".0" stripped -- and returns null for a missing/zero denominator OR a zero result, so
 // _ftlStatCell paints the same em-dash the card already shows for an empty stat. It calls
 // the very same _ratioNum the columns call, so the card and the row can never disagree.
-function _ftlRatio(yds, att){ var v = _ratioNum(yds, att); if(v == null || v === 0) return null; return v.toFixed(1).replace(/\.0+$/, ''); }
+function _ftlRatio(yds, att){ var v = _ratioNum(yds, att); if(v == null || v === 0) return null; return v.toFixed(1); }   /* DECIMAL_ALIGN_V1 (2026-08-25): trailing-zero strip removed, matches the table's Avg columns. Zero still returns null and renders as a dash -- his explicit call, zeros are NOT to become 0.0. */
 
 // ============================================================================
 // SCHEDULE_RESULTS_V1 (August 2, 2026 -- Walter, per the Dude).
