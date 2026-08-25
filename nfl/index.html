@@ -1088,6 +1088,10 @@ body.day-mode .tier-bracket-box.tier-armed::after {
 .cp-table tbody td{padding:6px 6px;border-bottom:1px solid rgba(255,255,255,0.04);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
 .cp-table tbody td.cp-left{text-align:left;}
 .cp-table tbody td.cp-col-year{font-weight:700;color:var(--turf);text-align:left;}
+/* CAREER_FPTS_FIRST_V1 (2026-08-24): the same gold the game log uses for FPTS, so the two
+   tables read as one family. --gold is already theme-aware (#f0a500 dark, #a16207 day), so
+   unlike the game log's rules this needs no separate day-mode override. */
+.cp-table thead th.cp-fpts,.cp-table tbody td.cp-fpts{color:var(--gold,#eab308);font-weight:800;}
 /* DRAG_POLISH_V1 (Aug 2, 2026, late night) -- undo + drop indicator. */
 #drop-indicator-bar{display:none;position:absolute;height:5px;background:var(--turf);border-radius:3px;z-index:9000;pointer-events:none;box-shadow:0 0 8px var(--turf);}
 #drop-indicator-pill{display:none;position:fixed;background:var(--turf);color:#0d1117;font-size:11px;font-weight:800;letter-spacing:0.04em;padding:3px 9px;border-radius:999px;z-index:9001;pointer-events:none;white-space:nowrap;}
@@ -8079,7 +8083,19 @@ function _cpColsFor(p){
   mid.forEach(function(m){ cols.push(statCol(m[0], m[1])); });
   // SCORING_ENGINE_NFL_V1: career FPts follows the active scoring system. Career rows carry only
   // pts_half_ppr + rec (CAREER_STAT_KEYS_NFL), so _fptsOf's derivation path does the math exactly.
-  cols.push({ label: 'FPts', render: function(r){ return _cpDec1(_fptsOf(r.stats, p)); }, sortVal: function(r){ return _fptsOf(r.stats, p); } });
+  // ── CAREER_FPTS_FIRST_V1 (2026-08-24, the Dude, meeting item #40) ──────────────
+  // "Model this screenshot and move fantasy points all the way to the left and shade
+  // it gold." The screenshot was the GAME LOG, which GAMELOG_FPTS_FIRST_V1 already
+  // arranged on 2026-08-22 as: WK · DATE · OPP · RESULT · FPTS · stats.
+  // 🪨 SO "ALL THE WAY LEFT" MEANS FIRST AMONG THE STATS, NOT COLUMN ONE. In the game
+  // log FPTS sits after the four LABEL columns; his screenshot was cropped so those
+  // were off-frame. The career table's labels are Year and Team, so FPts lands at
+  // index 2 — the same relative place — and the identifier columns keep leading.
+  // splice, not push. Index 2 also keeps the renderer's i<2 / i===0 / i===1 rules
+  // (left-align, year green, team left) pointing at exactly what they did before.
+  cols.splice(2, 0, { label: 'FPts', cls: 'cp-fpts',
+    render: function(r){ return _cpDec1(_fptsOf(r.stats, p)); },
+    sortVal: function(r){ return _fptsOf(r.stats, p); } });
   return cols;
 }
 
@@ -8134,7 +8150,7 @@ async function _cpLoad(pid, p){
 function _cpRenderRows(body, rows, cols, sortIdx, sortDir){
   let head = '<tr>';
   cols.forEach(function(c, i){
-    const cls = (i < 2 ? 'cp-left ' : '') + (sortIdx === i ? (sortDir === 'asc' ? 'cp-sort-asc' : 'cp-sort-desc') : '');
+    const cls = (i < 2 ? 'cp-left ' : '') + (c.cls ? c.cls + ' ' : '') + (sortIdx === i ? (sortDir === 'asc' ? 'cp-sort-asc' : 'cp-sort-desc') : '');
     const ind = sortIdx === i ? (sortDir === 'asc' ? '▲' : '▼') : '▲▼';
     head += '<th class="' + cls + '" data-ci="' + i + '">' + c.label + ' <span class="cp-sort-ind">' + ind + '</span></th>';
   });
@@ -8143,7 +8159,7 @@ function _cpRenderRows(body, rows, cols, sortIdx, sortDir){
   rows.forEach(function(r){
     tb += '<tr>';
     cols.forEach(function(c, i){
-      const cls = (i === 0) ? 'cp-col-year' : (i === 1 ? 'cp-left' : '');
+      const cls = ((i === 0) ? 'cp-col-year' : (i === 1 ? 'cp-left' : '')) + (c.cls ? ' ' + c.cls : '');
       tb += '<td class="' + cls + '">' + c.render(r) + '</td>';
     });
     tb += '</tr>';
