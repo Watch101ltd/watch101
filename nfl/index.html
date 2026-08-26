@@ -1126,7 +1126,22 @@ body.day-mode .tier-bracket-box.tier-armed::after {
 #undo-btn:disabled{opacity:0.4;cursor:default;}
 /* READONLY_V1 (Aug 2, 2026) -- one rule hides every admin control for fans. */
 body.readonly-mode .backend-only{display:none !important;}
-body.readonly-mode table.watch-list thead th.col-handle,body.readonly-mode table.watch-list tbody td.col-handle{display:none !important;}
+/* COLGROUP_SHIFT_FIX_V1 (2026-08-26, the Dude found it by comparing GitHub against Cloudflare) — THE BUG: this rule used to be display:none, and
+   display:none on a table cell REMOVES IT FROM THE TABLE'S COLUMN STRUCTURE. The <colgroup> still carried all 29 <col> elements,
+   so 27 visible cells mapped onto cols 1..28 and EVERY COLUMN AFTER THE HANDLE INHERITED THE WIDTH OF THE ONE TO ITS LEFT.
+   MEASURED live on the customer site, authored vs rendered: col-team 38 -> 152 (took col-player), col-bye 30 -> 38 (took col-team),
+   col-exp 30 -> 36, and the one he actually saw: col-adp 38 -> 240, because it inherited col-note. That is the "giant gap before ADP".
+   INVISIBLE ON GITHUB because nothing is hidden on the backend: 29 cells, 29 cols, aligned. Read-only was the only broken audience.
+   🪨 SAME SHAPE AS THE BUG RULE #15 WAS WRITTEN FOR — a header/body count mismatch shifting every column by one. Different
+   trigger (a HIDDEN cell, not a broken one), identical consequence.
+   THE FIX: keep the cell in the column structure and collapse it to nothing. display:table-cell is deliberate and load-bearing —
+   it overrides the .backend-only display:none at line ~1128, which would otherwise still apply to this cell. */
+body.readonly-mode table.watch-list colgroup col.col-handle{width:0 !important}
+body.readonly-mode table.watch-list thead th.col-handle,body.readonly-mode table.watch-list tbody td.col-handle{display:table-cell !important;width:0 !important;min-width:0 !important;max-width:0 !important;padding:0 !important;border:0 !important;overflow:hidden !important;visibility:hidden !important;font-size:0 !important;}
+/* COLGROUP_SHIFT_FIX_V1: col-action is LEFT AS display:none ON PURPOSE. It is the LAST column, so removing it from the structure shifts nothing
+   after it — there is nothing after it. Verified by measurement: with only the handle collapsed, every column returns to its
+   authored width. Do not "make this consistent" with the handle rule above; the asymmetry is the point, and collapsing this one
+   instead left a 4px sliver where display:none leaves none. ⚠ IF A COLUMN IS EVER ADDED AFTER Action, THIS RULE BECOMES THE BUG. */
 body.readonly-mode table.watch-list thead th.col-action,body.readonly-mode table.watch-list tbody td.col-action{display:none !important;}
 /* 🚨 LASTCHILD_LEAK_FIX_V2 (2026-08-25, the Dude found it: "it's not showing the tier titles" on the LIVE Cloudflare site).
    WAS `tbody td:last-child`. That is the SAME defect LASTCHILD_LEAK_FIX_V1 fixed on 2026-08-22 at the width rule
