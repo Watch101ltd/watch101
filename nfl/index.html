@@ -525,7 +525,9 @@ table.watch-list tbody .player-name{font-size:12px;font-weight:800}
 table.watch-list thead th.col-team{width:38px;text-align:right}
 table.watch-list thead th.col-bye{width:30px;text-align:right}  /* BYE_WEEK_COL_V1 */
 table.watch-list thead th.col-adp,table.watch-list tbody td.col-adp{width:38px;text-align:right}  /* ADP_COL_V1 */
-table.watch-list tbody td.col-bye{text-align:right}  /* BYE_WEEK_COL_V1 */
+table.watch-list tbody td.col-bye{text-align:left;padding-left:8px}  /* FIRST_CHAR_ALIGN_V1 (2026-08-26, the Dude) -- was text-align:right from BYE_WEEK_COL_V1. A single-digit bye sat one glyph right of a two-digit one, so 5 landed over the 4 of 14 and the eye had to hunt. Left-aligning puts every FIRST character on one vertical line. padding-left:8px re-centres the block in the 30px column so nothing visibly moved sideways -- measured: widest value "14" is 14.46px at body weight 700, content box is 24px, so 3 + (24-14.46)/2 = 8. */
+table.watch-list tbody td.col-team{text-align:left;padding-left:4px}  /* FIRST_CHAR_ALIGN_V1: same reason -- SF used to sit its S over the E of DET. 🪨 NOTE, and it is why the padding here is 4 and not 8: this column has NO SLACK. Widest code "WAS" measures 29.61px against a 32px content box, 2.39px spare. There is nothing to centre, so this is effectively a plain left-align. At font-weight 800 "WAS" would measure 32.49px and OVERFLOW the box -- pre-existing, not caused here, but do not add weight to this column. */
+table.watch-list tbody td.col-yrank{text-align:left;padding-left:10px}  /* FIRST_CHAR_ALIGN_V1: rank 1 used to sit over the 3 of 13. Left-aligned, 1 sits over the 1. padding-left:10px = 3 + (36 - 21.69)/2, widest "250" at weight 700. Holds a 4-digit rank too (10 + 28.9 = 38.9 < 42) if Yahoo ever emits one. */
 table.watch-list thead th.col-age{width:32px;text-align:right}
 table.watch-list thead th.col-exp{width:32px;text-align:right}
 table.watch-list thead th.col-delta{width:44px;text-align:right}
@@ -3078,7 +3080,7 @@ function _fitPlayerNamesIn(scopeSel){
 // YAHOO_DEF_RANKS_V1 (June 10, 2026 — PC Walter): optional field param. Default stays
 // 'yahoo_rank' (overall). The DEF tab passes 'yahoo_def_rank' — Yahoo's 1-32 rank AMONG
 // defenses — because DSTs never get an overall rank (kept null so pool sorts stay honest).
-function _rankCol_yrank(field){ var f = field || 'yahoo_rank'; return { key:'yrank', label:'Rank', headClass:'yh-rank', tdClass:'',
+function _rankCol_yrank(field){ var f = field || 'yahoo_rank'; return { key:'yrank', label:'Rank', headClass:'yh-rank', tdClass:'col-yrank',
   num:function(pid){ var v=_yahooLookupNum(pid,f); return v==null?Infinity:v; },
   render:function(pid){ var has=_yahooLookupNum(pid,f)!=null; return has ? _yahooLookupFmt(pid,f) : '<span class="placeholder">—</span>'; } }; }
 function _rankCol_yowned(){ return { key:'yowned', label:'Owned', headClass:'yh-owned', tdClass:'',
@@ -3563,7 +3565,7 @@ function _ftlToggleRankTypeTag(checkboxEl){
 function _rankViewActive(){
   try { var v = document.getElementById('rankings-view'); return !!(v && v.style.display !== 'none'); } catch(e){ return false; }
 }
-function _rankCol_team(){ return { key:'team', label:'Team', headClass:'col-team', tdClass:'',
+function _rankCol_team(){ return { key:'team', label:'Team', headClass:'col-team', tdClass:'col-team',
   num:function(pid){ var p=_playerDB[pid]||{}; return p.team || 'zzz'; },
   render:function(pid,p){ return (p && p.team) ? p.team : '<span class="placeholder">—</span>'; } }; }
 function _rankCol_exp(){ return { key:'exp', label:'Exp', headClass:'col-exp', tdClass:'',
@@ -3690,7 +3692,7 @@ function _rankColsFor(pos){
   var yr = _rankCol_yrank((pos === 'DEF') ? 'yahoo_def_rank' : undefined);
   yr.group = 'Y!';   // YAHOO_DEF_RANKS_V1 preserved
   yr.headClass = 'yh-rank col-yrank';   // ADP_COL_V1: zone divider moved to ADP, which now opens the market zone
-  yr.tdClass   = '';
+  yr.tdClass   = 'col-yrank';   // FIRST_CHAR_ALIGN_V1: was '' -- the rankings body cells carried no class, so every td.col-yrank rule silently skipped this surface. Same trap the FPts note two hundred lines up already warns about.
   // SLEEPER_SOURCE_LABEL_V1: ADP was constructed INLINE inside this array, so there was no reference to tag.
   // Lifted to its own variable for that reason only -- same object, same position in `lead`.
   var adp = _rankCol_adp();
@@ -4955,13 +4957,13 @@ function renderNflPlayers(){
     return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><div class="name-cell"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + '</div></td>' +   // INJ_TAG_V1 + FITNAMES_NFL_V1
-      '<td>' + team + '</td>' +
+      '<td class="col-team">' + team + '</td>' +   // FIRST_CHAR_ALIGN_V1: the team cell was a bare <td> on BOTH static surfaces, so td.col-team matched nothing. The width came from the colgroup; alignment cannot.
       '<td class="col-bye">' + _byeCell(pid) + '</td>' +   // BYE_WEEK_COL_V1
       '<td>' + age + '</td>' +
       // NFL_PLAYERS_PAGE_V1 — Yahoo rank + ownership (football HAS the Yahoo pipeline,
       // unlike NBA). Same lookup the watch list uses; placeholder class when no value.
       '<td class="col-adp col-zone-divider">' + _adpCell(pid) + '</td>' +   // ADP_COL_V1 (zone divider moved here: ADP now opens the market zone)
-      '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
+      '<td class="col-yrank' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " placeholder") + '">' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +   // FIRST_CHAR_ALIGN_V1: this cell emitted class="placeholder" OR no class attribute at all, so col-yrank could not simply be appended. Restructured so the class attribute is always present and placeholder is now a second class inside it -- td.placeholder still matches.
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       // CBS_OWNED_NFLPLAYERS_V1 (2026-06-17) — CBS rostered% column, same lookup the watch list uses.
       '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
@@ -5307,7 +5309,7 @@ function renderWatchList(){
       '<td class="col-rank">' + rank + '</td>' +
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><div class="name-cell"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _noteBadgeHtml(pid) + '</div></td>' +   // INJ_TAG_V1 + FITNAMES_NFL_V1 + COLPLAYER_CLASS_V1 (2026-08-21: this cell was class="left" ONLY, with no col-player -- which is exactly why the shared width rule had to reach for nth-child(4) in the first place. Now all three surfaces name the cell the same way.)
-      '<td>' + team + '</td>' +
+      '<td class="col-team">' + team + '</td>' +   // FIRST_CHAR_ALIGN_V1: the team cell was a bare <td> on BOTH static surfaces, so td.col-team matched nothing. The width came from the colgroup; alignment cannot.
       '<td class="col-bye">' + _byeCell(pid) + '</td>' +   // BYE_WEEK_COL_V1
       '<td>' + age + '</td>' +
       // EXP_FILL_V1 (2026-06-28) — fill the EXP column from Sleeper years_exp (0 = Rookie -> "R").
@@ -5318,7 +5320,7 @@ function renderWatchList(){
       _wlNoteCellHtml(pid) +   // WL_NOTES_V1 -- live Note column
       // YAHOO_DATA_V1: y!rank, y!owned cells. CBS_OWNED_V1: cbs owned cell (joins by name+team).
       '<td class="col-adp col-zone-divider">' + _adpCell(pid) + '</td>' +   // ADP_COL_V1 (zone divider moved here: ADP now opens the market zone)
-      '<td' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +
+      '<td class="col-yrank' + (_yahooLookupNum(pid, "yahoo_rank") != null ? "" : " placeholder") + '">' + _yahooLookupFmt(pid, "yahoo_rank") + '</td>' +   // FIRST_CHAR_ALIGN_V1: this cell emitted class="placeholder" OR no class attribute at all, so col-yrank could not simply be appended. Restructured so the class attribute is always present and placeholder is now a second class inside it -- td.placeholder still matches.
       '<td' + (_yahooLookupNum(pid, "roster_pct") != null ? "" : " class=\"placeholder\"") + '>' + _yahooLookupFmt(pid, "roster_pct", true) + '</td>' +
       '<td' + (_cbsLookupNum(pid) != null ? "" : " class=\"placeholder\"") + '>' + _cbsLookupFmt(pid) + '</td>' +
       '<td class="col-stat-a col-fpts col-zone-divider">' + statCellOrDash(_fptsOf(s, p), 1) + '</td>' +
