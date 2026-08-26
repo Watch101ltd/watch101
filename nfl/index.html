@@ -1441,6 +1441,18 @@ body.day-mode .lg-redname{color:#b91c1c;}
   font-size:14px;font-weight:600;
 }
 .empty-state strong{display:block;color:var(--text2);font-size:16px;margin-bottom:0.5rem}
+/* EMPTY_STATE_ALIGN_V1 (2026-08-25, the Dude off the live site: "displays way over on the right,
+   it's like hard to even notice it"). .empty-state already asked for text-align:center and was
+   LOSING. `table.watch-list tbody td` is more specific than a bare `.empty-state`, so the table's
+   own alignment won and the message was flung to the far right of a 29-column table.
+   🪨 THIRD TIME TODAY THE SAME SHAPE: a broad rule quietly beating the specific one that was
+   written for the job (see LASTCHILD_LEAK_FIX_V2 and DECIMAL_ALIGN_V1). Specificity is not a
+   detail, it decides which of two correct-looking rules actually runs.
+   LEFT, not centre, deliberately: this table is far wider than the screen, so "centred" is centred
+   in the TABLE and can sit off past the fold. The left edge is where the eye already is.
+   Scoped to td.empty-state so it cannot reach any other cell. Basketball was accidentally fine
+   (its cells default to left) and is made explicit here so a future width change cannot break it. */
+table.watch-list tbody td.empty-state{text-align:left}
 
 .remove-btn{
   background:transparent;border:1px solid #7f1d1d;color:#dc2626;
@@ -7476,7 +7488,23 @@ async function loadListFromStorage(){
   // localStorage fallback.
   try {
     const raw = localStorage.getItem(_wlStorageKey());  // NFL_MULTILIST_V1 — per-list key
-    if(!raw) return;
+    if(!raw){
+      // 🚨 WATCHLIST_PUBLISH_V1 FIX-UP (2026-08-25, found by the Dude on the live site minutes after
+      // the first attempt shipped). The customer wording added further down this function was placed
+      // BELOW this early return, and a CUSTOMER ALWAYS HITS IT: they have never edited anything, so
+      // localStorage is empty, the function gives up here, and the STATIC markup value on the
+      // #logo-sub div ("Not yet saved") simply stayed on screen. The fix was in a line customers
+      // never reached.
+      // 🪨 AN EARLY RETURN IS A BRANCH. Adding a line "in the fallback" is worthless if the fallback
+      // exits above it. Trace the path the affected user actually takes, not the one the code reads like.
+      try {
+        const _elE = document.getElementById('logo-sub');
+        if(_elE) _elE.textContent = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())
+          ? 'Not published yet'
+          : 'not yet saved';
+      } catch(_e){}
+      return;
+    }
     const arr = JSON.parse(raw);
     if(Array.isArray(arr)) _watchList = arr;
     // TEAL_STAMP_TWINS_V1: baseball's 404-fallback stamp - the browser-local save time.
