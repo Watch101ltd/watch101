@@ -720,7 +720,8 @@ table.watch-list thead tr.grouprow th.grp-blank{color:transparent;border-bottom:
 table.watch-list thead tr.grouprow th.grp-lbl{border-left:1px solid var(--gold)}
 table.watch-list thead tr.grouprow th.grp-fpts{padding:1px 2px;border-left:1px solid var(--gold)}
 table.watch-list thead tr.grouprow th.grp-y{color:#6001D2}    /* OWNERSHIP_GROUP_HEADERS_V1 (2026-08-26, the Dude): the SOURCE colours move up out of the leaf labels. Same purple that was on the 7px .y-prefix, now at the group row's 9px where it is actually legible. His call over matching the green of Passing/Rushing/Receiving -- the colour is what tells Yahoo data from CBS data at a glance. */
-table.watch-list thead tr.grouprow th.grp-cbs{color:#3b82f6}  /* OWNERSHIP_GROUP_HEADERS_V1: ditto, the CBS blue. */
+table.watch-list thead tr.grouprow th.grp-cbs{color:#3b82f6}
+table.watch-list thead tr.grouprow th.grp-slp{color:#ff9100;font-size:7px;letter-spacing:0}  /* SLEEPER_SOURCE_LABEL_V1 (2026-08-26, the Dude): "Sleeper" is a whole WORD, not a 2-3 character mark like Y! and CBS, so it is the one group label that steps down from the row's 9px/0.08em. MEASURED: at 9px/0.08em it needs 46.79px and ADP is 38px -- it would have forced ADP to 53 and handed back 15 of the 36px OWNERSHIP_GROUP_HEADERS_V1 had just reclaimed. At 7px/0 it needs 33.41px and fits the EXISTING column with 12% headroom, clip-free at every zoom 0.9 to 1.75. His call, off a side-by-side mock-up. 7px is not a new idea here either -- the retired .y-prefix was 7px in this same spot. #ff9100 is Sleeper's own brand orange, continuing the source-colour language. */  /* OWNERSHIP_GROUP_HEADERS_V1: ditto, the CBS blue. */
 #rankings-table .rk-note-badge{display:inline-block;font-size:12px;line-height:1;cursor:pointer;opacity:.85;transition:transform 120ms ease,opacity 120ms ease}
 #rankings-table .rk-note-badge:hover{opacity:1;transform:scale(1.15)}
 #rankings-table .rk-note-link{display:inline-block;font-size:11px;line-height:1;margin-left:4px;text-decoration:none;opacity:.85;flex-shrink:0}
@@ -1971,10 +1972,11 @@ document.addEventListener('DOMContentLoaded',function(){
     </colgroup>
     <thead>
       <!-- GROUP_HEADERS_NFL_V1 ported to the WATCH LIST 2026-08-21. 29 columns, counted with HTMLParser:
-           13 blank + Y! 2 + CBS 1 + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Action = 29.
+           12 blank + Sleeper 1 + Y! 2 + CBS 1 + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Action = 29.
            OWNERSHIP_GROUP_HEADERS_V1 (2026-08-26) split the old 16-wide blank: 13 still blank (handle..ADP), then the two source labels. -->
         <tr class="grouprow">
-          <th class="grp-blank" colspan="13"></th>
+          <th class="grp-blank" colspan="12"></th>
+          <th class="grp-lbl grp-slp" colspan="1">Sleeper</th>   <!-- SLEEPER_SOURCE_LABEL_V1: spans ADP -->
           <th class="grp-lbl grp-y" colspan="2">Y!</th>      <!-- OWNERSHIP_GROUP_HEADERS_V1: spans Rank + Owned -->
           <th class="grp-lbl grp-cbs" colspan="1">CBS</th>   <!-- OWNERSHIP_GROUP_HEADERS_V1: spans Owned -->
           <th class="grp-fpts" colspan="1"><select id="wl-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
@@ -2116,10 +2118,11 @@ document.addEventListener('DOMContentLoaded',function(){
       </colgroup>
       <thead>
         <!-- GROUP_HEADERS_NFL_V1 ported to the PLAYERS POOL 2026-08-21. 22 columns, counted with
-             HTMLParser: 6 blank + Y! 2 + CBS 1 + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Add = 22.
+             HTMLParser: 5 blank + Sleeper 1 + Y! 2 + CBS 1 + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Add = 22.
              OWNERSHIP_GROUP_HEADERS_V1 (2026-08-26) split the old 9-wide blank: 6 still blank (Pos..ADP). -->
           <tr class="grouprow">
-            <th class="grp-blank" colspan="6"></th>
+            <th class="grp-blank" colspan="5"></th>
+            <th class="grp-lbl grp-slp" colspan="1">Sleeper</th>   <!-- SLEEPER_SOURCE_LABEL_V1: spans ADP -->
             <th class="grp-lbl grp-y" colspan="2">Y!</th>      <!-- OWNERSHIP_GROUP_HEADERS_V1: spans Rank + Owned -->
             <th class="grp-lbl grp-cbs" colspan="1">CBS</th>   <!-- OWNERSHIP_GROUP_HEADERS_V1: spans Owned -->
             <th class="grp-fpts" colspan="1"><select id="np-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
@@ -3688,7 +3691,11 @@ function _rankColsFor(pos){
   yr.group = 'Y!';   // YAHOO_DEF_RANKS_V1 preserved
   yr.headClass = 'yh-rank col-yrank';   // ADP_COL_V1: zone divider moved to ADP, which now opens the market zone
   yr.tdClass   = '';
-  var lead = [team, _rankCol_bye(), age, exp, type, note, _rankCol_adp(), yr, yowned, cbs, fpts];   // PRIORITY_OFF_RANKINGS_V1 (2026-08-25, the Dude): priority is redundant on the rankings, so the column is out. _rankCol_priority() is left defined and every saved priority value still round-trips to the NAS -- putting it back is one word.   // BYE_WEEK_COL_V1 + ADP_COL_V1, watch-list order
+  // SLEEPER_SOURCE_LABEL_V1: ADP was constructed INLINE inside this array, so there was no reference to tag.
+  // Lifted to its own variable for that reason only -- same object, same position in `lead`.
+  var adp = _rankCol_adp();
+  adp.group = 'Sleeper';
+  var lead = [team, _rankCol_bye(), age, exp, type, note, adp, yr, yowned, cbs, fpts];   // PRIORITY_OFF_RANKINGS_V1 (2026-08-25, the Dude): priority is redundant on the rankings, so the column is out. _rankCol_priority() is left defined and every saved priority value still round-trips to the NAS -- putting it back is one word.   // BYE_WEEK_COL_V1 + ADP_COL_V1, watch-list order
   var stats;
   if(pos === 'DEF'){
     // DEF EXCEPTION (the Dude, 8/19): keep NFLVERSE_DEF_STATS_V1's block -- a DST row full of
@@ -3794,7 +3801,7 @@ function _rankColGroup(fixedHtml, cols){
   return out;   // ARRAY of class names; the caller makes real <col> elements from it
 }
 
-var _GRP_CLASS = { 'Y!':'grp-y', 'CBS':'grp-cbs' };   // OWNERSHIP_GROUP_HEADERS_V1: group label -> colour class. Absent = green, which is what the stat groups want.
+var _GRP_CLASS = { 'Sleeper':'grp-slp', 'Y!':'grp-y', 'CBS':'grp-cbs' };   // OWNERSHIP_GROUP_HEADERS_V1: group label -> colour class. Absent = green, which is what the stat groups want.
 function _rankGroupRow(cols, fixedCount){
   var cells = [];
   var run = null;              // the group currently being accumulated
