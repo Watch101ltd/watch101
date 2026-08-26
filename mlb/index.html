@@ -2231,6 +2231,49 @@ body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,
 </style>
 </head>
 <body>
+<!-- ═══════════════ MLB_SEASON_GATE_V1 (2026-08-26, the Dude) ═══════════════
+     Customers must NOT land on the unranked baseball site. They get a panel instead.
+     WHY IT IS KEYED ON HOSTNAME AND NOT A FLAG: the SAME FILE serves both audiences.
+     _isReadOnlyMode() already decides this everywhere else on the site (github = Matt's
+     backend, anything else = customer). This reuses that exact test, so MATT KEEPS THE
+     REAL PAGE on GitHub and only the Cloudflare customer view is gated.
+     WHY THE SCRIPT IS HERE AND NOT AT THE BOTTOM: _applyReadOnlyBodyClass() runs at
+     DOMContentLoaded, which is AFTER the page has painted. That would flash the broken
+     site for a moment, which is the one thing this is meant to prevent. This runs
+     synchronously as the body opens, before anything below it parses.
+     TO LIFT THE GATE FOR 2027: delete this whole block and the #mlb-gate div. Nothing
+     else in the file was touched. ═══════════════════════════════════════════════════ -->
+<style>
+html.mlb-gated, html.mlb-gated body { background:#0b0f14 !important; overflow:hidden !important; height:100% !important; }
+html.mlb-gated body > * { display:none !important; }
+html.mlb-gated body > #mlb-gate { display:flex !important; }
+#mlb-gate { position:fixed; inset:0; z-index:2147483000; display:none;
+  align-items:center; justify-content:center; text-align:center; padding:28px;
+  background:#0b0f14; color:#e5e7eb; font-family:'Nunito Sans',system-ui,sans-serif; }
+#mlb-gate .box { max-width:600px; }
+#mlb-gate .kicker { font-size:12px; font-weight:800; letter-spacing:.18em; text-transform:uppercase;
+  color:#64748b; margin:0 0 18px; }
+#mlb-gate h1 { font-size:clamp(24px,5vw,34px); line-height:1.15; font-weight:800; margin:0 0 16px; color:#4ade80; }
+#mlb-gate p { font-size:clamp(15px,2.4vw,18px); line-height:1.55; font-weight:600; color:#cbd5e1; margin:0 0 28px; }
+#mlb-gate a.back { display:inline-block; padding:12px 24px; border-radius:10px; background:#16a34a;
+  color:#04140a; font-weight:800; font-size:15px; text-decoration:none; }
+#mlb-gate a.back:hover { filter:brightness(1.12); }
+</style>
+<script>
+(function(){ try {
+  var h = (window.location && window.location.hostname || '').toLowerCase();
+  if (h.indexOf('github') === -1) {
+    document.documentElement.className += ' mlb-gated';
+  }
+} catch(e) {} })();
+</script>
+<div id="mlb-gate"><div class="box">
+  <p class="kicker">Watch101MLB</p>
+  <h1>Fantasy Baseball is coming in 2027</h1>
+  <p>Matt is building it for the new season. Check back before opening day.</p>
+  <a class="back" href="../">Back to Watch101</a>
+</div></div>
+<!-- ═══════════════ /MLB_SEASON_GATE_V1 ═══════════════ -->
 
 <script>
 /* EARLY THEME INIT — runs before any visible content paints.
