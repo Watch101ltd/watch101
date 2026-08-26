@@ -2720,6 +2720,12 @@ function showRankingsView(set){
     loadRankingsFromNAS();   // async: hydrates the new set, re-renders when done
   }
   renderRankings();
+  // SUBTITLE_ON_VIEW_SWITCH_V1 — the rankings are on screen NOW, so claim the shared teal line.
+  // Without this they keep whatever the watch-list loader wrote at page load.
+  try {
+    var _eSub = document.getElementById('logo-sub');
+    if(_eSub && window._rkTealText) _eSub.textContent = window._rkTealText;
+  } catch(_eSubErr){}
 }
 function switchRankPos(pos, btn){
   _rankPos = pos;
@@ -4236,25 +4242,41 @@ async function loadRankingsFromNAS(){
   // RANK_TEAL_V1 - write the teal line for the rankings view (baseball's stampWord
   // rule: env 'list' = Published:, staging = Staged: + [STAGING] badge).
   try {
+    // ── SUBTITLE_ON_VIEW_SWITCH_V1 (2026-08-25, the Dude: "it's showing the wrong message on the
+    // redraft rankings page... we have published the redraft rankings") ──────────────────
+    // WAS: this whole block only ran IF THE RANKINGS VIEW WAS ALREADY VISIBLE. At page load it never
+    // is — the watch list is — so the write was skipped, and showRankingsView() never came back to it.
+    // The rankings simply wore whatever the watch-list loader had left on the shared element.
+    //
+    // 🪵 THE LINE BELONGED TO THE ELEMENT, NOT TO THE VIEW. One #logo-sub, several writers, each
+    // assuming it spoke last. That is why this looked like a NEW bug tonight and was not: before the
+    // publish work it showed the rankings the WATCH LIST'S staging timestamp, the same defect wearing
+    // a less alarming sentence. Nobody noticed because a stale date looks plausible and 'Not published
+    // yet' on published rankings does not.
+    //
+    // Now the text is computed and STASHED on every load regardless of what is on screen, then applied
+    // (a) here when the rankings happen to be showing, and (b) by showRankingsView() on a switch.
+    // The reverse direction needs nothing: choosing a real list goes through switchActiveList, which
+    // reloads and rewrites the line on its way past.
+    var _setNm = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dynasty/Keeper Rankings' : 'Redraft Rankings';
+    var _txtRk;
+    if(_rkNewestLocal){
+      var _wRk = (_rkNewestEnv === 'list') ? 'Published:' : 'Staged:';
+      var _bRk = (_rkNewestEnv === 'list') ? '' : ' [STAGING]';
+      var _tsRk = (String(_rkNewestLocal).indexOf('T') > -1) ? new Date(_rkNewestLocal).toLocaleString() : _rkNewestLocal;
+      // Separator is a MIDDLE DOT, not an em dash: this string is public-facing and Rule #13 bans
+      // dashes there. It shipped with ' \u2014 ' until tonight, on the customer site.
+      _txtRk = _setNm + _bRk + ' \u00b7 ' + _wRk + ' ' + _tsRk;
+    } else {
+      _txtRk = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())
+        ? 'Not published yet'
+        : (_setNm + ': not yet saved');
+    }
+    window._rkTealText = _txtRk;   // stashed whether or not the view is up — this is the actual fix
     var _rvT = document.getElementById('rankings-view');
     if(_rvT && _rvT.style.display !== 'none'){
       var _elRk = document.getElementById('logo-sub');
-      if(_elRk){
-        var _setNm = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dynasty/Keeper Rankings' : 'Redraft Rankings';
-        if(_rkNewestLocal){
-          var _wRk = (_rkNewestEnv === 'list') ? 'Published:' : 'Staged:';
-          var _bRk = (_rkNewestEnv === 'list') ? '' : ' [STAGING]';
-          var _tsRk = (String(_rkNewestLocal).indexOf('T') > -1) ? new Date(_rkNewestLocal).toLocaleString() : _rkNewestLocal;
-          _elRk.textContent = _setNm + _bRk + ' \u2014 ' + _wRk + ' ' + _tsRk;
-        } else {
-          // WATCHLIST_PUBLISH_V1 (2026-08-25) — two fixes on one line. A customer got editor
-          // wording, AND this string carried an EM DASH on a page Matt and the public both see,
-          // which Constitution Rule #13 forbids on anything public-facing. Dash gone either way.
-          _elRk.textContent = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())
-            ? 'Not published yet'
-            : (_setNm + ': not yet saved');
-        }
-      }
+      if(_elRk) _elRk.textContent = _txtRk;
     }
   } catch(_te2){}
   if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankings();
