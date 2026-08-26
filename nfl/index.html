@@ -532,9 +532,9 @@ table.watch-list thead th.col-delta{width:44px;text-align:right}
 table.watch-list thead th.col-type{width:60px;text-align:right}
 table.watch-list thead th.col-priority{width:88px;text-align:right}
 table.watch-list thead th.col-note{width:240px;text-align:left}  /* WIDTH_SHAVE_V1 */
-table.watch-list thead th.col-yrank{width:44px;text-align:right}
-table.watch-list thead th.col-yowned{width:50px;text-align:right}
-table.watch-list thead th.col-cbsowned{width:50px;text-align:right}
+table.watch-list thead th.col-yrank{width:42px;text-align:right}   /* OWNERSHIP_GROUP_HEADERS_V1: "Y!Rank" needed 45.90px, "Rank" needs 35.73px (measured). 42 = 17% headroom. */
+table.watch-list thead th.col-yowned{width:52px;text-align:right}   /* OWNERSHIP_GROUP_HEADERS_V1: this rule said 50px while the colgroup rule said 64px -- they DISAGREED and the colgroup won. Both now say 52. */
+table.watch-list thead th.col-cbsowned{width:52px;text-align:right}   /* OWNERSHIP_GROUP_HEADERS_V1: same stale disagreement as above (50 vs 74). Both now say 52, identical to Y!Owned -- same label, same data, same width. */
 /* RANKINGS_NOTES_NFL_V1 (2026-06-29 — PC Walter, per Matt via the Dude): editable Note column +
    note badge on the rankings tabs, mirroring baseball's main-list Notes (same as the NBA build). */
 #rankings-table th.col-note,#rankings-table td.col-note{width:240px;max-width:240px;text-align:left;overflow:hidden}  /* WIDTH_SHAVE_V1: 160->240 with the shared note rule */
@@ -641,12 +641,12 @@ table.watch-list colgroup col.col-note{width:240px}
 table.watch-list thead tr th.col-note,table.watch-list tbody tr td.col-note{width:240px}  /* WIDTH_SHAVE_V1: 160->240, the Dude: give the reclaimed width to the notes -- "the note is supposed to be the big deal" (Matt, 8/21) */
 table.watch-list colgroup col.col-adp{width:38px}
 table.watch-list thead tr th.col-adp,table.watch-list tbody tr td.col-adp{width:38px}
-table.watch-list colgroup col.col-yrank{width:44px}
-table.watch-list thead tr th.col-yrank,table.watch-list tbody tr td.col-yrank{width:44px}
-table.watch-list colgroup col.col-yowned{width:64px}
-table.watch-list thead tr th.col-yowned,table.watch-list tbody tr td.col-yowned{width:64px}  /* YDS_WIDTH_V1 -> ARROW_JS_QUIET_V1: 58 fit at zoom 1.0 and wrapped at the viewer fit-zoom, where 9px text rounds wider. Headroom beats precision here. */
-table.watch-list colgroup col.col-cbsowned{width:74px}
-table.watch-list thead tr th.col-cbsowned,table.watch-list tbody tr td.col-cbsowned{width:74px}  /* YDS_WIDTH_V1 -> ARROW_JS_QUIET_V1: 64 fit at zoom 1.0 and wrapped at fractional fit-zoom. 74 holds label + hover arrow at any zoom. */
+table.watch-list colgroup col.col-yrank{width:42px}
+table.watch-list thead tr th.col-yrank,table.watch-list tbody tr td.col-yrank{width:42px}
+table.watch-list colgroup col.col-yowned{width:52px}
+table.watch-list thead tr th.col-yowned,table.watch-list tbody tr td.col-yowned{width:52px}  /* OWNERSHIP_GROUP_HEADERS_V1: 64 -> 52. "Owned" + hover arrow measures 44.81px; 52 is 16% headroom, the same margin the old 64px carried over "Y!Owned"'s 54.98px. */  /* YDS_WIDTH_V1 -> ARROW_JS_QUIET_V1: 58 fit at zoom 1.0 and wrapped at the viewer fit-zoom, where 9px text rounds wider. Headroom beats precision here. */
+table.watch-list colgroup col.col-cbsowned{width:52px}
+table.watch-list thead tr th.col-cbsowned,table.watch-list tbody tr td.col-cbsowned{width:52px}  /* OWNERSHIP_GROUP_HEADERS_V1: 74 -> 52, the single biggest reclaim on the page. The old comment blamed fit-zoom for 64px clipping; the real reason is that "CBS Owned" NEEDS 66.93px, so 64 was set BELOW its own label and never had a chance. With the word CBS lifted to the group row the label is 44.81px and 52 fits at every zoom 0.9 to 1.75, measured. */  /* YDS_WIDTH_V1 -> ARROW_JS_QUIET_V1: 64 fit at zoom 1.0 and wrapped at fractional fit-zoom. 74 holds label + hover arrow at any zoom. */
 table.watch-list colgroup col.col-fpts{width:50px}
 table.watch-list thead tr th.col-fpts,table.watch-list tbody tr td.col-fpts{width:50px}
 table.watch-list colgroup col.col-stat{width:32px}
@@ -719,6 +719,8 @@ table.watch-list thead tr.grouprow th{
 table.watch-list thead tr.grouprow th.grp-blank{color:transparent;border-bottom:1px solid transparent}
 table.watch-list thead tr.grouprow th.grp-lbl{border-left:1px solid var(--gold)}
 table.watch-list thead tr.grouprow th.grp-fpts{padding:1px 2px;border-left:1px solid var(--gold)}
+table.watch-list thead tr.grouprow th.grp-y{color:#6001D2}    /* OWNERSHIP_GROUP_HEADERS_V1 (2026-08-26, the Dude): the SOURCE colours move up out of the leaf labels. Same purple that was on the 7px .y-prefix, now at the group row's 9px where it is actually legible. His call over matching the green of Passing/Rushing/Receiving -- the colour is what tells Yahoo data from CBS data at a glance. */
+table.watch-list thead tr.grouprow th.grp-cbs{color:#3b82f6}  /* OWNERSHIP_GROUP_HEADERS_V1: ditto, the CBS blue. */
 #rankings-table .rk-note-badge{display:inline-block;font-size:12px;line-height:1;cursor:pointer;opacity:.85;transition:transform 120ms ease,opacity 120ms ease}
 #rankings-table .rk-note-badge:hover{opacity:1;transform:scale(1.15)}
 #rankings-table .rk-note-link{display:inline-block;font-size:11px;line-height:1;margin-left:4px;text-decoration:none;opacity:.85;flex-shrink:0}
@@ -768,8 +770,10 @@ table.watch-list tbody .stat-cell{font-size:11px}
    col-note and col-notebadge. Those declare widths for columns the watch list does not have, which is
    a different thing entirely from overriding the whole table's layout model. */
 /* Yahoo/CBS header accent prefixes */
-table.watch-list thead th .y-prefix{color:#6001D2;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
-table.watch-list thead th .cbs-prefix{color:#3b82f6;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
+/* RETIRED by OWNERSHIP_GROUP_HEADERS_V1 (2026-08-26). The .y-prefix and .cbs-prefix rules lived here and coloured a 7px "Y!" / "CBS"
+   INSIDE the leaf labels. Both spans are gone from the markup -- verified zero users before deleting -- and their colours now live on
+   tr.grouprow th.grp-y / .grp-cbs at 9px. Deleted rather than left in place: dead CSS naming a retired pattern is the thing a future
+   session finds in a search and reinstates in good faith. If you want the source colours, they are on the GROUP ROW now. */
 table.watch-list thead th .sort-arrow{opacity:0;font-size:8px;margin-left:0;float:left}  /* ARROW_ALIGN_V1 + YDS_WIDTH_V1: at rest the floated arrows read as stray glyphs between the tight columns (the Dude's screenshot), so they now appear on hover only -- the pointer cursor and titles still say "clickable", and every column stays sortable */  /* ARROW_ALIGN_V1 (2026-08-22, the Dude's eye): the in-flow arrow after the label was eating the cell's right edge, pushing every right-justified label ~12px left of its own numbers -- with 3-char labels in 32px columns the headers read as LEFT-justified. Floating the arrow to the cell's left lets the label hug the right edge exactly like the numbers below it. */
 table.watch-list thead th.left .sort-arrow{float:right;margin-right:0}  /* ARROW_ALIGN_V1: mirror image for the left-justified Player and Note headers -- label hugs left, arrow parks right */
 table.watch-list thead th[data-sort],table.watch-list thead th[data-npsort],table.watch-list thead th[data-ranksort]{cursor:pointer;user-select:none}
@@ -1967,9 +1971,12 @@ document.addEventListener('DOMContentLoaded',function(){
     </colgroup>
     <thead>
       <!-- GROUP_HEADERS_NFL_V1 ported to the WATCH LIST 2026-08-21. 29 columns, counted with HTMLParser:
-           16 blank + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Action. -->
+           13 blank + Y! 2 + CBS 1 + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Action = 29.
+           OWNERSHIP_GROUP_HEADERS_V1 (2026-08-26) split the old 16-wide blank: 13 still blank (handle..ADP), then the two source labels. -->
         <tr class="grouprow">
-          <th class="grp-blank" colspan="16"></th>
+          <th class="grp-blank" colspan="13"></th>
+          <th class="grp-lbl grp-y" colspan="2">Y!</th>      <!-- OWNERSHIP_GROUP_HEADERS_V1: spans Rank + Owned -->
+          <th class="grp-lbl grp-cbs" colspan="1">CBS</th>   <!-- OWNERSHIP_GROUP_HEADERS_V1: spans Owned -->
           <th class="grp-fpts" colspan="1"><select id="wl-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
           <th class="grp-lbl" colspan="2">Passing</th>
           <th class="grp-lbl" colspan="4">Rushing</th>
@@ -1990,9 +1997,9 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
         <th class="left col-note">Note</th>
         <th class="col-adp col-zone-divider" data-sort="adp" title="Average draft position, straight out of Sleeper’s own draft rooms. We do not calculate it. Follows the scoring box for STD, .5 PPR and PPR — each one a separate real Sleeper feed. Sleeper publishes NO TE premium ADP, so TE Prem shows nothing rather than another format’s number under the wrong label.">ADP <span class="sort-arrow">↕</span></th>
-        <th class="col-yrank" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
-        <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
-        <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
+        <th class="col-yrank" data-sort="yrank">Rank <span class="sort-arrow">↕</span></th>
+        <th class="col-yowned" data-sort="yowned">Owned <span class="sort-arrow">↕</span></th>
+        <th class="col-cbsowned" data-sort="cbsowned">Owned <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-a col-fpts col-zone-divider" data-sort="fpts">FPts <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b col-zone-divider" data-sort="payd">Yds <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-b" data-sort="patd">TD <span class="sort-arrow">↕</span></th>
@@ -2109,9 +2116,12 @@ document.addEventListener('DOMContentLoaded',function(){
       </colgroup>
       <thead>
         <!-- GROUP_HEADERS_NFL_V1 ported to the PLAYERS POOL 2026-08-21. 22 columns, counted with
-             HTMLParser: 9 blank + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Add. -->
+             HTMLParser: 6 blank + Y! 2 + CBS 1 + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Add = 22.
+             OWNERSHIP_GROUP_HEADERS_V1 (2026-08-26) split the old 9-wide blank: 6 still blank (Pos..ADP). -->
           <tr class="grouprow">
-            <th class="grp-blank" colspan="9"></th>
+            <th class="grp-blank" colspan="6"></th>
+            <th class="grp-lbl grp-y" colspan="2">Y!</th>      <!-- OWNERSHIP_GROUP_HEADERS_V1: spans Rank + Owned -->
+            <th class="grp-lbl grp-cbs" colspan="1">CBS</th>   <!-- OWNERSHIP_GROUP_HEADERS_V1: spans Owned -->
             <th class="grp-fpts" colspan="1"><select id="np-scoring" class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>
             <th class="grp-lbl" colspan="2">Passing</th>
             <th class="grp-lbl" colspan="4">Rushing</th>
@@ -2125,9 +2135,9 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-bye" data-npsort="bye" title="Bye week — BYE_WEEK_COL_V1">Bye <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
           <th class="col-adp col-zone-divider" data-npsort="adp" title="Average draft position, straight out of Sleeper’s own draft rooms. We do not calculate it. Follows the scoring box for STD, .5 PPR and PPR — each one a separate real Sleeper feed. Sleeper publishes NO TE premium ADP, so TE Prem shows nothing rather than another format’s number under the wrong label.">ADP <span class="sort-arrow">↕</span></th>
-          <th class="col-yrank" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
-          <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
-          <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
+          <th class="col-yrank" data-npsort="yrank">Rank <span class="sort-arrow">↕</span></th>
+          <th class="col-yowned" data-npsort="yowned">Owned <span class="sort-arrow">↕</span></th>
+          <th class="col-cbsowned" data-npsort="cbsowned">Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-a col-fpts col-zone-divider" data-npsort="fpts">FPts <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b col-zone-divider" data-npsort="payd">Yds <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-b" data-npsort="patd">TD <span class="sort-arrow">↕</span></th>
@@ -3065,15 +3075,15 @@ function _fitPlayerNamesIn(scopeSel){
 // YAHOO_DEF_RANKS_V1 (June 10, 2026 — PC Walter): optional field param. Default stays
 // 'yahoo_rank' (overall). The DEF tab passes 'yahoo_def_rank' — Yahoo's 1-32 rank AMONG
 // defenses — because DSTs never get an overall rank (kept null so pool sorts stay honest).
-function _rankCol_yrank(field){ var f = field || 'yahoo_rank'; return { key:'yrank', label:'Y!Rank', headClass:'yh-rank', tdClass:'',
+function _rankCol_yrank(field){ var f = field || 'yahoo_rank'; return { key:'yrank', label:'Rank', headClass:'yh-rank', tdClass:'',
   num:function(pid){ var v=_yahooLookupNum(pid,f); return v==null?Infinity:v; },
   render:function(pid){ var has=_yahooLookupNum(pid,f)!=null; return has ? _yahooLookupFmt(pid,f) : '<span class="placeholder">—</span>'; } }; }
-function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', headClass:'yh-owned', tdClass:'',
+function _rankCol_yowned(){ return { key:'yowned', label:'Owned', headClass:'yh-owned', tdClass:'',
   num:function(pid){ var v=_yahooLookupNum(pid,'roster_pct'); return v==null?-1:v; },
   render:function(pid){ var has=_yahooLookupNum(pid,'roster_pct')!=null; return has ? _yahooLookupFmt(pid,'roster_pct',true) : '<span class="placeholder">—</span>'; } }; }
 // OVERALL_RANK_V1 (2026-06-26) — CBS Owned column for the Overall rankings tab, matching the NFL
 // Players pool table. Reuses the same _cbsLookupNum/_cbsLookupFmt the watch list + pool use.
-function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Owned', headClass:'cbs-owned', tdClass:'',
+function _rankCol_cbsowned(){ return { key:'cbsowned', label:'Owned', headClass:'cbs-owned', tdClass:'',
   num:function(pid){ var v=_cbsLookupNum(pid); return v==null?-1:v; },
   render:function(pid){ var has=_cbsLookupNum(pid)!=null; return has ? _cbsLookupFmt(pid) : '<span class="placeholder">—</span>'; } }; }
 function _rankCol_age(){ return { key:'age', label:'Age', tdClass:'',
@@ -3669,7 +3679,13 @@ function _rankColsFor(pos){
   fpts.label       = 'FPts';
   fpts.headClass   = 'col-stat col-stat-a col-fpts col-zone-divider';
   fpts.tdClass     = 'col-stat-a col-fpts col-zone-divider';
-  var yr = _rankCol_yrank((pos === 'DEF') ? 'yahoo_def_rank' : undefined);   // YAHOO_DEF_RANKS_V1 preserved
+  // OWNERSHIP_GROUP_HEADERS_V1 (2026-08-26): tag the three market columns with their SOURCE so _rankGroupRow run-groups
+  // them into 'Y!' over Rank+Owned and 'CBS' over Owned -- exactly how Passing/Rushing/Receiving work.
+  // yr and yowned MUST stay adjacent in `lead` below or the Y! run splits into two cells.
+  yowned.group = 'Y!';
+  cbs.group    = 'CBS';
+  var yr = _rankCol_yrank((pos === 'DEF') ? 'yahoo_def_rank' : undefined);
+  yr.group = 'Y!';   // YAHOO_DEF_RANKS_V1 preserved
   yr.headClass = 'yh-rank col-yrank';   // ADP_COL_V1: zone divider moved to ADP, which now opens the market zone
   yr.tdClass   = '';
   var lead = [team, _rankCol_bye(), age, exp, type, note, _rankCol_adp(), yr, yowned, cbs, fpts];   // PRIORITY_OFF_RANKINGS_V1 (2026-08-25, the Dude): priority is redundant on the rankings, so the column is out. _rankCol_priority() is left defined and every saved priority value still round-trips to the NAS -- putting it back is one word.   // BYE_WEEK_COL_V1 + ADP_COL_V1, watch-list order
@@ -3778,6 +3794,7 @@ function _rankColGroup(fixedHtml, cols){
   return out;   // ARRAY of class names; the caller makes real <col> elements from it
 }
 
+var _GRP_CLASS = { 'Y!':'grp-y', 'CBS':'grp-cbs' };   // OWNERSHIP_GROUP_HEADERS_V1: group label -> colour class. Absent = green, which is what the stat groups want.
 function _rankGroupRow(cols, fixedCount){
   var cells = [];
   var run = null;              // the group currently being accumulated
@@ -3790,7 +3807,8 @@ function _rankGroupRow(cols, fixedCount){
       cells.push('<th class="grp-fpts" colspan="' + runLen + '">' +
                  '<select class="fpts-scoring-select" onclick="event.stopPropagation()" onchange="_scoringChanged(this.value)"></select></th>');
     } else if(run){
-      cells.push('<th class="grp-lbl" colspan="' + runLen + '">' + run + '</th>');
+      // OWNERSHIP_GROUP_HEADERS_V1: source groups carry a colour class; the stat groups (Passing/Rushing/Receiving) get none and stay green.
+      cells.push('<th class="grp-lbl' + (_GRP_CLASS[run] ? ' ' + _GRP_CLASS[run] : '') + '" colspan="' + runLen + '">' + run + '</th>');
     } else {
       cells.push('<th class="grp-blank" colspan="' + runLen + '"></th>');
     }
