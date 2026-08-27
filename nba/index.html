@@ -451,9 +451,15 @@ table.watch-list thead th.col-delta{width:44px;text-align:left}
 table.watch-list thead th.col-type{width:60px;text-align:left}
 table.watch-list thead th.col-priority{width:88px;text-align:left}
 table.watch-list thead th.col-note{width:144px;text-align:left}
-table.watch-list thead th.col-yrank,table.watch-list tbody td.col-yrank{width:54px;text-align:center}  /* FTX_ADP_V1: widened for 'Ftx ADP' label */
-table.watch-list thead th.col-yowned,table.watch-list tbody td.col-yowned{width:50px;text-align:center}
-table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned{width:50px;text-align:center}
+table.watch-list thead th.col-yrank,table.watch-list tbody td.col-yrank{width:52px;text-align:center}  /* FTX_ADP_V1 widened for 'Ftx ADP'; OWN_GROUP_HEADERS_NBA_V1 54→52 — leaf label is now just 'ADP', width floor is the VALUES: 243.3=29.1px + pad 12 + 3 = 44.1 ≤ 52−10 pads = 42?? NO — see pad note below: pad dropped to 12 so 29.1+12=41.1 ≤ 42 content. Measured. */
+table.watch-list thead th.col-yowned,table.watch-list tbody td.col-yowned{width:48px;text-align:center}  /* OWN_GROUP_HEADERS_NBA_V1: 50→48, see cbsowned note */
+table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned{width:48px;text-align:center}  /* OWN_GROUP_HEADERS_NBA_V1: 50→48 — brand moved to the band, leaf is just "Owned" (37.8px with arrow at 9px/800, 11% headroom at 48, football's proven floor) */
+/* ── OWN_GROUP_HEADERS_NBA_V1 (2026-08-27, Phase 2 of Matt's 8/27 header ask; football's
+   OWNERSHIP_GROUP_HEADERS_V1 pattern, ported) — brand band above ADP / Owned / Owned. ── */
+tr.own-group-row th{padding:2px 3px;font-size:8px;letter-spacing:0.08em;text-align:center;border-bottom:none;background:var(--surface);}
+tr.own-group-row th.own-grp{border-bottom:1px solid var(--border2);}
+tr.own-group-row th.own-grp-blank{border-bottom:none;}
+body.view-matts-take #nbamain-wrap tr.own-group-row{display:none !important;}  /* the trio is CSS-hidden in Satten Says; colspans cannot follow CSS, so the whole band goes with it */
 /* ── ALIGN_PASS_NBA_V1 (2026-08-27, Bug #196 — Matt on the 8/27 call: "this is left justify,
    this is right justified", the Dude: "They're off. Yep.") ─────────────────────────────────
    Basketball's port of football's 8/26-8/27 alignment work, and it is SMALLER than football's
@@ -467,9 +473,9 @@ table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned{wi
    the character alignment changes, not where the column visually sits. Headers stay centered.
    These land AFTER the width rules above on purpose — same specificity, later wins. */
 table.watch-list tbody td.col-exp{text-align:left;padding-left:9px}       /* label R/1/10 — first chars stack. content 26, widest "12"=13.2 → 3+(26−13.2)/2≈9 */
-table.watch-list tbody td.col-yrank{text-align:right;padding-right:14px}  /* Ftx ADP: right-aligned so the decimal points stack. STATBOX_CENTER_NBA_V1 retune 10→14: center the TYPICAL 4-glyph value ("11.9"=22.4px → 3+(44−22.4)/2≈14) rather than the rare widest; "243.3" (29.1) still fits (29.1+14=43.1≤44), sitting ~3px left of center. The Dude's page-read beat the widest-value math. */
-table.watch-list tbody td.col-yowned{text-align:right;padding-right:12px} /* percents — the % signs and units digits stack. content 48, "100%"=30.2 → 3+(48−30.2)/2≈12. NOTE: football's Owned columns still carry the centered defect (flagged 8/26, never ruled) — basketball now leads; port back on his word. */
-table.watch-list tbody td.col-cbsowned{text-align:right;padding-right:21px} /* content 59, base right pad 7 → 7+(59−30.2)/2≈21 */
+table.watch-list tbody td.col-yrank{text-align:right;padding-right:12px}  /* OWN_GROUP_HEADERS_NBA_V1 retune 14→12 for the 52px column: content 42, typical "11.9"=22.4 centers at 3+(42−22.4)/2≈13→12 (rounded down so the widest 243.3=29.1 fits: 29.1+12=41.1≤42). */
+table.watch-list tbody td.col-yowned{text-align:right;padding-right:9px}  /* OWN_GROUP_HEADERS_NBA_V1 retune for 48px: content 42, "100%"=30.2 → 3+(42−30.2)/2≈9. */
+table.watch-list tbody td.col-cbsowned{text-align:right;padding-right:11px}  /* OWN_GROUP_HEADERS_NBA_V1 retune for 48px: content 38 (3+7 divider pads), 7+(38−30.2)/2≈11. */
 /* RANKINGS_NOTES_NBA_V1 (2026-06-29 — PC Walter, per Matt via the Dude): editable Note column +
    note badge on the rankings tabs, mirroring baseball's main-list Notes. */
 #rankings-table th.col-note,#rankings-table td.col-note{width:160px;max-width:160px;text-align:left;overflow:hidden}
@@ -1803,6 +1809,7 @@ document.addEventListener('DOMContentLoaded',function(){
 <div class="table-wrap" id="nbamain-wrap">
   <table class="watch-list">
     <thead>
+      <tr class="own-group-row"><th class="own-grp-blank" colspan="11"></th><th class="own-grp">Ftx</th><th class="own-grp"><span class="y-prefix">Y!</span></th><th class="own-grp"><span class="cbs-prefix">CBS</span></th></tr><!-- OWN_GROUP_HEADERS_NBA_V1: no trailing cells on purpose — the stat columns get no cell in this row, so CSS-hidden view-mode columns can never desync a colspan (the #192 shape). -->
       <tr>
         <th class="col-handle">☰</th>
         <th class="col-rank" data-sort="rank">Rank <span class="sort-arrow">↕</span></th>
@@ -1815,9 +1822,9 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-type" data-sort="type">Type <span class="sort-arrow">↕</span></th>
         <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
         <th class="left col-note">Note</th>
-        <th class="col-yrank col-zone-divider" data-sort="yrank" title="Fantrax ADP (2026-27), current as of 8/27 — replaces Y!Rank until the Yahoo pipeline is fixed (Bug #194)">Ftx ADP <span class="sort-arrow">↕</span></th>
-        <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
-        <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
+        <th class="col-yrank col-zone-divider" data-sort="yrank" title="Fantrax ADP (2026-27), current as of 8/27 — replaces Y!Rank until the Yahoo pipeline is fixed (Bug #194)">ADP <span class="sort-arrow">↕</span></th>
+        <th class="col-yowned" data-sort="yowned">Owned <span class="sort-arrow">↕</span></th>
+        <th class="col-cbsowned" data-sort="cbsowned">Owned <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info col-cat-always col-zone-divider" data-sort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info col-cat-always" data-sort="min" title="Minutes per game — informational, not a scoring category">MIN <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info col-zone-divider col-cat13" data-sort="fgm" title="Field goals made per game — informational in 9-cat, a scoring category in 13-cat">FGM <span class="sort-arrow">↕</span></th>
@@ -1919,15 +1926,16 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="table-wrap" id="nbaplayers-wrap">
     <table class="watch-list" id="nba-players-table">
       <thead>
+        <tr class="own-group-row"><th class="own-grp-blank" colspan="4"></th><th class="own-grp">Ftx</th><th class="own-grp"><span class="y-prefix">Y!</span></th><th class="own-grp"><span class="cbs-prefix">CBS</span></th></tr><!-- OWN_GROUP_HEADERS_NBA_V1: no trailing cells on purpose — the stat columns get no cell in this row, so CSS-hidden view-mode columns can never desync a colspan (the #192 shape). -->
         <tr>
           <th class="col-pos" data-npsort="pos">Pos <span class="sort-arrow">↕</span></th>
           <th class="left col-player" data-npsort="name">Player <span class="sort-arrow">↕</span></th>
           <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
           <!-- OWNERSHIP_COLS_NBA_V1 (2026-06-26) — first col REPURPOSED to Fantrax ADP by FTX_ADP_V1 (2026-08-27, Bug #194); Y!Owned/CBS Owned unchanged. -->
-          <th class="col-yrank col-zone-divider" data-npsort="yrank" title="Fantrax ADP (2026-27), current as of 8/27 — replaces Y!Rank until the Yahoo pipeline is fixed (Bug #194)">Ftx ADP <span class="sort-arrow">↕</span></th>
-          <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
-          <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
+          <th class="col-yrank col-zone-divider" data-npsort="yrank" title="Fantrax ADP (2026-27), current as of 8/27 — replaces Y!Rank until the Yahoo pipeline is fixed (Bug #194)">ADP <span class="sort-arrow">↕</span></th>
+          <th class="col-yowned" data-npsort="yowned">Owned <span class="sort-arrow">↕</span></th>
+          <th class="col-cbsowned" data-npsort="cbsowned">Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info col-zone-divider" data-npsort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info" data-npsort="min" title="Minutes per game — informational, not a scoring category">MIN <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info col-zone-divider" data-npsort="fgm" title="Field goals made per game — informational in 9-cat, a scoring category in 13-cat">FGM <span class="sort-arrow">↕</span></th>
@@ -2036,6 +2044,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="table-wrap" id="nbarankings-wrap">
     <table class="watch-list" id="rankings-table">
       <thead>
+        <tr id="rankings-group-row"></tr><!-- OWN_GROUP_HEADERS_NBA_V1: filled by _rankRenderHead, colspans COMPUTED from the filtered column array so view modes can never desync it -->
         <tr id="rankings-head-row"></tr>
       </thead>
       <tbody id="rankings-body">
@@ -5162,13 +5171,13 @@ function _rankCol_min(){ return { key:'min', label:'MIN', tdClass:'col-stat-info
 // for the NBA Rankings tabs, matching the Watch List. NO data pipeline yet (no Yahoo API, no CBS scrape
 // for NBA) — these render em-dash placeholders for now, exactly like the Watch List does. When the data
 // layer ships, swap the render() bodies to read the real lookups (and wire num() for sorting).
-function _rankCol_yrank(){ return { key:'yrank', label:'Ftx ADP', headClass:'col-yrank col-zone-divider', tdClass:'col-yrank col-zone-divider',   // FTX_ADP_V1: was Y!Rank
+function _rankCol_yrank(){ return { key:'yrank', label:'ADP', group:'Ftx', headClass:'col-yrank col-zone-divider', tdClass:'col-yrank col-zone-divider',   // FTX_ADP_V1: was Y!Rank. OWN_GROUP_HEADERS_NBA_V1: brand lives in the group band now
   num:function(pid){ var f=_ftxFor(pid); return f?parseFloat(f.a):Infinity; },
   render:function(pid){ var f=_ftxFor(pid); return f?f.a:'—'; } }; }
-function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', headClass:'col-yowned', tdClass:'col-yowned',
+function _rankCol_yowned(){ return { key:'yowned', label:'Owned', group:'Y!', headClass:'col-yowned', tdClass:'col-yowned',   // OWN_GROUP_HEADERS_NBA_V1
   num:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):-1; },
   render:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Math.round(y.roster_pct)+'%':'—'; } }; }
-function _rankCol_cbsowned(){ return { key:'cbsowned', label:'CBS Owned', headClass:'col-cbsowned', tdClass:'col-cbsowned',
+function _rankCol_cbsowned(){ return { key:'cbsowned', label:'Owned', group:'CBS', headClass:'col-cbsowned', tdClass:'col-cbsowned',   // OWN_GROUP_HEADERS_NBA_V1
   num:function(pid){ var v=_cbsForNum(pid); return v==null?-1:v; },   // owned%: higher=better, missing sinks
   render:function(pid){ var v=_cbsForNum(pid); return v==null?'—':v+'%'; } }; }
 // ── RANKINGS_NOTES_NBA_V1 (2026-06-29) ───────────────────────────────────────
@@ -5560,6 +5569,24 @@ function _rankRenderHead(cols){
            c.label + ' <span class="sort-arrow" style="opacity:.4">↕</span></th>';
   }).join('');
   headRow.innerHTML = fixed + statHeads;
+  // OWN_GROUP_HEADERS_NBA_V1 (2026-08-27): the brand band above ADP/Owned/Owned. Colspans are
+  // COMPUTED from the same filtered cols array as the header row — run-length over the .group
+  // property, leading ungrouped columns fold into the blank, and the row STOPS after the last
+  // grouped column (stat columns get no cell, so nothing can desync — the #192 lesson). The
+  // grouped trio must stay ADJACENT in _rankColsFor or a run splits into two cells.
+  var groupRow = document.getElementById('rankings-group-row');
+  if(groupRow){
+    var GRP_BRAND = { 'Ftx': 'Ftx', 'Y!': '<span class="y-prefix">Y!</span>', 'CBS': '<span class="cbs-prefix">CBS</span>' };
+    var lead = 5, gi = 0, cells = '', any = false;
+    while(gi < cols.length && !cols[gi].group){ lead++; gi++; }
+    while(gi < cols.length && cols[gi].group){
+      var g = cols[gi].group, span = 0;
+      while(gi < cols.length && cols[gi].group === g){ span++; gi++; }
+      cells += '<th class="own-grp" colspan="' + span + '">' + (GRP_BRAND[g] || g) + '</th>';
+      any = true;
+    }
+    groupRow.innerHTML = any ? ('<th class="own-grp-blank" colspan="' + lead + '"></th>' + cells) : '';
+  }
 }
 // ── AV_COL_NBA_V1 (2026-08-22) — Auction Value, ported from football at the Dude's request ──
 // A box the user TYPES a dollar number into, RANKINGS ONLY, sitting between Rank and Pos.
