@@ -7719,11 +7719,20 @@ function fitTables(){
         // look no matter how tight the columns got. Now: fits at natural size, packed left, blank
         // space on the right on wide screens -- the Rotoworld look Matt showed on the 8/21 call.
         // zoom was already reset to '1' above; leave it there. SHRINK below still works unchanged.
+        wrap.style.overflowX = '';   // SCROLL_FALLBACK_NFL_V1: fits — clear scroll state
         return;
       }
       let scale = avail / natural;
-      if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; } // SHRINK, clamped
+      // SCROLL_FALLBACK_NFL_V1 (2026-08-27, Bug #195 twin — mirrored from basketball the same
+      // hour, per the standing back-to-back rule). Football's wraps carry the same
+      // overflow:visible sticky-header tradeoff, so the same amputation is latent here; the
+      // tables merely happen to fit at >=0.70 today. When the shrink clamps at the floor, that
+      // wrap flips to overflow-x:auto inline so a scrollbar exists (sticky header degrades only
+      // in that state — scroll beats invisible). Cleared whenever the table fits.
+      var _clamped = false;
+      if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; _clamped = true; }
       table.style.zoom = scale.toFixed(4);
+      wrap.style.overflowX = _clamped ? 'auto' : '';
     });
   });
 }
