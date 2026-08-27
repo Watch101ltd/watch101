@@ -1824,10 +1824,10 @@ document.addEventListener('DOMContentLoaded',function(){
            NBA builds this from WL_LISTS at runtime; football's stays static for now, one more parity
            item for the list. -->
       <optgroup label="LISTS">
-      <option value="integrity-nfl">⭐ List of Integrity</option>
-      <option value="ffpc-redraft-nfl">🏈 FFPC Re-Draft</option>
-      <option value="sfb16-nfl">🐠 #SFB16</option>
-      <option value="empire-nfl">✌️ Empire</option>
+      <option value="integrity-nfl">⭐ List of Integrity · 12 Team .5 PPR · 192</option>
+      <option value="ffpc-redraft-nfl">🏈 FFPC Re-Draft · 12 Team PPR + TE Prem · 192</option>
+      <option value="sfb16-nfl">🐠 #SFB16 · 12 Team Superflex · 240</option>
+      <option value="empire-nfl">✌️ Empire · 14 Team Dynasty · 364</option>
       </optgroup>
       <optgroup label="RANKINGS">
       <option value="dynasty-nfl">👑 Dynasty/Keeper Rankings</option>
@@ -5629,10 +5629,25 @@ function _phoneTierWrapRank(ids, cards){
 // from baseball's MULTILIST_V1, mirrored from the NBA build same session. LIST_ID is now a let that
 // follows the active list, so every existing save/load path (autoSaveToNflNAS, loadListFromStorage,
 // the manual Save button) keys to the active list with no further changes.
+// NFL_LIST_LABELS_V1 (2026-08-27 -- the Dude's call). The dropdown used to read just
+// "List of Integrity" / "FFPC Re-Draft" etc. He compared it to basketball, where every
+// entry states its shape ("12 Team Daily 9-Cat \u00b7 192"), and called football "very generic...
+// add more detail so you know exactly what the lists are just by glancing at the title."
+// Brand names KEPT and the shape appended; basketball drops the brand name, football does not,
+// because "List of Integrity" also heads the page and the dropdown would be the one place it
+// vanished. To match basketball exactly, delete the name and keep the half after the first dot.
+//
+// \u26a0\ufe0f WHERE 192 COMES FROM, because it is NOT what it looks like. The 8/3 tape has Matt
+// saying "192 total players" and it is a BASKETBALL conversation start to finish (nine cat,
+// point guard/shooting guard/util, and the "same for this one" is the WEEKLY nba list, not FFPC).
+// Football's bench size has never been stated by Matt; the spec said BENCH TBD for a reason.
+// **192 HERE IS THE DUDE'S OWN RULING**, on his arithmetic: 12 teams x 16 roster spots. Sound,
+// but it is his call, not a quote. If Matt ever contradicts it, Matt wins and this is the line
+// to change. SFB16's 240 and Empire's 364 DO come from Matt and are on the tape.
 const WL_LISTS = [
-  { id: 'integrity-nfl',    folder: 'Integrity',    name: 'List of Integrity', emoji: '⭐', tag: 'The flagship 101', specs: '12 TEAMS \u00b7 .5 PPR \u00b7 STARTERS: 1QB 2RB 3WR 1FLEX 1DEF \u00b7 BENCH TBD', blurb: 'The flagship Watch101 NFL list and the home base for the regular rankings. Twelve teams, half PPR, redraft, built as close to normal league settings as it gets: one QB, two RBs, three WRs, a flex and a defense. If you only follow one list, follow this one. No kicker advice here or anywhere on this site \u2014 you might as well roll dice against a wall.' },   // LIST_BLURBS_V1 (2026-08-20, from Matt's 8/19 tape)
+  { id: 'integrity-nfl',    folder: 'Integrity',    name: 'List of Integrity', emoji: '⭐', tag: 'The flagship 101', specs: '12 TEAMS \u00b7 .5 PPR \u00b7 STARTERS: 1QB 2RB 3WR 1FLEX 1DEF \u00b7 16 ROSTER SPOTS \u00b7 192 PLAYERS ROSTERED', blurb: 'The flagship Watch101 NFL list and the home base for the regular rankings. Twelve teams, half PPR, redraft, built as close to normal league settings as it gets: one QB, two RBs, three WRs, a flex and a defense. If you only follow one list, follow this one. No kicker advice here or anywhere on this site \u2014 you might as well roll dice against a wall.' },   // LIST_BLURBS_V1 (2026-08-20, from Matt's 8/19 tape)
   { id: 'dynasty-nfl',      folder: 'Dynasty',      name: 'Dynasty/Keeper Rankings',      emoji: '👑', tag: 'The long game, ranked deep', blurb: 'Keepers, rookies and building blocks, valued over a multi-season horizon rather than one week of scores. Ranked rather than capped at 101, because the names that decide a deep keeper league live at the edges.' },   // NFL_RANKINGS_PARITY_V1 (2026-08-05): now a rankings set; folder untouched, old Dynasty list data preserved on the NAS
-  { id: 'ffpc-redraft-nfl', folder: 'FFPC-ReDraft', name: 'FFPC Re-Draft',     emoji: '🏈', tag: 'FFPC re-draft', specs: '12 TEAMS \u00b7 PPR + TE PREMIUM \u00b7 STARTERS: 1QB 2RB 2WR 1TE 2FLEX 1DEF 1K \u00b7 BENCH TBD', blurb: 'The FFPC re-draft league \u2014 the big-money one. Twelve teams, full PPR with TIGHT END PREMIUM: every TE catch scores 1.5, which quietly rewires the whole position\u2019s value. Starters run one QB, two RBs, two WRs, a TE and TWO flexes, so lineups reach deeper than a standard league. This list opens on the TE Prem scoring by default.' },   // LIST_BLURBS_V1
+  { id: 'ffpc-redraft-nfl', folder: 'FFPC-ReDraft', name: 'FFPC Re-Draft',     emoji: '🏈', tag: 'FFPC re-draft', specs: '12 TEAMS \u00b7 PPR + TE PREMIUM \u00b7 STARTERS: 1QB 2RB 2WR 1TE 2FLEX 1DEF 1K \u00b7 16 ROSTER SPOTS \u00b7 192 PLAYERS ROSTERED', blurb: 'The FFPC re-draft league \u2014 the big-money one. Twelve teams, full PPR with TIGHT END PREMIUM: every TE catch scores 1.5, which quietly rewires the whole position\u2019s value. Starters run one QB, two RBs, two WRs, a TE and TWO flexes, so lineups reach deeper than a standard league. This list opens on the TE Prem scoring by default.' },   // LIST_BLURBS_V1
   { id: 'sfb16-nfl',        folder: 'SFB16',        name: '#SFB16',            emoji: '🐠', tag: 'Scott Fish Bowl 16', specs: '12 TEAMS \u00b7 20 ROSTER SPOTS (8 FLEX + 2 SUPERFLEX + 10 BENCH, NO IR) \u00b7 240 PLAYERS ROSTERED', blurb: 'Scott Fish Bowl 16 \u2014 the giant industry charity tournament, where half the analysts you read are playing too. Twelve teams and rules like nowhere else: ten starters that are nearly all flexes (eight flex plus two superflex), ten bench spots, no injured reserve, and a bonus-heavy scoring system all its own \u2014 which is why this list deliberately does NOT model the points. Every league is named after a video game; Matt\u2019s is the NBA 2K Series, on Sleeper.' },   // LIST_BLURBS_V1
   { id: 'empire-nfl',       folder: 'Empire',       name: 'Empire',            emoji: '✌️', tag: 'The Empire league', specs: '14 TEAMS \u00b7 26 ROSTER SPOTS (10 STARTERS + 13 BENCH + 3 TAXI) \u00b7 364 PLAYERS ROSTERED', blurb: 'The deep one: a fourteen-team DYNASTY league on Sleeper. Starters go one QB, two RBs, two WRs, a TE, two flexes, a superflex and a defense \u2014 then THIRTEEN bench spots and a three-man taxi squad for stashing rookies (call one up and you drop a man; the taxi seat stays empty until next season). Four hundred plus rostered players means the names that decide this league barely exist in shallower ones.' },   // LIST_BLURBS_V1
 ];
