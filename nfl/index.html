@@ -10256,6 +10256,15 @@ async function loadYahooData(){
   // (Option C on the Football To-Do List — 4-6 hour future session).
   const yahooIdToSleeperPid = {};
   const nameTeamToSleeperPid = {};
+  // YAHOO_NAMEPOS_MATCH_V3 (2026-08-27, Bug #193 follow-up). The football server
+  // does NOT emit a team field (verified in server.js: it pushes name, player_key,
+  // yahoo_player_id, yahoo_rank, roster_pct, roster_delta, eligible_positions,
+  // display_position, injury_status -- and nothing else). So yp.team is ALWAYS
+  // undefined here and the 'precise name|TEAM' branch below is dead code on this
+  // sport. POSITION is the disambiguator we actually have. Values are ARRAYS so a
+  // key claimed by two Sleeper players is visibly ambiguous instead of silently
+  // last-write-wins.
+  const namePosToSleeperPids = {};
   if(_playerDB){
     for(const sleeperPid in _playerDB){
       const rec = _playerDB[sleeperPid];
@@ -10267,6 +10276,11 @@ async function loadYahooData(){
       const teamKey = (rec.team || '').toUpperCase();
       if(nameKey && teamKey){
         nameTeamToSleeperPid[nameKey + '|' + teamKey] = sleeperPid;
+      }
+      // YAHOO_NAMEPOS_MATCH_V3
+      const posKey = (rec.position || '').toUpperCase();
+      if(nameKey && posKey){
+        (namePosToSleeperPids[nameKey + '|' + posKey] ||= []).push(sleeperPid);
       }
     }
   }
@@ -10354,14 +10368,24 @@ async function loadYahooData(){
           // is UNAMBIGUOUS: collect every candidate and take it only if there
           // is exactly one. Two candidates means we cannot tell them apart
           // without a team, and no rank is better than another man's rank.
-          const prefix = ypNameKey + '|';
-          const candidates = [];
-          for(const k in nameTeamToSleeperPid){
-            if(k.indexOf(prefix) === 0){ candidates.push(nameTeamToSleeperPid[k]); }
+          // YAHOO_NAMEPOS_MATCH_V3: position first. DeVonta Smith the receiver and
+          // Devonta Smith the cornerback share a name and nothing else, and Yahoo
+          // tells us WR vs CB on every record.
+          const ypPos = (yp.display_position || '').toUpperCase();
+          const posHits = ypPos ? (namePosToSleeperPids[ypNameKey + '|' + ypPos] || []) : [];
+          const posUniq = [...new Set(posHits)];
+          if(posUniq.length === 1){
+            sleeperPid = posUniq[0];   // name + position, unambiguous
+          } else {
+            const prefix = ypNameKey + '|';
+            const candidates = [];
+            for(const k in nameTeamToSleeperPid){
+              if(k.indexOf(prefix) === 0){ candidates.push(nameTeamToSleeperPid[k]); }
+            }
+            const uniq = [...new Set(candidates)];
+            if(uniq.length === 1){ sleeperPid = uniq[0]; }
+            else if(uniq.length > 1){ nameAmbiguousSkipped++; }
           }
-          const uniq = [...new Set(candidates)];
-          if(uniq.length === 1){ sleeperPid = uniq[0]; }
-          else if(uniq.length > 1){ nameAmbiguousSkipped++; }
         }
         if(sleeperPid){ matchedByNameTeam++; matchSource = 'name'; }
       }
