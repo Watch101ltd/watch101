@@ -456,10 +456,12 @@ table.watch-list thead th.col-yowned,table.watch-list tbody td.col-yowned{width:
 table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned{width:48px;text-align:center}  /* OWN_GROUP_HEADERS_NBA_V1: 50→48 — brand moved to the band, leaf is just "Owned" (37.8px with arrow at 9px/800, 11% headroom at 48, football's proven floor) */
 /* ── OWN_GROUP_HEADERS_NBA_V1 (2026-08-27, Phase 2 of Matt's 8/27 header ask; football's
    OWNERSHIP_GROUP_HEADERS_V1 pattern, ported) — brand band above ADP / Owned / Owned. ── */
-tr.own-group-row th{padding:2px 3px;font-size:8px;letter-spacing:0.08em;text-align:center;border-bottom:none;background:var(--surface);}
-tr.own-group-row th.own-grp{border-bottom:1px solid var(--border2);}
-tr.own-group-row th.own-grp-blank{border-bottom:none;}
-body.view-matts-take #nbamain-wrap tr.own-group-row{display:none !important;}  /* the trio is CSS-hidden in Satten Says; colspans cannot follow CSS, so the whole band goes with it */
+table.watch-list tr.own-group-row th{padding:2px 3px;font-size:8px;letter-spacing:0.08em;text-align:center;border-bottom:none;background:var(--surface);}  /* OWN_GROUP_HEADERS_NBA_V2: selector carries table.watch-list ON PURPOSE — the th.col-zone-divider rule higher up is (0,2,3) and sets text-align:left; a bare tr.own-group-row th was (0,1,2) and LOST, which left-parked the zone labels. This ties at (0,2,3) and wins by coming later. */
+table.watch-list tr.own-group-row th.own-grp{border-bottom:1px solid var(--border2);}
+table.watch-list tr.own-group-row th.own-grp-blank{border-bottom:none;}
+body.view-matts-take #nbamain-wrap tr.own-group-row,
+body.view-nine-cat #nbamain-wrap tr.own-group-row,
+body.view-thirteen-cat #nbamain-wrap tr.own-group-row{display:none !important;}  /* OWN_GROUP_HEADERS_NBA_V2: the static band's colspans cannot follow CSS-hidden columns, so it hides in EVERY compact mode on the static surfaces. The rankings band is computed per render and keeps working in all modes. */
 /* ── ALIGN_PASS_NBA_V1 (2026-08-27, Bug #196 — Matt on the 8/27 call: "this is left justify,
    this is right justified", the Dude: "They're off. Yep.") ─────────────────────────────────
    Basketball's port of football's 8/26-8/27 alignment work, and it is SMALLER than football's
@@ -1809,7 +1811,7 @@ document.addEventListener('DOMContentLoaded',function(){
 <div class="table-wrap" id="nbamain-wrap">
   <table class="watch-list">
     <thead>
-      <tr class="own-group-row"><th class="own-grp-blank" colspan="11"></th><th class="own-grp">Ftx</th><th class="own-grp"><span class="y-prefix">Y!</span></th><th class="own-grp"><span class="cbs-prefix">CBS</span></th></tr><!-- OWN_GROUP_HEADERS_NBA_V1: no trailing cells on purpose — the stat columns get no cell in this row, so CSS-hidden view-mode columns can never desync a colspan (the #192 shape). -->
+      <tr class="own-group-row"><th class="own-grp-blank" colspan="11"></th><th class="own-grp col-zone-divider">Ftx</th><th class="own-grp"><span class="y-prefix">Y!</span></th><th class="own-grp"><span class="cbs-prefix">CBS</span></th><th class="own-grp col-zone-divider" colspan="2">GAMES</th><th class="own-grp col-zone-divider" colspan="3">FG</th><th class="own-grp col-zone-divider" colspan="3">FT</th><th class="own-grp col-zone-divider" colspan="3">3PT</th><th class="own-grp col-zone-divider" colspan="8">PRODUCTION</th></tr><!-- OWN_GROUP_HEADERS_NBA_V2: FULL band, edge to edge like football's — the V1 trio-only band read as a floating strip (the Dude: "Doesn't look great"). Zone spans mirror the col-zone-divider zones. The Action/Add column gets no cell. In any view mode that CSS-hides columns this row hides entirely (colspans cannot follow CSS) — see the view-mode rule near the own-group-row styles. -->
       <tr>
         <th class="col-handle">☰</th>
         <th class="col-rank" data-sort="rank">Rank <span class="sort-arrow">↕</span></th>
@@ -1926,7 +1928,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="table-wrap" id="nbaplayers-wrap">
     <table class="watch-list" id="nba-players-table">
       <thead>
-        <tr class="own-group-row"><th class="own-grp-blank" colspan="4"></th><th class="own-grp">Ftx</th><th class="own-grp"><span class="y-prefix">Y!</span></th><th class="own-grp"><span class="cbs-prefix">CBS</span></th></tr><!-- OWN_GROUP_HEADERS_NBA_V1: no trailing cells on purpose — the stat columns get no cell in this row, so CSS-hidden view-mode columns can never desync a colspan (the #192 shape). -->
+        <tr class="own-group-row"><th class="own-grp-blank" colspan="4"></th><th class="own-grp col-zone-divider">Ftx</th><th class="own-grp"><span class="y-prefix">Y!</span></th><th class="own-grp"><span class="cbs-prefix">CBS</span></th><th class="own-grp col-zone-divider" colspan="2">GAMES</th><th class="own-grp col-zone-divider" colspan="3">FG</th><th class="own-grp col-zone-divider" colspan="3">FT</th><th class="own-grp col-zone-divider" colspan="3">3PT</th><th class="own-grp col-zone-divider" colspan="8">PRODUCTION</th></tr><!-- OWN_GROUP_HEADERS_NBA_V2: FULL band, edge to edge like football's — the V1 trio-only band read as a floating strip (the Dude: "Doesn't look great"). Zone spans mirror the col-zone-divider zones. The Action/Add column gets no cell. In any view mode that CSS-hides columns this row hides entirely (colspans cannot follow CSS) — see the view-mode rule near the own-group-row styles. -->
         <tr>
           <th class="col-pos" data-npsort="pos">Pos <span class="sort-arrow">↕</span></th>
           <th class="left col-player" data-npsort="name">Player <span class="sort-arrow">↕</span></th>
@@ -5496,28 +5498,28 @@ function _rankColsFor(pos){
   age.headClass  = 'col-age';
   note.headClass = 'left col-note';
   return [ team, age, exp, type, note, _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(),   // PRIORITY_OFF_RANKINGS_V1 (2026-08-25): prio dropped, twin of the football change
-    _rankCol_gp(),
-    _rankCol_min(),
+    _rankGrp(_rankCol_gp(),'GAMES'),
+    _rankGrp(_rankCol_min(),'GAMES'),
     // RANK_VIEW_MODES_NBA_V1 (2026-08-27): cat9/cat13 memberships appended, copied character
     // for character from the watch-list header markup (the generated-from-NBA_CATEGORIES set),
     // so the two tables can never disagree about what counts in which format.
-    _rankStatCol('fgm','FGM','fgm','col-stat-info col-zone-divider col-cat13'),
-    _rankStatCol('fga','FGA','fga','col-stat-info'),
-    _rankPctCol('fgpct','FG%','fgm','fga','col-stat-a col-cat9 col-cat13'),
-    _rankStatCol('ftm','FTM','ftm','col-stat-info col-zone-divider col-cat13'),
-    _rankStatCol('fta','FTA','fta','col-stat-info'),
-    _rankPctCol('ftpct','FT%','ftm','fta','col-stat-a col-cat9 col-cat13'),
-    _rankStatCol('tpm','3PM','tpm','col-stat-a col-zone-divider col-cat9 col-cat13'),
-    _rankStatCol('tpa','3PA','tpa','col-stat-info'),
-    _rankPctCol('tppct','3P%','tpm','tpa','col-stat-info col-cat13'),
-    _rankStatCol('pts','PTS','pts','col-stat-a col-zone-divider col-cat9 col-cat13'),
-    _rankStatCol('reb','REB','reb','col-stat-a col-cat9'),
-    _rankStatCol('oreb','ORB','oreb','col-stat-info col-cat13'),
-    _rankStatCol('dreb','DRB','dreb','col-stat-info col-cat13'),
-    _rankStatCol('ast','AST','ast','col-stat-a col-cat9 col-cat13'),
-    _rankStatCol('stl','STL','stl','col-stat-a col-cat9 col-cat13'),
-    _rankStatCol('blk','BLK','blk','col-stat-a col-cat9 col-cat13'),
-    _rankStatCol('to','TO','to','col-stat-a col-cat9 col-cat13') ]
+    _rankGrp(_rankStatCol('fgm','FGM','fgm','col-stat-info col-zone-divider col-cat13'),'FG'),
+    _rankGrp(_rankStatCol('fga','FGA','fga','col-stat-info'),'FG'),
+    _rankGrp(_rankPctCol('fgpct','FG%','fgm','fga','col-stat-a col-cat9 col-cat13'),'FG'),
+    _rankGrp(_rankStatCol('ftm','FTM','ftm','col-stat-info col-zone-divider col-cat13'),'FT'),
+    _rankGrp(_rankStatCol('fta','FTA','fta','col-stat-info'),'FT'),
+    _rankGrp(_rankPctCol('ftpct','FT%','ftm','fta','col-stat-a col-cat9 col-cat13'),'FT'),
+    _rankGrp(_rankStatCol('tpm','3PM','tpm','col-stat-a col-zone-divider col-cat9 col-cat13'),'3PT'),
+    _rankGrp(_rankStatCol('tpa','3PA','tpa','col-stat-info'),'3PT'),
+    _rankGrp(_rankPctCol('tppct','3P%','tpm','tpa','col-stat-info col-cat13'),'3PT'),
+    _rankGrp(_rankStatCol('pts','PTS','pts','col-stat-a col-zone-divider col-cat9 col-cat13'),'PRODUCTION'),
+    _rankGrp(_rankStatCol('reb','REB','reb','col-stat-a col-cat9'),'PRODUCTION'),
+    _rankGrp(_rankStatCol('oreb','ORB','oreb','col-stat-info col-cat13'),'PRODUCTION'),
+    _rankGrp(_rankStatCol('dreb','DRB','dreb','col-stat-info col-cat13'),'PRODUCTION'),
+    _rankGrp(_rankStatCol('ast','AST','ast','col-stat-a col-cat9 col-cat13'),'PRODUCTION'),
+    _rankGrp(_rankStatCol('stl','STL','stl','col-stat-a col-cat9 col-cat13'),'PRODUCTION'),
+    _rankGrp(_rankStatCol('blk','BLK','blk','col-stat-a col-cat9 col-cat13'),'PRODUCTION'),
+    _rankGrp(_rankStatCol('to','TO','to','col-stat-a col-cat9 col-cat13'),'PRODUCTION') ]
     // RANK_VIEW_MODES_NBA_V1: the view filter is applied HERE, at the single source of the
     // column array, so the header, every body row, the sort lookup and the empty-state
     // colspans all agree BY CONSTRUCTION. Columns a view drops are never built at all --
@@ -5555,6 +5557,8 @@ function _rankViewKeeps(c){
   var set = (mode === 'thirteen-cat') ? _RANK_VIEW_STATS.cat13 : _RANK_VIEW_STATS.cat9;
   return set.indexOf(c.key) !== -1;
 }
+// OWN_GROUP_HEADERS_NBA_V2: tag a column def with its band group. Groups must stay ADJACENT.
+function _rankGrp(col, g){ col.group = g; return col; }
 // ── /RANK_VIEW_MODES_NBA_V1 helpers ──
 function _rankRenderHead(cols){
   var headRow = document.getElementById('rankings-head-row');
@@ -5576,13 +5580,14 @@ function _rankRenderHead(cols){
   // grouped trio must stay ADJACENT in _rankColsFor or a run splits into two cells.
   var groupRow = document.getElementById('rankings-group-row');
   if(groupRow){
-    var GRP_BRAND = { 'Ftx': 'Ftx', 'Y!': '<span class="y-prefix">Y!</span>', 'CBS': '<span class="cbs-prefix">CBS</span>' };
+    var GRP_BRAND = { 'Ftx': 'Ftx', 'Y!': '<span class="y-prefix">Y!</span>', 'CBS': '<span class="cbs-prefix">CBS</span>', 'GAMES':'GAMES', 'FG':'FG', 'FT':'FT', '3PT':'3PT', 'PRODUCTION':'PRODUCTION' };   // OWN_GROUP_HEADERS_NBA_V2: full band
     var lead = 5, gi = 0, cells = '', any = false;
     while(gi < cols.length && !cols[gi].group){ lead++; gi++; }
     while(gi < cols.length && cols[gi].group){
       var g = cols[gi].group, span = 0;
       while(gi < cols.length && cols[gi].group === g){ span++; gi++; }
-      cells += '<th class="own-grp" colspan="' + span + '">' + (GRP_BRAND[g] || g) + '</th>';
+      var _dv = (cols[gi - span].headClass || '').indexOf('col-zone-divider') !== -1 ? ' col-zone-divider' : '';   // OWN_GROUP_HEADERS_NBA_V2: orange zone line continues through the band
+      cells += '<th class="own-grp' + _dv + '" colspan="' + span + '">' + (GRP_BRAND[g] || g) + '</th>';
       any = true;
     }
     groupRow.innerHTML = any ? ('<th class="own-grp-blank" colspan="' + lead + '"></th>' + cells) : '';
