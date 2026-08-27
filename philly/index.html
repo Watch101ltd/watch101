@@ -471,6 +471,60 @@ body.readonly-mode .backend-only{display:none !important;}
 </style>
 </head>
 <body>
+<!-- ═══════════════ PHILLY_GATE_V1 (2026-08-26, the Dude) ═══════════════
+     Same job and the same mechanism as MLB_SEASON_GATE_V1 on the baseball page:
+     customers must not land on a list that is not finished. They get a panel.
+
+     KEYED ON HOSTNAME, NOT A FLAG, because the SAME FILE serves both audiences.
+     _isReadOnlyMode() already draws this line everywhere else on the site
+     (github = Matt's backend, anything else = customer), so MATT KEEPS THE REAL
+     PAGE and only the Cloudflare customer view is gated.
+
+     RUNS AT THE TOP OF <body> ON PURPOSE. _applyReadOnlyBodyClass() fires at
+     DOMContentLoaded, which is after the page has painted, so hooking there
+     would flash the unfinished list for a moment. That flash is the exact thing
+     this exists to prevent. This runs synchronously as the body opens.
+
+     ⚑ /phood/ IS A REDIRECT TO /philly/, so it is covered by this and needs no
+     gate of its own. Nothing else points at the Philly list.
+
+     NO DATE IN THE COPY, deliberately. Baseball could promise 2027 because a
+     season is a fixed date. Philly has no such anchor and a missed date reads
+     worse than none. "Coming soon" also matches the homepage tile.
+
+     TO LIFT THE GATE: delete this whole block and the #philly-gate div. Nothing
+     else in the file was touched. ═══════════════════════════════════════════ -->
+<style>
+html.philly-gated, html.philly-gated body { background:#0b0f14 !important; overflow:hidden !important; height:100% !important; }
+html.philly-gated body > * { display:none !important; }
+html.philly-gated body > #philly-gate { display:flex !important; }
+#philly-gate { position:fixed; inset:0; z-index:2147483000; display:none;
+  align-items:center; justify-content:center; text-align:center; padding:28px;
+  background:#0b0f14; color:#e5e7eb; font-family:'Nunito Sans',system-ui,sans-serif; }
+#philly-gate .box { max-width:600px; }
+#philly-gate .kicker { font-size:12px; font-weight:800; letter-spacing:.18em; text-transform:uppercase;
+  color:#64748b; margin:0 0 18px; }
+#philly-gate h1 { font-size:clamp(24px,5vw,34px); line-height:1.15; font-weight:800; margin:0 0 16px; color:#e34a4a; }
+#philly-gate p { font-size:clamp(15px,2.4vw,18px); line-height:1.55; font-weight:600; color:#cbd5e1; margin:0 0 28px; }
+#philly-gate a.back { display:inline-block; padding:12px 24px; border-radius:10px; background:#c8102e;
+  color:#fff; font-weight:800; font-size:15px; text-decoration:none; }
+#philly-gate a.back:hover { filter:brightness(1.12); }
+</style>
+<script>
+(function(){ try {
+  var h = (window.location && window.location.hostname || '').toLowerCase();
+  if (h.indexOf('github') === -1) {
+    document.documentElement.className += ' philly-gated';
+  }
+} catch(e) {} })();
+</script>
+<div id="philly-gate"><div class="box">
+  <p class="kicker">Watch101Philly</p>
+  <h1>Watch101Philly is coming soon</h1>
+  <p>Matt is putting the list together. Check back soon.</p>
+  <a class="back" href="../">Back to Watch101</a>
+</div></div>
+<!-- ═══════════════ /PHILLY_GATE_V1 ═══════════════ -->
 
 <script>
 /* EARLY THEME INIT — runs before any visible content paints.
