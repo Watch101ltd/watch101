@@ -2081,11 +2081,27 @@ function fitTables(){
         // spread-out look no matter how tight the columns got. No amount of column work could win
         // against it. Now: fits at natural size, packed LEFT, blank space on the right on wide screens.
         // zoom was already reset to '1' above; leave it there. The SHRINK path below is unchanged.
+        wrap.style.overflowX = '';   // SCROLL_FALLBACK_NBA_V1: fits — clear any leftover scroll state
         return;
       }
       let scale = avail / natural;
-      if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; } // SHRINK, clamped → scroll if still too wide
+      // SCROLL_FALLBACK_NBA_V1 (2026-08-27, Bug #195, per the Dude — "scroll beats invisible").
+      // The engine's contract always said "below the floor the wrap side-scrolls," but
+      // NBA_STICKY_HEADERS_V1 set these wraps to overflow:visible ON THE SAME DAY the engine
+      // arrived (6/9), because overflow-x:auto traps position:sticky. That killed the fallback:
+      // any table wider than viewport/0.70 was amputated on the right with no scrollbar anywhere
+      // (body is overflow-x:hidden). Matt hit it first on Dynasty rankings on his MacBook.
+      // FIX: only when the shrink CLAMPS at the floor, flip THAT wrap to overflow-x:auto inline
+      // (beats the stylesheet's overflow:visible) so a scrollbar exists and every column is
+      // reachable. Known, accepted degradation IN THAT STATE ONLY: the sticky header pins to the
+      // wrap instead of the viewport, so it scrolls away vertically — scroll beats invisible.
+      // When the table fits (the normal case on the Dude's monitor), the inline style is cleared
+      // and sticky headers behave exactly as before. Do NOT "fix" this by lowering the floor:
+      // RANK_FLOOR_060_V1 tried that 8/20 and was retired 8/22 — zoom is the wrong lever for width.
+      var _clamped = false;
+      if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; _clamped = true; }
       table.style.zoom = scale.toFixed(4);
+      wrap.style.overflowX = _clamped ? 'auto' : '';
     });
   });
 }
