@@ -10280,13 +10280,24 @@ async function loadYahooData(){
   // the namesake ~rank 714). The star matched correctly by yahoo_id (32692 -> 6794), but
   // the namesake had no yahoo_id, fell to the name fallback, which resolved "justin
   // jefferson" back to the SAME pid 6794 and overwrote rank 11 with rank 714. Result: the
-  // star sorted to ~634th and fell off the top-200 render = "missing #11". Guarding by-id
-  // claims fixes every duplicate-name case at once.
-  const claimedByYahooId = new Set();
+  // star sorted to ~634th and fell off the top-200 render = "missing #11".
+  // ~~Guarding by-id claims fixes every duplicate-name case at once.~~ ⚠️ THAT LAST
+  // SENTENCE WAS WRONG AND IT COST BUG #193 ON 2026-08-27. It only covers pids won by
+  // an ID match. DeVonta Smith's Sleeper record carries NO yahoo_id, so BOTH his
+  // records took the name path, nothing claimed anything, and the cornerback (rank
+  // 1743) overwrote the WR (rank 23). Jefferson survived here only because Sleeper
+  // happens to carry HIS id. 🪨 THE FIX WAS WRITTEN FOR THE PLAYER IN FRONT OF US AND
+  // NEVER GENERALISED TO THE CLASS. See YAHOO_DUPENAME_CLOBBER_FIX_V2 directly below,
+  // which supersedes this paragraph.
+  // YAHOO_DUPENAME_CLOBBER_FIX_V2 (2026-08-27): was a Set of pids won by an ID
+  // match only. Now a Map pid -> matchSource for EVERY claim, so two name
+  // matches can no longer clobber each other.
+  const claimedPid = new Map();
   let matchedById = 0;
   let matchedByNameTeam = 0;
   let unmatched = 0;
   let nameClobberBlocked = 0;
+  let nameAmbiguousSkipped = 0;   // YAHOO_DUPENAME_CLOBBER_FIX_V2
   let matchedDst = 0;
   for(const yp of yahooPlayers){
     // YAHOO_DEF_RANKS_V1 (June 10, 2026 — PC Walter, per the Dude). Team defenses take
@@ -10335,24 +10346,44 @@ async function loadYahooData(){
         if(ypTeam && nameTeamToSleeperPid[ypNameKey + '|' + ypTeam]){
           sleeperPid = nameTeamToSleeperPid[ypNameKey + '|' + ypTeam];   // precise match
         } else {
-          // No team (or no exact hit) — old name-prefix walk as a safety net.
+          // YAHOO_DUPENAME_CLOBBER_FIX_V2 (2026-08-27). The old walk took the
+          // FIRST key whose NAME half matched and threw the team away, so
+          // Devonta Smith (CB) was handed 'devontasmith|PHI' and overwrote
+          // DeVonta Smith (WR). A net built to rescue missing ranks delivered
+          // the wrong player instead. Keep the rescue, but only when the name
+          // is UNAMBIGUOUS: collect every candidate and take it only if there
+          // is exactly one. Two candidates means we cannot tell them apart
+          // without a team, and no rank is better than another man's rank.
           const prefix = ypNameKey + '|';
+          const candidates = [];
           for(const k in nameTeamToSleeperPid){
-            if(k.indexOf(prefix) === 0){ sleeperPid = nameTeamToSleeperPid[k]; break; }
+            if(k.indexOf(prefix) === 0){ candidates.push(nameTeamToSleeperPid[k]); }
           }
+          const uniq = [...new Set(candidates)];
+          if(uniq.length === 1){ sleeperPid = uniq[0]; }
+          else if(uniq.length > 1){ nameAmbiguousSkipped++; }
         }
         if(sleeperPid){ matchedByNameTeam++; matchSource = 'name'; }
       }
     }
     if(!sleeperPid){ unmatched++; continue; }
-    // DUPENAME_RANK_CLOBBER_FIX_V1 — record by-id claims; never let a name-fallback
-    // match overwrite a pid that a primary yahoo_id match already claimed.
-    if(matchSource === 'id'){
-      claimedByYahooId.add(sleeperPid);
-    } else if(matchSource === 'name' && claimedByYahooId.has(sleeperPid)){
-      nameClobberBlocked++;
-      continue;  // skip — the correct (by-id) data is already in merged[sleeperPid]
+    // YAHOO_DUPENAME_CLOBBER_FIX_V2 (2026-08-27, Bug #193, the Dude's find).
+    // V1 claimed a pid ONLY when it was won by a yahoo_id match, so two NAME
+    // matches still clobbered each other and the LATER one won. Yahoo's list
+    // arrives in rank order, so the later one is always the worse player:
+    // DeVonta Smith (WR, rank 23) was overwritten by Devonta Smith (CB, 1743).
+    // Jefferson survived the identical collision only because Sleeper happens
+    // to carry his Yahoo ID. That is luck, not design.
+    // Now: FIRST claim on a pid wins, whatever matched it. The one permitted
+    // overwrite is an exact ID match correcting an earlier name-based guess.
+    if(claimedPid.has(sleeperPid)){
+      const priorSource = claimedPid.get(sleeperPid);
+      if(!(matchSource === 'id' && priorSource === 'name')){
+        nameClobberBlocked++;
+        continue;  // skip — the better-ranked player already holds this pid
+      }
     }
+    claimedPid.set(sleeperPid, matchSource);
     merged[sleeperPid] = {
       yahoo_rank: (typeof yp.yahoo_rank === 'number') ? yp.yahoo_rank : null,
       roster_pct: (typeof yp.roster_pct === 'number') ? yp.roster_pct : null
@@ -10362,7 +10393,7 @@ async function loadYahooData(){
   const matched = matchedById + matchedByNameTeam;
   _yahooDataByPid = merged;
   _yahooDataLoaded = true;
-  console.log('[yahoo] matched ' + matched + ' / ' + yahooPlayers.length + ' Yahoo players (primary id: ' + matchedById + ', name fallback: ' + matchedByNameTeam + ', DST: ' + matchedDst + ', unmatched: ' + unmatched + ', dupe-name clobbers blocked: ' + nameClobberBlocked + ')');  // YAHOO_DEF_RANKS_V1: DST count visible
+  console.log('[yahoo] matched ' + matched + ' / ' + yahooPlayers.length + ' Yahoo players (primary id: ' + matchedById + ', name fallback: ' + matchedByNameTeam + ', DST: ' + matchedDst + ', unmatched: ' + unmatched + ', dupe-name clobbers blocked: ' + nameClobberBlocked + ', ambiguous names skipped: ' + nameAmbiguousSkipped + ')');  // YAHOO_DEF_RANKS_V1: DST count visible
 
   if(statusEl) {
     const playerCount = _playerDB ? Object.keys(_playerDB).length : 0;
