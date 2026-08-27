@@ -1110,6 +1110,13 @@ body.view-thirteen-cat #nbamain-wrap td.col-stat-info:not(.col-cat13):not(.col-c
    GP and MIN are NOT col-cat13, so they correctly keep their grey header and no wash. */
 body.view-thirteen-cat #nbamain-wrap th.col-cat13{color:var(--stat-teal) !important;background:var(--stat-cat-wash);}
 body.view-thirteen-cat #nbamain-wrap td.col-cat13{background:var(--stat-cat-wash);}
+/* RANK_VIEW_MODES_NBA_V1 (2026-08-27): the same 13-cat promotion on the rankings surface --
+   its columns are JS-built and carry the identical col-cat13 classes as of today. Hidden
+   columns are FILTERED OUT at build (never display:none -- Bug #192's shape), so these two
+   rules are the only CSS the rankings views need. */
+body.view-thirteen-cat #nbarankings-wrap th.col-cat13{color:var(--stat-teal) !important;background:var(--stat-cat-wash);}
+body.view-thirteen-cat #nbarankings-wrap td.col-cat13{background:var(--stat-cat-wash);}
+#rk-view-mode-select.active{background:var(--court);color:#0d1117;border-color:var(--court);font-weight:700;}
 
 /* PCT_THIRD_V1 (Aug 6, 2026 — Matt's ask): stat groups now read makes, attempts, percent
    (FGM FGA FG% / FTM FTA FT% — threes already read 3PM 3PA 3P%). The gold group divider
@@ -1938,7 +1945,7 @@ document.addEventListener('DOMContentLoaded',function(){
      instant date-range row cloned onto the RANKINGS view, the football mirror built the same day
      (NFL_RANK_STATFILTER_V1). Structural parity with the NBA watch-list panel above: renames only
      (wlpf->rkpf, nbawl->nbark, Wl->Rank). Filter active = drag locked + tier brackets hidden. -->
-<div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbark-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select></div>
+<div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbark-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em;margin-left:10px">VIEW</span><select id="rk-view-mode-select" onchange="setViewMode(this.value)" title="Full View shows everything. 9 Cat and 13 Cat keep GP, MIN and that format's scoring categories. Ranking Mode is 9 Cat with the Note and Type columns tucked away so the stats sit next to the names." style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="full" selected>&#8596; Full View</option><option value="nine-cat">&#8596; 9 Cat</option><option value="thirteen-cat">&#8596; 13 Cat</option><option value="rank-work" id="rk-view-rankwork-opt">&#8596; Ranking Mode</option></select></div>
 <div id="nbark-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
   <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">Stat Filtering</div>
   <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
@@ -5111,12 +5118,12 @@ function _rankCol_age(){ return { key:'age', label:'Age', tdClass:'',
 function _rankCol_exp(){ return { key:'exp', label:'Exp', headClass:'col-exp', tdClass:'col-exp',
   num:function(pid){ var v=_nbaExpNum(_playerDB[pid]); return (v==null||isNaN(v))?Infinity:v; },
   render:function(pid,p){ var x=_nbaExpLabel(p); return (x==null)?'—':x; } }; }
-function _rankCol_gp(){ return { key:'gp', label:'GP', tdClass:'col-stat-info col-zone-divider', headClass:'col-stat col-stat-info col-zone-divider',
+function _rankCol_gp(){ return { key:'gp', label:'GP', tdClass:'col-stat-info col-zone-divider col-cat-always', headClass:'col-stat col-stat-info col-zone-divider col-cat-always',   // RANK_VIEW_MODES_NBA_V1: membership mirrors the watch-list markup
   num:function(pid){ var s=_statsRow(pid)||{}; return (s.gp==null)?-1:Number(s.gp); },
   render:function(pid){ var s=_statsRow(pid)||{}; return statCellOrDash(s.gp,0); } }; }
 // RANK_STATS_PARITY_V1: minutes per game. Uses the same _nbaMpg helper the watch list and the
 // player card use, so all three read one recipe (sp / gp / 60) rather than three copies of it.
-function _rankCol_min(){ return { key:'min', label:'MIN', tdClass:'col-stat-info', headClass:'col-stat col-stat-info',
+function _rankCol_min(){ return { key:'min', label:'MIN', tdClass:'col-stat-info col-cat-always', headClass:'col-stat col-stat-info col-cat-always',   // RANK_VIEW_MODES_NBA_V1
   num:function(pid){ var v=_nbaMpg(_statsRow(pid)); return (v==null)?-1:v; },
   render:function(pid){ return statCellOrDash(_nbaMpg(_statsRow(pid)),1); } }; }
 // OWNERSHIP_COLS_NBA_V1 (2026-06-26 — PC Walter, per the Dude): Y!Rank / Y!Owned / CBS Owned columns
@@ -5450,24 +5457,64 @@ function _rankColsFor(pos){
   return [ team, age, exp, type, note, _rankCol_yrank(), _rankCol_yowned(), _rankCol_cbsowned(),   // PRIORITY_OFF_RANKINGS_V1 (2026-08-25): prio dropped, twin of the football change
     _rankCol_gp(),
     _rankCol_min(),
-    _rankStatCol('fgm','FGM','fgm','col-stat-info col-zone-divider'),
+    // RANK_VIEW_MODES_NBA_V1 (2026-08-27): cat9/cat13 memberships appended, copied character
+    // for character from the watch-list header markup (the generated-from-NBA_CATEGORIES set),
+    // so the two tables can never disagree about what counts in which format.
+    _rankStatCol('fgm','FGM','fgm','col-stat-info col-zone-divider col-cat13'),
     _rankStatCol('fga','FGA','fga','col-stat-info'),
-    _rankPctCol('fgpct','FG%','fgm','fga','col-stat-a'),
-    _rankStatCol('ftm','FTM','ftm','col-stat-info col-zone-divider'),
+    _rankPctCol('fgpct','FG%','fgm','fga','col-stat-a col-cat9 col-cat13'),
+    _rankStatCol('ftm','FTM','ftm','col-stat-info col-zone-divider col-cat13'),
     _rankStatCol('fta','FTA','fta','col-stat-info'),
-    _rankPctCol('ftpct','FT%','ftm','fta','col-stat-a'),
-    _rankStatCol('tpm','3PM','tpm','col-stat-a col-zone-divider'),
+    _rankPctCol('ftpct','FT%','ftm','fta','col-stat-a col-cat9 col-cat13'),
+    _rankStatCol('tpm','3PM','tpm','col-stat-a col-zone-divider col-cat9 col-cat13'),
     _rankStatCol('tpa','3PA','tpa','col-stat-info'),
-    _rankPctCol('tppct','3P%','tpm','tpa','col-stat-info'),
-    _rankStatCol('pts','PTS','pts','col-stat-a col-zone-divider'),
-    _rankStatCol('reb','REB','reb','col-stat-a'),
-    _rankStatCol('oreb','ORB','oreb','col-stat-info'),
-    _rankStatCol('dreb','DRB','dreb','col-stat-info'),
-    _rankStatCol('ast','AST','ast','col-stat-a'),
-    _rankStatCol('stl','STL','stl','col-stat-a'),
-    _rankStatCol('blk','BLK','blk','col-stat-a'),
-    _rankStatCol('to','TO','to','col-stat-a') ];
+    _rankPctCol('tppct','3P%','tpm','tpa','col-stat-info col-cat13'),
+    _rankStatCol('pts','PTS','pts','col-stat-a col-zone-divider col-cat9 col-cat13'),
+    _rankStatCol('reb','REB','reb','col-stat-a col-cat9'),
+    _rankStatCol('oreb','ORB','oreb','col-stat-info col-cat13'),
+    _rankStatCol('dreb','DRB','dreb','col-stat-info col-cat13'),
+    _rankStatCol('ast','AST','ast','col-stat-a col-cat9 col-cat13'),
+    _rankStatCol('stl','STL','stl','col-stat-a col-cat9 col-cat13'),
+    _rankStatCol('blk','BLK','blk','col-stat-a col-cat9 col-cat13'),
+    _rankStatCol('to','TO','to','col-stat-a col-cat9 col-cat13') ]
+    // RANK_VIEW_MODES_NBA_V1: the view filter is applied HERE, at the single source of the
+    // column array, so the header, every body row, the sort lookup and the empty-state
+    // colspans all agree BY CONSTRUCTION. Columns a view drops are never built at all --
+    // deliberately NOT css display:none, which is the exact shape of Bug #192 (a hidden
+    // cell with a structure that still counts it). Rankings has no colgroup today; if one
+    // ever arrives, this approach keeps it honest for free.
+    .filter(_rankViewKeeps);
 }
+
+// ── RANK_VIEW_MODES_NBA_V1 (2026-08-27 -- PC Walter, per the Dude and Matt's 8/27 call) ──
+// The watch list's view dropdown (VIEW_MODES_NBA_V1), extended to the rankings surface.
+// Matt's ask, from the tape: see just the format's stats while ranking, and get the Note
+// column out of the way so the stats pull left ("I don't need my note in front").
+//   FULL          everything, unchanged.
+//   NINE CAT      GP + MIN + the nine 9-cat scoring categories. Same set as the watch list.
+//   THIRTEEN CAT  GP + MIN + the thirteen. REB correctly disappears (ORB/DRB replace it).
+//   RANKING MODE  rankings-only, BACKEND-ONLY (the Dude on the call: "I can make it back
+//                 end only... it's not a feature that's needed for our viewers"): the 9-cat
+//                 stat set PLUS Note and Type dropped, so the stats sit next to the names.
+//   SATTEN SAYS   deliberately NOT applied to rankings (the Dude: "you're not really gonna
+//                 need the Satten Says" there) -- rankings shows FULL while that mode is on.
+// Sort edge, accepted: if the active sort column is dropped by a view switch, the sort
+// lookup misses and the tab falls back to Matt's saved manual order. Benign and honest.
+var _rankViewMode = 'full';
+var _RANK_VIEW_STATS = {
+  all:   ['gp','min','fgm','fga','fgpct','ftm','fta','ftpct','tpm','tpa','tppct','pts','reb','oreb','dreb','ast','stl','blk','to'],
+  cat9:  ['gp','min','fgpct','ftpct','tpm','pts','reb','ast','stl','blk','to'],
+  cat13: ['gp','min','fgm','fgpct','ftm','ftpct','tpm','tppct','pts','oreb','dreb','ast','stl','blk','to']
+};
+function _rankViewKeeps(c){
+  var mode = _rankViewMode;
+  if(mode === 'full') return true;
+  if(mode === 'rank-work' && (c.key === 'note' || c.key === 'type')) return false;
+  if(_RANK_VIEW_STATS.all.indexOf(c.key) === -1) return true;   // not a stat column: keep
+  var set = (mode === 'thirteen-cat') ? _RANK_VIEW_STATS.cat13 : _RANK_VIEW_STATS.cat9;
+  return set.indexOf(c.key) !== -1;
+}
+// ── /RANK_VIEW_MODES_NBA_V1 helpers ──
 function _rankRenderHead(cols){
   var headRow = document.getElementById('rankings-head-row');
   if(!headRow) return;
@@ -7646,16 +7693,42 @@ function _wlPid(item){ return (typeof item === 'string') ? item : (item && item.
 // VIEW_MODES_NBA_V1 — three states, one dropdown. Both mode classes are removed before either is
 // applied, so the modes can never stack. 'full' simply adds neither.
 function setViewMode(mode){
+  // RANK_VIEW_MODES_NBA_V1: 'rank-work' is backend-only; a read-only viewer who somehow
+  // requests it lands on nine-cat instead (the option is also removed from their dropdown).
+  if(mode === 'rank-work' && typeof _isReadOnlyMode === 'function' && _isReadOnlyMode()){ mode = 'nine-cat'; }
   const b = document.body;
-  b.classList.remove('view-matts-take','view-nine-cat','view-thirteen-cat');
+  b.classList.remove('view-matts-take','view-nine-cat','view-thirteen-cat','view-rank-work');
   if(mode === 'matts-take')          b.classList.add('view-matts-take');
   else if(mode === 'nine-cat')       b.classList.add('view-nine-cat');
   else if(mode === 'thirteen-cat')   b.classList.add('view-thirteen-cat');
+  else if(mode === 'rank-work')      b.classList.add('view-rank-work');
   else                               mode = 'full';
-  const sel = document.getElementById('view-mode-select');
-  if(sel){ sel.value = mode; sel.classList.toggle('active', mode !== 'full'); }
+  // Rankings surface: Satten Says stays watch-list-only (the Dude's call on the 8/27 tape),
+  // so the rankings render full in that mode; every other mode maps straight across.
+  _rankViewMode = (mode === 'matts-take') ? 'full' : mode;
+  // Sync BOTH dropdowns; a select missing the active mode's option (the main one has no
+  // Ranking Mode) shows Full, which is truthful for its own surface.
+  ['view-mode-select','rk-view-mode-select'].forEach(function(id){
+    var sel = document.getElementById(id);
+    if(!sel) return;
+    var has = false;
+    for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value === mode){ has = true; break; } }
+    sel.value = has ? mode : 'full';
+    sel.classList.toggle('active', has && mode !== 'full');
+  });
+  if(typeof renderRankings === 'function'){ try{ renderRankings(); }catch(e){} }   // rebuild with the filtered column set
   if(typeof fitTables === 'function'){ try{ fitTables(); }catch(e){} }
 }
+// RANK_VIEW_MODES_NBA_V1: fans never see the Ranking Mode option at all.
+(function _trimRankWorkOption(){
+  function trim(){
+    if(typeof _isReadOnlyMode === 'function' && _isReadOnlyMode()){
+      var o = document.getElementById('rk-view-rankwork-opt');
+      if(o) o.remove();
+    }
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', trim); } else { trim(); }
+})();
 // Kept as a thin shim: anything still calling the old toggle lands on Matt's Take, which is what
 // the old button did. Cheaper than hunting for callers that may not exist.
 // PRESENT_MODE_TWINS_V1 (2026-08-19): baseball's togglePresentMode, ported verbatim (same body
