@@ -2459,9 +2459,22 @@ function _listTitle(l){
   if(!l) return '';
   return l.short ? (l.name + ' (' + l.short + ')') : l.name;
 }
+// RC_MENU_LABEL_PARITY_V1 (2026-08-27 -- the Dude: basketball's right-click menu said
+// "12 Team Daily 9-Cat" where the dropdown said "12 Team Daily 9-Cat \u00b7 192").
+// _listLabelText is the ONE place a list's label text is composed. _listOptionLabel adds
+// the emoji for the <select>; the right-click menu paints its own emoji in a separate span
+// and takes the text half. Two consumers, one composition, so they cannot disagree.
+// \u26a0\ufe0f FOOTBALL SOLVES THIS DIFFERENTLY ON PURPOSE -- its dropdown is hand-written markup,
+// so over there the <option> text IS the source and the menu strips the emoji off it with a
+// regex. Same goal, different mechanism because the two pages store labels differently.
+// DO NOT 'harmonise' these two implementations; porting either one over the other breaks it.
+function _listLabelText(l){
+  if(!l) return '';
+  return l.name + (l.roster ? ' \u00b7 ' + l.roster : '');
+}
 function _listOptionLabel(l){
   if(!l) return '';
-  return l.emoji + ' ' + l.name + (l.roster ? ' · ' + l.roster : '');
+  return l.emoji + ' ' + _listLabelText(l);
 }
 // LIST_RANKINGS_GROUP_V1 — the switcher is now BUILT from WL_LISTS rather than kept in
 // sync with hand-written markup. The old note on the registry warned this lived in two
@@ -6162,7 +6175,7 @@ document.addEventListener('click', function(e){
         var L = lists[i];
         if(L.backendOnly) continue;
         if(L.id === currentListId && view === 'watchlist') continue;   // omit-the-active rule
-        html += '<button class="rc-menu-item" data-dest="list:' + L.id + '"><span class="rc-emoji">' + (L.emoji || '\u2B50') + '</span><span class="rc-label">' + L.name + '</span></button>';
+        html += '<button class="rc-menu-item" data-dest="list:' + L.id + '"><span class="rc-emoji">' + (L.emoji || '\u2B50') + '</span><span class="rc-label">' + _listLabelText(L) + '</span></button>';
       }
       html += '<div style="height:1px;background:var(--border);margin:4px 0;"></div>';
       html += '<div class="rc-menu-header">Rankings</div>';
@@ -6173,7 +6186,7 @@ document.addEventListener('click', function(e){
       for(var j=0; j<ranks.length; j++){
         var R = ranks[j];
         if(view === 'rankings' && rSet === 'dynasty') continue;
-        html += '<button class="rc-menu-item" data-dest="list:' + R.id + '"><span class="rc-emoji">' + (R.emoji || '\uD83D\uDC51') + '</span><span class="rc-label">' + R.name + '</span></button>';
+        html += '<button class="rc-menu-item" data-dest="list:' + R.id + '"><span class="rc-emoji">' + (R.emoji || '\uD83D\uDC51') + '</span><span class="rc-label">' + _listLabelText(R) + '</span></button>';
       }
     }
     menu.innerHTML = html;
