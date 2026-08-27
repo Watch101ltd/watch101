@@ -8560,6 +8560,49 @@ else { _applyReadOnlyBodyClass(); }
   else { run(); }
 })();
 
+// FAN_BOOT_RANKINGS_V1 (2026-08-27 -- PC Walter, the Dude's call). Customers land on
+// REDRAFT RANKINGS instead of the flagship 101 list.
+//
+// WHY: the 101 lists are not published yet, so a visitor opening the page today lands on
+// "Not published yet" and an empty table, while Redraft Rankings is full.
+//
+// SCOPE IS DELIBERATE AND NARROW -- READ-ONLY ONLY. Matt works this same file as his
+// backend on GitHub and builds the lists daily. He keeps booting on the 101 and his
+// workflow is untouched. Do NOT widen this to everyone without telling him first.
+//
+// TEMPORARY BY DESIGN. His words: "once we have our 101 lists set up" the default goes
+// back. TO REVERT: delete this whole block. Nothing else references it.
+//
+// WHY IT WAITS: basketball builds its switcher options in JS, so the Redraft option does
+// not exist at DOMContentLoaded -- and assigning a <select> a value with no matching
+// option fails SILENTLY. We wait for the option itself, not just for the functions.
+(function fanBootOnRedraftRankings(){
+  var tries = 0, done = false;
+  function run(){
+    try {
+      if(done) return;
+      if(!_isReadOnlyMode()) return;                  // customers only
+      var sel = document.getElementById('list-switcher');
+      var ready = sel
+        && typeof showRankingsView === 'function'
+        && typeof switchActiveList === 'function'
+        && Array.prototype.some.call(sel.options, function(o){ return o.value === 'view:rankings'; });
+      if(!ready){
+        if(++tries < 60){ setTimeout(run, 250); }     // 15s cap, then give up quietly
+        return;
+      }
+      // Never yank a visitor who already picked something while we were waiting.
+      if(sel.value !== 'integrity-nba'){ done = true; return; }
+      done = true;
+      sel.value = 'view:rankings';
+      switchActiveList('view:rankings');              // diverts to showRankingsView('redraft')
+      console.log('[FAN_BOOT_RANKINGS_V1] fan view booted on Redraft Rankings');
+    } catch(e){ /* never break the page over this */ }
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', run); }
+  else { run(); }
+})();
+
 // (MATT_CONTROLS_V1 continues below)
 function _ftlUpdateShowNewHint(on){
   const hint = document.getElementById('ftl-shownew-hint');
