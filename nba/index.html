@@ -2137,6 +2137,13 @@ async function syncYahooNBA(){
     const data = await res.json();
     _yahooByYid = {}; _yahooByName = {};
     (data.players||[]).forEach(yp => {
+      // YRANK_DRAFTVALUE_SWAP_V1 (2026-08-27, per the Dude on the 8/27 Matt call, Bug #194).
+      // The AR-sorted yahoo_rank is LAST season's actual-production order (injured stars
+      // sink to 200-350 and the 2026 rookies are absent entirely). Until Yahoo access
+      // returns (Bug #29) and the game key is bumped to the 2026-27 game, the Y!Rank
+      // column carries the payload's preseason_rank instead: Yahoo draft-value (ADP)
+      // order, frozen 7/27. Dash when absent, never the misleading actual number.
+      yp.yahoo_rank = (yp.preseason_rank != null) ? yp.preseason_rank : null;
       if(yp.yahoo_player_id != null) _yahooByYid[String(yp.yahoo_player_id)] = yp;
       if(yp.name) _yahooByName[_nbaYahooNorm(yp.name)] = yp;
     });
