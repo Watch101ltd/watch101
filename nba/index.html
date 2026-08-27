@@ -445,7 +445,7 @@ table.watch-list thead th.col-delta{width:44px;text-align:left}
 table.watch-list thead th.col-type{width:60px;text-align:left}
 table.watch-list thead th.col-priority{width:88px;text-align:left}
 table.watch-list thead th.col-note{width:144px;text-align:left}
-table.watch-list thead th.col-yrank,table.watch-list tbody td.col-yrank{width:44px;text-align:center}
+table.watch-list thead th.col-yrank,table.watch-list tbody td.col-yrank{width:54px;text-align:center}  /* FTX_ADP_V1: widened for 'Ftx ADP' label */
 table.watch-list thead th.col-yowned,table.watch-list tbody td.col-yowned{width:50px;text-align:center}
 table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned{width:50px;text-align:center}
 /* RANKINGS_NOTES_NBA_V1 (2026-06-29 — PC Walter, per Matt via the Dude): editable Note column +
@@ -1770,7 +1770,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-type" data-sort="type">Type <span class="sort-arrow">↕</span></th>
         <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
         <th class="left col-note">Note</th>
-        <th class="col-yrank col-zone-divider" data-sort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
+        <th class="col-yrank col-zone-divider" data-sort="yrank" title="Fantrax ADP (2026-27), current as of 8/27 — replaces Y!Rank until the Yahoo pipeline is fixed (Bug #194)">Ftx ADP <span class="sort-arrow">↕</span></th>
         <th class="col-yowned" data-sort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info col-cat-always col-zone-divider" data-sort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
@@ -1879,8 +1879,8 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="left col-player" data-npsort="name">Player <span class="sort-arrow">↕</span></th>
           <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
-          <!-- OWNERSHIP_COLS_NBA_V1 (2026-06-26) — Y!Rank/Y!Owned/CBS Owned, matching the Watch List. Placeholders (no NBA data pipeline yet). -->
-          <th class="col-yrank col-zone-divider" data-npsort="yrank"><span class="y-prefix">Y!</span>Rank <span class="sort-arrow">↕</span></th>
+          <!-- OWNERSHIP_COLS_NBA_V1 (2026-06-26) — first col REPURPOSED to Fantrax ADP by FTX_ADP_V1 (2026-08-27, Bug #194); Y!Owned/CBS Owned unchanged. -->
+          <th class="col-yrank col-zone-divider" data-npsort="yrank" title="Fantrax ADP (2026-27), current as of 8/27 — replaces Y!Rank until the Yahoo pipeline is fixed (Bug #194)">Ftx ADP <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned"><span class="y-prefix">Y!</span>Owned <span class="sort-arrow">↕</span></th>
           <th class="col-cbsowned" data-npsort="cbsowned"><span class="cbs-prefix">CBS</span> Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info col-zone-divider" data-npsort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
@@ -2112,6 +2112,83 @@ if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoad
 // go straight here (Sleeper isn't ban-prone, no Worker needed). When the Yahoo
 // layer lands, a YAHOO_CACHE_URL Worker gets added — NOT in this shell.
 const SERVER_URL = 'https://nba-nas.fantasywatch101.com';
+
+// ── FTX_ADP_V1 (2026-08-27, per the Dude) ────────────────────────────────────
+// Current 2026-27 Fantrax ADP, replacing the retired Y!Rank column. WHY: Bug #194 —
+// our Yahoo rank was last season's actual-production order from a payload frozen
+// 7/27 and pinned to the 2025-26 game (Yahoo's 26-27 fantasy game is not open yet,
+// their own site says so), so the column could not show an honest current number.
+// The Dude's ruling: don't show a Yahoo rank at all until the Yahoo pipeline is
+// fixed; show a column that says what it is. SOURCE: hashtagbasketball.com ADP page
+// (Fantrax column), pulled 2026-08-27, 249 players with real ADP (their 243.5+
+// placeholder tail dropped). Snapshot: Fantasy Basketball/ADP Data/
+// fantrax_adp_2026-08-27.json. To refresh: re-pull that page, regenerate this string.
+// Format: "Full Name~adp~order;..." — display shows the ADP number, sort uses it too.
+// Join: normalized full name against Sleeper's _playerDB (accents + Jr/Sr/II-IV
+// stripped, same rules as _nbaYahooNorm), with a UNIQUE-last-name fallback that
+// refuses ambiguous last names (Murray, Johnson, etc. resolve by full name only).
+// NOTE: this block does NOT touch Matt's saved rankings order — display column only.
+const _FTX_ADP_RAW = "Victor Wembanyama~1.5~1;Nikola Jokic~1.6~2;Luka Doncic~3.7~4;Shai Gilgeous-Alexander~3.4~3;Cade Cunningham~5.5~5;Giannis Antetokounmpo~10.0~10;Jayson Tatum~8.3~7;Tyrese Maxey~8.0~6;Anthony Edwards~9.0~8;Karl-Anthony Towns~17.1~15;Cooper Flagg~11.9~12;Scottie Barnes~11.9~13;Kevin Durant~17.1~16;Stephen Curry~18.3~17;Anthony Davis~27.8~28;Jalen Johnson~9.3~9;Donovan Mitchell~13.9~14;Trae Young~22.5~20;Alperen Sengün~21.0~19;Amen Thompson~23.3~21;Jalen Brunson~31.7~32;Jamal Murray~20.8~18;Devin Booker~26.3~25;LaMelo Ball~24.1~22;James Harden~26.3~26;Josh Giddey~26.7~27;Chet Holmgren~25.2~24;Jaylen Brown~43.7~43;Domantas Sabonis~39.8~39;Evan Mobley~29.5~30;Kawhi Leonard~29.0~29;Bam Adebayo~36.6~35;Austin Reaves~24.4~23;LeBron James~56.6~52;Jalen Williams~37.5~37;Tyrese Haliburton~11.2~11;Paolo Banchero~48.2~47;Pascal Siakam~57.7~56;Derrick White~33.7~33;Deni Avdija~37.4~36;Trey Murphy III~29.7~31;Jalen Duren~43.3~42;Walker Kessler~39.0~38;Desmond Bane~47.3~46;Joel Embiid~59.9~61;Franz Wagner~59.3~60;Lauri Markkanen~34.3~34;Kon Knueppel~44.8~44;Jaren Jackson Jr.~41.6~40;Ivica Zubac~67.1~68;Dyson Daniels~59.3~59;OG Anunoby~57.7~54;Stephon Castle~60.2~62;Kyrie Irving~52.5~50;Brandon Miller~42.6~41;Donovan Clingan~50.2~48;De'Aaron Fox~72.8~74;Onyeka Okongwu~47.2~45;Michael Porter Jr.~64.7~66;Zion Williamson~82.6~82;Tyler Herro~61.0~63;Darius Garland~54.1~51;Julius Randle~66.4~67;Keyonte George~57.7~55;Alexandre Sarr~62.9~65;Ja Morant~80.0~79;Mikal Bridges~71.4~72;Nickeil Alexander-Walker~51.2~49;Jarrett Allen~83.8~85;Coby White~83.6~83;Brandon Ingram~76.4~75;Rudy Gobert~71.4~71;Damian Lillard~82.4~81;Naz Reid~71.6~73;Cameron Boozer~58.4~57;Matas Buzelis~61.1~64;Dejounte Murray~56.8~53;Josh Hart~96.3~94;Paul George~77.4~76;Jaden McDaniels~78.2~77;VJ Edgecombe~84.4~86;Payton Pritchard~79.5~78;Myles Turner~86.0~87;Kel'el Ware~59.1~58;Ryan Rollins~67.9~69;Zach Edey~69.8~70;Dylan Harper~88.7~88;AJ Dybantsa~101.7~98;Miles Bridges~103.8~100;Ausar Thompson~83.8~84;Norman Powell~92.3~92;Caleb Wilson~96.7~95;Jalen Green~118.7~120;Immanuel Quickley~81.7~80;Derik Queen~92.9~93;Nicolas Claxton~98.8~96;Andrew Wiggins~107.7~103;DeMar DeRozan~141.7~139;Jabari Smith Jr.~90.8~91;Kristaps Porzingis~109.6~108;Ty Jerome~90.3~90;Kevin Porter Jr.~108.3~105;Isaiah Hartenstein~99.3~97;CJ McCollum~117.4~119;Darryn Peterson~113.8~114;Zach LaVine~117.4~118;Mark Williams~110.2~109;Jalen Suggs~89.7~89;RJ Barrett~124.6~124;Day'Ron Sharpe~102.0~99;Reed Sheppard~117.1~117;John Collins~109.4~107;Jakob Poeltl~127.4~126;Ayo Dosunmu~104.0~101;Neemias Queta~107.1~102;Cedric Coward~110.3~110;Keegan Murray~108.9~106;Nikola Vucevic~197.9~165;Toumani Camara~112.4~112;Jaime Jaquez Jr.~125.7~125;Fred VanVleet~107.9~104;Peyton Watson~115.3~115;Cason Wallace~116.7~116;Collin Murray-Boyles~110.4~111;Andrew Nembhard~134.0~132;Kyshawn George~122.8~123;Brandin Podziemski~121.3~121;Ajay Mitchell~112.6~113;Jusuf Nurkic~121.8~122;Darius Acuff Jr.~135.8~135;Egor Demin~130.4~128;Aaron Gordon~143.6~140;Sandro Mamukelashvili~133.6~130;Ace Bailey~138.2~136;Anthony Black~133.9~131;Jeremiah Fears~134.4~133;Maxime Raynaud~129.8~127;Saddiq Bey~130.8~129;P.J. Washington~134.9~134;Shaedon Sharpe~164.6~148;Devin Vassell~154.3~143;Christian Braun~186.8~159;Collin Gillespie~138.9~138;Jimmy Butler III~206.5~285;Davion Mitchell~151.7~141;Tari Eason~138.3~137;Draymond Green~178.1~155;Bennedict Mathurin~164.6~147;Quentin Grimes~161.8~146;Wendell Carter Jr.~170.1~151;Yaxel Lendeborg~178.0~154;Tobias Harris~181.3~157;Jrue Holiday~173.6~152;Dillon Brooks~174.0~153;Paul Reed~155.1~144;Moussa Diabaté~168.2~149;Cameron Johnson~181.0~156;Grayson Allen~157.7~145;Mitchell Robinson~187.5~160;Mikel Brown Jr.~183.9~158;Deandre Ayton~214.8~292;Tre Jones~153.3~142;Kyle Filipowski~202.0~284;Pelle Larsson~169.0~150;Bobby Portis~220.3~294;Morez Johnson Jr.~212.7~288;Isaiah Stewart~218.1~293;Collin Sexton~221.5~297;Daniel Gafford~228.4~303;Keaton Wagler~224.9~298;Rui Hachimura~238.5~322;Kelly Oubre Jr.~232.8~312;Isaiah Collier~236.0~316;Bilal Coulibaly~190.4~161;Kyle Kuzma~235.0~314;Jonathan Kuminga~242.3~345;Jordan Poole~239.2~325;Gui Santos~193.3~162;Scotty Pippen Jr.~195.8~163;Joan Beringer~196.6~164;Dereck Lively II~208.4~286;Anfernee Simons~240.3~328;Herbert Jones~210.6~287;Jerami Grant~214.8~291;Brook Lopez~214.4~290;Aaron Nesmith~220.3~295;Robert Williams III~235.6~315;Malik Monk~241.8~339;Santi Aldama~231.1~310;Julian Champagnie~226.8~301;Jay Huff~226.8~300;Scoot Henderson~230.3~307;Jaylon Tyson~227.3~302;De'Anthony Melton~229.4~304;Naji Marshall~230.3~305;Yves Missi~230.3~306;Brayden Burries~230.7~308;Hannes Steinbach~232.4~311;Jared McCain~242.2~344;Aaron Wiggins~236.3~317;Zaccharie Risacher~237.1~319;Keldon Johnson~239.1~323;Sam Merrill~239.7~326;Tre Johnson~240.0~327;Tim Hardaway Jr.~240.6~329;Kingston Flemings~240.8~331;Max Strus~241.3~332;Brice Sensabaugh~241.7~336;Taylor Hendricks~241.6~335;Bradley Beal~242.1~343;Daniss Jenkins~241.8~337;Bub Carrington~242.1~342;Dennis Schröder~242.7~353;Alex Caruso~243.2~362;Miles McBride~242.4~347;Ousmane Dieng~242.6~350;Leonard Miller~242.7~351;Will Riley~242.7~352;De'Andre Hunter~243.0~358;Cameron Carr~243.0~355;Luguentz Dort~243.3~366;Marcus Smart~242.8~354;Dylan Cardwell~243.1~359;Adem Bona~243.1~360;Andre Drummond~243.3~364;Gary Payton II~243.2~361;Allen Graves~243.2~363;Khaman Maluach~198.4~166;Nique Clifford~213.4~289;Cam Spencer~221.4~296;Keon Ellis~226.5~299;Noah Clowney~230.9~309;Ryan Kalkbrenner~234.4~313;Max Christie~236.4~318;Isaiah Joe~237.3~320;Ron Holland II~237.7~321;Precious Achiuwa~239.2~324;Jake LaRavia~240.6~330;Kris Dunn~241.4~333;Duncan Robinson~241.4~334;AJ Green~241.8~338;Walter Clayton Jr.~241.8~340;Terrence Shannon Jr.~241.9~341;Danny Wolf~242.3~346;GG Jackson II~242.5~348;Jaylen Wells~242.5~349;Derrick Jones Jr.~243.0~356;Jalen Smith~243.0~357;Ja'Kobe Walter~243.3~365";
+const _FTX_ADP_ASOF = "8/27";
+let _ftxByName = {};   // normalized full name -> {a:"11.9", o:12}
+let _ftxByLast = {};   // last name -> row, or null when two players share it
+(function(){
+  _FTX_ADP_RAW.split(';').forEach(function(row){
+    var parts = row.split('~');
+    if(parts.length !== 3) return;
+    var norm = _ftxNorm(parts[0]);
+    var rec = { a: parts[1], o: parseInt(parts[2], 10), f: norm.charAt(0) };
+    if(norm) _ftxByName[norm] = rec;
+    var last = _ftxLastName(parts[0]);
+    if(last) _ftxByLast[last] = (last in _ftxByLast) ? null : rec;
+  });
+})();
+function _ftxNorm(str){
+  return (str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\b(iii|ii|iv|jr|sr)\b\.?/gi,'').replace(/[.']/g,'')
+    .replace(/\s+/g,' ').trim().toLowerCase();
+}
+function _ftxLastName(str){
+  var n = _ftxNorm(str);
+  var parts = n.split(' ');
+  return parts.length > 1 ? parts[parts.length-1] : '';
+}
+// Fantrax ADP row for a Sleeper pid, or null. Full-name match first. The last-name
+// fallback (for nickname mismatches like Nic/Nicolas Claxton) fires ONLY when ALL
+// THREE hold: the last name is unique in the ADP set (collisions stored null), the
+// FIRST INITIAL matches, and the last name is unique in our own _playerDB pool.
+// WHY SO STRICT: the Node harness caught the loose version handing Giannis's 10.0
+// to THANASIS Antetokounmpo and Steph's 18.3 to Seth Curry — the same family as
+// football's #193 DeVonta Smith clobber, on the day it was fixed. Dash over a lie.
+let _ftxPoolLastCache = { size: -1, counts: {} };
+function _ftxPoolLastCount(last){
+  var ids = _playerDB ? Object.keys(_playerDB) : [];
+  if(ids.length !== _ftxPoolLastCache.size){
+    var c = {};
+    for(var i=0;i<ids.length;i++){
+      var q = _playerDB[ids[i]] || {};
+      var qn = q.full_name || ((q.first_name||'') + ' ' + (q.last_name||'')).trim();
+      var ql = _ftxLastName(qn);
+      if(ql) c[ql] = (c[ql]||0) + 1;
+    }
+    _ftxPoolLastCache = { size: ids.length, counts: c };
+  }
+  return _ftxPoolLastCache.counts[last] || 0;
+}
+function _ftxFor(pid){
+  const pl = _playerDB && _playerDB[pid];
+  if(!pl) return null;
+  const nm = pl.full_name || ((pl.first_name||'') + ' ' + (pl.last_name||'')).trim();
+  const key = _ftxNorm(nm);
+  if(key && _ftxByName[key]) return _ftxByName[key];
+  const last = _ftxLastName(nm);
+  const cand = (last && _ftxByLast[last]) ? _ftxByLast[last] : null;
+  if(!cand) return null;
+  if(cand.f !== key.charAt(0)) return null;          // first initial must agree
+  if(_ftxPoolLastCount(last) > 1) return null;       // last name must be unique in OUR pool too
+  return cand;
+}
+// ── /FTX_ADP_V1 ──────────────────────────────────────────────────────────────
 
 // ── NBA_YAHOO_OWNERSHIP_V1 (2026-06-28) ──────────────────────────────────────
 // Pulls Yahoo overall ownership % + Yahoo overall rank from the live NBA server
@@ -2548,7 +2625,7 @@ function closeListInfoOverlay(){
 // the ACTIVE watch list in its current order using the page's own per-game math and
 // ownership lookups, so the file always matches what the table shows.
 function _exportRows(){
-  var headers = ['Rank','Player','Position','Team','Age','GP','Y! Rank','Y! Owned %','CBS Owned %',
+  var headers = ['Rank','Player','Position','Team','Age','GP','Fantrax ADP','Y! Owned %','CBS Owned %',
                  'PTS','REB','AST','STL','BLK','TO','FG%','3P%','FT%','Priority','Type Tags','Note'];
   var rows = [];
   var r1 = function(n){ return (n==null) ? '' : Math.round(n*10)/10; };
@@ -2565,7 +2642,7 @@ function _exportRows(){
     rows.push([
       i+1, nm || '', p.position || '', p.team || '',
       (age==null) ? '' : age, s.gp || '',
-      (y && y.yahoo_rank!=null) ? y.yahoo_rank : '',
+      (function(){ var f=(typeof _ftxFor==='function')?_ftxFor(pid):null; return f?f.a:''; })(),   /* FTX_ADP_V1: was Yahoo rank */
       (y && y.roster_pct!=null) ? Math.round(y.roster_pct) : '',
       (cv!=null) ? cv : '',
       r1(perGame(s.pts, s.gp)), r1(perGame(s.reb, s.gp)), r1(perGame(s.ast, s.gp)),
@@ -5024,9 +5101,9 @@ function _rankCol_min(){ return { key:'min', label:'MIN', tdClass:'col-stat-info
 // for the NBA Rankings tabs, matching the Watch List. NO data pipeline yet (no Yahoo API, no CBS scrape
 // for NBA) — these render em-dash placeholders for now, exactly like the Watch List does. When the data
 // layer ships, swap the render() bodies to read the real lookups (and wire num() for sorting).
-function _rankCol_yrank(){ return { key:'yrank', label:'Y!Rank', headClass:'col-yrank col-zone-divider', tdClass:'col-yrank col-zone-divider',
-  num:function(pid){ var y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?Number(y.yahoo_rank):Infinity; },
-  render:function(pid){ var y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?y.yahoo_rank:'—'; } }; }
+function _rankCol_yrank(){ return { key:'yrank', label:'Ftx ADP', headClass:'col-yrank col-zone-divider', tdClass:'col-yrank col-zone-divider',   // FTX_ADP_V1: was Y!Rank
+  num:function(pid){ var f=_ftxFor(pid); return f?parseFloat(f.a):Infinity; },
+  render:function(pid){ var f=_ftxFor(pid); return f?f.a:'—'; } }; }
 function _rankCol_yowned(){ return { key:'yowned', label:'Y!Owned', headClass:'col-yowned', tdClass:'col-yowned',
   num:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):-1; },
   render:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Math.round(y.roster_pct)+'%':'—'; } }; }
@@ -5965,7 +6042,7 @@ function _npStatValue(field, p, s, pid){
     case 'tppct': return pctOrNull(s.tpm, s.tpa);
     case 'ftpct': return pctOrNull(s.ftm, s.fta);
     // POOL_OWNERSHIP_SORT_V1 — Y!Rank / Y!Owned / CBS sort cases (mirror the watch-list's; nulls sink via the sort's missing-value rule)
-    case 'yrank':  { const y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?Number(y.yahoo_rank):null; }
+    case 'yrank':  { const f=_ftxFor(pid); return f?parseFloat(f.a):null; }   /* FTX_ADP_V1: was Yahoo rank */
     case 'yowned': { const y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):null; }
     case 'cbsowned': { var cv=_cbsForNum(pid); return (cv!=null)?Number(cv):null; }
     default: return null;
@@ -6527,7 +6604,7 @@ function renderNbaPlayers(){
       '<td>' + team + '</td>' +
       '<td>' + age + '</td>' +
       // OWNERSHIP_COLS_NBA_V1 + NBA_YAHOO_OWNERSHIP_V1 + NBA_CBS_OWNERSHIP_V1 — all three now live.
-      '<td class="col-yrank col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +
+      (function(){ var _f=_ftxFor(pid); return '<td class="col-yrank col-zone-divider' + (_f?'':' placeholder') + '">' + (_f?_f.a:'—') + '</td>'; })() +   /* FTX_ADP_V1: was Yahoo rank */
       '<td class="col-yowned ' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +
       '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +
       '<td class="col-stat-info col-cat-always col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
@@ -6938,7 +7015,7 @@ function renderWatchList(){
       _wlTypeCellHtml(pid) +   // TYPE_TAGS_SEED_V1 -- emoji chips
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       _wlNoteCellHtml(pid) +   // WL_NOTES_V1 -- live Note column
-      '<td class="col-yrank col-zone-divider' + ((_yh&&_yh.yahoo_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_rank!=null)?_yh.yahoo_rank:'—') + '</td>' +   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
+      (function(){ var _f=_ftxFor(pid); return '<td class="col-yrank col-zone-divider' + (_f?'':' placeholder') + '">' + (_f?_f.a:'—') + '</td>'; })() +   /* FTX_ADP_V1: was Yahoo rank */   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="col-yowned ' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +   // Y!Owned (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +   // CBS Owned (NBA_CBS_OWNERSHIP_V1 / CBS_OWNED_PCT_V1)
       '<td class="col-stat-info col-cat-always col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
@@ -7169,7 +7246,7 @@ function _renderRankPhoneList(ids){
     var railBits = '';
     try {
       var y = (typeof _yahooFor==='function') ? _yahooFor(pid) : null;
-      if(y && y.yahoo_rank != null) railBits += 'Y!# <b>' + y.yahoo_rank + '</b><br>';
+      var _fr = (typeof _ftxFor==='function') ? _ftxFor(pid) : null; if(_fr) railBits += 'Ftx <b>' + _fr.a + '</b><br>';   /* FTX_ADP_V1: was Y!# yahoo_rank */
       if(y && y.roster_pct != null) railBits += 'Y! <b>' + parseFloat(y.roster_pct).toFixed(0) + '%</b><br>';
     } catch(e){}
     try { var cw = (typeof _cbsForNum==='function') ? _cbsForNum(pid) : null; if(cw != null) railBits += 'CBS <b>' + parseFloat(cw).toFixed(0) + '%</b>'; } catch(e){}
@@ -8984,7 +9061,7 @@ function sortValueFor(field, p, s, pid){
       return (idx >= 0) ? _wlPriority(_watchList[idx]) : 0;
     }
     // Planned columns — no data yet, always sort to bottom.
-    case 'yrank':  { const y=_yahooFor(pid); return (y&&y.yahoo_rank!=null)?Number(y.yahoo_rank):null; }   // NBA_YAHOO_OWNERSHIP_V1
+    case 'yrank':  { const f=_ftxFor(pid); return f?parseFloat(f.a):null; }   /* FTX_ADP_V1: was Yahoo rank */   // NBA_YAHOO_OWNERSHIP_V1
     case 'yowned': { const y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):null; }   // NBA_YAHOO_OWNERSHIP_V1
     case 'cbsowned': { var cv=_cbsForNum(pid); return (cv!=null)?Number(cv):null; }   // NBA_CBS_OWNERSHIP_V1
     case 'delta': return _wlDeltaFor(pid);   // WL_DELTA_V1 (null = unstamped, sorts to bottom)
@@ -9458,11 +9535,11 @@ function openFromTheLogo(pid, _keepRange){
     _ftlStatCell('TO',  _ftlPG(s.to, gp),             'cat');
   // QUADRANTS_V1 (Aug 2, 2026): two compact stat rows in the hero, baseball-style.
   // OWNROW_CARD_V1 (Aug 6, 2026) — baseball's ownership row, ported per the Dude:
-  // Y!RK / Y!ROS%% / CBS%%, its own row, white values. Same lookups the table rows use.
+  // FTX ADP / Y!ROS%% / CBS%%, its own row, white values. (Y!RK retired by FTX_ADP_V1, Bug #194.)
   const _oyh  = (typeof _yahooFor === 'function') ? _yahooFor(pid) : null;
   const _ocbs = (typeof _cbsForNum === 'function') ? _cbsForNum(pid) : null;
   const ownRow =
-    _ftlStatCell('Y!RK',   (_oyh && _oyh.yahoo_rank != null) ? _oyh.yahoo_rank : null, 'own') +
+    _ftlStatCell('FTX ADP', (function(){ var f=(typeof _ftxFor==='function')?_ftxFor(pid):null; return f?f.a:null; })(), 'own') +   /* FTX_ADP_V1: was Y!RK */
     _ftlStatCell('Y!ROS%', (_oyh && _oyh.roster_pct != null) ? Math.round(_oyh.roster_pct) + '%' : null, 'own') +
     _ftlStatCell('CBS%',   (_ocbs != null) ? _ocbs + '%' : null, 'own');
   document.getElementById('ftl-statwrap').innerHTML =
