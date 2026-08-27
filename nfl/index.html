@@ -4611,21 +4611,44 @@ document.addEventListener('click', function(e){
         var L = lists[i];
         if(L.backendOnly) continue;
         if(L.id === currentListId && view === 'watchlist') continue;   // omit-the-active rule
-        html += '<button class="rc-menu-item" data-dest="list:' + L.id + '"><span class="rc-emoji">' + (L.emoji || '\u2B50') + '</span><span class="rc-label">' + L.name + '</span></button>';
+        html += '<button class="rc-menu-item" data-dest="list:' + L.id + '"><span class="rc-emoji">' + (L.emoji || '\u2B50') + '</span><span class="rc-label">' + _rcLabelFor(L.id, L.name) + '</span></button>';
       }
       html += '<div style="height:1px;background:var(--border);margin:4px 0;"></div>';
       html += '<div class="rc-menu-header">Rankings</div>';
       var rSet = (typeof _rankSet !== 'undefined') ? _rankSet : 'redraft';
       if(!(view === 'rankings' && rSet !== 'dynasty')){
-        html += '<button class="rc-menu-item" data-dest="list:view:rankings"><span class="rc-emoji">\uD83D\uDCCB</span><span class="rc-label">Redraft Rankings</span></button>';
+        html += '<button class="rc-menu-item" data-dest="list:view:rankings"><span class="rc-emoji">\uD83D\uDCCB</span><span class="rc-label">' + _rcLabelFor('view:rankings', 'Redraft Rankings') + '</span></button>';
       }
       for(var j=0; j<ranks.length; j++){
         var R = ranks[j];
         if(view === 'rankings' && rSet === 'dynasty') continue;
-        html += '<button class="rc-menu-item" data-dest="list:' + R.id + '"><span class="rc-emoji">' + (R.emoji || '\uD83D\uDC51') + '</span><span class="rc-label">' + R.name + '</span></button>';
+        html += '<button class="rc-menu-item" data-dest="list:' + R.id + '"><span class="rc-emoji">' + (R.emoji || '\uD83D\uDC51') + '</span><span class="rc-label">' + _rcLabelFor(R.id, R.name) + '</span></button>';
       }
     }
     menu.innerHTML = html;
+  }
+
+  // RC_MENU_LABEL_PARITY_V1 (2026-08-27 -- the Dude: "change the right click menu on football
+  // to match the pull down"). The dropdown's <option> text is now the SINGLE SOURCE for a
+  // list's label. This menu used to render L.name, which is the bare brand ("FFPC Re-Draft"),
+  // so the two menus said different things about the same list.
+  // \ud83e\udea8 DO NOT paste the label strings in here a second time. Two copies of the same
+  // string in two files is how Bug #193 and the three-versions-of-the-logo mess both happened.
+  // Read it from the option, fall back to name only if the option is genuinely missing (the
+  // fan view removes backendOnly options from the select).
+  function _rcLabelFor(id, fallback){
+    try {
+      var sel = document.getElementById('list-switcher');
+      if(sel){
+        var opt = Array.prototype.filter.call(sel.options, function(o){ return o.value === id; })[0];
+        if(opt && opt.textContent){
+          // strip the leading emoji token; this menu paints its own emoji in a separate span
+          var t = opt.textContent.replace(/^\s*\S+\s+/, '').trim();
+          if(t) return t;
+        }
+      }
+    } catch(e){ /* fall through to the name */ }
+    return fallback;
   }
 
   function showMenu(x, y){
