@@ -467,7 +467,7 @@ table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned{wi
    the character alignment changes, not where the column visually sits. Headers stay centered.
    These land AFTER the width rules above on purpose — same specificity, later wins. */
 table.watch-list tbody td.col-exp{text-align:left;padding-left:9px}       /* label R/1/10 — first chars stack. content 26, widest "12"=13.2 → 3+(26−13.2)/2≈9 */
-table.watch-list tbody td.col-yrank{text-align:right;padding-right:10px}  /* Ftx ADP is a DECIMAL, one place always, so right-align stacks the points for free — and it faces its right-aligned Owned neighbours (football's YRANK_RIGHT_ALIGN_V1 gap lesson). content 44, widest "243.3"=29.1 → 3+(44−29.1)/2≈10 */
+table.watch-list tbody td.col-yrank{text-align:right;padding-right:14px}  /* Ftx ADP: right-aligned so the decimal points stack. STATBOX_CENTER_NBA_V1 retune 10→14: center the TYPICAL 4-glyph value ("11.9"=22.4px → 3+(44−22.4)/2≈14) rather than the rare widest; "243.3" (29.1) still fits (29.1+14=43.1≤44), sitting ~3px left of center. The Dude's page-read beat the widest-value math. */
 table.watch-list tbody td.col-yowned{text-align:right;padding-right:12px} /* percents — the % signs and units digits stack. content 48, "100%"=30.2 → 3+(48−30.2)/2≈12. NOTE: football's Owned columns still carry the centered defect (flagged 8/26, never ruled) — basketball now leads; port back on his word. */
 table.watch-list tbody td.col-cbsowned{text-align:right;padding-right:21px} /* content 59, base right pad 7 → 7+(59−30.2)/2≈21 */
 /* RANKINGS_NOTES_NBA_V1 (2026-06-29 — PC Walter, per Matt via the Dude): editable Note column +
@@ -510,7 +510,8 @@ body.day-mode table.watch-list tbody td.col-stat-info .stat-cell{color:#1a1a1a}
 /* STAT_CAT_WASH_V1 day mode: the Dude's call is black numbers on white with a grey wash.
    Headers keep the day split (category dark, informational grey); only the NUMBERS go black. */
 body.day-mode table.watch-list tbody td.col-stat-info{color:#1a1a1a}
-table.watch-list thead th.col-stat{width:40px;text-align:left}
+table.watch-list thead th.col-stat{width:40px;text-align:center;position:relative}  /* STATBOX_CENTER_NBA_V1 part 2: was text-align:left — headers sat hard left while the value glyphs rode right, two alignments facing away from each other across the whole stat block (the page-wide "everything's shifted right" the Dude caught on 8/27). Centered now, over the centered number boxes. */
+table.watch-list thead th.col-stat .sort-arrow{position:absolute;right:1px;top:50%;transform:translateY(-50%)}  /* STATBOX_CENTER_NBA_V1: the arrow used to ride in the centering math and shoved every label ~half an arrow left of true center. Absolute = the LABEL centers exactly; the arrow pins to the column edge. Stat headers only — wide labels like CBS Owned would collide with an absolute arrow. */
 /* STAT_HEADER_COLORS_V1 (2026-06-07) — two-tone orange, applied to BOTH the header AND the
    data cells so each column reads as one color group. col-stat-a = counting (light orange),
    col-stat-b = shooting/percentages (deep orange). GP stays plain. */
@@ -541,7 +542,22 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 /* FROM_THE_LOGO_V1 — names are clickable to open the player detail overlay */
 .player-name.ftl-clickable{cursor:pointer;}
 .player-name.ftl-clickable:hover{color:var(--court-bright);text-decoration:underline;}
-.stat-cell{font-weight:700;color:#fb923c;font-family:'Nunito Sans',sans-serif;display:block;text-align:right;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1}
+.stat-cell{font-weight:700;color:#fb923c;font-family:'Nunito Sans',sans-serif;display:block;width:23px;margin-left:auto;margin-right:auto;text-align:right;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1}
+/* STATBOX_CENTER_NBA_V1 (2026-08-27, the Dude's catch off the live page: "assists, it's not even
+   under assists. Steals is almost under blocks."). DECIMAL_ALIGN_V1 below made this span a FULL-WIDTH
+   right-aligned block — decimal points stacked (correct) but the whole digit line rode the far right
+   edge of every cell while the headers sit centered, so every value read about half a column right of
+   its own label, page-wide. Walter's first check compared the BOX center to the header and passed on a
+   visibly wrong page — the 8/26 lesson again: the box was centered, the GLYPHS were not. THE FIX is
+   football's FPTS_CENTER_BLOCK recipe: an equal-width box sized to the WIDEST REAL VALUE, right-aligned
+   inside (points still stack), the box centered in the cell (margin auto), so the digit line sits under
+   the header. MEASURED at the real 600/11px tabular Nunito Sans: widest plain value "29.2"/"33.5" =
+   22.4px → 23px box. Percent cells carry the % and need more: "51.2%" = 32.7px → 33px box via .stat-pct
+   (rare "100.0%" = 39.3px overflows the box left by ~6px, right edge stays anchored, accepted).
+   GP is integer-only ("82" = 13.2px) so it sits ~5px right of true center inside the shared box —
+   accepted, it beats a per-column class zoo. DECIMAL_ALIGN_V1's alignment GOAL still stands; only its
+   full-width delivery is retired — do not restore display:block without a width. */
+.stat-cell.stat-pct{width:33px}
 /* DECIMAL_ALIGN_V1 (2026-08-25) — twin of the football change, but basketball needed a DIFFERENT
    half of it, which is the whole story of this pair.
    Basketball ALREADY keeps the trailing .0 (POINTZERO_V1, 2026-06-28, per Matt). Football never got
@@ -557,7 +573,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
    tabular figures force equal digit widths -- without them a 1 is narrower than an 8 and the points
    still land a hair apart even right-aligned. Percentages keep their % inside the span and still
    line up, since they all carry exactly one decimal. */
-.stat-zero{color:var(--text3);font-weight:400}
+.stat-zero{color:var(--text3);font-weight:400;display:block;text-align:center}  /* STATBOX_CENTER_NBA_V1: dash centers under the header like the sized number boxes */
 
 /* ══════════ FROM THE LOGO — player detail overlay (FROM_THE_LOGO_V1, 2026-06-07) ══════════
    Ported from the baseball Deep Cut (#player-page-overlay / .ppo-* pattern). NBA orange theme.
@@ -7688,7 +7704,7 @@ function statCellOrDash(val, decimals){
 }
 function pctCellOrDash(pct){
   if(pct == null || !isFinite(pct)) return '<span class="stat-zero">—</span>';
-  return '<span class="stat-cell">' + pct.toFixed(1) + '%</span>'; // PCTSIGN_V1 (2026-06-28, per Matt): append % to FG%/FT%/3P% cells
+  return '<span class="stat-cell stat-pct">' + pct.toFixed(1) + '%</span>'; // PCTSIGN_V1 (2026-06-28, per Matt): append % to FG%/FT%/3P% cells  // STATBOX_CENTER_NBA_V1: wider box for the % sign
 }
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
