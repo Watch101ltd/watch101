@@ -454,6 +454,22 @@ table.watch-list thead th.col-note{width:144px;text-align:left}
 table.watch-list thead th.col-yrank,table.watch-list tbody td.col-yrank{width:54px;text-align:center}  /* FTX_ADP_V1: widened for 'Ftx ADP' label */
 table.watch-list thead th.col-yowned,table.watch-list tbody td.col-yowned{width:50px;text-align:center}
 table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned{width:50px;text-align:center}
+/* ── ALIGN_PASS_NBA_V1 (2026-08-27, Bug #196 — Matt on the 8/27 call: "this is left justify,
+   this is right justified", the Dude: "They're off. Yep.") ─────────────────────────────────
+   Basketball's port of football's 8/26-8/27 alignment work, and it is SMALLER than football's
+   because this page's base td is already text-align:left — Team and Age were verified correct
+   as-is (Team first-chars already stack; every NBA age is a uniform XX.X). The four offenders
+   were the explicit text-align:center overrides above, centering values of ragged widths.
+   THE ANCHOR PRINCIPLE (both 8/26 feature docs, do not "harmonise" them): a LABEL anchors on
+   its first character (left); a MAGNITUDE anchors on its decimal point or unit (right).
+   All paddings MEASURED LIVE 2026-08-27 on the real page at the real font (700 11px Nunito
+   Sans) and re-center each block per football's formula base + (content − widest)/2, so only
+   the character alignment changes, not where the column visually sits. Headers stay centered.
+   These land AFTER the width rules above on purpose — same specificity, later wins. */
+table.watch-list tbody td.col-exp{text-align:left;padding-left:9px}       /* label R/1/10 — first chars stack. content 26, widest "12"=13.2 → 3+(26−13.2)/2≈9 */
+table.watch-list tbody td.col-yrank{text-align:right;padding-right:10px}  /* Ftx ADP is a DECIMAL, one place always, so right-align stacks the points for free — and it faces its right-aligned Owned neighbours (football's YRANK_RIGHT_ALIGN_V1 gap lesson). content 44, widest "243.3"=29.1 → 3+(44−29.1)/2≈10 */
+table.watch-list tbody td.col-yowned{text-align:right;padding-right:12px} /* percents — the % signs and units digits stack. content 48, "100%"=30.2 → 3+(48−30.2)/2≈12. NOTE: football's Owned columns still carry the centered defect (flagged 8/26, never ruled) — basketball now leads; port back on his word. */
+table.watch-list tbody td.col-cbsowned{text-align:right;padding-right:21px} /* content 59, base right pad 7 → 7+(59−30.2)/2≈21 */
 /* RANKINGS_NOTES_NBA_V1 (2026-06-29 — PC Walter, per Matt via the Dude): editable Note column +
    note badge on the rankings tabs, mirroring baseball's main-list Notes. */
 #rankings-table th.col-note,#rankings-table td.col-note{width:160px;max-width:160px;text-align:left;overflow:hidden}
