@@ -9132,9 +9132,14 @@ function openNotePopup(pid, curText, placeholder, onSave, hist){
     if(histDiv){ histDiv.style.display = 'block'; _noteHistRenderList(); }
     _noteHistModeLine();
     _notePopupSave = function(){
-      var v = ta.value; var m = _noteHistMode; closeNotePopup();
-      if(m && m.type === 'add'){ _noteHist && _noteHist.onAdd(v); }
-      else if(m && m.type === 'edit'){ _noteHist && _noteHist.onEdit(m.i, v); }
+      // NOTE_HISTORY_V1 SAVE FIX (2026-08-27, the Dude's find: "It's not saving my notes"):
+      // closeNotePopup() NULLS _noteHist, so referencing it AFTER close made Save a silent
+      // no-op. Capture the handlers BEFORE closing — the delete path below already did this
+      // correctly; the save path did not. The seam the Node harness could not reach.
+      var v = ta.value; var m = _noteHistMode; var h = _noteHist;
+      closeNotePopup();
+      if(h && m && m.type === 'add'){ h.onAdd(v); }
+      else if(h && m && m.type === 'edit'){ h.onEdit(m.i, v); }
     };
   } else {
     if(btnRow) btnRow.style.display = 'none';
