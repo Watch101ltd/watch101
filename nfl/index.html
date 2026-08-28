@@ -845,6 +845,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-header-right{font-size:10px;color:var(--text3);letter-spacing:0.1em;margin-right:48px;}  /* BUG49_PHASE2C: clear the close X */
 #ftl-overlay .ftl-hero{padding:10px 16px;display:flex;gap:14px;align-items:flex-start;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap;}
 #ftl-overlay .ftl-photo{width:90px;height:90px;border-radius:50%;border:2px solid var(--turf);object-fit:cover;object-position:center top;background:var(--surface2);flex-shrink:0;}
+#ftl-overlay .ftl-photo.ftl-deflogo{object-fit:contain;object-position:center;padding:8px;box-sizing:border-box;}  /* DEF_CARD_LOGO_V1 (2026-08-28, Bug #199): a team logo is a whole mark, not a face. cover would crop it against the ring; contain plus padding keeps it inside. DEF only. */
 #ftl-overlay .ftl-meta{flex:1;min-width:260px}
 /* CARD_FONT_V1: the player's name, same reasoning as .ftl-logo above. 700 rather
    than 800 — Matt's first word about the old one was "it's bolded". */
@@ -10297,12 +10298,33 @@ function openFromTheLogo(pid, _keepRange){
   const s = _ftlStatsRow(pid) || {};
 
   const photoEl = document.getElementById('ftl-photo');
-  photoEl.src = 'https://sleepercdn.com/content/nfl/players/' + encodeURIComponent(p.player_id || pid) + '.jpg';
+  // DEF_CARD_LOGO_V1 (2026-08-28, Bug #199 -- the Dude, off a Rams card screenshot):
+  // a team defense has no headshot. Sleeper's player_id for a DEF IS the team abbreviation
+  // (LAR carries player_id "LAR", first_name "Los Angeles", last_name "Rams", no full_name),
+  // so the old line asked for /players/LAR.jpg and got a 404 on all 32 teams. The logos live
+  // on the SAME CDN the headshots already come from:
+  //     https://sleepercdn.com/images/team_logos/nfl/<abbrev-lowercase>.png
+  // All 32 were loaded and rendered into this exact 90px circle before this shipped.
+  const _isDef = (p.position === 'DEF') || (Array.isArray(p.fantasy_positions) && p.fantasy_positions.indexOf('DEF') !== -1);
+  const _teamAbbr = String(p.team || p.player_id || pid || '').toLowerCase();
+  // PHOTO_FALLBACK_REARM_V1 (same ship): the inline onerror ended with this.onerror = null,
+  // which spends the fallback for the LIFE OF THE PAGE. The first broken image in a session
+  // got the grey silhouette and every one after it rendered ALT TEXT instead -- which is what
+  // the Rams card was showing. Re-arming it here means every card open gets its own fallback.
+  photoEl.onerror = function(){ this.onerror = null; this.src = 'https://sleepercdn.com/images/v2/icons/player_default.webp'; };
+  photoEl.classList.toggle('ftl-deflogo', !!_isDef);
+  photoEl.src = _isDef
+    ? ('https://sleepercdn.com/images/team_logos/nfl/' + encodeURIComponent(_teamAbbr) + '.png')
+    : ('https://sleepercdn.com/content/nfl/players/' + encodeURIComponent(p.player_id || pid) + '.jpg');
   const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
   photoEl.alt = name;
 
   document.getElementById('ftl-name').textContent = name;
-  const subParts = [ (p.team || '—'), (p.position || '—'), 'Age ' + nflDecimalAge(p) ];
+  // DEF_CARD_LOGO_V1 (2026-08-28): a team defense has no age and the segment printed
+  // "Age —", which read as a defect. His call: drop it entirely for DEF rather than
+  // print a dash. Height, weight and years_exp already vanish on their own when absent.
+  const subParts = [ (p.team || '—'), (p.position || '—') ];
+  if(!_isDef) subParts.push('Age ' + nflDecimalAge(p));
   if(p.years_exp != null && p.years_exp !== '') subParts.push((Number(p.years_exp) === 0 ? 'Rookie' : (p.years_exp + ' yr exp')));
   // HT_WT_V1 (2026-08-19 -- PC Walter, per Matt via the Dude on the 8/19 call, placement from
   // the Dude's screenshot: the hero sub-line, right after age/exp). Both fields come from
