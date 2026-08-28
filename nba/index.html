@@ -1707,6 +1707,12 @@ document.addEventListener('DOMContentLoaded',function(){
 <!-- Tab row to switch between the Watch List view and the NBA Players (feeder pool) view.
      Mirrors baseball's tab-nav-group. Watch List is the default view. -->
 <div class="page-nav" id="page-nav">
+  <!-- RANK_NAV_HIDE_V1 (2026-08-28, PC Walter, per the Dude). THIS TAB ROW BELONGS TO THE
+       WATCH LISTS ONLY. showRankingsView() hides it; showWatchListView() and showNbaPlayersView()
+       put it back. Redraft Rankings and Dynasty Rankings are reached through the list
+       switcher, so "Watch List" and "NBA Players" were dead weight sitting above them.
+       Driven inline from JS on purpose so the phone block's display:none !important still
+       wins on phone. Do not convert this to a CSS class without checking that rule. -->
   <button class="page-nav-btn active" id="nav-watchlist" onclick="showWatchListView()">🏠 Watch List</button>
   <button class="page-nav-btn" id="nav-nbaplayers" onclick="showNbaPlayersView()">🏀 NBA Players</button>
   <!-- RANKINGS_TAB_REMOVAL_V1 (2026-08-05, PC Walter, per the Dude). The 📋 Rankings tab that
@@ -4839,6 +4845,7 @@ function _hideAllViews(){
 function showWatchListView(){
   _hideAllViews();
   var wl = document.getElementById('watchlist-view'); if(wl) wl.style.display = '';
+  var _pnShow = document.getElementById('page-nav'); if(_pnShow) _pnShow.style.display = '';   // RANK_NAV_HIDE_V1
   var b = document.getElementById('nav-watchlist'); if(b) b.classList.add('active');
   // BUG37_RANKINGS_OWN_TITLE_V1 -- returning from rankings: point the dropdown back at the
   // active list, then let _updateYearLabels restore its title + tagline. Both halves of the
@@ -4852,6 +4859,7 @@ function showWatchListView(){
 function showNbaPlayersView(){
   _hideAllViews();
   var np = document.getElementById('nbaplayers-view'); if(np) np.style.display = '';
+  var _pnShow = document.getElementById('page-nav'); if(_pnShow) _pnShow.style.display = '';   // RANK_NAV_HIDE_V1
   var b = document.getElementById('nav-nbaplayers'); if(b) b.classList.add('active');
   // BUG37_RANKINGS_OWN_TITLE_V1 -- same exit restore as showWatchListView (widened for
   // dynasty-nba by DYNASTY_RANKINGS_V1).
@@ -4892,6 +4900,7 @@ function showRankingsView(set){
   _rankSet = target;
   _hideAllViews();
   var rv = document.getElementById('rankings-view'); if(rv) rv.style.display = '';
+  var _pnHide = document.getElementById('page-nav'); if(_pnHide) _pnHide.style.display = 'none';   // RANK_NAV_HIDE_V1
   var _t = document.getElementById('active-list-title');
   var _tg = document.getElementById('active-list-subtitle');
   if(_rankSet === 'dynasty'){
