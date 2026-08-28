@@ -8982,6 +8982,80 @@ function _noteBadgeHtml(pid){
     return '<span class="note-badge" onclick="event.stopPropagation();openFromTheLogo(&quot;' + safePid + '&quot;)" title="New note — added or changed within the last 48 hours. Click to read." role="button" tabindex="0">📝</span>';
   } catch(e){ return ''; }
 }
+// ── NOTE_HISTORY_V1 (2026-08-27, per the Dude — designed 8/25, his four rulings banked:
+// edit/delete ANY note · customers see the history · all lists both sports · deleting the
+// last note clears completely · edits KEEP their original date · unlimited entries ·
+// basketball first) ──────────────────────────────────────────────────────────────────────
+// MIRROR, DO NOT REPLACE: item.note / item.note_saved_at ALWAYS equal the newest entry, so
+// every existing reader (the main-list cell, the 48h badge, the card, the publish pipeline)
+// keeps working untouched. The server needs no change: it stores player objects verbatim.
+function _wlNotesEnsure(item){
+  if(!item || typeof item !== 'object') return item;
+  if(!Array.isArray(item.notes)){
+    if(item.note != null && String(item.note).trim()){
+      var _at = Number(item.note_saved_at);
+      // Legacy note with no stamp: at:null and rendered "date unknown" — honest beats invented.
+      item.notes = [{ t: String(item.note), at: (isFinite(_at) && _at > 0) ? _at : null }];
+    } else {
+      item.notes = [];
+    }
+  }
+  return item;
+}
+function _wlNotesSync(item){
+  if(!item || !Array.isArray(item.notes)) return;
+  if(item.notes.length){
+    var last = item.notes[item.notes.length - 1];
+    item.note = String(last.t || '');
+    if(last.at != null && isFinite(Number(last.at))){ item.note_saved_at = Number(last.at); }
+    else { delete item.note_saved_at; }   // unknown date can never light the 48h NEW badge
+  } else {
+    item.note = '';
+    delete item.note_saved_at;   // his ruling: deleting the last note clears completely
+  }
+}
+function _wlNotesCommit(idx){
+  _wlNotesSync(_watchList[idx]);
+  try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
+  renderWatchList();
+  try { if(typeof autoSaveToNbaNAS === 'function') autoSaveToNbaNAS(); }
+  catch(e){ console.warn('[NOTE_HISTORY_V1] autosave failed:', e); }
+}
+function _wlNoteAdd(pid, text){
+  if(_blockIfReadOnly('_wlNoteAdd')) return;
+  var idx = _wlIndexOf(pid); if(idx < 0) return;
+  var t = String(text || '').trim(); if(!t) return;   // an empty New Note is a cancel, not an entry
+  _wlNotesEnsure(_watchList[idx]);
+  _watchList[idx].notes.push({ t: t, at: Date.now() });
+  _wlNotesCommit(idx);
+}
+function _wlNoteEdit(pid, i, text){
+  if(_blockIfReadOnly('_wlNoteEdit')) return;
+  var idx = _wlIndexOf(pid); if(idx < 0) return;
+  _wlNotesEnsure(_watchList[idx]);
+  var arr = _watchList[idx].notes;
+  if(!(i >= 0 && i < arr.length)) return;
+  var t = String(text || '').trim();
+  if(!t){ _wlNoteDelete(pid, i); return; }   // emptying an entry deletes it
+  arr[i].t = t;   // his ruling: the date does NOT change — an edit fixes a typo, it does not rewrite when he thought it
+  _wlNotesCommit(idx);
+}
+function _wlNoteDelete(pid, i){
+  if(_blockIfReadOnly('_wlNoteDelete')) return;
+  var idx = _wlIndexOf(pid); if(idx < 0) return;
+  _wlNotesEnsure(_watchList[idx]);
+  var arr = _watchList[idx].notes;
+  if(!(i >= 0 && i < arr.length)) return;
+  arr.splice(i, 1);
+  _wlNotesCommit(idx);
+}
+function _wlNoteDateLabel(at){
+  if(at == null || !isFinite(Number(at))) return 'date unknown';
+  try { return new Date(Number(at)).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'}); }
+  catch(e){ return 'date unknown'; }
+}
+// ── /NOTE_HISTORY_V1 helpers ────────────────────────────────────────────────────────────
+
 function _setWlNote(pid, text){
   if(_blockIfReadOnly('_setWlNote')) return;
   const idx = _wlIndexOf(pid);
@@ -9033,7 +9107,9 @@ function _setWlNote(pid, text){
 // untouched. Backdrop click SAVES (old inline editors saved on blur — clicking away has always
 // meant "keep it"). Esc cancels. Ctrl+Enter saves. Enter is a newline now.
 var _notePopupSave = null;
-function openNotePopup(pid, curText, placeholder, onSave){
+var _noteHist = null;          // NOTE_HISTORY_V1: {pid, entries, onAdd, onEdit, onDelete} or null (legacy callers)
+var _noteHistMode = null;      // null | {type:'add'} | {type:'edit', i}
+function openNotePopup(pid, curText, placeholder, onSave, hist){
   var modal = document.getElementById('note-editor-modal');
   var ta = document.getElementById('note-editor-textarea');
   var title = document.getElementById('note-editor-player');
@@ -9043,30 +9119,119 @@ function openNotePopup(pid, curText, placeholder, onSave){
   title.textContent = nm || '';
   ta.value = curText || '';
   ta.placeholder = placeholder || '';
-  _notePopupSave = function(){ var v = ta.value; closeNotePopup(); onSave(v); };
+  // NOTE_HISTORY_V1 — with no hist argument this popup behaves EXACTLY as before (rankings
+  // callers pass four args and are untouched until their own build step).
+  _noteHist = (hist && typeof hist === 'object') ? hist : null;
+  _noteHistMode = null;
+  var btnRow = document.getElementById('note-editor-newbtn-row');
+  var histDiv = document.getElementById('note-editor-history');
+  var modeLine = document.getElementById('note-editor-mode-line');
+  if(_noteHist){
+    _noteHistMode = _noteHist.entries.length ? { type:'edit', i: _noteHist.entries.length - 1 } : { type:'add' };
+    if(btnRow) btnRow.style.display = _noteHist.entries.length ? 'block' : 'none';
+    if(histDiv){ histDiv.style.display = 'block'; _noteHistRenderList(); }
+    _noteHistModeLine();
+    _notePopupSave = function(){
+      var v = ta.value; var m = _noteHistMode; closeNotePopup();
+      if(m && m.type === 'add'){ _noteHist && _noteHist.onAdd(v); }
+      else if(m && m.type === 'edit'){ _noteHist && _noteHist.onEdit(m.i, v); }
+    };
+  } else {
+    if(btnRow) btnRow.style.display = 'none';
+    if(histDiv){ histDiv.style.display = 'none'; histDiv.innerHTML = ''; }
+    if(modeLine) modeLine.style.display = 'none';
+    _notePopupSave = function(){ var v = ta.value; closeNotePopup(); onSave(v); };
+  }
   modal.style.display = 'flex';
   ta.focus();
   try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){}
+}
+function _noteHistModeLine(){
+  var el = document.getElementById('note-editor-mode-line');
+  if(!el) return;
+  if(!_noteHist || !_noteHistMode){ el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  if(_noteHistMode.type === 'add'){ el.textContent = '\u270F\uFE0F Writing a NEW note \u2014 the old ones are kept below.'; }
+  else {
+    var e = _noteHist.entries[_noteHistMode.i];
+    el.textContent = '\u270F\uFE0F Editing the note from ' + _wlNoteDateLabel(e ? e.at : null) + ' (its date will not change).';
+  }
+}
+function _noteHistArmNew(){
+  if(!_noteHist) return;
+  var ta = document.getElementById('note-editor-textarea');
+  _noteHistMode = { type:'add' };
+  if(ta){ ta.value = ''; ta.focus(); }
+  _noteHistModeLine();
+}
+function _noteHistRenderList(){
+  var div = document.getElementById('note-editor-history');
+  if(!div || !_noteHist) return;
+  var entries = _noteHist.entries;
+  if(entries.length <= 1){ div.innerHTML = '<div style="font-size:11px;color:var(--text3)">No earlier notes yet \u2014 "+ New Note" starts the history.</div>'; return; }
+  var html = '<div style="font-size:10px;letter-spacing:0.06em;color:var(--text3);margin-bottom:6px">EARLIER NOTES</div>';
+  for(var i = entries.length - 2; i >= 0; i--){   // newest-first, excluding the newest (it is in the box)
+    var e = entries[i];
+    html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="flex:0 0 88px;font-size:10px;color:var(--text3);padding-top:2px">' + _wlNoteDateLabel(e.at) + '</div>' +
+      '<div style="flex:1 1 auto;font-size:12px;color:var(--text2);line-height:1.4">' + escapeHtml(e.t) + '</div>' +
+      '<button onclick="_noteHistEditClick(' + i + ')" title="Edit this note (its date stays)" style="background:transparent;border:none;cursor:pointer;font-size:12px">\u270F\uFE0F</button>' +
+      '<button onclick="_noteHistDeleteClick(' + i + ')" title="Delete this note" style="background:transparent;border:none;cursor:pointer;font-size:12px">\uD83D\uDDD1</button>' +
+      '</div>';
+  }
+  div.innerHTML = html;
+}
+function _noteHistEditClick(i){
+  if(!_noteHist) return;
+  var e = _noteHist.entries[i]; if(!e) return;
+  var ta = document.getElementById('note-editor-textarea');
+  _noteHistMode = { type:'edit', i: i };
+  if(ta){ ta.value = e.t; ta.focus(); }
+  _noteHistModeLine();
+}
+function _noteHistDeleteClick(i){
+  if(!_noteHist) return;
+  var e = _noteHist.entries[i]; if(!e) return;
+  if(!confirm('Delete this note from ' + _wlNoteDateLabel(e.at) + '? This cannot be undone.')) return;
+  var h = _noteHist; closeNotePopup();
+  h.onDelete(i);
 }
 function closeNotePopup(){
   var modal = document.getElementById('note-editor-modal');
   if(modal) modal.style.display = 'none';
   _notePopupSave = null;
+  _noteHist = null; _noteHistMode = null;   // NOTE_HISTORY_V1
 }
 function _notePopupSaveClick(){ if(_notePopupSave) _notePopupSave(); }
 function _notePopupKeydown(e){
   if(e.key === 'Escape'){ e.stopPropagation(); closeNotePopup(); }
   if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); _notePopupSaveClick(); }
 }
-function _notePopupBackdrop(e){ if(e.target && e.target.id === 'note-editor-modal'){ _notePopupSaveClick(); } }
+function _notePopupBackdrop(e){
+  if(!(e.target && e.target.id === 'note-editor-modal')) return;
+  // NOTE_HISTORY_V1: with "+ New Note" ARMED, an outside click must CANCEL, never save —
+  // otherwise "click away" silently creates a note. Every other state keeps today's
+  // click-outside-saves behaviour.
+  if(_noteHistMode && _noteHistMode.type === 'add'){ closeNotePopup(); return; }
+  _notePopupSaveClick();
+}
 function editWlNote(pid, el){
   if(_blockIfReadOnly('editWlNote')) return;
   const idx = _wlIndexOf(pid);
   if(idx < 0) return;
-  // NOTE_POPUP_NBA_V1: was an inline <input class="note-input"> swapped into the cell.
-  // _setWlNote still does ALL the real work (48h stamp, localStorage, re-render).
-  openNotePopup(pid, _wlNote(_watchList[idx]), 'Why is this player here?', function(val){
-    _setWlNote(pid, val);
+  // NOTE_HISTORY_V1: the watch list now opens the popup in history mode. The box holds the
+  // NEWEST note ("the old note comes up" — his words); + New Note appends; earlier notes list
+  // below with edit/delete. All mutations flow through the history helpers, which keep the
+  // item.note mirror current and autosave to the NAS.
+  _wlNotesEnsure(_watchList[idx]);
+  var entries = _watchList[idx].notes;
+  var newest = entries.length ? entries[entries.length - 1].t : '';
+  openNotePopup(pid, newest, 'Why is this player here?', null, {
+    pid: pid,
+    entries: entries,
+    onAdd: function(t){ _wlNoteAdd(pid, t); },
+    onEdit: function(i, t){ _wlNoteEdit(pid, i, t); },
+    onDelete: function(i){ _wlNoteDelete(pid, i); }
   });
 }
 
@@ -9080,10 +9245,21 @@ function _wlIndexOf(pid){
   return -1;
 }
 function _normalizeWatchList(){
+  // NORMALIZE_KEEP_FIELDS_V1 (2026-08-27, Bug #197). This function dates from PRIORITY_STARS_V1
+  // (May 2026), when items really were bare pids — and it kept rebuilding every item as
+  // {pid, priority} long after items grew notes, stamps and baselines. Running at BOTH hydrate
+  // points, it silently deleted every other field from memory on every load, and the raw
+  // `players: _watchList` autosave then wrote the stripped list to the NAS. The 8/25 snapshot
+  // shows the fingerprint: every watch/101 list at zero notes while the rankings (a separate
+  // store) hold dozens. THE FIX: normalize the SHAPE, keep the OBJECT.
   if(!Array.isArray(_watchList)) return;
   _watchList = _watchList.map(item => {
     if(typeof item === 'string') return {pid: item, priority: 0};
-    if(item && typeof item === 'object' && item.pid){ return {pid: item.pid, priority: _wlPriority(item)}; }
+    if(item && typeof item === 'object' && item.pid){
+      var out = Object.assign({}, item, {pid: item.pid, priority: _wlPriority(item)});
+      if(typeof _wlNotesEnsure === 'function') _wlNotesEnsure(out);   // NOTE_HISTORY_V1 migration rides the hydrate choke point
+      return out;
+    }
     return null;
   }).filter(Boolean);
 }
@@ -9754,6 +9930,12 @@ bootstrap();
     <div id="note-editor-player" style="font-size:13px;font-weight:800;color:var(--court);margin:0 0 10px 0"></div>
     <textarea id="note-editor-textarea" rows="7" onkeydown="_notePopupKeydown(event)" style="width:100%;box-sizing:border-box;resize:vertical;background:var(--surface2,rgba(255,255,255,0.04));border:1px solid var(--court);border-radius:6px;color:var(--text);font-size:13px;line-height:1.5;padding:10px 12px;font-family:inherit;outline:none"></textarea>
     <div style="font-size:11px;color:var(--text3);margin:6px 0 12px 0">Paste a link anywhere in the note and it shows as the &#128279; chip. Ctrl+Enter saves, Esc cancels, clicking outside saves.</div>
+    <!-- NOTE_HISTORY_V1: hidden unless the caller passes a history (watch list does; rankings not yet) -->
+    <div id="note-editor-mode-line" style="display:none;font-size:11px;font-weight:800;color:var(--gold);margin:0 0 8px 0"></div>
+    <div id="note-editor-newbtn-row" style="display:none;margin:0 0 10px 0">
+      <button id="note-editor-newbtn" onclick="_noteHistArmNew()" style="background:transparent;border:1px dashed var(--court);color:var(--court);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">+ New Note</button>
+    </div>
+    <div id="note-editor-history" style="display:none;max-height:200px;overflow-y:auto;border-top:1px solid var(--border2);margin:0 0 12px 0;padding-top:8px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button onclick="closeNotePopup()" style="background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Cancel</button>
       <button onclick="_notePopupSaveClick()" style="background:var(--court);border:1px solid var(--court);color:#0d1117;border-radius:6px;padding:6px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">Save Note</button>
