@@ -646,7 +646,7 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-note-block{display:block;padding:0 0 9px;}
 /* NOTE_HISTORY_V1 step 3: the 101 block's dated timeline */
 #ftl-overlay .ftl-note-hist-entry + .ftl-note-hist-entry{margin-top:5px;padding-top:5px;border-top:1px dotted var(--border);}
-#ftl-overlay .ftl-note-date{display:inline-block;font-size:10px;color:var(--text3);margin-right:7px;min-width:74px;}
+#ftl-overlay .ftl-note-date{display:inline-block;font-size:10px;color:var(--text3);margin-right:7px;min-width:120px;}  /* NOTE_TIMESTAMP_V1: room for the military-time stamp */
 #ftl-overlay .ftl-note-block + .ftl-note-block{
   padding-top:9px;border-top:1px solid rgba(255,255,255,.10);
 }
@@ -9053,8 +9053,18 @@ function _wlNoteDelete(pid, i){
   _wlNotesCommit(idx);
 }
 function _wlNoteDateLabel(at){
+  // NOTE_TIMESTAMP_V1 (2026-08-27, the Dude: "put a timestamp on notes as well"). Date plus
+  // time of day. REGULAR 12-hour time WITH AM/PM — his explicit call, made in the same breath
+  // as the feature ("I actually don't want it done military time, I want it done regular
+  // time"). Rule #10's military preference covers Walter's WRITTEN log timestamps, not the
+  // site's display — do not "correct" this to 24h. One formatter feeds both the popup's
+  // Earlier Notes list and the card's Satten Says timeline.
   if(at == null || !isFinite(Number(at))) return 'date unknown';
-  try { return new Date(Number(at)).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'}); }
+  try {
+    var d = new Date(Number(at));
+    return d.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'}) +
+           ' \u00B7 ' + d.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit', hour12:true});
+  }
   catch(e){ return 'date unknown'; }
 }
 // ── /NOTE_HISTORY_V1 helpers ────────────────────────────────────────────────────────────
@@ -9181,7 +9191,7 @@ function _noteHistRenderList(){
   for(var i = entries.length - 2; i >= 0; i--){   // newest-first, excluding the newest (it is in the box)
     var e = entries[i];
     html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--border)">' +
-      '<div style="flex:0 0 88px;font-size:10px;color:var(--text3);padding-top:2px">' + _wlNoteDateLabel(e.at) + '</div>' +
+      '<div style="flex:0 0 128px;font-size:10px;color:var(--text3);padding-top:2px">' + _wlNoteDateLabel(e.at) + '</div>' +   /* NOTE_TIMESTAMP_V1: widened for the time */
       '<div style="flex:1 1 auto;font-size:12px;color:var(--text2);line-height:1.4">' + escapeHtml(e.t) + '</div>' +
       '<button onclick="_noteHistEditClick(' + i + ')" title="Edit this note (its date stays)" style="background:transparent;border:none;cursor:pointer;font-size:12px">\u270F\uFE0F</button>' +
       '<button onclick="_noteHistDeleteClick(' + i + ')" title="Delete this note" style="background:transparent;border:none;cursor:pointer;font-size:12px">\uD83D\uDDD1</button>' +
