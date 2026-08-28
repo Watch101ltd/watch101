@@ -3444,8 +3444,186 @@ function openHiddenList(){
   modal.style.display = 'flex';
 }
 function closeHiddenList(){ var m = document.getElementById('rank-hidden-modal'); if(m) m.style.display = 'none'; }
+// ══════════ RANK_NOTE_HISTORY_V1 (2026-08-28) - NOTE_HISTORY_V1 step 4, the rankings twin, FOOTBALL
+// The watch list got its dated note timeline on 2026-08-27. This is the same feature on the
+// surface where Matt actually writes: the Redraft and Dynasty rankings.
+//
+// MIRROR, DO NOT REPLACE, exactly as on the watch list. _rankNotes[set][pid] and
+// _rankNoteStamps[set][pid] ALWAYS equal the newest entry, so every existing reader keeps
+// working with zero change: the Note cell, the 48h badge, _rankPlayersForSave, the publish
+// pipeline, the card's fallbacks and the sort accessor. The server needs no change and no
+// container rebuild: it stores the player objects verbatim, so a new `notes` key rides along.
+//
+// HIS FOUR RULINGS, carried over unchanged from the watch list build: edit or delete ANY
+// note - customers see the history too - deleting the last note clears completely - an edit
+// KEEPS its original date - unlimited entries.
+var _rankNoteHist = { redraft: {}, dynasty: {} };   // set -> pid -> [{t, at}], oldest first
+function _rankSetKey(set){ return (set === 'dynasty') ? 'dynasty' : 'redraft'; }
+function _rankCurSet(){ return ((typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'dynasty' : 'redraft'); }
+// WRITABLE bucket getters. _rankNotesOfSet() deliberately returns a throwaway {} when a
+// bucket is missing, which is right for reading and would SILENTLY SWALLOW A WRITE. These
+// create the bucket instead. Never write through _rankNotesOfSet().
+function _rankNotesBucketOfSet(set){
+  var k = _rankSetKey(set);
+  if(!_rankNotes[k] || typeof _rankNotes[k] !== 'object') _rankNotes[k] = {};
+  return _rankNotes[k];
+}
+function _rankStampsBucketOfSet(set){
+  var k = _rankSetKey(set);
+  if(!_rankNoteStamps[k] || typeof _rankNoteStamps[k] !== 'object') _rankNoteStamps[k] = {};
+  return _rankNoteStamps[k];
+}
+function _rankHistBucketOfSet(set){
+  var k = _rankSetKey(set);
+  if(!_rankNoteHist[k] || typeof _rankNoteHist[k] !== 'object') _rankNoteHist[k] = {};
+  return _rankNoteHist[k];
+}
+var RANK_NOTE_HIST_KEY = 'watch101_nfl_rank_note_hist_v1';   // { redraft:{pid:[...]}, dynasty:{...} }
+function _rankHistSaveLocal(){
+  // Rendering a player card runs the migration, which parks an EMPTY timeline on every pid
+  // it touches. Those never reach the NAS (the payload only writes a non-empty array) but
+  // they would accumulate as dead "pid":[] keys in localStorage. Strip them on the way out:
+  // an empty timeline carries no information, and its absence is what triggers the migration
+  // to rebuild it correctly next time.
+  try {
+    var _out = { redraft: {}, dynasty: {} };
+    ['redraft','dynasty'].forEach(function(k){
+      var b = _rankNoteHist[k]; if(!b || typeof b !== 'object') return;
+      Object.keys(b).forEach(function(pid){ if(Array.isArray(b[pid]) && b[pid].length) _out[k][pid] = b[pid]; });
+    });
+    localStorage.setItem(RANK_NOTE_HIST_KEY, JSON.stringify(_out));
+  }
+  catch(e){ console.warn('[RANK_NOTE_HISTORY_V1] localStorage save failed:', e); }
+}
+function _rankHistLoadLocal(){
+  try {
+    var raw = localStorage.getItem(RANK_NOTE_HIST_KEY);
+    if(!raw) return;
+    var o = JSON.parse(raw);
+    if(o && typeof o === 'object'){
+      _rankNoteHist = { redraft:(o.redraft && typeof o.redraft === 'object') ? o.redraft : {},
+                        dynasty:(o.dynasty && typeof o.dynasty === 'object') ? o.dynasty : {} };
+    }
+  } catch(e){ console.warn('[RANK_NOTE_HISTORY_V1] localStorage load failed:', e); }
+}
+// MIGRATION - one way, idempotent, never destructive. An existing single note becomes entry
+// one. A legacy note with no stamp gets at:null and renders "date unknown": being honest
+// about not knowing beats inventing a timestamp, his 8/25 call on the watch list.
+function _rankNotesEnsure(set, pid){
+  var hb = _rankHistBucketOfSet(set);
+  if(!Array.isArray(hb[pid])){
+    var txt = _rankNoteOfSet(set, pid);
+    if(txt && String(txt).trim()){
+      var at = Number(_rankStampsBucketOfSet(set)[pid]);
+      hb[pid] = [{ t: String(txt), at: (isFinite(at) && at > 0) ? at : null }];
+    } else {
+      hb[pid] = [];
+    }
+  }
+  return hb[pid];
+}
+function _rankNotesSync(set, pid){
+  var arr = _rankHistBucketOfSet(set)[pid];
+  var nb = _rankNotesBucketOfSet(set), sb = _rankStampsBucketOfSet(set);
+  if(Array.isArray(arr) && arr.length){
+    var last = arr[arr.length - 1];
+    nb[pid] = String(last.t || '');
+    if(last.at != null && isFinite(Number(last.at))) sb[pid] = Number(last.at);
+    else delete sb[pid];    // an unknown date can never light the 48h NEW badge
+  } else {
+    delete nb[pid];         // his ruling: deleting the last note clears completely
+    delete sb[pid];         // and the stamp goes with it, so the badge can never orphan
+  }
+}
+function _rankNotesCommit(set, pid){
+  _rankNotesSync(set, pid);
+  _rankHistSaveLocal(); _rankNotesSaveLocal(); _rankStampsSaveLocal();
+  if(typeof saveRankings === 'function' && _rankPos) saveRankings(_rankPos);   // pushes to the NAS
+  if(typeof renderRankings === 'function') renderRankings();
+}
+function _rankNoteAdd(set, pid, text){
+  if(_blockIfReadOnly('_rankNoteAdd')) return;
+  var t = String(text || '').trim(); if(!t) return;   // an empty New Note is a cancel, not an entry
+  _rankNotesEnsure(set, pid);
+  _rankHistBucketOfSet(set)[pid].push({ t: t, at: Date.now() });
+  _rankNotesCommit(set, pid);
+}
+function _rankNoteEdit(set, pid, i, text){
+  if(_blockIfReadOnly('_rankNoteEdit')) return;
+  var arr = _rankNotesEnsure(set, pid);
+  if(!(i >= 0 && i < arr.length)) return;
+  var t = String(text || '').trim();
+  if(!t){ _rankNoteDelete(set, pid, i); return; }   // emptying an entry deletes it
+  arr[i].t = t;   // his ruling: the date does NOT change, an edit fixes a typo
+  _rankNotesCommit(set, pid);
+}
+function _rankNoteDelete(set, pid, i){
+  if(_blockIfReadOnly('_rankNoteDelete')) return;
+  var arr = _rankNotesEnsure(set, pid);
+  if(!(i >= 0 && i < arr.length)) return;
+  arr.splice(i, 1);
+  _rankNotesCommit(set, pid);
+}
+// Sanitise an inbound notes array off the NAS. A malformed file must not be able to poison
+// the mirror, and an entry with no text is not an entry.
+function _rankHistClean(a){
+  if(!Array.isArray(a)) return null;
+  var out = [];
+  for(var i = 0; i < a.length; i++){
+    var e = a[i]; if(!e || typeof e !== 'object') continue;
+    var t = String(e.t == null ? '' : e.t); if(!t.trim()) continue;
+    var at = Number(e.at);
+    out.push({ t: t, at: (isFinite(at) && at > 0) ? at : null });
+  }
+  return out;
+}
+// HARVEST, AND IT IS ADD-ONLY BY DESIGN. Local history always wins, because it is what Matt
+// is looking at. With no local history we adopt the payload's. The awkward middle case is a
+// browser holding a local single note and no history: rather than drop either side, the local
+// note is APPENDED if it is not already in the timeline. Nothing Matt typed can be lost by a
+// merge, which is the only property that matters here.
+function _rankHistHarvest(set, pid, itNotes, hadLocalNote, localNote, localStamp){
+  var hb = _rankHistBucketOfSet(set);
+  if(Array.isArray(hb[pid])) return hb[pid];        // local history wins, untouched
+  var inbound = _rankHistClean(itNotes);
+  if(!inbound || !inbound.length) return null;      // nothing on the NAS to adopt
+  if(hadLocalNote){
+    var lt = String(localNote == null ? '' : localNote).trim();
+    var already = inbound.some(function(e){ return e.t.trim() === lt; });
+    if(lt && !already){
+      var la = Number(localStamp);
+      inbound.push({ t: lt, at: (isFinite(la) && la > 0) ? la : null });
+    }
+  }
+  hb[pid] = inbound;
+  _rankNotesSync(set, pid);   // the mirror follows the history it just adopted
+  return inbound;
+}
+_rankHistLoadLocal();
+// ══════════ /RANK_NOTE_HISTORY_V1 helpers ══════════
+
 function editRankNote(pid, el){
   if(_blockIfReadOnly('editRankNote')) return;
+  // RANK_NOTE_HISTORY_V1 (2026-08-28): the rankings now open the popup in HISTORY mode, the
+  // same way the watch list has since 2026-08-27. The box holds the NEWEST note ("the old
+  // note comes up", his words); + New Note appends; earlier notes list below with edit and
+  // delete. All mutations flow through the history helpers, which keep the _rankNotes and
+  // _rankNoteStamps mirrors current and push to the NAS through saveRankings.
+  // The single-string path below is KEPT and reachable: if the history helpers are ever
+  // absent this degrades to exactly today's behaviour rather than to a dead Note cell.
+  if(typeof _rankNotesEnsure === 'function' && typeof _rankNoteAdd === 'function'){
+    var _rkSet = _rankCurSet();
+    var _rkEntries = _rankNotesEnsure(_rkSet, pid);
+    var _rkNewest = _rkEntries.length ? _rkEntries[_rkEntries.length - 1].t : '';
+    openNotePopup(pid, _rkNewest, "Matt's take on this player...", null, {
+      pid: pid,
+      entries: _rkEntries,
+      onAdd: function(t){ _rankNoteAdd(_rkSet, pid, t); },
+      onEdit: function(i, t){ _rankNoteEdit(_rkSet, pid, i, t); },
+      onDelete: function(i){ _rankNoteDelete(_rkSet, pid, i); }
+    });
+    return;
+  }
   // NOTE_POPUP_NFL_V1: was an inline <input class="rk-note-input"> swapped in place of the
   // .rk-note div. The save logic below is the old inline editor's done() verbatim — the
   // RANK_NOTE_BADGE_48H_V1 stamp rules are untouched; only the collection UI changed.
@@ -3964,7 +4142,7 @@ function _rankPlayersForSave(pos){
   // RANK_FILE_SAVE_V1: lifted VERBATIM out of saveRankings() so the JSON written to disk is
   // byte-for-byte the same shape the NAS receives. 🪨 Two pieces of code answering the same
   // question is what caused Bug #160. There is now one.
-  return (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankStampBucket()[pid]);   /* NOTE_SET_SPLIT_V1 */ if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; return o; });
+  return (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankStampBucket()[pid]);   /* NOTE_SET_SPLIT_V1 */ if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; /* RANK_NOTE_HISTORY_V1: the dated timeline rides the same payload, so it reaches the NAS and survives a browser wipe exactly like the note itself. Copied, never handed out by reference. */ try { var _rkH = _rankHistBucketOfSet(_rankCurSet())[pid]; if(Array.isArray(_rkH) && _rkH.length) o.notes = _rkH.map(function(e){ return { t: String(e.t || ''), at: (e.at == null ? null : Number(e.at)) }; }); } catch(_he){} return o; });
 }
 
 /* ══════════ RANK_FILE_SAVE_V1 (2026-08-23, the Dude's ask) ══════════
@@ -4220,6 +4398,7 @@ async function loadRankingsFromNAS(){
   var _rkHiddenNewest = null;   // RANK_HIDE_V1: hidden harvests from the newest-stamped payload only
   _rankLoadLocal();
   _rankNotesLoadLocal();   // RANKINGS_NOTES_NFL_V1
+  _rankHistLoadLocal();    // RANK_NOTE_HISTORY_V1
   _rankTypesLoadLocal(); _rankPrioLoadLocal();   // RANKINGS_WL_CLONE_NFL_V1
   _rankAvLoadLocal();   // AV_COL_V1
   var positions = ['Overall','QB','RB','WR','TE','DEF'];
@@ -4258,7 +4437,7 @@ async function loadRankingsFromNAS(){
           }
         } catch(_rhE){ console.warn('[RANK_HIDE_V1] hidden hydrate failed for ' + pos + ':', _rhE); }
         if(players && players.length){
-          players.forEach(function(it){ if(!it || it.pid == null) return; var _nB=_rankNoteBucket(), _sB=_rankStampBucket();   /* NOTE_SET_SPLIT_V1: harvest into the set being loaded, exactly as av does below */ if(it.note != null && String(it.note).trim() && _nB[it.pid]==null) _nB[it.pid]=String(it.note); var _hst=Number(it.note_saved_at); if(isFinite(_hst) && _hst>0 && _sB[it.pid]==null) _sB[it.pid]=_hst; if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); var _avB=_rankAvBucket(); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _avB[it.pid]==null) _avB[it.pid]=_hav;   /* AV_SET_SPLIT_V1: harvest into the set being loaded */ });   // AV_COL_V1: av harvests too  // RANKINGS_NOTES_NFL_V1 + RANK_NOTE_BADGE_48H_V1 + RANKINGS_WL_CLONE_NFL_V1: notes, their freshness stamps, type tags and priority all harvest from the NAS payload
+          players.forEach(function(it){ if(!it || it.pid == null) return; var _nB=_rankNoteBucket(), _sB=_rankStampBucket();   /* NOTE_SET_SPLIT_V1: harvest into the set being loaded, exactly as av does below */ var _rkHadLocal=(_nB[it.pid]!=null); var _rkLocalNote=_nB[it.pid]; var _rkLocalStamp=_sB[it.pid]; if(it.note != null && String(it.note).trim() && _nB[it.pid]==null) _nB[it.pid]=String(it.note); /* RANK_NOTE_HISTORY_V1: the timeline harvests alongside the string it mirrors. Add-only: local history wins, and a local note that is not already in an adopted timeline is appended rather than dropped. */ try { if(typeof _rankHistHarvest==='function') _rankHistHarvest(_rankCurSet(), it.pid, it.notes, _rkHadLocal, _rkLocalNote, _rkLocalStamp); } catch(_hhe){} var _hst=Number(it.note_saved_at); if(isFinite(_hst) && _hst>0 && _sB[it.pid]==null) _sB[it.pid]=_hst; if(Array.isArray(it.type_tags) && it.type_tags.length && _rankTypes[it.pid]==null) _rankTypes[it.pid]=it.type_tags.slice(); var _hpv=Number(it.priority); if(isFinite(_hpv) && _hpv>0 && _rankPriorities[it.pid]==null) _rankPriorities[it.pid]=_hpv; var _hav=Number(it.av); var _avB=_rankAvBucket(); if(isFinite(_hav) && _hav>=0 && it.av!=null && it.av!=='' && _avB[it.pid]==null) _avB[it.pid]=_hav;   /* AV_SET_SPLIT_V1: harvest into the set being loaded */ });   // AV_COL_V1: av harvests too  // RANKINGS_NOTES_NFL_V1 + RANK_NOTE_BADGE_48H_V1 + RANKINGS_WL_CLONE_NFL_V1: notes, their freshness stamps, type tags and priority all harvest from the NAS payload
           // RANKINGS_LIVE_SEED_V1 -- only a HAND-DRAGGED order (manual:true in the saved payload) is
           // adopted. Legacy snapshots (the frozen 2026-06-28 saves) have no flag, so they are ignored
           // and the tab falls through to the live Yahoo seed in renderRankings.
@@ -9899,10 +10078,19 @@ function _ftlRenderMattsTake(pid){
     } catch(e){}
     try {
       if (typeof _rankNoteOfSet === 'function'){
-        const r = _rankNoteOfSet('redraft', pid);
-        if (r && r.trim()) _cnBlocks.push({ kind:'rd', label:'Redraft Rankings', text:r });
-        const d = _rankNoteOfSet('dynasty', pid);
-        if (d && d.trim()) _cnBlocks.push({ kind:'dy', label:'Dynasty Rankings', text:d });
+        // RANK_NOTE_HISTORY_V1 (2026-08-28): the rankings blocks now carry their FULL dated
+        // timeline, exactly like the 101 block above. Fans see it too, his 8/25 ruling. The
+        // single-string push is kept as the fallback, so this can only ever show MORE.
+        const _rkPushBlock = function(set, kind, label){
+          let _arr = [];
+          try { if (typeof _rankNotesEnsure === 'function') _arr = _rankNotesEnsure(set, pid) || []; } catch(e){}
+          _arr = _arr.filter(function(n){ return n && String(n.t||'').trim(); });
+          if (_arr.length){ _cnBlocks.push({ kind:kind, label:label, entries:_arr }); return; }
+          const v = _rankNoteOfSet(set, pid);
+          if (v && v.trim()) _cnBlocks.push({ kind:kind, label:label, text:v });
+        };
+        _rkPushBlock('redraft', 'rd', 'Redraft Rankings');
+        _rkPushBlock('dynasty', 'dy', 'Dynasty Rankings');
       } else if (typeof _rankNoteFor === 'function'){
         const one = _rankNoteFor(pid);                       // pre-split fallback
         if (one && one.trim()) _cnBlocks.push({ kind:'rd', label:'Rankings', text:one });
