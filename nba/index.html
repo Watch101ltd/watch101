@@ -644,6 +644,9 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 /* CARD_NOTE_STACK_V1 (2026-08-23) — every note Matt holds on a player, stacked and
    labelled by where he wrote it. 101 List always first, per the Dude. */
 #ftl-overlay .ftl-note-block{display:block;padding:0 0 9px;}
+/* NOTE_HISTORY_V1 step 3: the 101 block's dated timeline */
+#ftl-overlay .ftl-note-hist-entry + .ftl-note-hist-entry{margin-top:5px;padding-top:5px;border-top:1px dotted var(--border);}
+#ftl-overlay .ftl-note-date{display:inline-block;font-size:10px;color:var(--text3);margin-right:7px;min-width:74px;}
 #ftl-overlay .ftl-note-block + .ftl-note-block{
   padding-top:9px;border-top:1px solid rgba(255,255,255,.10);
 }
@@ -9596,7 +9599,15 @@ function _ftlRenderMattsTake(pid){
     const _cnBlocks = [];
     try {
       const i = _wlIndexOf(pid);
-      if (i >= 0){ const v = _wlNote(_watchList[i]); if (v && String(v).trim()) _cnBlocks.push({ kind:'wl', label:'101 List', text:String(v) }); }
+      if (i >= 0){
+        // NOTE_HISTORY_V1 step 3 (2026-08-27): the 101 block now carries the FULL history —
+        // every note, oldest to newest, each with its date. Fans see it too (his 8/25 ruling).
+        // The rankings blocks below keep their single string until THEIR history ships (step 4).
+        if (typeof _wlNotesEnsure === 'function') _wlNotesEnsure(_watchList[i]);
+        const _arr = (Array.isArray(_watchList[i].notes) ? _watchList[i].notes : []).filter(function(n){ return n && String(n.t||'').trim(); });
+        if (_arr.length){ _cnBlocks.push({ kind:'wl', label:'101 List', entries:_arr }); }
+        else { const v = _wlNote(_watchList[i]); if (v && String(v).trim()) _cnBlocks.push({ kind:'wl', label:'101 List', text:String(v) }); }
+      }
     } catch(e){}
     try {
       if (typeof _rankNoteOfSet === 'function'){
@@ -9619,6 +9630,20 @@ function _ftlRenderMattsTake(pid){
 
     if (_cnBlocks.length){
       noteEl.innerHTML = _cnBlocks.map(function(b){
+        // NOTE_HISTORY_V1 step 3: a block with .entries renders the whole timeline, oldest to
+        // newest, one dated line per note. A block with .text renders exactly as before.
+        if (b.entries){
+          const inner = b.entries.map(function(e){
+            const spE = _splitNoteAndUrl(e.t);
+            return '<div class="ftl-note-hist-entry"><span class="ftl-note-date">' +
+                   ((typeof _wlNoteDateLabel === 'function') ? _wlNoteDateLabel(e.at) : '') + '</span>' +
+                   escapeHtml(spE.text) + _renderNoteLinkBadge(spE.url) + '</div>';
+          }).join('');
+          return '<div class="ftl-note-block ftl-note-' + b.kind + '">' +
+                   '<span class="ftl-note-tag">' + escapeHtml(b.label) + '</span>' +
+                   '<span class="ftl-note-body">' + inner + '</span>' +
+                 '</div>';
+        }
         const sp = _splitNoteAndUrl(b.text);
         return '<div class="ftl-note-block ftl-note-' + b.kind + '">' +
                  '<span class="ftl-note-tag">' + escapeHtml(b.label) + '</span>' +
@@ -9628,7 +9653,8 @@ function _ftlRenderMattsTake(pid){
       // SCROLL, NOT GROWTH — the Dude's call: "two Satten notes with a scroll sounds
       // perfect." One note therefore looks exactly as it does today and three never
       // blow the card open, on a card he and Matt have both been trying to slim down.
-      noteEl.classList.toggle('ftl-note-scroll', _cnBlocks.length > 2);
+      var _cnCount = _cnBlocks.reduce(function(a, b){ return a + (b.entries ? b.entries.length : 1); }, 0);   // NOTE_HISTORY_V1 step 3: a 5-note history must scroll like 5 blocks would
+      noteEl.classList.toggle('ftl-note-scroll', _cnCount > 2);
     } else {
       noteEl.classList.remove('ftl-note-scroll');
       noteEl.innerHTML = '<em>No notes from Matt yet.</em>';
