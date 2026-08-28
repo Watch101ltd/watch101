@@ -1252,6 +1252,9 @@ body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.c
 /* CARD_NOTE_STACK_V1 (2026-08-23) — every note Matt holds on a player, stacked and
    labelled by where he wrote it. 101 List always first, per the Dude. */
 #ftl-overlay .ftl-note-block{display:block;padding:0 0 9px;}
+/* NOTE_HISTORY_V1: the 101 block's dated timeline */
+#ftl-overlay .ftl-note-hist-entry + .ftl-note-hist-entry{margin-top:5px;padding-top:5px;border-top:1px dotted var(--border);}
+#ftl-overlay .ftl-note-date{display:inline-block;font-size:10px;color:var(--text3);margin-right:7px;min-width:120px;}
 #ftl-overlay .ftl-note-block + .ftl-note-block{
   padding-top:9px;border-top:1px solid rgba(255,255,255,.10);
 }
@@ -8788,6 +8791,85 @@ function _noteBadgeHtml(pid){
     return '<span class="note-badge" onclick="event.stopPropagation();openFromTheLogo(&quot;' + safePid + '&quot;)" title="New note — added or changed within the last 48 hours. Click to read." role="button" tabindex="0">📝</span>';
   } catch(e){ return ''; }
 }
+// ── NOTE_HISTORY_V1 — FOOTBALL PORT (2026-08-27, per the Dude: "port this over to football,
+// but be careful — football already has a whole lot of Matt's notes"). SAFETY, stated plainly:
+// this block touches ONLY the watch-list note machinery. Matt's real football notes live in
+// the RANKINGS stores (_rankNotes — dozens of live notes, verified in the 8/25 snapshot) and
+// nothing here reads or writes them. The migration below only ever ADDS (it builds notes[]
+// FROM an existing note string); it never deletes. Same four rulings as basketball: delete-last
+// clears · edits keep their date · unlimited · MIRROR, DO NOT REPLACE (item.note always equals
+// the newest entry, so every existing reader keeps working untouched).
+function _wlNotesEnsure(item){
+  if(!item || typeof item !== 'object') return item;
+  if(!Array.isArray(item.notes)){
+    if(item.note != null && String(item.note).trim()){
+      var _at = Number(item.note_saved_at);
+      item.notes = [{ t: String(item.note), at: (isFinite(_at) && _at > 0) ? _at : null }];
+    } else {
+      item.notes = [];
+    }
+  }
+  return item;
+}
+function _wlNotesSync(item){
+  if(!item || !Array.isArray(item.notes)) return;
+  if(item.notes.length){
+    var last = item.notes[item.notes.length - 1];
+    item.note = String(last.t || '');
+    if(last.at != null && isFinite(Number(last.at))){ item.note_saved_at = Number(last.at); }
+    else { delete item.note_saved_at; }
+  } else {
+    item.note = '';
+    delete item.note_saved_at;
+  }
+}
+function _wlNotesCommit(idx){
+  _wlNotesSync(_watchList[idx]);
+  try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
+  renderWatchList();
+  try { if(typeof autoSaveToNflNAS === 'function') autoSaveToNflNAS(); }
+  catch(e){ console.warn('[NOTE_HISTORY_V1] autosave failed:', e); }
+}
+function _wlNoteAdd(pid, text){
+  if(_blockIfReadOnly('_wlNoteAdd')) return;
+  var idx = _wlIndexOf(pid); if(idx < 0) return;
+  var t = String(text || '').trim(); if(!t) return;
+  _wlNotesEnsure(_watchList[idx]);
+  _watchList[idx].notes.push({ t: t, at: Date.now() });
+  _wlNotesCommit(idx);
+}
+function _wlNoteEdit(pid, i, text){
+  if(_blockIfReadOnly('_wlNoteEdit')) return;
+  var idx = _wlIndexOf(pid); if(idx < 0) return;
+  _wlNotesEnsure(_watchList[idx]);
+  var arr = _watchList[idx].notes;
+  if(!(i >= 0 && i < arr.length)) return;
+  var t = String(text || '').trim();
+  if(!t){ _wlNoteDelete(pid, i); return; }
+  arr[i].t = t;
+  _wlNotesCommit(idx);
+}
+function _wlNoteDelete(pid, i){
+  if(_blockIfReadOnly('_wlNoteDelete')) return;
+  var idx = _wlIndexOf(pid); if(idx < 0) return;
+  _wlNotesEnsure(_watchList[idx]);
+  var arr = _watchList[idx].notes;
+  if(!(i >= 0 && i < arr.length)) return;
+  arr.splice(i, 1);
+  _wlNotesCommit(idx);
+}
+function _wlNoteDateLabel(at){
+  // Regular 12-hour time with AM/PM — the Dude's explicit call on basketball, mirrored here.
+  if(at == null || !isFinite(Number(at))) return 'date unknown';
+  try {
+    var d = new Date(Number(at));
+    return d.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'}) +
+           ' \u00B7 ' + d.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit', hour12:true});
+  }
+  catch(e){ return 'date unknown'; }
+}
+// ── /NOTE_HISTORY_V1 helpers (football) ─────────────────────────────────────────────────
+
 function _setWlNote(pid, text){
   if(_blockIfReadOnly('_setWlNote')) return;
   const idx = _wlIndexOf(pid);
@@ -8840,7 +8922,9 @@ function _setWlNote(pid, text){
 // clicking away has always meant "keep it," and a typed paragraph lost to a stray click
 // would be the worse surprise. Esc cancels. Ctrl+Enter saves. Enter is a newline now.
 var _notePopupSave = null;
-function openNotePopup(pid, curText, placeholder, onSave){
+var _noteHist = null;          // NOTE_HISTORY_V1
+var _noteHistMode = null;      // null | {type:'add'} | {type:'edit', i}
+function openNotePopup(pid, curText, placeholder, onSave, hist){
   var modal = document.getElementById('note-editor-modal');
   var ta = document.getElementById('note-editor-textarea');
   var title = document.getElementById('note-editor-player');
@@ -8850,30 +8934,116 @@ function openNotePopup(pid, curText, placeholder, onSave){
   title.textContent = nm || '';
   ta.value = curText || '';
   ta.placeholder = placeholder || '';
-  _notePopupSave = function(){ var v = ta.value; closeNotePopup(); onSave(v); };
+  // NOTE_HISTORY_V1 — with no hist argument this popup behaves EXACTLY as before. Football's
+  // rankings caller (editRankNote) passes four args, so Matt's ranking-note flow is untouched.
+  _noteHist = (hist && typeof hist === 'object') ? hist : null;
+  _noteHistMode = null;
+  var btnRow = document.getElementById('note-editor-newbtn-row');
+  var histDiv = document.getElementById('note-editor-history');
+  var modeLine = document.getElementById('note-editor-mode-line');
+  if(_noteHist){
+    _noteHistMode = _noteHist.entries.length ? { type:'edit', i: _noteHist.entries.length - 1 } : { type:'add' };
+    if(btnRow) btnRow.style.display = _noteHist.entries.length ? 'block' : 'none';
+    if(histDiv){ histDiv.style.display = 'block'; _noteHistRenderList(); }
+    _noteHistModeLine();
+    _notePopupSave = function(){
+      // capture handlers BEFORE close — closeNotePopup nulls them (basketball's save bug, pre-fixed here)
+      var v = ta.value; var m = _noteHistMode; var h = _noteHist;
+      closeNotePopup();
+      if(h && m && m.type === 'add'){ h.onAdd(v); }
+      else if(h && m && m.type === 'edit'){ h.onEdit(m.i, v); }
+    };
+  } else {
+    if(btnRow) btnRow.style.display = 'none';
+    if(histDiv){ histDiv.style.display = 'none'; histDiv.innerHTML = ''; }
+    if(modeLine) modeLine.style.display = 'none';
+    _notePopupSave = function(){ var v = ta.value; closeNotePopup(); onSave(v); };
+  }
   modal.style.display = 'flex';
   ta.focus();
   try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){}
+}
+function _noteHistModeLine(){
+  var el = document.getElementById('note-editor-mode-line');
+  if(!el) return;
+  if(!_noteHist || !_noteHistMode){ el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  if(_noteHistMode.type === 'add'){ el.textContent = '\u270F\uFE0F Writing a NEW note \u2014 the old ones are kept below.'; }
+  else {
+    var e = _noteHist.entries[_noteHistMode.i];
+    el.textContent = '\u270F\uFE0F Editing the note from ' + _wlNoteDateLabel(e ? e.at : null) + ' (its date will not change).';
+  }
+}
+function _noteHistArmNew(){
+  if(!_noteHist) return;
+  var ta = document.getElementById('note-editor-textarea');
+  _noteHistMode = { type:'add' };
+  if(ta){ ta.value = ''; ta.focus(); }
+  _noteHistModeLine();
+}
+function _noteHistRenderList(){
+  var div = document.getElementById('note-editor-history');
+  if(!div || !_noteHist) return;
+  var entries = _noteHist.entries;
+  if(entries.length <= 1){ div.innerHTML = '<div style="font-size:11px;color:var(--text3)">No earlier notes yet \u2014 "+ New Note" starts the history.</div>'; return; }
+  var html = '<div style="font-size:10px;letter-spacing:0.06em;color:var(--text3);margin-bottom:6px">EARLIER NOTES</div>';
+  for(var i = entries.length - 2; i >= 0; i--){
+    var e = entries[i];
+    html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="flex:0 0 128px;font-size:10px;color:var(--text3);padding-top:2px">' + _wlNoteDateLabel(e.at) + '</div>' +
+      '<div style="flex:1 1 auto;font-size:12px;color:var(--text2);line-height:1.4">' + escapeHtml(e.t) + '</div>' +
+      '<button onclick="_noteHistEditClick(' + i + ')" title="Edit this note (its date stays)" style="background:transparent;border:none;cursor:pointer;font-size:12px">\u270F\uFE0F</button>' +
+      '<button onclick="_noteHistDeleteClick(' + i + ')" title="Delete this note" style="background:transparent;border:none;cursor:pointer;font-size:12px">\uD83D\uDDD1</button>' +
+      '</div>';
+  }
+  div.innerHTML = html;
+}
+function _noteHistEditClick(i){
+  if(!_noteHist) return;
+  var e = _noteHist.entries[i]; if(!e) return;
+  var ta = document.getElementById('note-editor-textarea');
+  _noteHistMode = { type:'edit', i: i };
+  if(ta){ ta.value = e.t; ta.focus(); }
+  _noteHistModeLine();
+}
+function _noteHistDeleteClick(i){
+  if(!_noteHist) return;
+  var e = _noteHist.entries[i]; if(!e) return;
+  if(!confirm('Delete this note from ' + _wlNoteDateLabel(e.at) + '? This cannot be undone.')) return;
+  var h = _noteHist; closeNotePopup();
+  h.onDelete(i);
 }
 function closeNotePopup(){
   var modal = document.getElementById('note-editor-modal');
   if(modal) modal.style.display = 'none';
   _notePopupSave = null;
+  _noteHist = null; _noteHistMode = null;   // NOTE_HISTORY_V1
 }
 function _notePopupSaveClick(){ if(_notePopupSave) _notePopupSave(); }
 function _notePopupKeydown(e){
   if(e.key === 'Escape'){ e.stopPropagation(); closeNotePopup(); }
   if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); _notePopupSaveClick(); }
 }
-function _notePopupBackdrop(e){ if(e.target && e.target.id === 'note-editor-modal'){ _notePopupSaveClick(); } }
+function _notePopupBackdrop(e){
+  if(!(e.target && e.target.id === 'note-editor-modal')) return;
+  if(_noteHistMode && _noteHistMode.type === 'add'){ closeNotePopup(); return; }   // NOTE_HISTORY_V1: armed New Note cancels on outside click, never saves
+  _notePopupSaveClick();
+}
 function editWlNote(pid, el){
   if(_blockIfReadOnly('editWlNote')) return;
   const idx = _wlIndexOf(pid);
   if(idx < 0) return;
-  // NOTE_POPUP_NFL_V1: was an inline <input class="note-input"> swapped into the cell.
-  // _setWlNote still does ALL the real work (48h stamp, localStorage, re-render).
-  openNotePopup(pid, _wlNote(_watchList[idx]), 'Why is this player here?', function(val){
-    _setWlNote(pid, val);
+  // NOTE_HISTORY_V1: watch-list notes open in history mode (newest in the box, + New Note
+  // appends, earlier notes listed with edit/delete). Rankings notes are untouched.
+  _wlNotesEnsure(_watchList[idx]);
+  var entries = _watchList[idx].notes;
+  var newest = entries.length ? entries[entries.length - 1].t : '';
+  openNotePopup(pid, newest, 'Why is this player here?', null, {
+    pid: pid,
+    entries: entries,
+    onAdd: function(t){ _wlNoteAdd(pid, t); },
+    onEdit: function(i, t){ _wlNoteEdit(pid, i, t); },
+    onDelete: function(i){ _wlNoteDelete(pid, i); }
   });
 }
 
@@ -9718,7 +9888,14 @@ function _ftlRenderMattsTake(pid){
     const _cnBlocks = [];
     try {
       const i = _wlIndexOf(pid);
-      if (i >= 0){ const v = _wlNote(_watchList[i]); if (v && String(v).trim()) _cnBlocks.push({ kind:'wl', label:'101 List', text:String(v) }); }
+      if (i >= 0){
+        // NOTE_HISTORY_V1: the 101 block carries the FULL dated history; rankings blocks below
+        // keep their single string until their own history ships.
+        if (typeof _wlNotesEnsure === 'function') _wlNotesEnsure(_watchList[i]);
+        const _arr = (Array.isArray(_watchList[i].notes) ? _watchList[i].notes : []).filter(function(n){ return n && String(n.t||'').trim(); });
+        if (_arr.length){ _cnBlocks.push({ kind:'wl', label:'101 List', entries:_arr }); }
+        else { const v = _wlNote(_watchList[i]); if (v && String(v).trim()) _cnBlocks.push({ kind:'wl', label:'101 List', text:String(v) }); }
+      }
     } catch(e){}
     try {
       if (typeof _rankNoteOfSet === 'function'){
@@ -9741,6 +9918,18 @@ function _ftlRenderMattsTake(pid){
 
     if (_cnBlocks.length){
       noteEl.innerHTML = _cnBlocks.map(function(b){
+        if (b.entries){   // NOTE_HISTORY_V1: dated timeline, oldest to newest
+          const inner = b.entries.map(function(e){
+            const spE = _splitNoteAndUrl(e.t);
+            return '<div class="ftl-note-hist-entry"><span class="ftl-note-date">' +
+                   ((typeof _wlNoteDateLabel === 'function') ? _wlNoteDateLabel(e.at) : '') + '</span>' +
+                   escapeHtml(spE.text) + _renderNoteLinkBadge(spE.url) + '</div>';
+          }).join('');
+          return '<div class="ftl-note-block ftl-note-' + b.kind + '">' +
+                   '<span class="ftl-note-tag">' + escapeHtml(b.label) + '</span>' +
+                   '<span class="ftl-note-body">' + inner + '</span>' +
+                 '</div>';
+        }
         const sp = _splitNoteAndUrl(b.text);
         return '<div class="ftl-note-block ftl-note-' + b.kind + '">' +
                  '<span class="ftl-note-tag">' + escapeHtml(b.label) + '</span>' +
@@ -9750,7 +9939,8 @@ function _ftlRenderMattsTake(pid){
       // SCROLL, NOT GROWTH — the Dude's call: "two Satten notes with a scroll sounds
       // perfect." One note therefore looks exactly as it does today and three never
       // blow the card open, on a card he and Matt have both been trying to slim down.
-      noteEl.classList.toggle('ftl-note-scroll', _cnBlocks.length > 2);
+      var _cnCount = _cnBlocks.reduce(function(a, b){ return a + (b.entries ? b.entries.length : 1); }, 0);   // NOTE_HISTORY_V1
+      noteEl.classList.toggle('ftl-note-scroll', _cnCount > 2);
     } else {
       noteEl.classList.remove('ftl-note-scroll');
       noteEl.innerHTML = '<em>No notes from Matt yet.</em>';
@@ -10715,6 +10905,12 @@ function _yahooLookupFmt(pid, field, isPercent){
     <div id="note-editor-player" style="font-size:13px;font-weight:800;color:var(--turf);margin:0 0 10px 0"></div>
     <textarea id="note-editor-textarea" rows="7" onkeydown="_notePopupKeydown(event)" style="width:100%;box-sizing:border-box;resize:vertical;background:var(--surface2,rgba(255,255,255,0.04));border:1px solid var(--turf);border-radius:6px;color:var(--text);font-size:13px;line-height:1.5;padding:10px 12px;font-family:inherit;outline:none"></textarea>
     <div style="font-size:11px;color:var(--text3);margin:6px 0 12px 0">Paste a link anywhere in the note and it shows as the &#128279; chip. Ctrl+Enter saves, Esc cancels, clicking outside saves.</div>
+    <!-- NOTE_HISTORY_V1: hidden unless the caller passes a history (watch list does; rankings not yet) -->
+    <div id="note-editor-mode-line" style="display:none;font-size:11px;font-weight:800;color:var(--gold);margin:0 0 8px 0"></div>
+    <div id="note-editor-newbtn-row" style="display:none;margin:0 0 10px 0">
+      <button id="note-editor-newbtn" onclick="_noteHistArmNew()" style="background:transparent;border:1px dashed var(--gold);color:var(--gold);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">+ New Note</button>
+    </div>
+    <div id="note-editor-history" style="display:none;max-height:200px;overflow-y:auto;border-top:1px solid var(--border2);margin:0 0 12px 0;padding-top:8px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button onclick="closeNotePopup()" style="background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Cancel</button>
       <button onclick="_notePopupSaveClick()" style="background:var(--turf);border:1px solid var(--turf);color:#0d1117;border-radius:6px;padding:6px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">Save Note</button>
