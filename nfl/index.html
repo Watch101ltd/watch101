@@ -8889,11 +8889,20 @@ function _wlIndexOf(pid){
   return -1;
 }
 function _normalizeWatchList(){
+  // NORMALIZE_KEEP_FIELDS_V1 (2026-08-27, Bug #197). This function dates from PRIORITY_STARS_V1
+  // (May 2026), when items really were bare pids — and it kept rebuilding every item as
+  // {pid, priority} long after items grew notes, stamps and baselines. Running at BOTH hydrate
+  // points, it silently deleted every other field from memory on every load, and the raw
+  // `players: _watchList` autosave then wrote the stripped list to the NAS. The 8/25 snapshot
+  // shows the fingerprint: every watch/101 list at zero notes while the rankings (a separate
+  // store) hold dozens. THE FIX: normalize the SHAPE, keep the OBJECT.
   if(!Array.isArray(_watchList)) return;
   _watchList = _watchList.map(item => {
     if(typeof item === 'string') return {pid: item, priority: 0};
     if(item && typeof item === 'object' && item.pid){
-      return {pid: item.pid, priority: _wlPriority(item)};
+      var out = Object.assign({}, item, {pid: item.pid, priority: _wlPriority(item)});
+      if(typeof _wlNotesEnsure === 'function') _wlNotesEnsure(out);   // NOTE_HISTORY_V1 migration rides the hydrate choke point
+      return out;
     }
     return null;
   }).filter(Boolean);
