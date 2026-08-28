@@ -1870,6 +1870,12 @@ document.addEventListener('DOMContentLoaded',function(){
 <!-- Tab row to switch between the Watch List view and the NFL Players (feeder pool)
      view. Direct port of NBA_PLAYERS_PAGE_V1. Watch List is the default view. -->
 <div class="page-nav" id="page-nav">
+  <!-- RANK_NAV_HIDE_V1 (2026-08-28, PC Walter, per the Dude). THIS TAB ROW BELONGS TO THE
+       WATCH LISTS ONLY. showRankingsView() hides it; showWatchListView() and showNflPlayersView()
+       put it back. Redraft Rankings and Dynasty Rankings are reached through the list
+       switcher, so "Watch List" and "NFL Players" were dead weight sitting above them.
+       Driven inline from JS on purpose so the phone block's display:none !important still
+       wins on phone. Do not convert this to a CSS class without checking that rule. -->
   <button class="page-nav-btn active" id="nav-watchlist" onclick="showWatchListView()">🏠 Watch List</button>
   <button class="page-nav-btn" id="nav-nflplayers" onclick="showNflPlayersView()">🏈 NFL Players</button>
   <!-- NFL_RANKINGS_PARITY_V1 (2026-08-05, PC Walter, per the Dude). The 📋 Rankings tab that
@@ -2692,6 +2698,7 @@ function _hideAllViews(){
 function showWatchListView(){
   _hideAllViews();
   var wl = document.getElementById('watchlist-view'); if(wl) wl.style.display = '';
+  var _pnShow = document.getElementById('page-nav'); if(_pnShow) _pnShow.style.display = '';   // RANK_NAV_HIDE_V1
   var b = document.getElementById('nav-watchlist'); if(b) b.classList.add('active');
   // NFL_RANKINGS_PARITY_V1 -- Bug #37's exit restore, ported in the widened form: anything
   // parked on the dropdown that is not the active list (view:rankings OR dynasty-nfl) snaps
@@ -2703,6 +2710,7 @@ function showWatchListView(){
 function showNflPlayersView(){
   _hideAllViews();
   var np = document.getElementById('nflplayers-view'); if(np) np.style.display = '';
+  var _pnShow = document.getElementById('page-nav'); if(_pnShow) _pnShow.style.display = '';   // RANK_NAV_HIDE_V1
   var b = document.getElementById('nav-nflplayers'); if(b) b.classList.add('active');
   // NFL_RANKINGS_PARITY_V1 -- same exit restore as showWatchListView.
   var _ls = document.getElementById('list-switcher');
@@ -2729,6 +2737,7 @@ function showRankingsView(set){
   _rankSet = target;
   _hideAllViews();
   var rv = document.getElementById('rankings-view'); if(rv) rv.style.display = '';
+  var _pnHide = document.getElementById('page-nav'); if(_pnHide) _pnHide.style.display = 'none';   // RANK_NAV_HIDE_V1
   var _t = document.getElementById('active-list-title');
   var _tg = document.getElementById('active-list-subtitle');
   if(_rankSet === 'dynasty'){
@@ -9646,7 +9655,12 @@ function _ftlSchedCols(pos){
     case 'WR':
     case 'TE': return [['TGT','rec_tgt'],['REC','rec'],['RE YD','rec_yd'],['RE TD','rec_td'],['CAR','rush_att'],['RU YD','rush_yd']];
     case 'K':  return [['FGM','fgm'],['FGA','fga'],['XPM','xpm'],['XPA','xpa']];
-    case 'DEF':return [['SACK','def_sack'],['INT','def_int'],['FUM REC','def_fum_rec'],['TD','def_td'],['PTS ALLOW','pts_allow']];
+    // DEF_CARD_STATS_V1 (2026-08-28): SACK, INT and FUM REC were removed from this list, NOT
+    // because they are wrong but because the weekly feed does not carry them. Pulled every week
+    // of the Rams 2025 game log and the union of keys across all 17 is exactly def_td, pts_allow
+    // and the three fantasy-point fields. Three columns of permanent em-dashes read as a broken
+    // page. Put them back the day the server merges nflverse's weekly team file.
+    case 'DEF':return [['TD','def_td'],['PTS ALLOW','pts_allow']];
     default:   return [['CAR','rush_att'],['RU YD','rush_yd'],['REC','rec'],['RE YD','rec_yd']];
   }
 }
@@ -10396,6 +10410,18 @@ function openFromTheLogo(pid, _keepRange){
   const passing = _ftlStatCell('PA YD', _ftlNum(s.pass_yd)) + _ftlStatCell('PA TD', _ftlNum(s.pass_td));
   const rushing = _ftlStatCell('RU YD', _ftlNum(s.rush_yd)) + _ftlStatCell('YPC', _ftlRatio(s.rush_yd, s.rush_att)) + _ftlStatCell('RU TD', _ftlNum(s.rush_td));   // CARD_YPC_YPR_V1: YPC sits right after RuYd, same order as the table column
   const receiving = _ftlStatCell('REC', _ftlNum(s.rec)) + _ftlStatCell('RE YD', _ftlNum(s.rec_yd)) + _ftlStatCell('YPR', _ftlRatio(s.rec_yd, s.rec)) + _ftlStatCell('RE TD', _ftlNum(s.rec_td));   // CARD_YPC_YPR_V1: YPR right after ReYd, same as the column
+  // DEF_CARD_STATS_V1 (2026-08-28, Bug #200 -- the Dude: "the stats aren't loading, there's a
+  // bunch wrong with the player card for the defenses"). A team defense has no passing, rushing
+  // or receiving line, so every tile but FPTS was an em-dash. These seven come from the SAME
+  // season payload the offensive ones do: the server already merges real team-defense box
+  // stats from nflverse (NFLVERSE_DEF_STATS_V1, stats_team_reg_<year>.csv). Measured live on
+  // the Rams 2025 season before this was written: 47 sacks, 16 INT, 12 FF, 9 fumble
+  // recoveries, 82 passes defensed, 1 TD, 334 points allowed.
+  // ⚠️ SEASON ONLY, AND SAY SO OUT LOUD. The weekly feed carries pts_allow and def_td and
+  // NOTHING ELSE for a defense, so the Last 1 / 2 / 4 Week windows legitimately dash out
+  // everything except FPTS and PTS ALLOW. That is missing data upstream, not a broken card.
+  // Filling it means pulling nflverse's WEEKLY team file server-side, which is its own job.
+  const defense = _ftlStatCell('SACK', _ftlNum(s.def_sack)) + _ftlStatCell('INT', _ftlNum(s.def_int)) + _ftlStatCell('FF', _ftlNum(s.def_fum_forced)) + _ftlStatCell('FUM REC', _ftlNum(s.def_fum_rec)) + _ftlStatCell('PD', _ftlNum(s.def_pass_def)) + _ftlStatCell('TD', _ftlNum(s.def_td)) + _ftlStatCell('PTS ALLOW', _ftlNum(s.pts_allow));
   // QUADRANTS_V1 (Aug 2, 2026): one compact stat strip in the hero, baseball-style.
   // OWNROW_CARD_V1 (Aug 6, 2026) — baseball's ownership row, ported per the Dude:
   // Y!RK / Y!ROS%% / CBS%%, its own row, white values. Same lookups the table rows use.
@@ -10414,7 +10440,7 @@ function openFromTheLogo(pid, _keepRange){
     // (the ftl-own-cell class). grid-auto-columns:auto sizes each tile to its own number,
     // which answers Matt's "why is rushing yards with four digits the same size box as YPC
     // with one digit."
-    '<div class="ftl-statbar">' + fantasy + passing + rushing + receiving + ownRow + '</div>';
+    '<div class="ftl-statbar">' + fantasy + (_isDef ? defense : (passing + rushing + receiving)) + ownRow + '</div>';   // DEF_CARD_STATS_V1: FPTS leads and the ownership row still rides the end on both branches, so the strip keeps its shape
 
   // BUG49_PHASE2b: dynamic year note retired — header-right now carries baseball's static "Watch 101 Player Card" in the HTML.
 
