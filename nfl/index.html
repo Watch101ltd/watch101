@@ -5204,7 +5204,7 @@ function renderNflPlayers(){
     allIds = (_playerDB && _playerDB[_npSpotlight]) ? [_npSpotlight] : [];
   }
   // NFL_POOL_RENDER_CAP_V1 (2026-06-06 — PC Walter, per the Dude). CRITICAL PERF FIX.
-  // Football has ~3,152 pool players (vs NBA's ~560). Rendering ALL of them as live DOM
+  // Football HAD ~3,152 pool players (vs NBA's ~560). Rendering ALL of them as live DOM
   // rows built a 138,000px-tall table; a SINGLE forced layout of it measured 2,092ms, and
   // every click/scroll/repaint re-triggered that — freezing the browser AND the whole
   // machine for minutes. Baseball never hit this because its pool render is CAPPED at 200
@@ -5212,14 +5212,37 @@ function renderNflPlayers(){
   // baseball: render the top 200 (the pool is Yahoo-rank sorted, so the top 200 = the most
   // relevant players). The count line shows the full total so nothing feels hidden. A
   // future in-pool search can render all matches (like baseball's `q ? list : slice`).
-  // NFLP_POOL_SEARCH_V1 — when a search is active, show ALL matches (cap lifted); else top 200.
-  const POOL_CAP = 200;
+  // NFLP_POOL_SEARCH_V1 — when a search is active, show ALL matches (cap lifted).
+  //
+  // ⚑ CAP RAISED 200 → 2000 on 2026-08-30, 14:20 hours, BY THE DUDE, for MATT, who asked
+  // to see the whole pool rather than a top slice. ⚠️ EVERYTHING ABOVE THIS LINE IS STILL
+  // TRUE AND IS THE REASON THE CAP EXISTS AT ALL — do not read the new number as "the cap
+  // was pointless." IT WAS NOT. What changed is the POOL, not the verdict:
+  //   • June's 2,092ms disaster was measured on ~3,152 rows. NFL_FANTASY_POS_ONLY_V1 later
+  //     stripped individual defenders, and the pool is now ~1,006. Roughly a THIRD the size
+  //     that caused the freeze. The old measurement was correct and answered a question we
+  //     are no longer asking. (Same family as Bug #198: a correct measurement can answer the
+  //     wrong question and still read like proof.)
+  //   • MEASURED ON THE DUDE'S OWN MACHINE, NOT WALTER'S. He typed "a" into the pool search,
+  //     which already lifts the cap entirely, drew 783 rows, and reported it "running real
+  //     smooth" with no chug. 783 is ~78% of the full pool, so 1,006 is a short step, not a
+  //     leap. Walter's sandbox browser was deliberately NOT used for this: it sits on a fast
+  //     datacenter line and lied about exactly this class of problem all day on 2026-07-23.
+  //   • Basketball has NO cap at all and never has, and renders its full pool fine.
+  // 2000 rather than removing the slice: the pool grew past 3,000 once already, and if it
+  // ever does again this is a guardrail instead of a frozen browser. At today's ~1,006 the
+  // cap never fires, so Matt sees every player. If this line ever starts biting, the real
+  // fix is windowing (render only visible rows), NOT a bigger number.
+  const POOL_CAP = 2000;
   const _searching = (typeof _npSearchQ === 'string' && _npSearchQ.length > 0);
   const ids = _searching ? allIds : allIds.slice(0, POOL_CAP);
   if(statusEl){
     statusEl.textContent = _searching
       ? ('Found ' + ids.length.toLocaleString() + ' match' + (ids.length===1?'':'es') + ' for "' + _npSearchQ + '"')
-      : ('Showing top ' + ids.length + ' of ' + allIds.length.toLocaleString() + ' NFL players · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='yrank'?' (Yahoo rank)':''));
+      : ((allIds.length > POOL_CAP
+            ? ('Showing top ' + ids.length.toLocaleString() + ' of ' + allIds.length.toLocaleString())
+            : ('Showing all ' + ids.length.toLocaleString()))
+          + ' NFL players · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='yrank'?' (Yahoo rank)':''));
   }
   tbody.innerHTML = ids.map(pid => {
     const p = _playerDB[pid];
