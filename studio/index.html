@@ -104,6 +104,10 @@ button.go:hover{filter:brightness(1.1)}
 /* PHOTO_DRAG_V1 - the photo pans by dragging anywhere on the post. #photo itself
    keeps pointer-events:none; the drag listens on #post so the whole face of the
    post is the handle, and the two .mark drags are excluded by a closest() test. */
+/* LIST_SLICE_V1 - the from/to pair sits on one line so it reads as a range */
+.slicerow{display:flex;gap:8px;align-items:center}
+.slicerow input{flex:1;min-width:0}
+.slicerow span{flex:none;font-size:12px;font-weight:700;opacity:.75}
 #post.canpan{cursor:grab}
 #post.canpan.panning{cursor:grabbing}
 #scrim{position:absolute;inset:0;background:linear-gradient(180deg,
@@ -183,6 +187,7 @@ button.go:hover{filter:brightness(1.1)}
       <select id="tpl" onchange="onTemplate()">
         <option value="tier">One of Matt's tiers</option>
         <option value="toplist">Top of one of our lists</option>
+        <option value="slice">A portion of one of our lists</option>
         <option value="stat">Stat leaders</option>
         <option value="cover">Just a headline over a photo</option>
         <option value="detail">Headline plus a written card</option>
@@ -205,6 +210,16 @@ button.go:hover{filter:brightness(1.1)}
         <select id="statSel" onchange="render()"></select>
         <label>Season</label>
         <select id="yearSel" onchange="loadStats()"></select>
+      </div>
+
+      <div id="slicePick" style="display:none">
+        <label>Which part of the list</label>
+        <div class="slicerow">
+          <input type="number" id="sliceFrom" min="1" max="999" value="20" oninput="loadList()">
+          <span>to</span>
+          <input type="number" id="sliceTo" min="1" max="999" value="25" oninput="loadList()">
+        </div>
+        <div class="hint" id="sliceNote"></div>
       </div>
 
       <div id="countPick">
@@ -453,13 +468,23 @@ function outline(inner,outer){
 function drawRows(rows,valLabel){
   const box=$('o-rank');
   if(!rows || !rows.length){ box.innerHTML=''; return; }
-  /* The rows shrink as there are more of them, so ten still fits the frame. */
+  /* The rows shrink as there are more of them, so ten still fits the frame.
+     LIST_SLICE_V1 extended the ladder to 15. THE FIRST THREE RUNGS ARE BYTE-FOR-BYTE
+     THE OLD VALUES, deliberately - every post that works today must keep looking
+     exactly as it does. Only 11+ rows, which was impossible before, is new. */
   const n=rows.length;
-  const pad = n>=9?9 : n>=7?11 : 13;
-  const nameSz = n>=9?29 : n>=7?32 : 35;
+  const pad    = n>=14?6  : n>=12?7  : n>=11?8  : n>=9?9  : n>=7?11 : 13;
+  const nameSz = n>=14?23 : n>=12?25 : n>=11?27 : n>=9?29 : n>=7?32 : 35;
+  box.style.gap = (n>=11?6:9)+'px';
   box.innerHTML = rows.map((r,i)=>
     '<div class="rk" style="padding:'+pad+'px 20px">'+
-      '<div class="n" style="font-size:'+(nameSz+5)+'px">'+(i+1)+'</div>'+
+      /* 🚨 LIST_SLICE_V1 - THE NUMBER IS r.rank WHEN THE ROW CARRIES ONE.
+         It used to be hardcoded to (i+1), the position in the ARRAY. A slice of
+         20 to 25 would have printed 1,2,3,4,5,6 - which is the exact thing he
+         asked for and the exact thing that would have been wrong. Rows built by
+         the tier/toplist/stat templates carry no .rank and still get i+1, so
+         nothing that works today changes. */
+      '<div class="n" style="font-size:'+(nameSz+5)+'px">'+(r.rank!=null?r.rank:(i+1))+'</div>'+
       '<div class="nm" style="font-size:'+nameSz+'px">'+esc(r.name)+'</div>'+
       (r.pos?'<div class="pos" style="font-size:'+(nameSz-11)+'px">'+esc(r.pos)+(r.team?' · '+esc(r.team):'')+'</div>':'')+
       (r.val!=null?'<div class="val" style="font-size:'+(nameSz-2)+'px">'+esc(String(r.val))+'</div>':'')+
@@ -468,12 +493,18 @@ function drawRows(rows,valLabel){
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 let ROWS=[], TIERNAME='', AUTOHEAD='';
+/* LIST_SLICE_V1 - the most rows a post can carry and still be readable. Chosen by
+   arithmetic, not by eye: at 15 rows the name type is 23px in a 1080px-wide post,
+   which is about 8.5px on a phone. Below that the names stop being readable, and
+   an unreadable post is not a post. The FRAME could hold more - the stack totals
+   ~1019px of the 1230px available - so this is a legibility cap, not a space one. */
+const SLICE_MAX=15;
 
 function render(){
   const tpl=$('tpl').value;
   const S=SPORTS[SPORT];
   const isDetail = tpl==='detail';
-  const isRanked = (tpl==='tier'||tpl==='toplist'||tpl==='stat');
+  const isRanked = (tpl==='tier'||tpl==='toplist'||tpl==='stat'||tpl==='slice');
 
   $('detailOnly').style.display = isDetail?'block':'none';
   $('o-card').style.display     = isDetail?'block':'none';
@@ -667,12 +698,13 @@ function setSport(s){
 
 function onTemplate(){
   const t=$('tpl').value;
-  $('listPick').style.display  = (t==='tier'||t==='toplist')?'block':'none';
+  $('listPick').style.display  = (t==='tier'||t==='toplist'||t==='slice')?'block':'none';
   $('tierPick').style.display  = (t==='tier')?'block':'none';
   $('statPick').style.display  = (t==='stat')?'block':'none';
-  $('countPick').style.display = (t==='tier')?'none':((t==='toplist'||t==='stat')?'block':'none');
+  $('slicePick').style.display = (t==='slice')?'block':'none';
+  $('countPick').style.display = (t==='toplist'||t==='stat')?'block':'none';
   HEAD_TOUCHED=false;
-  if(t==='tier'||t==='toplist') loadList(); else if(t==='stat') loadStats(); else { ROWS=[]; TIERNAME=''; AUTOHEAD=''; render(); }
+  if(t==='tier'||t==='toplist'||t==='slice') loadList(); else if(t==='stat') loadStats(); else { ROWS=[]; TIERNAME=''; AUTOHEAD=''; render(); }
 }
 
 async function bootSport(){
@@ -763,6 +795,37 @@ async function loadList(){
       setStatus((list.players||[]).length+' players'+staged+'.');
       await applyTier();
       return;
+    } else if(t==='slice'){
+      /* ================= LIST_SLICE_V1 (2026-08-30, per the Dude) =================
+         Pick any list, then any window of it - "20 to 25", "20 to 30".
+
+         🚨 THE RANK IS ATTACHED BEFORE THE FILTER, NOT AFTER. resolveName returns
+         null for a pid that does not resolve (team defences and the like - see
+         TRAP 1 in the project doc) and .filter(Boolean) drops it. If the number
+         were applied after the drop, losing #22 would silently renumber 23,24,25
+         into 22,23,24 and the post would LIE about where those players sit on
+         Matt's list. Numbering first means a dropped pid leaves an honest gap. */
+      const total=order.length;
+      let from=Math.max(1, Math.floor(+$('sliceFrom').value||1));
+      let to  =Math.max(from, Math.floor(+$('sliceTo').value||from));
+      let note='';
+      if(to-from+1 > SLICE_MAX){ to = from + SLICE_MAX - 1; note='Capped at '+SLICE_MAX+' rows. '; }
+      if(from > total){
+        ROWS=[]; AUTOHEAD='';
+        note='That list only has '+total+' player'+(total===1?'':'s')+'.';
+      } else {
+        if(to > total){ to=total; note+='List ends at '+total+'. '; }
+        ROWS = order.slice(from-1, to)
+          .map((pid,i)=>{ const r=resolveName(players,pid);
+                          return r ? Object.assign({}, r, {rank:from+i, val:null}) : null; })
+          .filter(Boolean);
+        note += 'Showing '+from+' to '+to+' of '+total+'.';
+        AUTOHEAD='Nos. '+from+' to '+to;
+      }
+      /* Deliberately NOT writing the clamped numbers back into the inputs - he is
+         mid-keystroke and rewriting the box under his cursor is infuriating.
+         Clamp internally, say what happened in the note. */
+      $('sliceNote').textContent=note;
     } else {
       const n=Math.max(3,Math.min(10,+$('countSel').value||5));
       ROWS=order.slice(0,n).map(pid=>resolveName(players,pid)).filter(Boolean).map(r=>({...r,val:null}));
