@@ -2203,6 +2203,18 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="saveAllRankings(this)" title="Saves EVERY position tab of this rankings set to JSON files in List Data\_Staging, then pings Jay's phone once. It saves them all no matter which tab you are on." style="margin-left:14px">💾 Done Ranking</button>
     <button class="btn btn-outline backend-only" id="rank-hidden-btn" onclick="openHiddenList()" style="display:none;margin-left:6px" title="Players hidden from this rankings set — click to restore">♻️ Hidden (0)</button><!-- RANK_HIDE_V1 -->
   </div>
+<!-- NFL_RANK_SEARCH_V1 (2026-08-31 - PC Walter, per the Dude). Player-name search on the
+     RANKINGS view. This was the last surface on either sport without one: the Watch List has
+     #player-search and the pool has #nflp-search, rankings had nothing, so finding a player
+     meant scrolling.
+     DELIBERATELY A CLONE OF THE POOL BOX at #nflp-search: same .search-wrap / .search-icon
+     markup, same "Jump to player..." placeholder, same _foldSearch accent folding, and NAME
+     ONLY with no team matching, so two boxes on one page never behave differently. The
+     Dude's call, 2026-08-31.
+     It FILTERS (hides non-matching rows). It is NOT baseball's spotlight and it does NOT
+     scroll; he retired scroll-to-row himself on 2026-08-06 under Bug #45.
+     Placed above the DATE RANGE row to match where the pool puts its own box. -->
+<div style="margin:8px 16px 0 16px"><div class="search-wrap" style="max-width:420px"><span class="search-icon">&#8981;</span><input id="nflrk-search" class="search-input" type="text" placeholder="Jump to player..." autocomplete="off" oninput="rkRankSearchInput()"></div></div>
 <!-- NFL_RANK_STATFILTER_V1 (2026-08-20 — PC Walter, per the Dude; Matt flagged the missing filter live
      on the 8/19 call) — the STAT FILTERING box + instant date-range row cloned onto the RANKINGS view,
      structural parity with the watch-list panel (renames only: nflwlpf->nflrkpf, nflwl->nflrk, Wl->Rank).
@@ -2702,6 +2714,28 @@ function _rankBuildTeamSelect(){
   sel.innerHTML='<option value="ALL">All Teams</option>'+sorted.map(t=>'<option value="'+t+'">'+t+'</option>').join('');
   _rankTeamSelectBuilt=true;
 }
+// NFL_RANK_SEARCH_V1 (2026-08-31) - rankings name search, cloned from the pool's
+// _npSortedIds() search block. The query is re-read from the box on EVERY render pass rather
+// than cached on input, which is the same thing the pool does and for the same reason: there
+// is then no second copy of the state that can go stale behind the box.
+var _rkSearchQ = '';
+function _rankReadSearch(){
+  var el = document.getElementById('nflrk-search');
+  _rkSearchQ = el ? _foldSearch((el.value || '').trim()) : '';
+  return _rkSearchQ;
+}
+function _rankPassesSearch(pid){
+  if(!_rkSearchQ) return true;
+  var p = (_playerDB && _playerDB[pid]) || null;
+  if(!p) return false;
+  var nm = _foldSearch(p.full_name || ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || '');
+  return nm.indexOf(_rkSearchQ) !== -1;
+}
+// Straight re-render on input, no debounce, matching the pool box exactly. The pool renders
+// up to 2000 rows this way and the Dude measured 783 of them on HIS OWN machine on 2026-08-30
+// as "running real smooth". Rankings caps at 1500 per position, so this is inside ground
+// already proven on his hardware rather than on Walter's fast sandbox line.
+function rkRankSearchInput(){ renderRankings(); }
 function _rankPassesFilter(pid){
   const F=_rankFilters; if(!F) return true;
   const p=(_playerDB && _playerDB[pid])||null; if(!p) return true;
@@ -3041,15 +3075,27 @@ function renderRankings(){
   // drop (and its save) can never fire against a filtered view.
   if(typeof _rankBuildTeamSelect === 'function') _rankBuildTeamSelect();
   var _rkTotal = ids.length;
-  var _rkFiltOn = (typeof _rankFilterActive === 'function' && _rankFilterActive());
+  // NFL_RANK_SEARCH_V1 (2026-08-31) - read the name box FIRST, then fold it into the SAME
+  // gate the stat filter already uses. _rkFiltOn is what drives dragLocked, the tier-bracket
+  // wipe and the empty state further down, so the search inherits all three protections
+  // instead of carrying its own copy of them that could drift.
+  var _rkSearchOn = !!(typeof _rankReadSearch === 'function' ? _rankReadSearch() : '');
+  var _rkStatOn   = (typeof _rankFilterActive === 'function' && _rankFilterActive());
+  var _rkFiltOn   = _rkStatOn || _rkSearchOn;
+  var _rkFiltLabel = (_rkStatOn && _rkSearchOn) ? 'name search + stat filter on'
+                   : (_rkSearchOn ? 'name search on' : 'stat filter on');
   if(_rkFiltOn){
-    ids = ids.filter(function(pid){ return _rankPassesFilter(pid); });
+    ids = ids.filter(function(pid){
+      if(_rkStatOn && !_rankPassesFilter(pid)) return false;
+      if(_rkSearchOn && !_rankPassesSearch(pid)) return false;
+      return true;
+    });
   }
   // FANMODE_RANK_NOTES_V1 (2026-08-18, Bug #159) - the drag handle column is hidden from fans by
   // CSS, so neither of these sentences may tell them to drag anything.
   var _roStat = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
   var sortNote = _rankSortField ? (' · sorted by ' + _rankSortField.toUpperCase() + (_roStat ? '' : ' (drag a player to return to your order)')) : '';
-  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + (_rkFiltOn ? (ids.length + ' of ' + _rkTotal + ' players (stat filter on).') : (ids.length + ' players.')) + ((_roStat || _rkFiltOn) ? '' : ' Drag the ☰ handle to re-rank.') + ' Separate from the Watch 101 list.' + sortNote;
+  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + (_rkFiltOn ? (ids.length + ' of ' + _rkTotal + ' players (' + _rkFiltLabel + ').') : (ids.length + ' players.')) + ((_roStat || _rkFiltOn) ? '' : ' Drag the ☰ handle to re-rank.') + ' Separate from the Watch 101 list.' + sortNote;
 
   var cols = _rankColsFor(_rankPos);
   _rankRenderHead(cols);
@@ -3057,7 +3103,7 @@ function renderRankings(){
   var _rkRoDel = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();   // RANK_HIDE_V1
   if(ids.length === 0){
     tbody.innerHTML = _rkFiltOn
-      ? '<tr><td colspan="' + (cols.length + (_rkRoDel ? 5 : 6)) + '" class="empty-state"><strong>No ' + _rankPos + ' players match the stat filter</strong>Loosen or reset the filter to bring the list back.</td></tr>'
+      ? '<tr><td colspan="' + (cols.length + (_rkRoDel ? 5 : 6)) + '" class="empty-state"><strong>No ' + _rankPos + ' players match the current filter</strong>Clear the search box, or reset the stat filter, to bring the list back.</td></tr>'
       : '<tr><td colspan="' + (cols.length + (_rkRoDel ? 5 : 6)) + '" class="empty-state"><strong>No ' + _rankPos + ' players loaded</strong>Player data may still be loading — try again in a moment.</td></tr>';
     try { renderRankTiers(); } catch(e){}   /* NFL_RANK_STATFILTER_V1: wipe tier boxes from the previous paint */
     try { _renderRankPhoneList(ids); } catch(e){}   /* RANK_PHONE_NFL_V1 */
