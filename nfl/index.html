@@ -2724,6 +2724,17 @@ function _rankReadSearch(){
   _rkSearchQ = el ? _foldSearch((el.value || '').trim()) : '';
   return _rkSearchQ;
 }
+function _rankAnyFilterActive(){
+  // RANK_SEARCH_TIERGUARD_V1 (2026-08-31) - "is this view something other than the full saved
+  // order". Stage 1 taught renderRankings() about the name box; these two callers live OUTSIDE
+  // it and could not see _rkFiltOn, so they were still asking the narrower question.
+  // Reads the DOM live rather than _rkSearchQ on purpose: _rkSearchQ is only refreshed during a
+  // render pass, and these guards can fire between renders.
+  var stat = (typeof _rankFilterActive === 'function' && _rankFilterActive());
+  var el = document.getElementById('nflrk-search');
+  var q = el ? _foldSearch((el.value || '').trim()) : '';
+  return !!(stat || q);
+}
 function _rankPassesSearch(pid){
   if(!_rkSearchQ) return true;
   var p = (_playerDB && _playerDB[pid]) || null;
@@ -7200,7 +7211,7 @@ function openCreateRankTierModal(){
   if(_blockIfReadOnly('openCreateRankTierModal')) return;
   try {
     if(_rankSortField){ alert('Clear the column sort first - brackets only line up in your own order.'); return; }
-    if(typeof _rankFilterActive === 'function' && _rankFilterActive()){ alert('Clear the stat filter first - brackets only line up in your own full order.'); return; }   // NFL_RANK_STATFILTER_V1
+    if(typeof _rankAnyFilterActive === 'function' && _rankAnyFilterActive()){ alert('Clear the stat filter or the name search first - brackets only line up in your own full order.'); return; }   /* RANK_SEARCH_TIERGUARD_V1 */   // NFL_RANK_STATFILTER_V1
     _tierSurface = 'rankings';
     _rankTierEditingId = null;
     _rankTierPopulateForm(null);
@@ -7307,7 +7318,7 @@ function _rankTiersDefaultOrder(){
   // Brackets only make sense in the saved order. A column sort scrambles the rows and a stat
   // filter removes rows, so hide the boxes until both are cleared. (NFL_RANK_STATFILTER_V1 —
   // the old note that rankings has no filter bar stopped being true on 2026-08-20.)
-  try { return !_rankSortField && !(typeof _rankFilterActive === 'function' && _rankFilterActive()); } catch(e){ return false; }
+  try { return !_rankSortField && !(typeof _rankAnyFilterActive === 'function' && _rankAnyFilterActive()); } catch(e){ return false; }   /* RANK_SEARCH_TIERGUARD_V1 */
 }
 function _rankTiersResolveRange(tier){
   var tbody = document.getElementById('rankings-body');
