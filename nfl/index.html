@@ -2520,7 +2520,10 @@ async function _ensurePrevSeasonStats(){
 // "Previous Season"; this makes it read "Previous Season (2025)".
 function _labelPrevSeasonOptions(){
   const y = _prevSeasonYear();
-  ['nflwl-instant-daterange','nflp-instant-daterange','nflrk-instant-daterange'].forEach(function(id){
+  /* CARD_PREV_SEASON_V1 (2026-09-01): the card's select is labelled here too, so its
+     option reads 'Previous Season (2025)'. It is deliberately NOT added to the boot
+     path below that force-sets the table selects -- the card owns its own range. */
+  ['nflwl-instant-daterange','nflp-instant-daterange','nflrk-instant-daterange','ftl-daterange-select'].forEach(function(id){
     const sel = document.getElementById(id); if(!sel) return;
     const o = sel.querySelector('option[value="prevseason"]');
     if(o) o.textContent = 'Previous Season (' + y + ')';
@@ -10428,6 +10431,11 @@ async function _ftlRenderRankHistory(pid){
 // cannot touch this select, and _ftlDateRangeChange re-renders ONLY the card (keepRange=true).
 let _ftlDateRange = 'season';
 function _ftlStatsRow(pid){
+  /* CARD_PREV_SEASON_V1 (2026-09-01, Bug #203 - the Dude, off a Jahmyr Gibbs card):
+     the card's own copy of the _statsRow prevseason branch. The three tables got this
+     on 8/30; the card was never in scope and defaulted into an empty season, so every
+     tile read as a dash. Its own cached map, same one the tables use. */
+  if(_ftlDateRange === 'prevseason'){ return (_prevSeasonStats && _prevSeasonStats[pid]) || {}; }
   if(_ftlDateRange === 'season'){ return (_seasonStats && _seasonStats[pid]) || {}; }
   const w = _dateRangeStats && _dateRangeStats.windows && _dateRangeStats.windows[_ftlDateRange];
   return (w && w[pid]) || {};
@@ -10451,16 +10459,23 @@ async function _ftlDateRangeChange(sel){
   }
   _ftlDateRange = sel.value;
   sel.classList.toggle('daterange-active', _ftlDateRange !== 'season');
-  if(_ftlDateRange !== 'season'){ await _ensureDateRangeStats(); }
+  /* CARD_PREV_SEASON_V1: prevseason has its OWN cached fetch and must NOT fall into
+     _ensureDateRangeStats, which only knows the rolling windows. */
+  if(_ftlDateRange === 'prevseason'){ await _ensurePrevSeasonStats(); }
+  else if(_ftlDateRange !== 'season'){ await _ensureDateRangeStats(); }
   if(_ftlCurrentPid != null) openFromTheLogo(_ftlCurrentPid, true);
 }
 function openFromTheLogo(pid, _keepRange){
   const p = _playerDB && _playerDB[pid];
   if(!p) return;
   if(!_keepRange){
-    _ftlDateRange = 'season';
+    /* CARD_PREV_SEASON_V1: was hardcoded 'season', which dropped every fresh card open
+       into the empty year. Asks the same _defaultDateRange() the three tables ask, so the
+       card flips back to Season Stats by itself the day this season fills. */
+    _ftlDateRange = _defaultDateRange();
     const _drSel = document.getElementById('ftl-daterange-select');
-    if(_drSel){ _drSel.value = 'season'; _drSel.classList.remove('daterange-active'); }
+    if(_drSel){ _drSel.value = _ftlDateRange; _drSel.classList.toggle('daterange-active', _ftlDateRange !== 'season'); }
+    if(_ftlDateRange === 'prevseason'){ _ensurePrevSeasonStats(); }
   }
   const s = _ftlStatsRow(pid) || {};
 
@@ -11419,7 +11434,7 @@ function _yahooLookupFmt(pid, field, isPercent){
       <div class="ftl-rank" id="ftl-rank" style="display:none">Watch101 Rank <span class="num" id="ftl-rank-num" onclick="_ftlEditRank(event)" title="Click to type a new Watch101 rank"></span></div><!-- CARD_TYPEIN_V1 -->
       <div><label id="ftl-own-wrap" style="display:none"><input type="checkbox" id="ftl-own-check" onchange="_ftlToggleOwned(this)"> I own this player</label></div>
       </div>
-      <div class="ftl-daterange-wrap"><span class="ftl-daterange-label">Stats For:</span><select id="ftl-daterange-select" class="ftl-daterange-select" onchange="_ftlDateRangeChange(this)" title="Stat window shown on this card — resets to Season on open"><option value="season" selected>Season Stats</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option><option value="previous_seasons">Career</option></select></div>
+      <div class="ftl-daterange-wrap"><span class="ftl-daterange-label">Stats For:</span><select id="ftl-daterange-select" class="ftl-daterange-select" onchange="_ftlDateRangeChange(this)" title="Stat window shown on this card — resets to Season on open"><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option><option value="previous_seasons">Career</option></select></div>
     </div>
     <div class="ftl-herostats"><!-- BUG49_PHASE2: baseball hero pattern -->
       <!-- FAN_TAGS_TOP_V1: the slot is EMPTY in the backend and stays empty. Only the read-only
