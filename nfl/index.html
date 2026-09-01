@@ -1904,6 +1904,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of players">&#127991;&#65039; Tier</button>
     <div class="count-badge" id="count-badge">0 players</div>
     <button class="btn btn-turf backend-only" id="save-btn" onclick="saveList()">💾 Save</button>
+    <button class="btn btn-turf backend-only" id="save-all-btn" onclick="saveAllLists(this)" title="Checks every watch list you edited in this browser against the NAS staging folder, sends any that did not make it, then pings Jay once. No folder picker. LIST_SAVE_ALL_V1">💾 Save All</button>
   </div>
 </div>
 
@@ -9531,10 +9532,107 @@ function _nflSaveLocal(){
 // server.js + live after the Docker rebuild). Always writes localStorage too (offline
 // fallback). Silent + non-blocking — a NAS hiccup never breaks the UI. The manual Save
 // button (folder picker) stays as a belt-and-suspenders manual push.
+/* ══════════ LIST_SAVE_ALL_V1 (2026-09-01, Matt's ask on the 9/1 call, the Dude's ruling the same night) ══════════
+   Matt, 33:14: "I'm gonna be making changes to four to six lists at once... do you think it makes
+   sense to have a save all button as well?" The Dude: "One hundred percent."
+
+   🪨 WHY THERE IS NO FOLDER PICKER HERE. Every add, remove and drag already POSTs the list to
+   POST /list-staging/:listId (autoSaveToNflNAS), which writes the same timestamped JSON into the
+   same _Staging/<List>/ folder that saveList()'s picker writes to and that Matt_Approve_*.command
+   promotes from. So by the time he clicks, the data is normally already in staging. What this
+   button adds is (1) a CHECK that every list he touched actually reached the NAS (the autosave
+   coalesces rapid edits with the _nflNasSaving guard, so a fast second edit can be dropped),
+   (2) a re-send of anything that did not, and (3) ONE ping to the Dude's phone. No picker means
+   Bug #209 (picker forgets the path on his Mac) and #211 (Production offered beside Staging) do
+   not exist on this path.
+
+   ⚠️ TOUCHED LISTS ONLY. A list this browser never edited is never sent, because its localStorage
+   copy could be older than what another machine put on the NAS. _wlMarkTouched() stamps an ISO
+   time on every mutation (called from autoSaveToNflNAS); a list with no stamp is reported as
+   "untouched" and left alone. If the NAS copy is NEWER than the stamp and differs, it is also
+   left alone and said so, never overwritten.
+
+   ⚠️ THE EMPTY-FILE TRAP, carried over from saveRankingsToFile: the approve tools promote the
+   NEWEST staged file, so an empty one becomes the live list. Zero-player lists are refused.
+
+   ONE PING, at the end, whatever happened, exactly like _rankPingJay(): the click itself is the
+   signal that Matt is done. Webhook: matt_saved_all_nfl (HA side documented in
+   03 System Documentation/HA_SaveAll_Webhooks_2026-09-01.md). Rankings precedent: one pinger.
+   The per-list Save button beside it is untouched: the Dude ruled 9/1 that lists keep both. */
+var LIST_SAVE_ALL_IDS = ['integrity-nfl','ffpc-redraft-nfl','sfb16-nfl','empire-nfl'];   // watch lists only; dynasty-nfl is a RANKINGS set
+var _HA_WEBHOOK_SAVE_ALL = 'matt_saved_all_nfl';
+function _wlStorageKeyFor(id){ return (id === 'integrity-nfl') ? LIST_STORAGE_KEY : ('watch101_nfl_watch_list_' + id); }   // mirrors _wlStorageKey() for any id
+function _wlTouchedKeyFor(id){ return _wlStorageKeyFor(id) + '_touched'; }
+function _wlMarkTouched(){
+  try { localStorage.setItem(_wlTouchedKeyFor(currentListId), new Date().toISOString()); } catch(e){}
+}
+function _wlSameContent(a, b){
+  try { return JSON.stringify(a || []) === JSON.stringify(b || []); } catch(e){ return false; }
+}
+async function saveAllLists(btn){
+  if(_blockIfReadOnly('saveAllLists')) return;
+  var statusEl = document.getElementById('status-bar');
+  function say(m){ if(statusEl) statusEl.textContent = m; }
+  var restore = btn ? btn.textContent : '';
+  if(btn) btn.disabled = true;
+  // The list on screen first: make sure localStorage holds exactly what is in memory.
+  try { localStorage.setItem(_wlStorageKey(), JSON.stringify(_watchList)); } catch(e){}
+  try { localStorage.setItem(_tiersLsKey(), JSON.stringify(_tiersForSave())); } catch(e){}
+  var resent = [], inSync = [], untouched = [], empty = [], nasNewer = [], failed = [];
+  for(var i = 0; i < LIST_SAVE_ALL_IDS.length; i++){
+    var id = LIST_SAVE_ALL_IDS[i];
+    var meta = WL_LISTS.find(function(l){ return l.id === id; });
+    var label = meta ? (meta.short || meta.folder || id) : id;
+    if(btn) btn.textContent = '\u2026 ' + (i + 1) + ' of ' + LIST_SAVE_ALL_IDS.length;
+    var touchedAt = null, players = null, tiers = [];
+    try {
+      touchedAt = localStorage.getItem(_wlTouchedKeyFor(id));
+      var raw = localStorage.getItem(_wlStorageKeyFor(id));
+      players = raw ? JSON.parse(raw) : null;
+      var tRaw = localStorage.getItem(_wlStorageKeyFor(id) + '_tiers');
+      tiers = tRaw ? JSON.parse(tRaw) : [];
+      if(!Array.isArray(tiers)) tiers = [];
+    } catch(e){ players = null; }
+    if(!touchedAt || !Array.isArray(players)){ untouched.push(label); continue; }
+    if(id === currentListId){ players = _watchList; tiers = _tiersForSave(); }   // on-screen list: memory is the truth
+    if(!players.length){ empty.push(label); continue; }   // the empty-file trap
+    var nas = null;
+    try {
+      var g = await fetch(SERVER_URL + '/list-staging/' + id, { cache: 'no-store' });
+      if(g.ok){ var gj = await g.json(); nas = (gj && gj.data) ? gj.data : null; }
+    } catch(e){ nas = null; }
+    if(nas && _wlSameContent(players, nas.players) && _wlSameContent(tiers, nas.tiers || [])){ inSync.push(label); continue; }
+    if(nas && nas.saved_at && touchedAt && nas.saved_at > touchedAt){ nasNewer.push(label); continue; }   // ISO strings sort as text
+    try {
+      var res = await fetch(SERVER_URL + '/list-staging/' + id, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ players: players, tiers: tiers })
+      });
+      if(res.ok) resent.push(label); else failed.push(label + ' (HTTP ' + res.status + ')');
+    } catch(e){ failed.push(label); }
+  }
+  try { fetch(_HA_WEBHOOK_BASE + '/' + _HA_WEBHOOK_SAVE_ALL, { method: 'POST', mode: 'no-cors', keepalive: true }).catch(function(){}); } catch(e){}
+  var parts = [];
+  if(resent.length)    parts.push('sent to the NAS: ' + resent.join(', '));
+  if(inSync.length)    parts.push('already on the NAS: ' + inSync.join(', '));
+  if(nasNewer.length)  parts.push('NAS has a NEWER copy, left alone: ' + nasNewer.join(', '));
+  if(empty.length)     parts.push('EMPTY, refused: ' + empty.join(', '));
+  if(failed.length)    parts.push('FAILED: ' + failed.join(', '));
+  if(untouched.length) parts.push('not edited here: ' + untouched.join(', '));
+  var okCount = resent.length + inSync.length;
+  say((failed.length ? '\u26a0\ufe0f ' : '\u2713 ') + 'Save All: ' + okCount + ' of ' + LIST_SAVE_ALL_IDS.length + ' lists in staging. ' + parts.join('. ') + '. Jay pinged.');
+  if(btn){
+    btn.disabled = false;
+    btn.textContent = (failed.length ? '\u26a0\ufe0f ' : '\u2713 ') + okCount + '/' + LIST_SAVE_ALL_IDS.length + ' + pinged';
+    setTimeout(function(){ btn.textContent = restore; }, 4000);
+  }
+}
+
 let _nflNasSaving = false;
 async function autoSaveToNflNAS(){
   if(_blockIfReadOnly('autoSaveToNAS')) return;
   _nflSaveLocal();  // local copy first — always succeeds, instant
+  _wlMarkTouched();   // LIST_SAVE_ALL_V1: stamp this list as edited here, BEFORE the coalescing guard below can return early
   // TEAL_STAMP_TWINS_V1: baseball's saveData teal write - editing surface only, every
   // mutation, exactly baseball's PUBLISHED_LABEL_V1 gate (fans never see editor language).
   try {
