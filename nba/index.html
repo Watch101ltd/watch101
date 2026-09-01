@@ -8700,17 +8700,32 @@ async function _ftlRenderNbaGames(pid){
       prevEl.innerHTML = '<div class="ftl-gl-note">No games played yet.</div>';
     } else {
       let w = 0, l = 0;
-      const sums = { pts: 0, reb: 0, ast: 0 };
+      /* GL_SUMMARY_FIVE_NBA_V1 (2026-09-01, Matt on the 9/1 call: "those are the generic five, you
+         know, point rebounds assist blocks"). This strip carried PPG/RPG/APG only. The Avg row at the
+         BOTTOM of the same table has had all eight (incl. Stl and Blk) the whole time, so the ask was
+         never about missing data, it was about the quick-glance line not matching the five he thinks in.
+         Two stats added: SPG and BPG. The Dude's call to accept the small duplication with the Avg row
+         rather than redesign either one, because Matt has not seen a redesign and did not ask for one.
+         ALSO FIXED IN PASSING, and it is the reason these lines were rewritten rather than appended to:
+         the old sums read `g.stats.pts` UNGUARDED while the table below it reads `g.stats || {}`. One
+         game with no stats object would have thrown, and the throw is caught upstream by the handler
+         that replaces the WHOLE game log with "Game log unavailable right now." A latent whole-panel
+         failure sitting in the two lines being edited. Now guarded the same way the table already was. */
+      const sums = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0 };
       games.forEach(function(g){
         if (g.result === 'W') w++;
         if (g.result === 'L') l++;
-        sums.pts += (g.stats.pts || 0); sums.reb += (g.stats.reb || 0); sums.ast += (g.stats.ast || 0);
+        const st = g.stats || {};
+        sums.pts += (st.pts || 0); sums.reb += (st.reb || 0); sums.ast += (st.ast || 0);
+        sums.stl += (st.stl || 0); sums.blk += (st.blk || 0);
       });
       const n = games.length;
       let html = '<div class="ftl-gl-summary"><b>L' + n + '</b><span><b>' + w + '-' + l + '</b></span>'
                + '<span><b>' + (sums.pts / n).toFixed(1) + '</b> PPG</span>'
                + '<span><b>' + (sums.reb / n).toFixed(1) + '</b> RPG</span>'
                + '<span><b>' + (sums.ast / n).toFixed(1) + '</b> APG</span>'
+               + '<span><b>' + (sums.stl / n).toFixed(1) + '</b> SPG</span>'   /* GL_SUMMARY_FIVE_NBA_V1 */
+               + '<span><b>' + (sums.blk / n).toFixed(1) + '</b> BPG</span>'   /* GL_SUMMARY_FIVE_NBA_V1 */
                + '<span>' + log.season + '-' + String(Number(log.season) + 1).slice(2) + ' season</span></div>';
       html += '<div class="ftl-gl-tablewrap"><table class="ftl-gl-table"><thead><tr>'
             + '<th class="gl-left">Date</th><th class="gl-left">Opp</th><th class="gl-left">Res</th>'
