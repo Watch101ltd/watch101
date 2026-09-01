@@ -502,7 +502,14 @@ table.watch-list tbody td.col-cbsowned{text-align:right;padding-right:11px}  /* 
    so a percentage can be judged against its volume, but make them visibly NOT
    scoring categories. Basketball Monster is the model he named — attempts are
    present but deliberately uncoloured. Grey, slightly dimmed, still sortable. */
-table.watch-list thead th.col-stat-info{color:var(--text3) !important;font-weight:600}
+/* HDR_WHITE_V1 (2026-09-01, his call: "the gray font at the tops of the headers is very hard to read").
+   Measured on the live read-only page first: all 120 header cells resolved to exactly two colours,
+   rgb(148,163,184) which is --text3, and rgb(98,249,244) which is --stat-teal. Every grey one is the
+   SAME token, including the group band. Using var(--text) rather than a hard #fff so day mode stays
+   correct on its own (--text is #ffffff dark, #1a1a1a day). The teal category headers and the purple
+   Y! / blue CBS prefixes carry their own rules and are deliberately untouched. */
+table.watch-list thead th,table.watch-list tr.own-group-row th{color:var(--text) !important}
+table.watch-list thead th.col-stat-info{color:var(--text) !important;font-weight:600}
 /* STAT_CAT_WASH_V1: opacity was 0.78 to dim the grey numbers. Every number is now the same
    teal and the wash marks the categories instead, so there is nothing left to dim. */
 table.watch-list tbody td.col-stat-info{color:var(--stat-teal);opacity:1}
@@ -512,7 +519,7 @@ table.watch-list tbody td.col-stat-info{color:var(--stat-teal);opacity:1}
    same way the teal ones are two rules below. */
 table.watch-list tbody td.col-stat-info .stat-cell{color:var(--stat-teal);font-weight:600}
 table.watch-list thead th.col-stat-info:hover{filter:brightness(1.4)}
-body.day-mode table.watch-list thead th.col-stat-info{color:#6b7280 !important}
+body.day-mode table.watch-list thead th.col-stat-info{color:var(--text) !important}  /* HDR_WHITE_V1 */
 body.day-mode table.watch-list tbody td.col-stat-info{color:#6b7280}
 body.day-mode table.watch-list tbody td.col-stat-info .stat-cell{color:#1a1a1a}
 /* STAT_CAT_WASH_V1 day mode: the Dude's call is black numbers on white with a grey wash.
@@ -1013,9 +1020,9 @@ body.day-mode .must-watch-flash{color:#b91c1c !important;}
 #ftl-overlay .ftl-gl-summary b{color:var(--text1,#fff);font-variant-numeric:tabular-nums;}
 #ftl-overlay .ftl-gl-tablewrap{overflow-x:auto;border:1px solid var(--border2);border-radius:6px;}
 #ftl-overlay .ftl-gl-table{width:100%;border-collapse:collapse;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;}
-#ftl-overlay .ftl-gl-table th{font-size:9px;letter-spacing:0.1em;color:var(--court);font-weight:700;padding:7px 7px;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap;}
+#ftl-overlay .ftl-gl-table th{font-size:9px;letter-spacing:0.1em;color:var(--court);font-weight:700;padding:7px 4px;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap;}
 #ftl-overlay .ftl-gl-table th.gl-left,#ftl-overlay .ftl-gl-table td.gl-left{text-align:left;}
-#ftl-overlay .ftl-gl-table td{padding:6px 7px;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap;}
+#ftl-overlay .ftl-gl-table td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap;}
 #ftl-overlay .ftl-gl-table tr:last-child td{border-bottom:none;}
 #ftl-overlay .ftl-gl-table td.gl-res.win{color:#10b981;font-weight:600;}
 #ftl-overlay .ftl-gl-table td.gl-res.loss{color:#ec4899;font-weight:600;}
@@ -8632,11 +8639,36 @@ async function _ftlFetchNbaGamelog(pid){
   _ftlGamelogNbaCache[pid] = data || {};
   return _ftlGamelogNbaCache[pid];
 }
+/* GL_COMPACT_NBA_V1 (2026-09-01) -- three width savings in the card's game log, all three
+   asked for by Matt on the 9/1 call, all three for ONE reason he did not state outright.
+   WHY: the game log table has ELEVEN columns (Date, Opp, Res, Min, Pts, Reb, Ast, Stl, Blk, 3P, TO).
+   On the call he read out "point, rebounds, assist, steal" and then asked "can we get blocks in
+   there?" -- but Blk is the very next column after Stl, and it is already rendered, and so are 3P
+   and TO. Ten seconds earlier he had said "I do see turnovers are cut off on the side here", and TO
+   is the last of the eleven. So he was not asking for a new column, he could not SEE the last three.
+   He then volunteered the cure himself: shorter dates, tighter Result, no space after the @.
+   THE THREE:
+     1. Date  -- was "Apr 10" off a month-name array, now "4/10". His words: "April 10th could just
+        be four slash 10. You know, maybe that'll save us the space." Array removed, not left unused.
+     2. Opp   -- was "@ Denver", now "@Denver". His words: "I hate the at space Denver. It should
+        just be at Denver." (see the row build in _ftlRenderNbaGames below)
+     3. Width -- game log cell padding cut from 7px to 4px per side on both th and td. Eleven
+        columns times two sides times 3px is roughly 66px bought back. Vertical padding untouched.
+   ⚠️ DELIBERATE DIVERGENCE FROM BASEBALL, DO NOT "FIX" IT BACK. Baseball's Deep Cut game log puts
+   the space in via CSS (`.gl-opp-away::before{content:'@ '}`, mlb/index.html line 1951). Basketball
+   now differs on purpose because Matt asked for it on basketball. Baseball was not touched.
+   ⚠️ NOT DONE HERE, ON PURPOSE: the Result cell's own text was left exactly as it was. Matt said
+   "this result takes up a lot of room" and floated dropping the score, then talked himself out of it
+   ("yes, I would like to know the score... they're scoring a ton of points, so that's good to know").
+   The score string was also never inspected against real data from this sandbox, so reformatting it
+   would have been a guess. Padding buys the width without touching content.
+   ⚠️ STILL UNPROVEN AT SHIP TIME: whether this is enough to bring Blk/3P/TO into view on HIS window.
+   The wrapper is overflow-x:auto so it side-scrolls rather than clipping, and his window width is the
+   variable. His eyes settle it, not Walter's browser (7/23). */
 function _ftlGlDate(iso){
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
   if (!m) return iso || '—';
-  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return names[Number(m[2]) - 1] + ' ' + Number(m[3]);
+  return Number(m[2]) + '/' + Number(m[3]);
 }
 // GAMELOG_ZEROS_V1 (2026-08-05, Matt on the 8/5 call: "We should change these dashes to zeros").
 // Sleeper's per-game feed OMITS a counting stat entirely when its value is zero, so a game with no
@@ -8697,7 +8729,7 @@ async function _ftlRenderNbaGames(pid){
           resCell = '<td class="gl-left">—</td>';
         }
         html += '<tr><td class="gl-left">' + _ftlGlDate(g.date) + '</td>'
-              + '<td class="gl-left">' + (g.away ? '@ ' : '') + (g.opp || '—') + '</td>' + resCell
+              + '<td class="gl-left">' + (g.away ? '@' : '') + (g.opp || '—') + '</td>' + resCell
               + '<td>' + (mins != null ? mins : 0) + '</td>'   // GAMELOG_ZEROS_V1
               + '<td>' + _ftlGlNum(s.pts) + '</td><td>' + _ftlGlNum(s.reb) + '</td><td>' + _ftlGlNum(s.ast) + '</td>'
               + '<td>' + _ftlGlNum(s.stl) + '</td><td>' + _ftlGlNum(s.blk) + '</td><td>' + _ftlGlNum(s.tpm) + '</td><td>' + _ftlGlNum(s.to) + '</td></tr>';
