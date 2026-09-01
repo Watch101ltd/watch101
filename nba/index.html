@@ -624,6 +624,17 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-tags-slot .ftl-take-prow,#ftl-overlay .ftl-tags-slot .ftl-take-typerow{margin:2px 0 4px;}
 #ftl-overlay .ftl-deeplinks-label{font-family:var(--font-display);font-weight:700;font-size:18px;letter-spacing:0;color:var(--gold);text-align:right;margin-bottom:6px;line-height:1;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks-label */
 #ftl-overlay .ftl-deeplinks{display:flex;gap:6px;justify-content:flex-end;margin-bottom:6px;}  /* BUG49_PHASE2: baseball's .ppo-hero-deeplinks */
+/* CARD_MOVES_NBA_V1 (2026-09-01) -- "Latest News" and its RW pill share ONE LINE, closing a parity
+   gap that had been open since 8/23. Matt asked for this on the 8/23 call ("latest news in this,
+   like they can be on the same line. They actually should be") and it landed on FOOTBALL ONLY.
+   Basketball kept stacking the pill underneath the label for nine days. The Dude found it today by
+   putting the two cards side by side in screenshots, which is the check Walter does not run:
+   Walter verifies a page against itself, the Dude asks whether it still matches the set.
+   These three rules are football's, copied byte for byte from its CARD_MOVES_V1 block, so the twins
+   now agree rather than being two similar-looking implementations. */
+#ftl-overlay .ftl-newsrow{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:nowrap;}
+#ftl-overlay .ftl-newsrow .ftl-deeplinks-label{white-space:nowrap;}
+#ftl-overlay .ftl-newsrow .ftl-deeplinks{display:flex;align-items:center;gap:6px;}
 #ftl-overlay .ftl-daterange-wrap{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;}  /* FTL_DATERANGE_V1: baseball's .ppo-daterange-wrap */
 #ftl-overlay .ftl-daterange-label{font-family:var(--font-display);font-weight:700;font-size:10px;letter-spacing:0.04em;color:var(--text3)}
 #ftl-overlay .ftl-daterange-select{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:12px;font-family:'Nunito Sans',sans-serif;cursor:pointer;outline:none;letter-spacing:0.04em;}
@@ -9889,6 +9900,57 @@ function _ftlRenderRwLink(pid){
   el.style.display = 'inline-flex';
   if(wrap) wrap.style.display = '';  /* BUG49_PHASE2: Latest News block shows only when RW resolves */
 }
+/* SPOTRAC_CONTRACT_NBA_V1 (2026-09-01) -- contract link out to Spotrac on the player card.
+   Matt asked for this on the 9/1 call and it was the biggest new idea of the meeting. His reason,
+   in his own words: "one thing I find myself doing for Dynasty is constantly looking for players
+   contracts." Deep in a dynasty ranking, contract LENGTH is his proxy for whether a guy is still
+   going to be in the league -- he took Gafford over Nurkic on exactly that, three guaranteed years
+   against a deal ending a year earlier on an older player. On football he also wants DEAD MONEY,
+   which the contract-year emoji does not cover.
+   WHY A LINK AND NOT DATA: Sleeper carries no contract information. Checked live during the call.
+   Matt expected a link and said so: "that's what I thought it would be."
+   WHY SPOTRAC AND NOT OVER THE CAP: Over The Cap is football only. Spotrac covers every sport and he
+   uses it constantly. The Dude proposed one source for both sports for consistency; Matt agreed.
+
+   THE URL, PROVEN IN A BROWSER BEFORE THIS SHIPPED, NOT ASSUMED:
+     https://www.spotrac.com/nba/player/<slug>
+   Spotrac's canonical player URL is /nba/player/_/id/<their internal id>/<slug>, and WE DO NOT
+   HAVE THEIR ID. Three things were tested rather than guessed:
+     1. A WRONG id with the right slug does NOT work -- /nba/player/_/id/1/lebron-james silently
+        bounces to the NBA home page. The id genuinely matters on that long form.
+     2. The SHORT form with NO id DOES work -- /nba/player/lebron-james redirects straight to
+        /nba/player/_/id/2257/lebron-james. That is the form used here.
+     3. The slug _rwSlug() already produces is the slug Spotrac wants, including the awkward ones.
+        Verified live on four: deaaron-fox (apostrophe), jaren-jackson-jr (period), jamarr-chase
+        (apostrophe, NFL) and nikola-jokic (accented c). All four landed on the right player page.
+   WARNING: NO CLIENT-SIDE FALLBACK IS POSSIBLE. If a slug ever fails to match, Spotrac bounces to its
+   own sport home page rather than returning a 404, and cross-origin rules mean this page cannot
+   detect that. A bad link lands somewhere harmless but unhelpful. Accepted knowingly; the alternative
+   is a Spotrac id map, which is a scrape plus a pipeline to keep fresh.
+
+   WARNING: DELIBERATELY ITS OWN WRAP, NOT ADDED TO #ftl-deeplinks-wrap, AND THIS IS THE IMPORTANT
+   PART. That wrap is hidden whenever RotoWire fails to resolve (BUG49_PHASE2: it shows only when a
+   player has a rotowire_id). Nesting the contract link inside it would have hidden contracts for
+   exactly the players Matt wants them for, because deep dynasty guys are the ones most likely to have
+   no rotowire_id. Own wrap, own gate, so the two links live and die independently.
+   NOTE ON LAYOUT, AMENDED SAME SESSION: this row first shipped STACKED, because that is what this
+   page did and the new row was mirrored to its own neighbour. The Dude then put the two sports side
+   by side in screenshots, saw football on one line and basketball stacked, and closed it. Both wraps
+   on this page now carry class="ftl-newsrow" and this page matches football. See CARD_MOVES_NBA_V1
+   in the stylesheet. Nothing above this note changed; only the layout did. */
+function _ftlRenderContractLink(pid){
+  var wrap = document.getElementById('ftl-contract-wrap');
+  var el   = document.getElementById('ftl-contract-link');
+  if(!wrap || !el) return;
+  var p = (typeof _playerDB !== 'undefined' && _playerDB) ? _playerDB[pid] : null;
+  if(!p){ wrap.style.display = 'none'; return; }
+  var nm = (p.full_name || ((p.first_name || '') + ' ' + (p.last_name || ''))).trim();
+  var slug = (typeof _rwSlug === 'function') ? _rwSlug(nm) : '';
+  if(!slug){ wrap.style.display = 'none'; return; }
+  el.href  = 'https://www.spotrac.com/nba/player/' + slug;
+  el.title = 'Open ' + (nm || 'player') + " contract on Spotrac";
+  wrap.style.display = '';
+}
 function _ftlStatCell(label, val, kind){
   const na = (val == null);
   const shown = na ? '—' : val;
@@ -10318,6 +10380,7 @@ function openFromTheLogo(pid, _keepRange){
   _ftlCurrentPid = pid;
   _ftlSyncOwnedCheck(pid);
   _ftlRenderRwLink(pid);   // ROTOWIRE_LINK_NBA_V1
+  _ftlRenderContractLink(pid);   // SPOTRAC_CONTRACT_NBA_V1
   _ftlRenderTypeTags(pid);
   _dismissMustWatchOnOpen(pid);
   _ftlRenderNbaGames(pid);
@@ -10492,9 +10555,16 @@ bootstrap();
       <!-- FAN_TAGS_TOP_NBA_V1: the slot is EMPTY on the backend and stays empty. -->
       <div class="ftl-heronew">
         <div class="ftl-tags-slot" id="ftl-tags-slot"></div>
-        <div id="ftl-deeplinks-wrap" style="display:none">
+        <div id="ftl-deeplinks-wrap" class="ftl-newsrow" style="display:none">
           <div class="ftl-deeplinks-label">Latest News</div>
           <div class="ftl-deeplinks"><a class="ftl-rw-link" id="ftl-rw-link" href="#" target="_blank" rel="noopener" style="display:none" title="Open on RotoWire">RW</a></div>
+        </div>
+        <!-- SPOTRAC_CONTRACT_NBA_V1 (2026-09-01, Matt on the 9/1 call). Own wrap on purpose:
+             the Latest News wrap above hides whenever RotoWire does not resolve, and that would
+             have hidden contracts for the deep dynasty players Matt wants them for. -->
+        <div id="ftl-contract-wrap" class="ftl-newsrow" style="display:none">
+          <div class="ftl-deeplinks-label">Contract</div>
+          <div class="ftl-deeplinks"><a class="ftl-rw-link" id="ftl-contract-link" href="#" target="_blank" rel="noopener" title="Open contract on Spotrac">SPOTRAC</a></div>
         </div>
       </div>
     </div>
