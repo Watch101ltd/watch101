@@ -98,6 +98,7 @@ button.go:hover{filter:brightness(1.1)}
 .sports button[data-on="1"]{color:#fff;border-width:2px}
 #sp-nfl[data-on="1"]{background:#16a34a;border-color:#16a34a}
 #sp-nba[data-on="1"]{background:#ea580c;border-color:#ea580c}
+#pt-dark[data-on="1"],#pt-light[data-on="1"]{background:var(--sport);border-color:var(--sport)}   /* POST_LIGHT_V1 */
 
 .hint{font-size:11px;color:var(--dim);margin-top:7px;line-height:1.45}
 .status{font-size:12px;min-height:17px;font-weight:700;color:var(--sport)}
@@ -166,6 +167,27 @@ button.go:hover{filter:brightness(1.1)}
   border-radius:12px;pointer-events:none}
 .mark.hot::after{border-color:rgba(255,255,255,.5)}
 #m-logo img{height:96px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));display:block}
+/* ============ POST_LIGHT_V1 (2026-09-01, Matt's R13 as he actually meant it) ============
+   Matt, 44:13: "is there a light dark button?" He meant THE POST, not the tool (the Dude
+   corrected that the same evening). #post.light flips every piece of the post that was
+   built dark: the navy ground, the dark scrim, the white type and its dark halos, the cream
+   ranking boxes and the cream card. The accent (--sport) and the headline's white-inline /
+   navy-outer construction stay exactly as they are, because that is the signature.
+   The row colours are declared on #post here so a hand-picked row colour (R17, set as an
+   inline style on #post) still wins in either mode. */
+#post.light{background:#f4f1ea;
+  --rowbg:rgba(22,35,63,.94); --rowink:#ffffff; --rowsub:rgba(255,255,255,.72); --rowval:#ffffff}
+#post.light #scrim{background:linear-gradient(180deg,
+   rgba(255,255,255,.72) 0%, rgba(255,255,255,.30) 24%, rgba(255,255,255,.50) 56%, rgba(255,255,255,.92) 100%)}
+#post.light #noPhoto{color:rgba(0,0,0,.25)}
+#post.light .layer{color:var(--navy)}
+#post.light .tiername,#post.light .datebar{color:var(--navy);
+  text-shadow:0 0 3px rgba(255,255,255,.75),0 3px 10px rgba(255,255,255,.6)}
+#post.light .handle{text-shadow:0 0 3px rgba(255,255,255,.75),0 3px 10px rgba(255,255,255,.6)}
+#post.light .card{background:rgba(22,35,63,.95);color:#fff}
+#post.light .card .meta{border-top-color:rgba(255,255,255,.22)}
+#post.light .card .when{color:#fff}
+
 /* CORNERMARK_RETIRED_V1 (2026-08-30, the Dude) - the small generic 101 mark that
    sat bottom-right is GONE. His call, off his own screenshot: "it's a little
    redundant to have two logos on one screen." The sport logo carries the post
@@ -183,7 +205,7 @@ button.go:hover{filter:brightness(1.1)}
            R13 the light/dark switch for the tool. -->
       <div class="row" style="margin-top:9px">
         <button onclick="newPost()">New post</button>
-        <button id="themeBtn" onclick="toggleTheme()">Light mode</button>
+        <button id="themeBtn" onclick="toggleTheme()">Light mode (tool)</button>
       </div>
     </div>
 
@@ -287,10 +309,16 @@ button.go:hover{filter:brightness(1.1)}
 
     <div class="box">
       <h2>Colors</h2>
+      <!-- POST_LIGHT_V1: Matt's light/dark ask was about THE POST. Dark is the default. -->
+      <label class="first">Post</label>
+      <div class="sports">
+        <button id="pt-dark" data-on="1" onclick="setPostTheme('dark')">Dark post</button>
+        <button id="pt-light" data-on="0" onclick="setPostTheme('light')">Light post</button>
+      </div>
       <!-- R16 (Matt, 9/1 47:52): change the accent when the photo fights it. Green and
            orange stay the DEFAULTS, his words: "I would use our defaults as our defaults."
            Switching sport puts the default back. -->
-      <label class="first">Accent (headline, numbers, handle)</label>
+      <label>Accent (headline, numbers, handle)</label>
       <div class="row">
         <input type="color" id="accentIn" value="#16a34a" oninput="applyAccent(this.value)">
         <button onclick="resetAccent()">Use default</button>
@@ -1014,7 +1042,9 @@ function _isDark(hex){
   return (0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b)) < 0.179;
 }
 function applyRowColor(hex){
-  const st=document.documentElement.style, dark=_isDark(hex);
+  /* POST_LIGHT_V1: the vars go on #post, not :root, so the pick outranks #post.light's own
+     row defaults (an inline style beats a class rule on the same element). */
+  const st=$('post').style, dark=_isDark(hex);
   st.setProperty('--rowbg', hex);
   st.setProperty('--rowink', dark?'#f5f5f5':'#161616');
   st.setProperty('--rowsub', dark?'rgba(255,255,255,.72)':'#5b6470');
@@ -1022,7 +1052,7 @@ function applyRowColor(hex){
   const el=$('rowIn'); if(el && el.value!==hex) el.value=hex;
 }
 function resetRowColor(){
-  const st=document.documentElement.style;
+  const st=$('post').style;
   ['--rowbg','--rowink','--rowsub','--rowval'].forEach(v=>st.removeProperty(v));
   const el=$('rowIn'); if(el) el.value='#f7f6f2';
 }
@@ -1034,6 +1064,17 @@ function setTheme(light){
   try{ localStorage.setItem('w101_pm_theme', light?'light':'dark'); }catch(e){}
 }
 function toggleTheme(){ setTheme(!document.body.classList.contains('light')); }
+
+/* POST_LIGHT_V1: the post's own light/dark. A class on #post, which is exactly what
+   html2canvas exports, so the download matches the preview. Dark is the default and
+   New post returns to it. */
+function setPostTheme(mode){
+  const light = mode==='light';
+  $('post').classList.toggle('light', light);
+  $('pt-dark').dataset.on  = light?'0':'1';
+  $('pt-light').dataset.on = light?'1':'0';
+  render();
+}
 try{ setTheme(localStorage.getItem('w101_pm_theme')==='light'); }catch(e){}
 
 /* R27 New post. He asked "do I just hit refresh?" and the answer in the room was a guess.
@@ -1052,6 +1093,7 @@ function newPost(){
   PHOTO=null; PHOTO_W=0; PHOTO_H=0; PAN.x=0; PAN.y=0;
   $('photo').removeAttribute('src'); $('photoIn').value='';
   resetAccent(); resetRowColor(); resetMarks();
+  $('post').classList.remove('light'); $('pt-dark').dataset.on='1'; $('pt-light').dataset.on='0';   /* POST_LIGHT_V1: back to dark */
   setSize();          /* re-applies W/H and renders */
   onTemplate();       /* reloads the list for the tier template */
   setStatus('New post. Pick a list.');
