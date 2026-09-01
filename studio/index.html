@@ -55,7 +55,16 @@
   --text:#e6edf3; --dim:#8b949e;
   --navy:#16233f;
   --sport:#16a34a;
+  /* PM_GROUP1_V1 (2026-09-01, Matt's 9/1 asks): --field is the input/button ground so
+     the light theme (R13) can flip it; the four --row* vars are the ranking boxes (R17).
+     Defaults are BYTE-FOR-BYTE the values that were hardcoded before, so a post made
+     with the pickers untouched looks exactly as it did. */
+  --field:#0d1117;
+  --rowbg:rgba(247,246,242,.95); --rowink:#161616; --rowsub:#5b6470; --rowval:#16233f;
 }
+/* R13 LIGHT THEME - the TOOL only. Nothing inside #post reads these, so the post is
+   identical in either theme; only the chrome around it changes. */
+body.light{--ink:#eef0f3;--panel:#ffffff;--line:#cfd6dd;--text:#1f2328;--dim:#57606a;--field:#ffffff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ink);color:var(--text);
      font-family:'Nunito Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
@@ -73,14 +82,14 @@ h1 span{color:var(--sport)}
 label{display:block;font-size:12px;color:var(--dim);margin:9px 0 3px;font-weight:700}
 label.first{margin-top:0}
 input[type=text],textarea,select,input[type=file],input[type=number]{
-  width:100%;background:#0d1117;border:1px solid var(--line);color:var(--text);
+  width:100%;background:var(--field);border:1px solid var(--line);color:var(--text);
   border-radius:7px;padding:8px 9px;font-family:inherit;font-size:13px}
 textarea{resize:vertical;min-height:60px}
 input[type=range]{width:100%}
 .row{display:flex;gap:8px}.row>*{flex:1}
 
 button{font-family:'Nunito Sans',sans-serif;font-weight:800;font-size:13px;border-radius:8px;
-  padding:9px 12px;cursor:pointer;border:1px solid var(--line);background:#0d1117;color:var(--text)}
+  padding:9px 12px;cursor:pointer;border:1px solid var(--line);background:var(--field);color:var(--text)}
 button:hover{border-color:var(--sport)}
 button.go{background:var(--sport);border-color:var(--sport);color:#fff;font-size:14px;padding:11px}
 button.go:hover{filter:brightness(1.1)}
@@ -125,16 +134,16 @@ button.go:hover{filter:brightness(1.1)}
 
 /* the ranked list — the thing that makes this not vanilla */
 .rank{margin-top:16px;display:flex;flex-direction:column;gap:9px}
-.rk{display:flex;align-items:center;gap:18px;background:rgba(247,246,242,.95);
-    color:#161616;border-radius:16px;padding:13px 20px}
+.rk{display:flex;align-items:center;gap:18px;background:var(--rowbg);
+    color:var(--rowink);border-radius:16px;padding:13px 20px}
 .rk .n{font-family:'Caprasimo',cursive,sans-serif;font-size:40px;color:var(--sport);
        min-width:64px;text-align:center;flex:none}
 .rk .nm{font-size:35px;font-weight:800;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.rk .pos{font-size:24px;font-weight:800;color:#5b6470;flex:none}
-.rk .val{font-family:'Caprasimo',cursive,sans-serif;font-size:33px;color:var(--navy);flex:none;
+.rk .pos{font-size:24px;font-weight:800;color:var(--rowsub);flex:none}
+.rk .val{font-family:'Caprasimo',cursive,sans-serif;font-size:33px;color:var(--rowval);flex:none;
          text-align:right;min-width:130px}
 .tiername{font-family:'Caprasimo',cursive,sans-serif;font-size:40px;text-align:center;
-  color:#fff;text-shadow:0 0 3px rgba(0,0,0,.6),0 3px 10px rgba(0,0,0,.7);margin-bottom:4px}
+  color:#fff;text-shadow:0 0 3px rgba(0,0,0,.6),0 3px 10px rgba(0,0,0,.7);margin:2px 0 6px}   /* R15: now under the headline */
 
 .card{background:rgba(247,246,242,.95);color:#1a1a1a;border-radius:24px;padding:32px 34px;margin-top:12px}
 .card .body{font-size:35px;line-height:1.3;font-weight:700}
@@ -170,6 +179,12 @@ button.go:hover{filter:brightness(1.1)}
     <div>
       <h1>Watch<span>101</span> Post Maker</h1>
       <p class="sub">Pick a sport, pick a post, hit Download.</p>
+      <!-- PM_GROUP1_V1: R27 a real New Post button (he asked "do I just hit refresh?"),
+           R13 the light/dark switch for the tool. -->
+      <div class="row" style="margin-top:9px">
+        <button onclick="newPost()">New post</button>
+        <button id="themeBtn" onclick="toggleTheme()">Light mode</button>
+      </div>
     </div>
 
     <div id="offlineBox" class="offline" style="display:none"></div>
@@ -270,6 +285,25 @@ button.go:hover{filter:brightness(1.1)}
         They start top-left and bottom-right.</div>
     </div>
 
+    <div class="box">
+      <h2>Colors</h2>
+      <!-- R16 (Matt, 9/1 47:52): change the accent when the photo fights it. Green and
+           orange stay the DEFAULTS, his words: "I would use our defaults as our defaults."
+           Switching sport puts the default back. -->
+      <label class="first">Accent (headline, numbers, handle)</label>
+      <div class="row">
+        <input type="color" id="accentIn" value="#16a34a" oninput="applyAccent(this.value)">
+        <button onclick="resetAccent()">Use default</button>
+      </div>
+      <!-- R17 (Matt, 9/1 54:24): "these are all white boxes, and we might not want white boxes."
+           Text inside the box flips light or dark by itself so it always reads. -->
+      <label>Ranking boxes</label>
+      <div class="row">
+        <input type="color" id="rowIn" value="#f7f6f2" oninput="applyRowColor(this.value)">
+        <button onclick="resetRowColor()">Use default</button>
+      </div>
+    </div>
+
     <button class="go" onclick="download()">Download the PNG</button>
     <div class="status" id="status"></div>
   </div>
@@ -282,8 +316,10 @@ button.go:hover{filter:brightness(1.1)}
         <div id="scrim"></div>
         <div class="layer">
           <div class="spacer"></div>
-          <div class="tiername" id="o-tiername" style="display:none"></div>
           <div class="headline" id="o-head"></div>
+          <!-- R15 (Matt, 9/1 44:51): the list name is the big line, the tier sits UNDER it,
+               because "this is a subset of this." Same two elements, swapped in the flow. -->
+          <div class="tiername" id="o-tiername" style="display:none"></div>
           <div class="datebar" id="o-date"></div>
           <div class="rank" id="o-rank"></div>
           <div class="card" id="o-card" style="display:none">
@@ -691,6 +727,7 @@ function setSport(s){
   $('sp-nfl').dataset.on = s==='nfl'?'1':'0';
   $('sp-nba').dataset.on = s==='nba'?'1':'0';
   document.documentElement.style.setProperty('--sport', SPORTS[s].colour);
+  resetAccent();   /* R16: a sport switch always lands on that sport's default colour */
   $('f-where').value = SPORTS[s].tag;
   $('listSel').innerHTML = buildListOptions(SPORTS[s].lists);
   bootSport();
@@ -767,8 +804,15 @@ async function applyTier(){
     const tier=(!isNaN(idx) && idx>=0 && idx<tiers.length) ? tiers[idx] : null;
     if(tier){
       TIERNAME=tier.name||'';
-      ROWS=tierMembers(list,tier).map(pid=>resolveName(players,pid)).filter(Boolean)
-             .map(r=>({...r,val:null}));
+      /* 🐛 #204 (Matt, 9/1 43:11): a tier post numbered its players 1..6, their place IN
+         THE TIER. He wants their overall rank on the list. The rank is attached BEFORE
+         the .filter(Boolean), same reason as LIST_SLICE_V1: a pid that does not resolve
+         must leave an honest gap, not slide the next player up into its number. */
+      const order=(list.players||[]).map(p=>String(p.pid));
+      ROWS=tierMembers(list,tier)
+             .map(pid=>{ const r=resolveName(players,pid);
+                         return r ? Object.assign({}, r, {rank:order.indexOf(String(pid))+1, val:null}) : null; })
+             .filter(Boolean);
     } else { TIERNAME=''; ROWS=[]; }
     AUTOHEAD=(SPORTS[SPORT].lists.find(l=>l[0]===id)||[])[1]||'';
     render();
@@ -941,6 +985,76 @@ function layoutPhoto(){
   img.style.width=dw+'px'; img.style.height=dh+'px';
   img.style.left=((W-dw)/2+PAN.x)+'px';
   img.style.top =((H-dh)/2+PAN.y)+'px';
+}
+
+/* ================= PM_GROUP1_V1 (2026-09-01 evening, Matt's 9/1 asks, the Dude's go) =================
+   Six small things off the 9/1 call, in one pass: #204 tier rank (in applyTier), R15 the
+   swap (markup + CSS), and the four below. Nothing here touches how a post is measured
+   or exported; html2canvas reads computed styles, so CSS variables inside #post export
+   exactly as they preview (the accent already worked that way before tonight). */
+
+/* R16 accent. --sport is the one variable every accent-coloured thing already reads
+   (headline, row numbers, handle, the tool's own buttons), so changing it IS the feature. */
+function applyAccent(hex){
+  document.documentElement.style.setProperty('--sport', hex);
+  const el=$('accentIn'); if(el && el.value!==hex) el.value=hex;
+  render();
+}
+function resetAccent(){ applyAccent(SPORTS[SPORT].colour); }
+
+/* R17 ranking box colour. The ink flips by luminance so a dark box gets light type
+   and a light box keeps the original dark type. Default = exactly the old hardcoded
+   cream, restored by clearing the inline vars so the stylesheet's values return. */
+function _isDark(hex){
+  const m=/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex||''); if(!m) return false;
+  const r=parseInt(m[1],16)/255, g=parseInt(m[2],16)/255, b=parseInt(m[3],16)/255;
+  const lin=c=>c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);
+  /* 0.179 is the luminance where black and white text contrast equally (WCAG); below it
+     white type wins. Checked against the two sport colours: green and orange both keep DARK type. */
+  return (0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b)) < 0.179;
+}
+function applyRowColor(hex){
+  const st=document.documentElement.style, dark=_isDark(hex);
+  st.setProperty('--rowbg', hex);
+  st.setProperty('--rowink', dark?'#f5f5f5':'#161616');
+  st.setProperty('--rowsub', dark?'rgba(255,255,255,.72)':'#5b6470');
+  st.setProperty('--rowval', dark?'#ffffff':'#16233f');
+  const el=$('rowIn'); if(el && el.value!==hex) el.value=hex;
+}
+function resetRowColor(){
+  const st=document.documentElement.style;
+  ['--rowbg','--rowink','--rowsub','--rowval'].forEach(v=>st.removeProperty(v));
+  const el=$('rowIn'); if(el) el.value='#f7f6f2';
+}
+
+/* R13 light/dark for the TOOL. Remembered per browser. The post never changes. */
+function setTheme(light){
+  document.body.classList.toggle('light', !!light);
+  const b=$('themeBtn'); if(b) b.textContent = light ? 'Dark mode' : 'Light mode';
+  try{ localStorage.setItem('w101_pm_theme', light?'light':'dark'); }catch(e){}
+}
+function toggleTheme(){ setTheme(!document.body.classList.contains('light')); }
+try{ setTheme(localStorage.getItem('w101_pm_theme')==='light'); }catch(e){}
+
+/* R27 New post. He asked "do I just hit refresh?" and the answer in the room was a guess.
+   This is the real answer: every field back to its starting value, photo gone, marks and
+   colours back to default, sport kept, the lists already fetched kept (no reload, no wait). */
+function newPost(){
+  $('tpl').value='tier';
+  HEAD_TOUCHED=false; AUTOHEAD=''; TIERNAME=''; ROWS=[];
+  $('f-head').value=''; $('f-date').value='';
+  $('f-body').value='Full write-ups are on the site.';
+  $('f-where').value=SPORTS[SPORT].tag; $('f-when').value='Free';
+  $('f-handle').value='@watch101';
+  $('countSel').value=5; $('sliceFrom').value=20; $('sliceTo').value=25; $('sliceNote').textContent='';
+  $('zoom').value=100;
+  $('size').value='1080x1350';
+  PHOTO=null; PHOTO_W=0; PHOTO_H=0; PAN.x=0; PAN.y=0;
+  $('photo').removeAttribute('src'); $('photoIn').value='';
+  resetAccent(); resetRowColor(); resetMarks();
+  setSize();          /* re-applies W/H and renders */
+  onTemplate();       /* reloads the list for the tier template */
+  setStatus('New post. Pick a list.');
 }
 
 function download(){
