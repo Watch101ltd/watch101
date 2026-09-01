@@ -9737,6 +9737,62 @@ function _ftlRenderRwLink(pid){
   el.style.display = 'inline-flex';
   if(wrap) wrap.style.display = '';  /* BUG49_PHASE2: Latest News block shows only when RW resolves */
 }
+/* SPOTRAC_CONTRACT_NFL_V1 (2026-09-01) -- contract link out to Spotrac on the player card.
+   Matt asked for this on the 9/1 call and it was the biggest new idea of the meeting. His reason,
+   in his own words: "one thing I find myself doing for Dynasty is constantly looking for players
+   contracts." Deep in a dynasty ranking, contract LENGTH is his proxy for whether a guy is still
+   going to be in the league. On football he also wants DEAD MONEY -- his Barkley example on the call
+   was that cutting him before the 28 season means eating 17 million. The contract-year emoji already
+   on the page does not cover any of that.
+   WHY A LINK AND NOT DATA: Sleeper carries no contract information. Checked live during the call.
+   Matt expected a link and said so: "that's what I thought it would be."
+   WHY SPOTRAC AND NOT OVER THE CAP: Over The Cap is football only. Spotrac covers every sport and he
+   uses it constantly. The Dude proposed one source for both sports for consistency; Matt agreed.
+
+   THE URL, PROVEN IN A BROWSER BEFORE THIS SHIPPED, NOT ASSUMED:
+     https://www.spotrac.com/nfl/player/<slug>
+   Spotrac's canonical player URL is /nfl/player/_/id/<their internal id>/<slug>, and WE DO NOT HAVE
+   THEIR ID. Three things were tested rather than guessed:
+     1. A WRONG id with the right slug does NOT work -- /nba/player/_/id/1/lebron-james silently
+        bounces to the sport home page. The id genuinely matters on that long form.
+     2. The SHORT form with NO id DOES work -- /nba/player/lebron-james redirects straight to
+        /nba/player/_/id/2257/lebron-james. That is the form used here.
+     3. The slug _rwSlug() already produces is the slug Spotrac wants, including the awkward ones.
+        Verified live on four: deaaron-fox (apostrophe), jaren-jackson-jr (period), jamarr-chase
+        (apostrophe, NFL) and nikola-jokic (accented c). All four landed on the right player page.
+   WARNING: NO CLIENT-SIDE FALLBACK IS POSSIBLE. If a slug ever fails to match, Spotrac bounces to its
+   own sport home page rather than returning a 404, and cross-origin rules mean this page cannot
+   detect that. A bad link lands somewhere harmless but unhelpful. Accepted knowingly; the alternative
+   is a Spotrac id map, which is a scrape plus a pipeline to keep fresh.
+
+   WARNING: DELIBERATELY ITS OWN WRAP, NOT ADDED TO #ftl-deeplinks-wrap, AND THIS IS THE IMPORTANT
+   PART. That wrap is hidden whenever RotoWire fails to resolve (BUG49_PHASE2: it shows only when a
+   player has a rotowire_id). Nesting the contract link inside it would have hidden contracts for
+   exactly the players Matt wants them for, because deep dynasty guys are the ones most likely to have
+   no rotowire_id. Own wrap, own gate, so the two links live and die independently.
+   NOTE ON LAYOUT: this page's news row carries class="ftl-newsrow" (label and pill on one line, per
+   Matt on 8/23), so the contract row gets the same class to match its neighbour. CORRECTED SAME
+   SESSION: an earlier version of this note said "basketball still stacks". It did when this was
+   written and it does not now -- the Dude closed that gap the same afternoon (CARD_MOVES_NBA_V1).
+   Struck rather than left standing, because a stale note wins the next argument (Rule #8).
+   NOTE ON THIS FILE: _ftlStatCell here is (label, val, cls); basketball's is (label, val, kind). The
+   twins are NOT byte-identical and an anchor that works on one can miss on the other. It did today. */
+function _ftlRenderContractLink(pid){
+  var wrap = document.getElementById('ftl-contract-wrap');
+  var el   = document.getElementById('ftl-contract-link');
+  if(!wrap || !el) return;
+  var p = (typeof _playerDB !== 'undefined' && _playerDB) ? _playerDB[pid] : null;
+  if(!p){ wrap.style.display = 'none'; return; }
+  /* A team defence has no contract. DEF detection copied from DEF_CARD_LOGO_V1 (8/28, Bug #199). */
+  var isDef = (p.position === 'DEF') || (Array.isArray(p.fantasy_positions) && p.fantasy_positions.indexOf('DEF') !== -1);
+  if(isDef){ wrap.style.display = 'none'; return; }
+  var nm = (p.full_name || ((p.first_name || '') + ' ' + (p.last_name || ''))).trim();
+  var slug = (typeof _rwSlug === 'function') ? _rwSlug(nm) : '';
+  if(!slug){ wrap.style.display = 'none'; return; }
+  el.href  = 'https://www.spotrac.com/nfl/player/' + slug;
+  el.title = 'Open ' + (nm || 'player') + " contract on Spotrac";
+  wrap.style.display = '';
+}
 function _ftlStatCell(label, val, cls){
   const na = (val == null);
   return '<div class="ftl-statcell' + (cls ? ' ' + cls : '') + '"><div class="ftl-statlabel">' + label +
@@ -10616,6 +10672,7 @@ function openFromTheLogo(pid, _keepRange){
   try { _ftlSchedPrior = false; } catch(e){}   // SCHED_TRIO_V1: every card opens on the current season
   _ftlSyncOwnedCheck(pid);
   _ftlRenderRwLink(pid);   // ROTOWIRE_LINK_NFL_V1
+  _ftlRenderContractLink(pid);   // SPOTRAC_CONTRACT_NFL_V1
   _ftlRenderTypeTags(pid);
   _dismissMustWatchOnOpen(pid);
   _ftlRenderScheduleResults(pid);
@@ -11448,6 +11505,13 @@ function _yahooLookupFmt(pid, field, isPercent){
         <div id="ftl-deeplinks-wrap" class="ftl-newsrow" style="display:none">
           <div class="ftl-deeplinks-label">Latest News</div>
           <div class="ftl-deeplinks"><a class="ftl-rw-link" id="ftl-rw-link" href="#" target="_blank" rel="noopener" style="display:none" title="Open on RotoWire">RW</a></div>
+        </div>
+        <!-- SPOTRAC_CONTRACT_NFL_V1 (2026-09-01, Matt on the 9/1 call). Own wrap on purpose:
+             the Latest News wrap above hides whenever RotoWire does not resolve, and that would
+             have hidden contracts for the deep dynasty players Matt wants them for. Hidden for DEF. -->
+        <div id="ftl-contract-wrap" class="ftl-newsrow" style="display:none">
+          <div class="ftl-deeplinks-label">Contract</div>
+          <div class="ftl-deeplinks"><a class="ftl-rw-link" id="ftl-contract-link" href="#" target="_blank" rel="noopener" title="Open contract on Spotrac">SPOTRAC</a></div>
         </div>
       </div>
       <div class="ftl-statwrap" id="ftl-statwrap"></div>
