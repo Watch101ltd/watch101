@@ -225,6 +225,15 @@ button.go:hover{filter:brightness(1.1)}
   color:#fff;text-shadow:0 0 3px rgba(0,0,0,.6),0 3px 10px rgba(0,0,0,.7);
   white-space:pre-wrap;max-width:760px;padding:4px 6px}
 #post.light .freebox{color:var(--navy);text-shadow:0 0 3px rgba(255,255,255,.75),0 3px 10px rgba(255,255,255,.6)}
+/* TEXT_STYLE3_V1 (2026-09-01 night, Matt's R18): Instagram's "A" button, three looks.
+   plain = the letters with their halo · box = the letters on a shaded box · inverted = the
+   box takes the text colour and the letters flip to white or black. Colours are set inline
+   by applyTextStyle(); these classes only carry the shape. Applies to the three text boxes
+   and the @handle. The headline keeps its signature outline on purpose. */
+.ts-box,.ts-inv{text-shadow:none !important;border-radius:.22em;padding:.12em .38em}
+.ts-box{background:rgba(0,0,0,.55)}
+#post.light .ts-box{background:rgba(255,255,255,.78)}
+.mark.freebox.ts-box,.mark.freebox.ts-inv{padding:.18em .45em}
 
 /* CORNERMARK_RETIRED_V1 (2026-08-30, the Dude) - the small generic 101 mark that
    sat bottom-right is GONE. His call, off his own screenshot: "it's a little
@@ -323,32 +332,66 @@ button.go:hover{filter:brightness(1.1)}
         </div>
       </div>
       <label>Handle</label>
-      <input type="text" id="f-handle" value="@watch101" oninput="render()">
+      <div class="row">
+        <input type="text" id="f-handle" value="@watch101" oninput="render()">
+        <select id="handleStyle" onchange="render()" title="Plain, on a box, or inverted" style="flex:0 0 118px">
+          <option value="plain" selected>Plain</option>
+          <option value="box">Box</option>
+          <option value="inv">Inverted</option>
+        </select>
+      </div>
       <!-- TEXTBOX3_V1 (Matt R20, the Dude: three total): notes, callouts, captions. Each one
            appears on the post when it has text and drags anywhere. -->
       <!-- The Dude, 9/1 evening, off his own screenshot: one size for all three was not enough.
            "one large text box, one medium text box, and one small text box." A size per box. -->
       <label>Text box 1</label>
       <textarea id="f-text1" rows="2" oninput="render()" placeholder="Anything. Drag it where you want it."></textarea>
-      <select id="textSize1" onchange="render()">
-        <option value="36">Small</option>
-        <option value="48" selected>Medium</option>
-        <option value="64">Large</option>
-      </select>
+      <div class="row">
+        <select id="textSize1" onchange="render()">
+          <option value="36">Small</option>
+          <option value="48" selected>Medium</option>
+          <option value="64">Large</option>
+        </select>
+        <select id="textStyle1" onchange="render()" title="Plain, on a box, or inverted, like Instagram's A button">
+          <option value="plain" selected>Plain</option>
+          <option value="box">Box</option>
+          <option value="inv">Inverted</option>
+        </select>
+        <input type="color" id="textColor1" value="#ffffff" oninput="this.dataset.custom='1';render()" title="Text colour">
+        <button type="button" onclick="resetTextColor(1)" title="Back to white on a dark post, navy on a light one">Default</button>
+      </div>
       <label>Text box 2</label>
       <textarea id="f-text2" rows="2" oninput="render()"></textarea>
-      <select id="textSize2" onchange="render()">
-        <option value="36">Small</option>
-        <option value="48" selected>Medium</option>
-        <option value="64">Large</option>
-      </select>
+      <div class="row">
+        <select id="textSize2" onchange="render()">
+          <option value="36">Small</option>
+          <option value="48" selected>Medium</option>
+          <option value="64">Large</option>
+        </select>
+        <select id="textStyle2" onchange="render()" title="Plain, on a box, or inverted, like Instagram's A button">
+          <option value="plain" selected>Plain</option>
+          <option value="box">Box</option>
+          <option value="inv">Inverted</option>
+        </select>
+        <input type="color" id="textColor2" value="#ffffff" oninput="this.dataset.custom='1';render()" title="Text colour">
+        <button type="button" onclick="resetTextColor(2)" title="Back to white on a dark post, navy on a light one">Default</button>
+      </div>
       <label>Text box 3</label>
       <textarea id="f-text3" rows="2" oninput="render()"></textarea>
-      <select id="textSize3" onchange="render()">
-        <option value="36">Small</option>
-        <option value="48" selected>Medium</option>
-        <option value="64">Large</option>
-      </select>
+      <div class="row">
+        <select id="textSize3" onchange="render()">
+          <option value="36">Small</option>
+          <option value="48" selected>Medium</option>
+          <option value="64">Large</option>
+        </select>
+        <select id="textStyle3" onchange="render()" title="Plain, on a box, or inverted, like Instagram's A button">
+          <option value="plain" selected>Plain</option>
+          <option value="box">Box</option>
+          <option value="inv">Inverted</option>
+        </select>
+        <input type="color" id="textColor3" value="#ffffff" oninput="this.dataset.custom='1';render()" title="Text colour">
+        <button type="button" onclick="resetTextColor(3)" title="Back to white on a dark post, navy on a light one">Default</button>
+      </div>
     </div>
 
     <div class="box">
@@ -712,7 +755,9 @@ function render(){
   $('o-handle').textContent = $('f-handle').value;
   /* TEXTBOX3_V1 */
   for(let i=1;i<=3;i++){ const v=$('f-text'+i).value||'', el=$('m-text'+i);
-    el.textContent=v; el.style.fontSize=$('textSize'+i).value+'px'; el.style.display=v.trim()?'block':'none'; }
+    el.textContent=v; el.style.fontSize=$('textSize'+i).value+'px'; el.style.display=v.trim()?'block':'none';
+    applyTextStyle(el, $('textStyle'+i).value, textColorFor(i));   /* TEXT_STYLE3_V1 */ }
+  applyTextStyle($('o-handle'), $('handleStyle').value, getComputedStyle(document.documentElement).getPropertyValue('--sport').trim() || '#16a34a');
   $('o-head').textContent   = $('f-head').value;
   $('o-date').textContent   = $('f-date').value;
   $('o-body').textContent   = $('f-body').value;
@@ -1295,6 +1340,7 @@ function setPostTheme(mode){
   $('post').classList.toggle('light', light);
   $('pt-dark').dataset.on  = light?'0':'1';
   $('pt-light').dataset.on = light?'1':'0';
+  [1,2,3].forEach(function(i){ const el=$('textColor'+i); if(el && el.dataset.custom!=='1') resetTextColor(i,true); });   /* TEXT_STYLE3_V1: untouched pickers follow the post theme */
   render();
 }
 try{ setTheme(localStorage.getItem('w101_pm_theme')==='light'); }catch(e){}
@@ -1315,7 +1361,8 @@ function newPost(){
   $('size').value='1080x1350';
   _dropMedia(); PAN.x=0; PAN.y=0;   /* MOTION_EXPORT_V1 */
   $('photoIn').value='';
-  $('f-text1').value=''; $('f-text2').value=''; $('f-text3').value=''; $('textSize1').value='48'; $('textSize2').value='48'; $('textSize3').value='48';   /* TEXTBOX3_V1 */
+  $('f-text1').value=''; $('f-text2').value=''; $('f-text3').value=''; $('textSize1').value='48'; $('textSize2').value='48'; $('textSize3').value='48';
+  [1,2,3].forEach(function(i){ $('textStyle'+i).value='plain'; resetTextColor(i,true); }); $('handleStyle').value='plain';   /* TEXT_STYLE3_V1 */   /* TEXTBOX3_V1 */
   resetAccent(); resetRowColor(); resetLayout();
   $('post').classList.remove('light'); $('pt-dark').dataset.on='1'; $('pt-light').dataset.on='0';   /* POST_LIGHT_V1: back to dark */
   setSize();          /* re-applies W/H and renders */
@@ -1427,6 +1474,32 @@ async function downloadVideo(){
     setStatus(isMp4 ? ('Downloaded the MP4 ('+Math.round(seconds)+' s, muted).') : ('Downloaded as WebM: this Chrome could not write MP4. Tell Jay.'), !isMp4);
   }catch(err){ console.error('[MOTION_EXPORT_V1]',err); setStatus('Video export failed: '+(err&&err.message),true); layoutPhoto(); }
   finally{ _recording=false; btn.disabled=false; btn.textContent=keepLabel; }
+}
+
+/* ================= TEXT_STYLE3_V1 (2026-09-01 night, Matt's R18, the Dude's go) =================
+   Matt, 53:33: "normal text, change the color and then invert the background or have no
+   background." His case: green type on a green photo. Three looks per piece of text:
+     plain    - the letters in their colour with the usual halo
+     box      - the letters on a translucent box (dark box on a dark post, light on a light one)
+     inverted - a solid box in the text colour, letters flipped to white or black by luminance
+   Colours are inline so html2canvas exports exactly what the preview shows. */
+function textColorFor(i){
+  const el=$('textColor'+i);
+  if(el && el.dataset.custom==='1') return el.value;
+  return $('post').classList.contains('light') ? '#16233f' : '#ffffff';   /* the freebox defaults */
+}
+function resetTextColor(i, silent){
+  const el=$('textColor'+i); if(!el) return;
+  el.dataset.custom='0'; el.value = $('post').classList.contains('light') ? '#16233f' : '#ffffff';
+  if(!silent) render();
+}
+function applyTextStyle(el, mode, color){
+  if(!el) return;
+  el.classList.remove('ts-box','ts-inv');
+  el.style.background=''; el.style.color=''; el.style.textShadow='';
+  if(mode==='box'){ el.classList.add('ts-box'); el.style.color=color; }
+  else if(mode==='inv'){ el.classList.add('ts-inv'); el.style.background=color; el.style.color=_isDark(color)?'#ffffff':'#111111'; }
+  else { el.style.color=color; }
 }
 
 function download(){
