@@ -188,6 +188,27 @@ button.go:hover{filter:brightness(1.1)}
 #post.light .card .meta{border-top-color:rgba(255,255,255,.22)}
 #post.light .card .when{color:#fff}
 
+/* ============ DRAG_ALL_V1 + TEXTBOX3_V1 (2026-09-01, Matt's R14 / R20 / R26, the Dude's rulings) ============
+   R14: "I'm gonna make everything draggable." Every block in the content stack (.blk:
+   headline, tier name, dateline, the ranked list, the card) starts in the flex flow
+   exactly as before, so an untouched post is pixel-identical to yesterday's. The first
+   drag LIFTS the block: it becomes absolutely positioned at the spot it was already
+   sitting, and a same-height .hole is left in the flow so nothing else moves. Same
+   SCALE division and clamp as the marks.
+   R20, the Dude's ruling: THREE free text boxes, each a .mark (so it drags like the
+   logo), shown only when it has text. */
+.blk{position:relative;cursor:grab;touch-action:none}
+.blk.lifted{position:absolute;z-index:4;margin:0}
+.blk.grabbing{cursor:grabbing}
+.blk::after{content:'';position:absolute;inset:-8px;border:2px dashed transparent;border-radius:12px;pointer-events:none}
+.blk.hot::after{border-color:rgba(255,255,255,.5)}
+#post.light .blk.hot::after,#post.light .mark.hot::after{border-color:rgba(22,35,63,.45)}
+.hole{flex:none}
+.freebox{font-family:'Nunito Sans',system-ui,sans-serif;font-weight:800;font-size:48px;line-height:1.15;
+  color:#fff;text-shadow:0 0 3px rgba(0,0,0,.6),0 3px 10px rgba(0,0,0,.7);
+  white-space:pre-wrap;max-width:760px;padding:4px 6px}
+#post.light .freebox{color:var(--navy);text-shadow:0 0 3px rgba(255,255,255,.75),0 3px 10px rgba(255,255,255,.6)}
+
 /* CORNERMARK_RETIRED_V1 (2026-08-30, the Dude) - the small generic 101 mark that
    sat bottom-right is GONE. His call, off his own screenshot: "it's a little
    redundant to have two logos on one screen." The sport logo carries the post
@@ -282,6 +303,20 @@ button.go:hover{filter:brightness(1.1)}
       </div>
       <label>Handle</label>
       <input type="text" id="f-handle" value="@watch101" oninput="render()">
+      <!-- TEXTBOX3_V1 (Matt R20, the Dude: three total): notes, callouts, captions. Each one
+           appears on the post when it has text and drags anywhere. -->
+      <label>Text box 1</label>
+      <textarea id="f-text1" rows="2" oninput="render()" placeholder="Anything. Drag it where you want it."></textarea>
+      <label>Text box 2</label>
+      <textarea id="f-text2" rows="2" oninput="render()"></textarea>
+      <label>Text box 3</label>
+      <textarea id="f-text3" rows="2" oninput="render()"></textarea>
+      <label>Text box size</label>
+      <select id="textSize" onchange="render()">
+        <option value="36">Small</option>
+        <option value="48" selected>Medium</option>
+        <option value="64">Large</option>
+      </select>
     </div>
 
     <div class="box">
@@ -302,9 +337,9 @@ button.go:hover{filter:brightness(1.1)}
         <option value="1080x1350">Portrait 1080 × 1350 — best for Instagram</option>
         <option value="1080x1080">Square 1080 × 1080</option>
       </select>
-      <button style="margin-top:9px;width:100%" onclick="resetMarks()">Reset logo &amp; handle</button>
-      <div class="hint">Drag the sport logo and the @handle anywhere in the post.
-        They start top-left and bottom-right.</div>
+      <button style="margin-top:9px;width:100%" onclick="resetLayout()">Reset layout</button>
+      <div class="hint">Everything on the post drags: headline, tier name, dateline, the list, the card,
+        the logo, the @handle and the text boxes. Reset puts it all back where it started.</div>
     </div>
 
     <div class="box">
@@ -344,13 +379,13 @@ button.go:hover{filter:brightness(1.1)}
         <div id="scrim"></div>
         <div class="layer">
           <div class="spacer"></div>
-          <div class="headline" id="o-head"></div>
+          <div class="headline blk" id="o-head"></div>
           <!-- R15 (Matt, 9/1 44:51): the list name is the big line, the tier sits UNDER it,
                because "this is a subset of this." Same two elements, swapped in the flow. -->
-          <div class="tiername" id="o-tiername" style="display:none"></div>
-          <div class="datebar" id="o-date"></div>
-          <div class="rank" id="o-rank"></div>
-          <div class="card" id="o-card" style="display:none">
+          <div class="tiername blk" id="o-tiername" style="display:none"></div>
+          <div class="datebar blk" id="o-date"></div>
+          <div class="rank blk" id="o-rank"></div>
+          <div class="card blk" id="o-card" style="display:none">
             <div class="body" id="o-body"></div>
             <div class="meta"><div class="where" id="o-where"></div><div class="when" id="o-when"></div></div>
           </div>
@@ -360,6 +395,10 @@ button.go:hover{filter:brightness(1.1)}
              (render's .src and .textContent writes) keeps working untouched. -->
         <div class="mark" id="m-logo"><img id="o-logo" alt=""></div>
         <div class="mark" id="m-handle"><div class="handle" id="o-handle">@watch101</div></div>
+        <!-- TEXTBOX3_V1: three free text boxes, the Dude's count. Hidden until they hold text. -->
+        <div class="mark freebox" id="m-text1" style="display:none"></div>
+        <div class="mark freebox" id="m-text2" style="display:none"></div>
+        <div class="mark freebox" id="m-text3" style="display:none"></div>
       </div>
     </div>
     <div class="sub" id="scaleNote"></div>
@@ -572,13 +611,19 @@ function render(){
 
   $('detailOnly').style.display = isDetail?'block':'none';
   $('o-card').style.display     = isDetail?'block':'none';
-  $('o-date').style.display     = isDetail?'none':'block';
+  /* 🐛 #207 (Matt, 9/1 1:02:04, on the written-card preset): the dateline was hidden
+     outright on that preset, so "where's the dateline?" had no answer. Now it draws on
+     every preset whenever it has text, and hides only when the box is empty. */
+  $('o-date').style.display     = ($('f-date').value||'').trim() ? 'block' : 'none';
   $('o-tiername').style.display = (tpl==='tier'&&TIERNAME)?'block':'none';
   $('o-tiername').textContent   = TIERNAME;
 
   if(!HEAD_TOUCHED && AUTOHEAD) $('f-head').value = AUTOHEAD;
 
   $('o-handle').textContent = $('f-handle').value;
+  /* TEXTBOX3_V1 */
+  for(let i=1;i<=3;i++){ const v=$('f-text'+i).value||'', el=$('m-text'+i);
+    el.textContent=v; el.style.fontSize=$('textSize').value+'px'; el.style.display=v.trim()?'block':'none'; }
   $('o-head').textContent   = $('f-head').value;
   $('o-date').textContent   = $('f-date').value;
   $('o-body').textContent   = $('f-body').value;
@@ -618,7 +663,12 @@ const MARK_PAD_X=58, MARK_PAD_Y=60;
 let SCALE=1;                       /* written by fit(), read by the drag */
 const MARKS={
   'm-logo'  :{corner:'tl', x:0, y:0, placed:false},
-  'm-handle':{corner:'br', x:0, y:0, placed:false}
+  'm-handle':{corner:'br', x:0, y:0, placed:false},
+  /* TEXTBOX3_V1: the three boxes default to a stack under the logo, left edge on the
+     content grid. dy is added to the corner default; a drag overrides it like any mark. */
+  'm-text1' :{corner:'tl', x:0, y:0, placed:false, dy:200},
+  'm-text2' :{corner:'tl', x:0, y:0, placed:false, dy:340},
+  'm-text3' :{corner:'tl', x:0, y:0, placed:false, dy:480}
 };
 
 function placeMarks(){
@@ -630,7 +680,7 @@ function placeMarks(){
          rather than defaulting against a zero-width box */
       if(!w||!h) continue;
       m.x=(m.corner==='tl'||m.corner==='bl') ? MARK_PAD_X : W-MARK_PAD_X-w;
-      m.y=(m.corner==='tl'||m.corner==='tr') ? MARK_PAD_Y : H-MARK_PAD_Y-h;
+      m.y=((m.corner==='tl'||m.corner==='tr') ? MARK_PAD_Y : H-MARK_PAD_Y-h) + (m.dy||0);
       m.placed=true;
     }
     /* clamp EVERY pass, not just on drop. Switching 1080x1350 -> 1080x1080 drops
@@ -670,6 +720,55 @@ function initMarkDrag(id){
   el.addEventListener('mouseleave',function(){ el.classList.remove('hot'); });
 }
 initMarkDrag('m-logo'); initMarkDrag('m-handle');
+initMarkDrag('m-text1'); initMarkDrag('m-text2'); initMarkDrag('m-text3');   /* TEXTBOX3_V1 */
+
+/* ================= DRAG_ALL_V1 (2026-09-01, Matt's R14, the Dude's go) =================
+   The content blocks live in .layer's flex column. On the FIRST drag a block is lifted:
+   its current flow position is read (offsetLeft/offsetTop are relative to .layer, which
+   is inset:0 of #post, so they ARE post pixels), a same-size .hole is dropped into the
+   flow where it was so the rest of the stack does not move, and the block becomes
+   absolute at that exact spot. From then on it drags like a mark. resetLayout() puts
+   every block back into the flow and removes the holes. */
+const BLKS={};
+function initBlkDrag(id){
+  const el=$(id); if(!el) return;
+  el.addEventListener('pointerdown',function(e){
+    e.preventDefault(); e.stopPropagation();   /* not the photo pan, not a mark */
+    let b=BLKS[id];
+    if(!b || !b.lifted){
+      const cs=getComputedStyle(el);
+      b=BLKS[id]={lifted:true, x:el.offsetLeft, y:el.offsetTop, w:el.offsetWidth};
+      const hole=document.createElement('div'); hole.className='hole'; hole.dataset.for=id;
+      hole.style.height=el.offsetHeight+'px'; hole.style.marginTop=cs.marginTop; hole.style.marginBottom=cs.marginBottom;
+      el.parentNode.insertBefore(hole, el);
+      el.classList.add('lifted'); el.style.left=b.x+'px'; el.style.top=b.y+'px'; el.style.width=b.w+'px';
+    }
+    const sx=e.clientX, sy=e.clientY, ox=b.x, oy=b.y;
+    try{ el.setPointerCapture(e.pointerId); }catch(_){}
+    el.classList.add('grabbing');
+    function move(ev){
+      b.x=ox+(ev.clientX-sx)/SCALE; b.y=oy+(ev.clientY-sy)/SCALE;
+      b.x=Math.max(0,Math.min(b.x, W-el.offsetWidth)); b.y=Math.max(0,Math.min(b.y, H-el.offsetHeight));
+      el.style.left=b.x+'px'; el.style.top=b.y+'px';
+    }
+    function up(ev){
+      el.classList.remove('grabbing');
+      try{ el.releasePointerCapture(ev.pointerId); }catch(_){}
+      el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); el.removeEventListener('pointercancel',up);
+    }
+    el.addEventListener('pointermove',move); el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up);
+  });
+  el.addEventListener('mouseenter',function(){ el.classList.add('hot'); });
+  el.addEventListener('mouseleave',function(){ el.classList.remove('hot'); });
+}
+['o-head','o-tiername','o-date','o-rank','o-card'].forEach(initBlkDrag);
+function resetBlocks(){
+  for(const id in BLKS){ const el=$(id); if(!el) continue;
+    el.classList.remove('lifted'); el.style.left=''; el.style.top=''; el.style.width='';
+    delete BLKS[id]; }
+  document.querySelectorAll('.hole').forEach(function(h){ h.parentNode.removeChild(h); });
+}
+function resetLayout(){ resetBlocks(); resetMarks(); }
 
 /* PHOTO_DRAG_V1 - drag anywhere on the post to pan the photo.
    Listens on #post, not on #photo, because #photo sits UNDER .layer (which is
@@ -685,7 +784,7 @@ initMarkDrag('m-logo'); initMarkDrag('m-handle');
 function initPhotoDrag(){
   const post=$('post');
   post.addEventListener('pointerdown',function(e){
-    if(e.target && e.target.closest && e.target.closest('.mark')) return;
+    if(e.target && e.target.closest && e.target.closest('.mark,.blk')) return;   /* DRAG_ALL_V1: blocks too */
     if(!PHOTO||!PHOTO_W) return;
     e.preventDefault();
     const startX=e.clientX, startY=e.clientY, ox=PAN.x, oy=PAN.y;
@@ -1092,7 +1191,8 @@ function newPost(){
   $('size').value='1080x1350';
   PHOTO=null; PHOTO_W=0; PHOTO_H=0; PAN.x=0; PAN.y=0;
   $('photo').removeAttribute('src'); $('photoIn').value='';
-  resetAccent(); resetRowColor(); resetMarks();
+  $('f-text1').value=''; $('f-text2').value=''; $('f-text3').value=''; $('textSize').value='48';   /* TEXTBOX3_V1 */
+  resetAccent(); resetRowColor(); resetLayout();
   $('post').classList.remove('light'); $('pt-dark').dataset.on='1'; $('pt-light').dataset.on='0';   /* POST_LIGHT_V1: back to dark */
   setSize();          /* re-applies W/H and renders */
   onTemplate();       /* reloads the list for the tier template */
@@ -1103,7 +1203,7 @@ function download(){
   setStatus('Building the image…');
   /* DRAG_MARKS_V1 - strip the drag affordance by CLASS before the canvas is
      built. Not relying on :hover being absent from html2canvas's DOM clone. */
-  const marks=document.querySelectorAll('.mark');
+  const marks=document.querySelectorAll('.mark,.blk');   /* DRAG_ALL_V1 */
   for(let i=0;i<marks.length;i++){ marks[i].classList.remove('hot'); marks[i].classList.remove('grabbing'); }
   const node=$('post'), keep=node.style.transform;
   node.style.transform='scale(1)';
