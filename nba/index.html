@@ -6888,7 +6888,7 @@ document.addEventListener('click', function(e){
     var pid=btn&&btn.dataset?btn.dataset.pid:null;
     if(!pid){return;}
     mmFocal=String(pid);
-    var listId=(typeof currentListId!=='undefined'&&currentListId)?currentListId:'';
+    var listId=_ftlHistoryListId();   /* RANKHIST_SNAPSHOTS_V1 (#211): rankings-aware, was currentListId, which never changes on the rankings view */
     var ov=document.getElementById('movement-mode-overlay');
     var board=document.getElementById('mm-board');
     if(board)board.innerHTML='<div class="mm-msg">Loading rank history\u2026</div>';
@@ -10089,6 +10089,34 @@ function _ftlMin(s){ const v = _nbaMpg(s); return (v == null) ? null : v.toFixed
 let _ftlCurrentPid = null;
 let _ftlNotesHistory = null;
 
+/* RANKHIST_SNAPSHOTS_V1 - one fetch per list per page load; the endpoint caps limit at 10 */
+const _ftlSnapCache = {};
+async function _ftlSnapshotHistory(listId){
+  if (_ftlSnapCache[listId]) return _ftlSnapCache[listId];
+  try {
+    const res = await fetch(SERVER_URL + '/list/' + encodeURIComponent(listId) + '/history?limit=10', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    _ftlSnapCache[listId] = Array.isArray(data && data.snapshots) ? data.snapshots : [];
+  } catch (e) {
+    console.warn('[RANKHIST_SNAPSHOTS_V1] no snapshot history for ' + listId + ':', e && e.message);
+    _ftlSnapCache[listId] = [];
+  }
+  return _ftlSnapCache[listId];
+}
+/* RANKHIST_SNAPSHOTS_V1 (#211) - THE ACTUAL ROOT. Picking "Redraft Rankings" is a VIEW: the
+   switcher returns early and currentListId stays at whatever real list was open before
+   (Integrity by default). So on the rankings page the chart AND the Movement Mode replay
+   asked for history under the wrong list id, and every rankings card came up empty. This is
+   the one place that answers "which list's history is this card about": the rankings view
+   when it is showing (that position tab's own list id), otherwise the current list. */
+function _ftlHistoryListId(){
+  try {
+    var rv = document.getElementById('rankings-view');
+    if (rv && rv.style.display !== 'none' && typeof _rankListId === 'function' && typeof _rankPos !== 'undefined') return _rankListId(_rankPos);
+  } catch(e){}
+  return (typeof currentListId !== 'undefined' && currentListId) ? currentListId : '';
+}
 async function _ftlLoadHistoryNotes(){
   if (_ftlNotesHistory) return _ftlNotesHistory;
   try {
@@ -10242,7 +10270,7 @@ async function _ftlRenderRankHistory(pid){
   const latestLbl = document.getElementById('ftl-chart-latest');
   if (!svg) return;
   const history = (_ftlNotesHistory && _ftlNotesHistory[pid]) || [];
-  const activeListId = _activeList().id;
+  const activeListId = _ftlHistoryListId();   /* RANKHIST_SNAPSHOTS_V1 (#211): rankings-aware */
 
   const points = [];
   for (let i = 0; i < history.length; i++) {
@@ -10250,6 +10278,26 @@ async function _ftlRenderRankHistory(pid){
     if (!h || !h.date || h.rank == null) continue;
     if (activeListId && h.list_id && h.list_id !== activeListId) continue;
     points.push({ date: String(h.date), time: h.time ? String(h.time) : '0000', rank: Number(h.rank) });
+  }
+  /* RANKHIST_SNAPSHOTS_V1 (2026-09-01 late night, Bug #211, the Dude's find). The notes
+     history above is written by _append_history.py, which runs on a LIST approve and never on
+     a RANKINGS approve, so every rankings card had an empty chart and a locked Movement Mode
+     while the replay's own source (/list/:id/history snapshots) held four publishes. When the
+     notes yield nothing for the active list, derive the points from those snapshots instead:
+     same date/time/rank shape, so the chart, the gate and the replay finally agree. Lists keep
+     their notes path untouched (notes carry Matt's Take; snapshots do not). */
+  if (!points.length && activeListId) {
+    const snaps = await _ftlSnapshotHistory(activeListId);
+    if (_ftlCurrentPid !== pid) return;  // stale open guard, again, because we awaited
+    const pad = function(n){ return (n < 10 ? '0' : '') + n; };
+    for (let i = 0; i < snaps.length; i++) {
+      const sn = snaps[i];
+      const hit = (sn.players || []).find(function(p){ return p && String(p.pid) === String(pid); });
+      if (!hit) continue;
+      const d = new Date(sn.saved_at); if (isNaN(d.getTime())) continue;
+      points.push({ date: d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()),
+                    time: pad(d.getHours()) + pad(d.getMinutes()), rank: Number(hit.rank) });
+    }
   }
   points.sort(function(a, b){
     if (a.date !== b.date) return a.date < b.date ? -1 : 1;
