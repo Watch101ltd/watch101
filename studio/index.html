@@ -305,14 +305,25 @@ button.go:hover{filter:brightness(1.1)}
       <input type="text" id="f-handle" value="@watch101" oninput="render()">
       <!-- TEXTBOX3_V1 (Matt R20, the Dude: three total): notes, callouts, captions. Each one
            appears on the post when it has text and drags anywhere. -->
+      <!-- The Dude, 9/1 evening, off his own screenshot: one size for all three was not enough.
+           "one large text box, one medium text box, and one small text box." A size per box. -->
       <label>Text box 1</label>
       <textarea id="f-text1" rows="2" oninput="render()" placeholder="Anything. Drag it where you want it."></textarea>
+      <select id="textSize1" onchange="render()">
+        <option value="36">Small</option>
+        <option value="48" selected>Medium</option>
+        <option value="64">Large</option>
+      </select>
       <label>Text box 2</label>
       <textarea id="f-text2" rows="2" oninput="render()"></textarea>
+      <select id="textSize2" onchange="render()">
+        <option value="36">Small</option>
+        <option value="48" selected>Medium</option>
+        <option value="64">Large</option>
+      </select>
       <label>Text box 3</label>
       <textarea id="f-text3" rows="2" oninput="render()"></textarea>
-      <label>Text box size</label>
-      <select id="textSize" onchange="render()">
+      <select id="textSize3" onchange="render()">
         <option value="36">Small</option>
         <option value="48" selected>Medium</option>
         <option value="64">Large</option>
@@ -623,7 +634,7 @@ function render(){
   $('o-handle').textContent = $('f-handle').value;
   /* TEXTBOX3_V1 */
   for(let i=1;i<=3;i++){ const v=$('f-text'+i).value||'', el=$('m-text'+i);
-    el.textContent=v; el.style.fontSize=$('textSize').value+'px'; el.style.display=v.trim()?'block':'none'; }
+    el.textContent=v; el.style.fontSize=$('textSize'+i).value+'px'; el.style.display=v.trim()?'block':'none'; }
   $('o-head').textContent   = $('f-head').value;
   $('o-date').textContent   = $('f-date').value;
   $('o-body').textContent   = $('f-body').value;
@@ -1191,7 +1202,7 @@ function newPost(){
   $('size').value='1080x1350';
   PHOTO=null; PHOTO_W=0; PHOTO_H=0; PAN.x=0; PAN.y=0;
   $('photo').removeAttribute('src'); $('photoIn').value='';
-  $('f-text1').value=''; $('f-text2').value=''; $('f-text3').value=''; $('textSize').value='48';   /* TEXTBOX3_V1 */
+  $('f-text1').value=''; $('f-text2').value=''; $('f-text3').value=''; $('textSize1').value='48'; $('textSize2').value='48'; $('textSize3').value='48';   /* TEXTBOX3_V1 */
   resetAccent(); resetRowColor(); resetLayout();
   $('post').classList.remove('light'); $('pt-dark').dataset.on='1'; $('pt-light').dataset.on='0';   /* POST_LIGHT_V1: back to dark */
   setSize();          /* re-applies W/H and renders */
