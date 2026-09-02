@@ -146,6 +146,16 @@ button.go:hover{filter:brightness(1.1)}
 .rk .n{font-family:'Caprasimo',cursive,sans-serif;font-size:40px;color:var(--sport);
        min-width:64px;text-align:center;flex:none}
 .rk .nm{font-size:35px;font-weight:800;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+/* HEADSHOTS_V1 (2026-09-01 night, the Dude off his own screenshot; Matt 9/1 1:20ish: "I think
+   headshots are good. I like people like seeing faces."). A circle per row, cropped from the
+   top so the face stays in. The initials sit UNDER the image and show only when Sleeper has no
+   headshot for the player (Matt, same call: "he doesn't have a headshot"). Sleeper's own
+   silhouette is not CORS-readable, so it is never used; the export would come out blank. */
+.rk .hs{width:var(--hs,84px);height:var(--hs,84px);border-radius:50%;flex:none;position:relative;overflow:hidden;
+  background:rgba(127,127,127,.22);display:flex;align-items:center;justify-content:center}
+.rk .hs span{font-weight:900;font-size:calc(var(--hs,84px)*.38);letter-spacing:.02em;opacity:.7}
+.rk .hs img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%;display:none}
+.rk .hs.got img{display:block}
 .rk .pos{font-size:24px;font-weight:800;color:var(--rowsub);flex:none}
 .rk .val{font-family:'Caprasimo',cursive,sans-serif;font-size:33px;color:var(--rowval);flex:none;
          text-align:right;min-width:130px}
@@ -289,6 +299,10 @@ button.go:hover{filter:brightness(1.1)}
       <div id="countPick">
         <label>How many players</label>
         <input type="number" id="countSel" min="3" max="10" value="5" oninput="render()">
+      </div>
+      <!-- HEADSHOTS_V1: the toggle. On by default; with it on a list holds 10 rows instead of 15. -->
+      <div id="headsPick">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="headsOn" checked onchange="render()" style="width:auto;margin:0"> Show headshots (10 rows max)</label>
       </div>
     </div>
 
@@ -558,7 +572,8 @@ async function getList(id){
 function resolveName(players,pid){
   const p = players[pid] || players[String(pid)];
   if(!p) return null;
-  return {name:p.full_name || ((p.first_name||'')+' '+(p.last_name||'')).trim(),
+  return {pid:String(p.player_id || pid),   /* HEADSHOTS_V1: the row needs it for the photo */
+          name:p.full_name || ((p.first_name||'')+' '+(p.last_name||'')).trim(),
           pos:(p.fantasy_positions||[])[0] || p.depth_chart_position || '',
           team:p.team || p.team_abbr || ''};
 }
@@ -606,9 +621,38 @@ function outline(inner,outer){
   return p.join(',');
 }
 
+/* ================= HEADSHOTS_V1 (2026-09-01 night) =================
+   Sleeper hosts headshots at sleepercdn.com/content/<nfl|nba>/players/<pid>.jpg. PROVEN from
+   the studio origin in the Dude's own Chrome tonight: fetch() with CORS returns 200 for both
+   sports (Flacco 300x218, S. Curry 300x201), so the bytes can be turned into a data URI the
+   way every photo here is (the 7/28 tainted-canvas rule) and html2canvas exports them. A miss
+   (403, or a network error) is cached as 'none' and the initials stay. */
+const HS_CACHE={};
+function headsOn(){ const el=$('headsOn'); return !!(el && el.checked); }
+function initials(name){ return String(name||'').split(/\s+/).filter(Boolean).slice(0,2).map(function(w){ return w[0]; }).join('').toUpperCase(); }
+function loadHeadshot(pid){
+  const key=SPORT+':'+pid;
+  if(HS_CACHE[key]!==undefined) return;
+  HS_CACHE[key]=null;   /* in flight */
+  const url='https://sleepercdn.com/content/'+SPORT+'/players/'+encodeURIComponent(pid)+'.jpg';
+  fetch(url,{mode:'cors'}).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
+    .then(function(b){ return new Promise(function(res,rej){ const rd=new FileReader(); rd.onload=function(){ res(rd.result); }; rd.onerror=rej; rd.readAsDataURL(b); }); })
+    .then(function(dataUrl){ HS_CACHE[key]=dataUrl; applyHeadshot(pid,dataUrl); })
+    .catch(function(){ HS_CACHE[key]='none'; });
+}
+function applyHeadshot(pid,dataUrl){
+  const cells=$('o-rank').querySelectorAll('.hs[data-pid="'+pid+'"]');
+  for(let i=0;i<cells.length;i++){ const img=cells[i].querySelector('img'); if(img){ img.src=dataUrl; cells[i].classList.add('got'); } }
+}
+const HEADS_MAX=10;   /* rows with a face on them: 96px circles at 5, 80 at 7, 66 at 10, and 10 is the floor of legibility */
 function drawRows(rows,valLabel){
   const box=$('o-rank');
   if(!rows || !rows.length){ box.innerHTML=''; return; }
+  const heads=headsOn();
+  if(heads && rows.length>HEADS_MAX){
+    setStatus('Headshots on: showing the first '+HEADS_MAX+' of '+rows.length+'. Turn headshots off to fit all '+rows.length+'.');
+    rows=rows.slice(0,HEADS_MAX);
+  }
   /* The rows shrink as there are more of them, so ten still fits the frame.
      LIST_SLICE_V1 extended the ladder to 15. THE FIRST THREE RUNGS ARE BYTE-FOR-BYTE
      THE OLD VALUES, deliberately - every post that works today must keep looking
@@ -617,6 +661,8 @@ function drawRows(rows,valLabel){
   const pad    = n>=14?6  : n>=12?7  : n>=11?8  : n>=9?9  : n>=7?11 : 13;
   const nameSz = n>=14?23 : n>=12?25 : n>=11?27 : n>=9?29 : n>=7?32 : 35;
   box.style.gap = (n>=11?6:9)+'px';
+  const hs = heads ? (n<=5?96 : n<=7?80 : 66) : 0;   /* HEADSHOTS_V1: circle size by row count */
+  box.style.setProperty('--hs', hs+'px');
   box.innerHTML = rows.map((r,i)=>
     '<div class="rk" style="padding:'+pad+'px 20px">'+
       /* 🚨 LIST_SLICE_V1 - THE NUMBER IS r.rank WHEN THE ROW CARRIES ONE.
@@ -626,10 +672,13 @@ function drawRows(rows,valLabel){
          the tier/toplist/stat templates carry no .rank and still get i+1, so
          nothing that works today changes. */
       '<div class="n" style="font-size:'+(nameSz+5)+'px">'+(r.rank!=null?r.rank:(i+1))+'</div>'+
+      /* HEADSHOTS_V1: the circle, with a cached data URI if we already have it */
+      (heads && r.pid ? ('<div class="hs'+(typeof HS_CACHE[SPORT+':'+r.pid]==='string'&&HS_CACHE[SPORT+':'+r.pid]!=='none'?' got':'')+'" data-pid="'+esc(r.pid)+'"><span>'+esc(initials(r.name))+'</span><img alt=""'+(typeof HS_CACHE[SPORT+':'+r.pid]==='string'&&HS_CACHE[SPORT+':'+r.pid]!=='none'?' src="'+HS_CACHE[SPORT+':'+r.pid]+'"':'')+'></div>') : '')+
       '<div class="nm" style="font-size:'+nameSz+'px">'+esc(r.name)+'</div>'+
       (r.pos?'<div class="pos" style="font-size:'+(nameSz-11)+'px">'+esc(r.pos)+(r.team?' · '+esc(r.team):'')+'</div>':'')+
       (r.val!=null?'<div class="val" style="font-size:'+(nameSz-2)+'px">'+esc(String(r.val))+'</div>':'')+
     '</div>').join('');
+  if(heads) rows.forEach(function(r){ if(r.pid) loadHeadshot(r.pid); });   /* HEADSHOTS_V1: fill the circles as they arrive */
 }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -640,6 +689,7 @@ let ROWS=[], TIERNAME='', AUTOHEAD='';
    an unreadable post is not a post. The FRAME could hold more - the stack totals
    ~1019px of the 1230px available - so this is a legibility cap, not a space one. */
 const SLICE_MAX=15;
+function sliceMax(){ return headsOn() ? HEADS_MAX : SLICE_MAX; }   /* HEADSHOTS_V1 */
 
 function render(){
   const tpl=$('tpl').value;
@@ -905,6 +955,7 @@ function onTemplate(){
   $('statPick').style.display  = (t==='stat')?'block':'none';
   $('slicePick').style.display = (t==='slice')?'block':'none';
   $('countPick').style.display = (t==='toplist'||t==='stat')?'block':'none';
+  $('headsPick').style.display = (t==='tier'||t==='toplist'||t==='slice'||t==='stat')?'block':'none';   /* HEADSHOTS_V1 */
   HEAD_TOUCHED=false;
   if(t==='tier'||t==='toplist'||t==='slice') loadList(); else if(t==='stat') loadStats(); else { ROWS=[]; TIERNAME=''; AUTOHEAD=''; render(); }
 }
@@ -1018,7 +1069,7 @@ async function loadList(){
       let from=Math.max(1, Math.floor(+$('sliceFrom').value||1));
       let to  =Math.max(from, Math.floor(+$('sliceTo').value||from));
       let note='';
-      if(to-from+1 > SLICE_MAX){ to = from + SLICE_MAX - 1; note='Capped at '+SLICE_MAX+' rows. '; }
+      if(to-from+1 > sliceMax()){ to = from + sliceMax() - 1; note='Capped at '+sliceMax()+' rows'+(headsOn()?' with headshots on':'')+'. '; }
       if(from > total){
         ROWS=[]; AUTOHEAD='';
         note='That list only has '+total+' player'+(total===1?'':'s')+'.';
@@ -1258,6 +1309,7 @@ function newPost(){
   $('f-where').value=SPORTS[SPORT].tag; $('f-when').value='Free';
   $('f-handle').value='@watch101';
   $('countSel').value=5; $('sliceFrom').value=20; $('sliceTo').value=25; $('sliceNote').textContent='';
+  $('headsOn').checked=true;   /* HEADSHOTS_V1 */
   $('zoom').value=100;
   $('size').value='1080x1350';
   _dropMedia(); PAN.x=0; PAN.y=0;   /* MOTION_EXPORT_V1 */
