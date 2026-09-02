@@ -896,6 +896,14 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .fs-table th.fs-left,#ftl-overlay .fs-table td.fs-left{text-align:left;}
 #ftl-overlay .fs-table td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--border2);white-space:nowrap;}
 #ftl-overlay .fs-table tr:last-child td{border-bottom:none;}
+/* CARD_GROUP_HEADERS_V1 (2026-09-01): the group row above the labels, the main table's look
+   (tr.grouprow: 9px, letter-spaced, turf, gold left edge on each group). Dividers run down the
+   body on each group's first column so Rushing and Receiving read as their own blocks (R12). */
+#ftl-overlay .fs-table tr.fs-grouprow th{padding:5px 8px 1px;font-size:9px;letter-spacing:0.08em;text-align:center;color:var(--turf);border-bottom:1px solid transparent;}
+#ftl-overlay .fs-table tr.fs-grouprow th.fs-grp-blank{color:transparent;}
+#ftl-overlay .fs-table tr.fs-grouprow th.fs-grp-lbl{border-left:1px solid var(--gold);}
+#ftl-overlay .fs-table th.fs-grp-start{border-left:1px solid var(--gold);}
+#ftl-overlay .fs-table td.fs-grp-start{border-left:1px solid var(--border2);}
 #ftl-overlay .fs-table td.fs-result.win{color:#10b981;font-weight:600;}
 #ftl-overlay .fs-table td.fs-result.loss{color:var(--red,#ef4444);font-weight:600;}  /* SCHED_TRIO_V1 follow-up (2026-08-19, the Dude's catch): the original #ec4899 was LITERALLY pink (not a reddish that drifted) -- now the house red */
 #ftl-overlay .fs-table tr.fs-bye td,#ftl-overlay .fs-table tr.fs-dnp td{color:var(--text3);}
@@ -9957,23 +9965,30 @@ async function _ftlFetchGamelog(year, pid){
 }
 
 function _ftlSchedCols(pos){
-  // Position-appropriate columns: [header, sleeper stat key]
+  // Position-appropriate columns: [header, sleeper stat key, group]
+  // CARD_GROUP_HEADERS_V1 (2026-09-01 night, Matt's R11 + R12, the Dude's ask): the labels are
+  // now the main table's words (Yds, TD, Att, Tgt, Rec) with the group named ONCE above them
+  // (Passing / Rushing / Receiving), instead of RU YD / RE TD spelled into every cell. The
+  // third element is the group; consecutive columns with the same group share one header cell.
   switch(pos){
-    case 'QB': return [['CMP','pass_cmp'],['ATT','pass_att'],['PA YD','pass_yd'],['PA TD','pass_td'],['INT','pass_int'],['RU YD','rush_yd'],['RU TD','rush_td']];
+    case 'QB': return [['Cmp','pass_cmp','Passing'],['Att','pass_att','Passing'],['Yds','pass_yd','Passing'],['TD','pass_td','Passing'],['Int','pass_int','Passing'],['Yds','rush_yd','Rushing'],['TD','rush_td','Rushing']];
     case 'RB':
-    case 'FB': return [['CAR','rush_att'],['RU YD','rush_yd'],['RU TD','rush_td'],['TGT','rec_tgt'],['REC','rec'],['RE YD','rec_yd'],['RE TD','rec_td']];
+    case 'FB': return [['Att','rush_att','Rushing'],['Yds','rush_yd','Rushing'],['TD','rush_td','Rushing'],['Tgt','rec_tgt','Receiving'],['Rec','rec','Receiving'],['Yds','rec_yd','Receiving'],['TD','rec_td','Receiving']];
     case 'WR':
-    case 'TE': return [['TGT','rec_tgt'],['REC','rec'],['RE YD','rec_yd'],['RE TD','rec_td'],['CAR','rush_att'],['RU YD','rush_yd']];
-    case 'K':  return [['FGM','fgm'],['FGA','fga'],['XPM','xpm'],['XPA','xpa']];
+    case 'TE': return [['Tgt','rec_tgt','Receiving'],['Rec','rec','Receiving'],['Yds','rec_yd','Receiving'],['TD','rec_td','Receiving'],['Att','rush_att','Rushing'],['Yds','rush_yd','Rushing']];
+    case 'K':  return [['FGM','fgm','Kicking'],['FGA','fga','Kicking'],['XPM','xpm','Kicking'],['XPA','xpa','Kicking']];
     // DEF_CARD_STATS_V1 (2026-08-28): SACK, INT and FUM REC were removed from this list, NOT
     // because they are wrong but because the weekly feed does not carry them. Pulled every week
     // of the Rams 2025 game log and the union of keys across all 17 is exactly def_td, pts_allow
     // and the three fantasy-point fields. Three columns of permanent em-dashes read as a broken
     // page. Put them back the day the server merges nflverse's weekly team file.
-    case 'DEF':return [['TD','def_td'],['PTS ALLOW','pts_allow']];
-    default:   return [['CAR','rush_att'],['RU YD','rush_yd'],['REC','rec'],['RE YD','rec_yd']];
+    case 'DEF':return [['TD','def_td','Defense'],['Pts Allow','pts_allow','Defense']];
+    default:   return [['Att','rush_att','Rushing'],['Yds','rush_yd','Rushing'],['Rec','rec','Receiving'],['Yds','rec_yd','Receiving']];
   }
 }
+/* CARD_GROUP_HEADERS_V1: true for the first column of each group, so header and body cells can
+   carry the divider (R12: "a divider between the rushing block and the receiving block"). */
+function _ftlSchedGrpStart(cols, i){ return i === 0 || cols[i][2] !== cols[i-1][2]; }
 
 function _ftlFmtSchedDate(iso){
   // '2026-09-13' -> 'Sep 13'. String math on purpose -- new Date('YYYY-MM-DD')
@@ -9984,10 +9999,11 @@ function _ftlFmtSchedDate(iso){
   return names[Number(m[2]) - 1] + ' ' + Number(m[3]);
 }
 
-function _ftlSchedStatCell(v){
+function _ftlSchedStatCell(v, extraCls){
   const n = Number(v);
-  if (v == null || !isFinite(n)) return '<td class="fs-dash">—</td>';
-  return '<td>' + Math.round(n) + '</td>';
+  const x = extraCls ? (' ' + extraCls) : '';
+  if (v == null || !isFinite(n)) return '<td class="fs-dash' + x + '">—</td>';
+  return '<td' + (x ? ' class="' + extraCls + '"' : '') + '>' + Math.round(n) + '</td>';
 }
 
 // ══ BYE_WEEK_COL_V1 (2026-08-19 -- PC Walter, per Matt via the Dude on the 8/19 call) ══
@@ -10273,8 +10289,16 @@ async function _ftlRenderScheduleResults(pid){
   }
 
   // GAMELOG_FPTS_FIRST_V1: FPts now sits between RESULT and the stat columns, not at the far right.
-  let head = '<tr><th class="fs-left">WK</th><th class="fs-left">DATE</th><th class="fs-left">OPP</th><th class="fs-left">RESULT</th><th class="fs-fpts">FPTS</th>';
-  for (const c of cols) head += '<th>' + c[0] + '</th>';
+  // CARD_GROUP_HEADERS_V1: two header rows, the main table's shape. Row 1 names each group once
+  // over its run of columns (blank over WK..FPTS); row 2 carries the short labels.
+  let head = '<tr class="fs-grouprow"><th class="fs-grp-blank" colspan="5"></th>';
+  for (let gi = 0; gi < cols.length; ) {
+    let gj = gi; while (gj < cols.length && cols[gj][2] === cols[gi][2]) gj++;
+    head += '<th class="fs-grp-lbl" colspan="' + (gj - gi) + '">' + cols[gi][2] + '</th>';
+    gi = gj;
+  }
+  head += '</tr><tr><th class="fs-left">WK</th><th class="fs-left">DATE</th><th class="fs-left">OPP</th><th class="fs-left">RESULT</th><th class="fs-fpts">FPTS</th>';
+  for (let ci = 0; ci < cols.length; ci++) head += '<th' + (_ftlSchedGrpStart(cols, ci) ? ' class="fs-grp-start"' : '') + '>' + cols[ci][0] + '</th>';
   head += '</tr>';
 
   let rows = '';
@@ -10311,14 +10335,14 @@ async function _ftlRenderScheduleResults(pid){
       const fp = Number(fpv);
       // GAMELOG_FPTS_FIRST_V1: built FIRST and emitted BEFORE the stat cells.
       const fpCell = (isFinite(fp) && fpv != null) ? '<td class="fs-fpts">' + fp.toFixed(1) + '</td>' : '<td class="fs-fpts fs-dash">—</td>';
-      for (const c of cols) statCells += _ftlSchedStatCell(s[c[1]]);
+      for (let ci = 0; ci < cols.length; ci++) statCells += _ftlSchedStatCell(s[cols[ci][1]], _ftlSchedGrpStart(cols, ci) ? 'fs-grp-start' : '');   // CARD_GROUP_HEADERS_V1
       rows += '<tr' + _poTr + '><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + fpCell + statCells + '</tr>';   // SCHED_TRIO_V1
     } else if (played) {
       // Team played, no stat line recorded for him -- DNP, grayed like baseball's log.
       rows += '<tr class="fs-dnp' + _po + '"><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + '<td colspan="' + (cols.length + 1) + '">DNP</td></tr>';
     } else {
       statCells += '<td class="fs-fpts fs-dash"></td>';                                    // GAMELOG_FPTS_FIRST_V1: the FPts slot leads
-      for (let i = 0; i < cols.length; i++) statCells += '<td class="fs-dash"></td>';
+      for (let i = 0; i < cols.length; i++) statCells += '<td class="fs-dash' + (_ftlSchedGrpStart(cols, i) ? ' fs-grp-start' : '') + '"></td>';   // CARD_GROUP_HEADERS_V1
       rows += '<tr' + _poTr + '><td class="fs-left">' + w + '</td><td class="fs-left">' + _ftlFmtSchedDate(g.date) + '</td><td class="fs-left">' + oppCell + '</td>' + resultCell + statCells + '</tr>';   // SCHED_TRIO_V1
     }
   }
