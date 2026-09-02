@@ -110,7 +110,7 @@ button.go:hover{filter:brightness(1.1)}
 .frame{position:relative;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);border-radius:4px}
 #post{position:relative;width:1080px;height:1350px;overflow:hidden;
       background:var(--navy);transform-origin:top left}
-#photo{position:absolute;left:0;top:0;user-select:none;pointer-events:none}
+#photo,#bgvid{position:absolute;left:0;top:0;user-select:none;pointer-events:none}   /* MOTION_EXPORT_V1: #bgvid is the video twin of #photo */
 /* PHOTO_DRAG_V1 - the photo pans by dragging anywhere on the post. #photo itself
    keeps pointer-events:none; the drag listens on #post so the whole face of the
    post is the handle, and the two .mark drags are excluded by a closest() test. */
@@ -124,7 +124,13 @@ button.go:hover{filter:brightness(1.1)}
    rgba(8,12,16,.74) 0%, rgba(8,12,16,.34) 24%, rgba(8,12,16,.52) 56%, rgba(8,12,16,.92) 100%)}
 #noPhoto{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   color:rgba(255,255,255,.28);font-size:30px;font-weight:800;text-align:center;padding:60px}
-.layer{position:absolute;inset:0;display:flex;flex-direction:column;padding:60px 58px;color:#fff}
+.layer{position:absolute;inset:0;display:flex;flex-direction:column;padding:60px 58px var(--floor) 58px;color:#fff}
+/* 🐛 #205 LIST_FLOOR_V1 (Matt, 9/1 43:35: "this can't go all the way to the bottom. This needs
+   to cut off to leave room for watch."). The content stack and the @handle both defaulted to
+   60px off the bottom, so a long list's last row and the handle shared the same floor.
+   --floor reserves the handle's band: 60 pad + ~46 handle + 12 gap = 118px, which is the
+   118px the old footrow held before DRAG_MARKS_V1 let the marks float. Full circle. */
+:root{--floor:118px}
 .handle{font-family:'Caprasimo',cursive,sans-serif;font-size:38px;text-align:center;color:var(--sport);
         text-shadow:0 0 3px rgba(0,0,0,.55),0 3px 10px rgba(0,0,0,.6)}
 .spacer{flex:1}
@@ -332,7 +338,7 @@ button.go:hover{filter:brightness(1.1)}
 
     <div class="box">
       <h2>Photo</h2>
-      <input type="file" id="photoIn" accept="image/*">
+      <input type="file" id="photoIn" accept="image/*,video/mp4,video/webm,video/quicktime">
       <label>Zoom</label><input type="range" id="zoom" min="100" max="320" value="100" oninput="render()">
       <button style="margin-top:9px;width:100%" onclick="clearPhoto()">Remove photo</button>
       <div class="hint"><b>Drag the photo to move it.</b> A photo only moves where it has
@@ -347,7 +353,10 @@ button.go:hover{filter:brightness(1.1)}
       <select id="size" onchange="setSize()">
         <option value="1080x1350">Portrait 1080 × 1350 — best for Instagram</option>
         <option value="1080x1080">Square 1080 × 1080</option>
+        <option value="1080x1920">Story / Reel 1080 × 1920</option>
       </select>
+      <!-- MOTION_EXPORT_V1 (the Dude, 9/1): Stories and Reels are 9:16. A video post for a story
+           wants this size or Instagram crops it. -->
       <button style="margin-top:9px;width:100%" onclick="resetLayout()">Reset layout</button>
       <div class="hint">Everything on the post drags: headline, tier name, dateline, the list, the card,
         the logo, the @handle and the text boxes. Reset puts it all back where it started.</div>
@@ -379,6 +388,21 @@ button.go:hover{filter:brightness(1.1)}
     </div>
 
     <button class="go" onclick="download()">Download the PNG</button>
+    <!-- 🐛 #206 / R19, MOTION_EXPORT_V1: a GIF or a video behind the text comes out as an MP4 with
+         the text baked in. PNG only ever held one frame. MP4 only, no GIF file, by the Dude's call. -->
+    <div class="box" id="motionBox" style="display:none">
+      <h2>Video</h2>
+      <label class="first" id="motionLenLabel">Length (a GIF loops to fill it)</label>
+      <select id="motionLen">
+        <option value="5">5 seconds</option>
+        <option value="8" selected>8 seconds</option>
+        <option value="15">15 seconds</option>
+        <option value="30">30 seconds</option>
+      </select>
+      <button class="go" style="margin-top:9px;width:100%" id="motionBtn" onclick="downloadVideo()">Download the video (MP4)</button>
+      <div class="hint">Records in real time, so a 15 second video takes 15 seconds. Muted for now.
+        Instagram Stories and Reels want the Story / Reel size above.</div>
+    </div>
     <div class="status" id="status"></div>
   </div>
 
@@ -386,6 +410,9 @@ button.go:hover{filter:brightness(1.1)}
     <div class="frame" id="frame">
       <div id="post">
         <img id="photo" alt="">
+        <!-- MOTION_EXPORT_V1: a video background. Muted and looping in the preview; the export
+             is muted too (the Dude, 9/1: "mute it for now until we figure out a way to transmit the sound"). -->
+        <video id="bgvid" muted loop playsinline autoplay style="display:none"></video>
         <div id="noPhoto">Pick a photo<br>and it lands here</div>
         <div id="scrim"></div>
         <div class="layer">
@@ -1083,8 +1110,25 @@ $('posSel').addEventListener('change',buildStatRows);
 $('tierSel').addEventListener('change',loadList);
 
 /* -------------------------------------------------------------- the photo */
+let MEDIA='image';        /* MOTION_EXPORT_V1: 'image' | 'gif' | 'video' */
+let GIF_BYTES=null;        /* the GIF's own bytes, for ImageDecoder at export time */
 $('photoIn').addEventListener('change',function(e){
   const file=e.target.files&&e.target.files[0]; if(!file) return;
+  /* MOTION_EXPORT_V1: a video file goes to #bgvid through an object URL. It is never drawn
+     by html2canvas (the export draws each frame itself), so the tainted-canvas rule that
+     forces photos through readAsDataURL does not apply here. */
+  if((file.type||'').indexOf('video/')===0){
+    _dropMedia();
+    MEDIA='video'; PHOTO=URL.createObjectURL(file);
+    const v=$('bgvid');
+    v.onloadedmetadata=function(){ PHOTO_W=v.videoWidth; PHOTO_H=v.videoHeight; setStatus('Video loaded, '+Math.round(v.duration)+' s. Muted.'); render(); v.play().catch(function(){}); };
+    v.onerror=function(){ PHOTO=null; PHOTO_W=0; PHOTO_H=0; setStatus('Could not play that video. MP4 (H.264) is the safe choice.',true); render(); };
+    v.src=PHOTO;
+    return;
+  }
+  _dropMedia();
+  MEDIA = (file.type==='image/gif') ? 'gif' : 'image';
+  if(MEDIA==='gif'){ file.arrayBuffer().then(function(b){ GIF_BYTES=b; _showMotionBox(); }).catch(function(){ GIF_BYTES=null; }); }
   const rd=new FileReader();
   rd.onload=function(){
     PHOTO=rd.result;
@@ -1099,14 +1143,30 @@ $('photoIn').addEventListener('change',function(e){
      download failing silently. Banked 2026-07-28. Do not change it. */
   rd.readAsDataURL(file);
 });
-function clearPhoto(){ PHOTO=null; PHOTO_W=0; PHOTO_H=0; PAN.x=0; PAN.y=0;
-  $('photo').removeAttribute('src'); $('photoIn').value=''; setStatus('Photo removed.'); render(); }
+/* MOTION_EXPORT_V1: one place that lets go of whatever media is loaded */
+function _dropMedia(){
+  try{ if(MEDIA==='video' && PHOTO) URL.revokeObjectURL(PHOTO); }catch(_){}
+  const v=$('bgvid'); try{ v.pause(); }catch(_){} v.removeAttribute('src'); v.load && v.load();
+  $('photo').removeAttribute('src');
+  PHOTO=null; PHOTO_W=0; PHOTO_H=0; GIF_BYTES=null; MEDIA='image';
+  _showMotionBox();
+}
+function _showMotionBox(){
+  const on = (MEDIA==='video' || (MEDIA==='gif' && GIF_BYTES)) && PHOTO;
+  $('motionBox').style.display = on ? 'block' : 'none';
+  $('motionLenLabel').textContent = (MEDIA==='video') ? 'Length (cut off after)' : 'Length (a GIF loops to fill it)';
+}
+function clearPhoto(){ _dropMedia(); PAN.x=0; PAN.y=0;
+  $('photoIn').value=''; setStatus('Photo removed.'); render(); }
 
 function layoutPhoto(){
-  const img=$('photo');
+  /* MOTION_EXPORT_V1: the same geometry drives #photo or #bgvid, whichever holds the media */
+  const img = (MEDIA==='video') ? $('bgvid') : $('photo');
+  const other = (MEDIA==='video') ? $('photo') : $('bgvid');
+  other.style.display='none';
   if(!PHOTO||!PHOTO_W){ img.style.display='none'; $('noPhoto').style.display='flex';
-    $('post').classList.remove('canpan'); return; }
-  img.style.display='block'; $('noPhoto').style.display='none';
+    $('post').classList.remove('canpan'); _showMotionBox(); return; }
+  img.style.display='block'; $('noPhoto').style.display='none'; _showMotionBox();
   $('post').classList.add('canpan');
   const cover=Math.max(W/PHOTO_W,H/PHOTO_H);
   const z=cover*(+$('zoom').value/100);
@@ -1200,8 +1260,8 @@ function newPost(){
   $('countSel').value=5; $('sliceFrom').value=20; $('sliceTo').value=25; $('sliceNote').textContent='';
   $('zoom').value=100;
   $('size').value='1080x1350';
-  PHOTO=null; PHOTO_W=0; PHOTO_H=0; PAN.x=0; PAN.y=0;
-  $('photo').removeAttribute('src'); $('photoIn').value='';
+  _dropMedia(); PAN.x=0; PAN.y=0;   /* MOTION_EXPORT_V1 */
+  $('photoIn').value='';
   $('f-text1').value=''; $('f-text2').value=''; $('f-text3').value=''; $('textSize1').value='48'; $('textSize2').value='48'; $('textSize3').value='48';   /* TEXTBOX3_V1 */
   resetAccent(); resetRowColor(); resetLayout();
   $('post').classList.remove('light'); $('pt-dark').dataset.on='1'; $('pt-light').dataset.on='0';   /* POST_LIGHT_V1: back to dark */
@@ -1210,7 +1270,127 @@ function newPost(){
   setStatus('New post. Pick a list.');
 }
 
+/* ================= MOTION_EXPORT_V1 (2026-09-01 night, Matt's #206 + R19, the Dude's rulings) =================
+   The Dude: MP4 only (no GIF file), add the 1080x1920 story size, muted for now.
+
+   HOW A FRAME IS BUILT, in three layers on one canvas:
+     1. the post's ground colour (navy, or the light post's off-white)
+     2. the background media at the SAME cover scale, zoom and pan the preview uses (mediaRect)
+     3. the OVERLAY: everything else on the post (scrim, headline, list, marks, text boxes),
+        captured ONCE by html2canvas with the media hidden and the ground made transparent,
+        so it comes back with real alpha and can sit on top of every frame.
+   GIF frames come from the browser's own ImageDecoder (WebCodecs, Chrome), no library.
+   Video frames come from drawImage(#bgvid). The canvas is recorded by MediaRecorder,
+   MP4/H.264 when Chrome offers it, and the button says plainly if it had to fall back to WebM.
+   The PNG button on a video background uses the same compositor for a single frame, because
+   html2canvas does not reliably draw a <video>. */
+function mediaRect(){
+  const cover=Math.max(W/PHOTO_W,H/PHOTO_H), z=cover*(+$('zoom').value/100);
+  const dw=PHOTO_W*z, dh=PHOTO_H*z;
+  return { x:(W-dw)/2+PAN.x, y:(H-dh)/2+PAN.y, w:dw, h:dh };
+}
+function captureOverlay(){
+  const post=$('post'), keep=post.style.transform, keepBg=post.style.backgroundColor;
+  const marks=document.querySelectorAll('.mark,.blk');
+  for(let i=0;i<marks.length;i++){ marks[i].classList.remove('hot'); marks[i].classList.remove('grabbing'); }
+  const hid=[$('photo'),$('bgvid'),$('noPhoto')].map(function(el){ const d=el.style.display; el.style.display='none'; return [el,d]; });
+  post.style.transform='scale(1)'; post.style.backgroundColor='transparent';
+  return html2canvas(post,{backgroundColor:null,scale:1,width:W,height:H,useCORS:false,logging:false})
+    .then(function(c){ post.style.transform=keep; post.style.backgroundColor=keepBg; hid.forEach(function(p){ p[0].style.display=p[1]; }); layoutPhoto(); return c; })
+    .catch(function(e){ post.style.transform=keep; post.style.backgroundColor=keepBg; hid.forEach(function(p){ p[0].style.display=p[1]; }); layoutPhoto(); throw e; });
+}
+function groundColor(){ return getComputedStyle($('post')).backgroundColor || '#16233f'; }
+function drawFrame(ctx, source, overlay){
+  ctx.fillStyle=groundColor(); ctx.fillRect(0,0,W,H);
+  if(source){ const r=mediaRect(); try{ ctx.drawImage(source, r.x, r.y, r.w, r.h); }catch(_){} }
+  ctx.drawImage(overlay,0,0);
+}
+function pickVideoMime(){
+  const tries=['video/mp4;codecs=avc1.42E01E','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm'];
+  for(let i=0;i<tries.length;i++){ try{ if(window.MediaRecorder && MediaRecorder.isTypeSupported(tries[i])) return tries[i]; }catch(_){} }
+  return null;
+}
+async function gifFrames(){
+  /* ImageDecoder: Chrome 94+. Every frame decoded up front into ImageBitmaps with its own
+     delay, so the draw loop only ever picks a frame by elapsed time. */
+  if(!window.ImageDecoder) throw new Error('This browser cannot read GIF frames (needs Chrome).');
+  const dec=new ImageDecoder({data:GIF_BYTES, type:'image/gif'});
+  await dec.tracks.ready; await dec.completed.catch(function(){});
+  const n=dec.tracks.selectedTrack.frameCount, out=[]; let total=0;
+  for(let i=0;i<n;i++){
+    const r=await dec.decode({frameIndex:i});
+    const ms=Math.max(20, (r.image.duration||100000)/1000);   /* µs -> ms; browsers treat <20ms as 100ms */
+    out.push({bmp: await createImageBitmap(r.image), ms:ms, at:total}); total+=ms; r.image.close();
+  }
+  try{ dec.close(); }catch(_){}
+  return {frames:out, cycle:total};
+}
+let _recording=false;
+async function downloadVideo(){
+  if(_recording) return;
+  if(!PHOTO||!PHOTO_W||(MEDIA!=='video'&&MEDIA!=='gif')){ setStatus('Put a GIF or a video behind the post first.',true); return; }
+  const mime=pickVideoMime();
+  if(!mime){ setStatus('This browser cannot record video. Use Chrome.',true); return; }
+  const isMp4=mime.indexOf('mp4')>=0, ext=isMp4?'mp4':'webm';
+  const btn=$('motionBtn'), keepLabel=btn.textContent;
+  _recording=true; btn.disabled=true;
+  try{
+    setStatus('Capturing the text layer…');
+    const overlay=await captureOverlay();
+    const want=+$('motionLen').value||8;
+    const canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    let gif=null, video=null, seconds=want;
+    if(MEDIA==='gif'){ setStatus('Reading the GIF frames…'); gif=await gifFrames(); if(!gif.frames.length) throw new Error('No frames in that GIF.'); }
+    else { video=$('bgvid'); seconds=Math.min(want, isFinite(video.duration)?video.duration:want); }
+    const stream=canvas.captureStream(30);
+    const rec=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8000000});
+    const chunks=[]; rec.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
+    const done=new Promise(function(res){ rec.onstop=res; });
+    if(video){ video.pause(); video.currentTime=0; await new Promise(function(r){ video.onseeked=r; setTimeout(r,400); }); }
+    drawFrame(ctx, video || gif.frames[0].bmp, overlay);
+    rec.start(250);
+    if(video){ video.muted=true; video.loop=false; await video.play().catch(function(){}); }
+    const t0=performance.now(); let stop=false;
+    function tick(){
+      const el=(performance.now()-t0)/1000;
+      if(el>=seconds || (video && video.ended)) { stop=true; }
+      if(!stop){
+        if(gif){ const ms=(el*1000)%gif.cycle; let f=gif.frames[0]; for(let i=gif.frames.length-1;i>=0;i--){ if(gif.frames[i].at<=ms){ f=gif.frames[i]; break; } } drawFrame(ctx,f.bmp,overlay); }
+        else drawFrame(ctx,video,overlay);
+        btn.textContent='Recording… '+Math.ceil(seconds-el)+' s';
+        requestAnimationFrame(tick);
+      } else { try{ rec.stop(); }catch(_){} }
+    }
+    requestAnimationFrame(tick);
+    await done;
+    if(video){ video.loop=true; video.play().catch(function(){}); }
+    if(gif) gif.frames.forEach(function(f){ try{ f.bmp.close(); }catch(_){} });
+    const blob=new Blob(chunks,{type:mime.split(';')[0]});
+    const a=document.createElement('a');
+    const slug=($('f-head').value||'watch101').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50);
+    a.download='watch101-'+SPORT+'-'+(slug||'post')+'.'+ext; a.href=URL.createObjectURL(blob); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 60000);
+    setStatus(isMp4 ? ('Downloaded the MP4 ('+Math.round(seconds)+' s, muted).') : ('Downloaded as WebM: this Chrome could not write MP4. Tell Jay.'), !isMp4);
+  }catch(err){ console.error('[MOTION_EXPORT_V1]',err); setStatus('Video export failed: '+(err&&err.message),true); layoutPhoto(); }
+  finally{ _recording=false; btn.disabled=false; btn.textContent=keepLabel; }
+}
+
 function download(){
+  /* MOTION_EXPORT_V1: html2canvas does not reliably draw a <video>, so a video background
+     gets its still from the same compositor the MP4 uses, one frame. */
+  if(MEDIA==='video' && PHOTO && PHOTO_W){
+    setStatus('Building the image…');
+    captureOverlay().then(function(overlay){
+      const canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
+      drawFrame(canvas.getContext('2d'), $('bgvid'), overlay);
+      const a=document.createElement('a');
+      const slug=($('f-head').value||'watch101').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50);
+      a.download='watch101-'+SPORT+'-'+(slug||'post')+'.png'; a.href=canvas.toDataURL('image/png'); a.click();
+      setStatus('Downloaded (one frame of the video).');
+    }).catch(function(err){ setStatus('Export failed: '+err.message,true); });
+    return;
+  }
   setStatus('Building the image…');
   /* DRAG_MARKS_V1 - strip the drag affordance by CLASS before the canvas is
      built. Not relying on :hover being absent from html2canvas's DOM clone. */
