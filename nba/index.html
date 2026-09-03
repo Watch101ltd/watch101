@@ -447,8 +447,8 @@ table.watch-list thead th.col-team{width:38px;text-align:left}
    work, in all three tables. */
 table.watch-list thead th.col-exp,table.watch-list tbody td.col-exp{width:32px;text-align:center}
 table.watch-list thead th.col-age{width:32px;text-align:left}
-table.watch-list thead th.col-delta{width:44px;text-align:left}
-table.watch-list thead th.col-type{width:60px;text-align:left}
+table.watch-list thead th.col-delta{width:32px;text-align:left}   /* PRIORITY_NUDGE_LEFT_V1 2026-09-03: 44->32. Holds '+12' at ~20px, still fits. */
+table.watch-list thead th.col-type{width:48px;text-align:left}    /* PRIORITY_NUDGE_LEFT_V1 2026-09-03: 60->48. Pulls Priority and everything right of it 24px left. */
 table.watch-list thead th.col-priority{width:88px;text-align:left}
 table.watch-list thead th.col-note{width:144px;text-align:left}
 table.watch-list thead th.col-yrank,table.watch-list tbody td.col-yrank{width:52px;text-align:center}  /* FTX_ADP_V1 widened for 'Ftx ADP'; OWN_GROUP_HEADERS_NBA_V1 54→52 — leaf label is now just 'ADP', width floor is the VALUES: 243.3=29.1px + pad 12 + 3 = 44.1 ≤ 52−10 pads = 42?? NO — see pad note below: pad dropped to 12 so 29.1+12=41.1 ≤ 42 content. Measured. */
@@ -554,38 +554,6 @@ td.col-stat-a .stat-cell{color:var(--stat-teal)}
 td.col-stat-b .stat-cell{color:var(--stat-teal)}
 table.watch-list thead th.col-action,table.watch-list tbody td.col-action{width:62px;text-align:center}
 table.watch-list tbody td.placeholder{color:var(--text3)}
-/* ── PLACEHOLDER_CENTRE_NBA_V1 (2026-09-03) — Bug #212, the Dude's call off his own annotated
-   screenshot. ─────────────────────────────────────────────────────────────────────────────
-   HIS SYMPTOM: the Priority stars looked "shifted off to the right."
-   WHAT WAS ACTUALLY TRUE: nothing was misaligned. Header ink and body ink sat dead level on all
-   34 columns, measured at zoom 1, at 0.8073 and at the 0.70 auto-shrink floor. Five theories died
-   against that measurement (colgroup shift, header count, centred-body-under-left-header, sticky
-   header desync on horizontal scroll, and fractional-zoom rounding). The stars were not SHIFTED,
-   they were STRANDED.
-   THE REAL CAUSE, measured: on a list where no player carries a +/- value or a Type chip, both
-   cells render a LEFT-aligned em-dash inside columns sized 44px and 60px for content they are not
-   currently holding. Ink 11px, empty 30px and 46px respectively — roughly 76px of air sitting
-   between the Type dash and the first star. Fill those columns with real values and the gap
-   closes itself.
-   THE FIX: centre the em-dash ONLY when the cell is a placeholder. Real +/- numbers and real Type
-   chips keep their left alignment, so LEFT_JUSTIFY_NBA_V1 (2026-08-05) is NOT reversed and
-   football's right-aligned twin is NOT copied in. Both of those were deliberate decisions and
-   neither is Walter's to overturn.
-   ⚠️ KNOWN TRADE-OFF, CHOSEN DELIBERATELY AND SAID OUT LOUD: on a MIXED list, some players with a
-   +/- number and some without, the centred dashes will not line up under the left-aligned numbers.
-   That is the price of leaving real-data alignment alone. Worth an eye once a list has real +/-
-   values in it.
-   SCOPE — the watch list only, and that is the RESULT OF CHECKING ALL FOUR SURFACES, NOT OF
-   SKIPPING THEM (the standing four-surfaces rule):
-     • Watch list  — has +/-, Type and Priority adjacent. The only place the gap exists. FIXED HERE.
-     • Players pool — enumerated its header: no +/-, no Type, no Priority column at all.
-     • Rankings    — no +/- column, and no Priority since PRIORITY_OFF_RANKINGS_V1 (2026-08-25).
-                     Its Type placeholder also sits on a SPAN inside the td, not on the td, so this
-                     selector cannot reach it even by accident.
-     • Player card — not a table.
-   Selector is pinned to #watch-list-body so it can never leak onto another surface. */
-#watch-list-body td.placeholder.col-delta-cell,
-#watch-list-body td.placeholder.col-type-cell{text-align:center}
 table.watch-list tbody .remove-btn{padding:2px 6px;font-size:9px}
 /* Yahoo/CBS header accent prefixes */
 table.watch-list thead th .y-prefix{color:#6001D2;font-size:7px;font-weight:800;letter-spacing:0.1em;margin-right:1px}
