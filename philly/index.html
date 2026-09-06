@@ -210,6 +210,59 @@ tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-
    Philly's CSS variables drive every color, so day mode just works with no
    day-mode override rules. Pure show/hide, no animation.
    ============================================================================ */
+/* ============================================================================
+   PHILLY_FORUM_CARDS_V1 (2026-09-06 — the Dude's call, off his red-pen sketch).
+   The Philly list stops being a thin sports table row and becomes a forum post.
+
+   WHY THE <table> SURVIVES, because this is the part a future Walter will want
+   to "clean up" and must not: the tier brackets are absolutely positioned boxes
+   measured off getBoundingClientRect() of the first and last ROW in a tier, the
+   tier NAME rides on a real <tr class="tier-spacer-row"> injected into the
+   tbody, drag is bound to the <tr>, and renderWatchList() also feeds the phone
+   cards and the calendar off the same paint. So every spot is still exactly ONE
+   <tr data-phood-pid> holding ONE full-width <td>, and the three-rail block
+   lives INSIDE that cell. Four working systems keep working and none of them
+   know anything changed. Do NOT convert this to divs.
+
+   The <thead> is now the sort bar. The chips are still <th data-col="..."> so
+   the delegated click handler on #wl-thead and sortBy() are untouched, and the
+   Dude's standing rule that every sort control stays clickable holds literally.
+
+   EVENTS ARE UNCHANGED. Month lists keep their column table until he rules.
+   ============================================================================ */
+.spot-card{display:grid;grid-template-columns:250px 1fr 136px;gap:0;align-items:stretch}
+.sc-rail{padding:16px 15px;background:var(--surface2);border-right:1px solid var(--border)}
+.sc-railtop{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.sc-grip{color:var(--text3);font-size:15px;cursor:grab;user-select:none;letter-spacing:-1px;flex:0 0 auto}
+.sc-rank{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;background:var(--phood-red);color:#fff;font-family:var(--font-brand);font-size:18px;line-height:1;flex:0 0 auto}
+.sc-name{font-family:var(--font-display);font-size:19px;font-weight:700;color:#fff;line-height:1.18;cursor:pointer;word-break:break-word}
+body.read-only .sc-name{cursor:default}
+.sc-hood{font-size:10.5px;font-weight:800;letter-spacing:.13em;color:var(--gold);margin-bottom:2px}
+.sc-addr{font-size:11.5px;font-weight:600;color:var(--text3);line-height:1.5;margin-top:9px}
+.sc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.sc-photo{width:100%;aspect-ratio:4/3;border-radius:7px;object-fit:cover;display:block;margin:11px 0 2px;background:var(--surface3)}
+.sc-photo-add{width:100%;aspect-ratio:4/3;border-radius:7px;margin:11px 0 2px;border:1px dashed var(--border2);background:repeating-linear-gradient(135deg,var(--surface3) 0 9px,#16202c 9px 18px);display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;font-weight:800;letter-spacing:.11em;color:var(--text3);padding:6px;cursor:not-allowed}
+.sc-body{padding:16px 21px;min-width:0}
+.sc-byline{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:10.5px;font-weight:800;letter-spacing:.13em;color:var(--phood-red-soft)}
+.sc-take{font-family:var(--font-display);font-size:15.5px;font-weight:400;line-height:1.72;color:var(--text2);white-space:pre-wrap;word-break:break-word}
+.sc-take.placeholder{font-family:'Nunito Sans',sans-serif;font-size:13px;font-style:italic;color:var(--text3)}
+.sc-take:not(.placeholder){cursor:text}
+body:not(.read-only) .sc-take{cursor:pointer}
+.sc-links{padding:16px 13px;background:var(--surface2);border-left:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.sc-links .pill{justify-content:center;width:100%;box-sizing:border-box}
+#phood-table tr[data-phood-pid] > td.spot-cell{padding:0;border-bottom:1px solid var(--border)}
+#phood-table tr[data-phood-pid]:hover > td.spot-cell{background:transparent}
+/* The sort bar that replaced the column headers. Still <th data-col>, still delegated. */
+#wl-thead tr.sortbar-row th{background:var(--surface);border-bottom:2px solid var(--phood-red);padding:9px 6px;text-align:left}
+#wl-thead th.sortchip{font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--text3);cursor:pointer;white-space:nowrap}
+#wl-thead th.sortchip:hover{color:var(--text)}
+#wl-thead th.sortchip .arrow{color:var(--gold);margin-left:3px}
+@media(max-width:900px){
+  .spot-card{grid-template-columns:1fr}
+  .sc-rail{border-right:0;border-bottom:1px solid var(--border)}
+  .sc-links{border-left:0;border-top:1px solid var(--border);flex-direction:row;flex-wrap:wrap}
+  .sc-links .pill{width:auto;flex:1}
+}
 #legend-btn{background:transparent;border:1px solid var(--border2);color:var(--text);font-size:15px;cursor:pointer;padding:4px 10px;border-radius:6px;line-height:1;opacity:0.9;transition:all .15s;user-select:none}
 #legend-btn:hover{opacity:1;background:var(--surface2);border-color:var(--gold)}
 #legend-modal{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.66);align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
@@ -622,17 +675,19 @@ html.philly-gated body > #philly-gate { display:flex !important; }
 
   <div class="table-wrap">
     <table id="phood-table">
+      <!-- PHILLY_FORUM_CARDS_V1 — this static header only exists to avoid a flash of
+           the old column layout at boot. _renderThead() in phood-engine.js overwrites it
+           the moment the list kind is known, and IT is the source of truth. Keep the two
+           in step: the spots branch there paints this same sort bar. -->
       <thead id="wl-thead">
-        <tr>
-          <th class="c" data-col="rank" title="Click to restore Matt's list order" style="text-align:center;width:44px">#<span class="arrow" id="ar-rank"></span></th>
-          <th class="l" data-col="name">Spot<span class="arrow" id="ar-name"></span></th>
-          <th class="l" data-col="hood">Neighborhood<span class="arrow" id="ar-hood"></span></th>
-          <th class="l" data-col="vibe">Tags<span class="arrow" id="ar-vibe"></span></th>
-          <th class="l" data-col="take">Satten Says<span class="arrow" id="ar-take"></span></th>
-          <th class="l" data-col="addr">Address<span class="arrow" id="ar-addr"></span></th>
-          <th data-col="menu" style="text-align:center;width:70px">Menu</th>
-          <th data-col="pics" style="text-align:center;width:80px">Pics</th>
-          <th data-col="hype" style="text-align:center;width:80px">Hype</th>
+        <tr class="sortbar-row">
+          <th class="sortchip" data-col="rank" title="Click to restore Matt's list order" style="width:1px">Matt's order<span class="arrow" id="ar-rank"></span></th>
+          <th class="sortchip" data-col="name" style="width:1px">Spot<span class="arrow" id="ar-name"></span></th>
+          <th class="sortchip" data-col="hood" style="width:1px">Neighborhood<span class="arrow" id="ar-hood"></span></th>
+          <th class="sortchip" data-col="vibe" style="width:1px">Tags<span class="arrow" id="ar-vibe"></span></th>
+          <th class="sortchip" data-col="take" style="width:1px">Take<span class="arrow" id="ar-take"></span></th>
+          <th class="sortchip" data-col="addr" style="width:1px">Address<span class="arrow" id="ar-addr"></span></th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="watch-list-body"></tbody>
