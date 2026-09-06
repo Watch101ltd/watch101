@@ -427,28 +427,54 @@ function _igPillPair(p){
   }
   return out;
 }
+/* PHILLY_FORUM_CARDS_V1 — EVENT card (2026-09-06, the Dude: "all the lists,
+   including the calendar lists"). Same three-rail block as a spot, plus the three
+   things only an event has: the date range, the showtime, and the venue. Dates get
+   their own block at the top of the rail because on a month list the date is the
+   fact people are actually scanning for.
+   Structure contract is identical to the spot card and must stay that way: ONE
+   <tr data-phood-pid> holding ONE <td>, so tiers, spacer rows and drag keep working.
+   The events table has 8 sort chips, so this cell spans 8 and the spot cell spans 7. */
 function _eventRowHtml(p, rank){
   var drag = _dragEnabled();
   var trAttrs = drag
-    ? ' draggable="true"'
+    ? ' draggable="false"'
       + ' ondragstart="phoodDragStart(event,\'' + p.pid + '\')"'
       + ' ondragover="phoodDragOver(event,\'' + p.pid + '\')"'
       + ' ondrop="phoodDrop(event,\'' + p.pid + '\')"'
-      + ' ondragend="phoodDragEnd(event)"'
+      + ' ondragend="this.draggable=false;phoodDragEnd(event)"'
     : '';
+  var grip = drag
+    ? '<span class="sc-grip" title="Drag to re-rank" onmousedown="var r=this.closest(&quot;tr&quot;); if(r) r.draggable=true;">&#9776;</span>'
+    : '';
+  var ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+  var nameClick = ro ? '' : ' onclick="openEditSpotModal(&quot;' + _esc(p.pid) + '&quot;)" title="Click to edit (admin only)"';
+
+  var rail = '<div class="sc-rail">'
+    + '<div class="sc-railtop">' + grip + '<div class="sc-rank">' + rank + '</div></div>'
+    + '<div class="sc-name"' + nameClick + '>' + p.name + _freshTakeBadge(p) + '</div>'
+    + '<div class="sc-dates">' + _fmtEventDates(p) + '</div>'
+    + (p.venue ? '<div class="sc-venue">' + p.venue + '</div>' : '')
+    + '<div class="sc-hood">' + (p.hood || '') + '</div>'
+    + _photoBlockHtml(p)
+    + '<div class="sc-tags">' + _tagChipsHtml(p) + '</div>'
+    + '</div>';
+
+  var body = '<div class="sc-body">'
+    + '<div class="sc-byline">SATTEN SAYS</div>'
+    + _takeBlockHtml(p)
+    + '</div>';
+
+  var links = '<div class="sc-links">'
+    + (p.menu ? '<a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">&#127915; TIX</a>'
+              : '<a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No tickets link yet">&#127915; TIX</a>')
+    + _igPillPair(p)
+    + (p.hype ? '<a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">&#128293; HYPE</a>'
+              : '<a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">&#128293; HYPE</a>')
+    + '</div>';
+
   return '<tr data-phood-pid="' + p.pid + '"' + trAttrs + '>'
-    + '<td class="c' + (drag ? ' drag-handle" title="Drag to re-rank' : '') + '"><span class="rank-cell">' + (drag ? '&#9776; ' : '') + rank + '</span></td>'
-    + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span>' + _freshTakeBadge(p) + '</td>'
-    + '<td class="c" style="white-space:nowrap">' + _fmtEventDates(p) + '</td>'
-    + '<td class="l">' + (p.venue || '') + '</td>'
-    + '<td class="l">' + (p.hood || '') + '</td>'
-    + '<td class="l vibe">' + _tagChipsHtml(p) + '</td>'
-    + _takeCellHtml(p)
-    + (p.menu ? '<td class="c"><a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">🎟️ TIX</a></td>'
-               : '<td class="c"><a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No tickets link yet">🎟️ TIX</a></td>')
-    + '<td class="c" style="white-space:nowrap">' + _igPillPair(p) + '</td>'   /* EVENT_DUAL_IG_V1 */
-    + (p.hype ? '<td class="c"><a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">🔥 HYPE</a></td>'
-               : '<td class="c"><a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">🔥 HYPE</a></td>')
+    + '<td class="spot-cell" colspan="8"><div class="spot-card">' + rail + body + links + '</div></td>'
     + '</tr>';
 }
 /* PHILLY_FORUM_CARDS_V1 (2026-09-06) — a spot is a forum post, not a table row.
@@ -556,7 +582,7 @@ function renderWatchList(){
     html += _rowHtml(rows[i], _watchList.indexOf(rows[i]) + 1);   /* rank = saved order, like the twins */
   }
   if(!html){   /* PHILLY_MONTHS_V1 — the month lists are born empty; say so nicely */
-    html = '<tr><td colspan="' + (_isEventsList() ? 10 : 7) + '" class="c" style="padding:20px;color:var(--text3);font-style:italic">'
+    html = '<tr><td colspan="' + (_isEventsList() ? 8 : 7) + '" class="c" style="padding:20px;color:var(--text3);font-style:italic">'
          + (_isEventsList() ? 'No events yet — Matt is filling this month.' : 'Nothing here yet.')
          + '</td></tr>';
   }
@@ -609,17 +635,18 @@ function _renderThead(){
   if(!thead) return;
   var h;
   if(_isEventsList()){
-    h = '<tr>'
-      + '<th class="c" data-col="rank" title="Click to restore Matt\'s list order" style="text-align:center;width:44px">#<span class="arrow" id="ar-rank"></span></th>'
-      + '<th class="l" data-col="name">Event<span class="arrow" id="ar-name"></span></th>'
-      + '<th data-col="date" style="text-align:center;width:100px">Dates<span class="arrow" id="ar-date"></span></th>'
-      + '<th class="l" data-col="venue">Venue<span class="arrow" id="ar-venue"></span></th>'
-      + '<th class="l" data-col="hood">Neighborhood<span class="arrow" id="ar-hood"></span></th>'
-      + '<th class="l" data-col="vibe">Tags<span class="arrow" id="ar-vibe"></span></th>'
-      + '<th class="l" data-col="take">Matt\'s Take<span class="arrow" id="ar-take"></span></th>'
-      + '<th data-col="menu" style="text-align:center;width:70px">Tickets</th>'
-      + '<th data-col="pics" style="text-align:center;width:150px">Instagram</th>'
-      + '<th data-col="hype" style="text-align:center;width:80px">Hype</th>'
+    /* PHILLY_FORUM_CARDS_V1 — events get the sort bar too. SEVEN chips plus the
+       width-absorbing spacer = 8, which is the colspan on the event card's cell.
+       If you add a chip here you MUST bump the colspan in _eventRowHtml. */
+    h = '<tr class="sortbar-row">'
+      + '<th class="sortchip" data-col="rank" title="Click to restore Matt\'s list order" style="width:1px">Matt\'s order<span class="arrow" id="ar-rank"></span></th>'
+      + '<th class="sortchip" data-col="name" style="width:1px">Event<span class="arrow" id="ar-name"></span></th>'
+      + '<th class="sortchip" data-col="date" style="width:1px">Dates<span class="arrow" id="ar-date"></span></th>'
+      + '<th class="sortchip" data-col="venue" style="width:1px">Venue<span class="arrow" id="ar-venue"></span></th>'
+      + '<th class="sortchip" data-col="hood" style="width:1px">Neighborhood<span class="arrow" id="ar-hood"></span></th>'
+      + '<th class="sortchip" data-col="vibe" style="width:1px">Tags<span class="arrow" id="ar-vibe"></span></th>'
+      + '<th class="sortchip" data-col="take" style="width:1px">Take<span class="arrow" id="ar-take"></span></th>'
+      + '<th></th>'
       + '</tr>';
   } else {
     /* PHILLY_FORUM_CARDS_V1 — the columns are gone, so the header row becomes the
