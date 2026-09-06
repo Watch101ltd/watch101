@@ -288,6 +288,24 @@ var PLAYER_GAME_LOG = {
   "500743": {
     "games": [
       {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "WSH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
         "ab": 3,
         "avg": ".272",
         "bb": 0,
@@ -394,24 +412,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "DET",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -430,6 +430,24 @@ var PLAYER_GAME_LOG = {
   },
   "502054": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -512,13 +530,31 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 4,
+      "scratches": 5,
       "starts": 0,
-      "window": 4
+      "window": 5
     }
   },
   "502671": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".252",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "SD",
+        "order": 1,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -626,32 +662,14 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".247",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 1,
-        "k": 1,
-        "opp": "BOS",
-        "order": 1,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 13,
       "avg": ".462",
-      "bb": 0,
+      "bb": 1,
       "h": 6,
-      "hr": 2,
+      "hr": 1,
       "k": 2,
       "rbi": 4,
       "sb": 0,
@@ -806,6 +824,24 @@ var PLAYER_GAME_LOG = {
   "514888": {
     "games": [
       {
+        "ab": 5,
+        "avg": ".242",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "ARI",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".243",
         "bb": 0,
@@ -912,29 +948,11 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".246",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "NYM",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".182",
+      "ab": 23,
+      "avg": ".174",
       "bb": 1,
       "h": 4,
       "hr": 1,
@@ -1095,6 +1113,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PIT",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -1198,24 +1234,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PHI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -1234,6 +1252,24 @@ var PLAYER_GAME_LOG = {
   },
   "518692": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".302",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "WSH",
+        "order": 2,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -1341,34 +1377,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".302",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "DET",
-        "order": 2,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".389",
-      "bb": 7,
-      "h": 7,
+      "ab": 17,
+      "avg": ".294",
+      "bb": 6,
+      "h": 5,
       "hr": 1,
       "k": 5,
-      "rbi": 5,
+      "rbi": 4,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -1377,6 +1395,24 @@ var PLAYER_GAME_LOG = {
   },
   "519317": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -1484,24 +1520,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BOS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -1520,6 +1538,24 @@ var PLAYER_GAME_LOG = {
   },
   "521692": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".226",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "TOR",
+        "order": 4,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".224",
@@ -1627,33 +1663,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".221",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "CLE",
-        "order": 4,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 28,
-      "avg": ".286",
+      "avg": ".321",
       "bb": 1,
-      "h": 8,
+      "h": 9,
       "hr": 1,
-      "k": 4,
+      "k": 3,
       "rbi": 6,
       "sb": 0,
       "scratches": 0,
@@ -2024,6 +2042,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "HOU",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -2127,24 +2163,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "SF",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -2163,6 +2181,24 @@ var PLAYER_GAME_LOG = {
   },
   "543685": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PIT",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -2270,24 +2306,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PHI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -2306,6 +2324,24 @@ var PLAYER_GAME_LOG = {
   },
   "543760": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".217",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "SF",
+        "order": 6,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".216",
@@ -2413,31 +2449,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".216",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "HOU",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 20,
-      "avg": ".300",
+      "ab": 21,
+      "avg": ".238",
       "bb": 3,
-      "h": 6,
+      "h": 5,
       "hr": 0,
       "k": 2,
       "rbi": 1,
@@ -2449,6 +2467,24 @@ var PLAYER_GAME_LOG = {
   },
   "543807": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".248",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "KC",
+        "order": 2,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".251",
@@ -2556,35 +2592,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".251",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 4,
-        "home": true,
-        "hr": 1,
-        "k": 0,
-        "opp": "SEA",
-        "order": 4,
-        "r": 3,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 24,
-      "avg": ".375",
-      "bb": 1,
-      "h": 9,
-      "hr": 1,
+      "avg": ".208",
+      "bb": 2,
+      "h": 5,
+      "hr": 0,
       "k": 5,
-      "rbi": 5,
-      "sb": 1,
+      "rbi": 4,
+      "sb": 2,
       "scratches": 1,
       "starts": 6,
       "window": 7
@@ -2592,6 +2610,24 @@ var PLAYER_GAME_LOG = {
   },
   "543877": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ARI",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -2699,42 +2735,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".212",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "NYM",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 8,
-      "avg": ".125",
+      "ab": 6,
+      "avg": ".167",
       "bb": 1,
       "h": 1,
       "hr": 0,
       "k": 1,
       "rbi": 0,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
   "545121": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "HOU",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -2842,42 +2878,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".254",
-        "bb": 0,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "SF",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".217",
+      "ab": 19,
+      "avg": ".263",
       "bb": 0,
       "h": 5,
       "hr": 0,
-      "k": 3,
+      "k": 2,
       "rbi": 3,
       "sb": 0,
-      "scratches": 1,
-      "starts": 6,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
   "545341": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -2985,24 +3021,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -3021,6 +3039,24 @@ var PLAYER_GAME_LOG = {
   },
   "545361": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".241",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "PIT",
+        "order": 2,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".239",
@@ -3128,34 +3164,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".241",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "PHI",
-        "order": 2,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 29,
-      "avg": ".207",
+      "avg": ".241",
       "bb": 0,
-      "h": 6,
+      "h": 7,
       "hr": 0,
       "k": 10,
-      "rbi": 3,
+      "rbi": 4,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -3164,6 +3182,24 @@ var PLAYER_GAME_LOG = {
   },
   "547180": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".275",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "ATL",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".273",
@@ -3271,33 +3307,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".266",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "LAA",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".385",
+      "ab": 25,
+      "avg": ".440",
       "bb": 6,
-      "h": 10,
+      "h": 11,
       "hr": 0,
-      "k": 7,
+      "k": 5,
       "rbi": 3,
       "sb": 0,
       "scratches": 0,
@@ -3307,6 +3325,24 @@ var PLAYER_GAME_LOG = {
   },
   "553869": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TB",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".233",
@@ -3414,24 +3450,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -3450,6 +3468,24 @@ var PLAYER_GAME_LOG = {
   },
   "553993": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".211",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "MIL",
+        "order": 6,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".207",
@@ -3557,33 +3593,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".205",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 3,
-        "opp": "CHC",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 15,
-      "avg": ".200",
-      "bb": 4,
-      "h": 3,
+      "avg": ".333",
+      "bb": 3,
+      "h": 5,
       "hr": 2,
-      "k": 6,
+      "k": 3,
       "rbi": 5,
       "sb": 0,
       "scratches": 2,
@@ -3593,6 +3611,24 @@ var PLAYER_GAME_LOG = {
   },
   "571448": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".233",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "HOU",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".233",
@@ -3700,42 +3736,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
+      }
+    ],
+    "summary": {
+      "ab": 27,
+      "avg": ".148",
+      "bb": 1,
+      "h": 4,
+      "hr": 0,
+      "k": 5,
+      "rbi": 0,
+      "sb": 0,
+      "scratches": 0,
+      "starts": 7,
+      "window": 7
+    }
+  },
+  "571657": {
+    "games": [
       {
         "ab": null,
         "avg": "",
         "bb": null,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
         "h": null,
         "home": false,
         "hr": null,
         "k": null,
-        "opp": "SF",
+        "opp": "PHI",
         "order": null,
         "r": null,
         "rbi": null,
         "result": "",
         "sb": null,
         "status": "scratched"
-      }
-    ],
-    "summary": {
-      "ab": 23,
-      "avg": ".130",
-      "bb": 1,
-      "h": 3,
-      "hr": 0,
-      "k": 4,
-      "rbi": 0,
-      "sb": 0,
-      "scratches": 1,
-      "starts": 6,
-      "window": 7
-    }
-  },
-  "571657": {
-    "games": [
+      },
       {
         "ab": null,
         "avg": "",
@@ -3843,24 +3879,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-07-18",
-        "date_short": "Jul 18",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "TEX",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -3879,6 +3897,24 @@ var PLAYER_GAME_LOG = {
   },
   "571771": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".218",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "WSH",
+        "order": 9,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".216",
@@ -3986,42 +4022,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
+      }
+    ],
+    "summary": {
+      "ab": 12,
+      "avg": ".167",
+      "bb": 1,
+      "h": 2,
+      "hr": 0,
+      "k": 5,
+      "rbi": 0,
+      "sb": 0,
+      "scratches": 3,
+      "starts": 4,
+      "window": 7
+    }
+  },
+  "571912": {
+    "games": [
       {
         "ab": null,
         "avg": "",
         "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
         "h": null,
-        "home": false,
+        "home": true,
         "hr": null,
         "k": null,
-        "opp": "DET",
+        "opp": "TOR",
         "order": null,
         "r": null,
         "rbi": null,
         "result": "",
         "sb": null,
         "status": "scratched"
-      }
-    ],
-    "summary": {
-      "ab": 8,
-      "avg": ".125",
-      "bb": 1,
-      "h": 1,
-      "hr": 0,
-      "k": 3,
-      "rbi": 0,
-      "sb": 0,
-      "scratches": 4,
-      "starts": 3,
-      "window": 7
-    }
-  },
-  "571912": {
-    "games": [
+      },
       {
         "ab": null,
         "avg": "",
@@ -4129,24 +4165,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CLE",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -4165,6 +4183,24 @@ var PLAYER_GAME_LOG = {
   },
   "571970": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "WSH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".245",
@@ -4272,42 +4308,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".251",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "DET",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 16,
+      "ab": 12,
       "avg": ".000",
-      "bb": 4,
+      "bb": 3,
       "h": 0,
       "hr": 0,
-      "k": 6,
+      "k": 5,
       "rbi": 0,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "572233": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".227",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "ARI",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".229",
@@ -4415,24 +4451,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".229",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "NYM",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -4441,7 +4459,7 @@ var PLAYER_GAME_LOG = {
       "bb": 1,
       "h": 4,
       "hr": 0,
-      "k": 4,
+      "k": 5,
       "rbi": 2,
       "sb": 0,
       "scratches": 1,
@@ -4451,6 +4469,24 @@ var PLAYER_GAME_LOG = {
   },
   "573262": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PHI",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -4558,42 +4594,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".229",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "COL",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 15,
-      "avg": ".200",
+      "ab": 13,
+      "avg": ".154",
       "bb": 0,
-      "h": 3,
+      "h": 2,
       "hr": 0,
-      "k": 3,
+      "k": 2,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "575929": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "BAL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -4701,42 +4737,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".276",
-        "bb": 2,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "NYY",
-        "order": 4,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 5,
-      "avg": ".200",
-      "bb": 2,
-      "h": 1,
+      "ab": 3,
+      "avg": ".000",
+      "bb": 0,
+      "h": 0,
       "hr": 0,
-      "k": 2,
-      "rbi": 1,
+      "k": 1,
+      "rbi": 0,
       "sb": 0,
       "scratches": 0,
-      "starts": 2,
+      "starts": 1,
       "window": 7
     }
   },
   "592122": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "MIA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -4844,24 +4880,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -4880,6 +4898,24 @@ var PLAYER_GAME_LOG = {
   },
   "592178": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "STL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -4976,24 +5012,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": false,
         "hr": null,
@@ -5170,6 +5188,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -5273,24 +5309,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BOS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -5309,6 +5327,24 @@ var PLAYER_GAME_LOG = {
   },
   "592518": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".221",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 0,
+        "opp": "NYY",
+        "order": 3,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".220",
@@ -5416,35 +5452,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".212",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "TB",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".348",
-      "bb": 3,
-      "h": 8,
-      "hr": 0,
-      "k": 6,
-      "rbi": 3,
-      "sb": 1,
+      "ab": 21,
+      "avg": ".429",
+      "bb": 5,
+      "h": 9,
+      "hr": 1,
+      "k": 4,
+      "rbi": 4,
+      "sb": 2,
       "scratches": 1,
       "starts": 6,
       "window": 7
@@ -5452,6 +5470,24 @@ var PLAYER_GAME_LOG = {
   },
   "592626": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".235",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 2,
+        "opp": "TB",
+        "order": 1,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".235",
@@ -5559,42 +5595,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 7,
-      "avg": ".143",
+      "ab": 10,
+      "avg": ".200",
       "bb": 0,
-      "h": 1,
-      "hr": 1,
-      "k": 3,
-      "rbi": 1,
+      "h": 2,
+      "hr": 2,
+      "k": 5,
+      "rbi": 2,
       "sb": 0,
-      "scratches": 5,
-      "starts": 2,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "592663": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".219",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "ATL",
+        "order": 7,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".221",
@@ -5702,24 +5738,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".223",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "LAA",
-        "order": 8,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -5728,8 +5746,8 @@ var PLAYER_GAME_LOG = {
       "bb": 3,
       "h": 3,
       "hr": 1,
-      "k": 3,
-      "rbi": 1,
+      "k": 5,
+      "rbi": 2,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -5738,6 +5756,24 @@ var PLAYER_GAME_LOG = {
   },
   "592885": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".242",
@@ -5845,42 +5881,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".242",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "TEX",
-        "order": 6,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 1,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".227",
-      "bb": 4,
-      "h": 5,
+      "ab": 19,
+      "avg": ".158",
+      "bb": 3,
+      "h": 3,
       "hr": 1,
       "k": 5,
       "rbi": 2,
-      "sb": 1,
-      "scratches": 1,
-      "starts": 6,
+      "sb": 0,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
   "593428": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".220",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "NYY",
+        "order": 2,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".219",
@@ -5988,24 +6024,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".217",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "TB",
-        "order": 6,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -6014,9 +6032,9 @@ var PLAYER_GAME_LOG = {
       "bb": 4,
       "h": 6,
       "hr": 0,
-      "k": 6,
+      "k": 7,
       "rbi": 5,
-      "sb": 2,
+      "sb": 3,
       "scratches": 1,
       "starts": 6,
       "window": 7
@@ -6024,6 +6042,24 @@ var PLAYER_GAME_LOG = {
   },
   "593871": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "SF",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -6131,24 +6167,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "HOU",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -6167,6 +6185,24 @@ var PLAYER_GAME_LOG = {
   },
   "595879": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".243",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "CLE",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -6274,33 +6310,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".258",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "LAD",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 12,
-      "avg": ".083",
+      "ab": 14,
+      "avg": ".071",
       "bb": 1,
       "h": 1,
       "hr": 0,
-      "k": 3,
+      "k": 4,
       "rbi": 0,
       "sb": 0,
       "scratches": 3,
@@ -6310,6 +6328,24 @@ var PLAYER_GAME_LOG = {
   },
   "595978": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".251",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "DET",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".254",
@@ -6417,42 +6453,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "KC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 12,
-      "avg": ".083",
-      "bb": 1,
+      "ab": 14,
+      "avg": ".071",
+      "bb": 2,
       "h": 1,
       "hr": 0,
       "k": 5,
       "rbi": 2,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
   "596019": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".230",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "SF",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".233",
@@ -6560,33 +6596,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".233",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 3,
-        "opp": "HOU",
-        "order": 2,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 30,
-      "avg": ".233",
+      "ab": 31,
+      "avg": ".194",
       "bb": 2,
-      "h": 7,
+      "h": 6,
       "hr": 3,
-      "k": 7,
+      "k": 5,
       "rbi": 5,
       "sb": 0,
       "scratches": 0,
@@ -6740,6 +6758,24 @@ var PLAYER_GAME_LOG = {
   "596115": {
     "games": [
       {
+        "ab": 5,
+        "avg": ".237",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 3,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "BAL",
+        "order": 4,
+        "r": 2,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".227",
         "bb": 0,
@@ -6846,42 +6882,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-15",
-        "date_short": "Aug 15",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "PIT",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 20,
-      "avg": ".400",
+      "ab": 25,
+      "avg": ".440",
       "bb": 0,
-      "h": 8,
+      "h": 11,
       "hr": 0,
-      "k": 6,
+      "k": 8,
       "rbi": 4,
       "sb": 0,
       "scratches": 1,
-      "starts": 5,
+      "starts": 6,
       "window": 7
     }
   },
   "596117": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -6989,24 +7025,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "LAA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -7025,6 +7043,24 @@ var PLAYER_GAME_LOG = {
   },
   "596142": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".212",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "CIN",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -7132,42 +7168,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "TEX",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 4,
-      "avg": ".250",
-      "bb": 2,
-      "h": 1,
+      "ab": 7,
+      "avg": ".429",
+      "bb": 3,
+      "h": 3,
       "hr": 1,
-      "k": 2,
+      "k": 3,
       "rbi": 3,
       "sb": 0,
-      "scratches": 5,
-      "starts": 2,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "596146": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".205",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "HOU",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".211",
@@ -7275,33 +7311,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".213",
-        "bb": 0,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "SF",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 10,
-      "avg": ".200",
+      "avg": ".100",
       "bb": 0,
-      "h": 2,
+      "h": 1,
       "hr": 0,
-      "k": 1,
+      "k": 3,
       "rbi": 0,
       "sb": 0,
       "scratches": 4,
@@ -7311,6 +7329,24 @@ var PLAYER_GAME_LOG = {
   },
   "602104": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "COL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -7418,24 +7454,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PIT",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -7454,6 +7472,24 @@ var PLAYER_GAME_LOG = {
   },
   "605137": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".259",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "CWS",
+        "order": 4,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".258",
@@ -7561,33 +7597,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".253",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "CWS",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 26,
-      "avg": ".346",
+      "avg": ".385",
       "bb": 3,
-      "h": 9,
+      "h": 10,
       "hr": 1,
-      "k": 5,
+      "k": 4,
       "rbi": 4,
       "sb": 1,
       "scratches": 0,
@@ -7597,6 +7615,24 @@ var PLAYER_GAME_LOG = {
   },
   "605141": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".247",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "WSH",
+        "order": 3,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".244",
@@ -7704,33 +7740,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".239",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "DET",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 29,
-      "avg": ".310",
-      "bb": 5,
-      "h": 9,
+      "avg": ".345",
+      "bb": 4,
+      "h": 10,
       "hr": 1,
-      "k": 5,
+      "k": 4,
       "rbi": 7,
       "sb": 0,
       "scratches": 0,
@@ -7740,6 +7758,24 @@ var PLAYER_GAME_LOG = {
   },
   "605170": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CWS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -7847,24 +7883,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CWS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -8024,6 +8042,41 @@ var PLAYER_GAME_LOG = {
       "window": 7
     }
   },
+  "605353": {
+    "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "STL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      }
+    ],
+    "summary": {
+      "ab": 0,
+      "avg": ".000",
+      "bb": 0,
+      "h": 0,
+      "hr": 0,
+      "k": 0,
+      "rbi": 0,
+      "sb": 0,
+      "scratches": 1,
+      "starts": 0,
+      "window": 1
+    }
+  },
   "606115": {
     "games": [
       {
@@ -8170,6 +8223,24 @@ var PLAYER_GAME_LOG = {
   "606192": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".257",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "WSH",
+        "order": 5,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".257",
         "bb": 1,
@@ -8276,34 +8347,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".248",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "DET",
-        "order": 8,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 27,
-      "avg": ".407",
-      "bb": 4,
-      "h": 11,
+      "avg": ".370",
+      "bb": 3,
+      "h": 10,
       "hr": 1,
       "k": 6,
-      "rbi": 6,
+      "rbi": 7,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -8312,6 +8365,24 @@ var PLAYER_GAME_LOG = {
   },
   "606466": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".251",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 1,
+        "k": 0,
+        "opp": "HOU",
+        "order": 4,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".251",
@@ -8419,37 +8490,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "SF",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".333",
+      "ab": 14,
+      "avg": ".286",
       "bb": 2,
-      "h": 3,
-      "hr": 0,
+      "h": 4,
+      "hr": 1,
       "k": 1,
-      "rbi": 0,
+      "rbi": 1,
       "sb": 0,
       "scratches": 1,
-      "starts": 3,
+      "starts": 4,
       "window": 7
     }
   },
@@ -8600,6 +8653,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
+        "avg": ".264",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "TB",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 4,
         "avg": ".266",
         "bb": 0,
         "date": "2026-09-04",
@@ -8705,35 +8776,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".262",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 3,
-        "home": false,
-        "hr": 1,
-        "k": 0,
-        "opp": "MIL",
-        "order": 4,
-        "r": 1,
-        "rbi": 2,
-        "result": "",
-        "sb": 1,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 25,
-      "avg": ".440",
+      "avg": ".320",
       "bb": 3,
-      "h": 11,
-      "hr": 1,
+      "h": 8,
+      "hr": 0,
       "k": 5,
-      "rbi": 9,
-      "sb": 1,
+      "rbi": 7,
+      "sb": 0,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -8741,6 +8794,24 @@ var PLAYER_GAME_LOG = {
   },
   "607208": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".239",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "ATL",
+        "order": 2,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".239",
@@ -8848,33 +8919,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".241",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "LAA",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 29,
-      "avg": ".241",
-      "bb": 3,
-      "h": 7,
+      "ab": 28,
+      "avg": ".214",
+      "bb": 4,
+      "h": 6,
       "hr": 0,
-      "k": 5,
+      "k": 4,
       "rbi": 3,
       "sb": 1,
       "scratches": 0,
@@ -8884,6 +8937,24 @@ var PLAYER_GAME_LOG = {
   },
   "608070": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".237",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "DET",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".239",
@@ -8991,24 +9062,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".240",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "KC",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -9027,6 +9080,24 @@ var PLAYER_GAME_LOG = {
   },
   "608324": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".260",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIA",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".262",
@@ -9134,34 +9205,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".255",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 3,
-        "home": true,
-        "hr": 1,
-        "k": 0,
-        "opp": "CIN",
-        "order": 3,
-        "r": 1,
-        "rbi": 3,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 30,
-      "avg": ".433",
-      "bb": 1,
-      "h": 13,
-      "hr": 5,
-      "k": 2,
-      "rbi": 11,
+      "ab": 28,
+      "avg": ".357",
+      "bb": 2,
+      "h": 10,
+      "hr": 4,
+      "k": 3,
+      "rbi": 8,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -9170,6 +9223,24 @@ var PLAYER_GAME_LOG = {
   },
   "608348": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "MIA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".260",
@@ -9277,42 +9348,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".260",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 1,
-        "k": 1,
-        "opp": "CIN",
-        "order": 9,
-        "r": 3,
-        "rbi": 4,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 20,
-      "avg": ".300",
-      "bb": 2,
-      "h": 6,
-      "hr": 2,
-      "k": 3,
-      "rbi": 7,
+      "ab": 16,
+      "avg": ".250",
+      "bb": 1,
+      "h": 4,
+      "hr": 1,
+      "k": 2,
+      "rbi": 3,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "608369": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".227",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "TB",
+        "order": 2,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".227",
@@ -9420,33 +9491,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".222",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIL",
-        "order": 2,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".292",
-      "bb": 5,
+      "ab": 25,
+      "avg": ".280",
+      "bb": 4,
       "h": 7,
       "hr": 1,
-      "k": 3,
+      "k": 4,
       "rbi": 3,
       "sb": 0,
       "scratches": 0,
@@ -9603,6 +9656,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "NYY",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -9706,24 +9777,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TB",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -9742,6 +9795,24 @@ var PLAYER_GAME_LOG = {
   },
   "620443": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "SF",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -9849,42 +9920,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".241",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "HOU",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".111",
+      "ab": 6,
+      "avg": ".000",
       "bb": 1,
-      "h": 1,
+      "h": 0,
       "hr": 0,
-      "k": 2,
+      "k": 1,
       "rbi": 0,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
   "621020": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "MIA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -9992,24 +10063,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -10028,6 +10081,24 @@ var PLAYER_GAME_LOG = {
   },
   "621043": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "AZ",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -10135,24 +10206,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYM",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -10171,6 +10224,24 @@ var PLAYER_GAME_LOG = {
   },
   "621438": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "MIA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -10278,42 +10349,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 5,
-        "avg": ".271",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 4,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "CIN",
-        "order": 7,
-        "r": 3,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 16,
-      "avg": ".625",
+      "ab": 11,
+      "avg": ".545",
       "bb": 0,
-      "h": 10,
+      "h": 6,
       "hr": 1,
       "k": 0,
       "rbi": 6,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "621439": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CWS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -10421,24 +10492,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CWS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -10450,13 +10503,31 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 2,
+      "scratches": 1,
       "starts": 0,
       "window": 7
     }
   },
   "621493": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".224",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "OAK",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -10564,34 +10635,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".230",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 3,
-        "opp": "TOR",
-        "order": 7,
-        "r": 0,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 15,
-      "avg": ".133",
+      "ab": 13,
+      "avg": ".077",
       "bb": 1,
-      "h": 2,
+      "h": 1,
       "hr": 0,
-      "k": 6,
-      "rbi": 2,
+      "k": 4,
+      "rbi": 0,
       "sb": 0,
       "scratches": 3,
       "starts": 4,
@@ -10600,6 +10653,24 @@ var PLAYER_GAME_LOG = {
   },
   "621550": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -10707,24 +10778,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TOR",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -10743,6 +10796,24 @@ var PLAYER_GAME_LOG = {
   },
   "621566": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".250",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "PHI",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".252",
@@ -10850,33 +10921,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".258",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "COL",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 30,
-      "avg": ".133",
-      "bb": 1,
-      "h": 4,
+      "ab": 28,
+      "avg": ".107",
+      "bb": 2,
+      "h": 3,
       "hr": 0,
-      "k": 10,
+      "k": 11,
       "rbi": 2,
       "sb": 0,
       "scratches": 0,
@@ -10886,6 +10939,24 @@ var PLAYER_GAME_LOG = {
   },
   "622268": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".271",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "SEA",
+        "order": 7,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".272",
@@ -10993,33 +11064,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".280",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "BAL",
-        "order": 6,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".111",
-      "bb": 1,
+      "ab": 11,
+      "avg": ".091",
+      "bb": 0,
       "h": 1,
       "hr": 0,
-      "k": 1,
+      "k": 2,
       "rbi": 1,
       "sb": 0,
       "scratches": 4,
@@ -11029,6 +11082,24 @@ var PLAYER_GAME_LOG = {
   },
   "622761": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "TEX",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -11136,24 +11207,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 3,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -11172,6 +11225,24 @@ var PLAYER_GAME_LOG = {
   },
   "623168": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PIT",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -11279,37 +11350,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".171",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "PHI",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".222",
+      "ab": 6,
+      "avg": ".333",
       "bb": 0,
       "h": 2,
       "hr": 0,
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
@@ -11462,6 +11515,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "KC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -11565,24 +11636,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SEA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -11601,6 +11654,24 @@ var PLAYER_GAME_LOG = {
   },
   "624413": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".265",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "BOS",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".267",
@@ -11708,33 +11779,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".269",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 3,
-        "opp": "OAK",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".167",
-      "bb": 4,
+      "ab": 22,
+      "avg": ".182",
+      "bb": 5,
       "h": 4,
       "hr": 1,
-      "k": 7,
+      "k": 5,
       "rbi": 3,
       "sb": 0,
       "scratches": 0,
@@ -11744,6 +11797,24 @@ var PLAYER_GAME_LOG = {
   },
   "624424": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".240",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 1,
+        "k": 1,
+        "opp": "MIA",
+        "order": 8,
+        "r": 2,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".234",
@@ -11851,42 +11922,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 6,
-      "avg": ".333",
+      "ab": 9,
+      "avg": ".444",
       "bb": 2,
-      "h": 2,
-      "hr": 0,
-      "k": 0,
-      "rbi": 1,
+      "h": 4,
+      "hr": 1,
+      "k": 1,
+      "rbi": 2,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "624428": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".241",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "PIT",
+        "order": 9,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".239",
@@ -11994,42 +12065,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PHI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 3,
-      "avg": ".000",
+      "ab": 6,
+      "avg": ".167",
       "bb": 0,
-      "h": 0,
+      "h": 1,
       "hr": 0,
       "k": 3,
       "rbi": 0,
       "sb": 0,
-      "scratches": 6,
-      "starts": 1,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
   "624431": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".231",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIL",
+        "order": 7,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -12137,32 +12208,14 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".237",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 1,
-        "k": 1,
-        "opp": "CHC",
-        "order": 8,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 13,
-      "avg": ".231",
+      "ab": 12,
+      "avg": ".167",
       "bb": 0,
-      "h": 3,
-      "hr": 1,
+      "h": 2,
+      "hr": 0,
       "k": 3,
       "rbi": 2,
       "sb": 0,
@@ -12460,6 +12513,24 @@ var PLAYER_GAME_LOG = {
   "624641": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".234",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "ATL",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".239",
         "bb": 0,
@@ -12566,37 +12637,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "LAA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".333",
+      "ab": 13,
+      "avg": ".231",
       "bb": 0,
       "h": 3,
       "hr": 1,
       "k": 3,
       "rbi": 1,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
@@ -12746,6 +12799,24 @@ var PLAYER_GAME_LOG = {
   "630105": {
     "games": [
       {
+        "ab": 3,
+        "avg": ".212",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "NYY",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 2,
         "avg": ".214",
         "bb": 1,
@@ -12852,34 +12923,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".226",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "TB",
-        "order": 9,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".045",
-      "bb": 3,
+      "ab": 23,
+      "avg": ".043",
+      "bb": 2,
       "h": 1,
       "hr": 0,
       "k": 7,
-      "rbi": 2,
+      "rbi": 1,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -12888,6 +12941,24 @@ var PLAYER_GAME_LOG = {
   },
   "640459": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "CHC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".114",
@@ -12995,24 +13066,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "WSH",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -13031,6 +13084,24 @@ var PLAYER_GAME_LOG = {
   },
   "640902": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -13138,24 +13209,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TOR",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -13174,6 +13227,24 @@ var PLAYER_GAME_LOG = {
   },
   "641343": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".269",
@@ -13281,42 +13352,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".273",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 3,
-        "opp": "TEX",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 21,
-      "avg": ".143",
-      "bb": 9,
+      "ab": 18,
+      "avg": ".167",
+      "bb": 8,
       "h": 3,
       "hr": 0,
-      "k": 10,
+      "k": 7,
       "rbi": 1,
       "sb": 0,
-      "scratches": 0,
-      "starts": 7,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "641355": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".264",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "SD",
+        "order": 2,
+        "r": 0,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".265",
@@ -13424,34 +13495,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".254",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "BOS",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".357",
+      "ab": 29,
+      "avg": ".379",
       "bb": 0,
-      "h": 10,
+      "h": 11,
       "hr": 0,
       "k": 6,
-      "rbi": 1,
+      "rbi": 3,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -13460,6 +13513,24 @@ var PLAYER_GAME_LOG = {
   },
   "641487": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".225",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "OAK",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".224",
@@ -13567,30 +13638,12 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".209",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "TOR",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 19,
-      "avg": ".474",
-      "bb": 8,
+      "ab": 18,
+      "avg": ".500",
+      "bb": 9,
       "h": 9,
       "hr": 0,
       "k": 3,
@@ -14033,6 +14086,24 @@ var PLAYER_GAME_LOG = {
   "641680": {
     "games": [
       {
+        "ab": 3,
+        "avg": ".213",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "SEA",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".215",
         "bb": 0,
@@ -14139,33 +14210,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".211",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "BAL",
-        "order": 9,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 25,
-      "avg": ".280",
+      "avg": ".240",
       "bb": 1,
-      "h": 7,
+      "h": 6,
       "hr": 1,
-      "k": 3,
+      "k": 4,
       "rbi": 1,
       "sb": 0,
       "scratches": 1,
@@ -14175,6 +14228,24 @@ var PLAYER_GAME_LOG = {
   },
   "641857": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".216",
@@ -14282,24 +14353,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-25",
-        "date_short": "Aug 25",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "HOU",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -14311,13 +14364,31 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 1,
+      "scratches": 2,
       "starts": 2,
       "window": 7
     }
   },
   "641933": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "BOS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -14425,24 +14496,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATH",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -14496,6 +14549,24 @@ var PLAYER_GAME_LOG = {
   },
   "642086": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".258",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "PHI",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -14603,42 +14674,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "COL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 1,
+      "ab": 3,
       "avg": ".000",
-      "bb": 0,
+      "bb": 1,
       "h": 0,
       "hr": 0,
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 6,
-      "starts": 1,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
   "642201": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".240",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "BAL",
+        "order": 8,
+        "r": 0,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".240",
@@ -14746,34 +14817,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 1,
-        "avg": ".232",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "NYY",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".222",
+      "ab": 12,
+      "avg": ".250",
       "bb": 0,
-      "h": 2,
+      "h": 3,
       "hr": 0,
-      "k": 1,
-      "rbi": 0,
+      "k": 2,
+      "rbi": 2,
       "sb": 0,
       "scratches": 4,
       "starts": 3,
@@ -14782,6 +14835,24 @@ var PLAYER_GAME_LOG = {
   },
   "642215": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".202",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "OAK",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -14889,42 +14960,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
+      }
+    ],
+    "summary": {
+      "ab": 12,
+      "avg": ".250",
+      "bb": 2,
+      "h": 3,
+      "hr": 0,
+      "k": 5,
+      "rbi": 0,
+      "sb": 0,
+      "scratches": 4,
+      "starts": 3,
+      "window": 7
+    }
+  },
+  "642350": {
+    "games": [
       {
         "ab": null,
         "avg": "",
         "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
         "h": null,
         "home": false,
         "hr": null,
         "k": null,
-        "opp": "TOR",
+        "opp": "PIT",
         "order": null,
         "r": null,
         "rbi": null,
         "result": "",
         "sb": null,
         "status": "scratched"
-      }
-    ],
-    "summary": {
-      "ab": 8,
-      "avg": ".375",
-      "bb": 2,
-      "h": 3,
-      "hr": 0,
-      "k": 4,
-      "rbi": 0,
-      "sb": 0,
-      "scratches": 5,
-      "starts": 2,
-      "window": 7
-    }
-  },
-  "642350": {
-    "games": [
+      },
       {
         "ab": 2,
         "avg": ".220",
@@ -15032,24 +15103,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PHI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -15068,6 +15121,24 @@ var PLAYER_GAME_LOG = {
   },
   "642708": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".234",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "SD",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -15175,42 +15246,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BOS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 13,
-      "avg": ".385",
+      "ab": 16,
+      "avg": ".312",
       "bb": 1,
       "h": 5,
       "hr": 0,
-      "k": 2,
+      "k": 3,
       "rbi": 2,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "642715": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -15307,24 +15378,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "AZ",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -15498,6 +15551,24 @@ var PLAYER_GAME_LOG = {
   "643217": {
     "games": [
       {
+        "ab": 2,
+        "avg": ".241",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "MIN",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 1,
         "avg": ".242",
         "bb": 1,
@@ -15604,34 +15675,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".252",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 3,
-        "home": false,
-        "hr": 1,
-        "k": 1,
-        "opp": "MIN",
-        "order": 4,
-        "r": 2,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".174",
+      "ab": 21,
+      "avg": ".048",
       "bb": 2,
-      "h": 4,
-      "hr": 1,
-      "k": 6,
-      "rbi": 3,
+      "h": 1,
+      "hr": 0,
+      "k": 5,
+      "rbi": 1,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -15640,6 +15693,24 @@ var PLAYER_GAME_LOG = {
   },
   "643289": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".265",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "PHI",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".268",
@@ -15747,34 +15818,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".270",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "COL",
-        "order": 6,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 23,
-      "avg": ".261",
+      "avg": ".174",
       "bb": 1,
-      "h": 6,
+      "h": 4,
       "hr": 1,
-      "k": 2,
-      "rbi": 3,
+      "k": 4,
+      "rbi": 2,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -15783,6 +15836,24 @@ var PLAYER_GAME_LOG = {
   },
   "643376": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".171",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "TB",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -15890,33 +15961,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".168",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIL",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 10,
-      "avg": ".100",
+      "ab": 9,
+      "avg": ".222",
       "bb": 1,
-      "h": 1,
+      "h": 2,
       "hr": 0,
-      "k": 3,
+      "k": 2,
       "rbi": 0,
       "sb": 0,
       "scratches": 4,
@@ -15926,6 +15979,24 @@ var PLAYER_GAME_LOG = {
   },
   "643396": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".273",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "BAL",
+        "order": 6,
+        "r": 0,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -16033,42 +16104,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-16",
-        "date_short": "Aug 16",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "PIT",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 4,
-      "avg": ".250",
-      "bb": 0,
-      "h": 1,
+      "ab": 7,
+      "avg": ".286",
+      "bb": 1,
+      "h": 2,
       "hr": 0,
       "k": 0,
-      "rbi": 1,
+      "rbi": 3,
       "sb": 0,
       "scratches": 3,
-      "starts": 1,
+      "starts": 2,
       "window": 7
     }
   },
   "643446": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".271",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "SEA",
+        "order": 2,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".271",
@@ -16176,35 +16247,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".267",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "BAL",
-        "order": 2,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 1,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 31,
-      "avg": ".355",
-      "bb": 2,
-      "h": 11,
+      "avg": ".323",
+      "bb": 1,
+      "h": 10,
       "hr": 2,
-      "k": 5,
+      "k": 6,
       "rbi": 6,
-      "sb": 2,
+      "sb": 1,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -16356,6 +16409,24 @@ var PLAYER_GAME_LOG = {
   "645277": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".252",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "PHI",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 5,
         "avg": ".254",
         "bb": 0,
@@ -16462,33 +16533,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".255",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "COL",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".214",
+      "ab": 27,
+      "avg": ".185",
       "bb": 2,
-      "h": 6,
+      "h": 5,
       "hr": 1,
-      "k": 6,
+      "k": 5,
       "rbi": 1,
       "sb": 0,
       "scratches": 0,
@@ -16498,6 +16551,24 @@ var PLAYER_GAME_LOG = {
   },
   "645302": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -16605,24 +16676,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TOR",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -16641,6 +16694,24 @@ var PLAYER_GAME_LOG = {
   },
   "645305": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -16748,24 +16819,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BOS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -16784,6 +16837,24 @@ var PLAYER_GAME_LOG = {
   },
   "646240": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".258",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 2,
+        "k": 0,
+        "opp": "NYM",
+        "order": 2,
+        "r": 2,
+        "rbi": 3,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".256",
@@ -16891,34 +16962,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".248",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "ARI",
-        "order": 2,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 27,
-      "avg": ".370",
+      "avg": ".407",
       "bb": 7,
-      "h": 10,
-      "hr": 4,
-      "k": 9,
-      "rbi": 12,
+      "h": 11,
+      "hr": 6,
+      "k": 7,
+      "rbi": 15,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -16927,6 +16980,24 @@ var PLAYER_GAME_LOG = {
   },
   "647304": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".267",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "OAK",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".269",
@@ -17034,31 +17105,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".271",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "TOR",
-        "order": 4,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 30,
-      "avg": ".267",
+      "avg": ".200",
       "bb": 1,
-      "h": 8,
+      "h": 6,
       "hr": 0,
       "k": 5,
       "rbi": 2,
@@ -17215,6 +17268,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
+        "avg": ".318",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "ATL",
+        "order": 4,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 4,
         "avg": ".316",
         "bb": 0,
         "date": "2026-09-04",
@@ -17320,24 +17391,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".320",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "LAA",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -17347,7 +17400,7 @@ var PLAYER_GAME_LOG = {
       "h": 7,
       "hr": 0,
       "k": 1,
-      "rbi": 0,
+      "rbi": 1,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -17356,6 +17409,24 @@ var PLAYER_GAME_LOG = {
   },
   "650402": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".270",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "CLE",
+        "order": 1,
+        "r": 2,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".268",
@@ -17463,33 +17534,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".261",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "LAD",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".364",
+      "ab": 23,
+      "avg": ".348",
       "bb": 3,
       "h": 8,
       "hr": 0,
-      "k": 5,
+      "k": 6,
       "rbi": 1,
       "sb": 0,
       "scratches": 1,
@@ -17499,6 +17552,24 @@ var PLAYER_GAME_LOG = {
   },
   "650489": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "STL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -17606,42 +17677,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".262",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "ATL",
-        "order": 5,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 15,
-      "avg": ".200",
+      "ab": 11,
+      "avg": ".182",
       "bb": 1,
-      "h": 3,
+      "h": 2,
       "hr": 0,
       "k": 6,
-      "rbi": 2,
+      "rbi": 1,
       "sb": 0,
       "scratches": 3,
-      "starts": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "650490": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".304",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "TEX",
+        "order": 1,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".306",
@@ -17749,34 +17820,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".304",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "SD",
-        "order": 1,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 29,
-      "avg": ".379",
-      "bb": 3,
-      "h": 11,
+      "avg": ".310",
+      "bb": 4,
+      "h": 9,
       "hr": 1,
-      "k": 5,
-      "rbi": 2,
+      "k": 4,
+      "rbi": 1,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -17785,6 +17838,24 @@ var PLAYER_GAME_LOG = {
   },
   "650559": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".333",
@@ -17892,42 +17963,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".357",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "LAA",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 11,
-      "avg": ".273",
+      "ab": 9,
+      "avg": ".222",
       "bb": 0,
-      "h": 3,
+      "h": 2,
       "hr": 0,
       "k": 3,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "650859": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "NYY",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -18035,28 +18106,10 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".242",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "TB",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 6,
+      "ab": 2,
       "avg": ".000",
       "bb": 1,
       "h": 0,
@@ -18065,12 +18118,30 @@ var PLAYER_GAME_LOG = {
       "rbi": 0,
       "sb": 0,
       "scratches": 0,
-      "starts": 2,
+      "starts": 1,
       "window": 7
     }
   },
   "650968": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "BOS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -18178,24 +18249,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "OAK",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -18214,6 +18267,24 @@ var PLAYER_GAME_LOG = {
   },
   "655316": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "BAL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -18321,42 +18392,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".249",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "NYY",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 4,
+      "ab": 0,
       "avg": ".000",
       "bb": 0,
       "h": 0,
       "hr": 0,
-      "k": 2,
+      "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 6,
-      "starts": 1,
+      "scratches": 7,
+      "starts": 0,
       "window": 7
     }
   },
   "656305": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -18464,24 +18535,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "AZ",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -18500,6 +18553,24 @@ var PLAYER_GAME_LOG = {
   },
   "656413": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -18582,9 +18653,9 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 4,
+      "scratches": 5,
       "starts": 0,
-      "window": 4
+      "window": 5
     }
   },
   "656484": {
@@ -18733,6 +18804,24 @@ var PLAYER_GAME_LOG = {
   "656537": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".246",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "ATL",
+        "order": 9,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 2,
         "avg": ".240",
         "bb": 0,
@@ -18839,34 +18928,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".241",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "LAA",
-        "order": 9,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 11,
-      "avg": ".273",
+      "ab": 13,
+      "avg": ".308",
       "bb": 0,
-      "h": 3,
+      "h": 4,
       "hr": 0,
-      "k": 2,
-      "rbi": 1,
+      "k": 3,
+      "rbi": 0,
       "sb": 0,
       "scratches": 3,
       "starts": 4,
@@ -18875,6 +18946,24 @@ var PLAYER_GAME_LOG = {
   },
   "656555": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "DET",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -18982,24 +19071,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "KC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -19018,6 +19089,24 @@ var PLAYER_GAME_LOG = {
   },
   "656577": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CWS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -19114,24 +19203,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CWS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -19306,6 +19377,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
+        "avg": ".209",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "CLE",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 4,
         "avg": ".212",
         "bb": 0,
         "date": "2026-09-04",
@@ -19411,42 +19500,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "LAD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 15,
-      "avg": ".133",
+      "ab": 19,
+      "avg": ".105",
       "bb": 0,
       "h": 2,
       "hr": 0,
-      "k": 4,
+      "k": 6,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
   "656775": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".205",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "TEX",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".205",
@@ -19554,35 +19643,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".206",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "SD",
-        "order": 8,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 14,
-      "avg": ".214",
-      "bb": 4,
+      "ab": 15,
+      "avg": ".200",
+      "bb": 3,
       "h": 3,
       "hr": 0,
       "k": 0,
       "rbi": 2,
-      "sb": 0,
+      "sb": 1,
       "scratches": 2,
       "starts": 5,
       "window": 7
@@ -19590,6 +19661,24 @@ var PLAYER_GAME_LOG = {
   },
   "656811": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "LAA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -19697,24 +19786,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "STL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -19733,6 +19804,24 @@ var PLAYER_GAME_LOG = {
   },
   "656941": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".240",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 1,
+        "k": 0,
+        "opp": "ATL",
+        "order": 1,
+        "r": 2,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".238",
@@ -19840,34 +19929,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".245",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "LAA",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".148",
-      "bb": 4,
+      "ab": 26,
+      "avg": ".154",
+      "bb": 5,
       "h": 4,
-      "hr": 0,
+      "hr": 1,
       "k": 8,
-      "rbi": 2,
+      "rbi": 4,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -20020,6 +20091,24 @@ var PLAYER_GAME_LOG = {
   "657041": {
     "games": [
       {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PHI",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
         "ab": 2,
         "avg": ".226",
         "bb": 1,
@@ -20126,24 +20215,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "COL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -20162,6 +20233,24 @@ var PLAYER_GAME_LOG = {
   },
   "657136": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".237",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "BAL",
+        "order": 9,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -20269,24 +20358,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".246",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "NYY",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -20295,8 +20366,8 @@ var PLAYER_GAME_LOG = {
       "bb": 1,
       "h": 2,
       "hr": 0,
-      "k": 5,
-      "rbi": 0,
+      "k": 4,
+      "rbi": 1,
       "sb": 0,
       "scratches": 3,
       "starts": 4,
@@ -20305,6 +20376,24 @@ var PLAYER_GAME_LOG = {
   },
   "657656": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "NYY",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -20412,24 +20501,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TB",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -20483,6 +20554,24 @@ var PLAYER_GAME_LOG = {
   },
   "657757": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "NYY",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -20590,24 +20679,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TB",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -20619,13 +20690,31 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 1,
+      "scratches": 0,
       "starts": 1,
       "window": 7
     }
   },
   "660162": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PIT",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -20722,24 +20811,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PHI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -20913,6 +20984,24 @@ var PLAYER_GAME_LOG = {
   "660670": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".251",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 1,
+        "k": 1,
+        "opp": "PHI",
+        "order": 2,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 5,
         "avg": ".249",
         "bb": 0,
@@ -21019,34 +21108,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".235",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 3,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "COL",
-        "order": 4,
-        "r": 3,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".481",
-      "bb": 4,
-      "h": 13,
-      "hr": 1,
-      "k": 5,
-      "rbi": 5,
+      "ab": 28,
+      "avg": ".429",
+      "bb": 3,
+      "h": 12,
+      "hr": 2,
+      "k": 6,
+      "rbi": 6,
       "sb": 2,
       "scratches": 0,
       "starts": 7,
@@ -21055,6 +21126,24 @@ var PLAYER_GAME_LOG = {
   },
   "660688": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".286",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "LAD",
+        "order": 8,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -21162,37 +21251,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "MIA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".333",
+      "ab": 12,
+      "avg": ".417",
       "bb": 0,
-      "h": 3,
+      "h": 5,
       "hr": 0,
-      "k": 2,
-      "rbi": 0,
+      "k": 3,
+      "rbi": 1,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
@@ -21345,6 +21416,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "KC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -21448,37 +21537,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".265",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "SEA",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 5,
-      "avg": ".200",
+      "ab": 3,
+      "avg": ".333",
       "bb": 0,
       "h": 1,
       "hr": 0,
       "k": 1,
       "rbi": 1,
       "sb": 0,
-      "scratches": 5,
-      "starts": 2,
+      "scratches": 6,
+      "starts": 1,
       "window": 7
     }
   },
@@ -21628,6 +21699,24 @@ var PLAYER_GAME_LOG = {
   "661388": {
     "games": [
       {
+        "ab": 5,
+        "avg": ".271",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 1,
+        "k": 2,
+        "opp": "CIN",
+        "order": 3,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".272",
         "bb": 1,
@@ -21734,33 +21823,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".271",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 1,
-        "k": 1,
-        "opp": "TEX",
-        "order": 4,
-        "r": 2,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".348",
-      "bb": 3,
-      "h": 8,
+      "ab": 25,
+      "avg": ".280",
+      "bb": 2,
+      "h": 7,
       "hr": 1,
-      "k": 6,
+      "k": 7,
       "rbi": 4,
       "sb": 0,
       "scratches": 1,
@@ -21770,6 +21841,24 @@ var PLAYER_GAME_LOG = {
   },
   "661531": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -21877,24 +21966,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -21913,6 +21984,24 @@ var PLAYER_GAME_LOG = {
   },
   "662139": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".227",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "ARI",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".227",
@@ -22020,31 +22109,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".232",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "NYM",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 21,
-      "avg": ".095",
-      "bb": 2,
-      "h": 2,
+      "ab": 22,
+      "avg": ".136",
+      "bb": 1,
+      "h": 3,
       "hr": 0,
       "k": 3,
       "rbi": 3,
@@ -22056,6 +22127,24 @@ var PLAYER_GAME_LOG = {
   },
   "663330": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "BAL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -22163,37 +22252,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".213",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "NYY",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 2,
-      "avg": ".500",
+      "ab": 0,
+      "avg": ".000",
       "bb": 0,
-      "h": 1,
+      "h": 0,
       "hr": 0,
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 6,
-      "starts": 1,
+      "scratches": 7,
+      "starts": 0,
       "window": 7
     }
   },
@@ -22344,6 +22415,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 3,
+        "avg": ".234",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "HOU",
+        "order": 1,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 3,
         "avg": ".228",
         "bb": 1,
         "date": "2026-09-04",
@@ -22449,34 +22538,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".218",
-        "bb": 0,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "SF",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 20,
-      "avg": ".300",
-      "bb": 3,
-      "h": 6,
+      "ab": 19,
+      "avg": ".368",
+      "bb": 4,
+      "h": 7,
       "hr": 1,
       "k": 5,
-      "rbi": 2,
+      "rbi": 3,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -22485,6 +22556,24 @@ var PLAYER_GAME_LOG = {
   },
   "663494": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".258",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "COL",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".254",
@@ -22592,42 +22681,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PIT",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 7,
-      "avg": ".286",
-      "bb": 2,
-      "h": 2,
+      "ab": 9,
+      "avg": ".333",
+      "bb": 3,
+      "h": 3,
       "hr": 0,
-      "k": 2,
+      "k": 3,
       "rbi": 1,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "663538": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".266",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 3,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIA",
+        "order": 6,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".263",
@@ -22735,31 +22824,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".260",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "CIN",
-        "order": 5,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 26,
-      "avg": ".308",
+      "avg": ".385",
       "bb": 1,
-      "h": 8,
+      "h": 10,
       "hr": 1,
       "k": 3,
       "rbi": 4,
@@ -22771,6 +22842,24 @@ var PLAYER_GAME_LOG = {
   },
   "663586": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".224",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 1,
+        "k": 2,
+        "opp": "PHI",
+        "order": 8,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".223",
@@ -22878,37 +22967,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "COL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".273",
+      "ab": 25,
+      "avg": ".280",
       "bb": 1,
-      "h": 6,
-      "hr": 0,
-      "k": 4,
-      "rbi": 3,
+      "h": 7,
+      "hr": 1,
+      "k": 6,
+      "rbi": 4,
       "sb": 1,
-      "scratches": 1,
-      "starts": 6,
+      "scratches": 0,
+      "starts": 7,
       "window": 7
     }
   },
@@ -23058,6 +23129,24 @@ var PLAYER_GAME_LOG = {
   "663616": {
     "games": [
       {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CWS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
         "ab": 2,
         "avg": ".266",
         "bb": 0,
@@ -23164,42 +23253,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".267",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "CWS",
-        "order": 7,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 21,
-      "avg": ".286",
+      "ab": 17,
+      "avg": ".235",
       "bb": 2,
-      "h": 6,
+      "h": 4,
       "hr": 0,
       "k": 3,
       "rbi": 3,
       "sb": 0,
-      "scratches": 0,
-      "starts": 7,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "663624": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "BOS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -23307,24 +23396,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATH",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -23343,6 +23414,24 @@ var PLAYER_GAME_LOG = {
   },
   "663647": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -23450,24 +23539,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CHC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -23486,6 +23557,24 @@ var PLAYER_GAME_LOG = {
   },
   "663656": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".225",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "WSH",
+        "order": 4,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".226",
@@ -23593,35 +23682,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".229",
-        "bb": 2,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "DET",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 1,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 21,
-      "avg": ".190",
-      "bb": 8,
-      "h": 4,
+      "avg": ".143",
+      "bb": 7,
+      "h": 3,
       "hr": 1,
       "k": 2,
       "rbi": 2,
-      "sb": 2,
+      "sb": 1,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -23776,6 +23847,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TOR",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -23879,24 +23968,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CLE",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -23915,6 +23986,24 @@ var PLAYER_GAME_LOG = {
   },
   "663698": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -24022,24 +24111,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -24058,6 +24129,24 @@ var PLAYER_GAME_LOG = {
   },
   "663728": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".182",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 3,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "OAK",
+        "order": 4,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".176",
@@ -24165,34 +24254,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".169",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": false,
-        "hr": 1,
-        "k": 1,
-        "opp": "TOR",
-        "order": 5,
-        "r": 2,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".348",
-      "bb": 3,
-      "h": 8,
-      "hr": 3,
+      "ab": 24,
+      "avg": ".375",
+      "bb": 2,
+      "h": 9,
+      "hr": 2,
       "k": 6,
-      "rbi": 6,
+      "rbi": 5,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -24201,6 +24272,24 @@ var PLAYER_GAME_LOG = {
   },
   "663743": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "TEX",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -24308,24 +24397,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -24344,6 +24415,24 @@ var PLAYER_GAME_LOG = {
   },
   "663757": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": 0,
         "avg": ".211",
@@ -24451,42 +24540,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".216",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "BOS",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".056",
-      "bb": 4,
+      "ab": 16,
+      "avg": ".062",
+      "bb": 3,
       "h": 1,
       "hr": 0,
-      "k": 7,
+      "k": 6,
       "rbi": 2,
       "sb": 0,
       "scratches": 1,
-      "starts": 6,
+      "starts": 5,
       "window": 7
     }
   },
   "663837": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CLE",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -24583,24 +24672,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "LAD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -24774,6 +24845,24 @@ var PLAYER_GAME_LOG = {
   "663886": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".246",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 2,
+        "opp": "MIL",
+        "order": 5,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".246",
         "bb": 1,
@@ -24880,34 +24969,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".248",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 1,
-        "k": 2,
-        "opp": "CHC",
-        "order": 4,
-        "r": 1,
-        "rbi": 3,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".261",
+      "ab": 22,
+      "avg": ".227",
       "bb": 3,
-      "h": 6,
+      "h": 5,
       "hr": 2,
       "k": 8,
-      "rbi": 5,
+      "rbi": 3,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -25060,6 +25131,24 @@ var PLAYER_GAME_LOG = {
   "663968": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".285",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "LAA",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".288",
         "bb": 0,
@@ -25166,29 +25255,11 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".285",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "STL",
-        "order": 7,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 19,
-      "avg": ".316",
+      "ab": 20,
+      "avg": ".300",
       "bb": 1,
       "h": 6,
       "hr": 0,
@@ -25202,6 +25273,24 @@ var PLAYER_GAME_LOG = {
   },
   "663993": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "DET",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -25309,42 +25398,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".261",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 3,
-        "opp": "KC",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 19,
-      "avg": ".105",
+      "ab": 15,
+      "avg": ".133",
       "bb": 2,
       "h": 2,
       "hr": 1,
-      "k": 7,
+      "k": 4,
       "rbi": 3,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "664023": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".221",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIA",
+        "order": 5,
+        "r": 0,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".219",
@@ -25452,42 +25541,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 14,
-      "avg": ".286",
-      "bb": 2,
-      "h": 4,
+      "ab": 18,
+      "avg": ".333",
+      "bb": 3,
+      "h": 6,
       "hr": 0,
-      "k": 5,
-      "rbi": 1,
+      "k": 6,
+      "rbi": 3,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
   "664034": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".292",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "NYY",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".295",
@@ -25595,24 +25684,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".285",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "TB",
-        "order": 4,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -25631,6 +25702,24 @@ var PLAYER_GAME_LOG = {
   },
   "664040": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "LAA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".254",
@@ -25738,24 +25827,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "STL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -25774,6 +25845,24 @@ var PLAYER_GAME_LOG = {
   },
   "664056": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -25870,24 +25959,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "AZ",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -26061,6 +26132,24 @@ var PLAYER_GAME_LOG = {
   "664702": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".236",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "KC",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".236",
         "bb": 0,
@@ -26167,42 +26256,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
+      }
+    ],
+    "summary": {
+      "ab": 18,
+      "avg": ".444",
+      "bb": 3,
+      "h": 8,
+      "hr": 0,
+      "k": 2,
+      "rbi": 2,
+      "sb": 0,
+      "scratches": 1,
+      "starts": 6,
+      "window": 7
+    }
+  },
+  "664728": {
+    "games": [
       {
         "ab": null,
         "avg": "",
         "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
         "h": null,
         "home": true,
         "hr": null,
         "k": null,
-        "opp": "SEA",
+        "opp": "TOR",
         "order": null,
         "r": null,
         "rbi": null,
         "result": "",
         "sb": null,
         "status": "scratched"
-      }
-    ],
-    "summary": {
-      "ab": 14,
-      "avg": ".500",
-      "bb": 3,
-      "h": 7,
-      "hr": 0,
-      "k": 1,
-      "rbi": 2,
-      "sb": 0,
-      "scratches": 2,
-      "starts": 5,
-      "window": 7
-    }
-  },
-  "664728": {
-    "games": [
+      },
       {
         "ab": 3,
         "avg": ".232",
@@ -26310,37 +26399,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".235",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "CLE",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 20,
-      "avg": ".150",
+      "ab": 16,
+      "avg": ".188",
       "bb": 1,
       "h": 3,
       "hr": 0,
-      "k": 5,
+      "k": 3,
       "rbi": 0,
       "sb": 0,
-      "scratches": 1,
-      "starts": 6,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
@@ -26490,6 +26561,24 @@ var PLAYER_GAME_LOG = {
   "664761": {
     "games": [
       {
+        "ab": 3,
+        "avg": ".246",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "ATL",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".248",
         "bb": 0,
@@ -26596,33 +26685,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".245",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "LAA",
-        "order": 5,
-        "r": 2,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 22,
-      "avg": ".318",
-      "bb": 3,
-      "h": 7,
+      "avg": ".273",
+      "bb": 4,
+      "h": 6,
       "hr": 1,
-      "k": 4,
+      "k": 5,
       "rbi": 3,
       "sb": 0,
       "scratches": 1,
@@ -26632,6 +26703,24 @@ var PLAYER_GAME_LOG = {
   },
   "664770": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".270",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 3,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "KC",
+        "order": 5,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".265",
@@ -26739,32 +26828,14 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".265",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 1,
-        "k": 0,
-        "opp": "SEA",
-        "order": 2,
-        "r": 2,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 25,
-      "avg": ".280",
-      "bb": 1,
-      "h": 7,
-      "hr": 1,
+      "ab": 26,
+      "avg": ".346",
+      "bb": 0,
+      "h": 9,
+      "hr": 0,
       "k": 4,
       "rbi": 4,
       "sb": 0,
@@ -26775,6 +26846,24 @@ var PLAYER_GAME_LOG = {
   },
   "664774": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "AZ",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".204",
@@ -26882,24 +26971,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYM",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -26918,6 +26989,24 @@ var PLAYER_GAME_LOG = {
   },
   "664954": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "STL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -27025,24 +27114,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -27061,6 +27132,24 @@ var PLAYER_GAME_LOG = {
   },
   "664983": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".290",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "STL",
+        "order": 1,
+        "r": 2,
+        "rbi": 0,
+        "result": "",
+        "sb": 2,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".289",
@@ -27168,35 +27257,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".291",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "ATL",
-        "order": 1,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 29,
       "avg": ".276",
-      "bb": 2,
+      "bb": 4,
       "h": 8,
       "hr": 1,
       "k": 3,
-      "rbi": 4,
-      "sb": 2,
+      "rbi": 3,
+      "sb": 4,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -27204,6 +27275,24 @@ var PLAYER_GAME_LOG = {
   },
   "665019": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".239",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "CWS",
+        "order": 6,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".241",
@@ -27311,32 +27400,14 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".240",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 1,
-        "k": 0,
-        "opp": "CWS",
-        "order": 4,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".292",
-      "bb": 4,
-      "h": 7,
-      "hr": 3,
+      "ab": 23,
+      "avg": ".217",
+      "bb": 5,
+      "h": 5,
+      "hr": 2,
       "k": 5,
       "rbi": 4,
       "sb": 0,
@@ -27347,6 +27418,24 @@ var PLAYER_GAME_LOG = {
   },
   "665052": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".256",
+        "bb": 3,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 0,
+        "opp": "CHC",
+        "order": 3,
+        "r": 2,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".254",
@@ -27454,34 +27543,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".249",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "WSH",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 14,
-      "avg": ".143",
-      "bb": 2,
-      "h": 2,
-      "hr": 0,
-      "k": 6,
-      "rbi": 0,
+      "ab": 13,
+      "avg": ".231",
+      "bb": 4,
+      "h": 3,
+      "hr": 1,
+      "k": 4,
+      "rbi": 2,
       "sb": 0,
       "scratches": 3,
       "starts": 4,
@@ -27490,6 +27561,24 @@ var PLAYER_GAME_LOG = {
   },
   "665161": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".274",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "ARI",
+        "order": 1,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".277",
@@ -27597,33 +27686,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".282",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "NYM",
-        "order": 1,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".214",
+      "ab": 29,
+      "avg": ".172",
       "bb": 1,
-      "h": 6,
+      "h": 5,
       "hr": 1,
-      "k": 7,
+      "k": 8,
       "rbi": 2,
       "sb": 0,
       "scratches": 0,
@@ -27633,6 +27704,24 @@ var PLAYER_GAME_LOG = {
   },
   "665487": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".280",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "NYY",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".282",
@@ -27740,31 +27829,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".285",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "TB",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 31,
-      "avg": ".226",
-      "bb": 0,
-      "h": 7,
+      "ab": 30,
+      "avg": ".200",
+      "bb": 1,
+      "h": 6,
       "hr": 2,
       "k": 6,
       "rbi": 3,
@@ -27776,6 +27847,24 @@ var PLAYER_GAME_LOG = {
   },
   "665489": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".261",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "KC",
+        "order": 3,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".262",
@@ -27883,34 +27972,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".260",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "SEA",
-        "order": 3,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".296",
+      "ab": 28,
+      "avg": ".286",
       "bb": 2,
       "h": 8,
       "hr": 1,
-      "k": 1,
-      "rbi": 8,
+      "k": 2,
+      "rbi": 7,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -27919,6 +27990,24 @@ var PLAYER_GAME_LOG = {
   },
   "665506": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "SF",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -28026,24 +28115,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "HOU",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -28062,6 +28133,24 @@ var PLAYER_GAME_LOG = {
   },
   "665561": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -28169,24 +28258,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-09",
-        "date_short": "Aug 9",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "TOR",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -28198,13 +28269,31 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
+      "scratches": 4,
       "starts": 0,
       "window": 7
     }
   },
   "665742": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".274",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "SF",
+        "order": 2,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".277",
@@ -28312,29 +28401,11 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "HOU",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 20,
-      "avg": ".200",
+      "ab": 24,
+      "avg": ".167",
       "bb": 2,
       "h": 4,
       "hr": 2,
@@ -28342,12 +28413,30 @@ var PLAYER_GAME_LOG = {
       "rbi": 4,
       "sb": 1,
       "scratches": 1,
-      "starts": 5,
+      "starts": 6,
       "window": 7
     }
   },
   "665750": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "BOS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".217",
@@ -28455,42 +28544,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".227",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "OAK",
-        "order": 9,
-        "r": 0,
-        "rbi": 3,
-        "result": "",
-        "sb": 1,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 19,
-      "avg": ".105",
-      "bb": 3,
-      "h": 2,
+      "ab": 16,
+      "avg": ".000",
+      "bb": 2,
+      "h": 0,
       "hr": 0,
       "k": 10,
-      "rbi": 3,
-      "sb": 1,
-      "scratches": 1,
-      "starts": 6,
+      "rbi": 0,
+      "sb": 0,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
   "665804": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".236",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "MIA",
+        "order": 9,
+        "r": 2,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -28598,42 +28687,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 8,
-      "avg": ".250",
+      "ab": 11,
+      "avg": ".364",
       "bb": 2,
-      "h": 2,
+      "h": 4,
       "hr": 0,
       "k": 4,
       "rbi": 1,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "665833": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".267",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "LAA",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".267",
@@ -28741,35 +28830,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".261",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "STL",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 27,
-      "avg": ".370",
+      "avg": ".333",
       "bb": 6,
-      "h": 10,
+      "h": 9,
       "hr": 0,
       "k": 10,
       "rbi": 6,
-      "sb": 4,
+      "sb": 5,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -28921,6 +28992,24 @@ var PLAYER_GAME_LOG = {
   "665862": {
     "games": [
       {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
         "ab": 3,
         "avg": ".229",
         "bb": 1,
@@ -29027,42 +29116,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".226",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "BOS",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".261",
+      "ab": 20,
+      "avg": ".300",
       "bb": 4,
       "h": 6,
       "hr": 1,
-      "k": 8,
+      "k": 6,
       "rbi": 2,
       "sb": 2,
-      "scratches": 0,
-      "starts": 7,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "665923": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "CHC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".230",
@@ -29170,24 +29259,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "WSH",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -29206,6 +29277,24 @@ var PLAYER_GAME_LOG = {
   },
   "665926": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".243",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "KC",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -29313,34 +29402,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".241",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "SEA",
-        "order": 7,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".278",
-      "bb": 0,
+      "ab": 17,
+      "avg": ".294",
+      "bb": 1,
       "h": 5,
       "hr": 0,
-      "k": 6,
-      "rbi": 3,
+      "k": 5,
+      "rbi": 2,
       "sb": 1,
       "scratches": 2,
       "starts": 5,
@@ -29349,6 +29420,24 @@ var PLAYER_GAME_LOG = {
   },
   "665953": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "LAD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 5,
         "avg": ".252",
@@ -29456,42 +29545,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".246",
-        "bb": 2,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIA",
-        "order": 8,
-        "r": 2,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 17,
-      "avg": ".235",
-      "bb": 3,
+      "ab": 15,
+      "avg": ".267",
+      "bb": 1,
       "h": 4,
       "hr": 0,
-      "k": 5,
+      "k": 4,
       "rbi": 0,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "665966": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "BOS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".162",
@@ -29599,24 +29688,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATH",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -29635,6 +29706,24 @@ var PLAYER_GAME_LOG = {
   },
   "666018": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".278",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 1,
+        "k": 2,
+        "opp": "TEX",
+        "order": 2,
+        "r": 2,
+        "rbi": 3,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".277",
@@ -29742,34 +29831,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".279",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": true,
-        "hr": 1,
-        "k": 0,
-        "opp": "SD",
-        "order": 2,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".217",
+      "ab": 24,
+      "avg": ".250",
       "bb": 2,
-      "h": 5,
+      "h": 6,
       "hr": 2,
-      "k": 7,
-      "rbi": 4,
+      "k": 9,
+      "rbi": 6,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -29778,6 +29849,24 @@ var PLAYER_GAME_LOG = {
   },
   "666023": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".192",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "NYY",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -29885,34 +29974,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".200",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "TB",
-        "order": 8,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 10,
+      "ab": 8,
       "avg": ".000",
       "bb": 0,
       "h": 0,
       "hr": 0,
-      "k": 3,
-      "rbi": 1,
+      "k": 5,
+      "rbi": 0,
       "sb": 0,
       "scratches": 4,
       "starts": 3,
@@ -29921,6 +29992,24 @@ var PLAYER_GAME_LOG = {
   },
   "666126": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".259",
@@ -30028,42 +30117,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".260",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "BAL",
-        "order": 8,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 14,
-      "avg": ".286",
+      "ab": 10,
+      "avg": ".200",
       "bb": 0,
-      "h": 4,
+      "h": 2,
       "hr": 0,
       "k": 3,
-      "rbi": 1,
+      "rbi": 0,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "666139": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".210",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 1,
+        "k": 2,
+        "opp": "PIT",
+        "order": 7,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -30171,34 +30260,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".213",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "PHI",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 10,
-      "avg": ".100",
+      "ab": 12,
+      "avg": ".167",
       "bb": 3,
-      "h": 1,
-      "hr": 0,
-      "k": 2,
-      "rbi": 0,
+      "h": 2,
+      "hr": 1,
+      "k": 4,
+      "rbi": 1,
       "sb": 1,
       "scratches": 3,
       "starts": 4,
@@ -30207,6 +30278,24 @@ var PLAYER_GAME_LOG = {
   },
   "666152": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".248",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "CIN",
+        "order": 9,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".244",
@@ -30314,35 +30403,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".242",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "TEX",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 17,
-      "avg": ".235",
+      "avg": ".353",
       "bb": 0,
-      "h": 4,
+      "h": 6,
       "hr": 0,
-      "k": 4,
+      "k": 5,
       "rbi": 1,
-      "sb": 2,
+      "sb": 3,
       "scratches": 2,
       "starts": 5,
       "window": 7
@@ -30350,6 +30421,24 @@ var PLAYER_GAME_LOG = {
   },
   "666158": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "TEX",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -30457,24 +30546,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -30493,6 +30564,24 @@ var PLAYER_GAME_LOG = {
   },
   "666160": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "STL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 5,
         "avg": ".248",
@@ -30600,37 +30689,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".256",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "ATL",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 25,
-      "avg": ".200",
+      "ab": 21,
+      "avg": ".143",
       "bb": 0,
-      "h": 5,
+      "h": 3,
       "hr": 0,
-      "k": 5,
+      "k": 4,
       "rbi": 0,
       "sb": 0,
-      "scratches": 1,
-      "starts": 6,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
@@ -30780,6 +30851,24 @@ var PLAYER_GAME_LOG = {
   "666176": {
     "games": [
       {
+        "ab": 2,
+        "avg": ".239",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "DET",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".240",
         "bb": 0,
@@ -30886,31 +30975,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".238",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "KC",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".269",
+      "ab": 24,
+      "avg": ".250",
       "bb": 3,
-      "h": 7,
+      "h": 6,
       "hr": 0,
       "k": 3,
       "rbi": 3,
@@ -31066,6 +31137,24 @@ var PLAYER_GAME_LOG = {
   "666182": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".264",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "SF",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".266",
         "bb": 1,
@@ -31172,24 +31261,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".262",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "HOU",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -31198,7 +31269,7 @@ var PLAYER_GAME_LOG = {
       "bb": 3,
       "h": 8,
       "hr": 1,
-      "k": 4,
+      "k": 5,
       "rbi": 2,
       "sb": 1,
       "scratches": 0,
@@ -31208,6 +31279,24 @@ var PLAYER_GAME_LOG = {
   },
   "666211": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".206",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "ARI",
+        "order": 8,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".206",
@@ -31315,33 +31404,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".203",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "NYM",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 15,
-      "avg": ".200",
+      "avg": ".267",
       "bb": 2,
-      "h": 3,
+      "h": 4,
       "hr": 0,
-      "k": 4,
+      "k": 5,
       "rbi": 0,
       "sb": 1,
       "scratches": 2,
@@ -31351,6 +31422,24 @@ var PLAYER_GAME_LOG = {
   },
   "666310": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -31469,9 +31558,9 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 6,
+      "scratches": 7,
       "starts": 0,
-      "window": 6
+      "window": 7
     }
   },
   "666397": {
@@ -31620,6 +31709,24 @@ var PLAYER_GAME_LOG = {
   "666624": {
     "games": [
       {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "SF",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
         "ab": 2,
         "avg": ".167",
         "bb": 0,
@@ -31715,24 +31822,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "HOU",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -31909,6 +31998,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -32012,24 +32119,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "LAA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -32048,6 +32137,24 @@ var PLAYER_GAME_LOG = {
   },
   "666971": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "HOU",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -32155,24 +32262,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-14",
-        "date_short": "Aug 14",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -32184,7 +32273,7 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
+      "scratches": 4,
       "starts": 0,
       "window": 7
     }
@@ -32335,6 +32424,24 @@ var PLAYER_GAME_LOG = {
   "667472": {
     "games": [
       {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
         "ab": 5,
         "avg": ".265",
         "bb": 0,
@@ -32441,42 +32548,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 5,
-        "avg": ".254",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "CHC",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 19,
-      "avg": ".316",
-      "bb": 1,
+      "ab": 14,
+      "avg": ".429",
+      "bb": 0,
       "h": 6,
       "hr": 1,
       "k": 5,
       "rbi": 1,
       "sb": 1,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "667670": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -32584,24 +32691,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -32620,6 +32709,24 @@ var PLAYER_GAME_LOG = {
   },
   "668227": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".271",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "OAK",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".271",
@@ -32727,33 +32834,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".271",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "TOR",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 29,
-      "avg": ".241",
-      "bb": 2,
-      "h": 7,
+      "ab": 28,
+      "avg": ".286",
+      "bb": 3,
+      "h": 8,
       "hr": 2,
-      "k": 10,
+      "k": 9,
       "rbi": 8,
       "sb": 1,
       "scratches": 0,
@@ -32763,6 +32852,24 @@ var PLAYER_GAME_LOG = {
   },
   "668670": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".169",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIN",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -32870,33 +32977,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".172",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "MIN",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 10,
-      "avg": ".100",
+      "ab": 8,
+      "avg": ".125",
       "bb": 1,
       "h": 1,
       "hr": 0,
-      "k": 3,
+      "k": 2,
       "rbi": 1,
       "sb": 0,
       "scratches": 4,
@@ -32906,6 +32995,24 @@ var PLAYER_GAME_LOG = {
   },
   "668709": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".221",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "MIL",
+        "order": 4,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".221",
@@ -33013,33 +33120,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".219",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "CHC",
-        "order": 6,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".250",
+      "ab": 23,
+      "avg": ".261",
       "bb": 4,
       "h": 6,
       "hr": 1,
-      "k": 4,
+      "k": 5,
       "rbi": 4,
       "sb": 0,
       "scratches": 0,
@@ -33049,6 +33138,24 @@ var PLAYER_GAME_LOG = {
   },
   "668715": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -33145,24 +33252,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CHC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": false,
         "hr": null,
@@ -33285,6 +33374,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "TEX",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -33388,24 +33495,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -33424,6 +33513,24 @@ var PLAYER_GAME_LOG = {
   },
   "668800": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".176",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "NYM",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -33531,33 +33638,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".200",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "ARI",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 10,
-      "avg": ".200",
-      "bb": 0,
+      "ab": 11,
+      "avg": ".182",
+      "bb": 1,
       "h": 2,
       "hr": 0,
-      "k": 2,
+      "k": 3,
       "rbi": 0,
       "sb": 0,
       "scratches": 3,
@@ -33567,6 +33656,24 @@ var PLAYER_GAME_LOG = {
   },
   "668804": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".267",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 3,
+        "home": true,
+        "hr": 1,
+        "k": 0,
+        "opp": "LAA",
+        "order": 3,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".263",
@@ -33674,34 +33781,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".261",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "STL",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 29,
-      "avg": ".276",
+      "avg": ".379",
       "bb": 3,
-      "h": 8,
-      "hr": 0,
-      "k": 6,
-      "rbi": 0,
+      "h": 11,
+      "hr": 1,
+      "k": 5,
+      "rbi": 1,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -33710,6 +33799,24 @@ var PLAYER_GAME_LOG = {
   },
   "668885": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CWS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -33817,24 +33924,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CWS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -33853,6 +33942,24 @@ var PLAYER_GAME_LOG = {
   },
   "668901": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "SF",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".219",
@@ -33960,24 +34067,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-17",
-        "date_short": "Aug 17",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -33989,13 +34078,31 @@ var PLAYER_GAME_LOG = {
       "k": 1,
       "rbi": 4,
       "sb": 0,
-      "scratches": 2,
+      "scratches": 3,
       "starts": 2,
       "window": 7
     }
   },
   "668904": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".236",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "CWS",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".238",
@@ -34103,35 +34210,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".234",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "CWS",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 1,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".286",
-      "bb": 2,
-      "h": 8,
+      "ab": 27,
+      "avg": ".259",
+      "bb": 3,
+      "h": 7,
       "hr": 1,
-      "k": 8,
+      "k": 6,
       "rbi": 5,
-      "sb": 1,
+      "sb": 0,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -34139,6 +34228,24 @@ var PLAYER_GAME_LOG = {
   },
   "668930": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".254",
@@ -34246,42 +34353,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".255",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 3,
-        "opp": "TEX",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".214",
+      "ab": 24,
+      "avg": ".250",
       "bb": 2,
       "h": 6,
       "hr": 0,
-      "k": 12,
+      "k": 9,
       "rbi": 4,
       "sb": 0,
-      "scratches": 0,
-      "starts": 7,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "668939": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "BAL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".237",
@@ -34389,24 +34496,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYY",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -34425,6 +34514,24 @@ var PLAYER_GAME_LOG = {
   },
   "668942": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".247",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "TOR",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -34532,33 +34639,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".229",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "CLE",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".333",
+      "ab": 8,
+      "avg": ".250",
       "bb": 0,
-      "h": 3,
+      "h": 2,
       "hr": 0,
-      "k": 1,
+      "k": 0,
       "rbi": 0,
       "sb": 0,
       "scratches": 4,
@@ -34568,6 +34657,24 @@ var PLAYER_GAME_LOG = {
   },
   "668952": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".219",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "CWS",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -34675,37 +34782,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CWS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 0,
+      "ab": 3,
       "avg": ".000",
       "bb": 0,
       "h": 0,
       "hr": 0,
-      "k": 0,
+      "k": 1,
       "rbi": 0,
       "sb": 0,
-      "scratches": 7,
-      "starts": 0,
+      "scratches": 6,
+      "starts": 1,
       "window": 7
     }
   },
@@ -34855,6 +34944,24 @@ var PLAYER_GAME_LOG = {
   "669003": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".259",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "CIN",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 2,
         "avg": ".262",
         "bb": 0,
@@ -34961,24 +35068,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".259",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "TEX",
-        "order": 5,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -34987,7 +35076,7 @@ var PLAYER_GAME_LOG = {
       "bb": 1,
       "h": 4,
       "hr": 0,
-      "k": 4,
+      "k": 5,
       "rbi": 0,
       "sb": 0,
       "scratches": 2,
@@ -35144,6 +35233,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -35247,24 +35354,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "LAA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -35283,6 +35372,24 @@ var PLAYER_GAME_LOG = {
   },
   "669065": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".250",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 1,
+        "k": 1,
+        "opp": "CHC",
+        "order": 1,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -35390,34 +35497,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".243",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 3,
-        "opp": "WSH",
-        "order": 1,
-        "r": 1,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 20,
-      "avg": ".350",
+      "avg": ".400",
       "bb": 1,
-      "h": 7,
-      "hr": 2,
-      "k": 9,
-      "rbi": 7,
+      "h": 8,
+      "hr": 3,
+      "k": 7,
+      "rbi": 6,
       "sb": 0,
       "scratches": 2,
       "starts": 5,
@@ -35573,6 +35662,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -35676,24 +35783,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -35712,6 +35801,24 @@ var PLAYER_GAME_LOG = {
   },
   "669134": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".278",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "NYY",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".283",
@@ -35819,42 +35926,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
+      }
+    ],
+    "summary": {
+      "ab": 18,
+      "avg": ".222",
+      "bb": 2,
+      "h": 4,
+      "hr": 1,
+      "k": 5,
+      "rbi": 2,
+      "sb": 0,
+      "scratches": 2,
+      "starts": 5,
+      "window": 7
+    }
+  },
+  "669221": {
+    "games": [
       {
         "ab": null,
         "avg": "",
         "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
         "h": null,
         "home": false,
         "hr": null,
         "k": null,
-        "opp": "TB",
+        "opp": "PHI",
         "order": null,
         "r": null,
         "rbi": null,
         "result": "",
         "sb": null,
         "status": "scratched"
-      }
-    ],
-    "summary": {
-      "ab": 15,
-      "avg": ".267",
-      "bb": 1,
-      "h": 4,
-      "hr": 1,
-      "k": 4,
-      "rbi": 2,
-      "sb": 0,
-      "scratches": 3,
-      "starts": 4,
-      "window": 7
-    }
-  },
-  "669221": {
-    "games": [
+      },
       {
         "ab": 2,
         "avg": ".234",
@@ -35962,42 +36069,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".212",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "COL",
-        "order": 8,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 16,
-      "avg": ".375",
+      "ab": 12,
+      "avg": ".333",
       "bb": 5,
-      "h": 6,
+      "h": 4,
       "hr": 2,
-      "k": 6,
-      "rbi": 6,
+      "k": 5,
+      "rbi": 5,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "669224": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".186",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "SD",
+        "order": 9,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".188",
@@ -36105,33 +36212,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".178",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 3,
-        "opp": "BOS",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 16,
       "avg": ".125",
-      "bb": 0,
+      "bb": 1,
       "h": 2,
       "hr": 0,
-      "k": 6,
+      "k": 4,
       "rbi": 2,
       "sb": 1,
       "scratches": 2,
@@ -36286,6 +36375,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
+        "avg": ".273",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 2,
+        "opp": "WSH",
+        "order": 1,
+        "r": 1,
+        "rbi": 3,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 4,
         "avg": ".274",
         "bb": 0,
         "date": "2026-09-04",
@@ -36391,24 +36498,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".267",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "DET",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -36416,9 +36505,9 @@ var PLAYER_GAME_LOG = {
       "avg": ".312",
       "bb": 0,
       "h": 10,
-      "hr": 0,
-      "k": 4,
-      "rbi": 2,
+      "hr": 1,
+      "k": 5,
+      "rbi": 5,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -36427,6 +36516,24 @@ var PLAYER_GAME_LOG = {
   },
   "669257": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "WSH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".237",
@@ -36534,24 +36641,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-19",
-        "date_short": "Aug 19",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "COL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -36563,7 +36652,7 @@ var PLAYER_GAME_LOG = {
       "k": 1,
       "rbi": 2,
       "sb": 0,
-      "scratches": 1,
+      "scratches": 2,
       "starts": 3,
       "window": 7
     }
@@ -36857,6 +36946,24 @@ var PLAYER_GAME_LOG = {
   "669357": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".186",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "COL",
+        "order": 7,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".185",
         "bb": 0,
@@ -36963,34 +37070,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".193",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "PIT",
-        "order": 8,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 16,
-      "avg": ".125",
-      "bb": 1,
+      "ab": 17,
+      "avg": ".118",
+      "bb": 0,
       "h": 2,
       "hr": 0,
-      "k": 5,
-      "rbi": 1,
+      "k": 6,
+      "rbi": 2,
       "sb": 0,
       "scratches": 2,
       "starts": 5,
@@ -37070,6 +37159,24 @@ var PLAYER_GAME_LOG = {
   },
   "669364": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "CHC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -37177,37 +37284,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".283",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "WSH",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 6,
+      "ab": 1,
       "avg": ".000",
       "bb": 1,
       "h": 0,
       "hr": 0,
-      "k": 2,
+      "k": 0,
       "rbi": 0,
       "sb": 0,
       "scratches": 0,
-      "starts": 2,
+      "starts": 1,
       "window": 7
     }
   },
@@ -37447,6 +37536,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
+        "avg": ".308",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 3,
+        "opp": "NYY",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 4,
         "avg": ".320",
         "bb": 0,
         "date": "2026-09-04",
@@ -37552,42 +37659,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-16",
-        "date_short": "Aug 16",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CLE",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 11,
-      "avg": ".182",
+      "ab": 15,
+      "avg": ".133",
       "bb": 1,
       "h": 2,
       "hr": 0,
-      "k": 3,
+      "k": 6,
       "rbi": 0,
       "sb": 1,
       "scratches": 2,
-      "starts": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "669394": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".237",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "TB",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 1,
         "avg": ".237",
@@ -37695,24 +37802,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".236",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "MIL",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -37721,7 +37810,7 @@ var PLAYER_GAME_LOG = {
       "bb": 3,
       "h": 6,
       "hr": 0,
-      "k": 5,
+      "k": 6,
       "rbi": 3,
       "sb": 0,
       "scratches": 0,
@@ -37731,6 +37820,24 @@ var PLAYER_GAME_LOG = {
   },
   "669397": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "AZ",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -37838,37 +37945,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".260",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "NYM",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 10,
-      "avg": ".400",
-      "bb": 1,
+      "ab": 8,
+      "avg": ".500",
+      "bb": 0,
       "h": 4,
       "hr": 0,
-      "k": 3,
+      "k": 1,
       "rbi": 0,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
@@ -38003,6 +38092,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -38095,24 +38202,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "AZ",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -38289,6 +38378,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "KC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -38392,24 +38499,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-23",
-        "date_short": "Aug 23",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYY",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -38421,13 +38510,31 @@ var PLAYER_GAME_LOG = {
       "k": 2,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
+      "scratches": 4,
       "starts": 1,
       "window": 7
     }
   },
   "669707": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".244",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "LAA",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -38535,34 +38642,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".246",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "STL",
-        "order": 1,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 20,
-      "avg": ".250",
+      "ab": 19,
+      "avg": ".211",
       "bb": 2,
-      "h": 5,
+      "h": 4,
       "hr": 1,
       "k": 6,
-      "rbi": 5,
+      "rbi": 4,
       "sb": 1,
       "scratches": 1,
       "starts": 6,
@@ -38571,6 +38660,24 @@ var PLAYER_GAME_LOG = {
   },
   "669717": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -38678,24 +38785,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TOR",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -38714,6 +38803,24 @@ var PLAYER_GAME_LOG = {
   },
   "669720": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "NYY",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".215",
@@ -38821,42 +38928,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".225",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "TB",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 12,
-      "avg": ".083",
+      "ab": 8,
+      "avg": ".125",
       "bb": 0,
       "h": 1,
       "hr": 0,
       "k": 4,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "669743": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".248",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "WSH",
+        "order": 8,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".254",
@@ -38964,42 +39071,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "DET",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 4,
-      "avg": ".250",
+      "ab": 7,
+      "avg": ".143",
       "bb": 1,
       "h": 1,
       "hr": 0,
-      "k": 2,
-      "rbi": 0,
+      "k": 3,
+      "rbi": 1,
       "sb": 0,
-      "scratches": 5,
-      "starts": 2,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "669911": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -39096,24 +39203,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CHC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": false,
         "hr": null,
@@ -39147,6 +39236,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TB",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -39239,24 +39346,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-30",
         "date_short": "Aug 30",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
         "h": null,
         "home": false,
         "hr": null,
@@ -39290,6 +39379,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -39382,24 +39489,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-30",
         "date_short": "Aug 30",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TOR",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
         "h": null,
         "home": false,
         "hr": null,
@@ -39859,6 +39948,24 @@ var PLAYER_GAME_LOG = {
   "670231": {
     "games": [
       {
+        "ab": 3,
+        "avg": ".225",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 1,
+        "opp": "TOR",
+        "order": 7,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": null,
         "avg": "",
         "bb": null,
@@ -39965,37 +40072,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CLE",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 6,
-      "avg": ".167",
-      "bb": 2,
-      "h": 1,
-      "hr": 0,
-      "k": 3,
-      "rbi": 0,
+      "ab": 9,
+      "avg": ".222",
+      "bb": 3,
+      "h": 2,
+      "hr": 1,
+      "k": 4,
+      "rbi": 1,
       "sb": 0,
-      "scratches": 5,
-      "starts": 2,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
@@ -40145,6 +40234,24 @@ var PLAYER_GAME_LOG = {
   "670541": {
     "games": [
       {
+        "ab": 3,
+        "avg": ".315",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "ARI",
+        "order": 2,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".317",
         "bb": 0,
@@ -40251,34 +40358,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".320",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": false,
-        "hr": 1,
-        "k": 0,
-        "opp": "NYM",
-        "order": 2,
-        "r": 1,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 23,
-      "avg": ".304",
-      "bb": 4,
-      "h": 7,
-      "hr": 1,
-      "k": 4,
-      "rbi": 3,
+      "avg": ".217",
+      "bb": 6,
+      "h": 5,
+      "hr": 0,
+      "k": 6,
+      "rbi": 1,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -40287,6 +40376,24 @@ var PLAYER_GAME_LOG = {
   },
   "670623": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".259",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "ARI",
+        "order": 3,
+        "r": 0,
+        "rbi": 3,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".258",
@@ -40394,34 +40501,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".259",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "NYM",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".208",
-      "bb": 4,
-      "h": 5,
+      "ab": 26,
+      "avg": ".269",
+      "bb": 3,
+      "h": 7,
       "hr": 1,
       "k": 3,
-      "rbi": 3,
+      "rbi": 6,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -40430,6 +40519,24 @@ var PLAYER_GAME_LOG = {
   },
   "670764": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".218",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "TEX",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".219",
@@ -40537,31 +40644,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".221",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "SD",
-        "order": 9,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 20,
-      "avg": ".250",
-      "bb": 1,
-      "h": 5,
+      "ab": 18,
+      "avg": ".167",
+      "bb": 2,
+      "h": 3,
       "hr": 0,
       "k": 5,
       "rbi": 1,
@@ -40573,6 +40662,24 @@ var PLAYER_GAME_LOG = {
   },
   "670770": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -40680,24 +40787,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CHC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -40716,6 +40805,24 @@ var PLAYER_GAME_LOG = {
   },
   "671056": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".248",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 1,
+        "k": 2,
+        "opp": "COL",
+        "order": 2,
+        "r": 1,
+        "rbi": 3,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".246",
@@ -40823,34 +40930,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".243",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "PIT",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 30,
-      "avg": ".267",
+      "ab": 31,
+      "avg": ".323",
       "bb": 3,
-      "h": 8,
-      "hr": 1,
-      "k": 3,
-      "rbi": 6,
+      "h": 10,
+      "hr": 2,
+      "k": 5,
+      "rbi": 9,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -41149,6 +41238,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "BAL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -41252,24 +41359,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYY",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -41288,6 +41377,24 @@ var PLAYER_GAME_LOG = {
   },
   "671218": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".241",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "SD",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -41395,31 +41502,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 1,
-        "avg": ".239",
-        "bb": 2,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "BOS",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 8,
-      "avg": ".250",
-      "bb": 4,
-      "h": 2,
+      "ab": 9,
+      "avg": ".333",
+      "bb": 3,
+      "h": 3,
       "hr": 1,
       "k": 2,
       "rbi": 3,
@@ -41466,6 +41555,24 @@ var PLAYER_GAME_LOG = {
   },
   "671277": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".284",
@@ -41573,24 +41680,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BOS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -42024,6 +42113,24 @@ var PLAYER_GAME_LOG = {
         "ab": 4,
         "avg": ".233",
         "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 1,
+        "k": 1,
+        "opp": "SEA",
+        "order": 4,
+        "r": 1,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 4,
+        "avg": ".233",
+        "bb": 0,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": 1,
@@ -42127,35 +42234,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".228",
-        "bb": 2,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "BAL",
-        "order": 4,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 1,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".308",
-      "bb": 4,
+      "ab": 27,
+      "avg": ".296",
+      "bb": 2,
       "h": 8,
-      "hr": 0,
-      "k": 12,
-      "rbi": 8,
-      "sb": 1,
+      "hr": 1,
+      "k": 11,
+      "rbi": 9,
+      "sb": 0,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -42163,6 +42252,24 @@ var PLAYER_GAME_LOG = {
   },
   "671739": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".291",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "PHI",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -42270,34 +42377,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".294",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 1,
-        "k": 0,
-        "opp": "COL",
-        "order": 5,
-        "r": 2,
-        "rbi": 3,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".364",
+      "ab": 23,
+      "avg": ".261",
       "bb": 1,
-      "h": 8,
-      "hr": 3,
-      "k": 6,
-      "rbi": 8,
+      "h": 6,
+      "hr": 2,
+      "k": 8,
+      "rbi": 5,
       "sb": 1,
       "scratches": 1,
       "starts": 6,
@@ -42306,6 +42395,24 @@ var PLAYER_GAME_LOG = {
   },
   "671976": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".281",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIN",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".281",
@@ -42413,31 +42520,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".279",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIN",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 19,
-      "avg": ".263",
-      "bb": 2,
-      "h": 5,
+      "ab": 20,
+      "avg": ".300",
+      "bb": 1,
+      "h": 6,
       "hr": 0,
       "k": 3,
       "rbi": 0,
@@ -42449,6 +42538,24 @@ var PLAYER_GAME_LOG = {
   },
   "672016": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".159",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "SEA",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -42556,29 +42663,11 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-15",
-        "date_short": "Aug 15",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "TEX",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 6,
-      "avg": ".167",
+      "ab": 10,
+      "avg": ".100",
       "bb": 1,
       "h": 1,
       "hr": 0,
@@ -42586,12 +42675,30 @@ var PLAYER_GAME_LOG = {
       "rbi": 0,
       "sb": 0,
       "scratches": 2,
-      "starts": 2,
+      "starts": 3,
       "window": 7
     }
   },
   "672275": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "DET",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -42699,37 +42806,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".199",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "KC",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".556",
+      "ab": 6,
+      "avg": ".500",
       "bb": 0,
-      "h": 5,
+      "h": 3,
       "hr": 1,
       "k": 1,
       "rbi": 2,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
@@ -43025,6 +43114,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "MIA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -43128,24 +43235,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "CIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -43164,6 +43253,24 @@ var PLAYER_GAME_LOG = {
   },
   "672386": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".272",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "KC",
+        "order": 4,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".274",
@@ -43271,42 +43378,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SEA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".273",
+      "ab": 27,
+      "avg": ".259",
       "bb": 0,
-      "h": 6,
+      "h": 7,
       "hr": 1,
       "k": 6,
       "rbi": 5,
       "sb": 1,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "672515": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".300",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "HOU",
+        "order": 3,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".299",
@@ -43414,33 +43521,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".303",
-        "bb": 1,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": 1,
-        "home": false,
-        "hr": 1,
-        "k": 0,
-        "opp": "SF",
-        "order": 3,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".182",
-      "bb": 3,
-      "h": 4,
-      "hr": 2,
-      "k": 6,
+      "ab": 24,
+      "avg": ".208",
+      "bb": 2,
+      "h": 5,
+      "hr": 1,
+      "k": 7,
       "rbi": 3,
       "sb": 0,
       "scratches": 1,
@@ -43450,6 +43539,24 @@ var PLAYER_GAME_LOG = {
   },
   "672569": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PIT",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -43557,24 +43664,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PHI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -43593,6 +43682,24 @@ var PLAYER_GAME_LOG = {
   },
   "672580": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TOR",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -43689,24 +43796,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CLE",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": false,
         "hr": null,
@@ -43880,6 +43969,24 @@ var PLAYER_GAME_LOG = {
   "672640": {
     "games": [
       {
+        "ab": 3,
+        "avg": ".300",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "CHC",
+        "order": 4,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".300",
         "bb": 0,
@@ -43986,33 +44093,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".306",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "WSH",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 29,
-      "avg": ".172",
-      "bb": 1,
+      "ab": 27,
+      "avg": ".185",
+      "bb": 2,
       "h": 5,
       "hr": 1,
-      "k": 6,
+      "k": 4,
       "rbi": 3,
       "sb": 0,
       "scratches": 0,
@@ -44022,6 +44111,24 @@ var PLAYER_GAME_LOG = {
   },
   "672695": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".250",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "HOU",
+        "order": 2,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".252",
@@ -44129,35 +44236,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".254",
-        "bb": 1,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "SF",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 1,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 25,
-      "avg": ".240",
-      "bb": 4,
-      "h": 6,
+      "avg": ".160",
+      "bb": 3,
+      "h": 4,
       "hr": 0,
       "k": 4,
-      "rbi": 0,
-      "sb": 3,
+      "rbi": 1,
+      "sb": 2,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -44165,6 +44254,24 @@ var PLAYER_GAME_LOG = {
   },
   "672724": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PIT",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".222",
@@ -44272,24 +44379,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PHI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -44308,6 +44397,24 @@ var PLAYER_GAME_LOG = {
   },
   "672761": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CLE",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -44404,24 +44511,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "LAD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -44596,6 +44685,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 5,
+        "avg": ".233",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 4,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "KC",
+        "order": 6,
+        "r": 0,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 5,
         "avg": ".227",
         "bb": 0,
         "date": "2026-09-04",
@@ -44701,34 +44808,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".229",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 1,
-        "k": 0,
-        "opp": "SEA",
-        "order": 6,
-        "r": 1,
-        "rbi": 3,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 20,
-      "avg": ".200",
+      "ab": 22,
+      "avg": ".318",
       "bb": 3,
-      "h": 4,
-      "hr": 2,
+      "h": 7,
+      "hr": 1,
       "k": 8,
-      "rbi": 5,
+      "rbi": 4,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -44737,6 +44826,24 @@ var PLAYER_GAME_LOG = {
   },
   "673237": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".265",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "ARI",
+        "order": 7,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".262",
@@ -44844,42 +44951,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
+      }
+    ],
+    "summary": {
+      "ab": 18,
+      "avg": ".333",
+      "bb": 0,
+      "h": 6,
+      "hr": 1,
+      "k": 4,
+      "rbi": 1,
+      "sb": 0,
+      "scratches": 2,
+      "starts": 5,
+      "window": 7
+    }
+  },
+  "673357": {
+    "games": [
       {
         "ab": null,
         "avg": "",
         "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
         "h": null,
-        "home": false,
+        "home": true,
         "hr": null,
         "k": null,
-        "opp": "NYM",
+        "opp": "BOS",
         "order": null,
         "r": null,
         "rbi": null,
         "result": "",
         "sb": null,
         "status": "scratched"
-      }
-    ],
-    "summary": {
-      "ab": 14,
-      "avg": ".286",
-      "bb": 0,
-      "h": 4,
-      "hr": 1,
-      "k": 3,
-      "rbi": 1,
-      "sb": 0,
-      "scratches": 3,
-      "starts": 4,
-      "window": 7
-    }
-  },
-  "673357": {
-    "games": [
+      },
       {
         "ab": 3,
         "avg": ".221",
@@ -44987,24 +45094,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "HOU",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -45023,6 +45112,24 @@ var PLAYER_GAME_LOG = {
   },
   "673490": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".113",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "PHI",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".117",
@@ -45130,24 +45237,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".084",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "COL",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -45156,7 +45245,7 @@ var PLAYER_GAME_LOG = {
       "bb": 1,
       "h": 4,
       "hr": 0,
-      "k": 1,
+      "k": 3,
       "rbi": 1,
       "sb": 0,
       "scratches": 2,
@@ -45166,6 +45255,24 @@ var PLAYER_GAME_LOG = {
   },
   "673548": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".270",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIA",
+        "order": 2,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".270",
@@ -45273,34 +45380,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".277",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 3,
-        "home": true,
-        "hr": 1,
-        "k": 1,
-        "opp": "CIN",
-        "order": 2,
-        "r": 3,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".214",
-      "bb": 6,
-      "h": 6,
-      "hr": 2,
+      "ab": 26,
+      "avg": ".154",
+      "bb": 7,
+      "h": 4,
+      "hr": 1,
       "k": 4,
-      "rbi": 3,
+      "rbi": 1,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -45309,6 +45398,24 @@ var PLAYER_GAME_LOG = {
   },
   "673962": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TB",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -45416,24 +45523,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -45452,6 +45541,24 @@ var PLAYER_GAME_LOG = {
   },
   "675961": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".277",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "SEA",
+        "order": 8,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".272",
@@ -45559,42 +45666,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 16,
-      "avg": ".375",
+      "ab": 20,
+      "avg": ".400",
       "bb": 2,
-      "h": 6,
+      "h": 8,
       "hr": 2,
       "k": 4,
       "rbi": 4,
       "sb": 1,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "676059": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "BOS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -45702,24 +45809,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATH",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -45738,6 +45827,24 @@ var PLAYER_GAME_LOG = {
   },
   "676356": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "TEX",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -45845,42 +45952,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".267",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "SD",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".111",
+      "ab": 14,
+      "avg": ".143",
       "bb": 2,
       "h": 2,
       "hr": 1,
-      "k": 5,
+      "k": 3,
       "rbi": 3,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "676369": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "AZ",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -45988,24 +46095,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYM",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -46024,6 +46113,24 @@ var PLAYER_GAME_LOG = {
   },
   "676391": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".275",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "KC",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".276",
@@ -46131,31 +46238,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".279",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "SEA",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 24,
-      "avg": ".167",
+      "avg": ".208",
       "bb": 2,
-      "h": 4,
+      "h": 5,
       "hr": 0,
       "k": 3,
       "rbi": 3,
@@ -46167,6 +46256,24 @@ var PLAYER_GAME_LOG = {
   },
   "676439": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".241",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "WSH",
+        "order": 6,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -46274,34 +46381,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 1,
-        "avg": ".243",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "DET",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 7,
-      "avg": ".143",
-      "bb": 1,
-      "h": 1,
+      "ab": 9,
+      "avg": ".222",
+      "bb": 0,
+      "h": 2,
       "hr": 0,
-      "k": 2,
-      "rbi": 0,
+      "k": 3,
+      "rbi": 1,
       "sb": 0,
       "scratches": 4,
       "starts": 3,
@@ -46310,6 +46399,24 @@ var PLAYER_GAME_LOG = {
   },
   "676475": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".280",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "COL",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".281",
@@ -46417,31 +46524,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".290",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "PIT",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 25,
-      "avg": ".080",
+      "ab": 26,
+      "avg": ".115",
       "bb": 2,
-      "h": 2,
+      "h": 3,
       "hr": 0,
       "k": 6,
       "rbi": 3,
@@ -46453,6 +46542,24 @@ var PLAYER_GAME_LOG = {
   },
   "676551": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PHI",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -46560,24 +46667,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "COL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -46596,6 +46685,24 @@ var PLAYER_GAME_LOG = {
   },
   "676566": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "KC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -46678,9 +46785,9 @@ var PLAYER_GAME_LOG = {
       "k": 2,
       "rbi": 2,
       "sb": 0,
-      "scratches": 3,
+      "scratches": 4,
       "starts": 1,
-      "window": 4
+      "window": 5
     }
   },
   "676572": {
@@ -46829,6 +46936,24 @@ var PLAYER_GAME_LOG = {
   "676609": {
     "games": [
       {
+        "ab": 2,
+        "avg": ".235",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "SD",
+        "order": 8,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": null,
         "avg": "",
         "bb": null,
@@ -46935,30 +47060,12 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".232",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "BOS",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".250",
-      "bb": 0,
+      "ab": 23,
+      "avg": ".261",
+      "bb": 2,
       "h": 6,
       "hr": 1,
       "k": 8,
@@ -47024,6 +47131,24 @@ var PLAYER_GAME_LOG = {
   },
   "676694": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ARI",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -47131,24 +47256,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-08",
-        "date_short": "Aug 8",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "SD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -47167,6 +47274,24 @@ var PLAYER_GAME_LOG = {
   },
   "676724": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".267",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "SF",
+        "order": 5,
+        "r": 2,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -47274,31 +47399,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".265",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "HOU",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".227",
+      "ab": 23,
+      "avg": ".304",
       "bb": 1,
-      "h": 5,
+      "h": 7,
       "hr": 0,
       "k": 8,
       "rbi": 3,
@@ -47454,6 +47561,24 @@ var PLAYER_GAME_LOG = {
   "677008": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".167",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "BOS",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": null,
         "avg": "",
         "bb": null,
@@ -47527,21 +47652,39 @@ var PLAYER_GAME_LOG = {
       }
     ],
     "summary": {
-      "ab": 0,
-      "avg": ".000",
+      "ab": 4,
+      "avg": ".250",
       "bb": 0,
-      "h": 0,
+      "h": 1,
       "hr": 0,
-      "k": 0,
+      "k": 1,
       "rbi": 0,
       "sb": 0,
       "scratches": 4,
-      "starts": 0,
-      "window": 4
+      "starts": 1,
+      "window": 5
     }
   },
   "677347": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PIT",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -47606,13 +47749,31 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
+      "scratches": 4,
       "starts": 0,
-      "window": 3
+      "window": 4
     }
   },
   "677587": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".246",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "DET",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".247",
@@ -47720,33 +47881,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".249",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "KC",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 19,
-      "avg": ".158",
+      "avg": ".105",
       "bb": 1,
-      "h": 3,
+      "h": 2,
       "hr": 0,
-      "k": 3,
+      "k": 2,
       "rbi": 0,
       "sb": 2,
       "scratches": 1,
@@ -47756,6 +47899,24 @@ var PLAYER_GAME_LOG = {
   },
   "677588": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".228",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "LAD",
+        "order": 7,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -47863,42 +48024,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "MIA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 4,
+      "ab": 7,
       "avg": ".000",
       "bb": 1,
       "h": 0,
       "hr": 0,
-      "k": 0,
-      "rbi": 0,
+      "k": 2,
+      "rbi": 1,
       "sb": 0,
-      "scratches": 6,
-      "starts": 1,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
   "677592": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "COL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -48006,24 +48167,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PIT",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -48042,6 +48185,24 @@ var PLAYER_GAME_LOG = {
   },
   "677594": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".240",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "OAK",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".242",
@@ -48149,33 +48310,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".246",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "TOR",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 31,
-      "avg": ".161",
-      "bb": 2,
+      "ab": 32,
+      "avg": ".156",
+      "bb": 1,
       "h": 5,
       "hr": 0,
-      "k": 10,
+      "k": 9,
       "rbi": 5,
       "sb": 3,
       "scratches": 0,
@@ -48330,6 +48473,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
+        "avg": ".274",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "TB",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 4,
         "avg": ".276",
         "bb": 0,
         "date": "2026-09-04",
@@ -48435,33 +48596,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".271",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIL",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 26,
-      "avg": ".346",
+      "avg": ".308",
       "bb": 4,
-      "h": 9,
+      "h": 8,
       "hr": 3,
-      "k": 3,
+      "k": 2,
       "rbi": 7,
       "sb": 1,
       "scratches": 0,
@@ -48471,6 +48614,24 @@ var PLAYER_GAME_LOG = {
   },
   "677800": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".256",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "BAL",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".257",
@@ -48578,29 +48739,11 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".254",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "NYY",
-        "order": 3,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".308",
+      "ab": 28,
+      "avg": ".286",
       "bb": 3,
       "h": 8,
       "hr": 0,
@@ -48759,6 +48902,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
+        "avg": ".311",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "BOS",
+        "order": 2,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
+      {
+        "ab": 4,
         "avg": ".316",
         "bb": 0,
         "date": "2026-09-04",
@@ -48864,42 +49025,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
+      }
+    ],
+    "summary": {
+      "ab": 24,
+      "avg": ".333",
+      "bb": 1,
+      "h": 8,
+      "hr": 0,
+      "k": 4,
+      "rbi": 1,
+      "sb": 1,
+      "scratches": 1,
+      "starts": 6,
+      "window": 7
+    }
+  },
+  "677943": {
+    "games": [
       {
         "ab": null,
         "avg": "",
         "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
         "h": null,
-        "home": false,
+        "home": true,
         "hr": null,
         "k": null,
-        "opp": "ATH",
+        "opp": "MIL",
         "order": null,
         "r": null,
         "rbi": null,
         "result": "",
         "sb": null,
         "status": "scratched"
-      }
-    ],
-    "summary": {
-      "ab": 20,
-      "avg": ".400",
-      "bb": 1,
-      "h": 8,
-      "hr": 0,
-      "k": 3,
-      "rbi": 1,
-      "sb": 0,
-      "scratches": 2,
-      "starts": 5,
-      "window": 7
-    }
-  },
-  "677943": {
-    "games": [
+      },
       {
         "ab": null,
         "avg": "",
@@ -48996,24 +49157,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CHC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": false,
         "hr": null,
@@ -49187,6 +49330,24 @@ var PLAYER_GAME_LOG = {
   "677951": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".283",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "TOR",
+        "order": 2,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".283",
         "bb": 1,
@@ -49293,29 +49454,11 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".288",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "CLE",
-        "order": 2,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".185",
+      "ab": 26,
+      "avg": ".192",
       "bb": 3,
       "h": 5,
       "hr": 1,
@@ -49329,6 +49472,24 @@ var PLAYER_GAME_LOG = {
   },
   "678009": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CLE",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -49425,24 +49586,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "LAD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -49619,6 +49762,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "KC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -49722,37 +49883,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".224",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "SEA",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 6,
+      "ab": 3,
       "avg": ".000",
-      "bb": 3,
+      "bb": 2,
       "h": 0,
       "hr": 0,
       "k": 1,
       "rbi": 0,
       "sb": 0,
-      "scratches": 5,
-      "starts": 2,
+      "scratches": 6,
+      "starts": 1,
       "window": 7
     }
   },
@@ -49887,6 +50030,24 @@ var PLAYER_GAME_LOG = {
         "ab": 4,
         "avg": ".251",
         "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIN",
+        "order": 2,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 4,
+        "avg": ".251",
+        "bb": 0,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": 1,
@@ -49990,34 +50151,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".249",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIN",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".259",
-      "bb": 3,
-      "h": 7,
+      "ab": 28,
+      "avg": ".286",
+      "bb": 2,
+      "h": 8,
       "hr": 1,
       "k": 6,
-      "rbi": 1,
+      "rbi": 2,
       "sb": 2,
       "scratches": 0,
       "starts": 7,
@@ -50026,6 +50169,24 @@ var PLAYER_GAME_LOG = {
   },
   "678391": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".237",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "LAD",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -50133,31 +50294,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".235",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "MIA",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 14,
-      "avg": ".357",
-      "bb": 3,
-      "h": 5,
+      "ab": 13,
+      "avg": ".308",
+      "bb": 4,
+      "h": 4,
       "hr": 0,
       "k": 0,
       "rbi": 1,
@@ -50313,6 +50456,24 @@ var PLAYER_GAME_LOG = {
   "678545": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".216",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 1,
+        "k": 2,
+        "opp": "NYM",
+        "order": 4,
+        "r": 1,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".214",
         "bb": 0,
@@ -50419,34 +50580,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".212",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "ARI",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 17,
-      "avg": ".176",
+      "avg": ".235",
       "bb": 3,
-      "h": 3,
-      "hr": 1,
-      "k": 3,
-      "rbi": 2,
+      "h": 4,
+      "hr": 2,
+      "k": 4,
+      "rbi": 4,
       "sb": 1,
       "scratches": 2,
       "starts": 5,
@@ -50455,6 +50598,24 @@ var PLAYER_GAME_LOG = {
   },
   "678554": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "BAL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -50551,24 +50712,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-30",
         "date_short": "Aug 30",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYY",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
         "h": null,
         "home": false,
         "hr": null,
@@ -50742,6 +50885,24 @@ var PLAYER_GAME_LOG = {
   "678662": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".213",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "STL",
+        "order": 9,
+        "r": 2,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
+      {
         "ab": null,
         "avg": "",
         "bb": null,
@@ -50848,35 +51009,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".211",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "ATL",
-        "order": 9,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 11,
-      "avg": ".091",
+      "ab": 12,
+      "avg": ".167",
       "bb": 0,
-      "h": 1,
+      "h": 2,
       "hr": 0,
       "k": 5,
       "rbi": 0,
-      "sb": 0,
+      "sb": 1,
       "scratches": 3,
       "starts": 4,
       "window": 7
@@ -51013,6 +51156,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "BAL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -51116,42 +51277,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".284",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "NYY",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".167",
+      "ab": 14,
+      "avg": ".214",
       "bb": 0,
       "h": 3,
       "hr": 0,
       "k": 4,
       "rbi": 3,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "679032": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -51259,24 +51420,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "LAA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -51295,6 +51438,24 @@ var PLAYER_GAME_LOG = {
   },
   "679529": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".222",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "CLE",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".223",
@@ -51402,29 +51563,11 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".221",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "LAD",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 13,
-      "avg": ".154",
+      "ab": 14,
+      "avg": ".143",
       "bb": 1,
       "h": 2,
       "hr": 0,
@@ -51438,6 +51581,24 @@ var PLAYER_GAME_LOG = {
   },
   "679822": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TB",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -51545,42 +51706,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".258",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "MIL",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 13,
-      "avg": ".308",
+      "ab": 10,
+      "avg": ".300",
       "bb": 0,
-      "h": 4,
+      "h": 3,
       "hr": 2,
-      "k": 5,
+      "k": 3,
       "rbi": 3,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "679845": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TOR",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".237",
@@ -51688,37 +51849,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".234",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "CLE",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".208",
+      "ab": 20,
+      "avg": ".250",
       "bb": 2,
       "h": 5,
       "hr": 1,
-      "k": 5,
+      "k": 4,
       "rbi": 1,
       "sb": 1,
-      "scratches": 1,
-      "starts": 6,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
@@ -51868,6 +52011,24 @@ var PLAYER_GAME_LOG = {
   "680574": {
     "games": [
       {
+        "ab": 3,
+        "avg": ".190",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 0,
+        "opp": "MIL",
+        "order": 9,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".188",
         "bb": 0,
@@ -51974,34 +52135,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".191",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "CHC",
-        "order": 7,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 25,
-      "avg": ".120",
+      "ab": 24,
+      "avg": ".167",
       "bb": 1,
-      "h": 3,
-      "hr": 1,
-      "k": 8,
-      "rbi": 3,
+      "h": 4,
+      "hr": 2,
+      "k": 7,
+      "rbi": 4,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -52010,6 +52153,24 @@ var PLAYER_GAME_LOG = {
   },
   "680664": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CLE",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 5,
         "avg": ".307",
@@ -52117,42 +52278,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".333",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "LAD",
-        "order": 5,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 17,
-      "avg": ".235",
+      "ab": 15,
+      "avg": ".200",
       "bb": 0,
-      "h": 4,
+      "h": 3,
       "hr": 0,
-      "k": 4,
+      "k": 3,
       "rbi": 1,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "680695": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -52201,11 +52362,29 @@ var PLAYER_GAME_LOG = {
       "sb": 0,
       "scratches": 0,
       "starts": 0,
-      "window": 2
+      "window": 3
     }
   },
   "680700": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".227",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 1,
+        "k": 0,
+        "opp": "TEX",
+        "order": 8,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".225",
@@ -52313,34 +52492,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".226",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "SD",
-        "order": 7,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 17,
-      "avg": ".176",
-      "bb": 1,
-      "h": 3,
-      "hr": 2,
-      "k": 1,
-      "rbi": 3,
+      "ab": 16,
+      "avg": ".250",
+      "bb": 0,
+      "h": 4,
+      "hr": 3,
+      "k": 0,
+      "rbi": 4,
       "sb": 0,
       "scratches": 2,
       "starts": 5,
@@ -52496,6 +52657,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "KC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -52588,24 +52767,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SEA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -52782,6 +52943,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TB",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -52885,24 +53064,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -52921,6 +53082,24 @@ var PLAYER_GAME_LOG = {
   },
   "680757": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".270",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "DET",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".273",
@@ -53028,24 +53207,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".273",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "KC",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -53054,7 +53215,7 @@ var PLAYER_GAME_LOG = {
       "bb": 3,
       "h": 7,
       "hr": 0,
-      "k": 2,
+      "k": 1,
       "rbi": 0,
       "sb": 0,
       "scratches": 0,
@@ -53064,6 +53225,24 @@ var PLAYER_GAME_LOG = {
   },
   "680776": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".203",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "BAL",
+        "order": 7,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".204",
@@ -53171,42 +53350,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYY",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".130",
-      "bb": 1,
+      "ab": 26,
+      "avg": ".115",
+      "bb": 2,
       "h": 3,
       "hr": 1,
-      "k": 5,
+      "k": 7,
       "rbi": 2,
       "sb": 0,
-      "scratches": 1,
-      "starts": 6,
+      "scratches": 0,
+      "starts": 7,
       "window": 7
     }
   },
   "680777": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".271",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 1,
+        "k": 1,
+        "opp": "CWS",
+        "order": 3,
+        "r": 1,
+        "rbi": 3,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".272",
@@ -53314,34 +53493,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 5,
-        "avg": ".270",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "CWS",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 25,
-      "avg": ".240",
+      "ab": 24,
+      "avg": ".292",
       "bb": 2,
-      "h": 6,
-      "hr": 3,
-      "k": 5,
-      "rbi": 8,
+      "h": 7,
+      "hr": 4,
+      "k": 4,
+      "rbi": 11,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -53350,6 +53511,24 @@ var PLAYER_GAME_LOG = {
   },
   "680779": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "LAA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".167",
@@ -53457,37 +53636,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".166",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "STL",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 7,
-      "avg": ".143",
+      "ab": 5,
+      "avg": ".200",
       "bb": 1,
       "h": 1,
       "hr": 0,
-      "k": 2,
+      "k": 1,
       "rbi": 2,
       "sb": 1,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
@@ -53546,6 +53707,24 @@ var PLAYER_GAME_LOG = {
   },
   "680869": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".260",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "SEA",
+        "order": 3,
+        "r": 2,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".260",
@@ -53653,35 +53832,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".257",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 3,
-        "opp": "BAL",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".286",
+      "ab": 27,
+      "avg": ".296",
       "bb": 4,
       "h": 8,
       "hr": 3,
-      "k": 10,
+      "k": 7,
       "rbi": 4,
-      "sb": 1,
+      "sb": 2,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -53760,6 +53921,24 @@ var PLAYER_GAME_LOG = {
   },
   "680977": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -53867,24 +54046,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TOR",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -53903,6 +54064,24 @@ var PLAYER_GAME_LOG = {
   },
   "681047": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "BOS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -54010,24 +54189,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATH",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -54039,13 +54200,31 @@ var PLAYER_GAME_LOG = {
       "k": 1,
       "rbi": 0,
       "sb": 0,
-      "scratches": 2,
+      "scratches": 1,
       "starts": 1,
       "window": 7
     }
   },
   "681082": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".253",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "ATL",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -54153,24 +54332,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".261",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "LAA",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -54179,7 +54340,7 @@ var PLAYER_GAME_LOG = {
       "bb": 2,
       "h": 2,
       "hr": 1,
-      "k": 4,
+      "k": 5,
       "rbi": 2,
       "sb": 1,
       "scratches": 1,
@@ -54242,6 +54403,24 @@ var PLAYER_GAME_LOG = {
   },
   "681198": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".295",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "STL",
+        "order": 4,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".295",
@@ -54349,30 +54528,12 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".290",
-        "bb": 2,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "ATL",
-        "order": 4,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 25,
-      "avg": ".400",
-      "bb": 6,
+      "ab": 26,
+      "avg": ".385",
+      "bb": 4,
       "h": 10,
       "hr": 2,
       "k": 3,
@@ -54385,6 +54546,24 @@ var PLAYER_GAME_LOG = {
   },
   "681230": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "MIA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -54467,13 +54646,31 @@ var PLAYER_GAME_LOG = {
       "k": 1,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
+      "scratches": 4,
       "starts": 1,
-      "window": 4
+      "window": 5
     }
   },
   "681297": {
     "games": [
+      {
+        "ab": 1,
+        "avg": ".217",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "BOS",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -54581,34 +54778,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".228",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 1,
-        "k": 0,
-        "opp": "OAK",
-        "order": 8,
-        "r": 2,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 21,
-      "avg": ".048",
-      "bb": 0,
+      "ab": 18,
+      "avg": ".056",
+      "bb": 1,
       "h": 1,
-      "hr": 1,
+      "hr": 0,
       "k": 8,
-      "rbi": 2,
+      "rbi": 1,
       "sb": 0,
       "scratches": 2,
       "starts": 5,
@@ -54617,6 +54796,24 @@ var PLAYER_GAME_LOG = {
   },
   "681351": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TB",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -54724,37 +54921,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".207",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIL",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 4,
-      "avg": ".250",
+      "ab": 2,
+      "avg": ".500",
       "bb": 0,
       "h": 1,
       "hr": 0,
-      "k": 1,
+      "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 5,
-      "starts": 2,
+      "scratches": 6,
+      "starts": 1,
       "window": 7
     }
   },
@@ -54813,6 +54992,24 @@ var PLAYER_GAME_LOG = {
   },
   "681393": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".225",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "STL",
+        "order": 2,
+        "r": 2,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".223",
@@ -54920,34 +55117,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".220",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "ATL",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".214",
-      "bb": 1,
-      "h": 6,
+      "ab": 26,
+      "avg": ".269",
+      "bb": 3,
+      "h": 7,
       "hr": 0,
-      "k": 7,
-      "rbi": 1,
+      "k": 6,
+      "rbi": 2,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -54956,6 +55135,24 @@ var PLAYER_GAME_LOG = {
   },
   "681439": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -55056,13 +55253,31 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 5,
+      "scratches": 6,
       "starts": 0,
-      "window": 5
+      "window": 6
     }
   },
   "681460": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -55170,24 +55385,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -55206,6 +55403,24 @@ var PLAYER_GAME_LOG = {
   },
   "681481": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CLE",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -55313,24 +55528,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "LAD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -55349,6 +55546,24 @@ var PLAYER_GAME_LOG = {
   },
   "681508": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".277",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "BAL",
+        "order": 2,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".283",
@@ -55456,29 +55671,11 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 0,
-        "avg": ".275",
-        "bb": 2,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "NYY",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 19,
-      "avg": ".316",
+      "ab": 22,
+      "avg": ".273",
       "bb": 4,
       "h": 6,
       "hr": 3,
@@ -55639,6 +55836,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "WSH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -55742,24 +55957,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "DET",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -55778,6 +55975,24 @@ var PLAYER_GAME_LOG = {
   },
   "681715": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".227",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "CHC",
+        "order": 2,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".230",
@@ -55885,34 +56100,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".235",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 1,
-        "k": 2,
-        "opp": "WSH",
-        "order": 2,
-        "r": 1,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".154",
+      "ab": 25,
+      "avg": ".120",
       "bb": 4,
-      "h": 4,
-      "hr": 2,
+      "h": 3,
+      "hr": 1,
       "k": 10,
-      "rbi": 5,
+      "rbi": 3,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -55921,6 +56118,24 @@ var PLAYER_GAME_LOG = {
   },
   "681807": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".196",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "DET",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".193",
@@ -56028,37 +56243,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "KC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 3,
-      "avg": ".667",
+      "ab": 6,
+      "avg": ".500",
       "bb": 1,
-      "h": 2,
+      "h": 3,
       "hr": 0,
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 5,
-      "starts": 2,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
@@ -56211,6 +56408,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "DET",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -56314,24 +56529,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-07-21",
-        "date_short": "Jul 21",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "MIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -56495,6 +56692,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
+        "avg": ".231",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 3,
+        "opp": "SF",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 4,
         "avg": ".234",
         "bb": 0,
         "date": "2026-09-04",
@@ -56600,37 +56815,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "HOU",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 15,
-      "avg": ".267",
+      "ab": 19,
+      "avg": ".211",
       "bb": 0,
       "h": 4,
       "hr": 2,
-      "k": 6,
+      "k": 9,
       "rbi": 5,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
@@ -56780,6 +56977,24 @@ var PLAYER_GAME_LOG = {
   "682657": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".245",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "DET",
+        "order": 2,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 2,
         "avg": ".245",
         "bb": 0,
@@ -56886,42 +57101,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
+      }
+    ],
+    "summary": {
+      "ab": 16,
+      "avg": ".312",
+      "bb": 1,
+      "h": 5,
+      "hr": 2,
+      "k": 5,
+      "rbi": 5,
+      "sb": 0,
+      "scratches": 2,
+      "starts": 5,
+      "window": 7
+    }
+  },
+  "682663": {
+    "games": [
       {
         "ab": null,
         "avg": "",
         "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
         "h": null,
         "home": true,
         "hr": null,
         "k": null,
-        "opp": "KC",
+        "opp": "CHC",
         "order": null,
         "r": null,
         "rbi": null,
         "result": "",
         "sb": null,
         "status": "scratched"
-      }
-    ],
-    "summary": {
-      "ab": 12,
-      "avg": ".333",
-      "bb": 1,
-      "h": 4,
-      "hr": 2,
-      "k": 5,
-      "rbi": 5,
-      "sb": 0,
-      "scratches": 3,
-      "starts": 4,
-      "window": 7
-    }
-  },
-  "682663": {
-    "games": [
+      },
       {
         "ab": 4,
         "avg": ".225",
@@ -57029,24 +57244,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "WSH",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -57065,6 +57262,24 @@ var PLAYER_GAME_LOG = {
   },
   "682668": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -57172,24 +57387,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -57208,6 +57405,24 @@ var PLAYER_GAME_LOG = {
   },
   "682674": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -57315,24 +57530,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "AZ",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -57351,6 +57548,24 @@ var PLAYER_GAME_LOG = {
   },
   "682729": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "KC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -57447,24 +57662,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SEA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -57638,6 +57835,24 @@ var PLAYER_GAME_LOG = {
   "682829": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".278",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 1,
+        "k": 2,
+        "opp": "MIL",
+        "order": 2,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 5,
         "avg": ".276",
         "bb": 0,
@@ -57744,34 +57959,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".268",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 3,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "CHC",
-        "order": 2,
-        "r": 1,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 25,
-      "avg": ".480",
+      "ab": 24,
+      "avg": ".458",
       "bb": 5,
-      "h": 12,
-      "hr": 0,
-      "k": 8,
-      "rbi": 3,
+      "h": 11,
+      "hr": 1,
+      "k": 9,
+      "rbi": 2,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -57780,6 +57977,24 @@ var PLAYER_GAME_LOG = {
   },
   "682848": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "LAA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -57887,24 +58102,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "STL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -57923,6 +58120,24 @@ var PLAYER_GAME_LOG = {
   },
   "682877": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -57987,9 +58202,9 @@ var PLAYER_GAME_LOG = {
       "k": 2,
       "rbi": 4,
       "sb": 1,
-      "scratches": 1,
+      "scratches": 2,
       "starts": 2,
-      "window": 3
+      "window": 4
     }
   },
   "682927": {
@@ -58140,6 +58355,24 @@ var PLAYER_GAME_LOG = {
       {
         "ab": 4,
         "avg": ".265",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 3,
+        "opp": "LAD",
+        "order": 4,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
+      {
+        "ab": 4,
+        "avg": ".265",
         "bb": 0,
         "date": "2026-09-04",
         "date_short": "Sep 4",
@@ -58244,35 +58477,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".272",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIA",
-        "order": 1,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".083",
+      "ab": 25,
+      "avg": ".120",
       "bb": 2,
-      "h": 2,
+      "h": 3,
       "hr": 0,
-      "k": 10,
+      "k": 12,
       "rbi": 2,
-      "sb": 1,
+      "sb": 2,
       "scratches": 1,
       "starts": 6,
       "window": 7
@@ -58280,6 +58495,24 @@ var PLAYER_GAME_LOG = {
   },
   "682985": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".273",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 4,
+        "home": false,
+        "hr": 2,
+        "k": 1,
+        "opp": "CLE",
+        "order": 3,
+        "r": 3,
+        "rbi": 4,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -58387,42 +58620,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-23",
-        "date_short": "Aug 23",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "KC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 10,
-      "avg": ".100",
+      "ab": 15,
+      "avg": ".333",
       "bb": 0,
-      "h": 1,
-      "hr": 0,
-      "k": 5,
-      "rbi": 2,
+      "h": 5,
+      "hr": 2,
+      "k": 6,
+      "rbi": 6,
       "sb": 0,
       "scratches": 1,
-      "starts": 2,
+      "starts": 3,
       "window": 7
     }
   },
   "682987": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".245",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "SD",
+        "order": 7,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".240",
@@ -58530,37 +58763,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BOS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 17,
-      "avg": ".294",
+      "ab": 21,
+      "avg": ".333",
       "bb": 2,
-      "h": 5,
+      "h": 7,
       "hr": 2,
-      "k": 8,
-      "rbi": 6,
+      "k": 9,
+      "rbi": 7,
       "sb": 1,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
@@ -58853,6 +59068,24 @@ var PLAYER_GAME_LOG = {
   "682998": {
     "games": [
       {
+        "ab": 5,
+        "avg": ".238",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "HOU",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".239",
         "bb": 0,
@@ -58959,31 +59192,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".247",
-        "bb": 0,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "SF",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 25,
-      "avg": ".080",
+      "ab": 26,
+      "avg": ".115",
       "bb": 3,
-      "h": 2,
+      "h": 3,
       "hr": 1,
       "k": 7,
       "rbi": 3,
@@ -58995,6 +59210,24 @@ var PLAYER_GAME_LOG = {
   },
   "683002": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".222",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "BOS",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".221",
@@ -59102,33 +59335,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".217",
-        "bb": 2,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "OAK",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".259",
+      "ab": 26,
+      "avg": ".308",
       "bb": 3,
-      "h": 7,
+      "h": 8,
       "hr": 2,
-      "k": 5,
+      "k": 6,
       "rbi": 5,
       "sb": 0,
       "scratches": 0,
@@ -59285,6 +59500,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -59377,24 +59610,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-30",
         "date_short": "Aug 30",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
         "h": null,
         "home": true,
         "hr": null,
@@ -59550,6 +59765,24 @@ var PLAYER_GAME_LOG = {
   "683083": {
     "games": [
       {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "LAD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
         "ab": 2,
         "avg": ".213",
         "bb": 0,
@@ -59656,24 +59889,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "MIA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -59692,6 +59907,24 @@ var PLAYER_GAME_LOG = {
   },
   "683090": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TOR",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -59799,24 +60032,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CLE",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -59835,6 +60050,24 @@ var PLAYER_GAME_LOG = {
   },
   "683146": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".223",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "SF",
+        "order": 9,
+        "r": 0,
+        "rbi": 3,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -59942,34 +60175,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".219",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "HOU",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 10,
-      "avg": ".300",
-      "bb": 0,
-      "h": 3,
+      "avg": ".400",
+      "bb": 1,
+      "h": 4,
       "hr": 0,
-      "k": 4,
-      "rbi": 3,
+      "k": 2,
+      "rbi": 6,
       "sb": 0,
       "scratches": 3,
       "starts": 4,
@@ -59978,6 +60193,24 @@ var PLAYER_GAME_LOG = {
   },
   "683227": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".260",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "TB",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".274",
@@ -60085,34 +60318,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".269",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 1,
-        "k": 0,
-        "opp": "MIL",
-        "order": 9,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".292",
+      "ab": 25,
+      "avg": ".240",
       "bb": 1,
-      "h": 7,
-      "hr": 1,
-      "k": 2,
-      "rbi": 4,
+      "h": 6,
+      "hr": 0,
+      "k": 3,
+      "rbi": 3,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -60121,6 +60336,24 @@ var PLAYER_GAME_LOG = {
   },
   "683357": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".220",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "CHC",
+        "order": 6,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -60228,34 +60461,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".222",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "WSH",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 6,
-      "avg": ".167",
+      "ab": 7,
+      "avg": ".143",
       "bb": 0,
       "h": 1,
       "hr": 0,
       "k": 2,
-      "rbi": 0,
+      "rbi": 1,
       "sb": 0,
       "scratches": 5,
       "starts": 2,
@@ -60264,6 +60479,24 @@ var PLAYER_GAME_LOG = {
   },
   "683679": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -60371,24 +60604,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-16",
-        "date_short": "Aug 16",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "COL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -60407,6 +60622,24 @@ var PLAYER_GAME_LOG = {
   },
   "683734": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".313",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "CIN",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -60514,42 +60747,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "TEX",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 10,
-      "avg": ".400",
-      "bb": 0,
-      "h": 4,
+      "ab": 13,
+      "avg": ".385",
+      "bb": 1,
+      "h": 5,
       "hr": 1,
-      "k": 1,
+      "k": 2,
       "rbi": 3,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "683737": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".237",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIA",
+        "order": 3,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".236",
@@ -60657,34 +60890,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 6,
-        "avg": ".241",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "CIN",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 30,
-      "avg": ".100",
+      "ab": 29,
+      "avg": ".172",
       "bb": 2,
-      "h": 3,
+      "h": 5,
       "hr": 1,
-      "k": 10,
-      "rbi": 1,
+      "k": 11,
+      "rbi": 2,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -60693,6 +60908,24 @@ var PLAYER_GAME_LOG = {
   },
   "683748": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".226",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "TEX",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".220",
@@ -60800,42 +61033,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-22",
-        "date_short": "Aug 22",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 13,
-      "avg": ".308",
+      "ab": 17,
+      "avg": ".353",
       "bb": 0,
-      "h": 4,
+      "h": 6,
       "hr": 0,
-      "k": 1,
+      "k": 2,
       "rbi": 1,
-      "sb": 0,
+      "sb": 1,
       "scratches": 1,
-      "starts": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "683766": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".211",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 2,
+        "k": 0,
+        "opp": "NYM",
+        "order": 9,
+        "r": 2,
+        "rbi": 3,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".203",
@@ -60943,34 +61176,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".211",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 1,
-        "k": 1,
-        "opp": "ARI",
-        "order": 8,
-        "r": 1,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".208",
+      "ab": 25,
+      "avg": ".240",
       "bb": 1,
-      "h": 5,
-      "hr": 1,
-      "k": 5,
-      "rbi": 3,
+      "h": 6,
+      "hr": 2,
+      "k": 4,
+      "rbi": 4,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -60979,6 +61194,24 @@ var PLAYER_GAME_LOG = {
   },
   "683953": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "DET",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -61086,42 +61319,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".241",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "KC",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 12,
+      "ab": 9,
       "avg": ".000",
       "bb": 1,
       "h": 0,
       "hr": 0,
-      "k": 4,
+      "k": 2,
       "rbi": 0,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "685133": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".298",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "PIT",
+        "order": 3,
+        "r": 1,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".296",
@@ -61229,34 +61462,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".288",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "PHI",
-        "order": 3,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 25,
-      "avg": ".360",
-      "bb": 4,
-      "h": 9,
+      "ab": 27,
+      "avg": ".370",
+      "bb": 3,
+      "h": 10,
       "hr": 0,
       "k": 4,
-      "rbi": 3,
+      "rbi": 4,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -61265,6 +61480,24 @@ var PLAYER_GAME_LOG = {
   },
   "686217": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 6,
         "avg": ".237",
@@ -61372,24 +61605,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "TEX",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -61408,6 +61623,24 @@ var PLAYER_GAME_LOG = {
   },
   "686452": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "LAD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -61515,24 +61748,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "MIA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -61551,6 +61766,24 @@ var PLAYER_GAME_LOG = {
   },
   "686469": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".238",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "TOR",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".241",
@@ -61658,31 +61891,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".246",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "CLE",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".182",
-      "bb": 2,
-      "h": 4,
+      "ab": 24,
+      "avg": ".125",
+      "bb": 1,
+      "h": 3,
       "hr": 1,
       "k": 3,
       "rbi": 2,
@@ -61694,6 +61909,24 @@ var PLAYER_GAME_LOG = {
   },
   "686475": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TOR",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -61801,24 +62034,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CLE",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -61872,6 +62087,24 @@ var PLAYER_GAME_LOG = {
   },
   "686527": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".254",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "OAK",
+        "order": 2,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".254",
@@ -61979,34 +62212,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".256",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "TOR",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 30,
-      "avg": ".200",
+      "avg": ".233",
       "bb": 3,
-      "h": 6,
+      "h": 7,
       "hr": 1,
-      "k": 8,
-      "rbi": 4,
+      "k": 7,
+      "rbi": 5,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -62015,6 +62230,24 @@ var PLAYER_GAME_LOG = {
   },
   "686555": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".224",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "TOR",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".226",
@@ -62122,31 +62355,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".232",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "CLE",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 17,
-      "avg": ".176",
+      "avg": ".059",
       "bb": 2,
-      "h": 3,
+      "h": 1,
       "hr": 0,
       "k": 3,
       "rbi": 2,
@@ -62158,6 +62373,24 @@ var PLAYER_GAME_LOG = {
   },
   "686611": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".220",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "LAD",
+        "order": 9,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".216",
@@ -62265,35 +62498,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".220",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIA",
-        "order": 3,
-        "r": 1,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 24,
-      "avg": ".167",
+      "avg": ".208",
       "bb": 2,
-      "h": 4,
+      "h": 5,
       "hr": 0,
-      "k": 8,
-      "rbi": 3,
-      "sb": 0,
+      "k": 9,
+      "rbi": 2,
+      "sb": 1,
       "scratches": 1,
       "starts": 6,
       "window": 7
@@ -62301,6 +62516,24 @@ var PLAYER_GAME_LOG = {
   },
   "686668": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -62408,24 +62641,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -62444,6 +62659,24 @@ var PLAYER_GAME_LOG = {
   },
   "686681": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".280",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "TOR",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".280",
@@ -62551,42 +62784,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CLE",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 10,
-      "avg": ".400",
+      "ab": 14,
+      "avg": ".357",
       "bb": 1,
-      "h": 4,
+      "h": 5,
       "hr": 0,
       "k": 0,
       "rbi": 1,
       "sb": 1,
       "scratches": 0,
-      "starts": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "686765": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".267",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "BAL",
+        "order": 5,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".262",
@@ -62694,34 +62927,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".264",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 1,
-        "k": 1,
-        "opp": "NYY",
-        "order": 7,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 24,
-      "avg": ".250",
-      "bb": 2,
-      "h": 6,
-      "hr": 2,
-      "k": 5,
-      "rbi": 4,
+      "avg": ".292",
+      "bb": 3,
+      "h": 7,
+      "hr": 1,
+      "k": 4,
+      "rbi": 3,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -62730,6 +62945,24 @@ var PLAYER_GAME_LOG = {
   },
   "686780": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "COL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -62837,24 +63070,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PIT",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -62873,6 +63088,24 @@ var PLAYER_GAME_LOG = {
   },
   "686797": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".248",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "CWS",
+        "order": 7,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".248",
@@ -62980,34 +63213,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".248",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 1,
-        "k": 1,
-        "opp": "CWS",
-        "order": 2,
-        "r": 1,
-        "rbi": 3,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 31,
-      "avg": ".258",
+      "ab": 30,
+      "avg": ".233",
       "bb": 0,
-      "h": 8,
-      "hr": 1,
+      "h": 7,
+      "hr": 0,
       "k": 4,
-      "rbi": 7,
+      "rbi": 5,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -63303,6 +63518,24 @@ var PLAYER_GAME_LOG = {
   "686948": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".277",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "PHI",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 5,
         "avg": ".275",
         "bb": 0,
@@ -63409,34 +63642,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".276",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "COL",
-        "order": 1,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 31,
-      "avg": ".290",
+      "ab": 30,
+      "avg": ".300",
       "bb": 1,
       "h": 9,
       "hr": 0,
       "k": 9,
-      "rbi": 3,
+      "rbi": 2,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -63445,6 +63660,24 @@ var PLAYER_GAME_LOG = {
   },
   "687093": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".249",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 3,
+        "opp": "PIT",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".249",
@@ -63552,33 +63785,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".246",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "PHI",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".269",
+      "ab": 29,
+      "avg": ".276",
       "bb": 1,
-      "h": 7,
+      "h": 8,
       "hr": 1,
-      "k": 4,
+      "k": 7,
       "rbi": 5,
       "sb": 0,
       "scratches": 0,
@@ -63588,6 +63803,24 @@ var PLAYER_GAME_LOG = {
   },
   "687221": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "WSH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -63695,24 +63928,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "DET",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -63724,13 +63939,31 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 4,
+      "scratches": 5,
       "starts": 0,
       "window": 7
     }
   },
   "687231": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -63838,24 +64071,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -63874,6 +64089,24 @@ var PLAYER_GAME_LOG = {
   },
   "687263": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".238",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 3,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "PIT",
+        "order": 1,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".234",
@@ -63981,34 +64214,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".236",
-        "bb": 2,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "PHI",
-        "order": 1,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".174",
-      "bb": 3,
-      "h": 4,
+      "ab": 26,
+      "avg": ".269",
+      "bb": 1,
+      "h": 7,
       "hr": 1,
-      "k": 11,
-      "rbi": 2,
+      "k": 12,
+      "rbi": 3,
       "sb": 1,
       "scratches": 1,
       "starts": 6,
@@ -64164,6 +64379,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "COL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -64267,24 +64500,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-04-18",
-        "date_short": "Apr 18",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "HOU",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -64374,6 +64589,24 @@ var PLAYER_GAME_LOG = {
   },
   "687401": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".255",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "CIN",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -64481,42 +64714,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
+      }
+    ],
+    "summary": {
+      "ab": 17,
+      "avg": ".353",
+      "bb": 1,
+      "h": 6,
+      "hr": 1,
+      "k": 2,
+      "rbi": 4,
+      "sb": 0,
+      "scratches": 2,
+      "starts": 5,
+      "window": 7
+    }
+  },
+  "687462": {
+    "games": [
       {
         "ab": null,
         "avg": "",
         "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
         "h": null,
         "home": true,
         "hr": null,
         "k": null,
-        "opp": "TEX",
+        "opp": "LAA",
         "order": null,
         "r": null,
         "rbi": null,
         "result": "",
         "sb": null,
         "status": "scratched"
-      }
-    ],
-    "summary": {
-      "ab": 15,
-      "avg": ".400",
-      "bb": 1,
-      "h": 6,
-      "hr": 1,
-      "k": 0,
-      "rbi": 4,
-      "sb": 0,
-      "scratches": 3,
-      "starts": 4,
-      "window": 7
-    }
-  },
-  "687462": {
-    "games": [
+      },
       {
         "ab": 2,
         "avg": ".246",
@@ -64624,24 +64857,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "STL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -64804,6 +65019,24 @@ var PLAYER_GAME_LOG = {
   "687529": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".143",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 1,
+        "k": 0,
+        "opp": "NYM",
+        "order": 8,
+        "r": 2,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": null,
         "avg": "",
         "bb": null,
@@ -64910,42 +65143,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
+      }
+    ],
+    "summary": {
+      "ab": 8,
+      "avg": ".375",
+      "bb": 0,
+      "h": 3,
+      "hr": 1,
+      "k": 1,
+      "rbi": 1,
+      "sb": 0,
+      "scratches": 5,
+      "starts": 2,
+      "window": 7
+    }
+  },
+  "687551": {
+    "games": [
       {
         "ab": null,
         "avg": "",
         "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
         "h": null,
-        "home": true,
+        "home": false,
         "hr": null,
         "k": null,
-        "opp": "AZ",
+        "opp": "NYM",
         "order": null,
         "r": null,
         "rbi": null,
         "result": "",
         "sb": null,
         "status": "scratched"
-      }
-    ],
-    "summary": {
-      "ab": 4,
-      "avg": ".250",
-      "bb": 0,
-      "h": 1,
-      "hr": 0,
-      "k": 1,
-      "rbi": 0,
-      "sb": 0,
-      "scratches": 6,
-      "starts": 1,
-      "window": 7
-    }
-  },
-  "687551": {
-    "games": [
+      },
       {
         "ab": 3,
         "avg": ".235",
@@ -65053,24 +65286,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "ARI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -65089,6 +65304,24 @@ var PLAYER_GAME_LOG = {
   },
   "687597": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".197",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "STL",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -65196,37 +65429,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".222",
+      "ab": 11,
+      "avg": ".182",
       "bb": 0,
       "h": 2,
       "hr": 0,
-      "k": 5,
+      "k": 6,
       "rbi": 1,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
@@ -65376,6 +65591,24 @@ var PLAYER_GAME_LOG = {
   "687637": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".245",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "BOS",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": null,
         "avg": "",
         "bb": null,
@@ -65482,24 +65715,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".249",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "OAK",
-        "order": 6,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -65508,7 +65723,7 @@ var PLAYER_GAME_LOG = {
       "bb": 1,
       "h": 4,
       "hr": 0,
-      "k": 4,
+      "k": 3,
       "rbi": 0,
       "sb": 0,
       "scratches": 2,
@@ -65518,6 +65733,24 @@ var PLAYER_GAME_LOG = {
   },
   "687749": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "NYY",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -65625,24 +65858,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TB",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -65661,6 +65876,24 @@ var PLAYER_GAME_LOG = {
   },
   "687859": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".287",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "STL",
+        "order": 7,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".287",
@@ -65768,42 +66001,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 8,
-      "avg": ".375",
+      "ab": 12,
+      "avg": ".333",
       "bb": 2,
-      "h": 3,
+      "h": 4,
       "hr": 0,
       "k": 2,
-      "rbi": 0,
+      "rbi": 1,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "687952": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".268",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "BOS",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".269",
@@ -65911,33 +66144,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".274",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "OAK",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".278",
-      "bb": 2,
+      "ab": 19,
+      "avg": ".263",
+      "bb": 1,
       "h": 5,
       "hr": 1,
-      "k": 4,
+      "k": 5,
       "rbi": 2,
       "sb": 0,
       "scratches": 2,
@@ -65947,6 +66162,24 @@ var PLAYER_GAME_LOG = {
   },
   "687957": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "NYY",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -66054,24 +66287,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TB",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -66090,6 +66305,24 @@ var PLAYER_GAME_LOG = {
   },
   "688363": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".195",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "CHC",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -66197,37 +66430,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-17",
-        "date_short": "Aug 17",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "PHI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 8,
-      "avg": ".250",
-      "bb": 0,
+      "ab": 10,
+      "avg": ".200",
+      "bb": 1,
       "h": 2,
       "hr": 1,
-      "k": 1,
+      "k": 2,
       "rbi": 4,
       "sb": 0,
-      "scratches": 5,
-      "starts": 2,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
@@ -66359,6 +66574,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
+        "avg": ".289",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "TEX",
+        "order": 4,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 4,
         "avg": ".287",
         "bb": 0,
         "date": "2026-09-04",
@@ -66464,29 +66697,11 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".287",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "SD",
-        "order": 4,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 15,
-      "avg": ".333",
+      "ab": 16,
+      "avg": ".312",
       "bb": 0,
       "h": 5,
       "hr": 0,
@@ -66500,6 +66715,24 @@ var PLAYER_GAME_LOG = {
   },
   "690022": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "STL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -66596,24 +66829,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "ATL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": false,
         "hr": null,
@@ -66787,6 +67002,24 @@ var PLAYER_GAME_LOG = {
   "690976": {
     "games": [
       {
+        "ab": 2,
+        "avg": ".225",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "WSH",
+        "order": 7,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": null,
         "avg": "",
         "bb": null,
@@ -66893,42 +67126,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-07-24",
-        "date_short": "Jul 24",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYM",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 3,
-      "avg": ".000",
-      "bb": 1,
-      "h": 0,
+      "ab": 5,
+      "avg": ".200",
+      "bb": 3,
+      "h": 1,
       "hr": 0,
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 6,
-      "starts": 1,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
   "690984": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".215",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "DET",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -67036,31 +67269,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".221",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "KC",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 3,
-      "avg": ".333",
+      "ab": 2,
+      "avg": ".000",
       "bb": 0,
-      "h": 1,
+      "h": 0,
       "hr": 0,
       "k": 0,
       "rbi": 0,
@@ -67201,6 +67416,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CLE",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -67304,24 +67537,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "LAD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -67340,6 +67555,24 @@ var PLAYER_GAME_LOG = {
   },
   "691002": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "LAD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".500",
@@ -67404,9 +67637,9 @@ var PLAYER_GAME_LOG = {
       "k": 4,
       "rbi": 1,
       "sb": 0,
-      "scratches": 0,
+      "scratches": 1,
       "starts": 3,
-      "window": 3
+      "window": 4
     }
   },
   "691011": {
@@ -67558,6 +67791,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -67661,24 +67912,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -67697,6 +67930,24 @@ var PLAYER_GAME_LOG = {
   },
   "691019": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".182",
@@ -67804,24 +68055,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-18",
-        "date_short": "Aug 18",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CHC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -67833,13 +68066,31 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 0,
+      "scratches": 1,
       "starts": 1,
       "window": 7
     }
   },
   "691023": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".286",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 3,
+        "opp": "COL",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".289",
@@ -67947,33 +68198,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".290",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 3,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "PIT",
-        "order": 4,
-        "r": 2,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 30,
-      "avg": ".333",
+      "ab": 31,
+      "avg": ".226",
       "bb": 0,
-      "h": 10,
+      "h": 7,
       "hr": 1,
-      "k": 11,
+      "k": 13,
       "rbi": 3,
       "sb": 1,
       "scratches": 0,
@@ -67983,6 +68216,24 @@ var PLAYER_GAME_LOG = {
   },
   "691026": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "COL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -68090,24 +68341,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PIT",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -68126,6 +68359,24 @@ var PLAYER_GAME_LOG = {
   },
   "691176": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".230",
@@ -68233,42 +68484,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".231",
-        "bb": 0,
-        "date": "2026-07-27",
-        "date_short": "Jul 27",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "CWS",
-        "order": 4,
-        "r": 2,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".250",
+      "ab": 23,
+      "avg": ".217",
       "bb": 2,
-      "h": 7,
+      "h": 5,
       "hr": 0,
-      "k": 8,
+      "k": 7,
       "rbi": 0,
       "sb": 1,
-      "scratches": 0,
-      "starts": 7,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "691182": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".400",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "STL",
+        "order": 8,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".381",
@@ -68376,34 +68627,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 1,
-        "avg": ".500",
-        "bb": 2,
-        "date": "2026-08-16",
-        "date_short": "Aug 16",
-        "h": 1,
-        "home": false,
-        "hr": 1,
-        "k": 0,
-        "opp": "SF",
-        "order": 9,
-        "r": 3,
-        "rbi": 3,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 19,
-      "avg": ".421",
-      "bb": 4,
-      "h": 8,
-      "hr": 2,
+      "ab": 22,
+      "avg": ".409",
+      "bb": 2,
+      "h": 9,
+      "hr": 1,
       "k": 3,
-      "rbi": 8,
+      "rbi": 6,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -68412,6 +68645,24 @@ var PLAYER_GAME_LOG = {
   },
   "691277": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "CHC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".364",
@@ -68494,9 +68745,9 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 2,
+      "scratches": 3,
       "starts": 2,
-      "window": 4
+      "window": 5
     }
   },
   "691373": {
@@ -68646,6 +68897,24 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 5,
+        "avg": ".281",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 1,
+        "k": 2,
+        "opp": "TEX",
+        "order": 3,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
+        "ab": 5,
         "avg": ".280",
         "bb": 0,
         "date": "2026-09-04",
@@ -68751,33 +69020,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".280",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": true,
-        "hr": 1,
-        "k": 0,
-        "opp": "SD",
-        "order": 3,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 29,
-      "avg": ".276",
-      "bb": 2,
-      "h": 8,
+      "ab": 31,
+      "avg": ".290",
+      "bb": 1,
+      "h": 9,
       "hr": 2,
-      "k": 8,
+      "k": 10,
       "rbi": 5,
       "sb": 0,
       "scratches": 0,
@@ -68787,6 +69038,24 @@ var PLAYER_GAME_LOG = {
   },
   "691458": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "COL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -68894,24 +69163,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PIT",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -68930,6 +69181,24 @@ var PLAYER_GAME_LOG = {
   },
   "691594": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".286",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "CHC",
+        "order": 9,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".287",
@@ -69037,30 +69306,12 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".281",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "WSH",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".370",
-      "bb": 2,
+      "ab": 28,
+      "avg": ".357",
+      "bb": 1,
       "h": 10,
       "hr": 1,
       "k": 2,
@@ -69073,6 +69324,24 @@ var PLAYER_GAME_LOG = {
   },
   "691718": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".279",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "MIA",
+        "order": 1,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".280",
@@ -69180,34 +69449,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 6,
-        "avg": ".282",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 4,
-        "home": true,
-        "hr": 3,
-        "k": 0,
-        "opp": "CIN",
-        "order": 1,
-        "r": 4,
-        "rbi": 6,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 31,
-      "avg": ".323",
-      "bb": 3,
-      "h": 10,
-      "hr": 6,
-      "k": 8,
-      "rbi": 10,
+      "ab": 29,
+      "avg": ".241",
+      "bb": 4,
+      "h": 7,
+      "hr": 3,
+      "k": 10,
+      "rbi": 5,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -69360,6 +69611,24 @@ var PLAYER_GAME_LOG = {
   "691723": {
     "games": [
       {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "BOS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
         "ab": 3,
         "avg": ".222",
         "bb": 0,
@@ -69466,42 +69735,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".217",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "OAK",
-        "order": 7,
-        "r": 2,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 19,
-      "avg": ".316",
-      "bb": 2,
-      "h": 6,
+      "ab": 16,
+      "avg": ".312",
+      "bb": 1,
+      "h": 5,
       "hr": 1,
-      "k": 4,
+      "k": 3,
       "rbi": 3,
       "sb": 0,
-      "scratches": 1,
-      "starts": 6,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
   "691728": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "STL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".250",
@@ -69609,42 +69878,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".250",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "ATL",
-        "order": 8,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 6,
-      "avg": ".500",
-      "bb": 2,
-      "h": 3,
+      "ab": 3,
+      "avg": ".333",
+      "bb": 1,
+      "h": 1,
       "hr": 0,
       "k": 1,
       "rbi": 1,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 5,
+      "starts": 2,
       "window": 7
     }
   },
   "691740": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -69752,24 +70021,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "AZ",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -69788,6 +70039,24 @@ var PLAYER_GAME_LOG = {
   },
   "691777": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".229",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 1,
+        "k": 1,
+        "opp": "SEA",
+        "order": 6,
+        "r": 2,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".224",
@@ -69895,34 +70164,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".218",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "BAL",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".222",
-      "bb": 2,
-      "h": 4,
-      "hr": 1,
+      "ab": 19,
+      "avg": ".316",
+      "bb": 1,
+      "h": 6,
+      "hr": 2,
       "k": 5,
-      "rbi": 2,
+      "rbi": 4,
       "sb": 0,
       "scratches": 2,
       "starts": 5,
@@ -69931,6 +70182,24 @@ var PLAYER_GAME_LOG = {
   },
   "691781": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".246",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "LAD",
+        "order": 5,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".246",
@@ -70038,24 +70307,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".233",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 1,
-        "k": 2,
-        "opp": "MIA",
-        "order": 5,
-        "r": 1,
-        "rbi": 3,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -70063,9 +70314,9 @@ var PLAYER_GAME_LOG = {
       "avg": ".421",
       "bb": 1,
       "h": 8,
-      "hr": 1,
-      "k": 4,
-      "rbi": 8,
+      "hr": 0,
+      "k": 2,
+      "rbi": 5,
       "sb": 1,
       "scratches": 2,
       "starts": 5,
@@ -70074,6 +70325,24 @@ var PLAYER_GAME_LOG = {
   },
   "691783": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "HOU",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -70181,24 +70450,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "SF",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -70361,6 +70612,24 @@ var PLAYER_GAME_LOG = {
   "691788": {
     "games": [
       {
+        "ab": 3,
+        "avg": ".231",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "CHC",
+        "order": 7,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": null,
         "avg": "",
         "bb": null,
@@ -70467,34 +70736,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".233",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "WSH",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 13,
-      "avg": ".308",
+      "ab": 14,
+      "avg": ".214",
       "bb": 0,
-      "h": 4,
+      "h": 3,
       "hr": 0,
       "k": 5,
-      "rbi": 1,
+      "rbi": 2,
       "sb": 0,
       "scratches": 3,
       "starts": 4,
@@ -70503,6 +70754,24 @@ var PLAYER_GAME_LOG = {
   },
   "691858": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "CHC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".200",
@@ -70603,9 +70872,9 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 1,
       "sb": 0,
-      "scratches": 3,
+      "scratches": 4,
       "starts": 2,
-      "window": 5
+      "window": 6
     }
   },
   "691907": {
@@ -70754,6 +71023,24 @@ var PLAYER_GAME_LOG = {
   "693304": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".307",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "LAA",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".308",
         "bb": 0,
@@ -70860,30 +71147,12 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".305",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "STL",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".364",
-      "bb": 4,
+      "ab": 23,
+      "avg": ".348",
+      "bb": 3,
       "h": 8,
       "hr": 0,
       "k": 2,
@@ -70896,6 +71165,24 @@ var PLAYER_GAME_LOG = {
   },
   "693307": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".247",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "CLE",
+        "order": 4,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -71003,24 +71290,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".252",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "LAD",
-        "order": 4,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -71029,8 +71298,8 @@ var PLAYER_GAME_LOG = {
       "bb": 1,
       "h": 2,
       "hr": 0,
-      "k": 6,
-      "rbi": 0,
+      "k": 7,
+      "rbi": 1,
       "sb": 0,
       "scratches": 2,
       "starts": 5,
@@ -71039,6 +71308,24 @@ var PLAYER_GAME_LOG = {
   },
   "693409": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "COL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -71146,24 +71433,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-11",
-        "date_short": "Aug 11",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PHI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -71182,6 +71451,24 @@ var PLAYER_GAME_LOG = {
   },
   "694025": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -71289,24 +71576,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "LAA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -71325,6 +71594,24 @@ var PLAYER_GAME_LOG = {
   },
   "694192": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".283",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "CIN",
+        "order": 1,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".284",
@@ -71432,24 +71719,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".281",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": true,
-        "hr": 1,
-        "k": 1,
-        "opp": "TEX",
-        "order": 2,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -71457,8 +71726,8 @@ var PLAYER_GAME_LOG = {
       "avg": ".312",
       "bb": 1,
       "h": 10,
-      "hr": 2,
-      "k": 9,
+      "hr": 1,
+      "k": 8,
       "rbi": 3,
       "sb": 1,
       "scratches": 0,
@@ -71468,6 +71737,24 @@ var PLAYER_GAME_LOG = {
   },
   "694197": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".255",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "DET",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".253",
@@ -71575,42 +71862,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "KC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".056",
+      "ab": 21,
+      "avg": ".095",
       "bb": 2,
-      "h": 1,
+      "h": 2,
       "hr": 0,
       "k": 4,
       "rbi": 1,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "694203": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".219",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "PIT",
+        "order": 8,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -71718,31 +72005,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".221",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "PHI",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 10,
-      "avg": ".100",
+      "ab": 11,
+      "avg": ".182",
       "bb": 0,
-      "h": 1,
+      "h": 2,
       "hr": 0,
       "k": 3,
       "rbi": 0,
@@ -71754,6 +72023,24 @@ var PLAYER_GAME_LOG = {
   },
   "694208": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".210",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "PIT",
+        "order": 5,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".209",
@@ -71861,34 +72148,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".207",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "PHI",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".182",
-      "bb": 2,
-      "h": 4,
+      "ab": 23,
+      "avg": ".217",
+      "bb": 1,
+      "h": 5,
       "hr": 1,
       "k": 7,
-      "rbi": 2,
+      "rbi": 3,
       "sb": 0,
       "scratches": 1,
       "starts": 6,
@@ -71897,6 +72166,24 @@ var PLAYER_GAME_LOG = {
   },
   "694212": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".226",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "BOS",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -72004,24 +72291,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".230",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "OAK",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -72040,6 +72309,24 @@ var PLAYER_GAME_LOG = {
   },
   "694224": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".143",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "CWS",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -72132,7 +72419,7 @@ var PLAYER_GAME_LOG = {
       }
     ],
     "summary": {
-      "ab": 0,
+      "ab": 2,
       "avg": ".000",
       "bb": 0,
       "h": 0,
@@ -72141,12 +72428,30 @@ var PLAYER_GAME_LOG = {
       "rbi": 0,
       "sb": 0,
       "scratches": 5,
-      "starts": 0,
-      "window": 5
+      "starts": 1,
+      "window": 6
     }
   },
   "694249": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".269",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "STL",
+        "order": 5,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".265",
@@ -72254,35 +72559,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".263",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "ATL",
-        "order": 2,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".304",
+      "ab": 22,
+      "avg": ".364",
       "bb": 0,
-      "h": 7,
+      "h": 8,
       "hr": 1,
       "k": 3,
-      "rbi": 2,
-      "sb": 0,
+      "rbi": 3,
+      "sb": 1,
       "scratches": 2,
       "starts": 5,
       "window": 7
@@ -72290,6 +72577,24 @@ var PLAYER_GAME_LOG = {
   },
   "694362": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -72397,24 +72702,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CHC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -72433,6 +72720,24 @@ var PLAYER_GAME_LOG = {
   },
   "694371": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "HOU",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -72540,24 +72845,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-17",
-        "date_short": "Aug 17",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "BOS",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -72569,13 +72856,31 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 1,
+      "scratches": 2,
       "starts": 0,
       "window": 7
     }
   },
   "694374": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".238",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "HOU",
+        "order": 8,
+        "r": 2,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".237",
@@ -72683,31 +72988,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".242",
-        "bb": 1,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "SF",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 26,
-      "avg": ".154",
+      "avg": ".192",
       "bb": 2,
-      "h": 4,
+      "h": 5,
       "hr": 1,
       "k": 14,
       "rbi": 3,
@@ -72719,6 +73006,24 @@ var PLAYER_GAME_LOG = {
   },
   "694376": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".131",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "NYM",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -72826,33 +73131,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".122",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "ARI",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 15,
-      "avg": ".133",
+      "avg": ".200",
       "bb": 2,
-      "h": 2,
+      "h": 3,
       "hr": 0,
-      "k": 4,
+      "k": 3,
       "rbi": 0,
       "sb": 0,
       "scratches": 2,
@@ -72862,6 +73149,24 @@ var PLAYER_GAME_LOG = {
   },
   "694377": {
     "games": [
+      {
+        "ab": 1,
+        "avg": ".212",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "LAA",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -72969,33 +73274,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".214",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "STL",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 6,
-      "avg": ".167",
-      "bb": 0,
-      "h": 1,
+      "ab": 5,
+      "avg": ".000",
+      "bb": 1,
+      "h": 0,
       "hr": 0,
-      "k": 4,
+      "k": 3,
       "rbi": 0,
       "sb": 0,
       "scratches": 5,
@@ -73005,6 +73292,24 @@ var PLAYER_GAME_LOG = {
   },
   "694378": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "LAA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".225",
@@ -73112,24 +73417,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "STL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -73148,6 +73435,24 @@ var PLAYER_GAME_LOG = {
   },
   "694384": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "PIT",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -73244,24 +73549,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PHI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -73435,6 +73722,24 @@ var PLAYER_GAME_LOG = {
   "694497": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".196",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 2,
+        "opp": "TB",
+        "order": 7,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".195",
         "bb": 1,
@@ -73541,42 +73846,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 11,
-      "avg": ".182",
+      "ab": 15,
+      "avg": ".200",
       "bb": 1,
-      "h": 2,
-      "hr": 0,
-      "k": 3,
-      "rbi": 0,
+      "h": 3,
+      "hr": 1,
+      "k": 5,
+      "rbi": 1,
       "sb": 0,
-      "scratches": 4,
-      "starts": 3,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "694671": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".246",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "TB",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".249",
@@ -73684,33 +73989,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".257",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "MIL",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".125",
-      "bb": 5,
+      "ab": 26,
+      "avg": ".115",
+      "bb": 4,
       "h": 3,
       "hr": 0,
-      "k": 3,
+      "k": 4,
       "rbi": 0,
       "sb": 0,
       "scratches": 0,
@@ -73720,6 +74007,24 @@ var PLAYER_GAME_LOG = {
   },
   "694673": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".202",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "LAD",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -73827,31 +74132,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".224",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "MIA",
-        "order": 2,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".182",
+      "ab": 21,
+      "avg": ".095",
       "bb": 1,
-      "h": 4,
+      "h": 2,
       "hr": 0,
       "k": 5,
       "rbi": 0,
@@ -73863,6 +74150,24 @@ var PLAYER_GAME_LOG = {
   },
   "694728": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "AZ",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -73970,24 +74275,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYM",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -74006,6 +74293,24 @@ var PLAYER_GAME_LOG = {
   },
   "695020": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIN",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -74113,24 +74418,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "MIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -74149,6 +74436,24 @@ var PLAYER_GAME_LOG = {
   },
   "695257": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "LAA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -74256,24 +74561,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "STL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -74292,6 +74579,24 @@ var PLAYER_GAME_LOG = {
   },
   "695336": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".260",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "COL",
+        "order": 8,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".245",
@@ -74399,37 +74704,19 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "PIT",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 17,
-      "avg": ".529",
-      "bb": 3,
-      "h": 9,
+      "ab": 19,
+      "avg": ".579",
+      "bb": 4,
+      "h": 11,
       "hr": 3,
       "k": 3,
-      "rbi": 7,
-      "sb": 1,
-      "scratches": 2,
-      "starts": 5,
+      "rbi": 8,
+      "sb": 2,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
@@ -74488,6 +74775,24 @@ var PLAYER_GAME_LOG = {
   },
   "695490": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "MIL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".223",
@@ -74595,24 +74900,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "CHC",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -74631,6 +74918,24 @@ var PLAYER_GAME_LOG = {
   },
   "695491": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".229",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 1,
+        "k": 2,
+        "opp": "COL",
+        "order": 6,
+        "r": 2,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".212",
@@ -74738,34 +75043,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".163",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "PIT",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 18,
-      "avg": ".278",
+      "avg": ".333",
       "bb": 0,
-      "h": 5,
-      "hr": 2,
-      "k": 5,
-      "rbi": 3,
+      "h": 6,
+      "hr": 3,
+      "k": 6,
+      "rbi": 4,
       "sb": 0,
       "scratches": 2,
       "starts": 5,
@@ -74774,6 +75061,24 @@ var PLAYER_GAME_LOG = {
   },
   "695506": {
     "games": [
+      {
+        "ab": 1,
+        "avg": ".283",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "TOR",
+        "order": 3,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".281",
@@ -74881,34 +75186,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".283",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "CLE",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 29,
-      "avg": ".276",
+      "ab": 26,
+      "avg": ".269",
       "bb": 1,
-      "h": 8,
+      "h": 7,
       "hr": 0,
-      "k": 6,
-      "rbi": 3,
+      "k": 5,
+      "rbi": 4,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -74917,6 +75204,24 @@ var PLAYER_GAME_LOG = {
   },
   "695508": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "TB",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -75024,24 +75329,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-11",
-        "date_short": "Aug 11",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "LAA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -75060,6 +75347,24 @@ var PLAYER_GAME_LOG = {
   },
   "695578": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".267",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "LAD",
+        "order": 1,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".267",
@@ -75167,42 +75472,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-25",
-        "date_short": "Aug 25",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "COL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 9,
-      "avg": ".333",
-      "bb": 0,
-      "h": 3,
+      "ab": 13,
+      "avg": ".308",
+      "bb": 1,
+      "h": 4,
       "hr": 0,
-      "k": 3,
+      "k": 4,
       "rbi": 1,
-      "sb": 0,
+      "sb": 1,
       "scratches": 0,
-      "starts": 2,
+      "starts": 3,
       "window": 7
     }
   },
   "695600": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".230",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "TOR",
+        "order": 1,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".231",
@@ -75310,34 +75615,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".223",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": false,
-        "hr": 1,
-        "k": 2,
-        "opp": "CLE",
-        "order": 1,
-        "r": 1,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 29,
-      "avg": ".345",
+      "ab": 27,
+      "avg": ".333",
       "bb": 3,
-      "h": 10,
-      "hr": 4,
-      "k": 8,
-      "rbi": 8,
+      "h": 9,
+      "hr": 3,
+      "k": 6,
+      "rbi": 6,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -75346,6 +75633,24 @@ var PLAYER_GAME_LOG = {
   },
   "695657": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".213",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 2,
+        "opp": "MIN",
+        "order": 5,
+        "r": 1,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".213",
@@ -75453,34 +75758,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".213",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIN",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 25,
-      "avg": ".200",
-      "bb": 4,
-      "h": 5,
-      "hr": 2,
-      "k": 9,
-      "rbi": 5,
+      "ab": 26,
+      "avg": ".231",
+      "bb": 3,
+      "h": 6,
+      "hr": 3,
+      "k": 10,
+      "rbi": 6,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -75489,6 +75776,24 @@ var PLAYER_GAME_LOG = {
   },
   "695670": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "LAD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".192",
@@ -75596,42 +75901,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".197",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 1,
-        "k": 0,
-        "opp": "MIA",
-        "order": 7,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 14,
-      "avg": ".214",
+      "ab": 10,
+      "avg": ".200",
       "bb": 2,
-      "h": 3,
-      "hr": 1,
+      "h": 2,
+      "hr": 0,
       "k": 2,
-      "rbi": 1,
+      "rbi": 0,
       "sb": 1,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "695681": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".162",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "PIT",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".172",
@@ -75739,31 +76044,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".171",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "PHI",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 27,
-      "avg": ".185",
+      "avg": ".148",
       "bb": 1,
-      "h": 5,
+      "h": 4,
       "hr": 0,
       "k": 6,
       "rbi": 4,
@@ -75775,6 +76062,24 @@ var PLAYER_GAME_LOG = {
   },
   "695720": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -75882,42 +76187,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".261",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "BAL",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 12,
-      "avg": ".083",
+      "ab": 7,
+      "avg": ".143",
       "bb": 0,
       "h": 1,
       "hr": 0,
-      "k": 3,
+      "k": 2,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "695731": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".222",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIN",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".225",
@@ -76025,24 +76330,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".229",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "MIN",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
@@ -76051,7 +76338,7 @@ var PLAYER_GAME_LOG = {
       "bb": 2,
       "h": 3,
       "hr": 1,
-      "k": 1,
+      "k": 2,
       "rbi": 2,
       "sb": 0,
       "scratches": 1,
@@ -76061,6 +76348,24 @@ var PLAYER_GAME_LOG = {
   },
   "695734": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".254",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "LAD",
+        "order": 2,
+        "r": 0,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -76168,34 +76473,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".251",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIA",
-        "order": 4,
-        "r": 1,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".333",
-      "bb": 6,
-      "h": 6,
+      "ab": 20,
+      "avg": ".350",
+      "bb": 5,
+      "h": 7,
       "hr": 2,
-      "k": 3,
-      "rbi": 6,
+      "k": 2,
+      "rbi": 7,
       "sb": 1,
       "scratches": 1,
       "starts": 6,
@@ -76348,6 +76635,24 @@ var PLAYER_GAME_LOG = {
   "696100": {
     "games": [
       {
+        "ab": 5,
+        "avg": ".249",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "STL",
+        "order": 3,
+        "r": 1,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".250",
         "bb": 1,
@@ -76454,34 +76759,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".256",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 3,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "ATL",
-        "order": 3,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 27,
-      "avg": ".222",
+      "avg": ".148",
       "bb": 3,
-      "h": 6,
+      "h": 4,
       "hr": 0,
-      "k": 10,
-      "rbi": 2,
+      "k": 11,
+      "rbi": 3,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -76490,6 +76777,24 @@ var PLAYER_GAME_LOG = {
   },
   "696285": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "LAD",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 0,
         "avg": ".249",
@@ -76597,42 +76902,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".247",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "MIA",
-        "order": 9,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 12,
-      "avg": ".250",
-      "bb": 4,
+      "ab": 9,
+      "avg": ".333",
+      "bb": 3,
       "h": 3,
       "hr": 0,
       "k": 2,
       "rbi": 1,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "699013": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".236",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "LAA",
+        "order": 2,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -76740,30 +77045,12 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".244",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "STL",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 17,
-      "avg": ".118",
-      "bb": 1,
+      "ab": 16,
+      "avg": ".125",
+      "bb": 2,
       "h": 2,
       "hr": 1,
       "k": 9,
@@ -76776,6 +77063,24 @@ var PLAYER_GAME_LOG = {
   },
   "699024": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".350",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "COL",
+        "order": 5,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".333",
@@ -76850,21 +77155,39 @@ var PLAYER_GAME_LOG = {
       }
     ],
     "summary": {
-      "ab": 15,
-      "avg": ".333",
+      "ab": 20,
+      "avg": ".350",
       "bb": 2,
-      "h": 5,
+      "h": 7,
       "hr": 1,
-      "k": 3,
+      "k": 4,
       "rbi": 4,
       "sb": 0,
       "scratches": 0,
-      "starts": 4,
-      "window": 4
+      "starts": 5,
+      "window": 5
     }
   },
   "699115": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".000",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "MIL",
+        "order": 8,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -76885,21 +77208,39 @@ var PLAYER_GAME_LOG = {
       }
     ],
     "summary": {
-      "ab": 0,
+      "ab": 4,
       "avg": ".000",
       "bb": 0,
       "h": 0,
       "hr": 0,
-      "k": 0,
+      "k": 2,
       "rbi": 0,
       "sb": 0,
       "scratches": 1,
-      "starts": 0,
-      "window": 1
+      "starts": 1,
+      "window": 2
     }
   },
   "699302": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".244",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "MIL",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".231",
@@ -77007,34 +77348,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".245",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "CHC",
-        "order": 9,
-        "r": 2,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".250",
-      "bb": 3,
+      "ab": 29,
+      "avg": ".241",
+      "bb": 2,
       "h": 7,
       "hr": 2,
-      "k": 11,
-      "rbi": 6,
+      "k": 13,
+      "rbi": 5,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -77043,6 +77366,24 @@ var PLAYER_GAME_LOG = {
   },
   "699393": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".269",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIA",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".277",
@@ -77150,33 +77491,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".292",
-        "bb": 2,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "CIN",
-        "order": 8,
-        "r": 3,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 12,
-      "avg": ".167",
-      "bb": 3,
-      "h": 2,
+      "ab": 14,
+      "avg": ".000",
+      "bb": 1,
+      "h": 0,
       "hr": 0,
-      "k": 3,
+      "k": 4,
       "rbi": 2,
       "sb": 0,
       "scratches": 3,
@@ -77476,6 +77799,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CLE",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -77568,24 +77909,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "LAD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -77741,6 +78064,24 @@ var PLAYER_GAME_LOG = {
   "700250": {
     "games": [
       {
+        "ab": 3,
+        "avg": ".261",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 3,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "SD",
+        "order": 4,
+        "r": 2,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".257",
         "bb": 0,
@@ -77847,33 +78188,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".255",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "BOS",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".370",
-      "bb": 0,
-      "h": 10,
+      "ab": 26,
+      "avg": ".423",
+      "bb": 2,
+      "h": 11,
       "hr": 1,
-      "k": 6,
+      "k": 4,
       "rbi": 5,
       "sb": 0,
       "scratches": 1,
@@ -78030,6 +78353,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "TEX",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -78122,24 +78463,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-30",
         "date_short": "Aug 30",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
         "h": null,
         "home": true,
         "hr": null,
@@ -78313,6 +78636,24 @@ var PLAYER_GAME_LOG = {
   "701162": {
     "games": [
       {
+        "ab": 5,
+        "avg": ".258",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 3,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "CLE",
+        "order": 5,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 2,
         "avg": ".238",
         "bb": 1,
@@ -78419,34 +78760,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".229",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "LAD",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 8,
-      "avg": ".000",
+      "ab": 9,
+      "avg": ".333",
       "bb": 1,
-      "h": 0,
+      "h": 3,
       "hr": 0,
       "k": 4,
-      "rbi": 0,
+      "rbi": 1,
       "sb": 0,
       "scratches": 4,
       "starts": 3,
@@ -78599,6 +78922,24 @@ var PLAYER_GAME_LOG = {
   "701350": {
     "games": [
       {
+        "ab": 5,
+        "avg": ".250",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 3,
+        "opp": "BAL",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".259",
         "bb": 1,
@@ -78705,42 +79046,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-17",
-        "date_short": "Aug 17",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "AZ",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".385",
+      "ab": 31,
+      "avg": ".323",
       "bb": 3,
       "h": 10,
       "hr": 2,
-      "k": 6,
+      "k": 9,
       "rbi": 2,
       "sb": 0,
       "scratches": 0,
-      "starts": 6,
+      "starts": 7,
       "window": 7
     }
   },
   "701358": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".214",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "ARI",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -78848,42 +79189,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYM",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
-      "ab": 13,
-      "avg": ".231",
+      "ab": 17,
+      "avg": ".294",
       "bb": 1,
-      "h": 3,
+      "h": 5,
       "hr": 0,
-      "k": 3,
+      "k": 4,
       "rbi": 2,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
   "701398": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".268",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "MIL",
+        "order": 3,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".266",
@@ -78991,35 +79332,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".263",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 1,
-        "k": 1,
-        "opp": "CHC",
-        "order": 3,
-        "r": 2,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 29,
-      "avg": ".345",
+      "ab": 28,
+      "avg": ".357",
       "bb": 1,
       "h": 10,
-      "hr": 3,
+      "hr": 2,
       "k": 3,
-      "rbi": 6,
-      "sb": 0,
+      "rbi": 4,
+      "sb": 1,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -79027,6 +79350,24 @@ var PLAYER_GAME_LOG = {
   },
   "701538": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".238",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "NYY",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".240",
@@ -79134,34 +79475,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".241",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": false,
-        "hr": 1,
-        "k": 0,
-        "opp": "TB",
-        "order": 5,
-        "r": 2,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 27,
-      "avg": ".259",
+      "avg": ".185",
       "bb": 2,
-      "h": 7,
-      "hr": 1,
-      "k": 5,
-      "rbi": 3,
+      "h": 5,
+      "hr": 0,
+      "k": 6,
+      "rbi": 1,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -79314,6 +79637,24 @@ var PLAYER_GAME_LOG = {
   "701675": {
     "games": [
       {
+        "ab": 2,
+        "avg": ".243",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "COL",
+        "order": 9,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
+      {
         "ab": 4,
         "avg": ".242",
         "bb": 0,
@@ -79420,34 +79761,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".241",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "PIT",
-        "order": 6,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".222",
+      "ab": 26,
+      "avg": ".269",
       "bb": 0,
-      "h": 6,
+      "h": 7,
       "hr": 0,
       "k": 2,
-      "rbi": 2,
+      "rbi": 1,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -79456,6 +79779,24 @@ var PLAYER_GAME_LOG = {
   },
   "701678": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".263",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 3,
+        "opp": "CLE",
+        "order": 2,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 2,
         "avg": ".266",
@@ -79563,33 +79904,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".268",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "LAD",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 23,
       "avg": ".261",
-      "bb": 4,
+      "bb": 5,
       "h": 6,
       "hr": 1,
-      "k": 8,
+      "k": 10,
       "rbi": 4,
       "sb": 1,
       "scratches": 0,
@@ -79599,6 +79922,24 @@ var PLAYER_GAME_LOG = {
   },
   "701762": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -79706,24 +80047,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -79742,6 +80065,24 @@ var PLAYER_GAME_LOG = {
   },
   "701785": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".307",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "CWS",
+        "order": 2,
+        "r": 2,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".301",
@@ -79849,34 +80190,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".333",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "CWS",
-        "order": 8,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".231",
-      "bb": 3,
-      "h": 6,
+      "ab": 28,
+      "avg": ".250",
+      "bb": 2,
+      "h": 7,
       "hr": 0,
       "k": 4,
-      "rbi": 3,
+      "rbi": 4,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -79885,6 +80208,24 @@ var PLAYER_GAME_LOG = {
   },
   "701807": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".276",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "SF",
+        "order": 4,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".278",
@@ -79992,34 +80333,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".279",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "HOU",
-        "order": 4,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 27,
-      "avg": ".259",
+      "avg": ".222",
       "bb": 2,
-      "h": 7,
+      "h": 6,
       "hr": 0,
       "k": 7,
-      "rbi": 1,
+      "rbi": 0,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -80028,6 +80351,24 @@ var PLAYER_GAME_LOG = {
   },
   "701852": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".243",
@@ -80124,24 +80465,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-29",
         "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "ARI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
         "h": null,
         "home": true,
         "hr": null,
@@ -80318,6 +80641,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -80421,24 +80762,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "LAA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -80457,6 +80780,24 @@ var PLAYER_GAME_LOG = {
   },
   "702284": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".245",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 1,
+        "opp": "OAK",
+        "order": 8,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".246",
@@ -80564,33 +80905,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".247",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "TOR",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".192",
+      "ab": 25,
+      "avg": ".200",
       "bb": 3,
       "h": 5,
       "hr": 0,
-      "k": 7,
+      "k": 8,
       "rbi": 1,
       "sb": 0,
       "scratches": 0,
@@ -80600,6 +80923,24 @@ var PLAYER_GAME_LOG = {
   },
   "702332": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "BAL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".248",
@@ -80707,42 +81048,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".253",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 3,
-        "opp": "NYY",
-        "order": 5,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".091",
+      "ab": 18,
+      "avg": ".111",
       "bb": 3,
       "h": 2,
       "hr": 0,
-      "k": 7,
+      "k": 4,
       "rbi": 0,
       "sb": 1,
-      "scratches": 0,
-      "starts": 7,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "702616": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".232",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 3,
+        "opp": "BOS",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".236",
@@ -80850,33 +81191,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 5,
-        "avg": ".234",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 1,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "OAK",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".261",
+      "ab": 22,
+      "avg": ".227",
       "bb": 0,
-      "h": 6,
+      "h": 5,
       "hr": 1,
-      "k": 6,
+      "k": 7,
       "rbi": 1,
       "sb": 0,
       "scratches": 2,
@@ -80886,6 +81209,24 @@ var PLAYER_GAME_LOG = {
   },
   "703155": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "OAK",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".273",
@@ -80968,13 +81309,31 @@ var PLAYER_GAME_LOG = {
       "k": 4,
       "rbi": 3,
       "sb": 0,
-      "scratches": 1,
+      "scratches": 2,
       "starts": 3,
-      "window": 4
+      "window": 5
     }
   },
   "703492": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "SF",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".118",
@@ -81039,13 +81398,31 @@ var PLAYER_GAME_LOG = {
       "k": 1,
       "rbi": 0,
       "sb": 0,
-      "scratches": 1,
+      "scratches": 2,
       "starts": 2,
-      "window": 3
+      "window": 4
     }
   },
   "703520": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".327",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "KC",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".330",
@@ -81153,35 +81530,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".329",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "SEA",
-        "order": 1,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 1,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".346",
-      "bb": 5,
-      "h": 9,
+      "ab": 25,
+      "avg": ".320",
+      "bb": 6,
+      "h": 8,
       "hr": 0,
       "k": 6,
       "rbi": 2,
-      "sb": 2,
+      "sb": 1,
       "scratches": 0,
       "starts": 7,
       "window": 7
@@ -81189,6 +81548,24 @@ var PLAYER_GAME_LOG = {
   },
   "703601": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CLE",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 4,
         "avg": ".265",
@@ -81296,42 +81673,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".244",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "LAD",
-        "order": 8,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 21,
-      "avg": ".286",
-      "bb": 3,
-      "h": 6,
+      "ab": 19,
+      "avg": ".263",
+      "bb": 2,
+      "h": 5,
       "hr": 0,
-      "k": 7,
-      "rbi": 2,
+      "k": 6,
+      "rbi": 1,
       "sb": 0,
-      "scratches": 0,
-      "starts": 7,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "703607": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".274",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "SEA",
+        "order": 1,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".274",
@@ -81439,34 +81816,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".271",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "BAL",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 30,
-      "avg": ".333",
+      "ab": 29,
+      "avg": ".310",
       "bb": 5,
-      "h": 10,
+      "h": 9,
       "hr": 2,
-      "k": 7,
-      "rbi": 4,
+      "k": 9,
+      "rbi": 5,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -81475,6 +81834,24 @@ var PLAYER_GAME_LOG = {
   },
   "800050": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "DET",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".294",
@@ -81582,42 +81959,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".289",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "KC",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".333",
+      "ab": 23,
+      "avg": ".348",
       "bb": 0,
-      "h": 9,
+      "h": 8,
       "hr": 0,
-      "k": 7,
+      "k": 5,
       "rbi": 1,
       "sb": 0,
-      "scratches": 0,
-      "starts": 7,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "800325": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".262",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "CIN",
+        "order": 2,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -81725,34 +82102,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".274",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "TEX",
-        "order": 7,
-        "r": 0,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 11,
-      "avg": ".364",
-      "bb": 1,
-      "h": 4,
+      "avg": ".182",
+      "bb": 2,
+      "h": 2,
       "hr": 0,
       "k": 4,
-      "rbi": 3,
+      "rbi": 2,
       "sb": 0,
       "scratches": 4,
       "starts": 3,
@@ -81761,6 +82120,24 @@ var PLAYER_GAME_LOG = {
   },
   "801126": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".224",
@@ -81868,42 +82245,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".158",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 0,
-        "opp": "TOR",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 14,
-      "avg": ".357",
+      "ab": 11,
+      "avg": ".455",
       "bb": 3,
       "h": 5,
       "hr": 0,
       "k": 3,
       "rbi": 1,
       "sb": 0,
-      "scratches": 2,
-      "starts": 5,
+      "scratches": 3,
+      "starts": 4,
       "window": 7
     }
   },
   "801501": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 5,
         "avg": ".133",
@@ -82011,24 +82388,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "ARI",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -82047,6 +82406,24 @@ var PLAYER_GAME_LOG = {
   },
   "802139": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "COL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -82154,42 +82531,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".244",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "PIT",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 8,
+      "ab": 4,
       "avg": ".000",
       "bb": 0,
       "h": 0,
       "hr": 0,
-      "k": 2,
+      "k": 0,
       "rbi": 0,
       "sb": 0,
       "scratches": 0,
-      "starts": 2,
+      "starts": 1,
       "window": 7
     }
   },
   "802415": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".308",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "TEX",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".311",
@@ -82297,34 +82674,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".311",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "SD",
-        "order": 5,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 27,
-      "avg": ".333",
+      "ab": 28,
+      "avg": ".250",
       "bb": 1,
-      "h": 9,
+      "h": 7,
       "hr": 0,
-      "k": 2,
-      "rbi": 2,
+      "k": 3,
+      "rbi": 1,
       "sb": 1,
       "scratches": 0,
       "starts": 7,
@@ -82333,6 +82692,24 @@ var PLAYER_GAME_LOG = {
   },
   "803011": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".263",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "MIN",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".264",
@@ -82440,33 +82817,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".266",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIN",
-        "order": 1,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 24,
       "avg": ".208",
-      "bb": 4,
+      "bb": 5,
       "h": 5,
       "hr": 0,
-      "k": 5,
+      "k": 4,
       "rbi": 1,
       "sb": 0,
       "scratches": 0,
@@ -82476,6 +82835,24 @@ var PLAYER_GAME_LOG = {
   },
   "804606": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".267",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 3,
+        "opp": "LAA",
+        "order": 1,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".272",
@@ -82583,42 +82960,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-21",
-        "date_short": "Aug 21",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "LAD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
-      "ab": 3,
+      "ab": 7,
       "avg": ".000",
       "bb": 0,
       "h": 0,
       "hr": 0,
-      "k": 1,
+      "k": 4,
       "rbi": 0,
       "sb": 0,
       "scratches": 0,
-      "starts": 1,
+      "starts": 2,
       "window": 7
     }
   },
   "804668": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".223",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "LAA",
+        "order": 6,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -82726,33 +83103,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".233",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 2,
-        "opp": "STL",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 20,
-      "avg": ".100",
+      "avg": ".200",
       "bb": 2,
-      "h": 2,
+      "h": 4,
       "hr": 1,
-      "k": 8,
+      "k": 6,
       "rbi": 3,
       "sb": 0,
       "scratches": 2,
@@ -82762,6 +83121,24 @@ var PLAYER_GAME_LOG = {
   },
   "805300": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".208",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": true,
+        "hr": 0,
+        "k": 0,
+        "opp": "CHC",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -82869,33 +83246,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".209",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 3,
-        "opp": "WSH",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 21,
-      "avg": ".190",
+      "ab": 20,
+      "avg": ".200",
       "bb": 3,
       "h": 4,
       "hr": 1,
-      "k": 6,
+      "k": 3,
       "rbi": 2,
       "sb": 1,
       "scratches": 1,
@@ -82905,6 +83264,24 @@ var PLAYER_GAME_LOG = {
   },
   "805346": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CWS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -82969,9 +83346,9 @@ var PLAYER_GAME_LOG = {
       "k": 0,
       "rbi": 0,
       "sb": 0,
-      "scratches": 3,
+      "scratches": 4,
       "starts": 0,
-      "window": 3
+      "window": 4
     }
   },
   "805347": {
@@ -83120,6 +83497,24 @@ var PLAYER_GAME_LOG = {
   "805367": {
     "games": [
       {
+        "ab": 4,
+        "avg": ".271",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 0,
+        "k": 2,
+        "opp": "MIN",
+        "order": 7,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 1,
+        "status": "started"
+      },
+      {
         "ab": 3,
         "avg": ".271",
         "bb": 0,
@@ -83226,35 +83621,17 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 4,
-        "avg": ".271",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIN",
-        "order": 7,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 21,
-      "avg": ".238",
+      "avg": ".286",
       "bb": 2,
-      "h": 5,
+      "h": 6,
       "hr": 0,
-      "k": 3,
+      "k": 4,
       "rbi": 1,
-      "sb": 0,
+      "sb": 1,
       "scratches": 1,
       "starts": 6,
       "window": 7
@@ -83262,6 +83639,24 @@ var PLAYER_GAME_LOG = {
   },
   "805779": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -83369,24 +83764,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -83405,6 +83782,24 @@ var PLAYER_GAME_LOG = {
   },
   "805805": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CWS",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 3,
         "avg": ".130",
@@ -83512,42 +83907,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 1,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".333",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "CWS",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 23,
-      "avg": ".130",
-      "bb": 5,
-      "h": 3,
+      "ab": 20,
+      "avg": ".100",
+      "bb": 4,
+      "h": 2,
       "hr": 1,
-      "k": 6,
+      "k": 5,
       "rbi": 3,
       "sb": 1,
-      "scratches": 0,
-      "starts": 7,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "805808": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CLE",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 5,
         "avg": ".272",
@@ -83655,42 +84050,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".276",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "LAD",
-        "order": 3,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 29,
-      "avg": ".172",
+      "ab": 25,
+      "avg": ".200",
       "bb": 3,
       "h": 5,
       "hr": 0,
-      "k": 3,
+      "k": 2,
       "rbi": 3,
       "sb": 0,
-      "scratches": 0,
-      "starts": 7,
+      "scratches": 1,
+      "starts": 6,
       "window": 7
     }
   },
   "805811": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".262",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "NYM",
+        "order": 3,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".262",
@@ -83798,34 +84193,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 5,
-        "avg": ".254",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 1,
-        "k": 2,
-        "opp": "ARI",
-        "order": 3,
-        "r": 1,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".393",
-      "bb": 6,
-      "h": 11,
-      "hr": 1,
-      "k": 8,
-      "rbi": 9,
+      "ab": 26,
+      "avg": ".385",
+      "bb": 7,
+      "h": 10,
+      "hr": 0,
+      "k": 7,
+      "rbi": 7,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -83834,6 +84211,24 @@ var PLAYER_GAME_LOG = {
   },
   "805999": {
     "games": [
+      {
+        "ab": 2,
+        "avg": ".238",
+        "bb": 2,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 0,
+        "opp": "SF",
+        "order": 7,
+        "r": 2,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -83941,34 +84336,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".238",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 2,
-        "opp": "HOU",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 22,
-      "avg": ".182",
-      "bb": 2,
-      "h": 4,
-      "hr": 0,
-      "k": 7,
-      "rbi": 0,
+      "ab": 20,
+      "avg": ".250",
+      "bb": 4,
+      "h": 5,
+      "hr": 1,
+      "k": 5,
+      "rbi": 2,
       "sb": 1,
       "scratches": 1,
       "starts": 6,
@@ -83977,6 +84354,24 @@ var PLAYER_GAME_LOG = {
   },
   "806068": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "ATH",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -84084,24 +84479,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "TOR",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -84120,6 +84497,24 @@ var PLAYER_GAME_LOG = {
   },
   "806146": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".235",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "SD",
+        "order": 6,
+        "r": 0,
+        "rbi": 1,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".244",
@@ -84227,34 +84622,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".257",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "BOS",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 7,
-      "avg": ".143",
-      "bb": 1,
+      "ab": 8,
+      "avg": ".125",
+      "bb": 0,
       "h": 1,
       "hr": 0,
-      "k": 2,
-      "rbi": 0,
+      "k": 3,
+      "rbi": 1,
       "sb": 0,
       "scratches": 4,
       "starts": 3,
@@ -84263,6 +84640,24 @@ var PLAYER_GAME_LOG = {
   },
   "806198": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".276",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "CIN",
+        "order": 7,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".275",
@@ -84370,34 +84765,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".265",
-        "bb": 0,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "TEX",
-        "order": 8,
-        "r": 0,
-        "rbi": 1,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 18,
-      "avg": ".333",
+      "ab": 19,
+      "avg": ".368",
       "bb": 2,
-      "h": 6,
+      "h": 7,
       "hr": 1,
       "k": 3,
-      "rbi": 9,
+      "rbi": 8,
       "sb": 1,
       "scratches": 2,
       "starts": 5,
@@ -84406,6 +84783,24 @@ var PLAYER_GAME_LOG = {
   },
   "806367": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".308",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 2,
+        "opp": "NYM",
+        "order": 5,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".333",
@@ -84513,34 +84908,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 2,
-        "avg": ".286",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "ARI",
-        "order": 7,
-        "r": 1,
-        "rbi": 2,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 17,
-      "avg": ".412",
-      "bb": 3,
+      "ab": 19,
+      "avg": ".368",
+      "bb": 2,
       "h": 7,
       "hr": 0,
-      "k": 2,
-      "rbi": 6,
+      "k": 4,
+      "rbi": 4,
       "sb": 0,
       "scratches": 2,
       "starts": 5,
@@ -84549,6 +84926,24 @@ var PLAYER_GAME_LOG = {
   },
   "806956": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "NYY",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -84613,13 +85008,31 @@ var PLAYER_GAME_LOG = {
       "k": 2,
       "rbi": 0,
       "sb": 0,
-      "scratches": 2,
+      "scratches": 3,
       "starts": 1,
-      "window": 3
+      "window": 4
     }
   },
   "807712": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".276",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "CWS",
+        "order": 1,
+        "r": 2,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 5,
         "avg": ".275",
@@ -84727,29 +85140,11 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 4,
-        "avg": ".271",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 2,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "CWS",
-        "order": 1,
-        "r": 1,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 28,
-      "avg": ".357",
+      "ab": 29,
+      "avg": ".345",
       "bb": 2,
       "h": 10,
       "hr": 1,
@@ -84763,6 +85158,24 @@ var PLAYER_GAME_LOG = {
   },
   "807713": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "MIA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -84870,42 +85283,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 1,
-        "avg": ".250",
-        "bb": 1,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "CIN",
-        "order": 6,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 12,
-      "avg": ".250",
-      "bb": 3,
+      "ab": 11,
+      "avg": ".273",
+      "bb": 2,
       "h": 3,
       "hr": 1,
       "k": 1,
       "rbi": 2,
       "sb": 0,
-      "scratches": 3,
-      "starts": 4,
+      "scratches": 4,
+      "starts": 3,
       "window": 7
     }
   },
   "807726": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".267",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 2,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "CLE",
+        "order": 7,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".167",
@@ -84980,21 +85393,39 @@ var PLAYER_GAME_LOG = {
       }
     ],
     "summary": {
-      "ab": 12,
-      "avg": ".167",
-      "bb": 0,
-      "h": 2,
+      "ab": 15,
+      "avg": ".267",
+      "bb": 1,
+      "h": 4,
       "hr": 0,
       "k": 3,
       "rbi": 3,
       "sb": 0,
       "scratches": 1,
-      "starts": 3,
-      "window": 4
+      "starts": 4,
+      "window": 5
     }
   },
   "807727": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "KC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": 2,
         "avg": ".237",
@@ -85102,24 +85533,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SEA",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -85191,6 +85604,24 @@ var PLAYER_GAME_LOG = {
   },
   "807799": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "BAL",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -85298,24 +85729,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": false,
-        "hr": null,
-        "k": null,
-        "opp": "NYY",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -85334,6 +85747,24 @@ var PLAYER_GAME_LOG = {
   },
   "808959": {
     "games": [
+      {
+        "ab": 4,
+        "avg": ".211",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": true,
+        "hr": 1,
+        "k": 3,
+        "opp": "MIN",
+        "order": 3,
+        "r": 1,
+        "rbi": 2,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 4,
         "avg": ".211",
@@ -85441,34 +85872,16 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".221",
-        "bb": 2,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "MIN",
-        "order": 2,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 24,
-      "avg": ".042",
-      "bb": 6,
-      "h": 1,
-      "hr": 0,
-      "k": 11,
-      "rbi": 1,
+      "ab": 26,
+      "avg": ".077",
+      "bb": 4,
+      "h": 2,
+      "hr": 1,
+      "k": 13,
+      "rbi": 3,
       "sb": 0,
       "scratches": 0,
       "starts": 7,
@@ -85621,6 +86034,24 @@ var PLAYER_GAME_LOG = {
   "808982": {
     "games": [
       {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "NYM",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
+      {
         "ab": 5,
         "avg": ".280",
         "bb": 0,
@@ -85727,42 +86158,42 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 0,
         "status": "started"
-      },
-      {
-        "ab": 3,
-        "avg": ".289",
-        "bb": 1,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 1,
-        "home": true,
-        "hr": 0,
-        "k": 0,
-        "opp": "ARI",
-        "order": 5,
-        "r": 2,
-        "rbi": 0,
-        "result": "",
-        "sb": 1,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 26,
-      "avg": ".077",
-      "bb": 4,
-      "h": 2,
+      "ab": 23,
+      "avg": ".043",
+      "bb": 3,
+      "h": 1,
       "hr": 0,
       "k": 5,
       "rbi": 2,
-      "sb": 2,
-      "scratches": 1,
-      "starts": 6,
+      "sb": 1,
+      "scratches": 2,
+      "starts": 5,
       "window": 7
     }
   },
   "810938": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "TEX",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
       {
         "ab": null,
         "avg": "",
@@ -85859,24 +86290,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-30",
         "date_short": "Aug 30",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "SD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
         "h": null,
         "home": true,
         "hr": null,
@@ -85910,6 +86323,24 @@ var PLAYER_GAME_LOG = {
         "ab": null,
         "avg": "",
         "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "SEA",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "il"
+      },
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
         "date": "2026-09-04",
         "date_short": "Sep 4",
         "h": null,
@@ -86013,24 +86444,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "il"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-29",
-        "date_short": "Aug 29",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "BAL",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "il"
       }
     ],
     "summary": {
@@ -86049,6 +86462,24 @@ var PLAYER_GAME_LOG = {
   },
   "813841": {
     "games": [
+      {
+        "ab": 5,
+        "avg": ".291",
+        "bb": 0,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 1,
+        "home": false,
+        "hr": 0,
+        "k": 1,
+        "opp": "NYM",
+        "order": 1,
+        "r": 1,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": null,
         "avg": "",
@@ -86156,31 +86587,13 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": 3,
         "status": "started"
-      },
-      {
-        "ab": 2,
-        "avg": ".268",
-        "bb": 0,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": 0,
-        "home": true,
-        "hr": 0,
-        "k": 1,
-        "opp": "ARI",
-        "order": 1,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
-      "ab": 16,
-      "avg": ".312",
+      "ab": 19,
+      "avg": ".316",
       "bb": 3,
-      "h": 5,
+      "h": 6,
       "hr": 1,
       "k": 5,
       "rbi": 3,
@@ -86192,6 +86605,24 @@ var PLAYER_GAME_LOG = {
   },
   "814430": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "CLE",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -86299,24 +86730,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-28",
-        "date_short": "Aug 28",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "LAD",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -86335,6 +86748,24 @@ var PLAYER_GAME_LOG = {
   },
   "814439": {
     "games": [
+      {
+        "ab": 3,
+        "avg": ".266",
+        "bb": 1,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": 0,
+        "home": false,
+        "hr": 0,
+        "k": 0,
+        "opp": "HOU",
+        "order": 9,
+        "r": 0,
+        "rbi": 0,
+        "result": "",
+        "sb": 0,
+        "status": "started"
+      },
       {
         "ab": 3,
         "avg": ".270",
@@ -86442,33 +86873,15 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": 3,
-        "avg": ".271",
-        "bb": 0,
-        "date": "2026-08-27",
-        "date_short": "Aug 27",
-        "h": 0,
-        "home": false,
-        "hr": 0,
-        "k": 1,
-        "opp": "SF",
-        "order": 9,
-        "r": 0,
-        "rbi": 0,
-        "result": "",
-        "sb": 0,
-        "status": "started"
       }
     ],
     "summary": {
       "ab": 15,
       "avg": ".200",
-      "bb": 1,
+      "bb": 2,
       "h": 3,
       "hr": 0,
-      "k": 6,
+      "k": 5,
       "rbi": 0,
       "sb": 0,
       "scratches": 2,
@@ -86478,6 +86891,24 @@ var PLAYER_GAME_LOG = {
   },
   "815873": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": false,
+        "hr": null,
+        "k": null,
+        "opp": "KC",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -86585,24 +87016,6 @@ var PLAYER_GAME_LOG = {
         "result": "",
         "sb": null,
         "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-07-20",
-        "date_short": "Jul 20",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "TB",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
       }
     ],
     "summary": {
@@ -86621,6 +87034,24 @@ var PLAYER_GAME_LOG = {
   },
   "823550": {
     "games": [
+      {
+        "ab": null,
+        "avg": "",
+        "bb": null,
+        "date": "2026-09-05",
+        "date_short": "Sep 5",
+        "h": null,
+        "home": true,
+        "hr": null,
+        "k": null,
+        "opp": "NYY",
+        "order": null,
+        "r": null,
+        "rbi": null,
+        "result": "",
+        "sb": null,
+        "status": "scratched"
+      },
       {
         "ab": null,
         "avg": "",
@@ -86717,24 +87148,6 @@ var PLAYER_GAME_LOG = {
         "bb": null,
         "date": "2026-08-23",
         "date_short": "Aug 23",
-        "h": null,
-        "home": true,
-        "hr": null,
-        "k": null,
-        "opp": "MIN",
-        "order": null,
-        "r": null,
-        "rbi": null,
-        "result": "",
-        "sb": null,
-        "status": "scratched"
-      },
-      {
-        "ab": null,
-        "avg": "",
-        "bb": null,
-        "date": "2026-08-22",
-        "date_short": "Aug 22",
         "h": null,
         "home": true,
         "hr": null,
