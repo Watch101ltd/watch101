@@ -451,29 +451,76 @@ function _eventRowHtml(p, rank){
                : '<td class="c"><a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">🔥 HYPE</a></td>')
     + '</tr>';
 }
+/* PHILLY_FORUM_CARDS_V1 (2026-09-06) — a spot is a forum post, not a table row.
+   Still ONE <tr data-phood-pid> per spot holding ONE full-width <td>, because
+   the tier overlay measures row rects, the tier name rides a real spacer <tr>,
+   drag is bound to the <tr>, and the phone cards + calendar hang off the same
+   paint. See the CSS block in index.html for the full reasoning. */
+function _photoBlockHtml(p){
+  var ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+  if(p.photo) return '<img class="sc-photo" src="' + _esc(p.photo) + '" alt="' + _esc(p.name || '') + '" loading="lazy">';
+  /* Bug #158 lesson, already cited in _igPillPair: no invitations for controls
+     that do not exist for you. Fans get nothing. Admin sees the empty slot so
+     the shape is visible before the uploader exists. */
+  if(ro) return '';
+  return '<div class="sc-photo-add" title="Photo upload is not built yet. Server route + container rebuild pending.">PHOTO SLOT<br>NOT WIRED YET</div>';
+}
+function _takeBlockHtml(p){
+  var raw = (p && typeof p.take === 'string') ? p.take : '';
+  var ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+  var onclick = ro ? '' : ' onclick="event.stopPropagation();editTake(&quot;' + _esc(p.pid) + '&quot;, this)"';
+  if(!raw.trim()){
+    if(ro) return '<div class="sc-take placeholder">No take yet.</div>';
+    return '<div class="sc-take placeholder wl-note-cell" title="Click to add Matt&apos;s take"' + onclick + '><em class="note-add-hint">Add Matt&apos;s take...</em></div>';
+  }
+  var sp = _splitNoteAndUrl(raw);
+  return '<div class="sc-take wl-note-cell"' + (ro ? '' : ' title="Click to edit this take"') + onclick + '>' + _esc(sp.text) + _renderNoteLinkBadge(sp.url) + '</div>';
+}
 function _rowHtml(p, rank){
   if(_isEventsList()) return _eventRowHtml(p, rank);
   var drag = _dragEnabled();
+  /* Drag starts from the GRIP only. The row is born draggable="false" and the
+     grip flips it true on mousedown, ondragend flips it back. Without this the
+     whole block is a drag source and Matt cannot select a word of his own
+     paragraph. The handlers and phoodDrop() are untouched. */
   var trAttrs = drag
-    ? ' draggable="true"'
+    ? ' draggable="false"'
       + ' ondragstart="phoodDragStart(event,\'' + p.pid + '\')"'
       + ' ondragover="phoodDragOver(event,\'' + p.pid + '\')"'
       + ' ondrop="phoodDrop(event,\'' + p.pid + '\')"'
-      + ' ondragend="phoodDragEnd(event)"'
+      + ' ondragend="this.draggable=false;phoodDragEnd(event)"'
     : '';
+  var grip = drag
+    ? '<span class="sc-grip" title="Drag to re-rank" onmousedown="var r=this.closest(&quot;tr&quot;); if(r) r.draggable=true;">&#9776;</span>'
+    : '';
+  var ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+  var nameClick = ro ? '' : ' onclick="openEditSpotModal(&quot;' + _esc(p.pid) + '&quot;)" title="Click to edit (admin only)"';
+
+  var rail = '<div class="sc-rail">'
+    + '<div class="sc-railtop">' + grip + '<div class="sc-rank">' + rank + '</div></div>'
+    + '<div class="sc-name"' + nameClick + '>' + p.name + _freshTakeBadge(p) + '</div>'
+    + '<div class="sc-hood">' + (p.hood || '') + '</div>'
+    + _photoBlockHtml(p)
+    + '<div class="sc-addr">' + (p.addr || '') + '</div>'
+    + '<div class="sc-tags">' + _tagChipsHtml(p) + '</div>'
+    + '</div>';
+
+  var body = '<div class="sc-body">'
+    + '<div class="sc-byline">SATTEN SAYS</div>'
+    + _takeBlockHtml(p)
+    + '</div>';
+
+  var links = '<div class="sc-links">'
+    + (p.menu ? '<a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">MENU</a>'
+              : '<a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No menu link yet">MENU</a>')
+    + (p.pics ? '<a class="pill ig" href="' + _esc(p.pics) + '" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">' + IG_PILL_SVG + '</a>'
+              : '<a class="pill ig" href="#" onclick="return false;" style="opacity:0.45" title="No Instagram link yet" aria-label="Instagram">' + IG_PILL_SVG + '</a>')
+    + (p.hype ? '<a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">&#128293; HYPE</a>'
+              : '<a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">&#128293; HYPE</a>')
+    + '</div>';
+
   return '<tr data-phood-pid="' + p.pid + '"' + trAttrs + '>'
-    + '<td class="c' + (drag ? ' drag-handle" title="Drag to re-rank' : '') + '"><span class="rank-cell">' + (drag ? '&#9776; ' : '') + rank + '</span></td>'
-    + '<td class="l"><span class="player-name" onclick="openEditSpotModal(\'' + p.pid + '\')" style="cursor:pointer" title="Click to edit (admin only)">' + p.name + '</span>' + _freshTakeBadge(p) + '</td>'
-    + '<td class="l">' + p.hood + '</td>'
-    + '<td class="l vibe">' + _tagChipsHtml(p) + '</td>'
-    + _takeCellHtml(p)
-    + '<td class="l">' + p.addr + '</td>'
-    + (p.menu ? '<td class="c"><a class="pill" href="' + _esc(p.menu) + '" target="_blank" rel="noopener">MENU</a></td>'
-               : '<td class="c"><a class="pill" href="#" onclick="return false;" style="opacity:0.45" title="No menu link yet">MENU</a></td>')
-    + (p.pics ? '<td class="c"><a class="pill ig" href="' + _esc(p.pics) + '" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">' + IG_PILL_SVG + '</a></td>'
-               : '<td class="c"><a class="pill ig" href="#" onclick="return false;" style="opacity:0.45" title="No Instagram link yet" aria-label="Instagram">' + IG_PILL_SVG + '</a></td>')
-    + (p.hype ? '<td class="c"><a class="pill hype" href="' + _esc(p.hype) + '" target="_blank" rel="noopener">🔥 HYPE</a></td>'
-               : '<td class="c"><a class="pill hype" href="#" onclick="return false;" style="opacity:0.45" title="No hype link yet">🔥 HYPE</a></td>')
+    + '<td class="spot-cell" colspan="7"><div class="spot-card">' + rail + body + links + '</div></td>'
     + '</tr>';
 }
 function renderWatchList(){
@@ -509,7 +556,7 @@ function renderWatchList(){
     html += _rowHtml(rows[i], _watchList.indexOf(rows[i]) + 1);   /* rank = saved order, like the twins */
   }
   if(!html){   /* PHILLY_MONTHS_V1 — the month lists are born empty; say so nicely */
-    html = '<tr><td colspan="' + (_isEventsList() ? 10 : 9) + '" class="c" style="padding:20px;color:var(--text3);font-style:italic">'
+    html = '<tr><td colspan="' + (_isEventsList() ? 10 : 7) + '" class="c" style="padding:20px;color:var(--text3);font-style:italic">'
          + (_isEventsList() ? 'No events yet — Matt is filling this month.' : 'Nothing here yet.')
          + '</td></tr>';
   }
@@ -575,16 +622,20 @@ function _renderThead(){
       + '<th data-col="hype" style="text-align:center;width:80px">Hype</th>'
       + '</tr>';
   } else {
-    h = '<tr>'
-      + '<th class="c" data-col="rank" title="Click to restore Matt\'s list order" style="text-align:center;width:44px">#<span class="arrow" id="ar-rank"></span></th>'
-      + '<th class="l" data-col="name">Spot<span class="arrow" id="ar-name"></span></th>'
-      + '<th class="l" data-col="hood">Neighborhood<span class="arrow" id="ar-hood"></span></th>'
-      + '<th class="l" data-col="vibe">Tags<span class="arrow" id="ar-vibe"></span></th>'
-      + '<th class="l" data-col="take">Matt\'s Take<span class="arrow" id="ar-take"></span></th>'
-      + '<th class="l" data-col="addr">Address<span class="arrow" id="ar-addr"></span></th>'
-      + '<th data-col="menu" style="text-align:center;width:70px">Menu</th>'
-      + '<th data-col="pics" style="text-align:center;width:80px">Pics</th>'
-      + '<th data-col="hype" style="text-align:center;width:80px">Hype</th>'
+    /* PHILLY_FORUM_CARDS_V1 — the columns are gone, so the header row becomes the
+       SORT BAR. Every chip is still a <th data-col="...">, so the delegated click
+       handler on #wl-thead and sortBy() are untouched, _setSortArrows() still finds
+       its #ar-<field> spans, and the Dude's rule that every sort control stays
+       clickable holds literally. The trailing empty <th> absorbs the width so the
+       chips pack left instead of stretching across the table. */
+    h = '<tr class="sortbar-row">'
+      + '<th class="sortchip" data-col="rank" title="Click to restore Matt\'s list order" style="width:1px">Matt\'s order<span class="arrow" id="ar-rank"></span></th>'
+      + '<th class="sortchip" data-col="name" style="width:1px">Spot<span class="arrow" id="ar-name"></span></th>'
+      + '<th class="sortchip" data-col="hood" style="width:1px">Neighborhood<span class="arrow" id="ar-hood"></span></th>'
+      + '<th class="sortchip" data-col="vibe" style="width:1px">Tags<span class="arrow" id="ar-vibe"></span></th>'
+      + '<th class="sortchip" data-col="take" style="width:1px">Take<span class="arrow" id="ar-take"></span></th>'
+      + '<th class="sortchip" data-col="addr" style="width:1px">Address<span class="arrow" id="ar-addr"></span></th>'
+      + '<th></th>'
       + '</tr>';
   }
   thead.innerHTML = h;
@@ -1454,7 +1505,16 @@ function _tiersInjectSpacerRows(){
   if(!tbody) return;
   var firstRow = tbody.querySelector('tr[data-phood-pid]');
   if(!firstRow) return;
-  var colCount = firstRow.children.length;
+  /* PHILLY_FORUM_CARDS_V1 (2026-09-06): this used to be children.length, which was
+     the same number as the column count only because every row had one cell per
+     column. A spot row is now ONE cell with colspan="7", so counting children gave
+     1 and the spacer stopped spanning the table. SUM the colSpans instead — that is
+     correct for the old shape, the new card shape, and the 10-column events table. */
+  var colCount = 0;
+  for(var _ci = 0; _ci < firstRow.children.length; _ci++){
+    colCount += (firstRow.children[_ci].colSpan || 1);
+  }
+  if(colCount < 1) colCount = 1;
   currentTiers.forEach(function(tier){
     try {
       var range = _tiersResolveRange(tier);
