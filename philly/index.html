@@ -230,12 +230,15 @@ tr.tier-row td{background:var(--surface2);color:var(--gold);font-size:11px;font-
 
    EVENTS ARE UNCHANGED. Month lists keep their column table until he rules.
    ============================================================================ */
-.spot-card{display:grid;grid-template-columns:250px 1fr 136px;gap:0;align-items:stretch}
-.sc-rail{padding:16px 15px;background:var(--surface2);border-right:1px solid var(--border)}
+/* Rail widened 250px -> 330px on the Dude's call, 2026-09-06: "widen the column
+   so the name of the event isn't as smushed." Event names like Delicious City
+   Podcast's Hoagie Throwdown "Pure Breadlam" were breaking to four lines. */
+.spot-card{display:grid;grid-template-columns:330px 1fr 136px;gap:0;align-items:stretch}
+.sc-rail{padding:16px 15px;background:var(--surface2);border-right:1px solid var(--border);min-width:0}
 .sc-railtop{display:flex;align-items:center;gap:9px;margin-bottom:9px}
 .sc-grip{color:var(--text3);font-size:15px;cursor:grab;user-select:none;letter-spacing:-1px;flex:0 0 auto}
 .sc-rank{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;background:var(--phood-red);color:#fff;font-family:var(--font-brand);font-size:18px;line-height:1;flex:0 0 auto}
-.sc-name{font-family:var(--font-display);font-size:19px;font-weight:700;color:#fff;line-height:1.18;cursor:pointer;word-break:break-word}
+.sc-name{font-family:var(--font-display);font-size:19px;font-weight:700;color:#fff;line-height:1.18;cursor:pointer;word-break:break-word;overflow-wrap:anywhere;white-space:normal}
 body.read-only .sc-name{cursor:default}
 .sc-hood{font-size:10.5px;font-weight:800;letter-spacing:.13em;color:var(--gold);margin-bottom:2px}
 .sc-addr{font-size:11.5px;font-weight:600;color:var(--text3);line-height:1.5;margin-top:9px}
@@ -250,20 +253,29 @@ body.read-only .sc-name{cursor:default}
 body:not(.read-only) .sc-take{cursor:pointer}
 .sc-links{padding:16px 13px;background:var(--surface2);border-left:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
 .sc-links .pill{justify-content:center;width:100%;box-sizing:border-box}
-#phood-table tr[data-phood-pid] > td.spot-cell{padding:0;border-bottom:1px solid var(--border)}
-#phood-table tr[data-phood-pid]:hover > td.spot-cell{background:transparent}
+/* 🚨 THE CELL RESET, AND IT IS LOAD-BEARING. DO NOT DELETE IT.
+   The base rule `td{...text-align:right;white-space:nowrap;font-size:11px;
+   vertical-align:middle}` was written for thin rows of short values. A card
+   INHERITS all of it, so without this reset a long event name refuses to wrap
+   and spills out of the 250px rail across the take, and every line of prose in
+   the block is right-aligned. Found by the Dude on his own screen, 2026-09-06,
+   on the September list. The markup was correct the whole time — a structural
+   harness could never have caught this, and did not. */
+td.spot-cell{padding:0;border-bottom:1px solid var(--border);text-align:left;white-space:normal;vertical-align:top;font-size:14px}
+tr[data-phood-pid]:hover > td.spot-cell{background:transparent}
 /* The sort bar that replaced the column headers. Still <th data-col>, still delegated. */
 /* PHILLY_FORUM_CARDS_V1 — EVENT extras (2026-09-06). The month lists carry three
    things a restaurant does not: a date range, a showtime, and a venue. The date is
    the single most important fact about an event, so it gets its own block at the
    top of the left rail rather than being another line of small text. */
 .sc-dates{display:block;margin:2px 0 8px;padding:7px 10px;border-radius:7px;background:rgba(212,17,27,0.10);border:1px solid rgba(212,17,27,0.34);font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--phood-red-soft);line-height:1.35}
-.sc-venue{font-size:13px;font-weight:700;color:var(--text2);line-height:1.4;margin-bottom:2px}
+.sc-venue{font-size:13px;font-weight:700;color:var(--text2);line-height:1.4;margin-bottom:2px;white-space:normal;overflow-wrap:anywhere}
+.sc-hood,.sc-addr,.sc-dates{white-space:normal;overflow-wrap:anywhere}
 #wl-thead tr.sortbar-row th{background:var(--surface);border-bottom:2px solid var(--phood-red);padding:9px 6px;text-align:left}
 #wl-thead th.sortchip{font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--text3);cursor:pointer;white-space:nowrap}
 #wl-thead th.sortchip:hover{color:var(--text)}
 #wl-thead th.sortchip .arrow{color:var(--gold);margin-left:3px}
-@media(max-width:900px){
+@media(max-width:1000px){
   .spot-card{grid-template-columns:1fr}
   .sc-rail{border-right:0;border-bottom:1px solid var(--border)}
   .sc-links{border-left:0;border-top:1px solid var(--border);flex-direction:row;flex-wrap:wrap}
