@@ -244,7 +244,19 @@ body.read-only .sc-name{cursor:default}
 .sc-addr{font-size:11.5px;font-weight:600;color:var(--text3);line-height:1.5;margin-top:9px}
 .sc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
 .sc-photo{width:100%;aspect-ratio:4/3;border-radius:7px;object-fit:cover;display:block;margin:11px 0 2px;background:var(--surface3)}
-.sc-photo-add{width:100%;aspect-ratio:4/3;border-radius:7px;margin:11px 0 2px;border:1px dashed var(--border2);background:repeating-linear-gradient(135deg,var(--surface3) 0 9px,#16202c 9px 18px);display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;font-weight:800;letter-spacing:.11em;color:var(--text3);padding:6px;cursor:not-allowed}
+/* PHILLY_PHOTO_V1 (2026-09-06) — the picture, and the two admin controls that
+   sit on it. The tools are inside the image wrapper and fade up on hover so a
+   photo reads as a photo and not as a form. Fans never get this markup at all. */
+.sc-photo-add{width:100%;aspect-ratio:4/3;border-radius:7px;margin:11px 0 2px;border:1px dashed var(--border2);background:repeating-linear-gradient(135deg,var(--surface3) 0 9px,#16202c 9px 18px);display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;font-weight:800;letter-spacing:.11em;color:var(--text3);padding:6px;cursor:pointer;transition:border-color .15s,color .15s;line-height:1.7}
+.sc-photo-add:hover{border-color:var(--phood-red-soft);color:var(--text2)}
+.sc-photo-wrap{position:relative;margin:11px 0 2px}
+.sc-photo-wrap .sc-photo{margin:0}
+.sc-photo-tools{position:absolute;left:0;right:0;bottom:0;display:flex;gap:6px;padding:7px;background:linear-gradient(180deg,rgba(8,12,16,0) 0%,rgba(8,12,16,0.88) 60%);border-radius:0 0 7px 7px;opacity:0;transition:opacity .15s}
+.sc-photo-wrap:hover .sc-photo-tools,.sc-photo-tools:focus-within{opacity:1}
+.sc-photo-btn{flex:1;padding:5px 6px;border-radius:5px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-family:'Nunito Sans',sans-serif;font-size:10px;font-weight:800;letter-spacing:.08em;cursor:pointer}
+.sc-photo-btn:hover{border-color:var(--gold);color:#fff}
+.sc-photo-btn.danger:hover{border-color:var(--phood-red);color:#fff;background:var(--phood-red)}
+.sc-photo-btn:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
 .sc-body{padding:16px 21px;min-width:0}
 .sc-byline{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:10.5px;font-weight:800;letter-spacing:.13em;color:var(--phood-red-soft)}
 .sc-take{font-family:var(--font-display);font-size:15.5px;font-weight:400;line-height:1.72;color:var(--text2);white-space:pre-wrap;word-break:break-word}
@@ -917,6 +929,12 @@ html.philly-gated body > #philly-gate { display:flex !important; }
      or by clicking a tier's label tab (admin); fans never see either entry point. -->
 <!-- NOTE_POPUP_PHOOD_V1 (2026-08-21 evening) — paragraph-sized editor for Matt's take,
      port of football's NOTE_POPUP_NFL_V1. Wired by editTake in phood-engine.js. -->
+<!-- PHILLY_PHOTO_V1 (2026-09-06): ONE hidden picker for the whole page, not one
+     per row. openPhotoPicker() remembers which spot asked, clears .value first so
+     re-picking the same file still fires change, and _onPhotoPicked() shrinks the
+     image in the browser before anything is uploaded. -->
+<input type="file" id="spot-photo-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="_onPhotoPicked(this)">
+
 <div id="note-editor-modal" onclick="_notePopupBackdrop(event)" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
   <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;max-width:560px;width:100%;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,0.55)">
     <h2 style="margin:0 0 2px 0;font-size:16px;color:var(--text)">&#128221; Satten Says</h2>
