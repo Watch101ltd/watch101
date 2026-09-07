@@ -500,10 +500,14 @@ function _photoBlockHtml(p){
   var ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
   var url = _photoUrl(p);
   if(url){
-    var img = '<img class="sc-photo" src="' + _esc(url) + '" alt="' + _esc(p.name || '') + '" loading="lazy">';
+    /* PHOTO_FIT_V1 — p.photo_fit is 'fit' or absent. Absent means FILL, so every
+       photo already saved keeps exactly the look it has now. */
+    var fitOn = (p.photo_fit === 'fit');
+    var img = '<img class="sc-photo' + (fitOn ? ' fit' : '') + '" src="' + _esc(url) + '" alt="' + _esc(p.name || '') + '" loading="lazy">';
     if(ro) return img;
     return '<div class="sc-photo-wrap">' + img
       + '<div class="sc-photo-tools">'
+      +   '<button type="button" class="sc-photo-btn" title="' + (fitOn ? 'Currently showing the whole image. Switch to filling the box.' : 'Currently cropped to fill the box. Switch to showing the whole image.') + '" onclick="event.stopPropagation();toggleSpotPhotoFit(&quot;' + _esc(p.pid) + '&quot;)">' + (fitOn ? 'Fill' : 'Fit') + '</button>'
       +   '<button type="button" class="sc-photo-btn" title="Replace this photo" onclick="event.stopPropagation();openPhotoPicker(&quot;' + _esc(p.pid) + '&quot;)">Replace</button>'
       +   '<button type="button" class="sc-photo-btn danger" title="Remove this photo" onclick="event.stopPropagation();removeSpotPhoto(&quot;' + _esc(p.pid) + '&quot;)">Remove</button>'
       + '</div></div>';
@@ -601,6 +605,19 @@ async function _uploadSpotPhoto(pid, b64, name){
   } catch(e){
     alert('The photo for ' + name + ' did not save.\n\n' + e.message);
   }
+}
+/* PHOTO_FIT_V1 (2026-09-06) — purely a display choice, so it lives on the spot
+   and rides the normal save and approve. No server involvement, the image file
+   on the NAS is untouched either way. */
+function toggleSpotPhotoFit(pid){
+  if(_blockIfReadOnly('toggleSpotPhotoFit')) return;
+  var idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  var next = Object.assign({}, _watchList[idx]);
+  if(next.photo_fit === 'fit') delete next.photo_fit; else next.photo_fit = 'fit';
+  _watchList[idx] = next;
+  renderWatchList();
+  autoSaveToPhoodNAS();
 }
 async function removeSpotPhoto(pid){
   if(_blockIfReadOnly('removeSpotPhoto')) return;
