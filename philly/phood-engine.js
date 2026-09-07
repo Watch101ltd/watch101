@@ -482,14 +482,149 @@ function _eventRowHtml(p, rank){
    the tier overlay measures row rects, the tier name rides a real spacer <tr>,
    drag is bound to the <tr>, and the phone cards + calendar hang off the same
    paint. See the CSS block in index.html for the full reasoning. */
+/* ── PHILLY_PHOTO_V1 (2026-09-06) — pictures on a spot ──────────────────────
+   p.photo holds a NUMBER, the stamp of the last upload, not a URL. The URL is
+   built here so the photo automatically follows whichever environment the LIST
+   came from: admin reads /photo-staging/, fans read /photo/, exactly like
+   /list-staging/ and /list/ at the top of this file. That is what stops a photo
+   going live on the customer site ahead of the words about it.
+   The stamp doubles as the cache-buster (?v=), the same trick the 3D floorplan
+   needed when Chrome served day-old models through a hard reload. */
+function _photoUrl(p){
+  if(!p || !p.photo) return null;
+  var ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+  var route = ro ? '/photo/' : '/photo-staging/';
+  return SERVER_URL + route + currentListId + '/' + encodeURIComponent(p.pid) + '?v=' + encodeURIComponent(p.photo);
+}
 function _photoBlockHtml(p){
   var ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
-  if(p.photo) return '<img class="sc-photo" src="' + _esc(p.photo) + '" alt="' + _esc(p.name || '') + '" loading="lazy">';
+  var url = _photoUrl(p);
+  if(url){
+    var img = '<img class="sc-photo" src="' + _esc(url) + '" alt="' + _esc(p.name || '') + '" loading="lazy">';
+    if(ro) return img;
+    return '<div class="sc-photo-wrap">' + img
+      + '<div class="sc-photo-tools">'
+      +   '<button type="button" class="sc-photo-btn" title="Replace this photo" onclick="event.stopPropagation();openPhotoPicker(&quot;' + _esc(p.pid) + '&quot;)">Replace</button>'
+      +   '<button type="button" class="sc-photo-btn danger" title="Remove this photo" onclick="event.stopPropagation();removeSpotPhoto(&quot;' + _esc(p.pid) + '&quot;)">Remove</button>'
+      + '</div></div>';
+  }
   /* Bug #158 lesson, already cited in _igPillPair: no invitations for controls
-     that do not exist for you. Fans get nothing. Admin sees the empty slot so
-     the shape is visible before the uploader exists. */
+     that do not exist for you. A fan with no photo gets nothing at all. */
   if(ro) return '';
-  return '<div class="sc-photo-add" title="Photo upload is not built yet. Server route + container rebuild pending.">PHOTO SLOT<br>NOT WIRED YET</div>';
+  return '<div class="sc-photo-add" title="Add a photo for this spot" onclick="event.stopPropagation();openPhotoPicker(&quot;' + _esc(p.pid) + '&quot;)">'
+       + '<span>&#128247;<br>ADD PHOTO</span></div>';
+}
+
+/* THE SHRINK, and it is the whole reason this is affordable.
+   Matt's phone shoots ~4 MB. This redraws it at 900px wide as JPEG q0.82,
+   which lands near 120 KB, BEFORE a byte leaves his Mac. The server also
+   refuses anything over 3 MB, so if this ever fails to run the upload is
+   rejected rather than quietly costing everyone a 4 MB download.
+   ⚠️ HEIC: iPhone photos are often .heic and Chrome CANNOT decode them into a
+   canvas. img.onerror fires and we say so plainly instead of failing silent. */
+var PHOTO_MAX_WIDTH = 900;
+var PHOTO_JPEG_QUALITY = 0.82;
+function _photoDownscale(file, done, fail){
+  var url = URL.createObjectURL(file);
+  var img = new Image();
+  img.onload = function(){
+    try {
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if(!w || !h){ URL.revokeObjectURL(url); return fail('That file has no readable image in it.'); }
+      var scale = Math.min(1, PHOTO_MAX_WIDTH / w);
+      var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+      var c = document.createElement('canvas');
+      c.width = cw; c.height = ch;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff';           /* PNG transparency would go black in JPEG */
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.drawImage(img, 0, 0, cw, ch);
+      URL.revokeObjectURL(url);
+      var dataUrl = c.toDataURL('image/jpeg', PHOTO_JPEG_QUALITY);
+      var comma = dataUrl.indexOf(',');
+      if(comma < 0) return fail('The browser could not encode that image.');
+      done(dataUrl.slice(comma + 1), cw, ch);
+    } catch(e){ URL.revokeObjectURL(url); fail('Could not process that image: ' + e.message); }
+  };
+  img.onerror = function(){
+    URL.revokeObjectURL(url);
+    fail('This browser cannot read that image file. iPhone .HEIC photos are the usual cause — save it as JPG or PNG first.');
+  };
+  img.src = url;
+}
+
+var _photoPickerPid = null;
+function openPhotoPicker(pid){
+  if(_blockIfReadOnly('openPhotoPicker')) return;
+  var input = document.getElementById('spot-photo-input');
+  if(!input){ alert('The photo picker is missing from the page.'); return; }
+  _photoPickerPid = pid;
+  input.value = '';           /* so picking the SAME file twice still fires change */
+  input.click();
+}
+function _onPhotoPicked(input){
+  var pid = _photoPickerPid;
+  _photoPickerPid = null;
+  var file = input && input.files && input.files[0];
+  if(!file || !pid) return;
+  var idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  var name = _watchList[idx].name || 'this spot';
+  _photoDownscale(file, function(b64){
+    _uploadSpotPhoto(pid, b64, name);
+  }, function(msg){
+    alert('Photo not added for ' + name + '.\n\n' + msg);
+  });
+}
+async function _uploadSpotPhoto(pid, b64, name){
+  if(_blockIfReadOnly('_uploadSpotPhoto')) return;
+  try {
+    var res = await fetch(SERVER_URL + '/photo-staging/' + currentListId + '/' + encodeURIComponent(pid), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: b64 })
+    });
+    var out = null;
+    try { out = await res.json(); } catch(e){}
+    if(!res.ok || !out || !out.ok){
+      var why = (out && (out.detail || out.error)) || ('HTTP ' + res.status);
+      /* The single most likely cause on day one, said plainly rather than as a code. */
+      if(res.status === 404) why += '\n\nIf this says the route is unknown, the PHOOD container is still running the old server. Check /health for "photos": true.';
+      alert('The photo for ' + name + ' did not save.\n\n' + why);
+      return;
+    }
+    var idx = _wlIndexOf(pid);
+    if(idx < 0) return;
+    _watchList[idx] = Object.assign({}, _watchList[idx], { photo: out.stamp || Date.now() });
+    renderWatchList();
+    autoSaveToPhoodNAS();     /* the stamp is part of the list, so it rides the normal save + approve */
+  } catch(e){
+    alert('The photo for ' + name + ' did not save.\n\n' + e.message);
+  }
+}
+async function removeSpotPhoto(pid){
+  if(_blockIfReadOnly('removeSpotPhoto')) return;
+  var idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  var name = _watchList[idx].name || 'this spot';
+  if(!confirm('Remove the photo for ' + name + '?\n\nThe spot and everything written about it stays.')) return;
+  try {
+    await fetch(SERVER_URL + '/photo-staging/' + currentListId + '/' + encodeURIComponent(pid), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ remove: true })
+    });
+  } catch(e){ console.warn('[PHILLY_PHOTO_V1] remove call failed, clearing the reference anyway:', e); }
+  /* Clear the reference even if the delete call failed. An orphaned file on the
+     NAS is wasted space; a stamp pointing at a file that is gone is a broken
+     image on the page, which is worse. */
+  idx = _wlIndexOf(pid);
+  if(idx < 0) return;
+  var next = Object.assign({}, _watchList[idx]);
+  delete next.photo;
+  _watchList[idx] = next;
+  renderWatchList();
+  autoSaveToPhoodNAS();
 }
 function _takeBlockHtml(p){
   var raw = (p && typeof p.take === 'string') ? p.take : '';
