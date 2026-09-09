@@ -918,7 +918,8 @@ body.day-mode #ftl-overlay .fs-table tr.fs-playoff td{background:rgba(22,163,74,
 /* The playoff trio now rides the vitals line. Keeps its green so it still reads
    as the thing it is — "real noticeable and real easy to read", the Dude's words
    when it was recoloured — but inherits the vitals line's smaller size. */
-#ftl-overlay .ftl-sub .ftl-sub-po{font-weight:800;letter-spacing:.03em;color:#4ade80;white-space:nowrap;}
+#ftl-overlay .ftl-sub .ftl-sub-po{font-weight:800;letter-spacing:.03em;color:#4ade80;white-space:nowrap;display:block;}  /* HTWT_DIVIDER_V1 (2026-09-09): display:block - the playoff trio always gets its own line under the vitals. Nothing shares that line, and it can never push the weight down. */
+#ftl-overlay .ftl-sub .ftl-sub-wt{white-space:nowrap;}  /* HTWT_DIVIDER_V1: "220 lbs" is one fact and never breaks across lines */
 body.day-mode #ftl-overlay .ftl-sub .ftl-sub-po,
 body.light-mode #ftl-overlay .ftl-sub .ftl-sub-po{color:var(--turf-bright,#15803d);}
 #ftl-overlay .fs-playoffline{font-size:12px;font-weight:800;letter-spacing:.04em;color:#4ade80;margin:2px 0 6px 2px;}  /* SCHED_TRIO_V1, recolored per the Dude: green, ALL CAPS, bold -- "real noticeable and real easy to read" */
@@ -10209,13 +10210,11 @@ function _ftlAppendPlayoffsToSub(text){
     var sub = document.getElementById('ftl-sub');
     if(!sub || !text) return;
     _ftlClearPlayoffsOnSub();                 // never append twice
-    var sep = document.createElement('span');
-    sep.className = 'sep'; sep.textContent = '|';
     var span = document.createElement('span');
     span.className = 'ftl-sub-po';
     span.textContent = text;                  // textContent: opponent codes are data, not markup
     span.title = 'Fantasy playoff weeks \u2014 the games that decide championships';
-    sub.appendChild(sep); sub.appendChild(span);
+    sub.appendChild(span);   // HTWT_DIVIDER_V1: no separator - .ftl-sub-po is display:block and owns its own line
   } catch(e){ /* a missing playoff line must never break the card */ }
 }
 function _ftlToggleSchedYear(){
@@ -10747,13 +10746,23 @@ function openFromTheLogo(pid, _keepRange){
   }
   const _wtNum = Number(p.weight);
   const _wtFmt = (isFinite(_wtNum) && _wtNum > 0) ? (_wtNum + ' lbs') : '';
-  // CARD_MOVES_V1 (2026-08-23): NO SLASH between height and weight. Matt on the
-  // 8/23 call, and the Dude marked it on a screenshot — he wants it to read
-  // 5'11" 210 lbs, a plain space. The pipe separators between the OTHER segments
-  // stay; this is the one pair that reads as a single fact.
-  if(_htFmt && _wtFmt) subParts.push(_htFmt + ' ' + _wtFmt);
-  else if(_htFmt) subParts.push(_htFmt);
-  else if(_wtFmt) subParts.push(_wtFmt);
+  // HTWT_DIVIDER_V1 (2026-09-09, Matt, off a screenshot of the Jonah Coleman card).
+  // REVERSES the CARD_MOVES_V1 decision of 2026-08-23 above. That one joined height
+  // and weight with a plain space as "one fact"; the space is exactly where the line
+  // broke, so cards were rendering "5'8" 220" then "lbs" on the next line — a fact
+  // split in half. His call now, in his words: the pounds on the top line, the
+  // playoffs underneath, and never anything else.
+  //   1. height and weight are pushed as SEPARATE segments, so the divider between
+  //      them comes from the join below and is the same <span class="sep"> as every
+  //      other one on the line rather than a lookalike.
+  //   2. the weight is wrapped in .ftl-sub-wt (nowrap) so "220 lbs" can never split.
+  //   3. the playoffs span is display:block (see the CSS) so it always takes its own
+  //      line and can never ride up beside the vitals or push the weight down.
+  // A player missing height or weight still shows only what exists, no stray divider.
+  // Measured in Chromium against this file at 1280/1440/1920: vitals stay on one
+  // line at the full 11px, playoffs always on its own line.
+  if(_htFmt) subParts.push(_htFmt);
+  if(_wtFmt) subParts.push('<span class="ftl-sub-wt">' + _wtFmt + '</span>');
   document.getElementById('ftl-sub').innerHTML = subParts.join('<span class="sep">|</span>');
   _ftlClearPlayoffsOnSub();   // CARD_MOVES_V1: a fresh player starts without the previous player's playoff trio
 
