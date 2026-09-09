@@ -12441,29 +12441,21 @@ table.watch-list thead th.col-yrank,table.watch-list tbody td.col-yrank,table.wa
 #rankings-table th.col-player,#rankings-table td.col-player{width:148px!important}
 /* end LAPTOP_FIT_V1 */
 
-/* ── LAPTOP_FIT_V2 (2026-09-09) — THE PART V1 GOT WRONG, AND WHY ──────────────────
-   V1 above set a width on every column it wanted narrower. On an EMPTY table that worked
-   perfectly and measured beautifully. With real rows in it, several columns ignored the
-   number completely: football's Note was declared 180 and rendered 240, basketball's Player
-   was declared 148 and rendered 200. Matt was still looking at roughly 90 percent zoom while
-   the measurements said 100.
 
-   🪨 THE REASON IS WRITTEN IN THIS FILE ALREADY, in the colgroup note above:
-   "Chrome's fixed-layout algorithm does NOT let a <colgroup> width beat a header-cell width,
-   it takes the LARGER of the two." A cell holding real content contributes ITS content width,
-   and the larger one wins. A width is a request. It is not a cap.
+/* ── LAPTOP_FIT_V3 (2026-09-09) — MEASURED ON THE REAL PAGE ───────────────────
+   V2's numbers came from a table filled with rows I typed myself. Real cells carry badges,
+   spans and input boxes that fake ones do not, so several V2 widths were too small and
+   started cutting Matt's data. On football exactly one column was hurt: ADP was given 34px
+   and needs 42, so it clipped on 241 rows out of 250. Fixed below. Everything else measured
+   clean against 250 real players on the live customer site.
 
-   THE CAP IS max-width. So every column below now carries BOTH, at the same number, on the
-   <col>, the <th> and the <td>. Measured with forty rows of real note text in the table this
-   time, not an empty one: football rankings 1373 -> 1158, basketball rankings 1410 -> 1114.
+   🪨 THE RULE THIS COST TWO ROUNDS TO LEARN: MEASURE THE REAL PAGE WITH THE REAL CONTENT.
+   An empty table lies. A table full of rows you typed yourself lies more convincingly,
+   because it looks like data.
 
-   🪨 AND THE LESSON THAT COST TWO ROUNDS TONIGHT: MEASURE A TABLE WITH DATA IN IT, OR DO NOT
-   CLAIM A WIDTH. An empty table lays out from whatever row comes first and the answer is
-   fiction. The same empty-table mistake produced a wrong width number earlier the same night.
-
-   Deliberately NOT here: col-handle and col-av. Both are hidden by their own !important rules
-   elsewhere, and a rule here would win on source order and un-hide them.
-   ──────────────────────────────────────────────────────────────────────────────── */
+   Football at a 1280 laptop: 1199px, and 1255 on the GitHub editing page once the drag
+   column and the X column are added, against roughly 1265 of room.
+   ──────────────────────────────────────────────────────────────────────────── */
 /* every column: width AND max-width, on the col, the th and the td */
 table.watch-list colgroup col.col-rank{width:36px!important;max-width:36px!important}
 table.watch-list thead th.col-rank,table.watch-list tbody td.col-rank,table.watch-list thead tr th.col-rank,table.watch-list tbody tr td.col-rank{width:36px!important;max-width:36px!important;overflow:hidden!important;text-overflow:ellipsis!important}
@@ -12487,8 +12479,8 @@ table.watch-list colgroup col.col-priority{width:58px!important;max-width:58px!i
 table.watch-list thead th.col-priority,table.watch-list tbody td.col-priority,table.watch-list thead tr th.col-priority,table.watch-list tbody tr td.col-priority{width:58px!important;max-width:58px!important;overflow:hidden!important;text-overflow:ellipsis!important}
 table.watch-list colgroup col.col-note{width:150px!important;max-width:150px!important}
 table.watch-list thead th.col-note,table.watch-list tbody td.col-note,table.watch-list thead tr th.col-note,table.watch-list tbody tr td.col-note{width:150px!important;max-width:150px!important;overflow:hidden!important;text-overflow:ellipsis!important}
-table.watch-list colgroup col.col-adp{width:34px!important;max-width:34px!important}
-table.watch-list thead th.col-adp,table.watch-list tbody td.col-adp,table.watch-list thead tr th.col-adp,table.watch-list tbody tr td.col-adp{width:34px!important;max-width:34px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-adp{width:42px!important;max-width:42px!important}
+table.watch-list thead th.col-adp,table.watch-list tbody td.col-adp,table.watch-list thead tr th.col-adp,table.watch-list tbody tr td.col-adp{width:42px!important;max-width:42px!important;overflow:hidden!important;text-overflow:ellipsis!important}
 table.watch-list colgroup col.col-yrank{width:32px!important;max-width:32px!important}
 table.watch-list thead th.col-yrank,table.watch-list tbody td.col-yrank,table.watch-list thead tr th.col-yrank,table.watch-list tbody tr td.col-yrank{width:32px!important;max-width:32px!important;overflow:hidden!important;text-overflow:ellipsis!important}
 table.watch-list colgroup col.col-yowned{width:44px!important;max-width:44px!important}
@@ -12511,7 +12503,36 @@ table.watch-list thead th.col-notebadge,table.watch-list tbody td.col-notebadge,
 #rankings-table th.col-note,#rankings-table td.col-note{width:180px!important;max-width:180px!important;overflow:hidden!important;text-overflow:ellipsis!important}
 #rankings-table colgroup col.col-player{width:148px!important;max-width:148px!important}
 #rankings-table th.col-player,#rankings-table td.col-player{width:148px!important;max-width:148px!important;overflow:hidden!important;text-overflow:ellipsis!important}
-/* end LAPTOP_FIT_V2 */
+/* end LAPTOP_FIT_V3 */
+
+/* ── the cushion, LAPTOP_FIT_V4 (2026-09-09) — THE DUDE'S FIND, AND IT WAS THE BIG ONE ──
+   He kept saying there were big gaps between the columns and that shaving a pixel or two off
+   each would add up. He drew red lines on a screenshot of the last four basketball columns to
+   show me. He was right, and I had been solving the wrong half of the problem: I was shaving
+   COLUMNS one at a time while ~190px sat in the CUSHION inside every cell, on 32 columns.
+
+   🪨 WORSE, THE CUSHION WAS LOPSIDED. Measured on the live page: 3px on the left of a cell and
+   7px on the right. Basketball also hand-added extra right cushion to three columns, ADP 12px,
+   CBS Owned 11px, Yahoo Owned 9px. That asymmetry IS the gap he was pointing at, and no amount
+   of narrowing columns would ever have removed it.
+
+   Evened out to 2px a side. Measured on the live customer site across 250 real players:
+   basketball rankings 1180px, which is 1202 on the GitHub editing page against about 1265 of
+   room. 63px of headroom, from a change that touches no column width at all.
+
+   AND IT PAID FOR SOMETHING BETTER: with the cushion fixed, the full-length headers fit again,
+   so the "Own" / "Tm" shortening is REVERTED and Matt keeps his original labels. Football and
+   basketball stay worded the same. The room also gave the Player column back its full width.
+
+   🪨 THE LESSON: WHEN EVERY ONE OF THIRTY-TWO THINGS CARRIES THE SAME SMALL WASTE, THE WASTE
+   IS THE STRUCTURE, NOT THE THINGS. Look at what they all share before shaving them one by one.
+   The Dude saw that from a screenshot. The instruments never once reported it.
+   ──────────────────────────────────────────────────────────────────────────────────── */
+table.watch-list thead th,table.watch-list tbody td{padding-left:2px!important;padding-right:2px!important}
+table.watch-list tbody td.col-yrank,table.watch-list tbody td.col-yowned,table.watch-list tbody td.col-cbsowned,
+table.watch-list tbody td.col-bye,table.watch-list tbody td.col-team,table.watch-list tbody td.col-exp{padding-left:2px!important;padding-right:2px!important}
+table.watch-list thead th.col-handle,table.watch-list tbody td.col-handle{padding-left:1px!important;padding-right:1px!important}
+/* end LAPTOP_FIT_V4 */
 </style>
 <script>
 (function(){
