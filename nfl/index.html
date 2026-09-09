@@ -12390,7 +12390,29 @@ document.addEventListener('keydown',function(e){
    is safer than hunting every declaration and missing one.
    ================================================================================ */
 /* 1. auction value column, hidden */
-#rankings-table th.col-av,#rankings-table td.col-av,table.watch-list colgroup col.col-av,table.watch-list thead th.col-av,table.watch-list tbody td.col-av{display:none!important;width:0!important;padding:0!important;border:0!important}
+
+/* AV_HIDE_STRUCTURAL_V2 (2026-09-09) SUPERSEDES the display:none hide this block shipped with
+   earlier today, which was WRONG and the Dude caught it on the NBA rankings within the hour.
+
+   WHAT WENT WRONG. display:none does not merely hide a table cell, it REMOVES THE COLUMN from
+   the table. The group band above these columns is built with colspans counted from the number
+   of th elements written, so the moment one of those th stopped counting, every group label
+   slid one column to the right. Ftx ended up over Owned, Games ended up over Made, and so on
+   along the whole row. Football had been correct before this and my hide broke it.
+
+   THE FILE ALREADY SAID SO. _rankColsFor carries this line, about the view modes:
+   "deliberately NOT css display:none, which is the exact shape of Bug #192, a hidden cell with
+   a structure that still counts it." Same trap, same file, same day.
+
+   THE CURE, and it is copied from football's own read-only drag-handle rule, which has been
+   doing it correctly all along: keep the cell as a table-cell so the column still EXISTS and
+   the colspan arithmetic stays true, and take away its width, padding, border and ink instead.
+   visibility:hidden also removes the dollar input from the tab order, so nobody can type into
+   a column they cannot see. The colgroup entry goes to width:0 rather than display:none for
+   the same reason.
+   Rule: to hide a table column, give it zero width. Never display:none. */
+table.watch-list colgroup col.col-av{width:0!important}
+#rankings-table th.col-av,#rankings-table td.col-av,table.watch-list thead th.col-av,table.watch-list tbody td.col-av,table.watch-list thead tr th.col-av,table.watch-list tbody tr td.col-av{display:table-cell!important;width:0!important;min-width:0!important;max-width:0!important;padding:0!important;border:0!important;overflow:hidden!important;visibility:hidden!important;font-size:0!important}
 
 /* 2. width diet, all tables on this page */
 table.watch-list colgroup col.col-note{width:150px!important}
