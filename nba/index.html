@@ -370,11 +370,17 @@ table.watch-list{
      240px -> ~50px) and THEN the zoom fitter shrinks the wreckage further. A widescreen can never show
      this; a laptop can. width:max-content holds natural size on every screen and leaves ALL fitting to
      fitTables' proportional zoom, the one mechanism that shrinks every column by the same factor.
-     ⚑ NBA needs no <colgroup> here, unlike football. Football's colgroup exists because its first row
-     is now a colspan GROUP HEADER row, and under fixed layout a spanning cell smears the per-column
-     widths. NBA is deliberately NOT getting group headers (the Dude's call 2026-08-22 -- basketball's
-     stats are categories and Passing/Rushing/Receiving does not map), so its first row is an ordinary
-     header row and the existing th.col-* widths act as per-column floors under the auto algorithm. */
+     ⚑ CORRECTED 2026-09-09. THIS PARAGRAPH USED TO SAY "NBA needs no <colgroup> here, unlike football",
+     on the grounds that basketball was deliberately NOT getting group headers (the Dude's call
+     2026-08-22) and so its first row was an ordinary header row whose th.col-* widths acted as
+     per-column floors. That was true for five days. OWN_GROUP_HEADERS_NBA_V1 shipped the Ftx / Games /
+     FG / FT / 3PT / Production band on 2026-08-27 and this comment was never revisited, so basketball
+     ended up with football's exact problem and none of football's cure: a colspan row sitting first,
+     smearing the per-column widths, and nothing to outrank it.
+     🪨 THE COST, MEASURED 2026-09-09: the rankings table rendered 1410px wide when its own declared
+     widths add up to 1114, because nothing was enforcing them. Player was declared 148 and rendered
+     200. It also put the group band one column out of step, which is bug #216.
+     COLGROUP_WIDTHS_NBA_V1 ports football's mechanism. See _rankRenderHead. */
   width:max-content;border-collapse:separate;border-spacing:0;
   table-layout:fixed;background:var(--surface);  /* BLOCK_CLONE_V1: identity block widened to baseball spec */
   border:1px solid var(--border);border-radius:8px;
@@ -2098,6 +2104,12 @@ document.addEventListener('DOMContentLoaded',function(){
 <!-- ── WATCH LIST TABLE ─────── -->
   <div class="table-wrap" id="nbarankings-wrap">
     <table class="watch-list" id="rankings-table">
+      <!-- COLGROUP_WIDTHS_NBA_V1 (2026-09-09), ported from football. MUST stay the first child of the
+           table. Under table-layout:fixed the browser takes column widths from the FIRST ROW, and our
+           first row is the group band whose cells carry colspan, which smears width across everything
+           it spans and voids every per-column declaration. <colgroup> outranks that. Filled by
+           _rankRenderHead from the header row it has just built, so it can never fall out of step. -->
+      <colgroup id="rankings-colgroup"></colgroup>
       <thead>
         <tr id="rankings-group-row" class="own-group-row"></tr><!-- OWN_GROUP_HEADERS_NBA_V1: filled by _rankRenderHead, colspans COMPUTED from the filtered column array so view modes can never desync it -->
         <tr id="rankings-head-row"></tr>
@@ -5912,6 +5924,33 @@ function _rankRenderHead(cols){
            c.label + ' <span class="sort-arrow" style="opacity:.4">↕</span></th>';
   }).join('');
   headRow.innerHTML = fixed + statHeads;
+
+  // ── COLGROUP_WIDTHS_NBA_V1 (2026-09-09) — football's mechanism, ported at last ──
+  // Built by READING BACK the header row that was just written, one <col> per <th>, in order. Nothing
+  // here is a hand-kept list, so a column added above cannot desync the colgroup below.
+  // 🪨 WHY THE CLASS IS PICKED AND NOT REGEXED: a stat th carries several col-* classes at once, for
+  // example "col-stat col-stat-a col-cat9 col-cat13 col-zone-divider". A naive /col-[a-z]+/ grabs
+  // whichever comes first and would hand a column the wrong width. So the decorative and grouping
+  // classes are skipped by name and whatever is left is the real column class; a th with nothing left
+  // IS a stat column and gets col-stat.
+  var _CG_SKIP = { 'col-stat':1, 'col-stat-a':1, 'col-stat-b':1, 'col-stat-info':1, 'col-zone-divider':1 };
+  var cg = document.getElementById('rankings-colgroup');
+  if(cg){
+    cg.textContent = '';   // createElement, not innerHTML: <colgroup> has its own parser insertion mode
+    var _ths = headRow.children;
+    for(var _i = 0; _i < _ths.length; _i++){
+      var _cls = null, _list = String(_ths[_i].className).split(/\s+/);
+      for(var _j = 0; _j < _list.length; _j++){
+        var _c = _list[_j];
+        if(_c.indexOf('col-') !== 0) continue;
+        if(_CG_SKIP[_c] || _c.indexOf('col-cat') === 0) continue;
+        _cls = _c; break;
+      }
+      var _col = document.createElement('col');
+      _col.className = _cls || 'col-stat';
+      cg.appendChild(_col);
+    }
+  }
   // OWN_GROUP_HEADERS_NBA_V1 (2026-08-27): the brand band above ADP/Owned/Owned. Colspans are
   // COMPUTED from the same filtered cols array as the header row — run-length over the .group
   // property, leading ungrouped columns fold into the blank, and the row STOPS after the last
@@ -11494,6 +11533,70 @@ table.watch-list thead th.col-stat,table.watch-list tbody td.col-stat,table.watc
 #rankings-table th.col-note,#rankings-table td.col-note{width:110px!important}
 #rankings-table th.col-player,#rankings-table td.col-player{width:148px!important}
 /* end LAPTOP_FIT_V1 */
+
+/* ── LAPTOP_FIT_V2 (2026-09-09) — THE PART V1 GOT WRONG, AND WHY ──────────────────
+   V1 above set a width on every column it wanted narrower. On an EMPTY table that worked
+   perfectly and measured beautifully. With real rows in it, several columns ignored the
+   number completely: football's Note was declared 180 and rendered 240, basketball's Player
+   was declared 148 and rendered 200. Matt was still looking at roughly 90 percent zoom while
+   the measurements said 100.
+
+   🪨 THE REASON IS WRITTEN IN THIS FILE ALREADY, in the colgroup note above:
+   "Chrome's fixed-layout algorithm does NOT let a <colgroup> width beat a header-cell width,
+   it takes the LARGER of the two." A cell holding real content contributes ITS content width,
+   and the larger one wins. A width is a request. It is not a cap.
+
+   THE CAP IS max-width. So every column below now carries BOTH, at the same number, on the
+   <col>, the <th> and the <td>. Measured with forty rows of real note text in the table this
+   time, not an empty one: football rankings 1373 -> 1158, basketball rankings 1410 -> 1114.
+
+   🪨 AND THE LESSON THAT COST TWO ROUNDS TONIGHT: MEASURE A TABLE WITH DATA IN IT, OR DO NOT
+   CLAIM A WIDTH. An empty table lays out from whatever row comes first and the answer is
+   fiction. The same empty-table mistake produced a wrong width number earlier the same night.
+
+   Deliberately NOT here: col-handle and col-av. Both are hidden by their own !important rules
+   elsewhere, and a rule here would win on source order and un-hide them.
+   ──────────────────────────────────────────────────────────────────────────────── */
+/* every column: width AND max-width, on the col, the th and the td */
+table.watch-list colgroup col.col-rank{width:32px!important;max-width:32px!important}
+table.watch-list thead th.col-rank,table.watch-list tbody td.col-rank,table.watch-list thead tr th.col-rank,table.watch-list tbody tr td.col-rank{width:32px!important;max-width:32px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-pos{width:40px!important;max-width:40px!important}
+table.watch-list thead th.col-pos,table.watch-list tbody td.col-pos,table.watch-list thead tr th.col-pos,table.watch-list tbody tr td.col-pos{width:40px!important;max-width:40px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-player{width:142px!important;max-width:142px!important}
+table.watch-list thead th.col-player,table.watch-list tbody td.col-player,table.watch-list thead tr th.col-player,table.watch-list tbody tr td.col-player{width:142px!important;max-width:142px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-team{width:34px!important;max-width:34px!important}
+table.watch-list thead th.col-team,table.watch-list tbody td.col-team,table.watch-list thead tr th.col-team,table.watch-list tbody tr td.col-team{width:34px!important;max-width:34px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-age{width:30px!important;max-width:30px!important}
+table.watch-list thead th.col-age,table.watch-list tbody td.col-age,table.watch-list thead tr th.col-age,table.watch-list tbody tr td.col-age{width:30px!important;max-width:30px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-exp{width:30px!important;max-width:30px!important}
+table.watch-list thead th.col-exp,table.watch-list tbody td.col-exp,table.watch-list thead tr th.col-exp,table.watch-list tbody tr td.col-exp{width:30px!important;max-width:30px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-delta{width:30px!important;max-width:30px!important}
+table.watch-list thead th.col-delta,table.watch-list tbody td.col-delta,table.watch-list thead tr th.col-delta,table.watch-list tbody tr td.col-delta{width:30px!important;max-width:30px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-type{width:48px!important;max-width:48px!important}
+table.watch-list thead th.col-type,table.watch-list tbody td.col-type,table.watch-list thead tr th.col-type,table.watch-list tbody tr td.col-type{width:48px!important;max-width:48px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-priority{width:56px!important;max-width:56px!important}
+table.watch-list thead th.col-priority,table.watch-list tbody td.col-priority,table.watch-list thead tr th.col-priority,table.watch-list tbody tr td.col-priority{width:56px!important;max-width:56px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-note{width:94px!important;max-width:94px!important}
+table.watch-list thead th.col-note,table.watch-list tbody td.col-note,table.watch-list thead tr th.col-note,table.watch-list tbody tr td.col-note{width:94px!important;max-width:94px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-yrank{width:42px!important;max-width:42px!important}
+table.watch-list thead th.col-yrank,table.watch-list tbody td.col-yrank,table.watch-list thead tr th.col-yrank,table.watch-list tbody tr td.col-yrank{width:42px!important;max-width:42px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-yowned{width:42px!important;max-width:42px!important}
+table.watch-list thead th.col-yowned,table.watch-list tbody td.col-yowned,table.watch-list thead tr th.col-yowned,table.watch-list tbody tr td.col-yowned{width:42px!important;max-width:42px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-cbsowned{width:42px!important;max-width:42px!important}
+table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned,table.watch-list thead tr th.col-cbsowned,table.watch-list tbody tr td.col-cbsowned{width:42px!important;max-width:42px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-stat{width:30px!important;max-width:30px!important}
+table.watch-list thead th.col-stat,table.watch-list tbody td.col-stat,table.watch-list thead tr th.col-stat,table.watch-list tbody tr td.col-stat{width:30px!important;max-width:30px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-action{width:62px!important;max-width:62px!important}
+table.watch-list thead th.col-action,table.watch-list tbody td.col-action,table.watch-list thead tr th.col-action,table.watch-list tbody tr td.col-action{width:62px!important;max-width:62px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-notebadge{width:26px!important;max-width:26px!important}
+table.watch-list thead th.col-notebadge,table.watch-list tbody td.col-notebadge,table.watch-list thead tr th.col-notebadge,table.watch-list tbody tr td.col-notebadge{width:26px!important;max-width:26px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+
+/* the rankings table declares its own Player and Note widths */
+#rankings-table colgroup col.col-note{width:110px!important;max-width:110px!important}
+#rankings-table th.col-note,#rankings-table td.col-note{width:110px!important;max-width:110px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+#rankings-table colgroup col.col-player{width:148px!important;max-width:148px!important}
+#rankings-table th.col-player,#rankings-table td.col-player{width:148px!important;max-width:148px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+/* end LAPTOP_FIT_V2 */
 </style>
 <script>
 (function(){
