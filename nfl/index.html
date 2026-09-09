@@ -12533,6 +12533,41 @@ table.watch-list tbody td.col-yrank,table.watch-list tbody td.col-yowned,table.w
 table.watch-list tbody td.col-bye,table.watch-list tbody td.col-team,table.watch-list tbody td.col-exp{padding-left:2px!important;padding-right:2px!important}
 table.watch-list thead th.col-handle,table.watch-list tbody td.col-handle{padding-left:1px!important;padding-right:1px!important}
 /* end LAPTOP_FIT_V4 */
+
+/* ── UNIFORM_ALIGN_V1 (2026-09-09) — MATT'S CALL AND THE DUDE'S, ARRIVED AT SEPARATELY ────
+   Matt, by text, after the width work landed: "I think the best thing for us is to center justify
+   all the stats in each column. Generally I hate that, but it will allow us to see what has been
+   justified weird. Because some of these are right justified and others are left justified and some
+   columns are center justified in title but not in the column. It's ridiculous." The Dude asked the
+   same question in the same minute, without having seen Matt's message.
+
+   HE IS DESCRIBING A REAL DEFECT, NOT A PREFERENCE. Numbers were right-aligned so decimal points
+   would line up down a column. But each column is only as wide as the widest value it will ever
+   hold, so on a row with a short number the leftover space appears as a gap on its LEFT. The gap
+   moves from row to row depending on digit count. That is why passing yards hugged one line, then a
+   gap, then TD hugged the other. And several headers were centred while their own values were not,
+   so the label sat off-axis from the numbers under it. Tightening the cell cushion earlier tonight
+   removed the padding that had been masking all of this.
+
+   THE FIX: centre every cell AND every header, so a value's gap is the same on both sides by
+   construction, and a label always sits over its own numbers. Player and Note stay left, because
+   they are words, not figures.
+
+   COSTS NO WIDTH. Alignment moves the ink inside a column, it does not resize the column. Measured
+   on the live customer site with 250 real players: football rankings unchanged at 1239 on the
+   GitHub editing page against roughly 1265 of room, nothing clipped.
+
+   ⚠️ WHAT THIS DELIBERATELY GIVES UP, so nobody re-litigates it: decimal points no longer form a
+   perfect vertical line within a column. DECIMAL_ALIGN_V1 (2026-08-25) chose the opposite trade and
+   was right at the time. FPTS_CENTER_BLOCK_V1 (2026-08-26) satisfied both on ONE column by centring
+   a fixed-width box with the digits right-aligned inside it. That trick needs the column to be
+   wider than its widest value, and after the laptop-fit work these columns no longer have that
+   room. If room is ever found, that block is the way to get both back. */
+table.watch-list thead th,table.watch-list tbody td{text-align:center!important}
+table.watch-list thead th.col-player,table.watch-list tbody td.col-player,
+table.watch-list thead th.col-note,table.watch-list tbody td.col-note{text-align:left!important}
+table.watch-list tbody td .stat-cell{display:inline!important;min-width:0!important;text-align:inherit!important}
+/* end UNIFORM_ALIGN_V1 */
 </style>
 <script>
 (function(){
