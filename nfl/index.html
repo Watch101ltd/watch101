@@ -1832,7 +1832,19 @@ document.addEventListener('DOMContentLoaded',function(){
          list title / tagline / year line stacked UNDERNEATH, instead of flowing sideways. -->
     <div class="list-title-stack" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
     <div class="list-picker-header" style="display:flex;align-items:center;gap:8px">
-    <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--turf,#16a34a) 0%,#15803d 100%);color:#fff;border:1px solid var(--turf,#16a34a);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:240px;margin:6px 0 2px 0">
+    <!-- LIST_PILL_WIDTH_V1 (2026-09-09, Matt's ask on the 9/9 call: "this box has room to go all the
+         way to this right here, but for some reason, it feels compelled to cut itself off at 0.5p").
+         The cap was 240px. Measured on the live page at 1280 wide, not reasoned about:
+           - the selected name needs a 505px box, so it was being cut mid word at "12 Team .5 P"
+           - a native <select> sizes itself to its WIDEST option, so 505 covers every list in the
+             menu today and the box does NOT resize when you switch lists. One stable width.
+           - the widest option's text is the FFPC name at 416px. Padding and the arrow take the rest.
+           - the row ends at x=557 on a 1280 laptop, so ~720px of empty space sits to its right.
+         560 is the cap, not the width: it shows everything today and leaves headroom before a longer
+         league name could truncate again. A max-width only ever caps, so a short name stays short.
+         Per TABLE_WIDTH_MECHANICS_2026-09-09: a width is a request, a max-width is the cap. This was
+         the cap. -->
+    <select id="list-switcher" onchange="switchActiveList(this.value)" title="Switch active Watch List" style="background:linear-gradient(135deg,var(--turf,#16a34a) 0%,#15803d 100%);color:#fff;border:1px solid var(--turf,#16a34a);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'Nunito Sans',sans-serif;font-weight:700;cursor:pointer;outline:none;letter-spacing:0.04em;max-width:560px;margin:6px 0 2px 0">
       <!-- NFL_RANKINGS_PARITY_V1 (2026-08-05, PC Walter, per the Dude) -- NBA's LIST_RANKINGS_GROUP
            shape ported: LISTS up top, RANKINGS below the labeled separator. Dynasty moved down: it is
            a RANKINGS SET now, not a loadable 101 list (Matt's own 8/3 reasoning -- a 101 is the wrong
