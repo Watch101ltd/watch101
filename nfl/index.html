@@ -919,7 +919,9 @@ body.day-mode #ftl-overlay .fs-table tr.fs-playoff td{background:rgba(22,163,74,
    as the thing it is — "real noticeable and real easy to read", the Dude's words
    when it was recoloured — but inherits the vitals line's smaller size. */
 #ftl-overlay .ftl-sub .ftl-sub-po{font-weight:800;letter-spacing:.03em;color:#4ade80;white-space:nowrap;display:block;}  /* HTWT_DIVIDER_V1 (2026-09-09): display:block - the playoff trio always gets its own line under the vitals. Nothing shares that line, and it can never push the weight down. */
-#ftl-overlay .ftl-sub .ftl-sub-wt{white-space:nowrap;}  /* HTWT_DIVIDER_V1: "220 lbs" is one fact and never breaks across lines */
+#ftl-overlay .ftl-sub .fact{white-space:nowrap;}  /* FITCARD_V1 (2026-09-09): EVERY vitals fact is atomic. "9 yr exp", "Age 31.1", "215 lbs" are single facts and must never be cut across two lines. Superseded .ftl-sub-wt, which only protected the weight. */
+#ftl-overlay .ftl-sub .ftl-vitals{display:block;}  /* FITCARD_V1: the vitals run is its own block so it can be scaled independently of the playoff line below it */
+#ftl-overlay .ftl-sub .ftl-sub-wt{white-space:nowrap;}  /* kept for any cached markup that still carries the old class */
 body.day-mode #ftl-overlay .ftl-sub .ftl-sub-po,
 body.light-mode #ftl-overlay .ftl-sub .ftl-sub-po{color:var(--turf-bright,#15803d);}
 #ftl-overlay .fs-playoffline{font-size:12px;font-weight:800;letter-spacing:.04em;color:#4ade80;margin:2px 0 6px 2px;}  /* SCHED_TRIO_V1, recolored per the Dude: green, ALL CAPS, bold -- "real noticeable and real easy to read" */
@@ -1429,7 +1431,8 @@ body.day-mode .lg-redname{color:#b91c1c;}
 #ftl-overlay .ftl-ownbar .ftl-statval{color:var(--text1,#fff);}
 #ftl-overlay .ftl-statcell:last-child{border-right:none;}
 #ftl-overlay /* FONT_SWEEP_V1 pass 1 — the stat column labels — 8px, so a little air is KEPT for legibility */
-.ftl-statlabel{font-family:var(--font-display);font-weight:700;font-size:8px;letter-spacing:0.06em;color:var(--text3);margin-bottom:2px;}
+.ftl-statlabel{font-family:var(--font-display);font-weight:700;font-size:8px;letter-spacing:0.06em;color:var(--text3);margin-bottom:2px;white-space:nowrap;}  /* FITCARD_V1: "PA YD" is one label. It used to break into "PA" over "YD" on a narrow window - six of the thirteen did - which made the strip ragged and grew it from 34px to 45px. It scales now instead of breaking. */
+#ftl-overlay .ftl-statval{white-space:nowrap;}  /* FITCARD_V1: a value never breaks either */
 #ftl-overlay .ftl-statval{font-size:13px;font-weight:700;color:#22c55e;line-height:1;}
 #ftl-overlay .ftl-statval.na{color:var(--text3);font-weight:500;}
 /* ROTOWIRE_LINK_NFL_V1 (2026-08-05) — baseball's gold RW pill, cloned. Deliberately a PILL and
@@ -10193,6 +10196,107 @@ var _ftlSchedPrior = false;
 // of the player's vitals line, next to team / position / age / experience / size.
 // One row saved on a card both of them have been trying to slim all week.
 // ============================================================================
+// ============================================================================
+// FITCARD_V1 (2026-09-09, Matt). SHRINK BEFORE REFLOW.
+// His rule, in his words: "when almost every other website has its window shrunk,
+// it can shrink text to a certain size, and then after that it might need to make
+// adjustments." Before this, a narrow window made the card break things apart
+// instead of scaling them: "9 yr exp" snapped in half, the two rank pills stacked,
+// and six of the thirteen stat labels split into two lines.
+//
+// The rule this enforces, in order:
+//   1. Nothing that is ONE FACT ever breaks. That is CSS (.fact, .ftl-statlabel).
+//   2. Text scales down to a readable floor to stay on its line.
+//   3. Only if the floor is reached may a line reflow - and then only between facts.
+//
+// Floors are deliberate: 9px for the vitals and playoff lines, 8px for the rank
+// pills, 72% for the stat strip. Below those it stops shrinking and lets it wrap,
+// because unreadable is worse than wrapped.
+//
+// Every pass RE-STARTS from full size, so widening the window scales back up.
+// ============================================================================
+function _ftlFitCard(){
+  try{
+    var sub = document.getElementById('ftl-sub');
+    if(!sub || !sub.parentElement) return;
+    var meta = sub.parentElement;
+    var po   = sub.querySelector('.ftl-sub-po');
+
+    // Group the vitals so they scale independently of the playoff line.
+    // Idempotent: on a repeat pass the wrapper already exists and is reused.
+    var vit = sub.querySelector('.ftl-vitals');
+    if(!vit){
+      vit = document.createElement('span');
+      vit.className = 'ftl-vitals';
+      while(sub.firstChild && sub.firstChild !== po) vit.appendChild(sub.firstChild);
+      sub.insertBefore(vit, po);
+    }
+
+    function fitLine(el, max, min){
+      if(!el) return;
+      el.style.whiteSpace = 'nowrap';
+      var s = max;
+      el.style.fontSize = s + 'px';
+      while(s > min && el.scrollWidth > meta.clientWidth){
+        s -= 0.25;
+        el.style.fontSize = s + 'px';
+      }
+      // floor reached and still too wide: let it wrap, but only between facts
+      el.style.whiteSpace = (el.scrollWidth > meta.clientWidth) ? 'normal' : 'nowrap';
+    }
+    fitLine(vit, 11, 9);
+    fitLine(po,  11, 9);
+
+    // Rank pills scale rather than stacking.
+    var pa = document.getElementById('ftl-rankrk');
+    var pc = document.getElementById('ftl-rank');
+    if(pa && pc && pa.style.display !== 'none' && pc.style.display !== 'none'){
+      var ps = 11, pv = 4, ph = 10, pn = 16;
+      var applyPill = function(){
+        [pa, pc].forEach(function(el){
+          el.style.fontSize = ps + 'px';
+          el.style.padding = pv.toFixed(1) + 'px ' + ph.toFixed(1) + 'px';
+          el.style.letterSpacing = (0.15 * (ps / 11)).toFixed(3) + 'em';
+          var n = el.querySelector('.num');
+          if(n) n.style.fontSize = pn.toFixed(1) + 'px';
+        });
+      };
+      var stacked = function(){
+        return Math.abs(pa.getBoundingClientRect().top - pc.getBoundingClientRect().top) > 4;
+      };
+      applyPill();
+      while(ps > 8 && stacked()){
+        ps -= 0.25;
+        pv = Math.max(2, pv - 0.1);
+        ph = Math.max(5, ph - 0.35);
+        pn = Math.max(11, pn - 0.35);
+        applyPill();
+      }
+    }
+
+    // Stat strip scales as a unit. Base sizes match the CSS: 8px label, 13px value.
+    var wrap = document.getElementById('ftl-statwrap');
+    var bar  = wrap ? wrap.querySelector('.ftl-statbar') : null;
+    if(bar && wrap){
+      var sc = 1.0;
+      var applyBar = function(){
+        var L = bar.querySelectorAll('.ftl-statlabel'), V = bar.querySelectorAll('.ftl-statval'), i;
+        for(i=0;i<L.length;i++) L[i].style.fontSize = (8  * sc).toFixed(2) + 'px';
+        for(i=0;i<V.length;i++) V[i].style.fontSize = (13 * sc).toFixed(2) + 'px';
+      };
+      applyBar();
+      while(sc > 0.72 && bar.scrollWidth > wrap.clientWidth){
+        sc -= 0.02;
+        applyBar();
+      }
+    }
+  }catch(e){ /* a fit pass must never break the card */ }
+}
+var _ftlFitTimer = null;
+window.addEventListener('resize', function(){
+  clearTimeout(_ftlFitTimer);
+  _ftlFitTimer = setTimeout(_ftlFitCard, 80);   // FITCARD_V1: re-fit after a resize settles
+});
 function _ftlClearPlayoffsOnSub(){
   try {
     var sub = document.getElementById('ftl-sub');
@@ -10215,6 +10319,7 @@ function _ftlAppendPlayoffsToSub(text){
     span.textContent = text;                  // textContent: opponent codes are data, not markup
     span.title = 'Fantasy playoff weeks \u2014 the games that decide championships';
     sub.appendChild(span);   // HTWT_DIVIDER_V1: no separator - .ftl-sub-po is display:block and owns its own line
+    _ftlFitCard();           // FITCARD_V1: the line just got longer - re-fit it
   } catch(e){ /* a missing playoff line must never break the card */ }
 }
 function _ftlToggleSchedYear(){
@@ -10762,8 +10867,12 @@ function openFromTheLogo(pid, _keepRange){
   // Measured in Chromium against this file at 1280/1440/1920: vitals stay on one
   // line at the full 11px, playoffs always on its own line.
   if(_htFmt) subParts.push(_htFmt);
-  if(_wtFmt) subParts.push('<span class="ftl-sub-wt">' + _wtFmt + '</span>');
-  document.getElementById('ftl-sub').innerHTML = subParts.join('<span class="sep">|</span>');
+  if(_wtFmt) subParts.push(_wtFmt);
+  // FITCARD_V1: each segment is wrapped as a .fact so it is atomic - the line may break
+  // BETWEEN facts, never inside one.
+  document.getElementById('ftl-sub').innerHTML = subParts
+    .map(function(t){ return '<span class="fact">' + t + '</span>'; })
+    .join('<span class="sep">|</span>');
   _ftlClearPlayoffsOnSub();   // CARD_MOVES_V1: a fresh player starts without the previous player's playoff trio
 
   // ==========================================================================
@@ -10843,7 +10952,9 @@ function openFromTheLogo(pid, _keepRange){
     // (the ftl-own-cell class). grid-auto-columns:auto sizes each tile to its own number,
     // which answers Matt's "why is rushing yards with four digits the same size box as YPC
     // with one digit."
-    '<div class="ftl-statbar">' + fantasy + (_isDef ? defense : (passing + rushing + receiving)) + ownRow + '</div>';   // DEF_CARD_STATS_V1: FPTS leads and the ownership row still rides the end on both branches, so the strip keeps its shape
+    '<div class="ftl-statbar">' + fantasy + (_isDef ? defense : (passing + rushing + receiving)) + ownRow + '</div>';
+
+  _ftlFitCard();   // FITCARD_V1: hero is fully painted (vitals, pills, stat strip) - scale it to this window   // DEF_CARD_STATS_V1: FPTS leads and the ownership row still rides the end on both branches, so the strip keeps its shape
 
   // BUG49_PHASE2b: dynamic year note retired — header-right now carries baseball's static "Watch 101 Player Card" in the HTML.
 
