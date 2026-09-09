@@ -358,6 +358,23 @@ table.trending tbody td.cnt{text-align:right;color:var(--turf);font-weight:800;w
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
 }
 .search-wrap{position:relative;flex:1;min-width:280px;max-width:480px}
+/* STATUS_INLINE_V1 (2026-09-09, the Dude, off a marked up screenshot: "can we move that up next to
+   the search bar and then move the entire screen up vertically").
+   The "Ready. 12,227 players in DB..." line was its own 36px band under the toolbar. It now rides ON
+   the toolbar row, between the search box and the buttons, and that whole band is gone.
+   MEASURED ON THE LIVE PAGE AT 1280 BEFORE WRITING, because it does not fit for free:
+     - room on the toolbar row is 1233px. The buttons need 437. The status text ink is 551 at 12px.
+     - 1233 - 437 - 551 leaves 245 for a search box that was sitting at 480, so the search box HAS to
+       give up room. At 300 the row wrapped to two lines and the whole thing got TALLER, not shorter.
+     - 260px basis with the status at 11px is the first combination that holds ONE line. Checked.
+     - the placeholder "Search your watch list by name..." needs 205px and a 260px box gives it 210,
+       so it still fits and the wording did NOT have to change. Measured, not eyeballed.
+   Result: the first player row moves up 36px. Nothing is truncated, and the buttons do not move.
+   SCOPED TO THE TOOLBAR ON PURPOSE: .search-wrap is shared with the players pool and the rankings
+   search boxes, which are fine as they are. Do not fold this back into the bare .search-wrap rule.
+   On a phone the status bar is display:none from the phone block, so none of this reaches it. */
+.toolbar-watchlist > .search-wrap{flex:0 1 260px;min-width:140px;max-width:none}
+.toolbar-watchlist > #status-bar{flex:0 1 auto;min-width:0;padding:0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;line-height:1.2}
 .search-input{
   width:100%;background:var(--surface2);
   border:1px solid var(--border);border-radius:6px;
@@ -788,7 +805,25 @@ table.watch-list thead th[data-sort],table.watch-list thead th[data-npsort],tabl
 table.watch-list thead th[data-sort]:hover{color:var(--text)}
 table.watch-list thead th[data-sort]:hover .sort-arrow,table.watch-list thead th[data-npsort]:hover .sort-arrow,table.watch-list thead th[data-ranksort]:hover .sort-arrow{opacity:0.9}  /* YDS_WIDTH_V1: hover reveal covers all three surfaces' sort attributes */
 /* SCORING_ENGINE_NFL_V1 -- Variant D scoring box in the FPts header (mockup 2026-08-06) */
-.fpts-scoring-select{max-width:64px;background:var(--surface);border:1px solid var(--border2);color:var(--gold);font-size:9px;font-weight:700;border-radius:6px;padding:1px 3px;font-family:inherit;cursor:pointer;outline:none;text-transform:none;letter-spacing:0;margin-left:4px;vertical-align:middle}
+/* FPTS_COL_TIGHTEN_V1 (2026-09-09, the Dude: "you can see how much space there is on the left and
+   right of fantasy points in the column, it's a lot of dead space... can you just shrink that font
+   down, and make that column tighter"). HIS DIAGNOSIS WAS EXACTLY RIGHT AND THE NUMBERS SAY SO.
+   MEASURED ON THE LIVE PAGE, every figure below:
+     - the FPts column rendered 73px wide. The widest actual value ink in it is 29px.
+     - the column's DECLARED width was 62px, and it was being ignored, because Chrome takes the
+       LARGER of the declared width and what the content wants (rule 1 of TABLE_WIDTH_MECHANICS).
+     - the content wanting more was THIS DROPDOWN at 64px, and 20px of that was the browser's own
+       native arrow. With the select hidden entirely the column falls to 30px, which proves the
+       select was the whole story. The font was never the main cost, the arrow was.
+   SO: appearance:none removes the native arrow, and a 7x5 caret is painted in the right padding
+   instead. Measured both ways: the caret costs NOTHING, both land the select at 44px, so there is
+   no reason to strip the affordance off a control Matt actually uses. Font stays 9px for the same
+   reason: dropping it to 8px buys 4px and makes it harder to read.
+   Select 64 -> 44, column 73 -> 53, table 1316 -> 1296. Zero values clip, header does not clip.
+   The floor is 53 and it is the select: no declared width below 53 changes anything while it is
+   there. If this column ever has to get tighter than 53, the scoring picker has to leave the header
+   (moving it to the toolbar would take the column to 30). That is a design call, not a width. */
+.fpts-scoring-select{max-width:56px;background:var(--surface);border:1px solid var(--border2);color:var(--gold);font-size:9px;font-weight:700;border-radius:6px;padding:1px 9px 1px 3px;font-family:inherit;cursor:pointer;outline:none;text-transform:none;letter-spacing:0;margin-left:4px;vertical-align:middle;appearance:none;-webkit-appearance:none;text-align:center;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='7' height='5'><path d='M0 0h7L3.5 5z' fill='%23eab308'/></svg>");background-repeat:no-repeat;background-position:right 2px center}
 .fpts-scoring-select.nondefault{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
 table.watch-list tbody td{
   /* WIDTH_SHAVE_V1 (2026-08-21): was 10px 8px. Computed padding measured LIVE at 16px per column of
@@ -1953,6 +1988,11 @@ document.addEventListener('DOMContentLoaded',function(){
     <input id="player-search" class="search-input" type="text" placeholder="Search your watch list by name..." autocomplete="off">
     <div id="search-results" class="search-results"></div>
   </div>
+  <!-- STATUS_INLINE_V1 (2026-09-09): MOVED HERE from its own band below the toolbar. Same element,
+       same id, same class, moved rather than rebuilt, so setStatus() and everything else still find
+       it. It sits between the search box and the buttons; see the CSS block by this name for the
+       measurements that decided the search box's new width. -->
+  <div class="status-bar-wl" id="status-bar">Loading…</div>
   <div class="toolbar-right">
     <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
     <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: hide the stat and ownership columns and stretch the Note column so Matt's notes take center stage.">&#8596; Compact</button>
@@ -1967,8 +2007,7 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
-<!-- ── STATUS BAR ─────────────────────────────────────── -->
-<div class="status-bar-wl" id="status-bar">Loading…</div>
+<!-- ── STATUS BAR — MOVED 2026-09-09 onto the toolbar row above, see STATUS_INLINE_V1 ─── -->
 
 <!-- NFL_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — STAT FILTERING box on the NFL
      Watch101 list, matching the NFL Players pool. Functional: Team / Min FPts / Min Games / Age /
@@ -12590,8 +12629,8 @@ table.watch-list colgroup col.col-priority{width:58px!important}
 table.watch-list thead th.col-priority,table.watch-list tbody td.col-priority,table.watch-list thead tr th.col-priority,table.watch-list tbody tr td.col-priority{width:58px!important}
 table.watch-list colgroup col.col-type{width:56px!important}
 table.watch-list thead th.col-type,table.watch-list tbody td.col-type,table.watch-list thead tr th.col-type,table.watch-list tbody tr td.col-type{width:56px!important}
-table.watch-list colgroup col.col-fpts{width:62px!important}
-table.watch-list thead th.col-fpts,table.watch-list tbody td.col-fpts,table.watch-list thead tr th.col-fpts,table.watch-list tbody tr td.col-fpts{width:62px!important}
+table.watch-list colgroup col.col-fpts{width:53px!important}
+table.watch-list thead th.col-fpts,table.watch-list tbody td.col-fpts,table.watch-list thead tr th.col-fpts,table.watch-list tbody tr td.col-fpts{width:53px!important}
 table.watch-list colgroup col.col-cbsowned{width:44px!important}
 table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned,table.watch-list thead tr th.col-cbsowned,table.watch-list tbody tr td.col-cbsowned{width:44px!important}
 table.watch-list colgroup col.col-yowned{width:44px!important}
@@ -12654,8 +12693,8 @@ table.watch-list colgroup col.col-yowned{width:44px!important;max-width:44px!imp
 table.watch-list thead th.col-yowned,table.watch-list tbody td.col-yowned,table.watch-list thead tr th.col-yowned,table.watch-list tbody tr td.col-yowned{width:44px!important;max-width:44px!important;overflow:hidden!important;text-overflow:ellipsis!important}
 table.watch-list colgroup col.col-cbsowned{width:44px!important;max-width:44px!important}
 table.watch-list thead th.col-cbsowned,table.watch-list tbody td.col-cbsowned,table.watch-list thead tr th.col-cbsowned,table.watch-list tbody tr td.col-cbsowned{width:44px!important;max-width:44px!important;overflow:hidden!important;text-overflow:ellipsis!important}
-table.watch-list colgroup col.col-fpts{width:62px!important;max-width:62px!important}
-table.watch-list thead th.col-fpts,table.watch-list tbody td.col-fpts,table.watch-list thead tr th.col-fpts,table.watch-list tbody tr td.col-fpts{width:62px!important;max-width:62px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+table.watch-list colgroup col.col-fpts{width:53px!important;max-width:53px!important}
+table.watch-list thead th.col-fpts,table.watch-list tbody td.col-fpts,table.watch-list thead tr th.col-fpts,table.watch-list tbody tr td.col-fpts{width:53px!important;max-width:53px!important;overflow:hidden!important;text-overflow:ellipsis!important}
 table.watch-list colgroup col.col-stat{width:32px!important;max-width:32px!important}
 table.watch-list thead th.col-stat,table.watch-list tbody td.col-stat,table.watch-list thead tr th.col-stat,table.watch-list tbody tr td.col-stat{width:32px!important;max-width:32px!important;overflow:hidden!important;text-overflow:ellipsis!important}
 table.watch-list colgroup col.col-action{width:60px!important;max-width:60px!important}
