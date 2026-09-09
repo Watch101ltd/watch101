@@ -292,6 +292,28 @@ a.logo-mini:hover{opacity:1;}
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
 }
 .search-wrap{position:relative;flex:1;min-width:280px;max-width:480px}
+/* FILTERBAR_ROW_V1 (2026-09-09, the Dude, off a marked up screenshot: "this stat filtering box...
+   goes from the left side of the screen all the way to the right... it only needs to be a smaller
+   box enough to fit the text inside it. And then can we take the date range line above stat
+   filtering and bring that down and put it next to stat filtering").
+   MEASURED ON THE LIVE PAGE AT 1280 BEFORE WRITING:
+     - collapsed, that box was spanning 1233px and its content needs 142. A tenth of the width.
+     - the DATE RANGE label and its dropdown end at x=282, so the rest of that row was empty too.
+     - two bands, 34px and 42px with 8px between them, for two things that fit side by side.
+   Now one row: DATE RANGE on the left, the box pushed to the right end. The first player row
+   comes up 42px, from y=308 to y=266.
+   THE PART THAT MATTERS WHEN SOMEBODY CHANGES THIS LATER: expanded, that panel needs 1077px, which
+   does NOT fit beside the date range. flex-wrap is what handles it: open the box and it drops to
+   its own full width line by itself, closed it rides back up beside the date range. Verified both
+   ways. Do NOT remove flex-wrap and do NOT give the panel a fixed width.
+   The collapsed padding goes 12px to 8px so the box is exactly as tall as the date dropdown beside
+   it, 34px, and the row is no taller than it has to be. 6px was measured too and buys nothing,
+   because the dropdown is then the tallest thing in the row.
+   On a phone the panel is display:none from the phone block, so the row just carries the date
+   range and nothing here reaches it. */
+.filterbar-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 16px 8px 16px}
+.filterbar-row > *{flex:0 0 auto;min-width:0}
+#nbawl-filter-panel.filt-collapsed{margin-left:auto !important;padding-top:8px !important;padding-bottom:8px !important}
 /* STATUS_INLINE_V1 (2026-09-09, the Dude, off a marked up screenshot: "can we move that up next to
    the search bar and then move the entire screen up vertically").
    The "Ready. 12,227 players in DB..." line was its own 36px band under the toolbar. It now rides ON
@@ -1861,8 +1883,9 @@ document.addEventListener('DOMContentLoaded',function(){
      Date Range + %Owned (Y!/CBS) present for visual consistency but inert (no NBA data). When any
      filter is active, drag-to-rank is disabled (like an active sort) so the hand-built order is safe. -->
 <!-- INSTANT_DATERANGE_V1 (June 9, 2026 — PC Walter) — instant date-range OUTSIDE the box (watch list). -->
-<div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbawl-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select></div>
-<div id="nbawl-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+<div class="filterbar-row"><!-- FILTERBAR_ROW_V1: holds the DATE RANGE controls and the Stat Filtering box on ONE line -->
+<div style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbawl-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select></div>
+<div id="nbawl-filter-panel" style="margin:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
   <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">Stat Filtering</div>
   <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
     <div>
@@ -1915,6 +1938,7 @@ document.addEventListener('DOMContentLoaded',function(){
     </div>
   </div>
 </div>
+</div><!-- /filterbar-row FILTERBAR_ROW_V1 -->
 
 <!-- ── WATCH LIST TABLE ─────── -->
 <div class="table-wrap" id="nbamain-wrap">
