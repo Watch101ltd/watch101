@@ -292,6 +292,23 @@ a.logo-mini:hover{opacity:1;}
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
 }
 .search-wrap{position:relative;flex:1;min-width:280px;max-width:480px}
+/* STATUS_INLINE_V1 (2026-09-09, the Dude, off a marked up screenshot: "can we move that up next to
+   the search bar and then move the entire screen up vertically").
+   The "Ready. 12,227 players in DB..." line was its own 36px band under the toolbar. It now rides ON
+   the toolbar row, between the search box and the buttons, and that whole band is gone.
+   MEASURED ON THE LIVE PAGE AT 1280 BEFORE WRITING, because it does not fit for free:
+     - room on the toolbar row is 1233px. The buttons need 437. The status text ink is 551 at 12px.
+     - 1233 - 437 - 551 leaves 245 for a search box that was sitting at 480, so the search box HAS to
+       give up room. At 300 the row wrapped to two lines and the whole thing got TALLER, not shorter.
+     - 260px basis with the status at 11px is the first combination that holds ONE line. Checked.
+     - the placeholder "Search your watch list by name..." needs 205px and a 260px box gives it 210,
+       so it still fits and the wording did NOT have to change. Measured, not eyeballed.
+   Result: the first player row moves up 36px. Nothing is truncated, and the buttons do not move.
+   SCOPED TO THE TOOLBAR ON PURPOSE: .search-wrap is shared with the players pool and the rankings
+   search boxes, which are fine as they are. Do not fold this back into the bare .search-wrap rule.
+   On a phone the status bar is display:none from the phone block, so none of this reaches it. */
+.toolbar-watchlist > .search-wrap{flex:0 1 260px;min-width:140px;max-width:none}
+.toolbar-watchlist > #status-bar{flex:0 1 auto;min-width:0;padding:0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;line-height:1.2}
 .search-input{
   width:100%;background:var(--surface2);
   border:1px solid var(--border);border-radius:6px;
@@ -1811,6 +1828,11 @@ document.addEventListener('DOMContentLoaded',function(){
     <input id="player-search" class="search-input" type="text" placeholder="Search your watch list by name..." autocomplete="off">
     <div id="search-results" class="search-results"></div>
   </div>
+  <!-- STATUS_INLINE_V1 (2026-09-09): MOVED HERE from its own band below the toolbar. Same element,
+       same id, same class, moved rather than rebuilt, so setStatus() and everything else still find
+       it. It sits between the search box and the buttons; see the CSS block by this name for the
+       measurements that decided the search box's new width. -->
+  <div class="status-bar-wl" id="status-bar">Loading…</div>
   <div class="toolbar-right">
     <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
     <select id="view-mode-select" onchange="setViewMode(this.value)" title="Full View shows everything. Satten Says hides the stats and ownership so his notes, tags and stars take center stage. 9 Cat leaves GP, MIN and the nine scoring categories. 13 Cat leaves GP, MIN and the thirteen.">
@@ -1832,8 +1854,7 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
-<!-- ── STATUS BAR ─────── -->
-<div class="status-bar-wl" id="status-bar">Loading…</div>
+<!-- ── STATUS BAR — MOVED 2026-09-09 onto the toolbar row above, see STATUS_INLINE_V1 ─── -->
 
 <!-- NBA_WL_STATFILTER_V1 (2026-06-06 — PC Walter, per the Dude) — STAT FILTERING box on the NBA
      Watch101 list, matching the NBA Players pool + baseball. Functional: Team / Min PTS / Age.
