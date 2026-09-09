@@ -1545,6 +1545,15 @@ table.watch-list tbody td.empty-state{text-align:left}
   .pc-av{color:var(--gold);font-weight:800;}
   /* strip chrome */
   #page-nav{display:none !important;}
+  /* LIST_PILL_PHONE_GUARD_V1 (2026-09-09) — REQUIRED BY LIST_PILL_WIDTH_V1 EARLIER THE SAME DAY.
+     Raising the pill's cap to 560 fixed the laptop and broke the phone: the pill is sized by its
+     WIDEST option (505px on football), which is wider than a phone, so the phone's layout viewport
+     blew out from 390 to 556 and shrank the whole page to fit. MEASURED, not assumed.
+     max-width:100% does NOT fix it (measured: still 505) because the percentage resolves against a
+     containing block that is itself as wide as its content. 100vw does, because it is the screen.
+     60px = 16 left margin + 8 gap + 28 info button + 8 slack. Verified at 360 and 390 wide: the
+     page stays exactly as wide as the phone. !important is needed because the cap is an inline style. */
+  #list-switcher{max-width:calc(100vw - 60px) !important;}
   #nflwl-filter-panel{display:none !important;}
   #nflrk-filter-panel{display:none !important;}  /* NFL_RANK_STATFILTER_V1: mirror the watch-list phone rule */
   .toolbar-right > *:not(#theme-toggle){display:none !important;}  /* HDR_PARITY_TWINS_V1: baseball's PHONE_THEME_BTN_BACK_V1 — the moon lives in the toolbar now, keep it on phone */
@@ -1830,7 +1839,19 @@ document.addEventListener('DOMContentLoaded',function(){
     <!-- LIST_PICKER_STACK_V1 (2026-08-03 — PC Walter, per the Dude) — baseball's LIST_PICKER_HEADER_V2
          layout exactly: a flex-column stack holds the picker row (switcher + ℹ️) on top and the big
          list title / tagline / year line stacked UNDERNEATH, instead of flowing sideways. -->
-    <div class="list-title-stack" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+    <!-- HDR_ONE_ROW_V1 (2026-09-09, the Dude, off a marked up screenshot of the football header;
+         it closes Matt's "I want to get people to the list as soon as possible" from the 9/9 call).
+         THE STACK USED TO BE A COLUMN: picker row, then the title, then the stamp, then the tab row
+         as a separate band below the whole header. Four bands of chrome before the toolbar.
+         IT IS NOW ONE ROW: [ list pill ] [ i ] [ title over stamp ] ......... [ Watch List | Players ]
+         Measured on the live page at 1280 before writing any of it:
+           - the header block goes from 102px tall to 55px, and the separate tab band (26px) is gone
+           - the first table row moves up 77px, from y=415 to y=338
+           - the row uses 1165px of 1280, so it fits with ~115px to spare on the design target
+         flex-wrap is the phone safety net: below the phone breakpoint the parts wrap back to the old
+         stacked order by themselves, verified at 360 and 390 wide, and the tab row is display:none
+         there anyway. Do NOT remove flex-wrap. -->
+    <div class="list-title-stack" style="display:flex;flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap;width:100%">
     <div class="list-picker-header" style="display:flex;align-items:center;gap:8px">
     <!-- LIST_PILL_WIDTH_V1 (2026-09-09, Matt's ask on the 9/9 call: "this box has room to go all the
          way to this right here, but for some reason, it feels compelled to cut itself off at 0.5p").
@@ -1864,13 +1885,45 @@ document.addEventListener('DOMContentLoaded',function(){
     </select><button onclick="openListInfoOverlay()" title="What is each of these lists?" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;font-size:13px;font-weight:700;cursor:pointer;outline:none;font-family:'Nunito Sans',sans-serif;">ℹ️</button>
     </div><!-- /list-picker-header -->
     <!-- LIST_CHROME_V1 (2026-08-03) — big active-list title + tagline, baseball's LIST_PICKER_HEADER_V2 pattern in NFL colors. Updated by _updateYearLabels(). -->
-    <div id="active-list-title" style="font-size:16px;font-weight:800;color:#4ade80;letter-spacing:0.05em;text-shadow:0 1px 2px rgba(0,0,0,0.4);margin-top:4px">List of Integrity</div>
+    <!-- HDR_ONE_ROW_V1: the title and the stamp are one two line unit now so they can sit as a
+         single item on the row. min-width:0 lets it shrink rather than shove the tabs off the edge. -->
+    <div class="list-id-col" style="display:flex;flex-direction:column;align-items:flex-start;min-width:0">
+    <div id="active-list-title" style="font-size:16px;font-weight:800;color:#4ade80;letter-spacing:0.05em;text-shadow:0 1px 2px rgba(0,0,0,0.4);margin-top:0">List of Integrity</div>
     <!-- META_ROW_V1 (2026-08-22, the Dude): the tagline and the teal stamp share ONE line now.
          They were two stacked lines, and the stamp repeated the list name that is already in the title above. -->
     <div class="list-meta-row">
       <div id="active-list-subtitle" style="font-size:11px;color:var(--text2);opacity:0.85;letter-spacing:0.08em">The flagship 101</div>
       <div class="logo-sub" id="logo-sub">Not yet saved</div>
     </div>
+    </div><!-- /list-id-col HDR_ONE_ROW_V1 -->
+    <!-- HDR_ONE_ROW_V1 (2026-09-09): THIS BLOCK WAS MOVED HERE. It used to sit on its own line
+         below the whole header. It is the SAME element with the SAME id, moved, not rebuilt, so
+         every reference still finds it: showWatchListView() and showNflPlayersView()/showNbaPlayersView()
+         set style.display='' to bring it back, showRankingsView() sets 'none', and the phone block's
+         #page-nav{display:none !important} still wins. All of those were enumerated before the move.
+         SAID ACCURATELY BECAUSE IT WAS MEASURED: margin-left:auto would pin these to the far right
+         only if this row were full width. It is sized by its content, so in practice the tabs sit at
+         the END of the row, just past the stamp. At 1280 the row ends at x=1149 and stays on one
+         line. The auto margin is kept because it is what pins them if the row is ever widened.
+         padding is zeroed because .page-nav carries 6px 16px 0 16px from when it was its own band. -->
+<!-- ── PAGE NAV (NFL_PLAYERS_PAGE_V1) ─────── -->
+<!-- Tab row to switch between the Watch List view and the NFL Players (feeder pool)
+     view. Direct port of NBA_PLAYERS_PAGE_V1. Watch List is the default view. -->
+<div class="page-nav" id="page-nav" style="margin-left:auto;padding:0">
+  <!-- RANK_NAV_HIDE_V1 (2026-08-28, PC Walter, per the Dude). THIS TAB ROW BELONGS TO THE
+       WATCH LISTS ONLY. showRankingsView() hides it; showWatchListView() and showNflPlayersView()
+       put it back. Redraft Rankings and Dynasty Rankings are reached through the list
+       switcher, so "Watch List" and "NFL Players" were dead weight sitting above them.
+       Driven inline from JS on purpose so the phone block's display:none !important still
+       wins on phone. Do not convert this to a CSS class without checking that rule. -->
+  <button class="page-nav-btn active" id="nav-watchlist" onclick="showWatchListView()">🏠 Watch List</button>
+  <button class="page-nav-btn" id="nav-nflplayers" onclick="showNflPlayersView()">🏈 NFL Players</button>
+  <!-- NFL_RANKINGS_PARITY_V1 (2026-08-05, PC Walter, per the Dude). The 📋 Rankings tab that
+       lived here since June 9 is GONE on purpose, same day and same reason as basketball's:
+       two doors to one room confused more than they helped. Rankings is now reached ONLY
+       through the list switcher's RANKINGS group. Do not re-add a third tab. -->
+</div>
+
     </div><!-- /list-title-stack -->
   </div>
   <div class="header-right">
@@ -1888,24 +1941,6 @@ document.addEventListener('DOMContentLoaded',function(){
     <!-- HDR_PARITY_TWINS_V1: the Yahoo badge (comment above still documents it), Refresh and
          moon now live in the toolbar below. -->
   </div>
-</div>
-
-<!-- ── PAGE NAV (NFL_PLAYERS_PAGE_V1) ─────── -->
-<!-- Tab row to switch between the Watch List view and the NFL Players (feeder pool)
-     view. Direct port of NBA_PLAYERS_PAGE_V1. Watch List is the default view. -->
-<div class="page-nav" id="page-nav">
-  <!-- RANK_NAV_HIDE_V1 (2026-08-28, PC Walter, per the Dude). THIS TAB ROW BELONGS TO THE
-       WATCH LISTS ONLY. showRankingsView() hides it; showWatchListView() and showNflPlayersView()
-       put it back. Redraft Rankings and Dynasty Rankings are reached through the list
-       switcher, so "Watch List" and "NFL Players" were dead weight sitting above them.
-       Driven inline from JS on purpose so the phone block's display:none !important still
-       wins on phone. Do not convert this to a CSS class without checking that rule. -->
-  <button class="page-nav-btn active" id="nav-watchlist" onclick="showWatchListView()">🏠 Watch List</button>
-  <button class="page-nav-btn" id="nav-nflplayers" onclick="showNflPlayersView()">🏈 NFL Players</button>
-  <!-- NFL_RANKINGS_PARITY_V1 (2026-08-05, PC Walter, per the Dude). The 📋 Rankings tab that
-       lived here since June 9 is GONE on purpose, same day and same reason as basketball's:
-       two doors to one room confused more than they helped. Rankings is now reached ONLY
-       through the list switcher's RANKINGS group. Do not re-add a third tab. -->
 </div>
 
 <!-- ══════════ WATCH LIST VIEW (default) ══════════ -->
