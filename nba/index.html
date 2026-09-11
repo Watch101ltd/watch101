@@ -314,6 +314,15 @@ a.logo-mini:hover{opacity:1;}
 .filterbar-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 16px 8px 16px}
 .filterbar-row > *{flex:0 0 auto;min-width:0}
 #nbawl-filter-panel.filt-collapsed{margin-left:auto !important;padding-top:8px !important;padding-bottom:8px !important}
+/* FILTERBAR_ROW_PORT_V1 (2026-09-11, the Dude, after verifying the football port: "the same exact
+   issue exists on basketball... you made the header changes to the lists on basketball, but not the
+   rankings"). The basketball twin of the football port shipped the same hour, per the standing
+   back-to-back rule. Same wrapper, same flex-wrap escape hatch, nothing new.
+   NOTE for whoever edits this next: basketball's RANKINGS date row also carries the VIEW dropdown
+   (Full View / 9 Cat / 13 Cat / Ranking Mode) INSIDE the same div, so it travels with DATE RANGE as
+   one flex item and the Stat Filtering box sits to their right. Do not split them. */
+#nbap-filter-panel.filt-collapsed{margin-left:auto !important;padding-top:8px !important;padding-bottom:8px !important}
+#nbark-filter-panel.filt-collapsed{margin-left:auto !important;padding-top:8px !important;padding-bottom:8px !important}
 /* STATUS_INLINE_V1 (2026-09-09, the Dude, off a marked up screenshot: "can we move that up next to
    the search bar and then move the entire screen up vertically").
    The "Ready. 12,227 players in DB..." line was its own 36px band under the toolbar. It now rides ON
@@ -2004,8 +2013,9 @@ document.addEventListener('DOMContentLoaded',function(){
        Date Range + Max %Owned (CBS) are present for VISUAL consistency with baseball but inert
        (NBA has no date-range stat pipeline + no CBS data yet). Apply-gated. -->
   <!-- INSTANT_DATERANGE_V1 (June 9, 2026 — PC Walter) — instant date-range OUTSIDE the box (pool). -->
-  <div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbap-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select></div>
-  <div id="nbap-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+  <div class="filterbar-row"><!-- FILTERBAR_ROW_PORT_V1 (2026-09-11): DATE RANGE + Stat Filtering on ONE line, ported from the watch list -->
+  <div style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbap-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select></div>
+  <div id="nbap-filter-panel" style="margin:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
     <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">Stat Filtering</div>
     <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
       <div>
@@ -2058,6 +2068,7 @@ document.addEventListener('DOMContentLoaded',function(){
       </div>
     </div>
   </div>
+  </div><!-- /filterbar-row FILTERBAR_ROW_PORT_V1 -->
   <div class="table-wrap" id="nbaplayers-wrap">
     <table class="watch-list" id="nba-players-table">
       <thead>
@@ -2132,8 +2143,9 @@ document.addEventListener('DOMContentLoaded',function(){
      instant date-range row cloned onto the RANKINGS view, the football mirror built the same day
      (NFL_RANK_STATFILTER_V1). Structural parity with the NBA watch-list panel above: renames only
      (wlpf->rkpf, nbawl->nbark, Wl->Rank). Filter active = drag locked + tier brackets hidden. -->
-<div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbark-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em;margin-left:10px">VIEW</span><select id="rk-view-mode-select" onchange="setViewMode(this.value)" title="Full View shows everything. 9 Cat and 13 Cat keep GP, MIN and that format's scoring categories. Ranking Mode is 9 Cat with the Note and Type columns tucked away so the stats sit next to the names." style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="full" selected>&#8596; Full View</option><option value="nine-cat">&#8596; 9 Cat</option><option value="thirteen-cat">&#8596; 13 Cat</option><option value="rank-work" id="rk-view-rankwork-opt">&#8596; Ranking Mode</option></select></div>
-<div id="nbark-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+<div class="filterbar-row"><!-- FILTERBAR_ROW_PORT_V1 (2026-09-11): DATE RANGE + Stat Filtering on ONE line, ported from the watch list -->
+<div style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nbark-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="yesterday">Yesterday</option><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="7">Last 7 Days</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option></select><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em;margin-left:10px">VIEW</span><select id="rk-view-mode-select" onchange="setViewMode(this.value)" title="Full View shows everything. 9 Cat and 13 Cat keep GP, MIN and that format's scoring categories. Ranking Mode is 9 Cat with the Note and Type columns tucked away so the stats sit next to the names." style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="full" selected>&#8596; Full View</option><option value="nine-cat">&#8596; 9 Cat</option><option value="thirteen-cat">&#8596; 13 Cat</option><option value="rank-work" id="rk-view-rankwork-opt">&#8596; Ranking Mode</option></select></div>
+<div id="nbark-filter-panel" style="margin:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
   <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">Stat Filtering</div>
   <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
     <div>
@@ -2186,6 +2198,7 @@ document.addEventListener('DOMContentLoaded',function(){
     </div>
   </div>
 </div>
+</div><!-- /filterbar-row FILTERBAR_ROW_PORT_V1 -->
 
 <!-- ── WATCH LIST TABLE ─────── -->
   <div class="table-wrap" id="nbarankings-wrap">
