@@ -380,6 +380,17 @@ table.trending tbody td.cnt{text-align:right;color:var(--turf);font-weight:800;w
 .filterbar-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 16px 8px 16px}
 .filterbar-row > *{flex:0 0 auto;min-width:0}
 #nflwl-filter-panel.filt-collapsed{margin-left:auto !important;padding-top:8px !important;padding-bottom:8px !important}
+/* FILTERBAR_ROW_PORT_V1 (2026-09-11, the Dude: "I thought we were doing it on all the lists, but it
+   looks like you only did it on the list of integrity. Can we do it on all the football lists?").
+   FILTERBAR_ROW_V1 shipped 2026-09-09 on the WATCH LIST only -- its own write-up says the pool and
+   the rankings were deliberately not touched that night. This is the unported half, per the standing
+   rule that every football change lands on all four football surfaces.
+   Nothing here is new behaviour: same wrapper, same flex-wrap escape hatch, same 8px collapsed
+   padding so the box matches the 34px date dropdown beside it. The panels already carry
+   .filt-collapsed generically (toggled in JS, not per-surface), so only the margin-left:auto that
+   pushes the collapsed box to the right end was missing on these two. */
+#nflp-filter-panel.filt-collapsed{margin-left:auto !important;padding-top:8px !important;padding-bottom:8px !important}
+#nflrk-filter-panel.filt-collapsed{margin-left:auto !important;padding-top:8px !important;padding-bottom:8px !important}
 /* STATUS_INLINE_V1 (2026-09-09, the Dude, off a marked up screenshot: "can we move that up next to
    the search bar and then move the entire screen up vertically").
    The "Ready. 12,227 players in DB..." line was its own 36px band under the toolbar. It now rides ON
@@ -2189,8 +2200,9 @@ document.addEventListener('DOMContentLoaded',function(){
        (football HAS the Yahoo pipeline, unlike NBA). Date Range + Max %Owned (CBS) are present for
        visual consistency but inert (no date-range pipeline + no CBS data on NFL yet). Apply-gated. -->
   <!-- INSTANT_DATERANGE_V1 (June 9, 2026 — PC Walter) — instant date-range OUTSIDE the box (pool). -->
-  <div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nflp-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select></div>
-  <div id="nflp-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+  <div class="filterbar-row"><!-- FILTERBAR_ROW_PORT_V1 (2026-09-11): DATE RANGE + Stat Filtering on ONE line, ported from the watch list -->
+  <div style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nflp-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select></div>
+  <div id="nflp-filter-panel" style="margin:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
     <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">Stat Filtering</div>
     <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
       <div>
@@ -2231,6 +2243,7 @@ document.addEventListener('DOMContentLoaded',function(){
       </div>
     </div>
   </div>
+  </div><!-- /filterbar-row FILTERBAR_ROW_PORT_V1 -->
   <div class="table-wrap" id="nflplayers-wrap">
     <table class="watch-list" id="nfl-players-table">
       <!-- COLGROUP_WIDTHS_V1 ported here 2026-08-21. REQUIRED, not optional: this table's first row
@@ -2342,8 +2355,9 @@ document.addEventListener('DOMContentLoaded',function(){
      on the 8/19 call) — the STAT FILTERING box + instant date-range row cloned onto the RANKINGS view,
      structural parity with the watch-list panel (renames only: nflwlpf->nflrkpf, nflwl->nflrk, Wl->Rank).
      While any filter is active, drag-to-rank locks and tier brackets hide, so the frozen order is safe. -->
-<div style="margin:0 16px 8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nflrk-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select></div>
-<div id="nflrk-filter-panel" style="margin:0 16px 0 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
+<div class="filterbar-row"><!-- FILTERBAR_ROW_PORT_V1 (2026-09-11): DATE RANGE + Stat Filtering on ONE line, ported from the watch list -->
+<div style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);letter-spacing:0.06em">DATE RANGE</span><select id="nflrk-instant-daterange" title="Date range — applies instantly, no Apply needed" onchange="_applyInstantDateRange(this.id)" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="season" selected>Season Stats</option><option value="prevseason">Previous Season</option><option value="4">Last 4 Weeks</option><option value="2">Last 2 Weeks</option><option value="1">Last Week</option></select></div>
+<div id="nflrk-filter-panel" style="margin:0;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-family:'Nunito Sans',sans-serif">
   <div style="font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:10px">Stat Filtering</div>
   <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
     <div>
@@ -2384,6 +2398,7 @@ document.addEventListener('DOMContentLoaded',function(){
     </div>
   </div>
 </div>
+</div><!-- /filterbar-row FILTERBAR_ROW_PORT_V1 -->
 
   <div class="table-wrap" id="nflrankings-wrap">
     <table class="watch-list" id="rankings-table">
