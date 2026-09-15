@@ -2948,6 +2948,7 @@ function showWatchListView(){
   var _ls = document.getElementById('list-switcher');
   if(_ls && _ls.value !== currentListId) _ls.value = currentListId;
   if(typeof _updateYearLabels === 'function') _updateYearLabels();
+  if(typeof fitHeaders === 'function'){ try{ fitHeaders(); }catch(e){} }   // HEADER_FIT_V1: this surface was hidden, its headers were never fitted
 }
 function showNflPlayersView(){
   _hideAllViews();
@@ -2959,6 +2960,7 @@ function showNflPlayersView(){
   if(_ls && _ls.value !== currentListId) _ls.value = currentListId;
   if(typeof _updateYearLabels === 'function') _updateYearLabels();
   if(typeof renderNflPlayers === 'function') renderNflPlayers();
+  if(typeof fitHeaders === 'function'){ try{ fitHeaders(); }catch(e){} }   // HEADER_FIT_V1
 }
 // RANKINGS_PAGE_V1 — positional rankings view. Phase 1 shell: tabs switch, table renders an empty state.
 // Phase 2 (banked in 02 Plans/rankings_page_plan_nfl_then_nba.md): real rows + add + drag-rank + NAS save.
@@ -3002,6 +3004,7 @@ function showRankingsView(set){
     var _eSub = document.getElementById('logo-sub');
     if(_eSub && window._rkTealText) _eSub.textContent = window._rkTealText;
   } catch(_eSubErr){}
+  if(typeof fitHeaders === 'function'){ try{ fitHeaders(); }catch(e){} }   // HEADER_FIT_V1
 }
 function switchRankPos(pos, btn){
   _rankPos = pos;
@@ -8220,6 +8223,7 @@ function fitTables(){
       table.style.zoom = scale.toFixed(4);
       wrap.style.overflowX = _clamped ? 'auto' : '';
     });
+    if(typeof fitHeaders === 'function'){ try{ fitHeaders(); }catch(e){} }   // HEADER_FIT_V1 (Bug #221): after zoom is settled, make every header word fit
   });
 }
 window.addEventListener('resize', fitTables);
@@ -8237,6 +8241,110 @@ if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoad
   }
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', attach); } else { attach(); }
 })();
+
+// ──────────────────────────────────────────────────────────────────────────
+// HEADER_FIT_V1 (2026-09-15, Bug #221, PC Walter, per the Dude). A HEADER WORD IS NEVER CUT OFF.
+// His words: "I don't ever want the word to be incomplete. I just want you to shrink the font so
+// the whole word fits in the header." The 9/9 LAPTOP_FIT caps put overflow:hidden + text-overflow:
+// ellipsis on every th, with widths that fit the headers by about ONE PIXEL on his laptop. Any other
+// screen, zoom or font rasterizer tipped them over and printed Tea... / Owne... / Ma... . Fixed pixel
+// widths cannot promise a whole word on every machine, so this measures on the VIEWER'S OWN screen:
+//   1. text-overflow:clip on every header, inline !important, so the browser can never add dots.
+//   2. a word that runs under a pinned stat sort arrow (STATBOX_CENTER_NBA_V1 made it absolute)
+//      first re-centres in the room beside the arrow (padding-right = the arrow's footprint).
+//   3. anything still too wide drops its font by the measured ratio, then half a pixel at a time,
+//      never below HEADER_FIT_MIN_PX. Column widths are NOT touched, so nothing else moves.
+// Runs at the end of every fitTables() pass (resize, re-render, view switch) and after web fonts
+// load. Each th remembers what it was fitted for (width|zoom|text|dpr) and is skipped when nothing
+// changed, so re-renders cost ~1ms. Measured with trimmed text ranges: the space before the arrow
+// span is NOT part of the word. Baseball, the reference, never cut headers; this restores that.
+// ──────────────────────────────────────────────────────────────────────────
+var HEADER_FIT_MIN_PX = 6;
+function _hdrMeasure(th){
+  var ar = th.querySelector('.sort-arrow');
+  var absArrow = !!(ar && getComputedStyle(ar).position === 'absolute');
+  var box = th.getBoundingClientRect(), cs = getComputedStyle(th);
+  var scale = th.offsetWidth ? (box.width / th.offsetWidth) : 1;
+  var innerL = box.left + (parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft)) * scale;
+  var innerR = box.right - (parseFloat(cs.borderRightWidth) + parseFloat(cs.paddingRight)) * scale;
+  var arrowL = null;
+  if(absArrow){ var a = ar.getBoundingClientRect(); if(a.width > 0) arrowL = a.left; }
+  var w = document.createTreeWalker(th, NodeFilter.SHOW_TEXT), n, L = Infinity, R = -Infinity;
+  while((n = w.nextNode())){
+    var txt = n.textContent, s = txt.search(/\S/);
+    if(s < 0) continue;
+    if(absArrow && ar.contains(n)) continue;
+    var e = txt.length; while(e > s && /\s/.test(txt.charAt(e - 1))) e--;
+    var rg = document.createRange(); rg.setStart(n, s); rg.setEnd(n, e);
+    var rects = rg.getClientRects();
+    for(var i = 0; i < rects.length; i++){ if(rects[i].width > 0){ L = Math.min(L, rects[i].left); R = Math.max(R, rects[i].right); } }
+  }
+  if(R === -Infinity) return { over: false, textW: 0, roomW: 0, centeredClash: false, arrowW: 0 };
+  var edgeR = (arrowL !== null) ? Math.min(innerR, arrowL) : innerR;
+  return {
+    over: (R > edgeR + 0.25) || (L < innerL - 0.25),   // trimmed ranges, not scrollWidth: scrollWidth counts the hanging space before the arrow span
+    textW: R - L,
+    roomW: edgeR - innerL,
+    centeredClash: (arrowL !== null && R > arrowL + 0.25),
+    arrowW: (arrowL !== null) ? (box.right - arrowL) / scale : 0
+  };
+}
+function fitHeaders(){
+  var ths = [];
+  document.querySelectorAll('table.watch-list thead th').forEach(function(th){
+    if(th.offsetParent === null || th.clientWidth <= 2) return;   // hidden surface, or a zero-width hidden column (#216)
+    var t = th.closest('table');
+    var key = th.clientWidth + '|' + ((t && t.style.zoom) || '1') + '|' + th.textContent + '|' + (window.devicePixelRatio || 1);
+    if(th.getAttribute('data-hfit') === key) return;               // nothing changed since this header was last fitted
+    ths.push({ th: th, key: key });
+  });
+  if(!ths.length) return;
+  // WRITE: back to the stylesheet's own size and cushion, and no dots, ever
+  ths.forEach(function(o){
+    o.th.style.removeProperty('font-size');
+    o.th.style.removeProperty('padding-right');
+    o.th.style.setProperty('text-overflow', 'clip', 'important');
+  });
+  // READ
+  ths.forEach(function(o){ o.base = parseFloat(getComputedStyle(o.th).fontSize); o.m = _hdrMeasure(o.th); });
+  // WRITE: a word that only collides with a pinned arrow re-centres in the room beside the arrow
+  ths.forEach(function(o){
+    if(!o.m.over || !(o.base > 0) || !o.m.centeredClash) return;
+    o.th.style.setProperty('padding-right', o.m.arrowW + 'px', 'important');
+    o.nudged = true;
+  });
+  // READ then WRITE, in rounds: shrink by the measured ratio first, then half a pixel at a time
+  var pending = ths.filter(function(o){ return o.m.over && o.base > 0; });
+  for(var round = 0; round < 8 && pending.length; round++){
+    pending.forEach(function(o){ o.m = _hdrMeasure(o.th); });
+    pending = pending.filter(function(o){ return o.m.over; });
+    pending.forEach(function(o){
+      var cur = o.size || o.base, next;
+      if(round === 0 && o.m.textW > 0 && o.m.roomW > 0){
+        next = Math.floor(cur * (o.m.roomW / o.m.textW) * 2) / 2 + 0.5;   // one half-step generous; the next round steps down if it still does not fit
+        if(next >= cur) next = cur - 0.5;
+      } else {
+        next = cur - 0.5;
+      }
+      if(next <= HEADER_FIT_MIN_PX){ next = HEADER_FIT_MIN_PX; o.floor = true; }
+      o.size = next;
+      o.th.style.setProperty('font-size', next + 'px', 'important');
+    });
+    pending = pending.filter(function(o){ return !o.floor; });
+  }
+  ths.forEach(function(o){ o.th.setAttribute('data-hfit', o.key); });
+  var floored = ths.filter(function(o){ return o.floor && _hdrMeasure(o.th).over; });
+  if(floored.length && window.console){
+    console.warn('HEADER_FIT_V1: still too wide at ' + HEADER_FIT_MIN_PX + 'px, this column needs more width:',
+      floored.map(function(o){ return o.th.textContent.trim(); }));
+  }
+}
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(function(){
+    document.querySelectorAll('th[data-hfit]').forEach(function(th){ th.removeAttribute('data-hfit'); });
+    if(typeof fitTables === 'function') fitTables();
+  });
+}
 
 // ============================================================================
 // COMPACT_MODE_V1 (August 2, 2026 -- Walter, per the Dude). Checklist item 7.
