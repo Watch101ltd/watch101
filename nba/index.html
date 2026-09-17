@@ -2450,9 +2450,16 @@ if(document.fonts && document.fonts.ready){
 // CONFIG
 // ──────────────────────────────────────────────────────────────────────────
 // The live NBA server, deployed June 4 2026 behind Cloudflare. Sleeper stats
-// go straight here (Sleeper isn't ban-prone, no Worker needed). When the Yahoo
-// layer lands, a YAHOO_CACHE_URL Worker gets added — NOT in this shell.
+// go straight here (Sleeper isn't ban-prone, no Worker needed).
 const SERVER_URL = 'https://nba-nas.fantasywatch101.com';
+
+// NBA_YAHOO_WORKER_V1 (2026-09-17, PC Walter + the Dude) — the Yahoo layer landed.
+// Yahoo league-ranks go through the Cloudflare Worker (4-hour cooldown lockout,
+// 10 calls a day ceiling, KV cache with the 24-hour Yahoo cap), never straight to
+// the NAS unless the Worker cannot deliver. Identical to football's YAHOO_CACHE_URL.
+// ONLY route Yahoo calls through this URL; Sleeper, auth and lists stay on SERVER_URL.
+// Worker source: Claude/Cloudflare Worker NBA/watch101-nba-cache-worker.js
+const NBA_YAHOO_CACHE_URL = 'https://watch101-nba-cache.wild-fog-21df.workers.dev';
 
 // ── FTX_ADP_V1 (2026-08-27, per the Dude) ────────────────────────────────────
 // Current 2026-27 Fantrax ADP, replacing the retired Y!Rank column. WHY: Bug #194 —
@@ -2535,8 +2542,9 @@ function _ftxFor(pid){
 // Pulls Yahoo overall ownership % + Yahoo overall rank from the live NBA server
 // (Matt's OAuth token). leagueKey 466.l.17116 = the 2025-26 NBA season game key
 // (prefix 466). The server only uses the prefix to pick the season; percent_owned
-// is Yahoo's PUBLIC ownership across all of Yahoo, not a private league. NO Worker
-// for NBA — we hit the NAS directly. Join key: Sleeper's yahoo_id <-> the payload's
+// is Yahoo's PUBLIC ownership across all of Yahoo, not a private league. Since
+// NBA_YAHOO_WORKER_V1 (2026-09-17) the call goes Worker-first, NAS-fallback,
+// through _nbaYahooFetchLeagueRanks() below, same as football. Join key: Sleeper's yahoo_id <-> the payload's
 // yahoo_player_id (pure ID match; normalized-name fallback for the few Sleeper
 // players with no yahoo_id). When the 2026-27 season starts, bump the league key
 // below (or do the getNBAGameKey auto-detect upgrade — see memory).
@@ -2548,11 +2556,53 @@ function _nbaYahooNorm(str){
   return (str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/\b(iii|ii|iv|jr|sr)\b\.?/gi,'').replace(/\s+/g,' ').trim().toLowerCase();
 }
+// NBA_YAHOO_WORKER_V1 — copied from football's YAHOO_FALLBACK_V1 (May 15, 2026).
+// Two-stage fetch, Worker-first / NAS-fallback. Self-healing: if the Worker can't
+// deliver (most often because the NAS cache is cold and building the full payload
+// outlasts Cloudflare's Worker wall-clock timeout), fall back to a direct NAS call
+// which has no client-side timeout. The NAS finishes its build, the NAS cache is
+// warm, and the next Worker call is an instant cache hit.
+// A 503 from the Worker means a guardrail (cooldown or the 24h ceiling) blocked the
+// call. That is NOT a reason to go to the NAS directly; doing so would defeat the
+// ban protection. Only non-503 failures fall back.
+async function _nbaYahooFetchLeagueRanks(leagueKey){
+  const statusEl = document.getElementById('status-bar');
+  const workerUrl = NBA_YAHOO_CACHE_URL + '/yahoo/league-ranks/' + encodeURIComponent(leagueKey);
+  const nasUrl    = SERVER_URL          + '/yahoo/league-ranks/' + encodeURIComponent(leagueKey);
+
+  // ── Fast path: Worker (KV cache hit returns in ~50ms) ─────────────────────
+  try {
+    const res = await fetch(workerUrl);
+    if(res.status === 503){
+      const body = await res.json().catch(() => ({}));
+      console.warn('[NBA_YAHOO] Worker guardrail blocked the call:', body);
+      throw new Error('rankings guardrail: ' + (body.detail || 'unavailable'));
+    }
+    if(res.ok){
+      console.log('[NBA_YAHOO] league-ranks via Worker (fast path)');
+      return await res.json();
+    }
+    console.warn('[NBA_YAHOO] Worker returned HTTP ' + res.status + ' — falling back to NAS direct (slow path)');
+  } catch(e){
+    if(String(e && e.message).indexOf('rankings guardrail') === 0) throw e;
+    console.warn('[NBA_YAHOO] Worker fetch threw (' + e.message + ') — falling back to NAS direct');
+  }
+
+  // ── Slow path: NAS direct (first-time build, no client timeout) ───────────
+  if(statusEl){
+    statusEl.textContent = 'Loading league rankings — the first build can take up to 2 minutes.';
+  }
+  console.log('[NBA_YAHOO] league-ranks via NAS direct (slow first-time build)');
+  const res = await fetch(nasUrl);
+  if(!res.ok){
+    throw new Error('league-ranks NAS-direct HTTP ' + res.status);
+  }
+  console.log('[NBA_YAHOO] NAS-direct build complete — cache is now warm; subsequent loads will use fast path');
+  return await res.json();
+}
 async function syncYahooNBA(){
   try{
-    const res = await fetch(SERVER_URL + '/yahoo/league-ranks/' + NBA_YAHOO_LEAGUE_KEY);
-    if(!res.ok){ console.warn('[NBA_YAHOO] league-ranks HTTP ' + res.status); return; }
-    const data = await res.json();
+    const data = await _nbaYahooFetchLeagueRanks(NBA_YAHOO_LEAGUE_KEY);
     _yahooByYid = {}; _yahooByName = {};
     (data.players||[]).forEach(yp => {
       // YRANK_DRAFTVALUE_SWAP_V1 (2026-08-27, per the Dude on the 8/27 Matt call, Bug #194).
