@@ -2605,6 +2605,35 @@ async function _nbaYahooFetchLeagueRanks(leagueKey){
   console.log('[NBA_YAHOO] NAS-direct build complete — cache is now warm; subsequent loads will use fast path');
   return await res.json();
 }
+// ── YAHOO_RETRY_V1 (2026-09-19, Bug #224, PC Walter + the Dude) ──────────────
+// WHY: the 24-hour Yahoo cap (YAHOO_24H_CAP_V1/V2, 9/16) means once a day the
+// Worker copy and the NAS file are both gone at the same moment. The first
+// visitor after that triggers the rebuild; the Worker times out (502), the page
+// falls back to the NAS, the NAS is mid-build and answers 503 "already being
+// refreshed", and the page used to give up silently with blank Yahoo columns.
+// FIX: after a failed pull, try again on a slow schedule (45s, 90s, 150s, 240s,
+// then stop) so the columns fill in on their own once the build lands. A Worker
+// guardrail block (cooldown / daily ceiling) is NOT retried: it will not clear
+// in minutes and retrying would only burn the Worker's call ceiling. Yahoo
+// itself is never hit by a retry: the NAS holds one build at a time and every
+// retry lands on the Worker cache once the build is done.
+const _YAHOO_RETRY_DELAYS_MS = [45000, 90000, 150000, 240000];
+let _yahooRetryAttempt = 0;
+let _yahooRetryTimer = null;
+function _yahooScheduleRetry(err, fn, tag){
+  const msg = String((err && err.message) || err || '');
+  if(msg.indexOf('rankings guardrail') === 0){ console.warn(tag + ' guardrail blocked the call; not retrying'); return; }
+  if(_yahooRetryTimer) return;
+  if(_yahooRetryAttempt >= _YAHOO_RETRY_DELAYS_MS.length){ console.warn(tag + ' gave up after ' + _yahooRetryAttempt + ' retries'); return; }
+  const delay = _YAHOO_RETRY_DELAYS_MS[_yahooRetryAttempt++];
+  console.warn(tag + ' retry #' + _yahooRetryAttempt + ' in ' + Math.round(delay / 1000) + 's');
+  _yahooRetryTimer = setTimeout(function(){ _yahooRetryTimer = null; fn(); }, delay);
+}
+function _yahooRetryReset(){
+  _yahooRetryAttempt = 0;
+  if(_yahooRetryTimer){ clearTimeout(_yahooRetryTimer); _yahooRetryTimer = null; }
+}
+// ── /YAHOO_RETRY_V1 ──────────────────────────────────────────────────────────
 async function syncYahooNBA(){
   try{
     const data = await _nbaYahooFetchLeagueRanks(NBA_YAHOO_LEAGUE_KEY);
@@ -2625,11 +2654,12 @@ async function syncYahooNBA(){
       if(yp.name) _yahooByName[_nbaYahooNorm(yp.name)] = yp;
     });
     _yahooLoaded = true;
+    _yahooRetryReset();  // YAHOO_RETRY_V1
     console.log('[NBA_YAHOO] loaded ' + Object.keys(_yahooByYid).length + ' Yahoo rows');
     if(typeof renderWatchList==='function') renderWatchList();
     if(typeof renderNbaPlayers==='function') renderNbaPlayers();
     if(typeof renderRankings==='function') renderRankings();
-  }catch(e){ console.warn('[NBA_YAHOO] sync failed', e); }
+  }catch(e){ console.warn('[NBA_YAHOO] sync failed', e); _yahooScheduleRetry(e, syncYahooNBA, '[NBA_YAHOO]'); }  // YAHOO_RETRY_V1
 }
 // Look up the Yahoo payload row for a Sleeper player_id.
 // NOTE (verified 2026-06-28): Sleeper's NBA records carry yahoo_id = null for ALL
