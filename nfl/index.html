@@ -11490,6 +11490,35 @@ function _nflTeamToAbbr(team){
   return String(team).toUpperCase();   // already an abbr, or unmapped — pass through
 }
 
+// ── YAHOO_RETRY_V1 (2026-09-19, Bug #224, PC Walter + the Dude) ──────────────
+// WHY: the 24-hour Yahoo cap (YAHOO_24H_CAP_V1/V2, 9/16) means once a day the
+// Worker copy and the NAS file are both gone at the same moment. The first
+// visitor after that triggers the rebuild; the Worker times out (502), the page
+// falls back to the NAS, the NAS is mid-build and answers 503 "already being
+// refreshed", and the page used to give up silently with blank Yahoo columns.
+// FIX: after a failed pull, try again on a slow schedule (45s, 90s, 150s, 240s,
+// then stop) so the columns fill in on their own once the build lands. A Worker
+// guardrail block (cooldown / daily ceiling) is NOT retried: it will not clear
+// in minutes and retrying would only burn the Worker's call ceiling. Yahoo
+// itself is never hit by a retry: the NAS holds one build at a time and every
+// retry lands on the Worker cache once the build is done.
+const _YAHOO_RETRY_DELAYS_MS = [45000, 90000, 150000, 240000];
+let _yahooRetryAttempt = 0;
+let _yahooRetryTimer = null;
+function _yahooScheduleRetry(err, fn, tag){
+  const msg = String((err && err.message) || err || '');
+  if(msg.indexOf('rankings guardrail') === 0){ console.warn(tag + ' guardrail blocked the call; not retrying'); return; }
+  if(_yahooRetryTimer) return;
+  if(_yahooRetryAttempt >= _YAHOO_RETRY_DELAYS_MS.length){ console.warn(tag + ' gave up after ' + _yahooRetryAttempt + ' retries'); return; }
+  const delay = _YAHOO_RETRY_DELAYS_MS[_yahooRetryAttempt++];
+  console.warn(tag + ' retry #' + _yahooRetryAttempt + ' in ' + Math.round(delay / 1000) + 's');
+  _yahooRetryTimer = setTimeout(function(){ _yahooRetryTimer = null; fn(); }, delay);
+}
+function _yahooRetryReset(){
+  _yahooRetryAttempt = 0;
+  if(_yahooRetryTimer){ clearTimeout(_yahooRetryTimer); _yahooRetryTimer = null; }
+}
+// ── /YAHOO_RETRY_V1 ──────────────────────────────────────────────────────────
 // Top-level orchestrator. Runs once on page load (fire-and-forget) and again
 // whenever the user clicks the Sign-in badge after signing in.
 async function loadYahooData(){
@@ -11516,10 +11545,12 @@ async function loadYahooData(){
     payload = await _yahooFetchLeagueRanks(leagueKey);
   } catch(e){
     console.warn('[yahoo] league-ranks fetch failed:', e.message);
+    _yahooScheduleRetry(e, loadYahooData, '[yahoo]');  // YAHOO_RETRY_V1
     if(statusEl) statusEl.textContent = 'League rankings are temporarily unavailable — showing the latest saved list.';  // NEUTRAL_STATUS_V1 (2026-08-02, the Dude's call): no brand names in visitor-facing status/error banners; technical detail stays in the console.warn above.
     return;
   }
 
+  _yahooRetryReset();  // YAHOO_RETRY_V1
   const yahooPlayers = (payload && payload.players) || [];
   // YAHOO_NAME_FALLBACK_V1 (May 15, 2026) — many Sleeper records have
   // yahoo_id: null (especially for younger players like Ja'Marr Chase, Bijan
