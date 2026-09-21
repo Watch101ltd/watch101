@@ -8244,8 +8244,28 @@ function fitTables(){
       // pool. If a future session finds itself about to write another `if(wrap.id === ...)` here, that is
       // the exact shape of the bug this removal cured — read the CSS tombstone before doing it.
       table.style.zoom = '1';                       // reset to read true natural width
-      const avail = wrap.clientWidth;
-      const natural = table.scrollWidth;
+      /* TABLEFIT_PADDING_V1 (2026-09-21, PC Walter, per the Dude) - THIS IS THE RIGHT-EDGE CUTOFF,
+         and it had been here since the shrinker was written. His words: "it's getting the whole screen
+         to fit without cutting anything off on the right... just half of the E at the end of Remove is
+         getting cutoff."
+         `wrap.clientWidth` is the PADDING box - it INCLUDES the wrap's own left and right padding
+         (.table-wrap carries 0.75rem = 12px a side here). The table only ever gets the CONTENT box, so
+         dividing the natural width by clientWidth scaled every table 24px wider than its room and the
+         last column was clipped by that much. MEASURED at his 175% bench (1148px viewport), read-only
+         on the live GitHub pages, before a byte moved:
+           football watch list  natural 1299 -> 25px past the edge
+           basketball watch list natural 1366 -> 25px past
+           basketball rankings   natural 1276 -> 25px past   (his "TO cut in half")
+           basketball pool       natural 1072 -> fits either way
+         Same 25px everywhere, which is the 24px of padding plus a rounding pixel.
+         And `offsetWidth` replaces `scrollWidth` because scrollWidth rounds DOWN (1298 for a table that
+         is really 1298.67) while offsetWidth rounds UP - the safe direction for a width you must not
+         exceed. Do NOT put clientWidth back here without re-measuring the overhang. */
+      const _wcs = getComputedStyle(wrap);
+      const avail = wrap.clientWidth
+                  - (parseFloat(_wcs.paddingLeft)  || 0)
+                  - (parseFloat(_wcs.paddingRight) || 0);
+      const natural = table.offsetWidth;
       if(natural <= 0 || avail <= 0){ return; }
       if(natural <= avail){
         // STRETCH_KILL_V1 (2026-08-21 evening): GROW-to-fill retired on the Dude's call. The old line
@@ -8256,7 +8276,7 @@ function fitTables(){
         wrap.style.overflowX = '';   // SCROLL_FALLBACK_NFL_V1: fits — clear scroll state
         return;
       }
-      let scale = avail / natural;
+      let scale = (avail - 1) / natural;   // TABLEFIT_PADDING_V1: one pixel of slack for sub-pixel rounding
       // SCROLL_FALLBACK_NFL_V1 (2026-08-27, Bug #195 twin — mirrored from basketball the same
       // hour, per the standing back-to-back rule). Football's wraps carry the same
       // overflow:visible sticky-header tradeoff, so the same amputation is latent here; the
@@ -8909,9 +8929,13 @@ function _cpFitTables(scope){
       var table = wrap.querySelector('table');
       if(!table) return;
       table.style.zoom = '1';
-      var avail = wrap.clientWidth, natural = table.scrollWidth;
+      // TABLEFIT_PADDING_V1: same correction as fitTables(). .cp-table-wrap has no padding today,
+      // so this is belt and braces, but the two fitters now measure width the same way.
+      var _cs = getComputedStyle(wrap);
+      var avail = wrap.clientWidth - (parseFloat(_cs.paddingLeft)||0) - (parseFloat(_cs.paddingRight)||0);
+      var natural = table.offsetWidth;
       if(natural > 0 && avail > 0 && natural > avail){
-        table.style.zoom = (avail / natural).toFixed(4);
+        table.style.zoom = ((avail - 1) / natural).toFixed(4);   // TABLEFIT_PADDING_V1
       }
     });
   } catch(e){}
