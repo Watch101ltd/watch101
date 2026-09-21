@@ -10981,30 +10981,63 @@ function _ftlFitCard(){
     fitLine(vit, 11, 9);
     fitLine(po,  11, 9);
 
-    // Rank pills scale rather than stacking.
-    var pa = document.getElementById('ftl-rankrk');
-    var pc = document.getElementById('ftl-rank');
-    if(pa && pc && pa.style.display !== 'none' && pc.style.display !== 'none'){
-      var ps = 11, pv = 4, ph = 10, pn = 16;
-      var applyPill = function(){
-        [pa, pc].forEach(function(el){
-          el.style.fontSize = ps + 'px';
-          el.style.padding = pv.toFixed(1) + 'px ' + ph.toFixed(1) + 'px';
-          el.style.letterSpacing = (0.15 * (ps / 11)).toFixed(3) + 'em';
-          var n = el.querySelector('.num');
-          if(n) n.style.fontSize = pn.toFixed(1) + 'px';
+    // ========================================================================
+    // METAROW_FIT_V1 (2026-09-21, the Dude, off two zoom screenshots: at 175%
+    // "the I own this player button goes underneath").
+    // REPLACES football's rank-pill block, which had two holes:
+    //   1. It was gated on BOTH rank pills being visible. On a player who is not
+    //      on the watch list, Watch101 Rank is display:none, so the whole loop
+    //      never ran and nothing scaled at all. That is exactly Wembanyama.
+    //   2. It never looked at "I own this player", which is the third control in
+    //      this row and the widest one at 156px.
+    // Now the WHOLE row is the unit: every visible control in it scales together
+    // until they share one line. Works for one pill, two pills, or any future
+    // control dropped in there.
+    // MEASURED LIVE on the customer card before this was written: the two visible
+    // controls need 290px plus a 12px gap, and the row stacks the moment it has
+    // less than 302px, which is an overlay narrower than about 1050px.
+    // Verified by injecting this exact code into the live page: 1500/1300/1100
+    // untouched at 100%, and 1050/1000/950/900 scaled to 96/90/84/82% with the
+    // row on one line at every one. The 0.72 floor is never reached.
+    // Each control remembers its OWN natural size once, so the rank pill and the
+    // own pill keep their different paddings instead of being forced to match.
+    // 12px threshold, not football's 4px: these two sit 4px apart on purpose
+    // because the own pill carries a 10px top margin, so a 4px test is right on
+    // the boundary and one CSS tweak away from firing on a row that is fine.
+    // ========================================================================
+    var mrow = document.querySelector('#ftl-overlay .ftl-meta-row');
+    if(mrow){
+      var mkids = [].slice.call(mrow.children)
+        .map(function(c){ return c.id ? c : (c.firstElementChild || c); })
+        .filter(function(e){ return e && e.offsetParent !== null; });
+      if(mkids.length > 1){
+        mkids.forEach(function(el){
+          if(!el.dataset.mrBase){
+            var cs = getComputedStyle(el), n = el.querySelector('.num');
+            el.dataset.mrBase = JSON.stringify({
+              fs: parseFloat(cs.fontSize) || 11,
+              pv: parseFloat(cs.paddingTop) || 4,
+              ph: parseFloat(cs.paddingLeft) || 10,
+              nf: n ? (parseFloat(getComputedStyle(n).fontSize) || 16) : 0
+            });
+          }
         });
-      };
-      var stacked = function(){
-        return Math.abs(pa.getBoundingClientRect().top - pc.getBoundingClientRect().top) > 4;
-      };
-      applyPill();
-      while(ps > 8 && stacked()){
-        ps -= 0.25;
-        pv = Math.max(2, pv - 0.1);
-        ph = Math.max(5, ph - 0.35);
-        pn = Math.max(11, pn - 0.35);
-        applyPill();
+        var mf = 1.0;
+        var applyMeta = function(){
+          mkids.forEach(function(el){
+            var b = JSON.parse(el.dataset.mrBase);
+            el.style.fontSize = (b.fs * mf).toFixed(2) + 'px';
+            el.style.padding  = (b.pv * mf).toFixed(2) + 'px ' + (b.ph * mf).toFixed(2) + 'px';
+            var n = el.querySelector('.num');
+            if(n && b.nf) n.style.fontSize = (b.nf * mf).toFixed(2) + 'px';
+          });
+        };
+        var mSpread = function(){
+          var t = mkids.map(function(e){ return e.getBoundingClientRect().top; });
+          return Math.max.apply(null, t) - Math.min.apply(null, t);
+        };
+        applyMeta();
+        while(mf > 0.72 && mSpread() > 12){ mf -= 0.02; applyMeta(); }
       }
     }
 
