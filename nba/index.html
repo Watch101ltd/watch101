@@ -10982,6 +10982,39 @@ function _ftlFitCard(){
     fitLine(po,  11, 9);
 
     // ========================================================================
+    // NAME_FIT_V1 (2026-09-21) — the player NAME scales before it wraps.
+    // Closes the surviving half of Bug #169 (8/21, Matt: "card wraps player names
+    // onto two lines"). FITCARD_V1 fixed the "5 year experience" half because that
+    // is a .fact inside the vitals line. It never touched the name: .ftl-name is a
+    // separate 26px element and the fitter referenced it ZERO times on either sport.
+    // MEASURED on the GitHub page before writing, Nickeil Alexander-Walker at 24
+    // characters: the name broke onto two lines at a card width of 1175px and below.
+    // The card runs at 90% of the viewport, so at the Dude's 175% working zoom the
+    // card is about 1066px and it wrapped every time. Wembanyama is 17 characters
+    // and fits, which is why the 9/21 verification pass came back clean.
+    // ⚠ DELIBERATELY DOES NOT CACHE A BASE SIZE, unlike the meta row below.
+    // .ftl-name is 26px / 24px / 22px at three different breakpoints, so a base
+    // captured on a narrow window would never grow back when the window widened.
+    // Every pass clears the inline size, re-reads whatever the stylesheet says at
+    // THIS width, and scales from there — the same "every pass restarts from full
+    // size" rule the rest of this function follows. The meta row is allowed to
+    // cache because its controls have no breakpoint overrides; checked, both files.
+    // ========================================================================
+    var nameEl = document.getElementById('ftl-name');
+    if(nameEl){
+      nameEl.style.fontSize = '';                 // back to the stylesheet for this width
+      nameEl.style.whiteSpace = 'nowrap';
+      var nb = parseFloat(getComputedStyle(nameEl).fontSize) || 26;
+      var nf = 1.0;
+      while(nf > 0.72 && nameEl.scrollWidth > meta.clientWidth){
+        nf -= 0.02;
+        nameEl.style.fontSize = (nb * nf).toFixed(2) + 'px';
+      }
+      // floor reached and still too wide: wrapping beats unreadable
+      nameEl.style.whiteSpace = (nameEl.scrollWidth > meta.clientWidth) ? 'normal' : 'nowrap';
+    }
+
+    // ========================================================================
     // METAROW_FIT_V1 (2026-09-21, the Dude, off two zoom screenshots: at 175%
     // "the I own this player button goes underneath").
     // REPLACES football's rank-pill block, which had two holes:
