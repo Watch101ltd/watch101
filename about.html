@@ -87,6 +87,51 @@ body{
    DO NOT re-add position:sticky to .w101-nav without solving the column header
    collision first. Removing this line is what fixed the bug. */
 
+/* =========================================================================
+   CHROME_FIT_V1  (2026-09-21, PC Walter, per the Dude)
+   THE PAGE SHOULD LOOK THE SAME ON A WIDESCREEN AND ON A LAPTOP. His words,
+   and they are the whole specification: "everything should just shrink or get
+   a little bigger. Lines shouldn't break, things shouldn't move to different
+   places on the screen. That's what Matt means by amateurish."
+
+   At his 175% browser zoom the viewport is ~1148 CSS px. MEASURED on the live
+   GitHub page before a line of this was written:
+     - the site nav needs 1661px and had 1148, so it WRAPPED: the sister-site
+       minis and the social icons dropped to a second row and the bar went
+       54px tall -> 106px tall.
+     - the page header row needs 1145px and had 1116, so the Watch List /
+       Players tabs dropped to a second line, 38px tall -> 74px tall.
+
+   The fix is a UNIFORM BLOCK SCALE, not a rearrange. One CSS zoom on the whole
+   row, so every part shrinks together, in the same order, in the same places.
+   MEASURED after: nav settles at 0.6912 and is one row, 38px. Header settles at
+   0.9729 and is one row, 38px. 103px of chrome handed back to the list, with
+   nothing hidden and nothing moved.
+
+   At 175% browser zoom a 0.69 block scale still renders the bar LARGER than it
+   renders at 100% zoom today (54 x 0.69 x 1.75 = 66 physical px vs 54), so
+   nothing has to be dropped to make this fit.
+
+   zoom, NOT transform:scale — transform breaks the tables' sticky headers, the
+   same reason fitTables() uses zoom.
+
+   The .chrome-fit class is what turns wrapping OFF, so the row is allowed to
+   overflow and therefore be MEASURED. !important is required because
+   .list-title-stack carries flex-wrap:wrap as an INLINE style (HDR_ONE_ROW_V1's
+   phone safety net) and a stylesheet rule cannot beat an inline one without it.
+   Verified: with the rule written without !important the header row still
+   wrapped and the fitter reported "fits" on a broken layout.
+
+   Below 900px none of this applies and the phone layout is untouched.
+   ========================================================================= */
+@media (min-width:900px){
+  .w101-nav-inner.chrome-fit{flex-wrap:nowrap !important}
+  .w101-nav-inner.chrome-fit > *{flex-shrink:0 !important}
+  .w101-nav-inner.chrome-fit .w101-menu{flex-wrap:nowrap !important}
+  .list-title-stack.chrome-fit{flex-wrap:nowrap !important}
+  .list-title-stack.chrome-fit > *{flex-shrink:0 !important}
+  .list-title-stack.chrome-fit .page-nav{flex-wrap:nowrap !important}
+}
 .w101-nav-inner{
   max-width:1240px;margin:0 auto;padding:14px 20px;
   display:flex;align-items:center;gap:18px;flex-wrap:wrap;
@@ -771,5 +816,57 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
 </script>
 <!-- ======================== /SITE_COPY_V1 ======================== -->
 
+<!-- ===================== CHROME_FIT_V1 START ===================== -->
+<script>
+/* CHROME_FIT_V1 (2026-09-21, PC Walter, per the Dude). Read the CSS block of the
+   same name up in the stylesheet for the measurements and the reasoning.
+   Shrink the whole row as one block until it fits on one line. Never rearrange,
+   never hide. If the readability floor is reached and it STILL does not fit, the
+   nowrap is released so the row wraps instead of anything being cut off. */
+(function(){
+  var CHROME_FIT_MIN_VW = 900;          // below this the phone layout owns these rows
+  var TARGETS = [
+    // [selector, shrink floor]
+    ['.w101-nav-inner',   0.62],        // his 175% bench needs 0.6912; 0.62 holds down to about 1030px wide
+    ['.list-title-stack', 0.75]         // bench needs 0.9729; this row carries real content so it wraps sooner
+  ];
+  function fitChrome(){
+    var phone = window.innerWidth < CHROME_FIT_MIN_VW;
+    for(var i = 0; i < TARGETS.length; i++){
+      var sel = TARGETS[i][0], floor = TARGETS[i][1];
+      var el = document.querySelector(sel);
+      if(!el) continue;                               // the hub pages carry a nav and no title stack
+      el.style.zoom = '';                             // always reset first, so the natural width is the real one
+      if(phone || el.offsetParent === null){ el.classList.remove('chrome-fit'); continue; }
+      el.classList.add('chrome-fit');                 // wrapping off, so the row can overflow and be measured
+      var need = el.scrollWidth, avail = el.clientWidth;
+      if(need <= 0 || avail <= 0 || need <= avail) continue;   // already fits, leave it at full size
+      var z = (avail - 2) / need;
+      if(z < floor) z = floor;
+      el.style.zoom = z.toFixed(4);
+      if(el.scrollWidth > el.clientWidth + 1){        // floor reached and still too wide:
+        el.classList.remove('chrome-fit');            // wrap rather than cut anything off
+        el.style.zoom = '';
+      }
+    }
+  }
+  window.fitChrome = fitChrome;
+  window.addEventListener('resize', fitChrome);
+  window.addEventListener('load', fitChrome);         // the brand logo is an <img>; its width lands late
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fitChrome); }  // web fonts change every width in the bar
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fitChrome); } else { fitChrome(); }
+  /* Re-fit when the row's CONTENTS change. Two observers, both on things fitChrome
+     never touches, so neither can trigger itself:
+       - the title stack's subtree: switching lists rewrites the list name and the stamp
+       - #page-nav's style: showRankingsView() hides the tab row, the others put it back */
+  if(window.MutationObserver){
+    var stack = document.querySelector('.list-title-stack');
+    if(stack){ new MutationObserver(fitChrome).observe(stack, {childList:true, subtree:true, characterData:true}); }
+    var pn = document.getElementById('page-nav');
+    if(pn){ new MutationObserver(fitChrome).observe(pn, {attributes:true, attributeFilter:['style']}); }
+  }
+})();
+</script>
+<!-- ===================== CHROME_FIT_V1 END ===================== -->
 </body>
 </html>
