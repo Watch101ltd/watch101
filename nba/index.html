@@ -678,6 +678,8 @@ table.watch-list tbody tr:last-child td{border-bottom:none}
 #ftl-overlay .ftl-name{font-family:var(--font-display);font-weight:700;font-size:26px;letter-spacing:0;color:var(--text);line-height:1;}
 #ftl-overlay .ftl-sub{font-size:11px;color:var(--text2);margin-top:3px;letter-spacing:0.04em;}
 #ftl-overlay .ftl-sub .sep{color:var(--border2);margin:0 8px}
+#ftl-overlay .ftl-sub .fact{white-space:nowrap;}  /* FITCARD_PORT_V1 (2026-09-21): EVERY fact on the vitals line is atomic. "Age 25.9", "6'6\"", "230 lbs" are single facts and must never be cut across two lines. */
+#ftl-overlay .ftl-sub .ftl-vitals{display:block;}  /* FITCARD_PORT_V1: the vitals run is its own block so it can be scaled on its own */
 #ftl-overlay .ftl-rank{display:inline-flex;align-items:center;gap:8px;margin-top:0;padding:4px 10px;background:#c2410c33;border:1px solid var(--court-deep);border-radius:6px;font-size:11px;letter-spacing:0.15em;color:var(--court-bright);font-weight:700;}
 #ftl-overlay .ftl-rank .num{font-family:var(--font-display);font-weight:700;font-size:16px;letter-spacing:0}
 #ftl-overlay .ftl-herostats{flex:2;min-width:320px;display:flex;flex-direction:column;gap:5px;align-self:center;}  /* BUG49_PHASE2: clone of baseball's .ppo-hero-stats — right column holds Latest News + the stat block */
@@ -1275,8 +1277,8 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
 #ftl-overlay .ftl-ownbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;overflow:hidden;background:var(--surface2);}
 #ftl-overlay .ftl-ownbar .ftl-statval{color:var(--text1,#fff);}
 #ftl-overlay .ftl-statcell:last-child{border-right:none;}
-#ftl-overlay .ftl-statlabel{font-family:var(--font-display);font-weight:700;font-size:8px;letter-spacing:0.06em;color:var(--text3);margin-bottom:2px;}
-#ftl-overlay .ftl-statval{font-size:13px;font-weight:700;color:#fb923c;line-height:1;}
+#ftl-overlay .ftl-statlabel{font-family:var(--font-display);font-weight:700;font-size:8px;letter-spacing:0.06em;color:var(--text3);margin-bottom:2px;white-space:nowrap;}  /* FITCARD_PORT_V1: a stat label is one label. On football six of thirteen used to split in half on a narrow window. */
+#ftl-overlay .ftl-statval{font-size:13px;font-weight:700;color:#fb923c;line-height:1;white-space:nowrap;}  /* FITCARD_PORT_V1: a value never breaks either */
 #ftl-overlay .ftl-statval.na{color:var(--text3);font-weight:500;}
 /* ROTOWIRE_LINK_NBA_V1 (2026-08-05) — baseball's gold RW pill, cloned. Deliberately a
    PILL and deliberately just a LINK: the Dude looked at a real news feed and decided against
@@ -10795,7 +10797,27 @@ function openFromTheLogo(pid, _keepRange){
 
   document.getElementById('ftl-name').textContent = name;
   const subParts = [ (p.team || '—'), (p.position || '—'), 'Age ' + nbaDecimalAge(p) ];
-  document.getElementById('ftl-sub').innerHTML = subParts.join('<span class="sep">|</span>');
+  // HT_WT_NBA_V1 (2026-09-21) — height and weight on the basketball card, the way football
+  // has had them since 2026-08-19. Formatter copied verbatim from football's card: Sleeper's
+  // NBA blob carries height as INCHES-as-string (Jimmy Butler "78" = 6'6", verified live off
+  // nba-nas /sleeper/players on 2026-09-21, 2,075 of 2,089 named players carry both fields)
+  // but has carried feet-inches strings like 6'2" historically, so BOTH shapes are handled.
+  // A player missing either one simply shows what exists, with no stray divider.
+  const _htRaw = (p.height != null) ? String(p.height).trim() : '';
+  let _htFmt = '';
+  if(_htRaw){
+    if(_htRaw.indexOf("'") !== -1){ _htFmt = _htRaw; }                    // legacy 6'2" shape: use as-is
+    else { const _in = Number(_htRaw); if(isFinite(_in) && _in > 0){ _htFmt = Math.floor(_in / 12) + "'" + (_in % 12) + '"'; } }
+  }
+  const _wtNum = Number(p.weight);
+  const _wtFmt = (isFinite(_wtNum) && _wtNum > 0) ? (_wtNum + ' lbs') : '';
+  if(_htFmt) subParts.push(_htFmt);
+  if(_wtFmt) subParts.push(_wtFmt);
+  // FITCARD_PORT_V1: each segment is wrapped as a .fact so it is atomic - the line may break
+  // BETWEEN facts, never inside one.
+  document.getElementById('ftl-sub').innerHTML = subParts
+    .map(function(t){ return '<span class="fact">' + t + '</span>'; })
+    .join('<span class="sep">|</span>');
 
   // Watch101 rank — only if this player is ON the watch list (his hand-ranked slot).
   const idx = _wlIndexOf(pid);
@@ -10891,8 +10913,125 @@ function openFromTheLogo(pid, _keepRange){
 
   document.getElementById('ftl-backdrop').classList.add('visible');
   document.getElementById('ftl-overlay').classList.add('visible');
+  _ftlFitCard();   // FITCARD_PORT_V1: card is painted and on screen - scale it to this window
   document.body.classList.add('ftl-open');
 }
+// ============================================================================
+// FITCARD_PORT_V1 (2026-09-21) — FITCARD_V1 and HTWT_DIVIDER_V1's nowrap rules,
+// ported VERBATIM from football, where they shipped 2026-09-09 and Matt verified
+// them. Basketball never got them: before today this card wrapped exactly the way
+// football did in August.
+// The function below is a byte-for-byte copy. Two football-only things simply are
+// not here and the code already handles that on its own:
+//   - the playoff trio (.ftl-sub-po). querySelector returns null, fitLine() returns
+//     early on a null element, and the vitals-grouping loop with a null boundary
+//     correctly sweeps the WHOLE sub line into .ftl-vitals, which is what basketball
+//     wants since its entire line is vitals.
+//   - height and weight had never been on this card at all. They are added in the
+//     sub-line builder below, using football's own formatter.
+// ============================================================================
+// ============================================================================
+// FITCARD_V1 (2026-09-09, Matt). SHRINK BEFORE REFLOW.
+// His rule, in his words: "when almost every other website has its window shrunk,
+// it can shrink text to a certain size, and then after that it might need to make
+// adjustments." Before this, a narrow window made the card break things apart
+// instead of scaling them: "9 yr exp" snapped in half, the two rank pills stacked,
+// and six of the thirteen stat labels split into two lines.
+//
+// The rule this enforces, in order:
+//   1. Nothing that is ONE FACT ever breaks. That is CSS (.fact, .ftl-statlabel).
+//   2. Text scales down to a readable floor to stay on its line.
+//   3. Only if the floor is reached may a line reflow - and then only between facts.
+//
+// Floors are deliberate: 9px for the vitals and playoff lines, 8px for the rank
+// pills, 72% for the stat strip. Below those it stops shrinking and lets it wrap,
+// because unreadable is worse than wrapped.
+//
+// Every pass RE-STARTS from full size, so widening the window scales back up.
+// ============================================================================
+function _ftlFitCard(){
+  try{
+    var sub = document.getElementById('ftl-sub');
+    if(!sub || !sub.parentElement) return;
+    var meta = sub.parentElement;
+    var po   = sub.querySelector('.ftl-sub-po');
+
+    // Group the vitals so they scale independently of the playoff line.
+    // Idempotent: on a repeat pass the wrapper already exists and is reused.
+    var vit = sub.querySelector('.ftl-vitals');
+    if(!vit){
+      vit = document.createElement('span');
+      vit.className = 'ftl-vitals';
+      while(sub.firstChild && sub.firstChild !== po) vit.appendChild(sub.firstChild);
+      sub.insertBefore(vit, po);
+    }
+
+    function fitLine(el, max, min){
+      if(!el) return;
+      el.style.whiteSpace = 'nowrap';
+      var s = max;
+      el.style.fontSize = s + 'px';
+      while(s > min && el.scrollWidth > meta.clientWidth){
+        s -= 0.25;
+        el.style.fontSize = s + 'px';
+      }
+      // floor reached and still too wide: let it wrap, but only between facts
+      el.style.whiteSpace = (el.scrollWidth > meta.clientWidth) ? 'normal' : 'nowrap';
+    }
+    fitLine(vit, 11, 9);
+    fitLine(po,  11, 9);
+
+    // Rank pills scale rather than stacking.
+    var pa = document.getElementById('ftl-rankrk');
+    var pc = document.getElementById('ftl-rank');
+    if(pa && pc && pa.style.display !== 'none' && pc.style.display !== 'none'){
+      var ps = 11, pv = 4, ph = 10, pn = 16;
+      var applyPill = function(){
+        [pa, pc].forEach(function(el){
+          el.style.fontSize = ps + 'px';
+          el.style.padding = pv.toFixed(1) + 'px ' + ph.toFixed(1) + 'px';
+          el.style.letterSpacing = (0.15 * (ps / 11)).toFixed(3) + 'em';
+          var n = el.querySelector('.num');
+          if(n) n.style.fontSize = pn.toFixed(1) + 'px';
+        });
+      };
+      var stacked = function(){
+        return Math.abs(pa.getBoundingClientRect().top - pc.getBoundingClientRect().top) > 4;
+      };
+      applyPill();
+      while(ps > 8 && stacked()){
+        ps -= 0.25;
+        pv = Math.max(2, pv - 0.1);
+        ph = Math.max(5, ph - 0.35);
+        pn = Math.max(11, pn - 0.35);
+        applyPill();
+      }
+    }
+
+    // Stat strip scales as a unit. Base sizes match the CSS: 8px label, 13px value.
+    var wrap = document.getElementById('ftl-statwrap');
+    var bar  = wrap ? wrap.querySelector('.ftl-statbar') : null;
+    if(bar && wrap){
+      var sc = 1.0;
+      var applyBar = function(){
+        var L = bar.querySelectorAll('.ftl-statlabel'), V = bar.querySelectorAll('.ftl-statval'), i;
+        for(i=0;i<L.length;i++) L[i].style.fontSize = (8  * sc).toFixed(2) + 'px';
+        for(i=0;i<V.length;i++) V[i].style.fontSize = (13 * sc).toFixed(2) + 'px';
+      };
+      applyBar();
+      while(sc > 0.72 && bar.scrollWidth > wrap.clientWidth){
+        sc -= 0.02;
+        applyBar();
+      }
+    }
+  }catch(e){ /* a fit pass must never break the card */ }
+}
+var _ftlFitTimer = null;
+window.addEventListener('resize', function(){
+  clearTimeout(_ftlFitTimer);
+  _ftlFitTimer = setTimeout(_ftlFitCard, 80);   // FITCARD_V1: re-fit after a resize settles
+});
+
 function closeFromTheLogo(){
   const ov = document.getElementById('ftl-overlay');
   if(ov) ov.classList.remove('visible');
