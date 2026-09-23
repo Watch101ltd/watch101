@@ -5513,13 +5513,16 @@ function _rankSeedPpg(pid){
   if(gp <= 0 || s.pts == null) return -1;
   return Number(s.pts) / gp;
 }
-// NBA_YAHOO_SEED_V1 (2026-06-28) — default rankings seed is now YAHOO OVERALL RANK
-// (the Dude's call). Returns the player's Yahoo rank (1 = best). Players with no
-// Yahoo rank (outside Yahoo's ranked pool) return Infinity so they fall to the
-// bottom; PPG then breaks ties among the unranked so the tail stays sensible.
+// NBA_YAHOO_SEED_V1 (2026-06-28) — default rankings seed is YAHOO OVERALL RANK (the Dude's call).
+// 🔑 SEED_ACTUAL_RANK_NBA_V1 (2026-09-22, Matt's call) — reads yahoo_actual_rank, NOT yahoo_rank.
+//   Line ~2719 overwrites yahoo_rank with preseason_rank, which covered only 193 of 677 players
+//   on 2026-09-22 while yahoo_actual_rank covered all 677 (1..677). The Y!Rank column already
+//   renders yahoo_actual_rank, so the board now seeds in the exact order of the column Matt reads.
+//   Infinity is still the no-rank fallback and PPG still breaks ties, but essentially nobody hits
+//   that path now: every player in the payload carries a real rank.
 function _rankSeedYahoo(pid){
   var y = _yahooFor(pid);
-  if(y && y.yahoo_rank != null) return Number(y.yahoo_rank);
+  if(y && y.yahoo_actual_rank != null) return Number(y.yahoo_actual_rank);   // SEED_ACTUAL_RANK_NBA_V1
   return Infinity;
 }
 function _rankingsIdsFor(pos){
