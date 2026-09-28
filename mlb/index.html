@@ -753,6 +753,16 @@ body.day-mode .must-watch-flash{
   color: #b91c1c !important;
 }
 /* /MUST_WATCH_FLASH_V1 */
+/* NAME_FLAG_V1 (2026-09-23, Matt's call): the football look on all three sports. Must Watch = YELLOW
+   flashing name, Alert, Add Now = RED flashing name, bold. The flash is an OPACITY fade, not the
+   blurred text-shadow glow that MUSTWATCH_GLOW_REMOVAL_V1 took out on 5/30 for the drag lag. Matt's
+   words: "If this affects our dragging again we'll turn it off." To turn it off, set both
+   animation lines below to none. */
+@keyframes name-flag-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
+.must-watch-flash{color:#fbbf24 !important;font-weight:800;animation:name-flag-pulse 1.6s ease-in-out infinite !important;}
+body.day-mode .must-watch-flash{color:#b45309 !important;animation:name-flag-pulse 1.6s ease-in-out infinite !important;}
+.red-alert-flash{color:#ef4444 !important;font-weight:800;animation:name-flag-pulse 1.6s ease-in-out infinite !important;}
+body.day-mode .red-alert-flash{color:#b91c1c !important;}
 
 /* ============================================================================
    LEGEND_KEY_V1 (2026-06-01 0044 — PC Walter, per The Dude) — public-facing Key.
@@ -834,6 +844,8 @@ body.day-mode .lg-chip.hit{color:#b91c1c;}
 body.day-mode .lg-chip.pit{color:#1d4ed8;}
 .lg-redname{color:#f87171;font-weight:800;}
 body.day-mode .lg-redname{color:#b91c1c;}
+.lg-yellowname{color:#fbbf24;font-weight:800;}   /* NAME_FLAG_V1 (2026-09-23): legend swatch for the yellow Must Watch name */
+body.day-mode .lg-yellowname{color:#b45309;}
 .lg-badge{display:inline-block;font-weight:800;font-size:11px;padding:1px 7px;border-radius:999px;background:#1d4ed8;color:#fff;}
 .lg-plus{color:#22c55e;font-weight:800;}
 .lg-minus{color:#ef4444;font-weight:800;}
@@ -2626,8 +2638,8 @@ html.mlb-gated body > #mlb-gate { display:flex !important; }
       <div class="legend-section">
         <h3>Player Tags (the emoji)</h3>
         <div class="lg-grid">
-          <div class="lg-row"><span class="lg-key">👀</span><span class="lg-def"><b>Must Watch</b> <span class="lg-sub">drop everything, read his notes first. His name also shows in <span class="lg-redname">red</span>.</span></span></div>
-          <div class="lg-row"><span class="lg-key">🚨</span><span class="lg-def"><b>Alert, Add Now</b> <span class="lg-sub">stop what you are doing and put in the claim.</span></span></div>
+          <div class="lg-row"><span class="lg-key">👀</span><span class="lg-def"><b>Must Watch</b> <span class="lg-sub">drop everything, read his notes first. His name also shows in <span class="lg-yellowname">yellow</span>.</span></span></div>
+          <div class="lg-row"><span class="lg-key">🚨</span><span class="lg-def"><b>Alert, Add Now</b> <span class="lg-sub">stop what you are doing and put in the claim. His name also shows in <span class="lg-redname">red</span>.</span></span></div>
           <div class="lg-row"><span class="lg-key">🔥</span><span class="lg-def"><b>Hot Streak</b> <span class="lg-sub">cooking the last 7 to 14 days. Ride it.</span></span></div>
           <div class="lg-row"><span class="lg-key">🫡</span><span class="lg-def"><b>Next Man Up</b> <span class="lg-sub">the starter went down, he got the call.</span></span></div>
           <div class="lg-row"><span class="lg-key">⏳</span><span class="lg-def"><b>Short-term Answer</b> <span class="lg-sub">plugs the hole this week. Not a long-term keeper.</span></span></div>
@@ -7766,9 +7778,12 @@ function _typeTagById(id){
 // them this session. The class string returned by _mustWatchFlashClass is meant
 // to be concatenated directly into the renderTable() row-builder template after
 // flameClass(p), so the leading space matters.
+// NAME_FLAG_V1 (2026-09-23, Matt's call): Alert, Add Now (alert_add_now) now flags the name too.
+// Red Alert = red flashing name, Must Watch = yellow flashing name, both stop once the player is
+// opened (same acknowledged Set). A player carrying both tags shows RED. Same on all three sports.
 function _isMustWatchActive(p){
   if(!p || !Array.isArray(p.type_tags)) return false;
-  if(p.type_tags.indexOf('must_watch') === -1) return false;
+  if(p.type_tags.indexOf('must_watch') === -1 && p.type_tags.indexOf('alert_add_now') === -1) return false;   // NAME_FLAG_V1
   // MUST_WATCH_FLASH_V1 type-fix: mlb_id is a number on player records, but
   // _dismissMustWatch stores String(mlbId) in the Set. Coerce here so the
   // .has() check matches the stored key. Without this, the pulse never stops.
@@ -7778,7 +7793,8 @@ function _isMustWatchActive(p){
   return true;
 }
 function _mustWatchFlashClass(p){
-  return _isMustWatchActive(p) ? ' must-watch-flash' : '';
+  if(!_isMustWatchActive(p)) return '';
+  return (p.type_tags.indexOf('alert_add_now') !== -1) ? ' red-alert-flash' : ' must-watch-flash';   // NAME_FLAG_V1: red wins
 }
 // Acknowledge a must-watch player — stops the pulse for the rest of the session.
 // No-op if the player isn't actually must-watch or already acknowledged.
