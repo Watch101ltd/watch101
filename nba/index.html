@@ -2516,7 +2516,46 @@ function fitNameCells(){
   }
   todo.forEach(function(o){ o.nm.setAttribute('data-namefit', o.key); });
 }
+// ─────────────────────────────────────────────────────────────────────────────────
+// ADDPILL_FIT_V1 (2026-09-28, Matt's Claude, Matt's call: "fix this"). THE ADD PILL IS NEVER CUT OFF.
+// The player pool's "✓ Added" pill is wider than its Add/Action cell, and that cell carries
+// overflow:hidden + text-overflow:ellipsis, so the pill was clipped. Measured 2026-09-28 at the
+// stylesheet size: pill 72px in a 60px football cell (56px inside the padding).
+// The fix shrinks the WHOLE PILL as one unit (CSS zoom: text, padding and border together) until it
+// fits, never below ADDPILL_FIT_MIN. Column widths are NOT touched, so nothing else moves.
+// "+ Add" pills are only touched if they overflow too. Runs from the top of fitHeaders(), so it
+// covers every fitTables() pass, including the one the pool's MutationObserver fires when a pill
+// flips from "+ Add" to "✓ Added". transition:none on a fitted pill so the measure is never stale.
+// ──────────────────────────────────────────────────────────────────────────
+var ADDPILL_FIT_MIN = 0.6;
+function fitAddPills(){
+  var todo = [];
+  document.querySelectorAll('td.col-action button.np-add-btn').forEach(function(bt){
+    var td = bt.parentElement;
+    if(!td || td.offsetParent === null || td.clientWidth <= 2) return;
+    todo.push({ bt: bt, td: td });
+  });
+  if(!todo.length) return;
+  // WRITE: back to natural size
+  todo.forEach(function(o){ o.bt.style.removeProperty('zoom'); o.bt.style.removeProperty('transition'); o.td.style.removeProperty('text-overflow'); });
+  // READ
+  todo.forEach(function(o){
+    var cs = getComputedStyle(o.td);
+    o.avail = o.td.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    o.w = o.bt.offsetWidth;
+  });
+  // WRITE
+  todo.forEach(function(o){
+    if(o.w > o.avail && o.w > 0 && o.avail > 0){
+      var z = Math.max(ADDPILL_FIT_MIN, Math.floor((o.avail / o.w) * 100) / 100);
+      o.bt.style.setProperty('transition', 'none', 'important');
+      o.bt.style.setProperty('zoom', String(z));
+      o.td.style.setProperty('text-overflow', 'clip', 'important');   // no dots from the cell either
+    }
+  });
+}
 function fitHeaders(){
+  if(typeof fitAddPills === 'function'){ try{ fitAddPills(); }catch(e){} }   // ADDPILL_FIT_V1 (2026-09-28): the Add pill shrinks as a unit, never clipped
   if(typeof fitNameCells === 'function'){ try{ fitNameCells(); }catch(e){} }   // NAMECELL_FIT_V1 (2026-09-23): names shrink, never dots
   var ths = [];
   document.querySelectorAll('table.watch-list thead th').forEach(function(th){
