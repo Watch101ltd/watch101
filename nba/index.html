@@ -873,6 +873,8 @@ body.day-mode .lg-def .lg-sub{color:#65718a;}
 body.day-mode .lg-chip.cat{color:#0f766e;}
 .lg-redname{color:#f87171;font-weight:800;}
 body.day-mode .lg-redname{color:#b91c1c;}
+.lg-yellowname{color:#fbbf24;font-weight:800;}   /* NAME_FLAG_V1 (2026-09-23): legend swatch for the yellow Must Watch name */
+body.day-mode .lg-yellowname{color:#b45309;}
 .lg-plus{color:#22c55e;font-weight:800;}
 .lg-minus{color:#ef4444;font-weight:800;}
 .lg-star{color:#fbbf24;}
@@ -1089,13 +1091,15 @@ body.day-mode #quick-edit-popup .ftl-tg-head,
 body.light-mode #quick-edit-popup .ftl-tg-head{
   color:#555;border-bottom-color:rgba(0,0,0,.14);opacity:1;
 }
-.must-watch-flash{color:var(--red,#ef4444) !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}
+.must-watch-flash{color:#fbbf24 !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}   /* NAME_FLAG_V1 (2026-09-23, Matt): Must Watch is now YELLOW (the priority-star gold) */
+.red-alert-flash{color:var(--red,#ef4444) !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}   /* NAME_FLAG_V1: Alert, Add Now takes the red Must Watch used to have */
 .inj-tag{display:inline-block;font-size:10px;font-weight:800;padding:1px 4px;border-radius:2px;letter-spacing:0.04em;background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444;white-space:nowrap;margin-left:4px;vertical-align:middle;line-height:1.3;}  /* INJ_TAG_NBA_V1: baseball's badge geometry, football's sizing */
 body.day-mode .inj-tag{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}  /* INJ_TAG_NBA_V1 day-mode */
 .inj-tag.inj-q{background:#78350f;color:#fcd34d;border:1px solid #f59e0b}  /* INJ_TAG_NBA_V1: amber for maybe (Q/GTD/P) */
 body.day-mode .inj-tag.inj-q{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}  /* INJ_TAG_NBA_V1 day-mode amber */
 @keyframes must-watch-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
-body.day-mode .must-watch-flash{color:#b91c1c !important;}
+body.day-mode .must-watch-flash{color:#b45309 !important;}   /* NAME_FLAG_V1: dark amber, gold does not read on the light background */
+body.day-mode .red-alert-flash{color:#b91c1c !important;}
 /* NBA_GAMES_V1 (Aug 2, 2026, late evening) -- Previous / Upcoming Games cards. */
 #ftl-overlay .ftl-gl-note{font-size:12px;color:var(--text3);padding:6px 2px;font-style:italic;}
 #ftl-overlay .ftl-gl-summary{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:9px 13px;margin-bottom:10px;background:var(--surface2,rgba(255,255,255,0.02));border:1px solid var(--border2);border-left:3px solid var(--court);border-radius:6px;font-size:12px;color:var(--text2);}
@@ -1367,6 +1371,8 @@ table.watch-list tbody td.empty-state{text-align:left}
 .priority-stars .pstar{color:#3a3f4a;transition:color 0.1s;padding:0 1px;}
 .priority-stars .pstar:hover{color:#fbbf24}
 .priority-stars .pstar.filled{color:#fbbf24}
+/* HALF_STARS_TWINS_V1 (2026-09-23, Matt): half-filled star, left half gold, right half the empty grey (baseball's look) */
+.priority-stars .pstar.half{background:linear-gradient(90deg,#fbbf24 50%,#3a3f4a 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
 /* NBA_PLAYERS_PAGE_V1 (Stage 1) — page nav tabs (Watch List / NBA Players) */
 /* TAB_AND_BTN_SHRINK_V1 (2026-08-24, the Dude, straight after POS_BUTTON_SHRINK_V1:
    "I love the way it looks so much that I want you to shrink down these tabs and these
@@ -2461,7 +2467,57 @@ function _hdrMeasure(th){
     arrowW: (arrowL !== null) ? (box.right - arrowL) / scale : 0
   };
 }
+// ──────────────────────────────────────────────────────────────────────────
+// NAMECELL_FIT_V1 (2026-09-23, Matt's Claude, Matt's call). A PLAYER NAME IS NEVER CUT OFF.
+// His words: "Please shrink the text when the ellipses happens so it doesn't happen." Basketball never
+// had a name fitter (football has FITNAMES_NFL_V1, baseball fitPlayerNames). Measured on the GitHub
+// page before building: 13 names cut in the pool (Shai Gilgeous-Alexander, Giannis Antetokounmpo with
+// DTD, Tyrese Haliburton...) and 2 on rankings (Kentavious Caldwell-Pope, Yanic Konan Niederhauser).
+//   1. only the .player-name inside a table.watch-list td.col-player. Badges and notes untouched.
+//   2. if the name, or the cell holding it with its badges, is wider than its room, the NAME's font
+//      drops half a pixel at a time, never below NAMECELL_FIT_MIN_PX, with text-overflow:clip.
+//   3. column widths are NOT touched. Runs from the top of fitHeaders(), cached per name.
+//   4. skipped while any drag is in progress: baseball's DRAG_LAG_FITNAMES_GUARD_V1 (2026-05-29) caught
+//      a name-fit pass mid-drag driving Layout events from 459 to 4,266. The drop re-renders and re-fits.
+// ──────────────────────────────────────────────────────────────────────────
+var NAMECELL_FIT_MIN_PX = 6;
+function _fitDragActive(){
+  return (typeof _nbaDragSrcPid !== 'undefined' && _nbaDragSrcPid !== null) ||
+         (typeof _rankDragSrcPid !== 'undefined' && _rankDragSrcPid !== null) ||
+         (typeof _tierDragPayload !== 'undefined' && !!_tierDragPayload) ||
+         (typeof _rankTierDragPayload !== 'undefined' && !!_rankTierDragPayload);
+}
+function fitNameCells(){
+  if(_fitDragActive()) return;
+  var todo = [];
+  document.querySelectorAll('table.watch-list tbody td.col-player .player-name').forEach(function(nm){
+    var box = nm.closest('.name-cell') || nm.closest('td');
+    if(!box || box.offsetParent === null || box.clientWidth <= 2) return;
+    var t = box.closest('table');
+    var key = box.clientWidth + '|' + ((t && t.style.zoom) || '1') + '|' + box.textContent + '|' + (nm.className || '') + '|' + (window.devicePixelRatio || 1);
+    if(nm.getAttribute('data-namefit') === key) return;
+    todo.push({ nm: nm, box: box, key: key });
+  });
+  if(!todo.length) return;
+  function over(o){ return (o.nm.scrollWidth > o.nm.clientWidth) || (o.box.scrollWidth > o.box.clientWidth); }
+  // WRITE: back to the stylesheet's own size before measuring again
+  todo.forEach(function(o){ o.nm.style.removeProperty('font-size'); o.nm.style.removeProperty('text-overflow'); });
+  // READ
+  todo.forEach(function(o){ o.over = over(o); if(o.over){ o.size = parseFloat(getComputedStyle(o.nm).fontSize); } });
+  // WRITE then READ, in rounds of half a pixel
+  var pending = todo.filter(function(o){ return o.over && o.size > 0; });
+  pending.forEach(function(o){ o.nm.style.setProperty('text-overflow', 'clip', 'important'); });
+  for(var round = 0; round < 40 && pending.length; round++){
+    pending.forEach(function(o){
+      o.size = Math.max(NAMECELL_FIT_MIN_PX, o.size - 0.5);
+      o.nm.style.setProperty('font-size', o.size + 'px', 'important');
+    });
+    pending = pending.filter(function(o){ return o.size > NAMECELL_FIT_MIN_PX && over(o); });
+  }
+  todo.forEach(function(o){ o.nm.setAttribute('data-namefit', o.key); });
+}
 function fitHeaders(){
+  if(typeof fitNameCells === 'function'){ try{ fitNameCells(); }catch(e){} }   // NAMECELL_FIT_V1 (2026-09-23): names shrink, never dots
   var ths = [];
   document.querySelectorAll('table.watch-list thead th').forEach(function(th){
     if(th.offsetParent === null || th.clientWidth <= 2) return;   // hidden surface, or a zero-width hidden column (#216)
@@ -2514,6 +2570,7 @@ function fitHeaders(){
 if(document.fonts && document.fonts.ready){
   document.fonts.ready.then(function(){
     document.querySelectorAll('th[data-hfit]').forEach(function(th){ th.removeAttribute('data-hfit'); });
+    document.querySelectorAll('[data-namefit]').forEach(function(el){ el.removeAttribute('data-namefit'); });   // NAMECELL_FIT_V1
     if(typeof fitTables === 'function') fitTables();
   });
 }
@@ -6136,7 +6193,7 @@ function _rankRenderPriorityStars(pid, currentPriority){
   // data-rank-pid only. body.readonly-mode .priority-stars covers fans for free.
   var html = '<span class="priority-stars" data-rank-pid="' + escapeHtml(pid) + '">';
   for(var n = 1; n <= 5; n++){
-    html += '<span class="pstar' + ((n <= currentPriority) ? ' filled' : '') + '" data-value="' + n + '">\u2605</span>';
+    html += '<span class="pstar' + ((n <= currentPriority) ? ' filled' : ((n - 0.5 <= currentPriority) ? ' half' : '')) + '" data-value="' + n + '">\u2605</span>';   // HALF_STARS_TWINS_V1
   }
   return html + '</span>';
 }
@@ -6146,8 +6203,11 @@ document.addEventListener('click', function(e){
   var wrap = star.closest('.priority-stars');
   if(!wrap || !wrap.getAttribute('data-rank-pid')) return;   // rankings stars only
   var pid = wrap.getAttribute('data-rank-pid');
-  var value = parseInt(star.dataset.value, 10);
-  if(!pid || !value) return;
+  var clicked = parseInt(star.dataset.value, 10);
+  if(!pid || !clicked) return;
+  // HALF_STARS_TWINS_V1 (2026-09-23, Matt): baseball's cycle -- click = half, again = full, again = clear
+  var cur = _rankPriorityFor(pid);
+  var value = (cur === clicked) ? 0 : ((cur === clicked - 0.5) ? clicked : clicked - 0.5);
   _rankSetPriority(pid, value);
 });
 function _ftlToggleRankTypeTag(checkboxEl){
@@ -8136,7 +8196,7 @@ function _renderRankPhoneList(ids){
       var pv = Number(_rankPriorities[pid] || 0);
       if(pv > 0){
         stars = '<span class="pc-stars">';
-        for(var n = 1; n <= 5; n++){ stars += '<span class="' + (pv >= n ? 'on' : 'off') + '">★</span>'; }
+        for(var n = 1; n <= 5; n++){ stars += '<span class="' + (pv >= n ? 'on' : (pv >= n - 0.5 ? 'half' : 'off')) + '">★</span>'; }   // HALF_STARS_TWINS_V1
         stars += '</span>';
       }
     } catch(e){}
@@ -9070,15 +9130,21 @@ function _ftlRenderTypeTags(pid){
 }
 
 let _mustWatchAcknowledged = new Set();
+// NAME_FLAG_V1 (2026-09-23, Matt's call): Alert, Add Now (alert_add_now) now flags the name too.
+// Red Alert = red flashing name, Must Watch = yellow flashing name. Both stop once the player is
+// opened (same acknowledged Set). A player carrying both tags shows RED.
 function _isMustWatchActive(pid){
   const idx = _wlIndexOf(pid);
   if(idx < 0) return false;
-  if(_wlTypeTags(_watchList[idx]).indexOf('must_watch') === -1) return false;
+  const _nfTags = _wlTypeTags(_watchList[idx]);
+  if(_nfTags.indexOf('must_watch') === -1 && _nfTags.indexOf('alert_add_now') === -1) return false;   // NAME_FLAG_V1
   if(_mustWatchAcknowledged.has(String(pid))) return false;
   return true;
 }
 function _mustWatchFlashClass(pid){
-  return _isMustWatchActive(pid) ? ' must-watch-flash' : '';
+  if(!_isMustWatchActive(pid)) return '';
+  const idx = _wlIndexOf(pid);
+  return (_wlTypeTags(_watchList[idx]).indexOf('alert_add_now') !== -1) ? ' red-alert-flash' : ' must-watch-flash';   // NAME_FLAG_V1: red wins
 }
 function _dismissMustWatchOnOpen(pid){
   if(!_isMustWatchActive(pid)) return;
@@ -10223,7 +10289,7 @@ function setPriority(pid, newPriority){
 function renderPriorityStars(pid, currentPriority){
   let html = '<span class="priority-stars" data-pid="' + escapeHtml(pid) + '">';
   for(let n = 1; n <= 5; n++){
-    const filled = (n <= currentPriority) ? ' filled' : '';
+    const filled = (n <= currentPriority) ? ' filled' : ((n - 0.5 <= currentPriority) ? ' half' : '');   // HALF_STARS_TWINS_V1 (2026-09-23): baseball's half-step scale
     html += '<span class="pstar' + filled + '" data-value="' + n + '">★</span>';
   }
   html += '</span>';
@@ -10235,8 +10301,13 @@ document.addEventListener('click', function(e){
   const wrap = star.closest('.priority-stars');
   if(!wrap) return;
   const pid = wrap.dataset.pid;
-  const value = parseInt(star.dataset.value, 10);
-  if(!pid || !value) return;
+  const clicked = parseInt(star.dataset.value, 10);
+  if(!pid || !clicked) return;
+  // HALF_STARS_TWINS_V1 (2026-09-23, Matt): same 0.5-5.0 half-step scale as baseball. Baseball's cycle:
+  // click a star = half, click it again = full, click it a third time = clear.
+  const _hi = _wlIndexOf(pid);
+  const cur = (_hi >= 0) ? _wlPriority(_watchList[_hi]) : 0;
+  const value = (cur === clicked) ? 0 : ((cur === clicked - 0.5) ? clicked : clicked - 0.5);
   setPriority(pid, value);
 });
 
@@ -11437,7 +11508,8 @@ bootstrap();
       </div>
       <div class="legend-section">
         <h3>Names &amp; Colors</h3>
-        <div class="lg-row"><span class="lg-key"><span class="lg-redname">Name</span></span><span class="lg-def"><b>Must Watch.</b> <span class="lg-sub">A red, flashing name means drop everything and read his notes first.</span></span></div>
+        <div class="lg-row"><span class="lg-key"><span class="lg-yellowname">Name</span></span><span class="lg-def"><b>Must Watch.</b> <span class="lg-sub">A yellow, flashing name means drop everything and read his notes first.</span></span></div>
+        <div class="lg-row"><span class="lg-key"><span class="lg-redname">Name</span></span><span class="lg-def"><b>Alert, Add Now.</b> <span class="lg-sub">A red, flashing name means stop what you are doing and put in the claim.</span></span></div>
         <div class="lg-row"><span class="lg-key"><span class="lg-chip cat">24.1</span></span><span class="lg-def"><b>Counted category.</b> <span class="lg-sub">The teal wash marks stats that score in THIS list&rsquo;s format; grey stats are for context.</span></span></div>
         <div class="lg-row"><span class="lg-key">&#127991;&#65039;</span><span class="lg-def"><b>Tier brackets.</b> <span class="lg-sub">The colored boxes around groups of players are Matt&rsquo;s tiers &mdash; guys he values as a cluster.</span></span></div>
       </div>
