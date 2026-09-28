@@ -1295,13 +1295,15 @@ body.day-mode #quick-edit-popup .ftl-tg-head,
 body.light-mode #quick-edit-popup .ftl-tg-head{
   color:#555;border-bottom-color:rgba(0,0,0,.14);opacity:1;
 }
-.must-watch-flash{color:var(--red,#ef4444) !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}
+.must-watch-flash{color:#fbbf24 !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}   /* NAME_FLAG_V1 (2026-09-23, Matt): Must Watch is now YELLOW (the priority-star gold) */
+.red-alert-flash{color:var(--red,#ef4444) !important;font-weight:800;animation:must-watch-pulse 1.6s ease-in-out infinite;}   /* NAME_FLAG_V1: Alert, Add Now takes the red Must Watch used to have */
 .inj-tag{display:inline-block;font-size:10px;font-weight:800;padding:1px 4px;border-radius:2px;letter-spacing:0.04em;background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444;white-space:nowrap;margin-left:4px;vertical-align:middle;line-height:1.3;}  /* INJ_TAG_V1, restyled 2026-08-19 on the Dude's first look: baseball's .injury-badge geometry cloned (its il10 palette, the most readable of the red family), sized up from baseball's 8px to 10px because his exact words were "big, bold, capitalized and inside a red rectangle just like baseball" -- the first pass's small superscript letter was too hard to read */
 body.day-mode .inj-tag{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}  /* INJ_TAG_V1: day-mode, baseball's own day-mode badge palette */
 .inj-tag.inj-q{background:#78350f;color:#fcd34d;border:1px solid #f59e0b}  /* INJ_TAG_SEVERITY_V1 (2026-08-19, the Dude's call): Questionable wears baseball's DTD amber -- maybe-hurt is not the same news as out -- D/O/IR/PUP/SUS stay red */
 body.day-mode .inj-tag.inj-q{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}  /* INJ_TAG_SEVERITY_V1: baseball's day-mode DTD palette */
 @keyframes must-watch-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
-body.day-mode .must-watch-flash{color:#b91c1c !important;}
+body.day-mode .must-watch-flash{color:#b45309 !important;}   /* NAME_FLAG_V1: dark amber, gold does not read on the light background */
+body.day-mode .red-alert-flash{color:#b91c1c !important;}
 #compact-toggle-btn.active{background:var(--turf);color:#0d1117;border-color:var(--turf);}
 /* ---- PRESENT_MODE_TWINS_V1 (2026-08-19 -- baseball's Presentation Mode, ported per Matt + the Dude's own call on the 8/19 tape: "we don't have a present mode for football and basketball, JP") ---- */
 #present-btn.active{background:var(--gold,#eab308);color:#000;border-color:var(--gold,#eab308);font-weight:600;}
@@ -1472,6 +1474,8 @@ body.day-mode .lg-def .lg-sub{color:#65718a;}
 body.day-mode .lg-chip.cat{color:#0f766e;}
 .lg-redname{color:#f87171;font-weight:800;}
 body.day-mode .lg-redname{color:#b91c1c;}
+.lg-yellowname{color:#fbbf24;font-weight:800;}   /* NAME_FLAG_V1 (2026-09-23): legend swatch for the yellow Must Watch name */
+body.day-mode .lg-yellowname{color:#b45309;}
 .lg-plus{color:#22c55e;font-weight:800;}
 .lg-minus{color:#ef4444;font-weight:800;}
 .lg-star{color:#fbbf24;}
@@ -1583,6 +1587,8 @@ table.watch-list tbody td.empty-state{text-align:left}
 }
 .priority-stars .pstar:hover{color:#fbbf24}
 .priority-stars .pstar.filled{color:#fbbf24}
+/* HALF_STARS_TWINS_V1 (2026-09-23, Matt): half-filled star, left half gold, right half the empty grey (baseball's look) */
+.priority-stars .pstar.half{background:linear-gradient(90deg,#fbbf24 50%,#3a3f4a 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
 
 /* COLLAPSIBLE_FILTER_V1 (June 9, 2026 — PC Walter, per the Dude). Ported from baseball. The two NFL
    STAT FILTERING panels (#nflwl-filter-panel watch list, #nflp-filter-panel pool) collapse to just
@@ -3381,8 +3387,15 @@ function _fitPlayerNamesIn(scopeSel){
     if(!cell.clientWidth) continue;    // hidden surface: measuring it would shrink every name to the floor
     nameEl.style.fontSize = '';        // reset to the CSS default every render
     var size = 12;
-    var safety = 12;
-    while(cell.scrollWidth > cell.clientWidth + 1 && size > 9 && safety-- > 0){
+    var safety = 20;
+    // NAMECELL_FIT_V1 (2026-09-23, Matt: "Please shrink the text when the ellipses happens so it doesn't
+    // happen"). The old test only asked whether the .name-cell overflowed. But the name span carries
+    // min-width:0 + text-overflow:ellipsis, so it absorbs its own overflow by printing dots and the cell
+    // never reports too wide: 11 football names were cut with the fitter reporting "fits" (Terrance
+    // Ferguson, John Michael Gyllenborg, KeAndre Lambert-Smith, Washington Commanders...). Now it also
+    // asks the NAME itself. Floor lowered 9 -> 6px to match HEADER_FIT_V1 and NUMCELL_FIT_V1, so a
+    // longer name can never fall back to dots (today's longest need 9 to 9.5px).
+    while((cell.scrollWidth > cell.clientWidth + 1 || nameEl.scrollWidth > nameEl.clientWidth) && size > 6 && safety-- > 0){
       size -= 0.5;
       nameEl.style.fontSize = size + 'px';
     }
@@ -4031,7 +4044,7 @@ function _rankRenderPriorityStars(pid, currentPriority){
   // {pointer-events:none} covers fans for free because the class is shared.
   var html = '<span class="priority-stars" data-rank-pid="' + escapeHtml(pid) + '">';
   for(var n = 1; n <= 5; n++){
-    html += '<span class="pstar' + ((n <= currentPriority) ? ' filled' : '') + '" data-value="' + n + '">\u2605</span>';
+    html += '<span class="pstar' + ((n <= currentPriority) ? ' filled' : ((n - 0.5 <= currentPriority) ? ' half' : '')) + '" data-value="' + n + '">\u2605</span>';   // HALF_STARS_TWINS_V1
   }
   return html + '</span>';
 }
@@ -4041,8 +4054,11 @@ document.addEventListener('click', function(e){
   var wrap = star.closest('.priority-stars');
   if(!wrap || !wrap.getAttribute('data-rank-pid')) return;   // rankings stars only
   var pid = wrap.getAttribute('data-rank-pid');
-  var value = parseInt(star.dataset.value, 10);
-  if(!pid || !value) return;
+  var clicked = parseInt(star.dataset.value, 10);
+  if(!pid || !clicked) return;
+  // HALF_STARS_TWINS_V1 (2026-09-23, Matt): baseball's cycle -- click = half, again = full, again = clear
+  var cur = _rankPriorityFor(pid);
+  var value = (cur === clicked) ? 0 : ((cur === clicked - 0.5) ? clicked : clicked - 0.5);
   _rankSetPriority(pid, value);
 });
 function _ftlToggleRankTypeTag(checkboxEl){
@@ -6100,7 +6116,7 @@ function _renderRankPhoneList(ids){
       var pv = Number(_rankPriorities[pid] || 0);
       if(pv > 0){
         stars = '<span class="pc-stars">';
-        for(var n = 1; n <= 5; n++){ stars += '<span class="' + (pv >= n ? 'on' : 'off') + '">★</span>'; }
+        for(var n = 1; n <= 5; n++){ stars += '<span class="' + (pv >= n ? 'on' : (pv >= n - 0.5 ? 'half' : 'off')) + '">★</span>'; }   // HALF_STARS_TWINS_V1
         stars += '</span>';
       }
     } catch(e){}
@@ -8354,7 +8370,62 @@ function _hdrMeasure(th){
     arrowW: (arrowL !== null) ? (box.right - arrowL) / scale : 0
   };
 }
+// ─────────────────────────────────────────────────────────────────────────────────
+// NUMCELL_FIT_V1 (2026-09-23, Matt's Claude, Matt's call). A NUMBER IS NEVER CUT OFF.
+// His words: "Why am I seeing ... and not an adjustment of font size." Found on football's Yahoo
+// Rank column: fixed at 32px by LAPTOP_FIT_V3, so a 4-digit rank (1018) printed as "10...".
+// HEADER_FIT_V1 (Rule #19) only ever covered th; this is the same move for NUMBER cells:
+//   1. only cells whose whole text is a number (digits, . , % + - dashes / :) are touched.
+//      Notes, player names, teams, badges and anything holding an input are NEVER touched (Matt).
+//   2. a number that does not fit its cell drops its font half a pixel at a time, never below
+//      NUMCELL_FIT_MIN_PX, with text-overflow:clip inline so the browser can never add dots.
+//   3. column widths are NOT touched, so nothing else moves. Shrinking beats dots, always (Matt).
+// Called at the top of fitHeaders(), so it runs on every fitTables() pass and view switch. Each
+// cell remembers what it was fitted for (width|zoom|text|dpr) and is skipped when nothing changed.
+// ──────────────────────────────────────────────────────────────────────────
+var NUMCELL_FIT_MIN_PX = 6;
+var _NUMCELL_RE = /^[\d\s.,%+\-−–—\/:]+$/;
+function _fitDragActive(){   // NAMECELL_FIT_V1: the FITNAMES drag guard, shared
+  return (typeof _nflDragSrcPid !== 'undefined' && _nflDragSrcPid !== null) ||
+         (typeof _rankDragSrcPid !== 'undefined' && _rankDragSrcPid !== null) ||
+         (typeof _tierDragPayload !== 'undefined' && !!_tierDragPayload) ||
+         (typeof _rankTierDragPayload !== 'undefined' && !!_rankTierDragPayload);
+}
+function fitNumCells(){
+  if(_fitDragActive()) return;   // baseball's DRAG_LAG_FITNAMES_GUARD_V1 lesson: no measuring passes mid-drag
+  var todo = [];
+  document.querySelectorAll('table.watch-list tbody td').forEach(function(td){
+    if(td.offsetParent === null || td.clientWidth <= 2) return;
+    if(td.querySelector('input,textarea,select,button,img')) return;
+    var txt = td.textContent.trim();
+    if(!txt || !/\d/.test(txt) || !_NUMCELL_RE.test(txt)) return;
+    var t = td.closest('table');
+    var key = td.clientWidth + '|' + ((t && t.style.zoom) || '1') + '|' + txt + '|' + (window.devicePixelRatio || 1);
+    if(td.getAttribute('data-nfit') === key) return;
+    todo.push({ td: td, key: key });
+  });
+  if(!todo.length) return;
+  // WRITE: back to the stylesheet's own size before measuring again
+  todo.forEach(function(o){ o.td.style.removeProperty('font-size'); o.td.style.removeProperty('text-overflow'); });
+  // READ
+  todo.forEach(function(o){
+    o.over = o.td.scrollWidth > o.td.clientWidth;
+    if(o.over){ o.size = parseFloat(getComputedStyle(o.td).fontSize); }
+  });
+  // WRITE then READ, in rounds of half a pixel
+  var pending = todo.filter(function(o){ return o.over && o.size > 0; });
+  pending.forEach(function(o){ o.td.style.setProperty('text-overflow', 'clip', 'important'); });
+  for(var round = 0; round < 40 && pending.length; round++){
+    pending.forEach(function(o){
+      o.size = Math.max(NUMCELL_FIT_MIN_PX, o.size - 0.5);
+      o.td.style.setProperty('font-size', o.size + 'px', 'important');
+    });
+    pending = pending.filter(function(o){ return o.size > NUMCELL_FIT_MIN_PX && o.td.scrollWidth > o.td.clientWidth; });
+  }
+  todo.forEach(function(o){ o.td.setAttribute('data-nfit', o.key); });
+}
 function fitHeaders(){
+  if(typeof fitNumCells === 'function'){ try{ fitNumCells(); }catch(e){} }   // NUMCELL_FIT_V1 (2026-09-23): numbers shrink, never dots
   var ths = [];
   document.querySelectorAll('table.watch-list thead th').forEach(function(th){
     if(th.offsetParent === null || th.clientWidth <= 2) return;   // hidden surface, or a zero-width hidden column (#216)
@@ -8407,6 +8478,7 @@ function fitHeaders(){
 if(document.fonts && document.fonts.ready){
   document.fonts.ready.then(function(){
     document.querySelectorAll('th[data-hfit]').forEach(function(th){ th.removeAttribute('data-hfit'); });
+    document.querySelectorAll('td[data-nfit]').forEach(function(td){ td.removeAttribute('data-nfit'); });   // NUMCELL_FIT_V1
     if(typeof fitTables === 'function') fitTables();
   });
 }
@@ -8840,15 +8912,21 @@ function _ftlRenderTypeTags(pid){
 }
 
 let _mustWatchAcknowledged = new Set();
+// NAME_FLAG_V1 (2026-09-23, Matt's call): Alert, Add Now (alert_add_now) now flags the name too.
+// Red Alert = red flashing name, Must Watch = yellow flashing name. Both stop once the player is
+// opened (same acknowledged Set). A player carrying both tags shows RED.
 function _isMustWatchActive(pid){
   const idx = _wlIndexOf(pid);
   if(idx < 0) return false;
-  if(_wlTypeTags(_watchList[idx]).indexOf('must_watch') === -1) return false;
+  const _nfTags = _wlTypeTags(_watchList[idx]);
+  if(_nfTags.indexOf('must_watch') === -1 && _nfTags.indexOf('alert_add_now') === -1) return false;   // NAME_FLAG_V1
   if(_mustWatchAcknowledged.has(String(pid))) return false;
   return true;
 }
 function _mustWatchFlashClass(pid){
-  return _isMustWatchActive(pid) ? ' must-watch-flash' : '';
+  if(!_isMustWatchActive(pid)) return '';
+  const idx = _wlIndexOf(pid);
+  return (_wlTypeTags(_watchList[idx]).indexOf('alert_add_now') !== -1) ? ' red-alert-flash' : ' must-watch-flash';   // NAME_FLAG_V1: red wins
 }
 function _dismissMustWatchOnOpen(pid){
   if(!_isMustWatchActive(pid)) return;
@@ -9767,7 +9845,7 @@ function setPriority(pid, newPriority){
 function renderPriorityStars(pid, currentPriority){
   let html = '<span class="priority-stars" data-pid="' + escapeHtml(pid) + '">';
   for(let n = 1; n <= 5; n++){
-    const filled = (n <= currentPriority) ? ' filled' : '';
+    const filled = (n <= currentPriority) ? ' filled' : ((n - 0.5 <= currentPriority) ? ' half' : '');   // HALF_STARS_TWINS_V1 (2026-09-23): baseball's half-step scale
     html += '<span class="pstar' + filled + '" data-value="' + n + '">\u2605</span>';
   }
   html += '</span>';
@@ -9779,8 +9857,13 @@ document.addEventListener('click', function(e){
   const wrap = star.closest('.priority-stars');
   if(!wrap) return;
   const pid = wrap.dataset.pid;
-  const value = parseInt(star.dataset.value, 10);
-  if(!pid || !value) return;
+  const clicked = parseInt(star.dataset.value, 10);
+  if(!pid || !clicked) return;
+  // HALF_STARS_TWINS_V1 (2026-09-23, Matt): same 0.5-5.0 half-step scale as baseball. Baseball's cycle:
+  // click a star = half, click it again = full, click it a third time = clear.
+  const _hi = _wlIndexOf(pid);
+  const cur = (_hi >= 0) ? _wlPriority(_watchList[_hi]) : 0;
+  const value = (cur === clicked) ? 0 : ((cur === clicked - 0.5) ? clicked : clicked - 0.5);
   setPriority(pid, value);
 });
 // /PRIORITY_STARS_V1
@@ -12285,7 +12368,8 @@ function _yahooLookupFmt(pid, field, isPercent){
       </div>
       <div class="legend-section">
         <h3>Names &amp; Colors</h3>
-        <div class="lg-row"><span class="lg-key"><span class="lg-redname">Name</span></span><span class="lg-def"><b>Must Watch.</b> <span class="lg-sub">A red, flashing name means drop everything and read his notes first.</span></span></div>
+        <div class="lg-row"><span class="lg-key"><span class="lg-yellowname">Name</span></span><span class="lg-def"><b>Must Watch.</b> <span class="lg-sub">A yellow, flashing name means drop everything and read his notes first.</span></span></div>
+        <div class="lg-row"><span class="lg-key"><span class="lg-redname">Name</span></span><span class="lg-def"><b>Alert, Add Now.</b> <span class="lg-sub">A red, flashing name means stop what you are doing and put in the claim.</span></span></div>
         <div class="lg-row"><span class="lg-key"><span class="lg-chip cat">24.1</span></span><span class="lg-def"><b>Counted category.</b> <span class="lg-sub">The teal wash marks stats that score in THIS list&rsquo;s format; grey stats are for context.</span></span></div>
         <div class="lg-row"><span class="lg-key">&#127991;&#65039;</span><span class="lg-def"><b>Tier brackets.</b> <span class="lg-sub">The colored boxes around groups of players are Matt&rsquo;s tiers &mdash; guys he values as a cluster.</span></span></div>
       </div>
