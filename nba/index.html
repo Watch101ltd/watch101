@@ -7972,7 +7972,10 @@ function renderWatchList(){
   // ranking can never be reordered against a sort. _sortField === null == rank view.
   // NBA_WL_STATFILTER_V1 — also disable dragging when a FILTER is active (you can't
   // safely reorder a filtered subset against the full hand-built ranking).
-  const dragEnabled = (_sortField === null) && !(typeof _wlFilterActive === 'function' && _wlFilterActive());
+  // SORTED_DRAG_NBA_V1 (2026-09-28, Matt): drag works while a column sort is on, like baseball. The drop edits
+  // the SAVED order (lands next to the player dropped on) and the view stays sorted.
+  // FILTERED_DRAG_V1 (same night, Matt): the Stat Filtering box (incl. max Owned) no longer locks it either.
+  const dragEnabled = true;
   tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
     const s = _statsRow(pid);
@@ -8005,10 +8008,10 @@ function renderWatchList(){
       : '<tr data-nba-pid="' + escapeHtml(pid) + '">';
     const _handleCell = dragEnabled
       ? '<td class="center col-handle nba-drag-handle" title="Drag to re-rank">☰</td>'
-      : '<td class="center col-handle nba-drag-handle disabled" title="Clear the column sort (click Rank) to drag-rank">☰</td>';
+      : '<td class="center col-handle nba-drag-handle disabled" title="Clear the stat filter to drag-rank">☰</td>';
     return _trOpen +
       _handleCell +
-      '<td class="col-rank">' + rank + '</td>' +
+      (((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode()) ? ('<td class="col-rank">' + rank + '</td>') : ('<td class="col-rank rank-editable" title="Click to type a new rank -- works even while sorted" onclick="event.stopPropagation();wlEditRankNum(' + _pidJson + ',this)">' + rank + '</td>')) +   // WL_RANK_TYPEIN_NBA_V1
       '<td class="center">' + _nbaPosBadges(p) + '</td>' +
       '<td class="left col-player"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _noteBadgeHtml(pid) + '</td>' +   // INJ_TAG_NBA_V1
       '<td>' + team + '</td>' +
@@ -10359,14 +10362,12 @@ document.addEventListener('click', function(e){
 // only emitting the drag attributes when dragEnabled. These handlers also re-check.
 let _nbaDragSrcPid = null;
 function nbaDragStart(e, pid){
-  if(_sortField !== null){ e.preventDefault(); return; }
   if(_blockIfReadOnly('nbaDragStart')){ e.preventDefault(); return; }
   _nbaDragSrcPid = pid;
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nba-dragging');
   try { e.dataTransfer.effectAllowed = 'move'; } catch(_){}
 }
 function nbaDragOver(e, pid){
-  if(_sortField !== null) return;
   e.preventDefault();
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nba-drag-over');
   try { e.dataTransfer.dropEffect = 'move'; } catch(_){}
@@ -10375,7 +10376,6 @@ function nbaDragOver(e, pid){
 function nbaDrop(e, pid){
   e.preventDefault();
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.remove('nba-drag-over');
-  if(_sortField !== null) return;                 // never reorder while a stat sort is active
   if(_nbaDragSrcPid == null || _nbaDragSrcPid === pid) return;
   const si = _watchList.findIndex(item => _wlPid(item) === _nbaDragSrcPid);
   const ti = _watchList.findIndex(item => _wlPid(item) === pid);
@@ -10389,6 +10389,46 @@ function nbaDrop(e, pid){
   _nbaDragSrcPid = null;
   renderWatchList();        // rank is re-derived from array position on render
   autoSaveToNbaNAS();       // NBA_AUTOSAVE_NAS_V1 — persist the new order to the NAS
+}
+// WL_RANK_TYPEIN_NBA_V1 (2026-09-28, Matt): click the Rank number on the Watch 101 table, type the new rank,
+// Enter. Same four steps as the card's _ftlEditRank: Undo snapshot, tier self-repair, splice the SAVED order,
+// render + autosave. Works while sorted (the rank shown is always the saved rank). Esc cancels, blur applies.
+function wlEditRankNum(pid, el){
+  if(_blockIfReadOnly('wlEditRankNum')) return;
+  if(!el || el.querySelector('input')) return;
+  var from0 = _wlIndexOf(pid);
+  if(from0 < 0) return;
+  var tr = el.closest('tr'); if(tr) tr.setAttribute('draggable', 'false');   /* no dragging mid-type */
+  var input = document.createElement('input');
+  input.type = 'number'; input.min = '1'; input.className = 'rank-num-input';
+  input.title = 'Type a new rank and press Enter';
+  input.value = from0 + 1;
+  el.textContent = ''; el.appendChild(input);
+  input.focus(); input.select();
+  var done = function(apply){
+    var n = parseInt(String(input.value).trim(), 10);
+    var from = _wlIndexOf(pid);
+    if(!apply || !isFinite(n) || n < 1 || from === -1){ renderWatchList(); return; }
+    if(n > _watchList.length) n = _watchList.length;          // typing 999 parks him last
+    if(from === n - 1){ renderWatchList(); return; }
+    if(typeof snapshotForUndo === 'function') snapshotForUndo();
+    _tierRepairCapture(currentTiers, _tierRepairWlIds());
+    var moved = _watchList.splice(from, 1)[0];
+    _watchList.splice(n - 1, 0, moved);
+    if(_tierRepairReanchor(currentTiers, _tierRepairWlIds(), pid)){ _tiersUserMutated = true; try{ _tiersPersistLocal(); }catch(_e){} }
+    renderWatchList();
+    if(typeof autoSaveToNbaNAS === 'function') autoSaveToNbaNAS();
+    if(typeof updateUndoButton === 'function') updateUndoButton();
+  };
+  input.addEventListener('keydown', function(ev){
+    if(ev.key === 'Enter'){ ev.preventDefault(); input.removeEventListener('blur', onBlur); done(true); }
+    if(ev.key === 'Escape'){ ev.preventDefault(); input.removeEventListener('blur', onBlur); done(false); }
+    ev.stopPropagation();
+  });
+  var onBlur = function(){ done(true); };
+  input.addEventListener('blur', onBlur);
+  input.addEventListener('click', function(ev){ ev.stopPropagation(); });
+  input.addEventListener('mousedown', function(ev){ ev.stopPropagation(); });
 }
 function nbaDragEnd(e){
   _nbaDragSrcPid = null;
