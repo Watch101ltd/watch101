@@ -5853,7 +5853,10 @@ function renderWatchList(){
   // active). When a stat column sort is on, dragging is disabled so a hand-built
   // ranking can never be reordered against a sort. _sortField === null == rank view.
   // NFL_WL_STATFILTER_V1 — also disable dragging when a FILTER is active.
-  const dragEnabled = (_sortField === null) && !(typeof _wlFilterActive === 'function' && _wlFilterActive());
+  // SORTED_DRAG_NFL_V1 (2026-09-28, Matt): drag works while a column sort is on, like baseball. The drop edits
+  // the SAVED order (lands next to the player dropped on) and the view stays sorted.
+  // FILTERED_DRAG_V1 (same night, Matt): the Stat Filtering box (incl. max Owned) no longer locks it either.
+  const dragEnabled = true;
   tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
     const p = (_playerDB && _playerDB[pid]) || null;
     const s = _statsRow(pid);
@@ -5881,10 +5884,10 @@ function renderWatchList(){
       : '<tr data-nfl-pid="' + escapeHtml(pid) + '">';
     const _handleCell = dragEnabled
       ? '<td class="center col-handle nfl-drag-handle" title="Drag to re-rank">☰</td>'
-      : '<td class="center col-handle nfl-drag-handle disabled" title="Clear the column sort (click Rank) to drag-rank">☰</td>';
+      : '<td class="center col-handle nfl-drag-handle disabled" title="Clear the stat filter to drag-rank">☰</td>';
     return _trOpen +
       _handleCell +
-      '<td class="col-rank">' + rank + '</td>' +
+      (((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode()) ? ('<td class="col-rank">' + rank + '</td>') : ('<td class="col-rank rank-editable" title="Click to type a new rank -- works even while sorted" onclick="event.stopPropagation();wlEditRankNum(' + _pidJson + ',this)">' + rank + '</td>')) +   // WL_RANK_TYPEIN_NFL_V1
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><div class="name-cell"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _noteBadgeHtml(pid) + '</div></td>' +   // INJ_TAG_V1 + FITNAMES_NFL_V1 + COLPLAYER_CLASS_V1 (2026-08-21: this cell was class="left" ONLY, with no col-player -- which is exactly why the shared width rule had to reach for nth-child(4) in the first place. Now all three surfaces name the cell the same way.)
       '<td class="col-team">' + team + '</td>' +   // FIRST_CHAR_ALIGN_V1: the team cell was a bare <td> on BOTH static surfaces, so td.col-team matched nothing. The width came from the colgroup; alignment cannot.
@@ -9915,14 +9918,12 @@ document.addEventListener('click', function(e){
 // dragEnabled; these handlers also re-check as a backstop.
 let _nflDragSrcPid = null;
 function nflDragStart(e, pid){
-  if(_sortField !== null){ e.preventDefault(); return; }
   if(_blockIfReadOnly('nflDragStart')){ e.preventDefault(); return; }
   _nflDragSrcPid = pid;
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nfl-dragging');
   try { e.dataTransfer.effectAllowed = 'move'; } catch(_){}
 }
 function nflDragOver(e, pid){
-  if(_sortField !== null) return;
   e.preventDefault();
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.add('nfl-drag-over');
   try { e.dataTransfer.dropEffect = 'move'; } catch(_){}
@@ -9931,7 +9932,6 @@ function nflDragOver(e, pid){
 function nflDrop(e, pid){
   e.preventDefault();
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.remove('nfl-drag-over');
-  if(_sortField !== null) return;                 // never reorder while a stat sort is active
   if(_nflDragSrcPid == null || _nflDragSrcPid === pid) return;
   const si = _watchList.findIndex(item => _wlPid(item) === _nflDragSrcPid);
   const ti = _watchList.findIndex(item => _wlPid(item) === pid);
@@ -9945,6 +9945,46 @@ function nflDrop(e, pid){
   _nflDragSrcPid = null;
   renderWatchList();        // rank is re-derived from array position on render
   autoSaveToNflNAS();       // NFL_AUTOSAVE_NAS_V1 — persist the new order to the NAS
+}
+// WL_RANK_TYPEIN_NFL_V1 (2026-09-28, Matt): click the Rank number on the Watch 101 table, type the new rank,
+// Enter. Same four steps as the card's _ftlEditRank: Undo snapshot, tier self-repair, splice the SAVED order,
+// render + autosave. Works while sorted (the rank shown is always the saved rank). Esc cancels, blur applies.
+function wlEditRankNum(pid, el){
+  if(_blockIfReadOnly('wlEditRankNum')) return;
+  if(!el || el.querySelector('input')) return;
+  var from0 = _wlIndexOf(pid);
+  if(from0 < 0) return;
+  var tr = el.closest('tr'); if(tr) tr.setAttribute('draggable', 'false');   /* no dragging mid-type */
+  var input = document.createElement('input');
+  input.type = 'number'; input.min = '1'; input.className = 'rank-num-input';
+  input.title = 'Type a new rank and press Enter';
+  input.value = from0 + 1;
+  el.textContent = ''; el.appendChild(input);
+  input.focus(); input.select();
+  var done = function(apply){
+    var n = parseInt(String(input.value).trim(), 10);
+    var from = _wlIndexOf(pid);
+    if(!apply || !isFinite(n) || n < 1 || from === -1){ renderWatchList(); return; }
+    if(n > _watchList.length) n = _watchList.length;          // typing 999 parks him last
+    if(from === n - 1){ renderWatchList(); return; }
+    if(typeof snapshotForUndo === 'function') snapshotForUndo();
+    _tierRepairCapture(currentTiers, _tierRepairWlIds());
+    var moved = _watchList.splice(from, 1)[0];
+    _watchList.splice(n - 1, 0, moved);
+    if(_tierRepairReanchor(currentTiers, _tierRepairWlIds(), pid)){ _tiersUserMutated = true; try{ _tiersPersistLocal(); }catch(_e){} }
+    renderWatchList();
+    if(typeof autoSaveToNflNAS === 'function') autoSaveToNflNAS();
+    if(typeof updateUndoButton === 'function') updateUndoButton();
+  };
+  input.addEventListener('keydown', function(ev){
+    if(ev.key === 'Enter'){ ev.preventDefault(); input.removeEventListener('blur', onBlur); done(true); }
+    if(ev.key === 'Escape'){ ev.preventDefault(); input.removeEventListener('blur', onBlur); done(false); }
+    ev.stopPropagation();
+  });
+  var onBlur = function(){ done(true); };
+  input.addEventListener('blur', onBlur);
+  input.addEventListener('click', function(ev){ ev.stopPropagation(); });
+  input.addEventListener('mousedown', function(ev){ ev.stopPropagation(); });
 }
 function nflDragEnd(e){
   _nflDragSrcPid = null;
