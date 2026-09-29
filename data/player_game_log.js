@@ -29978,7 +29978,7 @@ var PLAYER_GAME_LOG = {
     "games": [
       {
         "ab": 4,
-        "avg": ".268",
+        "avg": ".263",
         "bb": 0,
         "date": "2026-09-27",
         "date_short": "Sep 27",
@@ -30014,7 +30014,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 3,
-        "avg": ".258",
+        "avg": ".253",
         "bb": 0,
         "date": "2026-09-25",
         "date_short": "Sep 25",
@@ -30032,7 +30032,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 4,
-        "avg": ".257",
+        "avg": ".251",
         "bb": 0,
         "date": "2026-09-23",
         "date_short": "Sep 23",
@@ -30050,7 +30050,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 4,
-        "avg": ".257",
+        "avg": ".251",
         "bb": 0,
         "date": "2026-09-22",
         "date_short": "Sep 22",
@@ -30086,7 +30086,7 @@ var PLAYER_GAME_LOG = {
       },
       {
         "ab": 2,
-        "avg": ".257",
+        "avg": ".251",
         "bb": 1,
         "date": "2026-09-20",
         "date_short": "Sep 20",
