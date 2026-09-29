@@ -2259,6 +2259,49 @@ var PLAYER_PITCHING_GAME_LOG = {
       "wins": 1
     }
   },
+  "529017": {
+    "games": [
+      {
+        "bb": 1,
+        "date": "2026-09-25",
+        "date_short": "Sep 25",
+        "decision": "",
+        "er": 2,
+        "h": 3,
+        "home": true,
+        "hr": 1,
+        "ip": "1.0",
+        "is_start": false,
+        "k": 2,
+        "opp": "BAL",
+        "pitches": 34,
+        "r": 2,
+        "result": "",
+        "status": "relief",
+        "strikes": 21
+      }
+    ],
+    "summary": {
+      "appearances": 1,
+      "bb": 1,
+      "er": 2,
+      "era": "18.00",
+      "h": 3,
+      "holds": 0,
+      "hr": 1,
+      "ip": "1.0",
+      "ip_outs": 3,
+      "k": 2,
+      "k_per_9": "18.0",
+      "losses": 0,
+      "r": 2,
+      "saves": 0,
+      "starts": 0,
+      "whip": "4.00",
+      "window": 1,
+      "wins": 0
+    }
+  },
   "542888": {
     "games": [
       {
@@ -66625,7 +66668,7 @@ var PLAYER_PITCHING_GAME_LOG = {
         "date": "2026-09-19",
         "date_short": "Sep 19",
         "decision": "",
-        "er": 1,
+        "er": 0,
         "h": 1,
         "home": true,
         "hr": 0,
@@ -66700,8 +66743,8 @@ var PLAYER_PITCHING_GAME_LOG = {
     "summary": {
       "appearances": 7,
       "bb": 1,
-      "er": 3,
-      "era": "4.76",
+      "er": 2,
+      "era": "3.18",
       "h": 4,
       "holds": 1,
       "hr": 0,
@@ -108331,7 +108374,7 @@ var PLAYER_PITCHING_GAME_LOG = {
         "date_short": "Sep 19",
         "decision": "",
         "er": 0,
-        "h": 2,
+        "h": 1,
         "home": true,
         "hr": 0,
         "ip": "0.1",
@@ -108407,7 +108450,7 @@ var PLAYER_PITCHING_GAME_LOG = {
       "bb": 2,
       "er": 2,
       "era": "2.57",
-      "h": 8,
+      "h": 7,
       "holds": 0,
       "hr": 0,
       "ip": "7.0",
@@ -108418,7 +108461,7 @@ var PLAYER_PITCHING_GAME_LOG = {
       "r": 3,
       "saves": 0,
       "starts": 0,
-      "whip": "1.43",
+      "whip": "1.29",
       "window": 7,
       "wins": 1
     }
