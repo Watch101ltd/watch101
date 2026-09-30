@@ -1161,12 +1161,20 @@ body.day-mode .red-alert-flash{color:#b91c1c !important;}
 .cp-table{width:max-content;border-collapse:collapse;font-size:13px;}
 .cp-table thead th{position:sticky;top:0;background:var(--surface,#0d1117);color:var(--court);font-size:11px;font-weight:800;letter-spacing:0.04em;padding:8px 6px;border-bottom:1px solid var(--border2);cursor:pointer;user-select:none;white-space:nowrap;text-align:right;}
 .cp-table thead th.cp-left{text-align:left;}
-.cp-table thead th .cp-sort-ind{display:inline-block;margin-left:2px;opacity:0.55;font-size:8px;}
-.cp-table thead th.cp-sort-asc .cp-sort-ind,.cp-table thead th.cp-sort-desc .cp-sort-ind{opacity:1;}
+/* CP_SORT_ARROW_MATCH_V1 (2026-09-30, Matt): the career popup sort marks now match the main table exactly -- one faint up-down arrow per header (0.4, 0.9 on hover), a down/up arrow in the bright accent on the sorted column. Was a two-triangle pair on every header. */
+.cp-table thead th .cp-sort-ind{opacity:0.4;font-size:8px;margin-left:1px;}
+.cp-table thead th:hover .cp-sort-ind{opacity:0.9;}
+.cp-table thead th.cp-sort-asc .cp-sort-ind,.cp-table thead th.cp-sort-desc .cp-sort-ind{opacity:1;color:var(--court-bright);}
 .cp-table tbody tr:nth-child(odd){background:rgba(255,255,255,0.015);}
 .cp-table tbody td{padding:6px 6px;border-bottom:1px solid rgba(255,255,255,0.04);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
 .cp-table tbody td.cp-left{text-align:left;}
 .cp-table tbody td.cp-col-year{font-weight:700;color:var(--court);text-align:left;}
+/* CP_ALIGN_V1 (2026-09-30, Matt: "columns lined up so everything looks straight"): stat headers centre over
+   centred numbers, and the sort arrow is pinned to the header's right edge so it never pushes the label off
+   centre -- the main table's STATBOX_CENTER_NBA_V1 rule. Year and Team stay left. */
+.cp-table thead th:not(.cp-left){text-align:center;position:relative;padding:8px 12px;}
+.cp-table thead th:not(.cp-left) .cp-sort-ind{position:absolute;right:2px;top:50%;transform:translateY(-50%);}
+.cp-table tbody td:not(.cp-left):not(.cp-col-year){text-align:center;padding:6px 12px;}
 /* DRAG_POLISH_V1 (Aug 2, 2026, late night) -- undo + drop indicator. */
 #drop-indicator-bar{display:none;position:absolute;height:5px;background:var(--court);border-radius:3px;z-index:9000;pointer-events:none;box-shadow:0 0 8px var(--court);}
 #drop-indicator-pill{display:none;position:fixed;background:var(--court);color:#0d1117;font-size:11px;font-weight:800;letter-spacing:0.04em;padding:3px 9px;border-radius:999px;z-index:9001;pointer-events:none;white-space:nowrap;}
@@ -9597,6 +9605,23 @@ window.addEventListener('resize', function(){ _cpFitTables(document); });
 function _cpG(s, k){ return (s && typeof s[k] === 'number') ? s[k] : null; }
 function _cpInt(v){ return (v == null) ? '—' : Math.round(v); }
 function _cpDec1(v){ return (v == null) ? '—' : v.toFixed(1); }
+// CP_CATS_MATCH_V1 (2026-09-30, Matt): the popup's stat columns are the ACTIVE LIST's scoring categories,
+// in the main table's order and with its labels (PTS not PPG, REB not RPG), after GP and MIN. The order
+// comes from _RANK_VIEW_STATS (the page's own 9-cat / 13-cat column lists) and the labels from
+// NBA_CATEGORIES, so the popup cannot drift from the watch list. 9 or 13 follows _nbaListCatMode().
+// Per game, same as the main table. Percentages from makes/attempts.
+function _cpCatCols(pgCol, pctCol){
+  const mode = (typeof _nbaListCatMode === 'function') ? _nbaListCatMode() : '9';
+  const ids = (_RANK_VIEW_STATS[mode === '13' ? 'cat13' : 'cat9'] || []).filter(function(id){ return id !== 'gp' && id !== 'min'; });
+  // Matt 2026-09-30: 13-cat also lists REB (total) just before ORB/DRB. ORB/DRB show a dash until the career
+  // server saves them (open item, his call to return to).
+  if(mode === '13' && ids.indexOf('reb') === -1){ const at = ids.indexOf('oreb'); ids.splice(at < 0 ? ids.length : at, 0, 'reb'); }
+  const PCT = { fgpct: ['fgm', 'fga'], ftpct: ['ftm', 'fta'], tppct: ['tpm', 'tpa'] };
+  return ids.map(function(id){
+    const cat = nbaCategoryById(id); const label = cat ? cat.label : id.toUpperCase();
+    return PCT[id] ? pctCol(label, PCT[id][0], PCT[id][1]) : pgCol(label, id);
+  });
+}
 function _cpColsFor(p){
   function pg(key){ return function(r){ const g = _cpG(r.stats, 'gp'); const v = _cpG(r.stats, key); return (g && v != null) ? v / g : null; }; }
   function pgCol(label, key){
@@ -9605,16 +9630,14 @@ function _cpColsFor(p){
   }
   function pctCol(label, mk, ak){
     const f = function(r){ const m = _cpG(r.stats, mk), a = _cpG(r.stats, ak); return (a && m != null) ? (m / a) * 100 : null; };
-    return { label: label, render: function(r){ return f(r) == null ? '—' : f(r).toFixed(1); }, sortVal: f };
+    return { label: label, render: function(r){ return f(r) == null ? '—' : f(r).toFixed(1) + '%'; }, sortVal: f };   // CP_CATS_MATCH_V1: % sign, same as the main table's pctCellOrDash
   }
   return [
     { label: 'Year', render: function(r){ return r.season + '-' + String(r.season + 1).slice(2); }, sortVal: function(r){ return r.season; } },
     { label: 'Team', render: function(r){ return r.team || '—'; }, sortVal: function(r){ return r.team || ''; } },
-    { label: 'G', render: function(r){ return _cpInt(_cpG(r.stats, 'gp')); }, sortVal: function(r){ return _cpG(r.stats, 'gp'); } },
-    { label: 'MPG', render: function(r){ const g = _cpG(r.stats, 'gp'), s = _cpG(r.stats, 'sp'); return (g && s != null) ? _cpDec1(s / g / 60) : '—'; }, sortVal: function(r){ const g = _cpG(r.stats, 'gp'), s = _cpG(r.stats, 'sp'); return (g && s != null) ? s / g / 60 : null; } },
-    pgCol('PPG', 'pts'), pgCol('RPG', 'reb'), pgCol('APG', 'ast'), pgCol('SPG', 'stl'), pgCol('BPG', 'blk'), pgCol('3PG', 'tpm'),
-    pctCol('FG%', 'fgm', 'fga'), pctCol('FT%', 'ftm', 'fta'), pgCol('TOV', 'to')
-  ];
+    { label: 'GP', render: function(r){ return _cpInt(_cpG(r.stats, 'gp')); }, sortVal: function(r){ return _cpG(r.stats, 'gp'); } },
+    { label: 'MIN', render: function(r){ const g = _cpG(r.stats, 'gp'), s = _cpG(r.stats, 'sp'); return (g && s != null) ? _cpDec1(s / g / 60) : '—'; }, sortVal: function(r){ const g = _cpG(r.stats, 'gp'), s = _cpG(r.stats, 'sp'); return (g && s != null) ? s / g / 60 : null; } }
+  ].concat(_cpCatCols(pgCol, pctCol));
 }
 
 function openCareerPopup(){
@@ -9669,7 +9692,7 @@ function _cpRenderRows(body, rows, cols, sortIdx, sortDir){
   let head = '<tr>';
   cols.forEach(function(c, i){
     const cls = (i < 2 ? 'cp-left ' : '') + (sortIdx === i ? (sortDir === 'asc' ? 'cp-sort-asc' : 'cp-sort-desc') : '');
-    const ind = sortIdx === i ? (sortDir === 'asc' ? '▲' : '▼') : '▲▼';
+    const ind = sortIdx === i ? (sortDir === 'asc' ? '↑' : '↓') : '↕';   // CP_SORT_ARROW_MATCH_V1: same glyphs as updateSortArrows()
     head += '<th class="' + cls + '" data-ci="' + i + '">' + c.label + ' <span class="cp-sort-ind">' + ind + '</span></th>';
   });
   head += '</tr>';
