@@ -2816,6 +2816,10 @@ async function syncYahooNBA(){
       // YRANK_COL_NBA_V1 (2026-09-18, the Dude's call: 'use the regular ranks', 'don't change the order of the players').
       // The REAL Yahoo rank (sort=AR, 1..674 on the 2026-27 game, every player has one) is kept in its own slot
       // for the Rank column. yahoo_rank itself keeps carrying preseason_rank below so the rankings SEED is untouched.
+      // OWNED_ZERO_V1 (2026-09-30, Bug #231, the Dude checked Jason Sanders = 0% on Yahoo): Yahoo's
+      // percent_owned leaves out the number when a player is 0% and sends only the week's change.
+      // Change present + no number = 0%, same as baseball. No change either = Yahoo said nothing, keep the dash.
+      if(yp.roster_pct == null && yp.roster_delta != null) yp.roster_pct = 0;
       yp.yahoo_actual_rank = (yp.yahoo_rank != null) ? Number(yp.yahoo_rank) : null;
       yp.yahoo_rank = (yp.preseason_rank != null) ? yp.preseason_rank : null;
       if(yp.yahoo_player_id != null) _yahooByYid[String(yp.yahoo_player_id)] = yp;
