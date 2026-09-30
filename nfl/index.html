@@ -566,6 +566,14 @@ table.watch-list thead th.col-handle,table.watch-list tbody td.col-handle{width:
 .np-add-btn:hover{filter:brightness(1.1)}
 .np-add-btn.added{background:transparent;color:var(--turf,#16a34a);border:1px solid var(--turf,#16a34a);cursor:default;font-weight:800}
 .np-add-btn:disabled{cursor:default}
+
+/* ADDPILL_TOGGLE_V1: the Added pill is clickable (removes); hover shows a red Remove, same width */
+.np-add-btn.added{cursor:pointer;display:inline-grid;justify-items:center}
+.np-add-btn.added>span{grid-area:1/1}
+.np-add-btn.added .np-lbl-off{visibility:hidden}
+.np-add-btn.added:hover{color:#ef4444;border-color:#ef4444;filter:none}
+.np-add-btn.added:hover .np-lbl-on{visibility:hidden}
+.np-add-btn.added:hover .np-lbl-off{visibility:visible}
 /* NFL_DRAG_RANK_V1 — drag handle + drop feedback. Handle grabbable only in rank view. */
 table.watch-list tbody td.nfl-drag-handle{cursor:grab;color:var(--text2);user-select:none}
 table.watch-list tbody td.nfl-drag-handle:active{cursor:grabbing}
@@ -5541,7 +5549,7 @@ function renderNflPlayers(){
       '<td class="col-stat-a">' + _ratioCellOrDash(s.rec_yd, s.rec) + '</td>' +   // YPC_YPR_V1
       '<td class="col-stat-a">' + statCellOrDash(s.rec_td) + '</td>' +
       '<td class="center col-action">' + (onList
-          ? '<button class="np-add-btn added" disabled>✓ Added</button>'
+          ? '<button class="np-add-btn added" title="On the watch list. Click to remove." onclick="npRemoveFromList(' + _pidJson + ', this)">' + _NP_ADDED_HTML + '</button>'
           : '<button class="np-add-btn" onclick="npAddToList(' + _pidJson + ', this)">+ Add</button>') + '</td>' +
     '</tr>';
   }).join('');
@@ -5553,12 +5561,39 @@ function renderNflPlayers(){
 function npAddToList(pid, btnEl){
   if(_wlIndexOf(pid) >= 0) return;
   addPlayerToList(pid);   // adds + re-renders the watch list + auto-saves to NAS
-  if(btnEl){
-    btnEl.textContent = '✓ Added';
-    btnEl.classList.add('added');
-    btnEl.disabled = true;
+  if(_wlIndexOf(pid) >= 0) _npSetPill(btnEl, pid, true);   // ADDPILL_TOGGLE_V1: the pill can now take him back off
+}
+
+// ── ADDPILL_TOGGLE_V1 (2026-09-30, Matt's ask via the Dude, football AND basketball) ──
+// The pool's "✓ Added" pill is now a toggle: click it to take the player OFF the list,
+// and the pill flips back to "+ Add" in place (no pool re-render, so scroll and sort stay).
+// Hovering the pill shows "✕ Remove" in red so it is obvious what a click will do.
+// Removal goes through the SAME removePlayerFromList() the watch list's Remove button uses:
+// fan/read-only mode is still blocked, it is undoable with Undo, and it autosaves to the NAS.
+// Both labels sit stacked in one grid cell, so the pill never changes width on hover
+// (ADDPILL_FIT_V1 measures it once and that measurement stays true).
+var _NP_ADDED_HTML = '<span class="np-lbl-on">✓ Added</span><span class="np-lbl-off">✕ Remove</span>';
+function _npSetPill(btnEl, pid, onList){
+  if(!btnEl) return;
+  btnEl.disabled = false;
+  if(onList){
+    btnEl.className = 'np-add-btn added';
+    btnEl.innerHTML = _NP_ADDED_HTML;
+    btnEl.title = 'On the watch list. Click to remove.';
+    btnEl.onclick = function(){ npRemoveFromList(pid, btnEl); };
+  } else {
+    btnEl.className = 'np-add-btn';
+    btnEl.textContent = '+ Add';
+    btnEl.title = '';
+    btnEl.onclick = function(){ npAddToList(pid, btnEl); };
   }
 }
+function npRemoveFromList(pid, btnEl){
+  if(_wlIndexOf(pid) < 0){ _npSetPill(btnEl, pid, false); return; }
+  removePlayerFromList(pid);                 // undoable + autosaves; refuses in read-only mode
+  if(_wlIndexOf(pid) < 0) _npSetPill(btnEl, pid, false);   // flip only if it really came off
+}
+// ── /ADDPILL_TOGGLE_V1 ───────────────────────────────────────────────────────
 
 function _npSortBy(field){
   if(!field) return;
