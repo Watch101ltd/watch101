@@ -9320,6 +9320,7 @@ function _ftlToggleOwned(checkboxEl){
   if(checkboxEl) checkboxEl.checked = isOwnedPlayer(_ftlCurrentPid);
 }
 function _ftlSyncOwnedCheck(pid){
+  if(typeof _ftlNoteBtnSync === 'function') _ftlNoteBtnSync(pid);   // CARD_ADDNOTE_V1: runs on every card open
   const wrap = document.getElementById('ftl-own-wrap');
   const check = document.getElementById('ftl-own-check');
   if(wrap) wrap.style.display = 'inline-flex';
@@ -10795,6 +10796,7 @@ async function _ftlLoadHistoryNotes(){
 }
 
 function _ftlRenderMattsTake(pid){
+  if(typeof _ftlNoteBtnSync === 'function') _ftlNoteBtnSync(pid);   // CARD_ADDNOTE_V1
   const noteEl = document.getElementById('ftl-take-note');
   const starsEl = document.getElementById('ftl-take-stars');
   if (noteEl){
@@ -11542,6 +11544,22 @@ bootstrap();
     <div id="list-info-body" style="display:flex;flex-direction:column;gap:14px"><!-- populated by JS at open time --></div>
   </div>
 </div>
+<style>/* CARD_ADDNOTE_V1 (2026-09-30) */
+#ftl-overlay .ftl-photocol{display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0;}
+#ftl-overlay .ftl-addnote-btn{background:transparent;color:var(--court,#ea580c);border:1px solid var(--court,#ea580c);border-radius:16px;padding:6px 14px;font-size:12px;font-weight:800;font-family:'Nunito Sans',sans-serif;cursor:pointer;white-space:nowrap;}
+#ftl-overlay .ftl-addnote-btn:hover{background:var(--court,#ea580c);color:#fff;}
+#ftl-overlay .ftl-takewrap{position:relative;}
+#ftl-overlay .ftl-noteadd{position:absolute;top:0;left:0;right:0;z-index:6;min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;background:var(--surface,#0f172a);border:1px solid var(--court,#ea580c);border-radius:10px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.45);}
+#ftl-overlay .ftl-noteadd-title{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--court,#ea580c);}
+#ftl-overlay .ftl-noteadd-title span{font-family:'Nunito Sans',sans-serif;font-weight:600;font-size:12px;color:var(--text3);margin-left:6px;}
+#ftl-overlay .ftl-noteadd textarea{width:100%;box-sizing:border-box;min-height:150px;resize:vertical;background:var(--surface2,#111827);color:var(--text,#e5e7eb);border:1px solid var(--border2,#334155);border-radius:8px;padding:8px 10px;font:14px/1.5 'Nunito Sans',sans-serif;}
+#ftl-overlay .ftl-noteadd textarea:focus{outline:none;border-color:var(--court,#ea580c);}
+#ftl-overlay .ftl-noteadd-row{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+#ftl-overlay .ftl-noteadd-hint{margin-right:auto;font-size:11px;color:var(--text3);}
+#ftl-overlay .ftl-noteadd-cancel{background:transparent;color:var(--text2);border:1px solid var(--border2,#334155);border-radius:6px;padding:5px 12px;font-weight:700;cursor:pointer;}
+#ftl-overlay .ftl-noteadd-save{background:var(--court,#ea580c);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-weight:800;cursor:pointer;}
+@media (max-width:880px){#ftl-overlay .ftl-noteadd{position:static;}}  /* stacked layout: push down, never cover the schedule */
+</style>
 <div id="ftl-overlay" role="dialog" aria-modal="true" aria-label="Player detail">
   <button class="ftl-close" onclick="closeFromTheLogo()" aria-label="Close">&times;</button>
   <div class="ftl-header">
@@ -11552,8 +11570,11 @@ bootstrap();
     <div class="ftl-header-right">Watch 101 Player Card</div>
   </div>
   <section class="ftl-hero">
+    <div class="ftl-photocol"><!-- CARD_ADDNOTE_V1: photo + the Add Note button under it -->
     <img class="ftl-photo" id="ftl-photo" src="" alt=""
          onerror="this.onerror=null;this.src='https://sleepercdn.com/images/v2/icons/player_default.webp'">
+    <button type="button" class="ftl-addnote-btn" id="ftl-addnote-btn" style="display:none" onclick="_ftlNoteAddOpen()" title="Write a new dated note without leaving the card">+ Add Note</button>
+    </div>
     <div class="ftl-meta">
       <div class="ftl-name" id="ftl-name"></div>
       <div class="ftl-sub" id="ftl-sub"></div>
@@ -11594,6 +11615,17 @@ bootstrap();
        gonna look at this." Every id unchanged — nodes moved, nothing removed. -->
   <div class="ftl-cols">
     <div class="ftl-takewrap">
+      <!-- CARD_ADDNOTE_V1 (2026-09-30, Matt's ask via the Dude): the new-note box opens HERE, over
+           "Satten Says", so the stats and schedule on the right stay visible while he writes. -->
+      <div class="ftl-noteadd" id="ftl-noteadd" style="display:none">
+        <div class="ftl-noteadd-title">New note <span id="ftl-noteadd-date"></span></div>
+        <textarea id="ftl-noteadd-text" placeholder="Why is this player here?" rows="7"></textarea>
+        <div class="ftl-noteadd-row">
+          <span class="ftl-noteadd-hint">Ctrl+Enter saves &middot; Esc cancels</span>
+          <button type="button" class="ftl-noteadd-cancel" onclick="_ftlNoteAddClose(false)">Cancel</button>
+          <button type="button" class="ftl-noteadd-save" onclick="_ftlNoteAddSave()">Save Note</button>
+        </div>
+      </div>
       <div class="ftl-take-card">
         <div class="ftl-take-title">Satten Says</div>
         <div class="ftl-take-note" id="ftl-take-note"><em>No notes from Matt yet.</em></div>
@@ -12713,5 +12745,67 @@ table.watch-list tbody td .stat-cell{display:inline!important;min-width:0!import
 })();
 </script>
 <!-- ===================== CHROME_FIT_V1 END ===================== -->
+<script>
+// ── CARD_ADDNOTE_V1 (2026-09-30, PC Walter; Matt's ask via the Dude, football AND basketball) ──
+// "+ Add Note" under the photo on the player card. It opens a box over "Satten Says" (the
+// left column only), so the stats and schedule stay in view while Matt writes. Saving goes
+// through the SAME _wlNoteAdd() the watch list's note popup uses: a new dated entry at the
+// end of the history, localStorage + NAS autosave, fan/read-only mode blocked. The button
+// only shows for a player on the current watch list (that is where notes live) and never
+// in read-only mode. Nothing else about notes changes.
+var _ftlNoteAddPid = null;
+function _ftlNoteBtnSync(pid){
+  var btn = document.getElementById('ftl-addnote-btn');
+  if(_ftlNoteAddPid != null && _ftlNoteAddPid !== pid) _ftlNoteAddClose(true);   // new player: drop the old box
+  if(!btn) return;
+  var ro = false; try { ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode(); } catch(e){}
+  var onList = (typeof _wlIndexOf === 'function') && _wlIndexOf(pid) >= 0;
+  btn.style.display = (!ro && onList) ? '' : 'none';
+}
+function _ftlNoteAddOpen(){
+  var pid = _ftlCurrentPid; if(pid == null) return;
+  if(_blockIfReadOnly('_ftlNoteAddOpen')) return;
+  if(_wlIndexOf(pid) < 0) return;
+  var box = document.getElementById('ftl-noteadd'), ta = document.getElementById('ftl-noteadd-text');
+  var dt = document.getElementById('ftl-noteadd-date');
+  if(!box || !ta) return;
+  _ftlNoteAddPid = pid;
+  if(dt){ var d = new Date(); dt.textContent = (d.getMonth()+1) + '/' + d.getDate() + '/' + d.getFullYear(); }
+  box.style.display = 'flex';
+  ta.focus();
+}
+function _ftlNoteAddClose(force){
+  var box = document.getElementById('ftl-noteadd'), ta = document.getElementById('ftl-noteadd-text');
+  if(!box) return;
+  if(!force && ta && ta.value.trim() && !confirm('Throw away this note without saving it?')) return;
+  box.style.display = 'none';
+  if(ta) ta.value = '';
+  _ftlNoteAddPid = null;
+}
+function _ftlNoteAddSave(){
+  var ta = document.getElementById('ftl-noteadd-text');
+  var pid = _ftlNoteAddPid;
+  if(!ta || pid == null) return;
+  var t = ta.value.trim();
+  if(!t){ ta.focus(); return; }
+  var idx = _wlIndexOf(pid);
+  var before = (idx >= 0 && _watchList[idx] && _watchList[idx].notes) ? _watchList[idx].notes.length : -1;
+  _wlNoteAdd(pid, t);
+  idx = _wlIndexOf(pid);
+  var after = (idx >= 0 && _watchList[idx] && _watchList[idx].notes) ? _watchList[idx].notes.length : -1;
+  if(after <= before){ alert('That note did not save. Nothing was lost: your text is still in the box.'); return; }
+  _ftlNoteAddClose(true);
+  if(typeof _ftlRenderMattsTake === 'function') _ftlRenderMattsTake(pid);   // the new note shows at once
+}
+(function(){
+  var ta = document.getElementById('ftl-noteadd-text');
+  if(!ta) return;
+  ta.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' || e.keyCode === 27){ e.preventDefault(); e.stopPropagation(); _ftlNoteAddClose(false); }   // Esc closes the box, not the card
+    else if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); _ftlNoteAddSave(); }
+  });
+})();
+// ── /CARD_ADDNOTE_V1 ─────────────────────────────────────────────────────────
+</script>
 </body>
 </html>
