@@ -1315,6 +1315,19 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
 #ftl-overlay .ftl-statcell.cat .ftl-statlabel{color:var(--stat-teal);}
 #ftl-overlay .ftl-statcell.info .ftl-statlabel{color:var(--text3);}
 #ftl-overlay .ftl-statcell .ftl-statval.na{color:var(--text3);}
+/* CARD_OWN_STYLE_V1 (2026-09-30, Matt's pick C): the four ownership tiles lead the strip, end on the main
+   table's orange zone divider, show white numbers (OWNROW's intent, which the teal rule below it had been
+   overriding), and colour each label by its source: Fantrax orange, Yahoo purple, CBS blue. The purple and
+   blue are lightened for the dark card; day mode uses the darker originals. */
+#ftl-overlay .ftl-statcell.ftl-own-cell + .ftl-statcell:not(.ftl-own-cell){border-left:2px solid #ea580c;}
+#ftl-overlay .ftl-statcell.ftl-own-cell .ftl-statval{color:var(--text1,#fff);}
+#ftl-overlay .ftl-statcell.own-src-ftx .ftl-statlabel{color:#fb923c;}
+#ftl-overlay .ftl-statcell.own-src-yh .ftl-statlabel{color:#a78bfa;}
+#ftl-overlay .ftl-statcell.own-src-cbs .ftl-statlabel{color:#60a5fa;}
+body.day-mode #ftl-overlay .ftl-statcell.ftl-own-cell .ftl-statval{color:#1a1a1a;}
+body.day-mode #ftl-overlay .ftl-statcell.own-src-ftx .ftl-statlabel{color:#ea580c;}
+body.day-mode #ftl-overlay .ftl-statcell.own-src-yh .ftl-statlabel{color:#6001D2;}
+body.day-mode #ftl-overlay .ftl-statcell.own-src-cbs .ftl-statlabel{color:#2563eb;}
 /* ══════════ CARD_SCHED_PHONE_V1 (2026-08-23) ══════════
    THE SCHEDULE TABLE BURSTS THE CARD ON A PHONE. Found by the Dude straight after the stat-strip
    fix: *"the schedule results at the bottom of the player page still doesn't fit."* He was right,
@@ -10737,14 +10750,14 @@ function _ftlRenderContractLink(pid){
   el.title = 'Open ' + (nm || 'player') + " contract on Spotrac";
   wrap.style.display = '';
 }
-function _ftlStatCell(label, val, kind){
+function _ftlStatCell(label, val, kind, extraCls){   // CARD_OWN_STYLE_V1: extraCls tags the ownership tile's source
   const na = (val == null);
   const shown = na ? '—' : val;
   // STAT_TWIN_V1: kind is 'cat' (scoring category, teal) or 'info' (informational, green),
   // mirroring the table's col-stat-a / col-stat-info classes. Omitted = uncoloured, so any
   // future caller that does not pass one still renders rather than breaking.
   const cls = (kind === 'cat' || kind === 'info') ? (' ' + kind) : (kind === 'own' ? ' ftl-own-cell' : '');  // CARD_COMPACT_NBA_V1: ownership tiles ride stat row 2 and keep OWNROW's white values
-  return '<div class="ftl-statcell' + cls + '"><div class="ftl-statlabel">' + label +
+  return '<div class="ftl-statcell' + cls + (extraCls ? (' ' + extraCls) : '') + '"><div class="ftl-statlabel">' + label +
          '</div><div class="ftl-statval' + (na ? ' na' : '') + '">' + shown + '</div></div>';
 }
 // Format a per-game number to 1 decimal, strip a trailing .0, em-dash when null.
@@ -11198,43 +11211,48 @@ function openFromTheLogo(pid, _keepRange){
   // Three labels were renamed to match the table exactly: FG became FGM, 3P became 3PM,
   // TOV became TO. The underlying fields are unchanged. PF stays removed site wide, per Matt
   // ("never, anywhere"), carried over from NINE_CAT_V1.
+  // CARD_CAT_HILITE_V1 (2026-09-30, Matt): the highlighted tiles follow the OPEN LIST's scoring categories
+  // (13 Cat list = 13-cat, every other list = 9-cat, _nbaListCatMode), read from NBA_CATEGORIES, instead of
+  // the nine that were hard-coded here. GP and MIN never score, so they stay informational.
+  const _ftlCatSet = {}; (typeof nbaCategoriesFor === 'function' ? nbaCategoriesFor(typeof _nbaListCatMode === 'function' ? _nbaListCatMode() : '9') : []).forEach(function(c){ _ftlCatSet[c.id] = true; });
+  const _ftlKind = function(id){ return _ftlCatSet[id] ? 'cat' : 'info'; };
   const statRow1 =
-    _ftlStatCell('GP',  (s.gp != null ? s.gp : null), 'info') +
-    _ftlStatCell('MIN', _ftlMin(s),                   'info') +
-    _ftlStatCell('FGM', _ftlPG(s.fgm, gp),            'info') +
-    _ftlStatCell('FGA', _ftlPG(s.fga, gp),            'info') +
-    _ftlStatCell('FG%', _ftlPct(s.fgm, s.fga),        'cat')  +
-    _ftlStatCell('FTM', _ftlPG(s.ftm, gp),            'info') +
-    _ftlStatCell('FTA', _ftlPG(s.fta, gp),            'info') +
-    _ftlStatCell('FT%', _ftlPct(s.ftm, s.fta),        'cat')  +
-    _ftlStatCell('3PM', _ftlPG(s.tpm, gp),            'cat')  +
-    _ftlStatCell('3PA', _ftlPG(s.tpa, gp),            'info') +
-    _ftlStatCell('3P%', _ftlPct(s.tpm, s.tpa),        'info');
+    _ftlStatCell('GP',  (s.gp != null ? s.gp : null), _ftlKind('gp')) +
+    _ftlStatCell('MIN', _ftlMin(s),                   _ftlKind('min')) +
+    _ftlStatCell('FGM', _ftlPG(s.fgm, gp),            _ftlKind('fgm')) +
+    _ftlStatCell('FGA', _ftlPG(s.fga, gp),            _ftlKind('fga')) +
+    _ftlStatCell('FG%', _ftlPct(s.fgm, s.fga),        _ftlKind('fgpct'))  +
+    _ftlStatCell('FTM', _ftlPG(s.ftm, gp),            _ftlKind('ftm')) +
+    _ftlStatCell('FTA', _ftlPG(s.fta, gp),            _ftlKind('fta')) +
+    _ftlStatCell('FT%', _ftlPct(s.ftm, s.fta),        _ftlKind('ftpct'))  +
+    _ftlStatCell('3PM', _ftlPG(s.tpm, gp),            _ftlKind('tpm'))  +
+    _ftlStatCell('3PA', _ftlPG(s.tpa, gp),            _ftlKind('tpa')) +
+    _ftlStatCell('3P%', _ftlPct(s.tpm, s.tpa),        _ftlKind('tppct'));
   const statRow2 =
-    _ftlStatCell('PTS', _ftlPG(s.pts, gp),            'cat')  +
-    _ftlStatCell('REB', _ftlPG(s.reb, gp),            'cat')  +
-    _ftlStatCell('ORB', _ftlPG(s.oreb, gp),           'info') +
-    _ftlStatCell('DRB', _ftlPG(s.dreb, gp),           'info') +
-    _ftlStatCell('AST', _ftlPG(s.ast, gp),            'cat')  +
-    _ftlStatCell('STL', _ftlPG(s.stl, gp),            'cat')  +
-    _ftlStatCell('BLK', _ftlPG(s.blk, gp),            'cat')  +
-    _ftlStatCell('TO',  _ftlPG(s.to, gp),             'cat');
+    _ftlStatCell('PTS', _ftlPG(s.pts, gp),            _ftlKind('pts'))  +
+    _ftlStatCell('REB', _ftlPG(s.reb, gp),            _ftlKind('reb'))  +
+    _ftlStatCell('ORB', _ftlPG(s.oreb, gp),           _ftlKind('oreb')) +
+    _ftlStatCell('DRB', _ftlPG(s.dreb, gp),           _ftlKind('dreb')) +
+    _ftlStatCell('AST', _ftlPG(s.ast, gp),            _ftlKind('ast'))  +
+    _ftlStatCell('STL', _ftlPG(s.stl, gp),            _ftlKind('stl'))  +
+    _ftlStatCell('BLK', _ftlPG(s.blk, gp),            _ftlKind('blk'))  +
+    _ftlStatCell('TO',  _ftlPG(s.to, gp),             _ftlKind('to'));
   // QUADRANTS_V1 (Aug 2, 2026): two compact stat rows in the hero, baseball-style.
   // OWNROW_CARD_V1 (Aug 6, 2026) — baseball's ownership row, ported per the Dude:
   // FTX ADP / Y!ROS%% / CBS%%, its own row, white values. (Y!RK retired by FTX_ADP_V1, Bug #194.)
   const _oyh  = (typeof _yahooFor === 'function') ? _yahooFor(pid) : null;
   const _ocbs = (typeof _cbsForNum === 'function') ? _cbsForNum(pid) : null;
   const ownRow =
-    _ftlStatCell('FTX ADP', (function(){ var f=(typeof _ftxFor==='function')?_ftxFor(pid):null; return f?f.a:null; })(), 'own') +   /* FTX_ADP_V1: was Y!RK */
-    _ftlStatCell('Y!RK', (_oyh && _oyh.yahoo_actual_rank != null) ? _oyh.yahoo_actual_rank : null, 'own') +   /* YRANK_COL_NBA_V1: the tile FTX_ADP_V1 retired, back */
-    _ftlStatCell('Y!ROS%', (_oyh && _oyh.roster_pct != null) ? Math.round(_oyh.roster_pct) + '%' : null, 'own') +
-    _ftlStatCell('CBS%',   (_ocbs != null) ? _ocbs + '%' : null, 'own');
+    _ftlStatCell('FTX ADP', (function(){ var f=(typeof _ftxFor==='function')?_ftxFor(pid):null; return f?f.a:null; })(), 'own', 'own-src-ftx') +   /* FTX_ADP_V1: was Y!RK */
+    _ftlStatCell('Y!RK', (_oyh && _oyh.yahoo_actual_rank != null) ? _oyh.yahoo_actual_rank : null, 'own', 'own-src-yh') +   /* YRANK_COL_NBA_V1: the tile FTX_ADP_V1 retired, back */
+    _ftlStatCell('Y!ROS%', (_oyh && _oyh.roster_pct != null) ? Math.round(_oyh.roster_pct) + '%' : null, 'own', 'own-src-yh') +
+    _ftlStatCell('CBS%',   (_ocbs != null) ? _ocbs + '%' : null, 'own', 'own-src-cbs');
   document.getElementById('ftl-statwrap').innerHTML =
     // STATSTRIP_FULLWIDTH_NBA_V1 (2026-08-21, the Dude, reversing CARD_COMPACT_NBA_V1's two-row
     // shape the same hour it shipped): with the strip now spanning the card's FULL width instead
     // of the herostats column, all 22 tiles fit one row. minmax(0,auto) columns squeeze evenly
     // on smaller screens (STATGRID_V1's no-wrap grid, now allowed to compress).
-    '<div class="ftl-statbar">' + statRow1 + statRow2 + ownRow + '</div>';
+    '<div class="ftl-statbar">' + ownRow + statRow1 + statRow2 + '</div>';   // CARD_OWN_FIRST_V1 (2026-09-30, Matt): ADP + ownership tiles lead, like the main table
 
   _ftlCurrentPid = pid;
   _ftlSyncOwnedCheck(pid);
