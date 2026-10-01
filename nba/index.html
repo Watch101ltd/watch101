@@ -1292,6 +1292,20 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
 #ftl-overlay .ftl-statlabel{font-family:var(--font-display);font-weight:700;font-size:8px;letter-spacing:0.06em;color:var(--text3);margin-bottom:2px;white-space:nowrap;}  /* FITCARD_PORT_V1: a stat label is one label. On football six of thirteen used to split in half on a narrow window. */
 #ftl-overlay .ftl-statval{font-size:13px;font-weight:700;color:#fb923c;line-height:1;white-space:nowrap;}  /* FITCARD_PORT_V1: a value never breaks either */
 #ftl-overlay .ftl-statval.na{color:var(--text3);font-weight:500;}
+/* STRIP_SHRINK_FIRST_V1 (2026-09-30, Matt: "I just want the text to shrink so nothing overlaps"): set by _ftlFitCard
+   only when the strip is at its smallest size and still too wide. Then, and only then, tiles wrap to more rows. */
+/* STRIP_CATS_ONLY_V1 (2026-09-30, Matt): before any wrap, the non-category tiles drop out so the strip stays one row. */
+#ftl-overlay .ftl-statbar.ftl-strip-cats-only .ftl-statcell.info:not(.ftl-gpmin){display:none;}
+#ftl-overlay .ftl-statbar.ftl-strip-wrap{display:flex;flex-wrap:wrap;}
+/* STRIP_PTS_ROW2_V1 (2026-09-30, Matt: "for the phone, move points on to the second row"): an empty break that only
+   exists in wrap mode. Row 1 = ownership + GP/MIN + shooting, row 2 = PTS onward. */
+#ftl-overlay .ftl-statbar .ftl-strip-break{display:none;}
+#ftl-overlay .ftl-statbar.ftl-strip-wrap .ftl-strip-break{display:block;flex-basis:100%;height:0;}
+#ftl-overlay .ftl-statbar.ftl-strip-wrap .ftl-strip-break-own{display:none;}
+/* smallest phones: if row 1 itself would wrap (one tile stranded on a line), break after the ownership tiles too:
+   ownership | GP, MIN, shooting | PTS onward -- three tidy rows instead of a stretched orphan */
+#ftl-overlay .ftl-statbar.ftl-strip-wrap.ftl-strip-wrap3 .ftl-strip-break-own{display:block;}
+#ftl-overlay .ftl-statbar.ftl-strip-wrap .ftl-statcell{flex:1 0 auto;}
 /* ROTOWIRE_LINK_NBA_V1 (2026-08-05) — baseball's gold RW pill, cloned. Deliberately a
    PILL and deliberately just a LINK: the Dude looked at a real news feed and decided against
    rebuilding one tonight, because actual headlines need licensed content, not a hyperlink.
@@ -1319,8 +1333,9 @@ body.view-nine-cat #nbamain-wrap th.col-pct-div, body.view-nine-cat #nbamain-wra
    table's orange zone divider, show white numbers (OWNROW's intent, which the teal rule below it had been
    overriding), and colour each label by its source: Fantrax orange, Yahoo purple, CBS blue. The purple and
    blue are lightened for the dark card; day mode uses the darker originals. */
-#ftl-overlay .ftl-statcell.ftl-own-cell + .ftl-statcell:not(.ftl-own-cell){border-left:2px solid #ea580c;}
+#ftl-overlay .ftl-statcell.own-src-cbs{border-right:2px solid #ea580c;}   /* on the LAST ownership tile, so it survives the next tile being hidden (STRIP_CATS_ONLY_V1) */
 #ftl-overlay .ftl-statcell.ftl-own-cell .ftl-statval{color:var(--text1,#fff);}
+#ftl-overlay .ftl-statcell.ftl-own-cell .ftl-statlabel{letter-spacing:0.02em;}   /* OWN_TILE_NARROW_V1 */
 #ftl-overlay .ftl-statcell.own-src-ftx .ftl-statlabel{color:#fb923c;}
 #ftl-overlay .ftl-statcell.own-src-yh .ftl-statlabel{color:#a78bfa;}
 #ftl-overlay .ftl-statcell.own-src-cbs .ftl-statlabel{color:#60a5fa;}
@@ -1581,8 +1596,8 @@ table.watch-list tbody td.empty-state{text-align:left}
      🪨 THE PATTERN TO REMEMBER: this is Bug #32 again (2026-08-04), where Matt saw broken headers
      at 100% zoom and the Dude had to reach 175% on his widescreen to reproduce it. TIGHTENING A
      LAYOUT FOR THE WIDE CASE IS THE ACT THAT BREAKS THE NARROW ONE. Check both, every time. */
-  #ftl-overlay .ftl-statbar{display:flex;flex-wrap:wrap;}
-  #ftl-overlay .ftl-statcell{min-width:60px;flex:1 0 auto;}
+  /* STRIP_SHRINK_FIRST_V1 (2026-09-30): the phone wrap moved out of this width rule into .ftl-strip-wrap below,
+     which _ftlFitCard adds ONLY after the strip has shrunk to its floor and still does not fit. */
 }
 /* NBA_MULTILIST_V1 tweak (June 11, 2026, per the Dude) — the EXPANDED dropdown rows render on the
    browser-native white background, so the select's inherited white text was invisible. Dark text on white
@@ -11217,8 +11232,8 @@ function openFromTheLogo(pid, _keepRange){
   const _ftlCatSet = {}; (typeof nbaCategoriesFor === 'function' ? nbaCategoriesFor(typeof _nbaListCatMode === 'function' ? _nbaListCatMode() : '9') : []).forEach(function(c){ _ftlCatSet[c.id] = true; });
   const _ftlKind = function(id){ return _ftlCatSet[id] ? 'cat' : 'info'; };
   const statRow1 =
-    _ftlStatCell('GP',  (s.gp != null ? s.gp : null), _ftlKind('gp')) +
-    _ftlStatCell('MIN', _ftlMin(s),                   _ftlKind('min')) +
+    _ftlStatCell('GP',  (s.gp != null ? s.gp : null), _ftlKind('gp'), 'ftl-gpmin') +
+    _ftlStatCell('MIN', _ftlMin(s),                   _ftlKind('min'), 'ftl-gpmin') +
     _ftlStatCell('FGM', _ftlPG(s.fgm, gp),            _ftlKind('fgm')) +
     _ftlStatCell('FGA', _ftlPG(s.fga, gp),            _ftlKind('fga')) +
     _ftlStatCell('FG%', _ftlPct(s.fgm, s.fga),        _ftlKind('fgpct'))  +
@@ -11228,7 +11243,7 @@ function openFromTheLogo(pid, _keepRange){
     _ftlStatCell('3PM', _ftlPG(s.tpm, gp),            _ftlKind('tpm'))  +
     _ftlStatCell('3PA', _ftlPG(s.tpa, gp),            _ftlKind('tpa')) +
     _ftlStatCell('3P%', _ftlPct(s.tpm, s.tpa),        _ftlKind('tppct'));
-  const statRow2 =
+  const statRow2 = '<div class="ftl-strip-break"></div>' +   // STRIP_PTS_ROW2_V1: when the strip has to wrap, PTS starts row 2
     _ftlStatCell('PTS', _ftlPG(s.pts, gp),            _ftlKind('pts'))  +
     _ftlStatCell('REB', _ftlPG(s.reb, gp),            _ftlKind('reb'))  +
     _ftlStatCell('ORB', _ftlPG(s.oreb, gp),           _ftlKind('oreb')) +
@@ -11246,7 +11261,8 @@ function openFromTheLogo(pid, _keepRange){
     _ftlStatCell('FTX ADP', (function(){ var f=(typeof _ftxFor==='function')?_ftxFor(pid):null; return f?f.a:null; })(), 'own', 'own-src-ftx') +   /* FTX_ADP_V1: was Y!RK */
     _ftlStatCell('Y!RK', (_oyh && _oyh.yahoo_actual_rank != null) ? _oyh.yahoo_actual_rank : null, 'own', 'own-src-yh') +   /* YRANK_COL_NBA_V1: the tile FTX_ADP_V1 retired, back */
     _ftlStatCell('Y!ROS%', (_oyh && _oyh.roster_pct != null) ? Math.round(_oyh.roster_pct) + '%' : null, 'own', 'own-src-yh') +
-    _ftlStatCell('CBS%',   (_ocbs != null) ? _ocbs + '%' : null, 'own', 'own-src-cbs');
+    _ftlStatCell('CBS%',   (_ocbs != null) ? _ocbs + '%' : null, 'own', 'own-src-cbs') +
+    '<div class="ftl-strip-break ftl-strip-break-own"></div>';   // STRIP_PTS_ROW2_V1: used only on the smallest phones
   document.getElementById('ftl-statwrap').innerHTML =
     // STATSTRIP_FULLWIDTH_NBA_V1 (2026-08-21, the Dude, reversing CARD_COMPACT_NBA_V1's two-row
     // shape the same hour it shipped): with the strip now spanning the card's FULL width instead
@@ -11426,21 +11442,59 @@ function _ftlFitCard(){
       }
     }
 
-    // Stat strip scales as a unit. Base sizes match the CSS: 8px label, 13px value.
+    // STRIP_SHRINK_FIRST_V1 (2026-09-30, Matt, off a 900px screenshot: labels cut to "TX ADP", numbers
+    // running together as "21.446.2%"). The old pass measured bar.scrollWidth against the wrap, and that
+    // can NEVER read "too wide": the grid's minmax(0,auto) columns let every tile shrink below its own
+    // text and clip it, so the bar always reports that it fits. It never shrank a single pixel. Now each
+    // tile's NEEDED width (its widest line + its padding + its borders) is added up and compared with the
+    // room the bar actually has. The whole strip -- labels, numbers and padding together -- scales down
+    // until it fits, to a 72% floor (the same floor the name and the meta row use). Only if it still
+    // does not fit at the floor does it wrap onto more rows (.ftl-strip-wrap). Every pass starts from
+    // full size, so widening the window grows it back.
     var wrap = document.getElementById('ftl-statwrap');
     var bar  = wrap ? wrap.querySelector('.ftl-statbar') : null;
     if(bar && wrap){
+      bar.classList.remove('ftl-strip-wrap'); bar.classList.remove('ftl-strip-cats-only'); bar.classList.remove('ftl-strip-wrap3');
+      var cells = bar.querySelectorAll('.ftl-statcell');
       var sc = 1.0;
       var applyBar = function(){
-        var L = bar.querySelectorAll('.ftl-statlabel'), V = bar.querySelectorAll('.ftl-statval'), i;
-        for(i=0;i<L.length;i++) L[i].style.fontSize = (8  * sc).toFixed(2) + 'px';
-        for(i=0;i<V.length;i++) V[i].style.fontSize = (13 * sc).toFixed(2) + 'px';
+        for(var i=0;i<cells.length;i++){
+          var c = cells[i];
+          var ph = c.classList.contains('ftl-own-cell') ? 4 : 7;   // OWN_TILE_NARROW_V1 (Matt 2026-09-30): ownership tiles a bit narrower
+          c.style.padding = (3 * sc).toFixed(2) + 'px ' + (ph * sc).toFixed(2) + 'px';
+          var l = c.querySelector('.ftl-statlabel'), v = c.querySelector('.ftl-statval');
+          if(l) l.style.fontSize = (8  * sc).toFixed(2) + 'px';
+          if(v) v.style.fontSize = (13 * sc).toFixed(2) + 'px';
+        }
       };
+      var need = function(){
+        var t = 0;
+        for(var i=0;i<cells.length;i++){
+          var c = cells[i]; if(c.offsetParent === null) continue;   // hidden tiles take no room
+          var l = c.querySelector('.ftl-statlabel'), v = c.querySelector('.ftl-statval');
+          var content = Math.max(l ? l.scrollWidth : 0, v ? v.scrollWidth : 0);
+          var cs = getComputedStyle(c);
+          // +1 per tile: scrollWidth rounds down, so a tile is never allowed to sit at exactly its text width
+          t += 1 + content + (parseFloat(cs.paddingLeft)||0) + (parseFloat(cs.paddingRight)||0)
+                       + (parseFloat(cs.borderLeftWidth)||0) + (parseFloat(cs.borderRightWidth)||0);
+        }
+        return t;
+      };
+      var room = bar.clientWidth;
       applyBar();
-      while(sc > 0.72 && bar.scrollWidth > wrap.clientWidth){
-        sc -= 0.02;
-        applyBar();
+      while(sc > 0.72 && need() > room){ sc -= 0.02; applyBar(); }
+      if(need() > room){
+        // STRIP_CATS_ONLY_V1: at the floor and still too wide -> drop the non-category tiles, refit from full size.
+        bar.classList.add('ftl-strip-cats-only');
+        sc = 1.0; applyBar();
+        while(sc > 0.72 && need() > room){ sc -= 0.02; applyBar(); }
       }
+      if(need() > room){
+        bar.classList.add('ftl-strip-wrap');
+        // more than the two planned rows means a tile got stranded: add the ownership break (three even rows)
+        var tops = {}; for(var k=0;k<cells.length;k++){ if(cells[k].offsetParent !== null) tops[Math.round(cells[k].getBoundingClientRect().top)] = 1; }
+        if(Object.keys(tops).length > 2) bar.classList.add('ftl-strip-wrap3');
+      }   // floor reached and still too wide: wrap, never clip
     }
   }catch(e){ /* a fit pass must never break the card */ }
 }
