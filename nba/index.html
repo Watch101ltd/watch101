@@ -11158,7 +11158,18 @@ function openFromTheLogo(pid, _keepRange){
   photoEl.alt = name;
 
   document.getElementById('ftl-name').textContent = name;
-  const subParts = [ (p.team || '—'), (p.position || '—'), 'Age ' + nbaDecimalAge(p) ];
+  // CARD_ALLPOS_V1 (2026-10-05, Matt): the card showed only Sleeper's single p.position. It now shows
+  // the player's FULL eligibility, the same list and order (PG, SG, SF, PF, C) the Pos column badges use
+  // (NBA_POS_BADGES_V1 + NBA_POS_ORDER_V1), joined by commas with NO space, Matt's call: "commas, no
+  // space after the comma" (e.g. SG,SF,PF). It stays one .fact, so it never splits across lines and the
+  // vitals line shrinks as a unit (FITCARD_PORT_V1). Falls back to p.position, then a dash.
+  var _cardPosArr = (Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions : (p.position ? [p.position] : []);
+  var _cardPosSeen = {}, _cardPos = [];
+  for(var _cpi=0;_cpi<_cardPosArr.length;_cpi++){ var _cpv=_cardPosArr[_cpi]; if(_cpv && !_cardPosSeen[_cpv]){ _cardPosSeen[_cpv]=1; _cardPos.push(_cpv); } }
+  _cardPos = _cardPos.map(function(v,i){ return { v:v, r:(NBA_POS_ORDER[String(v).toUpperCase()] || 99), i:i }; })
+                     .sort(function(a,b){ return (a.r - b.r) || (a.i - b.i); })
+                     .map(function(x){ return x.v; });
+  const subParts = [ (p.team || '—'), (_cardPos.length ? _cardPos.join(',') : '—'), 'Age ' + nbaDecimalAge(p) ];
   // HT_WT_NBA_V1 (2026-09-21) — height and weight on the basketball card, the way football
   // has had them since 2026-08-19. Formatter copied verbatim from football's card: Sleeper's
   // NBA blob carries height as INCHES-as-string (Jimmy Butler "78" = 6'6", verified live off
