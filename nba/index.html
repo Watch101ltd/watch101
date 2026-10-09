@@ -3325,7 +3325,7 @@ function _exportRows(){
     var age = (typeof nbaDecimalAgeNum === 'function') ? nbaDecimalAgeNum(p) : null;
     var tags = _wlTypeTags(it).map(function(id){ var d=_typeTagById(id); return d ? d.label : id; }).join(' / ');
     rows.push([
-      i+1, nm || '', p.position || '', p.team || '',
+      i+1, nm || '', _nbaPosText(p), p.team || '',   /* YAHOO_POS_NBA_V1 */
       (age==null) ? '' : age, s.gp || '',
       (function(){ var f=(typeof _ftxFor==='function')?_ftxFor(pid):null; return f?f.a:''; })(),   /* FTX_ADP_V1: was Yahoo rank */
       (y && y.roster_pct!=null) ? Math.round(y.roster_pct) : '',
@@ -5328,10 +5328,37 @@ let _wlFilters = { team:'ALL', statRows:[], minGames:null, ageMin:null, ageMax:n
 // the single p.position. The old filter only matched p.position, so multi-position guys showed under one
 // slot. This matches ANY of the player's fantasy_positions against the checked boxes; falls back to the
 // single p.position if the array is missing. Verified live: ~15+ multi-position players in the data.
+// YAHOO_POS_NBA_V1 (2026-10-09, Matt's Claude, Matt: "everywhere"). Positions now come from YAHOO's
+// eligibility, not Sleeper's. Yahoo sends eligible_positions on every row of the league-ranks payload
+// the page ALREADY loads for Y!Rank and Y!Owned (server.js buildLeagueRanksPayload, slot labels like
+// G/F/Util stripped), so this adds ZERO calls to Yahoo and stores nothing: it reads the live payload
+// through _yahooFor(), the same name join the rank and owned columns use. Falls back to Sleeper's
+// fantasy_positions, then p.position, when Yahoo has no row for the player (or has not loaded yet).
+// EVERY position read on the page goes through _nbaPosList: filters, rankings tab eligibility, badges,
+// the card, the search lists, sorts and the CSV.
+function _nbaPosList(p){
+  if(!p) return [];
+  if(p.player_id != null && typeof _yahooFor === 'function'){
+    var y = _yahooFor(String(p.player_id));
+    if(y && Array.isArray(y.eligible_positions) && y.eligible_positions.length) return y.eligible_positions;
+  }
+  if(Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) return p.fantasy_positions;
+  return p.position ? [p.position] : [];
+}
+// Deduped and in basketball order (PG, SG, SF, PF, C), for every place that prints them as text.
+function _nbaPosSorted(p){
+  var arr = _nbaPosList(p), seen = {}, uniq = [];
+  for(var i=0;i<arr.length;i++){ var v=arr[i]; if(v && !seen[v]){ seen[v]=1; uniq.push(v); } }
+  var ord = (typeof NBA_POS_ORDER !== 'undefined') ? NBA_POS_ORDER : {};
+  return uniq.map(function(v,i){ return { v:v, r:(ord[String(v).toUpperCase()] || 99), i:i }; })
+             .sort(function(a,b){ return (a.r - b.r) || (a.i - b.i); })
+             .map(function(x){ return x.v; });
+}
+// Text form, Matt's card format: commas, no space (SG,SF,PF).
+function _nbaPosText(p){ return _nbaPosSorted(p).join(','); }
 function _nbaPosMatch(p, checked){
   if(!checked || !checked.length) return true;
-  var arr = (p && Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions
-          : (p && p.position ? [p.position] : []);
+  var arr = _nbaPosList(p);   // YAHOO_POS_NBA_V1
   for(var i=0;i<arr.length;i++){ if(checked.indexOf(arr[i]) !== -1) return true; }
   return false;
 }
@@ -5691,8 +5718,7 @@ var RANK_POS_CAP_DYN = { Overall:1500, PG:1500, SG:1500, SF:1500, PF:1500, C:150
 // same headroom, exactly as football's did.
 function _rankCap(pos){ return ((_rankSet === 'dynasty') ? RANK_POS_CAP_DYN : RANK_POS_CAP)[pos] || 50; }
 function _rankEligible(p, pos){
-  var arr = (p && Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions
-          : (p && p.position ? [p.position] : []);
+  var arr = _nbaPosList(p);   // YAHOO_POS_NBA_V1
   return arr.indexOf(pos) !== -1;
 }
 function _rankSeedPpg(pid){
@@ -5750,6 +5776,50 @@ function _rankingsIdsFor(pos){
   var cap = _rankCap(pos);   // DYNCAP_V1: set-aware (redraft 100/60, dynasty 400)
   return ids.slice(0, cap);
 }
+// RANK_INTEGRATE_V1 parked store: per set and tab, the players who left that tab and the player who
+// sat directly above each (plus the index, used if that neighbour has gone too). Browser storage only:
+// player ids and positions in Matt's own order, never Yahoo data.
+var RANK_PARKED_KEY = 'watch101_nba_rank_parked_v1';
+var _rankParked = null;
+function _rankParkedAll(){
+  if(_rankParked) return _rankParked;
+  try { _rankParked = JSON.parse(localStorage.getItem(RANK_PARKED_KEY) || '{}') || {}; } catch(e){ _rankParked = {}; }
+  return _rankParked;
+}
+function _rankParkedSave(){ try { localStorage.setItem(RANK_PARKED_KEY, JSON.stringify(_rankParkedAll())); } catch(e){} }
+function _rankIntegrate(pos, cur, seed){
+  var all = _rankParkedAll();
+  var key = ((_rankSet === 'dynasty') ? 'dynasty' : 'redraft') + '|' + pos;
+  var parked = all[key] || (all[key] = {});
+  var changed = false;
+  var seedSet = {}; seed.forEach(function(pid){ seedSet[pid] = 1; });
+  // 1. Leaving: park each one with the player who sat directly above him.
+  var kept = [];
+  for(var i=0;i<cur.length;i++){
+    var pid = cur[i];
+    if(seedSet[pid]){ kept.push(pid); continue; }
+    parked[pid] = { after: kept.length ? kept[kept.length-1] : null, idx: kept.length, at: new Date().toISOString() };
+    changed = true;
+  }
+  // 2. Arriving, in Yahoo order: a parked player returns under his old neighbour; anyone else goes in
+  //    at his Yahoo spot for this tab.
+  var have = {}; kept.forEach(function(pid){ have[pid] = 1; });
+  for(var k=0;k<seed.length;k++){
+    var np = seed[k];
+    if(have[np]) continue;
+    var at, pk = parked[np];
+    if(pk){
+      if(pk.after == null) at = 0;
+      else { var ai = kept.indexOf(pk.after); at = (ai >= 0) ? ai + 1 : Math.min(Number(pk.idx) || 0, kept.length); }
+      delete parked[np]; changed = true;
+    } else {
+      at = Math.min(k, kept.length);
+    }
+    kept.splice(at, 0, np); have[np] = 1;
+  }
+  if(changed) _rankParkedSave();
+  return kept;
+}
 function renderRankings(){
   var tbody = document.getElementById('rankings-body');
   var statusEl = document.getElementById('rankings-status');
@@ -5759,8 +5829,9 @@ function renderRankings(){
     return;
   }
   // _rankings[pos] is the source of truth for ORDER. First render with no saved order seeds from the
-  // auto-load; after that drag reorders the array (Matt's order wins). Newly-eligible players get
-  // appended in seed order; players no longer eligible get dropped (never silently loses anyone).
+  // auto-load; after that drag reorders the array (Matt's order wins). Newly-eligible players go in at
+  // their Yahoo spot and players no longer eligible are parked, see RANK_INTEGRATE_V1 (was: appended at
+  // the bottom / dropped, until 2026-10-09).
   var seed = _rankingsIdsFor(_rankPos);
   // NBA_YAHOO_SEED_V1 timing guard: the seed sorts by Yahoo rank. If Yahoo data
   // hasn't loaded yet, seeding now would fall back to PPG order AND (worse) get
@@ -5776,13 +5847,19 @@ function renderRankings(){
     _rankings[_rankPos] = seed.slice();
   } else if(!_rankings[_rankPos] || _rankings[_rankPos].length === 0){
     _rankings[_rankPos] = seed.slice();
-  } else {
-    var have = {};
-    _rankings[_rankPos].forEach(function(pid){ have[pid]=1; });
-    seed.forEach(function(pid){ if(!have[pid]) _rankings[_rankPos].push(pid); });
-    var seedSet = {}; seed.forEach(function(pid){ seedSet[pid]=1; });
-    _rankings[_rankPos] = _rankings[_rankPos].filter(function(pid){ return seedSet[pid]; });
+  } else if(_yahooLoaded){
+    // RANK_INTEGRATE_V1 (2026-10-09, Matt's Claude, Matt's rules for YAHOO_POS_NBA_V1):
+    //  * A player who becomes eligible for this tab goes in "as close to [his] Yahoo ranking as
+    //    possible", never at the bottom: his place in the Yahoo-ordered seed for this tab is the spot
+    //    he takes in Matt's order. Matt adjusts after.
+    //  * A player who leaves the tab is PARKED with the player directly above him, and when he becomes
+    //    eligible again he comes back at that old spot ("Come back at their old spot").
+    //  * Hand-ranked tabs only change once Yahoo has loaded. Before that the saved order is shown as
+    //    saved (see the else branch below), so a slow Yahoo load can never pull a player out and then
+    //    put him back somewhere else.
+    _rankings[_rankPos] = _rankIntegrate(_rankPos, _rankings[_rankPos], seed);
   }
+  // else: hand-ranked tab and Yahoo not loaded yet. Show the saved order untouched (RANK_INTEGRATE_V1).
   // Manual saved order lives in _rankings[pos]. If a stat-sort is active, render a SORTED VIEW copy
   // (never mutates the saved order). Dragging clears the sort and re-snaps to the manual order.
   var manualIds = _provisional ? seed : _rankings[_rankPos];
@@ -7090,7 +7167,7 @@ function _npBuildTeamSelect(){
 function _npStatValue(field, p, s, pid){
   switch(field){
     case 'name': return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
-    case 'pos':  return p.position || 'zzz';
+    case 'pos':  return _nbaPosText(p) || 'zzz';   // YAHOO_POS_NBA_V1
     case 'team': return p.team || 'zzz';
     case 'age':  return nbaDecimalAgeNum(p);
     case 'gp':   return (s.gp || 0);                       // raw games count
@@ -7214,7 +7291,7 @@ function npPoolSearchInput(val){
     if(!p || !p.position || !p.team) continue;   // the pool's own "real player" reality filter
     var nm = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
     if(nm && _foldSearch(nm).indexOf(q) > -1){
-      matches.push({ pid:String(id), name:nm, team:p.team, pos:p.position });
+      matches.push({ pid:String(id), name:nm, team:p.team, pos:_nbaPosText(p) });   // YAHOO_POS_NBA_V1
       if(matches.length >= 12) break;   // baseball caps the picker at 12
     }
   }
@@ -7449,7 +7526,7 @@ document.addEventListener('click', function(e){
     return {
       name: p ? (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()) : ('Player ' + pid),
       team: p ? (p.team || '\u2014') : '\u2014',
-      pos:  p ? (p.position || '') : ''
+      pos:  p ? _nbaPosText(p) : ''   // YAHOO_POS_NBA_V1
     };
   }
   function buildRows(){
@@ -7557,7 +7634,7 @@ document.addEventListener('click', function(e){
     var name = p ? (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()) : ('Player ' + pid);
     var meta = [];
     if(p && p.team) meta.push(p.team);
-    if(p && p.position) meta.push(p.position);
+    if(p && _nbaPosText(p)) meta.push(_nbaPosText(p));   // YAHOO_POS_NBA_V1
     var isNew = (entry.is_new_this_publish === true);
     var tags = Array.isArray(entry.type_tags) ? entry.type_tags : [];
     var html = '<div class="qep-header"><div class="qep-title">' + escapeHtml(name)
@@ -7919,9 +7996,10 @@ function renderSearchResults(term){
     const pos  = p.position || '?';
     const team = p.team || '—';
     const age  = nbaDecimalAge(p);  // NBA_DECIMAL_AGE_V1
-    const posClass = posClassFor(pos);
+    const _srPos = _nbaPosSorted(p);   // YAHOO_POS_NBA_V1: every eligible position, one badge each
+    const _srBadges = (_srPos.length ? _srPos : [pos]).map(function(v){ return '<span class="pos-badge ' + posClassFor(v) + '">' + v + '</span>'; }).join('');
     return '<div class="search-result-item' + (onList ? ' already-on-list' : '') + '" data-player-id="' + id + '">' +
-      '<span class="pos-badge ' + posClass + '">' + pos + '</span>' +
+      '<span class="sri-pos" style="display:inline-flex;gap:3px;flex:none;min-width:98px">' + _srBadges + '</span>' +
       '<span class="sri-name">' + escapeHtml(name) + '</span>' +
       '<span class="sri-meta">' + team + ' · Age ' + age + (onList ? ' · already on list' : '') + '</span>' +
     '</div>';
@@ -8801,8 +8879,7 @@ function posClassFor(pos){
 // (which match on any-of and do not care about order) are untouched.
 var NBA_POS_ORDER = { PG:1, SG:2, G:3, SF:4, PF:5, F:6, C:7 };
 function _nbaPosBadges(p){
-  var arr = (p && Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions
-          : (p && p.position ? [p.position] : []);
+  var arr = _nbaPosList(p);   // YAHOO_POS_NBA_V1
   var seen = {}, uniq = [];
   for(var i=0;i<arr.length;i++){ var v=arr[i]; if(v && !seen[v]){ seen[v]=1; uniq.push(v); } }
   // stable sort into basketball order; ties and unknowns keep the order Sleeper gave them
@@ -10578,7 +10655,7 @@ function sortValueFor(field, p, s, pid){
   switch(field){
     case 'rank':     return null;
     case 'name':     return (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()).toLowerCase();
-    case 'pos':      return p.position || 'zzz';
+    case 'pos':      return _nbaPosText(p) || 'zzz';   // YAHOO_POS_NBA_V1
     case 'team':     return p.team || 'zzz';
     case 'age':      return nbaDecimalAgeNum(p);  // NBA_DECIMAL_AGE_V1 — sort by precise age, matching the column
     case 'exp':      return _nbaExpNum(p);        // EXP_COL_NBA_V1 — null sinks, same rule as every other missing value
@@ -11163,7 +11240,7 @@ function openFromTheLogo(pid, _keepRange){
   // (NBA_POS_BADGES_V1 + NBA_POS_ORDER_V1), joined by commas with NO space, Matt's call: "commas, no
   // space after the comma" (e.g. SG,SF,PF). It stays one .fact, so it never splits across lines and the
   // vitals line shrinks as a unit (FITCARD_PORT_V1). Falls back to p.position, then a dash.
-  var _cardPosArr = (Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) ? p.fantasy_positions : (p.position ? [p.position] : []);
+  var _cardPosArr = _nbaPosList(p);   // YAHOO_POS_NBA_V1
   var _cardPosSeen = {}, _cardPos = [];
   for(var _cpi=0;_cpi<_cardPosArr.length;_cpi++){ var _cpv=_cardPosArr[_cpi]; if(_cpv && !_cardPosSeen[_cpv]){ _cardPosSeen[_cpv]=1; _cardPos.push(_cpv); } }
   _cardPos = _cardPos.map(function(v,i){ return { v:v, r:(NBA_POS_ORDER[String(v).toUpperCase()] || 99), i:i }; })
