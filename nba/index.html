@@ -9736,9 +9736,32 @@ async function _ftlRenderNbaGames(pid){
     const now = new Date();
     const todayISO = _ftlLocalISO(now);
     // Monday of the current week (getDay(): Sun=0 .. Sat=6)
-    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
-    const lastISO = _ftlLocalISO(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 13));
-    const mondayISO = _ftlLocalISO(monday);
+    let monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    let lastISO = _ftlLocalISO(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 13));
+    let mondayISO = _ftlLocalISO(monday);
+    // SCHED_FIRST_GAMES_NBA_V1 (2026-10-09, Matt's Claude; Matt: "It should show their first set of
+    // games (even though theyre more than two weeks out, just list them anyway now)"). When this
+    // team has NO game in the current two weeks but does have games ahead (the off-season, before
+    // opening night), the strip starts at the Monday of the week of its next game instead, and the
+    // two rows are labelled "Week of M/D" rather than This Week / Next Week.
+    let _weekLabels = ['This Week', 'Next Week'];
+    (function(){
+      let inWindow = false, nextISO = null;
+      both[0].concat(both[1]).forEach(function(g){
+        if (!g || !g.date || g.status === 'canceled') return;
+        if (g.home !== team && g.away !== team) return;
+        if (g.date >= mondayISO && g.date <= lastISO) inWindow = true;
+        if (g.date >= todayISO && (!nextISO || g.date < nextISO)) nextISO = g.date;
+      });
+      if (inWindow || !nextISO) return;
+      const p = nextISO.split('-').map(Number);
+      const gd = new Date(p[0], p[1] - 1, p[2]);
+      monday = new Date(gd.getFullYear(), gd.getMonth(), gd.getDate() - ((gd.getDay() + 6) % 7));
+      mondayISO = _ftlLocalISO(monday);
+      lastISO = _ftlLocalISO(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 13));
+      const md = function(off){ const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + off); return (d.getMonth() + 1) + '/' + d.getDate(); };
+      _weekLabels = ['Week of ' + md(0), 'Week of ' + md(7)];
+    })();
 
     // Every game for this team inside the two-week window, INCLUDING already-played
     // ones from earlier this week (they render dimmed, keeping the week honest).
@@ -9783,7 +9806,7 @@ async function _ftlRenderNbaGames(pid){
       return '<div class="ftl-cal-weeklabel">' + label + '</div><div class="ftl-cal-week">' + cells + badge + '</div>';
     };
 
-    nextEl.innerHTML = weekHtml(0, 'This Week') + weekHtml(7, 'Next Week');
+    nextEl.innerHTML = weekHtml(0, _weekLabels[0]) + weekHtml(7, _weekLabels[1]);   // SCHED_FIRST_GAMES_NBA_V1
   } catch(e){
     if (_ftlCurrentPid === pid) nextEl.innerHTML = '<div class="ftl-gl-note">Schedule unavailable right now.</div>';
   }
@@ -10483,7 +10506,8 @@ function openNotePopup(pid, curText, placeholder, onSave, hist){
   var modeLine = document.getElementById('note-editor-mode-line');
   if(_noteHist){
     _noteHistMode = _noteHist.entries.length ? { type:'edit', i: _noteHist.entries.length - 1 } : { type:'add' };
-    if(btnRow) btnRow.style.display = _noteHist.entries.length ? 'block' : 'none';
+    if(btnRow) btnRow.style.display = 'block';   // NOTE_POPUP_COPY_V1: the row now also carries Copy and Import, so it always shows
+    var _nbBtn = document.getElementById('note-editor-newbtn'); if(_nbBtn) _nbBtn.style.display = _noteHist.entries.length ? '' : 'none';
     if(histDiv){ histDiv.style.display = 'block'; _noteHistRenderList(); }
     _noteHistModeLine();
     _notePopupSave = function(){
@@ -10502,6 +10526,7 @@ function openNotePopup(pid, curText, placeholder, onSave, hist){
     if(modeLine) modeLine.style.display = 'none';
     _notePopupSave = function(){ var v = ta.value; closeNotePopup(); onSave(v); };
   }
+  try { if(typeof _notePopupToolsSync === 'function') _notePopupToolsSync(); } catch(e){}   // NOTE_POPUP_COPY_V1
   modal.style.display = 'flex';
   ta.focus();
   try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){}
@@ -11739,7 +11764,7 @@ bootstrap();
      list and rankings note columns. Port of football's NOTE_POPUP_NFL_V1, behaviour identical,
      accent swapped to --court per this page's theme. -->
 <div id="note-editor-modal" onclick="_notePopupBackdrop(event)" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:9999;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;font-family:'Nunito Sans',sans-serif">
-  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:18px 20px;width:92vw;max-width:560px;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
+  <div id="note-editor-box" style="position:relative;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:18px 20px;width:92vw;max-width:560px;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
     <h2 style="margin:0 0 2px 0;font-size:16px;color:var(--text)">&#128221; Note</h2>
     <div id="note-editor-player" style="font-size:13px;font-weight:800;color:var(--court);margin:0 0 10px 0"></div>
     <textarea id="note-editor-textarea" rows="7" onkeydown="_notePopupKeydown(event)" style="width:100%;box-sizing:border-box;resize:vertical;background:var(--surface2,rgba(255,255,255,0.04));border:1px solid var(--court);border-radius:6px;color:var(--text);font-size:13px;line-height:1.5;padding:10px 12px;font-family:inherit;outline:none"></textarea>
@@ -11748,6 +11773,7 @@ bootstrap();
     <div id="note-editor-mode-line" style="display:none;font-size:11px;font-weight:800;color:var(--gold);margin:0 0 8px 0"></div>
     <div id="note-editor-newbtn-row" style="display:none;margin:0 0 10px 0">
       <button id="note-editor-newbtn" onclick="_noteHistArmNew()" style="background:transparent;border:1px dashed var(--court);color:var(--court);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">+ New Note</button>
+      <span id="note-editor-tools" style="display:none"><!-- NOTE_POPUP_COPY_V1 --><button type="button" onclick="_notePopupCopyToggle(this)" title="Copy what is in the box to other lists" style="background:transparent;border:1px solid var(--court);color:var(--court);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;margin-left:8px">Copy</button><button type="button" onclick="_notePopupImport()" title="Bring in your most recent note on this player from another list, as a new note here" style="background:transparent;border:1px solid var(--court);color:var(--court);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;margin-left:8px">Import</button><span id="note-editor-tool-msg" style="margin-left:10px;font-size:11px;color:var(--text3)"></span></span>
     </div>
     <div id="note-editor-history" style="display:none;max-height:200px;overflow-y:auto;border-top:1px solid var(--border2);margin:0 0 12px 0;padding-top:8px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -11875,6 +11901,13 @@ body:not(.readonly-mode) #ftl-overlay #ftl-satten-card{cursor:text;}
 #ftl-overlay .ftl-tool-btn:hover{background:var(--court,#ea580c);color:#fff;}
 #ftl-overlay .ftl-tool-msg{font-size:11px;color:var(--text3);}
 #ftl-overlay #ftl-satten-card{position:relative;}
+#note-editor-box .ftl-copy-head{padding:6px 12px 2px;font-size:9px;letter-spacing:0.14em;font-weight:800;color:var(--text3);text-transform:uppercase;}
+#note-editor-box .ftl-copy-panel{position:absolute;z-index:8;min-width:230px;background:var(--surface2,#111827);border:1px solid var(--border2,#334155);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.45);padding:6px 0;}
+#note-editor-box .ftl-copy-opt{display:flex;align-items:center;gap:8px;padding:4px 12px;font-size:12px;color:var(--text,#e5e7eb);cursor:pointer;white-space:nowrap;}
+#note-editor-box .ftl-copy-opt:hover{background:rgba(255,255,255,.06);}
+#note-editor-box .ftl-copy-opt.is-src{color:var(--text3);cursor:default;}
+#note-editor-box .ftl-copy-all{font-weight:800;border-bottom:1px solid var(--border,#1f2937);padding-bottom:6px;margin-bottom:3px;}
+#note-editor-box .ftl-copy-go{display:block;margin:6px 12px 2px auto;background:var(--court);color:#fff;border:none;border-radius:6px;padding:4px 14px;font-weight:800;font-size:12px;cursor:pointer;}
 #ftl-overlay .ftl-copy-head{padding:6px 12px 2px;font-size:9px;letter-spacing:0.14em;font-weight:800;color:var(--text3);text-transform:uppercase;}
 #ftl-overlay .ftl-copy-panel{position:absolute;z-index:8;white-space:normal;cursor:default;min-width:230px;background:var(--surface2,#111827);border:1px solid var(--border2,#334155);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.45);padding:6px 0;}
 #ftl-overlay .ftl-copy-opt{display:flex;align-items:center;gap:8px;padding:4px 12px;font-size:12px;color:var(--text,#e5e7eb);cursor:pointer;white-space:nowrap;}
@@ -13221,17 +13254,18 @@ async function _ftlRankNotePush(set, pid){
   if(failed) alert('The note is saved in this browser, but ' + failed + ' rankings tab(s) did not reach the server. Try saving it again.');
 }
 // ── CARD_NOTE_COPY_V1 (2026-10-09, Matt's Claude; Matt: "two new buttons should appear just under
-//    the top note: Copy ... and Import") ──────────────────────────────────────────────────────────
-// Copy: the NEWEST note of the top block in Satten Says goes to whichever lists are ticked (or All):
-//   every 101 list in WL_LISTS plus Redraft Rankings and Dynasty Rankings. A player who is not on a
-//   ticked 101 list is ADDED at the bottom of it (Matt: "add to bottom"). Each copy is a new dated
-//   note; a list whose newest note for him already reads the same is skipped, so a double click
-//   cannot stack duplicates. Lists that are not open are changed on the NAS directly (read, add
-//   the note, write back) and nothing else in them moves.
-// Import: finds his most recent note on this player across every list and both rankings sets and
-//   opens it in the note box as a NEW note for the page he is on (Matt: "page im on"), to edit
-//   before saving. Nothing saves until he presses Save Note.
-var _ftlToolsSrc = null;   // { kind, listId?, text } of the newest note in the top block
+//    the top note: Copy ... and Import") + NOTE_POPUP_COPY_V1 (same evening: "I want the ability to
+//    copy and import notes from this screen as well", the Note window) ─────────────────────────
+// Copy: sends a note to whichever lists are ticked (or All): every 101 list in WL_LISTS plus Redraft
+//   and Dynasty Rankings. On the card it sends the NEWEST note of the top block; in the Note window it
+//   sends what is in the box. A player who is not on a ticked 101 list is ADDED at the bottom of it
+//   (Matt: "add to bottom"). Each copy is a new dated note; a list whose newest note for him already
+//   reads the same is skipped, so a double click cannot stack duplicates. Lists that are not open are
+//   changed on the NAS directly (read, add the note, write back) and nothing else in them moves.
+// Import: finds his most recent note on this player across every OTHER list and both rankings sets
+//   and puts it in the box as a NEW note for the page he is on (Matt: "page im on"), to edit before
+//   saving. Nothing saves until he saves.
+var _ftlToolsSrc = null;   // { key, text } of the newest note in the card's top block
 function _ftlNoteTargets(){
   var out = [];
   try { (WL_LISTS || []).forEach(function(L){ out.push({ key: 'wl:' + L.id, label: L.name || L.id }); }); } catch(e){}
@@ -13239,83 +13273,52 @@ function _ftlNoteTargets(){
   out.push({ key: 'dy', label: 'Dynasty Rankings', rank: true });
   return out;
 }
-function _ftlNoteToolsRender(pid, blocks){
-  var host = document.getElementById('ftl-take-note');
-  if(!host || !_ftlNoteCanEdit(pid)) return;
-  var top = (blocks && blocks.length) ? blocks[0] : null;
-  _ftlToolsSrc = null;
-  if(top){
-    var t = top.entries && top.entries.length ? String(top.entries[top.entries.length - 1].t || '') : String(top.text || '');
-    if(t.trim()) _ftlToolsSrc = { kind: top.kind, listId: (top.kind === 'wl' ? LIST_ID : null), text: t };
-  }
-  var row = document.createElement('div');
-  row.className = 'ftl-note-tools';
-  row.innerHTML = (_ftlToolsSrc ? '<button type="button" class="ftl-tool-btn" data-tool="copy" title="Copy the newest note above to other lists">Copy</button>' : '') +
-                  '<button type="button" class="ftl-tool-btn" data-tool="import" title="Bring in your most recent note on this player from any list, to edit as a new note here">Import</button>' +
-                  '<span class="ftl-tool-msg"></span>';
-  try { var oldP = document.querySelector('#ftl-satten-card .ftl-copy-panel'); if(oldP) oldP.remove(); } catch(e){}
-  var firstBlock = host.querySelector('.ftl-note-block');
-  if(firstBlock && firstBlock.nextSibling) host.insertBefore(row, firstBlock.nextSibling);
-  else host.appendChild(row);
+function _noteKeyLabel(key){ return (_ftlNoteTargets().filter(function(T){ return T.key === key; })[0] || {}).label || key; }
+function _noteCtxKey(){ var k = _ftlNoteContextKind(); return k === 'wl' ? ('wl:' + LIST_ID) : k; }
+function _noteBlockKey(kind){ return kind === 'wl' ? ('wl:' + LIST_ID) : kind; }
+function _noteCopyPanelHtml(srcKey, goCall){
+  var html = '<label class="ftl-copy-opt ftl-copy-all"><input type="checkbox" value="all"> All</label>';
+  var hdr = '';
+  _ftlNoteTargets().forEach(function(T){
+    var h = T.rank ? 'Rankings' : '101 Lists';
+    if(h !== hdr){ html += '<div class="ftl-copy-head">' + h + '</div>'; hdr = h; }
+    var isSrc = (T.key === srcKey);
+    html += '<label class="ftl-copy-opt' + (isSrc ? ' is-src' : '') + '"><input type="checkbox" value="' + T.key + '"' + (isSrc ? ' disabled' : '') + '> ' + escapeHtml(T.label) + (isSrc ? ' (this note)' : '') + '</label>';
+  });
+  return html + '<button type="button" class="ftl-copy-go" onclick="' + goCall + '">Copy</button>';
 }
-function _ftlToolMsg(t){ var m = document.querySelector('#ftl-take-note .ftl-tool-msg'); if(m) m.textContent = t || ''; }
-document.addEventListener('click', function(ev){
-  var b = ev.target && ev.target.closest ? ev.target.closest('#ftl-take-note .ftl-tool-btn, #ftl-satten-card .ftl-copy-go') : null;
-  if(!b) return;
-  ev.stopPropagation();
-  if(b.classList.contains('ftl-copy-go')){ _ftlCopyGo(); return; }
-  if(b.getAttribute('data-tool') === 'copy') _ftlCopyPanelToggle();
-  else _ftlImportNewest();
-}, true);
+// Opens (or closes) a checklist panel under btn, inside host (which must be position:relative).
+function _noteCopyPanelToggle(host, btn, srcKey, goCall){
+  if(!host || !btn) return null;
+  var panel = host.querySelector('.ftl-copy-panel');
+  if(panel){ panel.remove(); return null; }
+  panel = document.createElement('div');
+  panel.className = 'ftl-copy-panel';
+  host.appendChild(panel);
+  var hr = host.getBoundingClientRect(), br = btn.getBoundingClientRect();
+  panel.style.top = (br.bottom - hr.top + 4) + 'px';
+  panel.style.left = (br.left - hr.left) + 'px';
+  panel.innerHTML = _noteCopyPanelHtml(srcKey, goCall);
+  return panel;
+}
 document.addEventListener('change', function(ev){
   var c = ev.target;
-  if(!c || !c.closest || !c.closest('#ftl-satten-card .ftl-copy-panel')) return;
+  if(!c || !c.closest || !c.closest('.ftl-copy-panel')) return;
   var panel = c.closest('.ftl-copy-panel');
   if(c.value === 'all'){ panel.querySelectorAll('input[type=checkbox]:not([value=all]):not(:disabled)').forEach(function(x){ x.checked = c.checked; }); }
   else if(!c.checked){ var a = panel.querySelector('input[value=all]'); if(a) a.checked = false; }
 });
-function _ftlCopyPanelToggle(){
-  // The panel hangs off the Satten Says CARD, not the note area, so a long scrolling note
-  // history can never clip it. It is placed right under the Copy button.
-  var card = document.getElementById('ftl-satten-card'), btn = document.querySelector('#ftl-take-note .ftl-tool-btn[data-tool="copy"]');
-  if(!card || !btn || !_ftlToolsSrc) return;
-  var panel = card.querySelector('.ftl-copy-panel');
-  if(panel){ panel.remove(); return; }
-  panel = document.createElement('div');
-  panel.className = 'ftl-copy-panel';
-  card.appendChild(panel);
-  var cr = card.getBoundingClientRect(), br = btn.getBoundingClientRect();
-  panel.style.top = (br.bottom - cr.top + 4) + 'px';
-  panel.style.left = (br.left - cr.left) + 'px';
-  var srcKey = _ftlToolsSrc.kind === 'wl' ? ('wl:' + _ftlToolsSrc.listId) : _ftlToolsSrc.kind;
-  var html = '<label class="ftl-copy-opt ftl-copy-all"><input type="checkbox" value="all"> All</label>';
-  var _hdr = '';
-  _ftlNoteTargets().forEach(function(T){
-    var h = T.rank ? 'Rankings' : '101 Lists';
-    if(h !== _hdr){ html += '<div class="ftl-copy-head">' + h + '</div>'; _hdr = h; }
-    var isSrc = (T.key === srcKey);
-    html += '<label class="ftl-copy-opt' + (isSrc ? ' is-src' : '') + '"><input type="checkbox" value="' + T.key + '"' + (isSrc ? ' disabled' : '') + '> ' + escapeHtml(T.label) + (isSrc ? ' (this note)' : '') + '</label>';
-  });
-  html += '<button type="button" class="ftl-copy-go">Copy</button>';
-  panel.innerHTML = html;
-}
-async function _ftlCopyGo(){
-  if(_blockIfReadOnly('_ftlCopyGo')) return;
-  var pid = _ftlCurrentPid, src = _ftlToolsSrc;
-  var panel = document.querySelector('#ftl-satten-card .ftl-copy-panel');
-  if(pid == null || !src || !panel) return;
-  var keys = Array.prototype.map.call(panel.querySelectorAll('input[type=checkbox]:checked:not([value=all])'), function(x){ return x.value; });
-  if(!keys.length){ _ftlToolMsg('Tick at least one list.'); return; }
-  panel.remove();
-  _ftlToolMsg('Copying...');
+function _noteCopyKeys(panel){ return Array.prototype.map.call(panel.querySelectorAll('input[type=checkbox]:checked:not([value=all])'), function(x){ return x.value; }); }
+// The copy itself, shared by the card and the Note window. Returns the message to show.
+async function _noteCopyRun(pid, text, keys){
   var done = [], skipped = [], failed = [], added = [];
   for(var k = 0; k < keys.length; k++){
-    var key = keys[k], label = (_ftlNoteTargets().filter(function(T){ return T.key === key; })[0] || {}).label || key;
+    var key = keys[k], label = _noteKeyLabel(key);
     try {
       if(key === 'rd' || key === 'dy'){
         var set = _ftlNoteSetOf(key), arr = _rankNotesEnsure(set, pid);
-        if(arr.length && String(arr[arr.length - 1].t) === src.text){ skipped.push(label); continue; }
-        arr.push({ t: src.text, at: Date.now() });
+        if(arr.length && String(arr[arr.length - 1].t) === text){ skipped.push(label); continue; }
+        arr.push({ t: text, at: Date.now() });
         _ftlRankNoteChanged(set, pid);
         done.push(label);
       } else {
@@ -13323,8 +13326,8 @@ async function _ftlCopyGo(){
         if(id === LIST_ID){
           if(_wlIndexOf(pid) < 0){ addPlayerToList(pid); added.push(label); }
           var cur = _ftlNoteArr(pid, 'wl') || [];
-          if(cur.length && String(cur[cur.length - 1].t) === src.text){ skipped.push(label); continue; }
-          _wlNoteAdd(pid, src.text);
+          if(cur.length && String(cur[cur.length - 1].t) === text){ skipped.push(label); continue; }
+          _wlNoteAdd(pid, text);
           done.push(label);
         } else {
           var r = await fetch(SERVER_URL + '/list-staging/' + id, { cache: 'no-cache' });
@@ -13332,13 +13335,13 @@ async function _ftlCopyGo(){
           var data = (body && body.data) ? body.data : (body || {});
           var players = Array.isArray(data.players) ? data.players : [];
           var tiers = Array.isArray(data.tiers) ? data.tiers : [];
-          var it = null;
-          for(var i = 0; i < players.length; i++){ if(String(_wlPid(players[i])) === String(pid)){ it = players[i]; break; } }
+          var it = null, i;
+          for(i = 0; i < players.length; i++){ if(String(_wlPid(players[i])) === String(pid)){ it = players[i]; break; } }
           if(it && typeof it !== 'object'){ it = { pid: String(it), priority: 0 }; players[i] = it; }
           if(!it){ it = { pid: String(pid), priority: 0 }; players.push(it); added.push(label); }   // "add to bottom"
           _wlNotesEnsure(it);
-          if(it.notes.length && String(it.notes[it.notes.length - 1].t) === src.text){ skipped.push(label); continue; }
-          it.notes.push({ t: src.text, at: Date.now() });
+          if(it.notes.length && String(it.notes[it.notes.length - 1].t) === text){ skipped.push(label); continue; }
+          it.notes.push({ t: text, at: Date.now() });
           _wlNotesSync(it);
           var w = await fetch(SERVER_URL + '/list-staging/' + id, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -13353,25 +13356,23 @@ async function _ftlCopyGo(){
   if(added.length) msg += ' Added him to ' + added.join(', ') + '.';
   if(skipped.length) msg += ' Already there: ' + skipped.join(', ') + '.';
   if(failed.length) msg += ' NOT saved: ' + failed.join(', ') + '. Try again.';
-  if(typeof _ftlRenderMattsTake === 'function') _ftlRenderMattsTake(pid);
-  _ftlToolMsg(msg.trim());
+  return msg.trim();
 }
-async function _ftlImportNewest(){
-  if(_blockIfReadOnly('_ftlImportNewest')) return;
-  var pid = _ftlCurrentPid; if(pid == null) return;
-  _ftlToolMsg('Looking...');
+// His most recent note on this player in any store except excludeKey. null when there is none.
+async function _noteFindNewest(pid, excludeKey){
   var best = null;
-  var consider = function(arr, label){
+  var consider = function(arr, key){
+    if(key === excludeKey) return;
     (arr || []).forEach(function(e){
       if(!e || !String(e.t || '').trim()) return;
       var at = Number(e.at) || 0;
-      if(!best || at > best.at) best = { t: String(e.t), at: at, label: label };
+      if(!best || at > best.at) best = { t: String(e.t), at: at, label: _noteKeyLabel(key) };
     });
   };
-  try { consider(_ftlNoteArr(pid, 'wl'), (_ftlNoteTargets().filter(function(T){ return T.key === 'wl:' + LIST_ID; })[0] || {}).label || 'this list'); } catch(e){}
-  try { consider(_rankNotesEnsure('redraft', pid), 'Redraft Rankings'); } catch(e){}
-  try { consider(_rankNotesEnsure('dynasty', pid), 'Dynasty Rankings'); } catch(e){}
-  var others = (WL_LISTS || []).filter(function(L){ return L.id !== LIST_ID; });
+  try { consider(_ftlNoteArr(pid, 'wl'), 'wl:' + LIST_ID); } catch(e){}
+  try { consider(_rankNotesEnsure('redraft', pid), 'rd'); } catch(e){}
+  try { consider(_rankNotesEnsure('dynasty', pid), 'dy'); } catch(e){}
+  var others = (WL_LISTS || []).filter(function(L){ return L.id !== LIST_ID && ('wl:' + L.id) !== excludeKey; });
   await Promise.all(others.map(async function(L){
     try {
       var r = await fetch(SERVER_URL + '/list-staging/' + L.id, { cache: 'no-cache' });
@@ -13380,17 +13381,104 @@ async function _ftlImportNewest(){
       (data && Array.isArray(data.players) ? data.players : []).forEach(function(it){
         if(!it || typeof it !== 'object' || String(_wlPid(it)) !== String(pid)) return;
         var copy = JSON.parse(JSON.stringify(it)); _wlNotesEnsure(copy);
-        consider(copy.notes, L.name || L.id);
+        consider(copy.notes, 'wl:' + L.id);
       });
     } catch(e){}
   }));
-  if(!best){ _ftlToolMsg('No notes on this player anywhere yet.'); return; }
+  return best;
+}
+function _noteImportedLabel(best){ return ' (imported from ' + best.label + (best.at ? (', ' + _wlNoteDateLabel(best.at)) : '') + ')'; }
+
+// ── the player card ──
+function _ftlNoteToolsRender(pid, blocks){
+  var host = document.getElementById('ftl-take-note');
+  if(!host || !_ftlNoteCanEdit(pid)) return;
+  var top = (blocks && blocks.length) ? blocks[0] : null;
+  _ftlToolsSrc = null;
+  if(top){
+    var t = top.entries && top.entries.length ? String(top.entries[top.entries.length - 1].t || '') : String(top.text || '');
+    if(t.trim()) _ftlToolsSrc = { key: _noteBlockKey(top.kind), text: t };
+  }
+  var row = document.createElement('div');
+  row.className = 'ftl-note-tools';
+  row.innerHTML = (_ftlToolsSrc ? '<button type="button" class="ftl-tool-btn" onclick="_ftlCopyPanelToggle(this)" title="Copy the newest note above to other lists">Copy</button>' : '') +
+                  '<button type="button" class="ftl-tool-btn" onclick="_ftlImportNewest()" title="Bring in your most recent note on this player from another list, to edit as a new note here">Import</button>' +
+                  '<span class="ftl-tool-msg"></span>';
+  try { var oldP = document.querySelector('#ftl-satten-card .ftl-copy-panel'); if(oldP) oldP.remove(); } catch(e){}
+  var firstBlock = host.querySelector('.ftl-note-block');
+  if(firstBlock && firstBlock.nextSibling) host.insertBefore(row, firstBlock.nextSibling);
+  else host.appendChild(row);
+}
+function _ftlToolMsg(t){ var m = document.querySelector('#ftl-take-note .ftl-tool-msg'); if(m) m.textContent = t || ''; }
+function _ftlCopyPanelToggle(btn){
+  if(!_ftlToolsSrc) return;
+  _noteCopyPanelToggle(document.getElementById('ftl-satten-card'), btn, _ftlToolsSrc.key, '_ftlCopyGo()');
+}
+async function _ftlCopyGo(){
+  if(_blockIfReadOnly('_ftlCopyGo')) return;
+  var pid = _ftlCurrentPid, src = _ftlToolsSrc;
+  var panel = document.querySelector('#ftl-satten-card .ftl-copy-panel');
+  if(pid == null || !src || !panel) return;
+  var keys = _noteCopyKeys(panel);
+  if(!keys.length){ _ftlToolMsg('Tick at least one list.'); return; }
+  panel.remove();
+  _ftlToolMsg('Copying...');
+  var msg = await _noteCopyRun(pid, src.text, keys);
+  if(typeof _ftlRenderMattsTake === 'function') _ftlRenderMattsTake(pid);
+  _ftlToolMsg(msg);
+}
+async function _ftlImportNewest(){
+  if(_blockIfReadOnly('_ftlImportNewest')) return;
+  var pid = _ftlCurrentPid; if(pid == null) return;
+  _ftlToolMsg('Looking...');
+  var best = await _noteFindNewest(pid, _noteCtxKey());
+  if(!best){ _ftlToolMsg('No notes on this player on any other list yet.'); return; }
   _ftlToolMsg('');
-  var kind = _ftlNoteContextKind();
-  _ftlNoteAddOpen(-1, kind);
+  _ftlNoteAddOpen(-1, _ftlNoteContextKind());
   var ta = document.getElementById('ftl-noteadd-text'), dt = document.getElementById('ftl-noteadd-date');
   if(ta){ ta.value = best.t; try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){} }
-  if(dt) dt.textContent += ' (imported from ' + best.label + (best.at ? (', ' + ((typeof _wlNoteDateLabel === 'function') ? _wlNoteDateLabel(best.at) : '')) : '') + ')';
+  if(dt) dt.textContent += _noteImportedLabel(best);
+}
+
+// ── the Note window (NOTE_POPUP_COPY_V1) ──
+function _notePopupMsg(t){ var m = document.getElementById('note-editor-tool-msg'); if(m) m.textContent = t || ''; }
+function _notePopupToolsSync(){
+  var tools = document.getElementById('note-editor-tools');
+  if(tools) tools.style.display = (_noteHist && _noteHist.pid != null) ? '' : 'none';
+  _notePopupMsg('');
+  try { var p = document.querySelector('#note-editor-box .ftl-copy-panel'); if(p) p.remove(); } catch(e){}
+}
+function _notePopupCopyToggle(btn){
+  if(!_noteHist) return;
+  _noteCopyPanelToggle(document.getElementById('note-editor-box'), btn, _noteCtxKey(), '_notePopupCopyGo()');
+}
+async function _notePopupCopyGo(){
+  if(_blockIfReadOnly('_notePopupCopyGo')) return;
+  var panel = document.querySelector('#note-editor-box .ftl-copy-panel');
+  var ta = document.getElementById('note-editor-textarea');
+  if(!_noteHist || !panel || !ta) return;
+  var text = String(ta.value || '').trim();
+  if(!text){ _notePopupMsg('There is nothing in the box to copy.'); return; }
+  var keys = _noteCopyKeys(panel);
+  if(!keys.length){ _notePopupMsg('Tick at least one list.'); return; }
+  panel.remove();
+  _notePopupMsg('Copying...');
+  _notePopupMsg(await _noteCopyRun(String(_noteHist.pid), text, keys));
+}
+async function _notePopupImport(){
+  if(_blockIfReadOnly('_notePopupImport')) return;
+  if(!_noteHist) return;
+  var h = _noteHist;
+  _notePopupMsg('Looking...');
+  var best = await _noteFindNewest(String(h.pid), _noteCtxKey());
+  if(_noteHist !== h) return;   // the window was closed while we looked
+  if(!best){ _notePopupMsg('No notes on this player on any other list yet.'); return; }
+  _notePopupMsg('');
+  _noteHistArmNew();
+  var ta = document.getElementById('note-editor-textarea');
+  if(ta){ ta.value = best.t; try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){} }
+  var ml = document.getElementById('note-editor-mode-line');
+  if(ml) ml.textContent = '✏️ Writing a NEW note' + _noteImportedLabel(best) + '. Save Note keeps it; Cancel drops it.';
 }
 function _ftlNoteAddSave(){
   var ta = document.getElementById('ftl-noteadd-text');
