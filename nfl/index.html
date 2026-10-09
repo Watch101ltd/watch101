@@ -1044,6 +1044,20 @@ td.col-note{width:240px;max-width:240px;overflow:hidden;white-space:nowrap;text-
   text-align:left;white-space:nowrap;
   /* NO text-transform. Bug #168: Matt types his tier names lowercase deliberately. */
 }
+/* ══════════ RANK_TIER_BREAK_V1 (2026-10-09, Matt's Claude, Matt's ask) ══════════
+   Matt: "I really just want to be able to insert a line and not have to box and name and color code
+   the tiers... on the rankings pages I don't want it." A tier break is a plain line with an automatic
+   label (Tier 2, Tier 3...), dropped from a right-click menu. Same type and weight as the old tier
+   label rows so the page keeps one look. Rankings page only; the watch list keeps its tier boxes. */
+#rankings-table tbody tr.rank-break-row td{
+  border:none !important;padding:0 8px !important;height:auto !important;line-height:1 !important;
+  background:transparent !important;
+}
+/* Matt, 2026-10-09: "There's too much room between the players and the tier. I just want a thin line...
+   Tier 2 in the middle of the line in small font... -----Tier 2----" */
+.rank-break-line{display:flex;align-items:center;gap:6px;height:11px;color:var(--gold,#f0a500);font-family:'Nunito Sans',sans-serif;font-size:8px;font-weight:800;letter-spacing:0.08em;white-space:nowrap}
+.rank-break-line::before,.rank-break-line::after{content:'';flex:1;height:1px;background:var(--gold,#f0a500);opacity:0.85}
+.rank-break-card{margin:2px 2px}
 /* ══════════ TIER_TINT_EDIT_V1 (2026-08-22) — THE LABEL IS THE DOOR BACK IN ══════════
    The floating tab TIER_TINT_V1 replaced was clickable and opened the Edit Tier window.
    The redesign kept the look and dropped the door. Matt found it the same day:
@@ -2394,7 +2408,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="rank-subnav-btn" data-rankpos="WR" onclick="switchRankPos('WR', this)">WR</button>
     <button class="rank-subnav-btn" data-rankpos="TE" onclick="switchRankPos('TE', this)">TE</button>
     <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
-    <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px">&#127991;&#65039; Tier</button>
+    <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px;display:none !important">&#127991;&#65039; Tier</button>
     <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="saveAllRankings(this)" title="Saves EVERY position tab of this rankings set to JSON files in List Data\_Staging, then pings Jay's phone once. It saves them all no matter which tab you are on." style="margin-left:14px">💾 Done Ranking</button>
     <button class="btn btn-outline backend-only" id="rank-hidden-btn" onclick="openHiddenList()" style="display:none;margin-left:6px" title="Players hidden from this rankings set — click to restore">♻️ Hidden (0)</button><!-- RANK_HIDE_V1 -->
   </div>
@@ -4478,7 +4492,7 @@ function _rankPlayersForSave(pos){
   // RANK_FILE_SAVE_V1: lifted VERBATIM out of saveRankings() so the JSON written to disk is
   // byte-for-byte the same shape the NAS receives. 🪨 Two pieces of code answering the same
   // question is what caused Bug #160. There is now one.
-  return (_rankings[pos]||[]).map(function(pid){ var o={ pid: pid }; var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankStampBucket()[pid]);   /* NOTE_SET_SPLIT_V1 */ if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; /* RANK_NOTE_HISTORY_V1: the dated timeline rides the same payload, so it reaches the NAS and survives a browser wipe exactly like the note itself. Copied, never handed out by reference. */ try { var _rkH = _rankHistBucketOfSet(_rankCurSet())[pid]; if(Array.isArray(_rkH) && _rkH.length) o.notes = _rkH.map(function(e){ return { t: String(e.t || ''), at: (e.at == null ? null : Number(e.at)) }; }); } catch(_he){} return o; });
+  return (_rankings[pos]||[]).map(function(pid, _rbi){ var o={ pid: pid }; if(_rankBreakAt(pos, _rbi + 1)) o.tb = 1;   /* RANK_TIER_BREAK_V1 */ var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankStampBucket()[pid]);   /* NOTE_SET_SPLIT_V1 */ if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; /* RANK_NOTE_HISTORY_V1: the dated timeline rides the same payload, so it reaches the NAS and survives a browser wipe exactly like the note itself. Copied, never handed out by reference. */ try { var _rkH = _rankHistBucketOfSet(_rankCurSet())[pid]; if(Array.isArray(_rkH) && _rkH.length) o.notes = _rkH.map(function(e){ return { t: String(e.t || ''), at: (e.at == null ? null : Number(e.at)) }; }); } catch(_he){} return o; });
 }
 
 /* ══════════ RANK_FILE_SAVE_V1 (2026-08-23, the Dude's ask) ══════════
@@ -4733,6 +4747,7 @@ async function loadRankingsFromNAS(){
   var _rkNewestIso = null, _rkNewestLocal = null, _rkNewestEnv = null;
   var _rkHiddenNewest = null;   // RANK_HIDE_V1: hidden harvests from the newest-stamped payload only
   _rankLoadLocal();
+  _rankBreaksLoadLocal();  // RANK_TIER_BREAK_V1 (the NAS payload below overrides per tab)
   _rankNotesLoadLocal();   // RANKINGS_NOTES_NFL_V1
   _rankHistLoadLocal();    // RANK_NOTE_HISTORY_V1
   _rankTypesLoadLocal(); _rankPrioLoadLocal();   // RANKINGS_WL_CLONE_NFL_V1
@@ -4780,6 +4795,14 @@ async function loadRankingsFromNAS(){
           if(payload.manual === true){
             _rankings[pos] = players.map(function(it){ return (it && it.pid != null) ? it.pid : it; });
             _rankManual[pos] = true;
+            try {
+              _rankBreaksFromPlayers(pos, players);   // RANK_TIER_BREAK_V1
+              // RANK_TIER_BREAK_V1 one-time conversion (Matt, 2026-10-09, option 1): a tab that still carries
+              // tier BOXES and no breaks gets a break at every box edge, so each old tier keeps its exact
+              // boundaries. The names were saved to "10 Writing (Matt)/Football Rankings Tier Names
+              // (saved 2026-10-09).md" first. The tab's next save writes breaks and no boxes, so this runs once.
+              if(!_rankBreaksGet(pos).length && Array.isArray(payload.tiers) && payload.tiers.length) _rankBreaksFromTiers(pos, players, payload.tiers);
+            } catch(_rbE){}
           }
         }
       }
@@ -5088,6 +5111,7 @@ document.addEventListener('click', function(e){
   // QUICK_EDIT_TWINS_V1 - the watch-list row that was right-clicked, if any
   var currentRowPid = null;
   var currentRowName = null;
+  var currentRankBreakN = null, currentRankBreakMode = null;   // RANK_TIER_BREAK_V1
 
   function _rcViewNow(){
     try {
@@ -5111,6 +5135,17 @@ document.addEventListener('click', function(e){
       if(nameLabel.length > 22) nameLabel = nameLabel.slice(0, 21) + '\u2026';
       html += '<div class="rc-menu-header">Quick Edit</div>';
       html += '<button class="rc-menu-item" data-dest="quick-edit"><span class="rc-emoji">\u270F\uFE0F</span><span class="rc-label">' + nameLabel + '</span></button>';
+      html += '<div style="height:1px;background:var(--border);margin:4px 0;"></div>';
+    }
+    // RANK_TIER_BREAK_V1 - backend only, rankings view only, only when a ranked row or a break was right-clicked
+    if(!isFan && view === 'rankings' && currentRankBreakN){
+      html += '<div class="rc-menu-header">Tier Break</div>';
+      if(typeof _rankTiersDefaultOrder === 'function' && !_rankTiersDefaultOrder()){
+        html += '<div style="padding:6px 12px;font-size:12px;color:var(--text3)">Clear the sort, filter or search first</div>';
+      } else {
+        var _rbLabel = (currentRankBreakMode === 'insert') ? 'Insert tier break below' : (currentRankBreakMode === 'removebelow' ? 'Remove tier break below' : 'Remove tier break');
+        html += '<button class="rc-menu-item" data-dest="tierbreak:' + currentRankBreakN + '"><span class="rc-emoji">\u2796</span><span class="rc-label">' + _rbLabel + '</span></button>';
+      }
       html += '<div style="height:1px;background:var(--border);margin:4px 0;"></div>';
     }
     html += '<div class="rc-menu-header">Switch To</div>';
@@ -5195,6 +5230,17 @@ document.addEventListener('click', function(e){
     if(t.closest('a, img, input, textarea, select')) return;
     // QUICK_EDIT_TWINS_V1 - stash the watch-list row under the cursor (if any)
     currentRowPid = null; currentRowName = null;
+    // RANK_TIER_BREAK_V1 - stash the rankings row (or tier break line) under the cursor
+    currentRankBreakN = null; currentRankBreakMode = null;
+    try {
+      var _rbBrk = t.closest('#rankings-body tr.rank-break-row');
+      var _rbRow = _rbBrk ? null : t.closest('#rankings-body tr[data-rank-pid]');
+      if(_rbBrk){ currentRankBreakN = Number(_rbBrk.getAttribute('data-break-after')); currentRankBreakMode = 'remove'; }
+      else if(_rbRow){
+        var _rbn = (_rankings[_rankPos] || []).indexOf(String(_rbRow.getAttribute('data-rank-pid'))) + 1;
+        if(_rbn > 0){ currentRankBreakN = _rbn; currentRankBreakMode = _rankBreakAt(_rankPos, _rbn) ? 'removebelow' : 'insert'; }
+      }
+    } catch(_rbE){ currentRankBreakN = null; }
     var wlRow = t.closest && t.closest('#watch-list-body tr[data-nfl-pid]');
     if(wlRow){
       currentRowPid = wlRow.getAttribute('data-nfl-pid');
@@ -5209,6 +5255,13 @@ document.addEventListener('click', function(e){
     var btn = e.target && e.target.closest ? e.target.closest('.rc-menu-item') : null;
     if(!btn) return;
     var destId = btn.getAttribute('data-dest');
+    // RANK_TIER_BREAK_V1 - insert or remove a tier break
+    if(destId && destId.indexOf('tierbreak:') === 0){
+      var _tbn = Number(destId.slice(10));
+      hideMenu();
+      if(_tbn > 0 && typeof _rankBreakToggle === 'function') _rankBreakToggle(_tbn);
+      return;
+    }
     // QUICK_EDIT_TWINS_V1 - open the popup at the menu's spot (coords read BEFORE hideMenu)
     if(destId === 'quick-edit'){
       var qx = parseInt(menu.style.left, 10) || 0;
@@ -6185,12 +6238,20 @@ function _renderRankPhoneList(ids){
       + rail
     + '</div>';
   });
+  // RANK_TIER_BREAK_V1: the same tier breaks between the phone cards, in Matt's own order only.
+  try {
+    if(_rankTiersDefaultOrder()){
+      _rankBreaksGet(_rankPos).forEach(function(n, bi){
+        if(n >= 1 && n < cards.length) cards[n - 1] += '<div class="rank-break-card"><div class="rank-break-line">Tier ' + (bi + 2) + '</div></div>';
+      });
+    }
+  } catch(_rbE){}
   host.innerHTML = _phoneTierWrapRank(ids, cards);
 }
 function _phoneTierWrapRank(ids, cards){
   try {
     if(typeof _rankTiersDefaultOrder === 'function' && !_rankTiersDefaultOrder()) return cards.join('');
-    var arr = (typeof _rankTiersGet === 'function') ? _rankTiersGet(_rankPos) : [];
+    var arr = [];   // RANK_TIER_BREAK_V1: tier boxes are retired on the rankings page (breaks are added to the cards instead)
     if(!Array.isArray(arr) || !arr.length) return cards.join('');
     var idx = {};
     for(var i = 0; i < ids.length; i++){ idx[String(ids[i])] = i; }
@@ -7394,6 +7455,11 @@ function _rankTiersGet(pos){ var k = _rankTierKeyFor(pos); if(!Array.isArray(_ra
 // TIERS_SNAPSHOT_GUARD, ported whole. An empty tiers save is only trusted after an
 // EXPLICIT create/edit/delete. Otherwise rescue from the load snapshot or localStorage.
 function _rankTiersForSave(pos){
+  // RANK_TIER_BREAK_V1 (2026-10-09): tier BOXES are retired on the rankings page (Matt: "on the
+  // rankings pages I don't want it"; his one saved box, redraft SG, "delete it"). Saves send no
+  // tiers, so each tab's next save clears them. Tier breaks ride the players array instead (tb:1).
+  // The watch list's tiers are a different engine (_tiersForSave) and are untouched.
+  return [];
   var k = _rankTierKeyFor(pos);
   try {
     var cur = _rankTiers[k];
@@ -7710,9 +7776,75 @@ function _rankTiersMemberRows(range){
   }
   return out;
 }
+// ============================================================================
+// RANK_TIER_BREAK_V1 (2026-10-09, Matt's Claude, for Matt). Plain tier breaks on the basketball
+// RANKINGS page. Matt's answers: right-click (two-finger click on a Mac) to drop one; an automatic
+// label (Tier 2, Tier 3...); a break STAYS at its spot in the list when players are dragged (it is a
+// rank number, not a player); fans see them; football added the same day, rankings only ("same deal").
+// Stored as 'set|Pos' -> [n, ...], n = how many players sit above the break. On save each break is
+// written as tb:1 on the player at rank n (the same players array the notes, tags and $ already ride,
+// so no server change); on load those flags turn back into rank numbers, so a break never travels.
+// Breaks only show in Matt's own order: a column sort, stat filter or name search hides them.
+// ============================================================================
+var _rankBreaks = {};
+var RANK_BREAKS_LS_KEY = 'watch101_nfl_rankbreaks_v1';
+function _rankBreaksGet(pos){ var k = _rankTierKeyFor(pos); if(!Array.isArray(_rankBreaks[k])) _rankBreaks[k] = []; return _rankBreaks[k]; }
+function _rankBreakAt(pos, n){ return _rankBreaksGet(pos).indexOf(n) !== -1; }
+function _rankBreaksPersistLocal(){ try { localStorage.setItem(RANK_BREAKS_LS_KEY, JSON.stringify(_rankBreaks)); } catch(e){} }
+function _rankBreaksLoadLocal(){ try { var raw = localStorage.getItem(RANK_BREAKS_LS_KEY); if(raw){ var o = JSON.parse(raw); if(o && typeof o === 'object') _rankBreaks = o; } } catch(e){} }
+function _rankBreaksFromPlayers(pos, players){
+  var arr = [];
+  (players || []).forEach(function(it, i){ if(it && it.tb) arr.push(i + 1); });
+  _rankBreaks[_rankTierKeyFor(pos)] = arr;
+}
+function _rankBreaksFromTiers(pos, players, tiers){
+  var ids = (players || []).map(function(it){ return String(it && it.pid != null ? it.pid : it); });
+  var set = {};
+  (tiers || []).forEach(function(t){
+    var si = ids.indexOf(String(t && t.start_pid)), ei = ids.indexOf(String(t && t.end_pid));
+    if(si < 0 || ei < 0 || si > ei) return;
+    if(si > 0) set[si] = 1;                    // a break above the tier's first player
+    if(ei + 1 < ids.length) set[ei + 1] = 1;   // and one under its last player
+  });
+  _rankBreaks[_rankTierKeyFor(pos)] = Object.keys(set).map(Number).sort(function(a,b){ return a - b; });
+}
+function _rankBreakToggle(n){
+  if(_blockIfReadOnly('rankBreakToggle')) return;
+  var arr = _rankBreaksGet(_rankPos);
+  var at = arr.indexOf(n);
+  if(at === -1){ arr.push(n); arr.sort(function(a,b){ return a - b; }); } else { arr.splice(at, 1); }
+  _rankManual[_rankPos] = true;   // a break is a ranking decision: it claims the tab, like a drag
+  _rankBreaksPersistLocal();
+  renderRankings();
+  try { saveRankings(_rankPos); } catch(e){ console.warn('[RANK_TIER_BREAK_V1] save failed:', e); }
+}
+function _rankBreaksInject(){
+  var tbody = document.getElementById('rankings-body');
+  if(!tbody) return;
+  tbody.querySelectorAll('tr.rank-break-row').forEach(function(r){ r.remove(); });
+  if(!_rankTiersDefaultOrder()) return;
+  var arr = _rankBreaksGet(_rankPos);
+  if(!arr.length) return;
+  var rows = tbody.querySelectorAll('tr[data-rank-pid]');
+  if(!rows.length) return;
+  var cols = rows[0].children.length;
+  arr.forEach(function(n, i){
+    var row = rows[n - 1];
+    if(!row || n >= rows.length) return;   // a break past the last player draws nothing
+    var tr = document.createElement('tr');
+    tr.className = 'rank-break-row';
+    tr.setAttribute('data-break-after', String(n));
+    tr.innerHTML = '<td colspan="' + cols + '"><div class="rank-break-line">Tier ' + (i + 2) + '</div></td>';
+    row.parentNode.insertBefore(tr, row.nextSibling);
+  });
+}
 function renderRankTiers(){
   _rankTiersClearOverlay();     // kept: empties any stale overlay layer from before TIER_TINT_V1
   _rankTiersClearTint();
+  // RANK_TIER_BREAK_V1: the rankings page draws tier BREAKS, not boxes. Clear any old box rows and stop.
+  try { _rankTiersClearSpacerRows(); } catch(e){}
+  try { _rankBreaksInject(); } catch(e){ console.warn('[RANK_TIER_BREAK_V1] inject failed:', e); }
+  return;
   try { _rankTiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_TINT_V1] label inject crashed:', e); }
   var arr = _rankTiersGet();
   if(!arr.length) return;
@@ -11156,11 +11288,13 @@ function _ftlRenderMattsTake(pid){
     if (_cnBlocks.length){
       noteEl.innerHTML = _cnBlocks.map(function(b){
         if (b.entries){   // NOTE_HISTORY_V1: dated timeline, oldest to newest
-          const _wlArrE = (b.kind === 'wl' && _wlIndexOf(pid) >= 0) ? (_watchList[_wlIndexOf(pid)].notes || []) : null;   // CARD_NOTEEDIT_V1
+          const _wlArrE = (b.kind === 'wl' && _wlIndexOf(pid) >= 0) ? (_watchList[_wlIndexOf(pid)].notes || [])
+                        : ((b.kind === 'rd' || b.kind === 'dy') && typeof _rankHistBucketOfSet === 'function') ? (_rankHistBucketOfSet(b.kind === 'rd' ? 'redraft' : 'dynasty')[pid] || [])
+                        : null;   // CARD_NOTEEDIT_V1 + CARD_NOTE_ANYWHERE_V1 (rankings lines are editable too)
           const inner = b.entries.map(function(e){
             const spE = _splitNoteAndUrl(e.t);
             const _ni = _wlArrE ? _wlArrE.indexOf(e) : -1;   // CARD_NOTEEDIT_V1: which saved note this line is
-            return '<div class="ftl-note-hist-entry"' + (_ni >= 0 ? ' data-wl-ni="' + _ni + '"' : '') + '><span class="ftl-note-date">' +
+            return '<div class="ftl-note-hist-entry"' + (_ni >= 0 ? ' data-wl-ni="' + _ni + '" data-nk="' + b.kind + '"' : '') + '><span class="ftl-note-date">' +
                    ((typeof _wlNoteDateLabel === 'function') ? _wlNoteDateLabel(e.at) : '') + '</span>' +
                    escapeHtml(spE.text) + _renderNoteLinkBadge(spE.url) + '</div>';
           }).join('');
@@ -11181,9 +11315,11 @@ function _ftlRenderMattsTake(pid){
       var _cnCount = _cnBlocks.reduce(function(a, b){ return a + (b.entries ? b.entries.length : 1); }, 0);   // NOTE_HISTORY_V1
       noteEl.classList.toggle('ftl-note-scroll', _cnCount > 2);
       if(typeof _ftlNoteWireEdit === 'function') _ftlNoteWireEdit(pid);   // CARD_NOTEEDIT_V1
+      try { if(typeof _ftlNoteToolsRender === 'function') _ftlNoteToolsRender(pid, _cnBlocks); } catch(_ntE){}   // CARD_NOTE_COPY_V1
     } else {
       noteEl.classList.remove('ftl-note-scroll');
-      noteEl.innerHTML = '<em>No notes from Matt yet.</em>';
+      noteEl.innerHTML = (typeof _ftlNoteCanEdit === 'function' && _ftlNoteCanEdit(pid)) ? '<em>No notes from Matt yet. Click here to write one.</em>' : '<em>No notes from Matt yet.</em>';   // CARD_NOTE_ANYWHERE_V1
+      try { if(typeof _ftlNoteToolsRender === 'function') _ftlNoteToolsRender(pid, []); } catch(_ntE){}   // CARD_NOTE_COPY_V1: Import still offered
     }
   }
   if (starsEl){
@@ -12381,6 +12517,21 @@ function _yahooLookupFmt(pid, field, isPercent){
 #ftl-overlay .ftl-note-hist-entry.ftl-note-editable{cursor:pointer;border-radius:6px;transition:background .12s;}
 #ftl-overlay .ftl-note-hist-entry.ftl-note-editable:hover{background:rgba(255,255,255,.06);outline:1px dashed var(--turf,#16a34a);}
 #ftl-overlay #ftl-noteadd-mode{font:inherit;color:inherit;margin:0;}
+/* CARD_NOTE_ANYWHERE_V1: on the backend the whole Satten Says card is the way in (no button) */
+body:not(.readonly-mode) #ftl-overlay #ftl-satten-card{cursor:text;}
+/* CARD_NOTE_COPY_V1: Copy / Import under the top note (backend only) */
+#ftl-overlay .ftl-note-tools{position:relative;display:flex;align-items:center;gap:6px;margin:2px 0 9px;white-space:normal;cursor:default;}
+#ftl-overlay .ftl-tool-btn{background:transparent;color:var(--turf,#16a34a);border:1px solid var(--turf,#16a34a);border-radius:12px;padding:2px 10px;font-size:11px;font-weight:800;font-family:'Nunito Sans',sans-serif;cursor:pointer;line-height:1.5;}
+#ftl-overlay .ftl-tool-btn:hover{background:var(--turf,#16a34a);color:#fff;}
+#ftl-overlay .ftl-tool-msg{font-size:11px;color:var(--text3);}
+#ftl-overlay #ftl-satten-card{position:relative;}
+#ftl-overlay .ftl-copy-head{padding:6px 12px 2px;font-size:9px;letter-spacing:0.14em;font-weight:800;color:var(--text3);text-transform:uppercase;}
+#ftl-overlay .ftl-copy-panel{position:absolute;z-index:8;white-space:normal;cursor:default;min-width:230px;background:var(--surface2,#111827);border:1px solid var(--border2,#334155);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.45);padding:6px 0;}
+#ftl-overlay .ftl-copy-opt{display:flex;align-items:center;gap:8px;padding:4px 12px;font-size:12px;color:var(--text,#e5e7eb);cursor:pointer;white-space:nowrap;}
+#ftl-overlay .ftl-copy-opt:hover{background:rgba(255,255,255,.06);}
+#ftl-overlay .ftl-copy-opt.is-src{color:var(--text3);cursor:default;}
+#ftl-overlay .ftl-copy-all{font-weight:800;border-bottom:1px solid var(--border,#1f2937);padding-bottom:6px;margin-bottom:3px;}
+#ftl-overlay .ftl-copy-go{display:block;margin:6px 12px 2px auto;background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:4px 14px;font-weight:800;font-size:12px;cursor:pointer;}
 #ftl-overlay .ftl-noteadd-delete{background:transparent;color:#ef4444;border:1px solid #ef4444;border-radius:6px;padding:5px 12px;font-weight:700;cursor:pointer;}
   /* stacked layout: push down, never cover the schedule */
 </style>
@@ -12454,7 +12605,7 @@ function _yahooLookupFmt(pid, field, isPercent){
           <button type="button" class="ftl-noteadd-save" onclick="_ftlNoteAddSave()">Save Note</button>
         </div>
       </div>
-      <div class="ftl-take-card">
+      <div class="ftl-take-card" id="ftl-satten-card"><!-- CARD_NOTE_ANYWHERE_V1: click this card to write or edit a note -->
         <div class="ftl-take-title">Satten Says</div>
         <div class="ftl-take-note" id="ftl-take-note"><em>No notes from Matt yet.</em></div>
       </div>
@@ -13567,45 +13718,83 @@ table.watch-list tbody td .stat-cell{display:inline!important;min-width:0!import
 // shortcut is gone entirely). Only the Save button saves. Esc closes the box, not the card.
 // Rankings notes on the card are not editable here: they belong to the rankings page.
 var _ftlNoteAddPid = null;
-var _ftlNoteEditIdx = -1;   // -1 = new note, otherwise the index in _watchList[..].notes
+var _ftlNoteEditIdx = -1;   // -1 = new note, otherwise the index in the target store's notes
+var _ftlNoteKind = 'wl';    // CARD_NOTE_ANYWHERE_V1: 'wl' = the open 101 list, 'rd' / 'dy' = redraft / dynasty rankings
+// ── CARD_NOTE_ANYWHERE_V1 (2026-10-09, Matt's Claude; Matt: "I want to be able to edit from
+//    anywhere. Ideally by just clicking in the Satten says box, not a separate button") ──────────
+// * Every player card, any page, backend only. The "+ Add Note" button is retired (kept hidden).
+// * Click a note line in Satten Says = edit THAT note (101 List, Redraft or Dynasty, wherever it
+//   lives). Delete Note is in the same box.
+// * Click anywhere else in the Satten Says card = a NEW note, filed by the page underneath:
+//   a rankings page -> that rankings set (redraft or dynasty); any other page -> the open 101 list.
+//   A player not on the open list is ADDED to it first (Matt, 2026-10-09: "Yes").
+// * Rankings notes save to the NAS by rewriting ONLY the note fields of that player in each saved
+//   tab of that set (read, change his note, write back): never a tab's order, so this is safe from
+//   any page and for either set, including the set that is not on screen.
+var RANK_NOTE_SPORT = 'nfl';
+var RANK_NOTE_POSITIONS = ['Overall','QB','RB','WR','TE','DEF'];
 function _ftlNoteBtnSync(pid){
   var btn = document.getElementById('ftl-addnote-btn');
   if(_ftlNoteAddPid != null && _ftlNoteAddPid !== pid) _ftlNoteAddClose(true);   // new player: drop the old box
-  if(!btn) return;
-  btn.style.display = _ftlNoteCanEdit(pid) ? '' : 'none';
+  if(btn) btn.style.display = 'none';   // CARD_NOTE_ANYWHERE_V1: the Satten Says card itself is the button now
 }
 function _ftlNoteCanEdit(pid){
   var ro = false; try { ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode(); } catch(e){}
-  return !ro && (typeof _wlIndexOf === 'function') && _wlIndexOf(pid) >= 0;
+  return !ro;
+}
+function _ftlNoteSetOf(kind){ return kind === 'dy' ? 'dynasty' : 'redraft'; }
+function _ftlNoteLabelOf(kind){ return kind === 'wl' ? '101 List' : (kind === 'dy' ? 'Dynasty Rankings' : 'Redraft Rankings'); }
+// The notes array a kind points at, for this player (null when that store has nothing for him).
+function _ftlNoteArr(pid, kind){
+  if(kind === 'wl'){ var i = _wlIndexOf(pid); if(i < 0) return null; if(typeof _wlNotesEnsure === 'function') _wlNotesEnsure(_watchList[i]); return _watchList[i].notes || []; }
+  return _rankNotesEnsure(_ftlNoteSetOf(kind), pid);
+}
+// Which store a NEW note goes to: the page under the card decides.
+function _ftlNoteContextKind(){
+  try {
+    var rv = document.getElementById('rankings-view');
+    if(rv && rv.style.display !== 'none') return (typeof _rankCurSet === 'function' && _rankCurSet() === 'dynasty') ? 'dy' : 'rd';
+  } catch(e){}
+  return 'wl';
 }
 function _ftlNoteWireEdit(pid){
   if(!_ftlNoteCanEdit(pid)) return;
   document.querySelectorAll('#ftl-take-note .ftl-note-hist-entry[data-wl-ni]').forEach(function(el){
     el.classList.add('ftl-note-editable');
     el.title = 'Click to edit this note';
-    el.onclick = function(ev){
-      if(ev.target && ev.target.closest && ev.target.closest('a')) return;   // a link badge still opens its link
-      _ftlNoteAddOpen(parseInt(el.getAttribute('data-wl-ni'), 10));
-    };
   });
 }
-function _ftlNoteAddOpen(editIdx){
+// One listener for the whole Satten Says card: a note line edits it, anywhere else writes a new one.
+document.addEventListener('click', function(ev){
+  try {
+    var card = ev.target && ev.target.closest ? ev.target.closest('#ftl-overlay #ftl-satten-card') : null;   // ONLY Satten Says (other cards share .ftl-take-card)
+    if(!card) return;
+    if(ev.target.closest('a')) return;                       // a link badge still opens its link
+    if(ev.target.closest('.ftl-note-tools') || ev.target.closest('.ftl-copy-panel')) return;   // CARD_NOTE_COPY_V1: Copy / Import have their own clicks
+    if(!_ftlNoteCanEdit(_ftlCurrentPid)) return;             // fans: nothing happens
+    var line = ev.target.closest('.ftl-note-hist-entry[data-wl-ni]');
+    if(line) _ftlNoteAddOpen(parseInt(line.getAttribute('data-wl-ni'), 10), line.getAttribute('data-nk') || 'wl');
+    else _ftlNoteAddOpen(-1, _ftlNoteContextKind());
+  } catch(e){ console.warn('[CARD_NOTE_ANYWHERE_V1] click failed:', e); }
+});
+function _ftlNoteAddOpen(editIdx, kind){
   var pid = _ftlCurrentPid; if(pid == null) return;
   if(_blockIfReadOnly('_ftlNoteAddOpen')) return;
-  var wi = _wlIndexOf(pid); if(wi < 0) return;
+  kind = kind || _ftlNoteContextKind();
   var box = document.getElementById('ftl-noteadd'), ta = document.getElementById('ftl-noteadd-text');
   var dt = document.getElementById('ftl-noteadd-date'), md = document.getElementById('ftl-noteadd-mode');
   var del = document.getElementById('ftl-noteadd-delete');
   if(!box || !ta) return;
   if(box.style.display !== 'none' && ta.value.trim() && !confirm('Throw away what is in the box and open this instead?')) return;
-  var notes = (_watchList[wi] && _watchList[wi].notes) || [];
+  var notes = _ftlNoteArr(pid, kind) || [];
   var isEdit = (typeof editIdx === 'number' && editIdx >= 0 && editIdx < notes.length);
   _ftlNoteAddPid = pid;
+  _ftlNoteKind = kind;
   _ftlNoteEditIdx = isEdit ? editIdx : -1;
-  if(md) md.textContent = isEdit ? 'Edit note from' : 'New note';
+  if(md) md.textContent = (isEdit ? 'Edit ' : 'New ') + _ftlNoteLabelOf(kind) + ' note' + (isEdit ? ' from' : '');
   if(dt){
     if(isEdit){ dt.textContent = (typeof _wlNoteDateLabel === 'function') ? _wlNoteDateLabel(notes[editIdx].at) : ''; }
-    else { var d = new Date(); dt.textContent = (d.getMonth()+1) + '/' + d.getDate() + '/' + d.getFullYear(); }
+    else { var d = new Date(); dt.textContent = (d.getMonth()+1) + '/' + d.getDate() + '/' + d.getFullYear() + ((kind === 'wl' && _wlIndexOf(pid) < 0) ? ' (adds him to this 101 list)' : ''); }
   }
   if(del) del.style.display = isEdit ? '' : 'none';
   ta.value = isEdit ? String(notes[editIdx].t || '') : '';
@@ -13622,27 +13811,258 @@ function _ftlNoteAddClose(force){
   _ftlNoteAddPid = null; _ftlNoteEditIdx = -1;
 }
 function _ftlNoteNotes(pid){ var i = _wlIndexOf(pid); return (i >= 0 && _watchList[i] && _watchList[i].notes) ? _watchList[i].notes : null; }
+// Rankings note change: memory + this browser first, then the NAS for that set only.
+function _ftlRankNoteChanged(set, pid){
+  _rankNotesSync(set, pid);
+  try { _rankHistSaveLocal(); _rankNotesSaveLocal(); _rankStampsSaveLocal(); } catch(e){}
+  try {
+    var rv = document.getElementById('rankings-view');
+    if(rv && rv.style.display !== 'none' && typeof renderRankings === 'function') renderRankings();
+  } catch(e){}
+  _ftlRankNotePush(set, pid);
+}
+async function _ftlRankNotePush(set, pid){
+  var sp = String(pid), wrote = 0, failed = 0;
+  var note = _rankNoteOfSet(set, sp);
+  var stamp = Number((_rankStampsBucketOfSet(set) || {})[sp]);
+  var tl = (_rankHistBucketOfSet(set) || {})[sp];
+  for(var i = 0; i < RANK_NOTE_POSITIONS.length; i++){
+    var id = 'rankings-' + RANK_NOTE_SPORT + '-' + (set === 'dynasty' ? 'dyn-' : '') + RANK_NOTE_POSITIONS[i].toLowerCase();
+    try {
+      var r = await fetch(SERVER_URL + '/list-staging/' + id, { cache: 'no-cache' });
+      if(!r.ok) continue;
+      var d = await r.json(); var p = (d && d.data) ? d.data : d;
+      if(!p || p.manual !== true || !Array.isArray(p.players)) continue;   // only hand-ranked saves carry notes
+      var hit = false;
+      p.players.forEach(function(it){
+        if(!it || String(it.pid) !== sp) return;
+        hit = true;
+        if(note){
+          it.note = note;
+          if(isFinite(stamp) && stamp > 0) it.note_saved_at = stamp; else delete it.note_saved_at;
+          if(Array.isArray(tl) && tl.length) it.notes = tl.map(function(e){ return { t: String(e.t || ''), at: (e.at == null ? null : Number(e.at)) }; });
+          else delete it.notes;
+        } else { delete it.note; delete it.note_saved_at; delete it.notes; }
+      });
+      if(!hit) continue;
+      var w = await fetch(SERVER_URL + '/list-staging/' + id, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ players: p.players, manual: true, tiers: Array.isArray(p.tiers) ? p.tiers : [] })
+      });
+      if(w.ok) wrote++; else failed++;
+    } catch(e){ failed++; console.warn('[CARD_NOTE_ANYWHERE_V1] NAS note save failed for ' + id + ':', e); }
+  }
+  console.log('[CARD_NOTE_ANYWHERE_V1] ' + set + ' note for ' + sp + ' written to ' + wrote + ' saved tab(s)' + (failed ? (', ' + failed + ' failed') : ''));
+  if(failed) alert('The note is saved in this browser, but ' + failed + ' rankings tab(s) did not reach the server. Try saving it again.');
+}
+// ── CARD_NOTE_COPY_V1 (2026-10-09, Matt's Claude; Matt: "two new buttons should appear just under
+//    the top note: Copy ... and Import") ──────────────────────────────────────────────────────────
+// Copy: the NEWEST note of the top block in Satten Says goes to whichever lists are ticked (or All):
+//   every 101 list in WL_LISTS plus Redraft Rankings and Dynasty Rankings. A player who is not on a
+//   ticked 101 list is ADDED at the bottom of it (Matt: "add to bottom"). Each copy is a new dated
+//   note; a list whose newest note for him already reads the same is skipped, so a double click
+//   cannot stack duplicates. Lists that are not open are changed on the NAS directly (read, add
+//   the note, write back) and nothing else in them moves.
+// Import: finds his most recent note on this player across every list and both rankings sets and
+//   opens it in the note box as a NEW note for the page he is on (Matt: "page im on"), to edit
+//   before saving. Nothing saves until he presses Save Note.
+var _ftlToolsSrc = null;   // { kind, listId?, text } of the newest note in the top block
+function _ftlNoteTargets(){
+  var out = [];
+  try { (WL_LISTS || []).forEach(function(L){ out.push({ key: 'wl:' + L.id, label: L.name || L.id }); }); } catch(e){}
+  out.push({ key: 'rd', label: 'Redraft Rankings', rank: true });
+  out.push({ key: 'dy', label: 'Dynasty Rankings', rank: true });
+  return out;
+}
+function _ftlNoteToolsRender(pid, blocks){
+  var host = document.getElementById('ftl-take-note');
+  if(!host || !_ftlNoteCanEdit(pid)) return;
+  var top = (blocks && blocks.length) ? blocks[0] : null;
+  _ftlToolsSrc = null;
+  if(top){
+    var t = top.entries && top.entries.length ? String(top.entries[top.entries.length - 1].t || '') : String(top.text || '');
+    if(t.trim()) _ftlToolsSrc = { kind: top.kind, listId: (top.kind === 'wl' ? LIST_ID : null), text: t };
+  }
+  var row = document.createElement('div');
+  row.className = 'ftl-note-tools';
+  row.innerHTML = (_ftlToolsSrc ? '<button type="button" class="ftl-tool-btn" data-tool="copy" title="Copy the newest note above to other lists">Copy</button>' : '') +
+                  '<button type="button" class="ftl-tool-btn" data-tool="import" title="Bring in your most recent note on this player from any list, to edit as a new note here">Import</button>' +
+                  '<span class="ftl-tool-msg"></span>';
+  try { var oldP = document.querySelector('#ftl-satten-card .ftl-copy-panel'); if(oldP) oldP.remove(); } catch(e){}
+  var firstBlock = host.querySelector('.ftl-note-block');
+  if(firstBlock && firstBlock.nextSibling) host.insertBefore(row, firstBlock.nextSibling);
+  else host.appendChild(row);
+}
+function _ftlToolMsg(t){ var m = document.querySelector('#ftl-take-note .ftl-tool-msg'); if(m) m.textContent = t || ''; }
+document.addEventListener('click', function(ev){
+  var b = ev.target && ev.target.closest ? ev.target.closest('#ftl-take-note .ftl-tool-btn, #ftl-satten-card .ftl-copy-go') : null;
+  if(!b) return;
+  ev.stopPropagation();
+  if(b.classList.contains('ftl-copy-go')){ _ftlCopyGo(); return; }
+  if(b.getAttribute('data-tool') === 'copy') _ftlCopyPanelToggle();
+  else _ftlImportNewest();
+}, true);
+document.addEventListener('change', function(ev){
+  var c = ev.target;
+  if(!c || !c.closest || !c.closest('#ftl-satten-card .ftl-copy-panel')) return;
+  var panel = c.closest('.ftl-copy-panel');
+  if(c.value === 'all'){ panel.querySelectorAll('input[type=checkbox]:not([value=all]):not(:disabled)').forEach(function(x){ x.checked = c.checked; }); }
+  else if(!c.checked){ var a = panel.querySelector('input[value=all]'); if(a) a.checked = false; }
+});
+function _ftlCopyPanelToggle(){
+  // The panel hangs off the Satten Says CARD, not the note area, so a long scrolling note
+  // history can never clip it. It is placed right under the Copy button.
+  var card = document.getElementById('ftl-satten-card'), btn = document.querySelector('#ftl-take-note .ftl-tool-btn[data-tool="copy"]');
+  if(!card || !btn || !_ftlToolsSrc) return;
+  var panel = card.querySelector('.ftl-copy-panel');
+  if(panel){ panel.remove(); return; }
+  panel = document.createElement('div');
+  panel.className = 'ftl-copy-panel';
+  card.appendChild(panel);
+  var cr = card.getBoundingClientRect(), br = btn.getBoundingClientRect();
+  panel.style.top = (br.bottom - cr.top + 4) + 'px';
+  panel.style.left = (br.left - cr.left) + 'px';
+  var srcKey = _ftlToolsSrc.kind === 'wl' ? ('wl:' + _ftlToolsSrc.listId) : _ftlToolsSrc.kind;
+  var html = '<label class="ftl-copy-opt ftl-copy-all"><input type="checkbox" value="all"> All</label>';
+  var _hdr = '';
+  _ftlNoteTargets().forEach(function(T){
+    var h = T.rank ? 'Rankings' : '101 Lists';
+    if(h !== _hdr){ html += '<div class="ftl-copy-head">' + h + '</div>'; _hdr = h; }
+    var isSrc = (T.key === srcKey);
+    html += '<label class="ftl-copy-opt' + (isSrc ? ' is-src' : '') + '"><input type="checkbox" value="' + T.key + '"' + (isSrc ? ' disabled' : '') + '> ' + escapeHtml(T.label) + (isSrc ? ' (this note)' : '') + '</label>';
+  });
+  html += '<button type="button" class="ftl-copy-go">Copy</button>';
+  panel.innerHTML = html;
+}
+async function _ftlCopyGo(){
+  if(_blockIfReadOnly('_ftlCopyGo')) return;
+  var pid = _ftlCurrentPid, src = _ftlToolsSrc;
+  var panel = document.querySelector('#ftl-satten-card .ftl-copy-panel');
+  if(pid == null || !src || !panel) return;
+  var keys = Array.prototype.map.call(panel.querySelectorAll('input[type=checkbox]:checked:not([value=all])'), function(x){ return x.value; });
+  if(!keys.length){ _ftlToolMsg('Tick at least one list.'); return; }
+  panel.remove();
+  _ftlToolMsg('Copying...');
+  var done = [], skipped = [], failed = [], added = [];
+  for(var k = 0; k < keys.length; k++){
+    var key = keys[k], label = (_ftlNoteTargets().filter(function(T){ return T.key === key; })[0] || {}).label || key;
+    try {
+      if(key === 'rd' || key === 'dy'){
+        var set = _ftlNoteSetOf(key), arr = _rankNotesEnsure(set, pid);
+        if(arr.length && String(arr[arr.length - 1].t) === src.text){ skipped.push(label); continue; }
+        arr.push({ t: src.text, at: Date.now() });
+        _ftlRankNoteChanged(set, pid);
+        done.push(label);
+      } else {
+        var id = key.slice(3);
+        if(id === LIST_ID){
+          if(_wlIndexOf(pid) < 0){ addPlayerToList(pid); added.push(label); }
+          var cur = _ftlNoteArr(pid, 'wl') || [];
+          if(cur.length && String(cur[cur.length - 1].t) === src.text){ skipped.push(label); continue; }
+          _wlNoteAdd(pid, src.text);
+          done.push(label);
+        } else {
+          var r = await fetch(SERVER_URL + '/list-staging/' + id, { cache: 'no-cache' });
+          var body = r.ok ? await r.json() : null;
+          var data = (body && body.data) ? body.data : (body || {});
+          var players = Array.isArray(data.players) ? data.players : [];
+          var tiers = Array.isArray(data.tiers) ? data.tiers : [];
+          var it = null;
+          for(var i = 0; i < players.length; i++){ if(String(_wlPid(players[i])) === String(pid)){ it = players[i]; break; } }
+          if(it && typeof it !== 'object'){ it = { pid: String(it), priority: 0 }; players[i] = it; }
+          if(!it){ it = { pid: String(pid), priority: 0 }; players.push(it); added.push(label); }   // "add to bottom"
+          _wlNotesEnsure(it);
+          if(it.notes.length && String(it.notes[it.notes.length - 1].t) === src.text){ skipped.push(label); continue; }
+          it.notes.push({ t: src.text, at: Date.now() });
+          _wlNotesSync(it);
+          var w = await fetch(SERVER_URL + '/list-staging/' + id, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ players: players, tiers: tiers })
+          });
+          if(w.ok) done.push(label); else failed.push(label);
+        }
+      }
+    } catch(e){ console.warn('[CARD_NOTE_COPY_V1] copy to ' + key + ' failed:', e); failed.push(label); }
+  }
+  var msg = done.length ? ('Copied to ' + done.join(', ') + '.') : '';
+  if(added.length) msg += ' Added him to ' + added.join(', ') + '.';
+  if(skipped.length) msg += ' Already there: ' + skipped.join(', ') + '.';
+  if(failed.length) msg += ' NOT saved: ' + failed.join(', ') + '. Try again.';
+  if(typeof _ftlRenderMattsTake === 'function') _ftlRenderMattsTake(pid);
+  _ftlToolMsg(msg.trim());
+}
+async function _ftlImportNewest(){
+  if(_blockIfReadOnly('_ftlImportNewest')) return;
+  var pid = _ftlCurrentPid; if(pid == null) return;
+  _ftlToolMsg('Looking...');
+  var best = null;
+  var consider = function(arr, label){
+    (arr || []).forEach(function(e){
+      if(!e || !String(e.t || '').trim()) return;
+      var at = Number(e.at) || 0;
+      if(!best || at > best.at) best = { t: String(e.t), at: at, label: label };
+    });
+  };
+  try { consider(_ftlNoteArr(pid, 'wl'), (_ftlNoteTargets().filter(function(T){ return T.key === 'wl:' + LIST_ID; })[0] || {}).label || 'this list'); } catch(e){}
+  try { consider(_rankNotesEnsure('redraft', pid), 'Redraft Rankings'); } catch(e){}
+  try { consider(_rankNotesEnsure('dynasty', pid), 'Dynasty Rankings'); } catch(e){}
+  var others = (WL_LISTS || []).filter(function(L){ return L.id !== LIST_ID; });
+  await Promise.all(others.map(async function(L){
+    try {
+      var r = await fetch(SERVER_URL + '/list-staging/' + L.id, { cache: 'no-cache' });
+      if(!r.ok) return;
+      var body = await r.json(); var data = (body && body.data) ? body.data : body;
+      (data && Array.isArray(data.players) ? data.players : []).forEach(function(it){
+        if(!it || typeof it !== 'object' || String(_wlPid(it)) !== String(pid)) return;
+        var copy = JSON.parse(JSON.stringify(it)); _wlNotesEnsure(copy);
+        consider(copy.notes, L.name || L.id);
+      });
+    } catch(e){}
+  }));
+  if(!best){ _ftlToolMsg('No notes on this player anywhere yet.'); return; }
+  _ftlToolMsg('');
+  var kind = _ftlNoteContextKind();
+  _ftlNoteAddOpen(-1, kind);
+  var ta = document.getElementById('ftl-noteadd-text'), dt = document.getElementById('ftl-noteadd-date');
+  if(ta){ ta.value = best.t; try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){} }
+  if(dt) dt.textContent += ' (imported from ' + best.label + (best.at ? (', ' + ((typeof _wlNoteDateLabel === 'function') ? _wlNoteDateLabel(best.at) : '')) : '') + ')';
+}
 function _ftlNoteAddSave(){
   var ta = document.getElementById('ftl-noteadd-text');
-  var pid = _ftlNoteAddPid;
+  var pid = _ftlNoteAddPid, kind = _ftlNoteKind, i = _ftlNoteEditIdx;
   if(!ta || pid == null) return;
+  if(_blockIfReadOnly('_ftlNoteAddSave')) return;
   var t = ta.value.trim();
   if(!t){ ta.focus(); return; }
-  var before = JSON.stringify(_ftlNoteNotes(pid) || null);
-  if(_ftlNoteEditIdx >= 0) _wlNoteEdit(pid, _ftlNoteEditIdx, t);
-  else _wlNoteAdd(pid, t);
-  var after = JSON.stringify(_ftlNoteNotes(pid) || null);
-  if(after === before && !(_ftlNoteEditIdx >= 0 && (_ftlNoteNotes(pid)||[])[_ftlNoteEditIdx] && _ftlNoteNotes(pid)[_ftlNoteEditIdx].t === t)){
-    alert('That note did not save. Nothing was lost: your text is still in the box.'); return;
+  if(kind === 'wl'){
+    if(_wlIndexOf(pid) < 0 && i < 0 && typeof addPlayerToList === 'function') addPlayerToList(pid);   // Matt: a note adds him to the open list
+    var before = JSON.stringify(_ftlNoteNotes(pid) || null);
+    if(i >= 0) _wlNoteEdit(pid, i, t); else _wlNoteAdd(pid, t);
+    var after = JSON.stringify(_ftlNoteNotes(pid) || null);
+    if(after === before && !(i >= 0 && (_ftlNoteNotes(pid)||[])[i] && _ftlNoteNotes(pid)[i].t === t)){
+      alert('That note did not save. Nothing was lost: your text is still in the box.'); return;
+    }
+  } else {
+    var set = _ftlNoteSetOf(kind);
+    var arr = _rankNotesEnsure(set, pid);
+    if(i >= 0){ if(!(i < arr.length)) return; arr[i].t = t; }   // an edit keeps its date (his ruling)
+    else arr.push({ t: t, at: Date.now() });
+    _ftlRankNoteChanged(set, pid);
   }
   _ftlNoteAddClose(true);
   if(typeof _ftlRenderMattsTake === 'function') _ftlRenderMattsTake(pid);   // shows at once
 }
 function _ftlNoteDelete(){
-  var pid = _ftlNoteAddPid, i = _ftlNoteEditIdx;
+  var pid = _ftlNoteAddPid, i = _ftlNoteEditIdx, kind = _ftlNoteKind;
   if(pid == null || i < 0) return;
+  if(_blockIfReadOnly('_ftlNoteDelete')) return;
   if(!confirm('Delete this note? This cannot be undone.')) return;
-  _wlNoteDelete(pid, i);
+  if(kind === 'wl') _wlNoteDelete(pid, i);
+  else {
+    var set = _ftlNoteSetOf(kind);
+    var arr = _rankNotesEnsure(set, pid);
+    if(i < arr.length){ arr.splice(i, 1); _ftlRankNoteChanged(set, pid); }
+  }
   _ftlNoteAddClose(true);
   if(typeof _ftlRenderMattsTake === 'function') _ftlRenderMattsTake(pid);
 }
