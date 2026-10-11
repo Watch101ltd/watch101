@@ -2899,9 +2899,22 @@ function _yahooRetryReset(){
   if(_yahooRetryTimer){ clearTimeout(_yahooRetryTimer); _yahooRetryTimer = null; }
 }
 // ── /YAHOO_RETRY_V1 ──────────────────────────────────────────────────────────
-async function syncYahooNBA(){
+// YAHOO_EARLY_V1 (2026-10-11, Matt's Claude, Matt approved). Two changes so a visitor never sees
+// Sleeper's positions, which disagree with Yahoo on 260 of the 607 players Yahoo lists:
+//  (a) The Yahoo pull now STARTS at the top of bootstrap(), alongside the Sleeper loads, instead of
+//      after the lists load. Measured 2026-10-11 on the GitHub page: the table drew at ~0.8 s and Yahoo
+//      landed at ~1.25 s because the pull was not even asked for until ~0.82 s. Started early it lands
+//      by the first draw, and bootstrap applies it before that draw (no extra Yahoo call: the same one
+//      pull, only earlier; nothing stored).
+//  (b) Until Yahoo is in, _nbaPosList returns no positions (a dash), never Sleeper's guess.
+let _yahooPrefetch = null, _yahooPrefetchData = null;
+function _yahooStartPrefetch(){
   try{
-    const data = await _nbaYahooFetchLeagueRanks(NBA_YAHOO_LEAGUE_KEY);
+    _yahooPrefetch = _nbaYahooFetchLeagueRanks(NBA_YAHOO_LEAGUE_KEY);
+    _yahooPrefetch.then(function(d){ _yahooPrefetchData = d; }, function(){});   // failure is handled in syncYahooNBA
+  }catch(e){ _yahooPrefetch = null; }
+}
+function _yahooApply(data){
     _yahooByYid = {}; _yahooByName = {};
     (data.players||[]).forEach(yp => {
       // YRANK_DRAFTVALUE_SWAP_V1 (2026-08-27, per the Dude on the 8/27 Matt call, Bug #194).
@@ -2923,6 +2936,12 @@ async function syncYahooNBA(){
       if(yp.name) _yahooByName[_nbaYahooNorm(yp.name)] = yp;
     });
     _yahooLoaded = true;
+}
+async function syncYahooNBA(){
+  try{
+    var _pre = _yahooPrefetch; _yahooPrefetch = null;   // YAHOO_EARLY_V1: use the pull bootstrap started; retries pull fresh
+    const data = _pre ? await _pre : await _nbaYahooFetchLeagueRanks(NBA_YAHOO_LEAGUE_KEY);
+    _yahooApply(data);
     _yahooRetryReset();  // YAHOO_RETRY_V1
     console.log('[NBA_YAHOO] loaded ' + Object.keys(_yahooByYid).length + ' Yahoo rows');
     if(typeof renderWatchList==='function') renderWatchList();
@@ -5416,6 +5435,7 @@ function _nbaPosList(p){
     var y = _yahooFor(String(p.player_id));
     if(y && Array.isArray(y.eligible_positions) && y.eligible_positions.length) return y.eligible_positions;
   }
+  if(!_yahooLoaded) return [];   // YAHOO_EARLY_V1: a dash until Yahoo is in, never Sleeper's guess
   if(Array.isArray(p.fantasy_positions) && p.fantasy_positions.length) return p.fantasy_positions;
   return p.position ? [p.position] : [];
 }
@@ -8007,6 +8027,7 @@ async function _deriveStatsYear(){
 
 async function bootstrap(){
   const statusEl = document.getElementById('status-bar');
+  _yahooStartPrefetch();   // YAHOO_EARLY_V1
   try {
     statusEl.textContent = 'Checking season state…';
     STATS_YEAR = await _deriveStatsYear();
@@ -8048,6 +8069,7 @@ async function bootstrap(){
 
     await loadListFromStorage();
     _normalizeWatchList();
+    if(_yahooPrefetchData && !_yahooLoaded) _yahooApply(_yahooPrefetchData);   // YAHOO_EARLY_V1: first draw already has Yahoo
     renderWatchList();
     loadRankingsFromNAS();  // NBA_RANKINGS_LOAD_V1 — fire-and-forget; hydrates Matt's saved orders in the background
     syncYahooNBA();  // NBA_YAHOO_OWNERSHIP_V1 — fire-and-forget; fills Y!Rank/Y!Owned when it returns
