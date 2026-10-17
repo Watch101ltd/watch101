@@ -9551,12 +9551,24 @@ function applyOwnedRowFill(){
       // Fill the CELLS, not the row (baseball's lesson: row striping paints the
       // td, so a tr background never shows). Attribute selectors are static CSS
       // -- they follow re-renders automatically.
-      const sel  = ownedPlayers.map(function(id){ return 'tr[data-nba-pid="' + id + '"] td'; }).join(',');
-      const selH = ownedPlayers.map(function(id){ return 'tr[data-nba-pid="' + id + '"]:hover td'; }).join(',');
+      // OWNED_ALL_TABLES_V1 (2026-10-16 ~20:35 hours ET, PC Walter with the Dude): the fill only ever
+      // targeted tr[data-nba-pid], the WATCH LIST's rows. The rankings page tags its rows
+      // data-rank-pid and the player pool data-np-pid (same Sleeper id on all three), so on those
+      // two pages the box saved the choice and painted nothing. The Dude, off a Redraft Rankings
+      // screenshot with LaMelo ticked and his row unchanged: "the 'I own this player' button is
+      // not really doing anything right now." Now every table with the player gets the fill.
+      const _ownAttrs = ['data-nba-pid', 'data-rank-pid', 'data-np-pid'];
+      const _ownSel = function(prefix, suffix){
+        const out = [];
+        ownedPlayers.forEach(function(id){ _ownAttrs.forEach(function(a){ out.push(prefix + 'tr[' + a + '="' + id + '"]' + suffix); }); });
+        return out.join(',');
+      };
+      const sel  = _ownSel('', ' td');
+      const selH = _ownSel('', ':hover td');
       css += sel  + '{background:var(--owned-row,#253545) !important}';
       css += selH + '{background:var(--owned-row-hover,#2f4258) !important}';
-      const selD  = ownedPlayers.map(function(id){ return 'body.day-mode tr[data-nba-pid="' + id + '"] td'; }).join(',');
-      const selDH = ownedPlayers.map(function(id){ return 'body.day-mode tr[data-nba-pid="' + id + '"]:hover td'; }).join(',');
+      const selD  = _ownSel('body.day-mode ', ' td');
+      const selDH = _ownSel('body.day-mode ', ':hover td');
       css += selD  + '{background:#f3e8c8 !important}';
       css += selDH + '{background:#ecdba6 !important}';
     }
