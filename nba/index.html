@@ -6000,7 +6000,15 @@ function renderRankings(){
   var dragLocked = !!_rankSortField || _rkFiltOn;
   var _rkRo = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();   // RANK_TYPEIN_NBA_V1: no click-to-type for a read-only viewer  // sorted OR stat-filtered: the view is not the saved order, so disable drag (NBA_RANK_STATFILTER_V1)
   var _badgeCol = _rankCol_notebadge();   // RANKINGS_WL_CLONE_NBA_V1: badge rides the player cell now, like the watch list
+  // RANK_TRUE_NUM_V1 (2026-10-16 ~20:45 hours ET, PC Walter with the Dude): the Rank cell read (i+1), the
+  // row's position in whatever is SHOWING. Type 'kum' in the search and Kuminga, #347 in Matt's redraft
+  // order, became #1 (the Dude's screenshots). The Rank column is Matt's rank, so it now reads the
+  // player's place in his saved order (manualIds) whether the view is searched, stat-filtered or
+  // stat-sorted. editRankNum already did this (indexOf on _rankings); the two painters now agree with it.
+  var _rkRankOf = {};
+  manualIds.forEach(function(pid, k){ _rkRankOf[pid] = k + 1; });
   tbody.innerHTML = ids.map(function(pid, i){
+    var _trueRank = _rkRankOf[pid] || (i + 1);
     var p = _playerDB[pid];
     if(!p) return '';
     var name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
@@ -6018,8 +6026,8 @@ function renderRankings(){
         : '<td class="center col-handle nba-drag-handle" title="Drag to re-rank">☰</td>';
     return '<tr data-rank-pid="' + escapeHtml(pid) + '"' + dragAttrs + '>' +
       handleCell +
-      (_rkRo ? ('<td class="col-rank">' + (i+1) + '</td>')
-             : ('<td class="col-rank rank-editable" title="Click to type a new rank -- works even while sorted" onclick="event.stopPropagation();editRankNum(&quot;' + _pidAttr + '&quot;,this)">' + (i+1) + '</td>')) +   // RANK_TYPEIN_NBA_V1
+      (_rkRo ? ('<td class="col-rank">' + _trueRank + '</td>')
+             : ('<td class="col-rank rank-editable" title="Click to type a new rank -- works even while sorted" onclick="event.stopPropagation();editRankNum(&quot;' + _pidAttr + '&quot;,this)">' + _trueRank + '</td>')) +   // RANK_TYPEIN_NBA_V1 + RANK_TRUE_NUM_V1
       '<td class="col-av">' + _rankAvCellHtml(pid) + '</td>' +   // AV_COL_NBA_V1
       '<td class="center">' + _nbaPosBadges(p) + '</td>' +
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + ' ' + _badgeCol.render(pid) + '</td>' +   // RANKINGS_WL_CLONE_NBA_V1 + INJ_TAG_NBA_V1
@@ -8584,7 +8592,7 @@ function _renderRankPhoneList(ids){
     var posB = ''; try { posB = (typeof _nbaPosBadges==='function') ? _nbaPosBadges(p) : escapeHtml(p.position || '?'); } catch(e){ posB = escapeHtml(p.position || '?'); }
     var pidAttr = escapeHtml(String(pid));
     return '<div class="pc-row" data-rank-pid="' + pidAttr + '" onclick="_phoneRowTap(&quot;' + pidAttr + '&quot;)">'
-      + '<div class="pc-rank">' + (i + 1) + '</div>'
+      + '<div class="pc-rank">' + (((_rankings[_rankPos] || []).indexOf(pid) + 1) || (i + 1)) + '</div>'   /* RANK_TRUE_NUM_V1: Matt's rank, not the row number */
       + '<div class="pc-main">'
         + '<div class="pc-nm"><span class="player-name">' + escapeHtml(name) + '</span>' + inj + (emojis ? ' <span class="pc-prio">' + emojis + '</span>' : '') + '</div>'
         + '<div class="pc-meta">' + escapeHtml(p.team || '') + ' · ' + posB + (age ? (' · ' + age) : '') + '</div>'
