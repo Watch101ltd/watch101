@@ -3795,6 +3795,7 @@ function _ftlEditRank(e){
 }
 function editRankNum(pid, el){
   if(_blockIfReadOnly('editRankNum')) return;
+  if(_rankFlowGuard()) return;   // OVERALL_FLOW_NBA_V2
   if(el.querySelector('input')) return;               // already editing this cell
   var arr = _rankings[_rankPos] || [];
   var cur = arr.indexOf(pid) + 1;                     // his MANUAL rank, which may differ from the sorted view's number
@@ -5914,6 +5915,76 @@ function _rankIntegrate(pos, cur, seed){
   if(changed) _rankParkedSave();
   return kept;
 }
+// ══════════ OVERALL_FLOW_NBA_V2 (2026-10-18 -- PC Walter, per the Dude; Matt's ask on the 10/17 call) ══════════
+// Matt: "publish the overall, and then change each of the position rankings just so it flowed from the
+// list ... I don't need to be adjusting each list as much. It should automatically flow from it."
+// So on the REDRAFT set the Overall tab is the only order anyone edits. Every position tab is built on
+// the fly from Overall: Matt's Overall order, filtered to the players eligible at that position, with the
+// live seed filling the tail below the Overall board's depth. ORDER ONLY: tier breaks on a position tab
+// are Matt's own (right-click, as before) and are never derived -- V2, the Dude 10/18 10:27: Matt ranks
+// Overall once for the season, then tiers each position tab himself. A break is a rank number, so a
+// later Overall drag can move players in/out of a tier but never deletes the line; Matt adjusts after.
+// Position tabs: no drag, no click-to-type rank; right-click tiers allowed. Saves still write every tab
+// (derived order + that tab's own breaks), so the Post Maker / approval flow / fans see one consistent set.
+// Both sets flow (redraft and dynasty); set either to false to give that set independent tabs back.
+var RANK_FLOW_SETS = { redraft: true, dynasty: true };
+var RANK_FLOW_POSITIONS = ['PG','SG','SF','PF','C'];
+function _rankFlowsFromOverall(pos){
+  if(!pos || pos === 'Overall') return false;
+  var set = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'dynasty' : 'redraft';
+  return !!RANK_FLOW_SETS[set];
+}
+function _rankOverallOrderNow(){
+  var ov = (_rankManual.Overall && Array.isArray(_rankings.Overall) && _rankings.Overall.length) ? _rankings.Overall : _rankingsIdsFor('Overall');
+  return (ov || []).slice();
+}
+function _rankDeriveFromOverall(pos){
+  var ov = _rankOverallOrderNow();
+  var ids = [], seen = {};
+  ov.forEach(function(pid){
+    var p = _playerDB && _playerDB[pid];
+    if(!p) return;
+    if(!p.team || p.position === 'DEF') return;
+    if(!_rankEligible(p, pos)) return;
+    if(false) return;
+    if(seen[pid]) return;
+    seen[pid] = true; ids.push(pid);
+  });
+  // Overall is capped shallower than a position's own pool: fill the tail from the live seed, in seed order.
+  (_rankingsIdsFor(pos) || []).forEach(function(pid){ if(!seen[pid]){ seen[pid] = true; ids.push(pid); } });
+  var cap = _rankCap(pos); if(ids.length > cap) ids = ids.slice(0, cap);
+  return { ids: ids };   // V2: order only. This tab's tier breaks stay whatever Matt set (_rankBreaks['set|pos']).
+}
+function _rankFlowSync(pos){
+  // Rebuild one derived tab from Overall (used before any save so a never-opened tab can't save stale/empty).
+  try {
+    if(!_playerDB || !_rankFlowsFromOverall(pos)) return;
+    var d = _rankDeriveFromOverall(pos);
+    _rankings[pos] = d.ids;    // V2: breaks untouched -- they are Matt's, per tab
+    _rankManual[pos] = true;   // saved payloads say manual:true so the derived order + his breaks are what the Post Maker / fans read (and what reloads)
+  } catch(e){ console.warn('[OVERALL_FLOW_NBA_V2] sync failed for ' + pos + ':', e); }
+}
+function _rankFlowGuard(){
+  // A ranking action on a derived tab: refuse, and point at Overall.
+  if(!_rankFlowsFromOverall(_rankPos)) return false;
+  var s = document.getElementById('rankings-status');
+  if(s) s.textContent = 'The ' + _rankPos + ' tab\'s ORDER follows your Overall tab -- move players there and it flows here. Tiers on this tab are yours: right-click a player.';
+  return true;
+}
+var _rankFlowFanTimer = null;
+function _rankFlowFanOut(){
+  // After an Overall save, push the derived position tabs to the server too (coalesced, in sequence).
+  if(!_rankFlowsFromOverall(RANK_FLOW_POSITIONS[0])) return;
+  if(_rankFlowFanTimer) clearTimeout(_rankFlowFanTimer);
+  _rankFlowFanTimer = setTimeout(function(){
+    _rankFlowFanTimer = null;
+    var ps = RANK_FLOW_POSITIONS.slice();
+    (function next(i){
+      if(i >= ps.length){ var s = document.getElementById('rankings-status'); if(s) s.textContent = '\u2713 Overall saved; ' + ps.join('/') + ' tabs refreshed from it.'; return; }
+      Promise.resolve().then(function(){ return saveRankings(ps[i]); }).catch(function(){}).then(function(){ next(i + 1); });
+    })(0);
+  }, 1500);
+}
 function renderRankings(){
   var tbody = document.getElementById('rankings-body');
   var statusEl = document.getElementById('rankings-status');
@@ -5933,7 +6004,12 @@ function renderRankings(){
   // Yahoo isn't loaded, render a PROVISIONAL order this pass WITHOUT committing it
   // to _rankings (so syncYahooNBA's later renderRankings() re-seeds with real ranks).
   var _provisional = false;
-  if(!_rankManual[_rankPos]){
+  var _flow = _rankFlowsFromOverall(_rankPos);   // OVERALL_FLOW_NBA_V2
+  if(_flow){
+    // Derived tab: Matt's Overall order filtered to this position. Rebuilt on EVERY render, never dragged.
+    _rankFlowSync(_rankPos);
+    seed = _rankings[_rankPos];
+  } else if(!_rankManual[_rankPos]){
     // NBA_RANKINGS_LIVE_SEED_V1 -- never-dragged tab: follow the live Yahoo-rank seed on EVERY render,
     // so rank drift can never strand a stale order. Before Yahoo lands the seed is the PPG fallback and
     // stays provisional (syncYahooNBA's re-render swaps in real ranks). Only a hand-drag freezes a tab.
@@ -5984,7 +6060,7 @@ function renderRankings(){
   // CSS, so neither of these sentences may tell them to drag anything.
   var _roStat = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
   var sortNote = _rankSortField ? (' · sorted by ' + _rankSortField.toUpperCase() + (_roStat ? '' : ' (drag a player to return to your order)')) : '';
-  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + (_rkFiltOn ? (ids.length + ' of ' + _rkTotal + ' players (' + _rkFiltLabel + ').') : (ids.length + ' players.')) + ((_roStat || _rkFiltOn) ? '' : ' Drag the ☰ handle to re-rank.') + ' Separate from the Watch101 list.' + sortNote;
+  if(statusEl) statusEl.textContent = _rankPos + ' rankings — ' + (_rkFiltOn ? (ids.length + ' of ' + _rkTotal + ' players (' + _rkFiltLabel + ').') : (ids.length + ' players.')) + (_flow ? (_roStat ? '' : ' Order follows your Overall tab; right-click a player to set this tab\'s own tiers.') : ((_roStat || _rkFiltOn) ? '' : ' Drag the ☰ handle to re-rank.')) + ' Separate from the Watch101 list.'   /* OVERALL_FLOW_NBA_V2 */ + sortNote;
 
   var cols = _rankColsFor(_rankPos);
   _rankRenderHead(cols);
@@ -5997,8 +6073,8 @@ function renderRankings(){
     try { _renderRankPhoneList(ids); } catch(e){}   /* RANK_PHONE_NBA_V1 */
     return;
   }
-  var dragLocked = !!_rankSortField || _rkFiltOn;
-  var _rkRo = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();   // RANK_TYPEIN_NBA_V1: no click-to-type for a read-only viewer  // sorted OR stat-filtered: the view is not the saved order, so disable drag (NBA_RANK_STATFILTER_V1)
+  var dragLocked = !!_rankSortField || _rkFiltOn || _flow;   // OVERALL_FLOW_NBA_V2: derived tabs never drag
+  var _rkRo = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode()) || _flow;   // OVERALL_FLOW_NBA_V2: no click-to-type on a derived tab   // RANK_TYPEIN_NBA_V1: no click-to-type for a read-only viewer  // sorted OR stat-filtered: the view is not the saved order, so disable drag (NBA_RANK_STATFILTER_V1)
   var _badgeCol = _rankCol_notebadge();   // RANKINGS_WL_CLONE_NBA_V1: badge rides the player cell now, like the watch list
   // RANK_TRUE_NUM_V1 (2026-10-16 ~20:45 hours ET, PC Walter with the Dude): the Rank cell read (i+1), the
   // row's position in whatever is SHOWING. Type 'kum' in the search and Kuminga, #347 in Matt's redraft
@@ -6843,6 +6919,7 @@ function rankDragOver(e, pid){
 function rankDrop(e, pid){
   e.preventDefault();
   if(e.currentTarget && e.currentTarget.classList) e.currentTarget.classList.remove('nba-drag-over');
+  if(_rankFlowGuard()) return;   // OVERALL_FLOW_NBA_V2
   if(_rankDragSrcPid == null || _rankDragSrcPid === pid) return;
   var arr = _rankings[_rankPos]; if(!arr) return;
   var si = arr.indexOf(_rankDragSrcPid);
@@ -6993,6 +7070,7 @@ async function saveAllRankings(btn){
 
 async function saveRankingsToFile(pos){
   if(_blockIfReadOnly('saveRankingsToFile')) return false;
+  _rankFlowSync(pos);   // OVERALL_FLOW_NBA_V2: a derived tab saves what Overall says, even if never opened
   var statusEl = document.getElementById('rankings-status');
   function say(m){ if(statusEl) statusEl.textContent = m; }
   _rankSaveCancelled = false;   // RANK_SAVE_ALL_V1: reset per call, see the flag's declaration
@@ -7066,6 +7144,7 @@ function _rankSaveLocal(){
 var _rankNasSaving = {};
 async function saveRankings(pos){
   if(_blockIfReadOnly('saveRankings')) return;
+  _rankFlowSync(pos);   // OVERALL_FLOW_NBA_V2
   _rankSaveLocal();
   var listId = _rankListId(pos);   // DYNASTY_RANKINGS_V1 (set-aware NAS id)
   if(_rankNasSaving[pos]) return;
@@ -7079,6 +7158,7 @@ async function saveRankings(pos){
     });
     if(res.ok){
       if(statusEl) statusEl.textContent = '✓ ' + pos + ' rankings saved (' + players.length + ').';
+      if(pos === 'Overall') _rankFlowFanOut();   // OVERALL_FLOW_NBA_V2: push the derived tabs to the server too
       // RANK_TEAL_V1 - a drag save refreshes the teal line too (staging, right now)
       try {
         var _elRs = document.getElementById('logo-sub');
