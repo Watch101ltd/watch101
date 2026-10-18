@@ -2242,6 +2242,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="rank-subnav-btn" data-rankpos="C" onclick="switchRankPos('C', this)">C</button>
     <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px;display:none !important">&#127991;&#65039; Tier</button>
     <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="saveAllRankings(this)" title="Saves EVERY position tab of this rankings set to JSON files in List Data\_Staging, then pings Jay's phone once. It saves them all no matter which tab you are on." style="margin-left:14px">💾 Done Ranking</button>
+    <button class="btn btn-outline backend-only" id="rank-import-btn" onclick="window._rkImport &amp;&amp; window._rkImport.start()" title="Import an Excel or CSV file as this set's OVERALL rankings. Names are matched to the site's players, you confirm the unmatched ones, then the position tabs rebuild themselves from Overall. (RANK_IMPORT_XLSX_V1)" style="margin-left:6px">📥 Import</button><input type="file" id="rki-file" accept=".xlsx,.xls,.csv" style="display:none">
   </div>
 <!-- RANK_SEARCH_V1 (2026-08-31 - PC Walter, per the Dude). Player-name search on the RANKINGS
      view. This was the last surface on either sport without one: the Watch List has
@@ -13650,6 +13651,241 @@ function _ftlNoteDelete(){
   });
 })();
 // ── /CARD_ADDNOTE_V1 ─────────────────────────────────────────────────────────
+</script>
+<script>
+// ══════════ RANK_IMPORT_XLSX_V1 (2026-10-18 ~13:30 ET -- PC Walter, per the Dude: "He may do this often") ══════════
+// An IMPORT button on the rankings page (backend only). Matt picks an Excel / CSV file; the page reads it
+// in the browser with the SheetJS library already loaded for Export, guesses the sheet + the rank, name and
+// tier columns (he can change any of them), matches names to the site's player list, previews matched /
+// unmatched (each unmatched row gets a dropdown of the closest site players, or Skip), then APPLY writes
+// the order as the OVERALL tab of the set he is on (redraft or dynasty), flagged manual:true, and saves it
+// through saveRankings('Overall') -- the same path a drag takes, so OVERALL_FLOW_V2's fan-out refreshes
+// the five position tabs on the server too. Options: keep site players missing from the sheet at the bottom
+// (default; Matt's 10/13 answer) or drop them; tiers from a tier column, or clear old breaks (default on),
+// or keep old breaks. Never touches position tabs directly. Nothing here runs for fans (_blockIfReadOnly).
+(function(){
+  var ST = { rows: [], headers: [], sheetNames: [], wb: null, fileName: '', mapping: {}, picks: {} };
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return (typeof escapeHtml === 'function') ? escapeHtml(String(s == null ? '' : s)) : String(s == null ? '' : s); }
+  function say(m){ var el = $('rankings-status'); if(el) el.textContent = m; }
+
+  // --- name normalisation + similarity -------------------------------------------------------------
+  function norm(s){
+    s = String(s == null ? '' : s).toLowerCase();
+    try { s = s.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch(e){}
+    s = s.replace(/[’'`.,\-]/g, ' ').replace(/\s+/g, ' ').trim();
+    s = s.replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
+    return s;
+  }
+  function bigrams(s){ var o = {}; s = s.replace(/\s/g, ''); for(var i = 0; i < s.length - 1; i++){ var b = s.substr(i, 2); o[b] = (o[b] || 0) + 1; } return o; }
+  function dice(a, b){
+    var A = bigrams(a), B = bigrams(b), inter = 0, na = 0, nb = 0, k;
+    for(k in A){ na += A[k]; if(B[k]) inter += Math.min(A[k], B[k]); }
+    for(k in B){ nb += B[k]; }
+    return (na + nb) ? (2 * inter) / (na + nb) : 0;
+  }
+  function pool(){
+    // every active player the Overall seed would accept (same filter as _rankingsIdsFor('Overall'))
+    var out = [];
+    if(!window._playerDB) return out;
+    for(var id in _playerDB){
+      var p = _playerDB[id];
+      if(!p || !p.position || !p.team || p.position === 'DEF') continue;
+      var name = p.full_name || ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
+      if(!name) continue;
+      out.push({ pid: id, name: name, n: norm(name), team: p.team || '', pos: (typeof _nbaPosList === 'function') ? _nbaPosList(p).join('/') : (p.position || '') });
+    }
+    return out;
+  }
+  function label(c){ return c.name + ' (' + c.pos + (c.team ? ', ' + c.team : '') + ')'; }
+
+  // --- file reading ---------------------------------------------------------------------------------
+  function readFile(file){
+    if(typeof XLSX === 'undefined'){ say('⚠️ The Excel library did not load (offline?). Reload the page and try again.'); return; }
+    var fr = new FileReader();
+    fr.onload = function(ev){
+      try {
+        var wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+        ST.wb = wb; ST.sheetNames = wb.SheetNames.slice(); ST.fileName = file.name;
+        loadSheet(pickDefaultSheet(wb));
+        openModal();
+      } catch(e){ console.warn('[RANK_IMPORT_XLSX_V1] read failed:', e); say('⚠️ Could not read that file: ' + (e && e.message ? e.message : e)); }
+    };
+    fr.readAsArrayBuffer(file);
+  }
+  function pickDefaultSheet(wb){
+    // prefer a sheet named like Rank / Overall / Rankings, else the first one with rows
+    var names = wb.SheetNames, i;
+    for(i = 0; i < names.length; i++){ if(/^(rank|ranks|rankings|overall|overall rankings)$/i.test(names[i].trim())) return names[i]; }
+    for(i = 0; i < names.length; i++){ var r = XLSX.utils.sheet_to_json(wb.Sheets[names[i]], { header: 1, defval: '' }); if(r && r.length > 1) return names[i]; }
+    return names[0];
+  }
+  function loadSheet(name){
+    var aoa = XLSX.utils.sheet_to_json(ST.wb.Sheets[name], { header: 1, defval: '' });
+    // header row = first row with a cell that looks like a name/player header; else row 0
+    var hi = 0, i;
+    for(i = 0; i < Math.min(aoa.length, 15); i++){ if(aoa[i].some(function(c){ return /^(player|name|player name)$/i.test(String(c).trim()); })){ hi = i; break; } }
+    ST.sheet = name;
+    ST.headers = (aoa[hi] || []).map(function(h, k){ var t = String(h).trim(); return t || ('Column ' + (k + 1)); });
+    ST.rows = aoa.slice(hi + 1).filter(function(r){ return r.some(function(c){ return String(c).trim() !== ''; }); });
+    var H = ST.headers.map(function(h){ return h.toLowerCase(); });
+    function findCol(res){ for(var j = 0; j < res.length; j++){ for(var k = 0; k < H.length; k++){ if(res[j].test(H[k])) return k; } } return -1; }
+    var nameCol = findCol([/^(player|name|player name)$/, /player/, /name/]);
+    var rankCol = findCol([/^(rank|rk|overall|ovr|#|no\.?|num)$/, /overall/, /rank/]);
+    var tierCol = findCol([/^tier$/, /tier/]);
+    if(nameCol < 0){ // fall back: the column with the most 2+-word text cells
+      var best = -1, bestN = -1;
+      ST.headers.forEach(function(_, k){ var n = ST.rows.filter(function(r){ return /\S+\s+\S+/.test(String(r[k])); }).length; if(n > bestN){ bestN = n; best = k; } });
+      nameCol = best;
+    }
+    ST.mapping = { name: nameCol, rank: rankCol, tier: tierCol };
+    ST.picks = {};
+  }
+
+  // --- matching -------------------------------------------------------------------------------------
+  function buildPlan(){
+    var m = ST.mapping, P = pool(), byNorm = {}, byLast = {};
+    P.forEach(function(c){ (byNorm[c.n] = byNorm[c.n] || []).push(c); var parts = c.n.split(' '); var last = parts[parts.length - 1]; (byLast[last] = byLast[last] || []).push(c); });
+    var rows = ST.rows.slice();
+    if(m.rank >= 0){ // sort by rank column when it is numeric; otherwise sheet order
+      var numeric = rows.every(function(r){ return r[m.rank] === '' || isFinite(Number(r[m.rank])); });
+      if(numeric) rows = rows.filter(function(r){ return r[m.rank] !== ''; }).sort(function(a, b){ return Number(a[m.rank]) - Number(b[m.rank]); });
+    }
+    var plan = [], seen = {}, dupes = 0;
+    rows.forEach(function(r, idx){
+      var raw = String(r[m.name] == null ? '' : r[m.name]).trim();
+      if(!raw) return;
+      var n = norm(raw);
+      if(/,/.test(raw)){ var pr = raw.split(','); n = norm(pr.slice(1).join(' ') + ' ' + pr[0]); }   // "Last, First"
+      var tier = (m.tier >= 0) ? String(r[m.tier]).trim() : '';
+      var hit = null, cands = [];
+      if(byNorm[n] && byNorm[n].length === 1) hit = byNorm[n][0];
+      else {
+        var parts = n.split(' '), last = parts[parts.length - 1], first = parts[0] || '';
+        var lastHits = (byLast[last] || []).filter(function(c){ return c.n.indexOf(first.charAt(0)) === 0 || c.n.split(' ')[0].charAt(0) === first.charAt(0); });
+        if(lastHits.length === 1 && dice(n, lastHits[0].n) >= 0.5) hit = lastHits[0];
+        if(!hit){
+          cands = P.map(function(c){ return { c: c, s: dice(n, c.n) }; }).sort(function(a, b){ return b.s - a.s; }).slice(0, 8);
+          if(cands.length && cands[0].s >= 0.92 && (cands.length < 2 || cands[1].s < cands[0].s - 0.1)) hit = cands[0].c;
+        }
+      }
+      var key = 'r' + idx;
+      if(!hit && ST.picks[key]) hit = P.filter(function(c){ return c.pid === ST.picks[key]; })[0] || null;
+      if(hit && seen[hit.pid]){ dupes++; return; }
+      if(hit) seen[hit.pid] = true;
+      plan.push({ key: key, raw: raw, tier: tier, pid: hit ? hit.pid : null, hit: hit, cands: cands.map(function(x){ return x.c; }) });
+    });
+    return { plan: plan, dupes: dupes, poolSize: P.length };
+  }
+
+  // --- modal ----------------------------------------------------------------------------------------
+  function openModal(){
+    var old = $('rk-import-modal'); if(old) old.remove();
+    var wrap = document.createElement('div'); wrap.id = 'rk-import-modal';
+    wrap.setAttribute('style', 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.72);display:flex;align-items:flex-start;justify-content:center;padding:28px 12px;overflow:auto;font-family:inherit');
+    wrap.innerHTML = '<div id="rk-import-box" style="background:#0f1623;color:#e5e7eb;border:1px solid #334155;border-radius:10px;max-width:900px;width:100%;padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.6)"></div>';
+    document.body.appendChild(wrap);
+    wrap.addEventListener('click', function(e){ if(e.target === wrap) closeModal(); });
+    renderModal();
+  }
+  function closeModal(){ var m = $('rk-import-modal'); if(m) m.remove(); }
+  function sel(id, opts, cur, allowNone){
+    var h = '<select id="' + id + '" style="background:#111827;color:#e5e7eb;border:1px solid #334155;border-radius:6px;padding:4px 6px;max-width:260px">';
+    if(allowNone) h += '<option value="-1"' + (cur < 0 ? ' selected' : '') + '>(none)</option>';
+    opts.forEach(function(o, k){ h += '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + esc(o) + '</option>'; });
+    return h + '</select>';
+  }
+  function renderModal(){
+    var box = $('rk-import-box'); if(!box) return;
+    var res = buildPlan(), plan = res.plan;
+    var matched = plan.filter(function(p){ return p.pid; }).length, un = plan.filter(function(p){ return !p.pid; });
+    var setName = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dynasty' : 'Redraft';
+    var h = '';
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px"><div style="font-size:17px;font-weight:600">📥 Import rankings → ' + setName + ' Overall</div><button class="btn btn-outline" onclick="window._rkImport.close()">✕</button></div>';
+    h += '<div style="font-size:12.5px;color:#9ca3af;margin-bottom:10px">File: <b style="color:#e5e7eb">' + esc(ST.fileName) + '</b> · ' + ST.rows.length + ' rows. The position tabs rebuild themselves from Overall after this saves (OVERALL_FLOW_V2).</div>';
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px;font-size:13px">';
+    h += '<label>Sheet<br>' + sel('rki-sheet', ST.sheetNames, ST.sheetNames.indexOf(ST.sheet), false) + '</label>';
+    h += '<label>Player name column<br>' + sel('rki-name', ST.headers, ST.mapping.name, false) + '</label>';
+    h += '<label>Rank column<br>' + sel('rki-rank', ST.headers, ST.mapping.rank, true) + '<div style="color:#6b7280;font-size:11px">(none) = use the sheet’s row order</div></label>';
+    h += '<label>Tier column<br>' + sel('rki-tier', ST.headers, ST.mapping.tier, true) + '</label>';
+    h += '</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:16px;font-size:13px;margin-bottom:12px">';
+    h += '<label><input type="checkbox" id="rki-keep" checked> Keep site players that are NOT in the sheet, at the bottom in their current order</label>';
+    h += '<label><input type="checkbox" id="rki-cleartiers" ' + (ST.mapping.tier >= 0 ? '' : 'checked') + '> Clear the existing Overall tier breaks' + (ST.mapping.tier >= 0 ? ' (the tier column will set new ones)' : '') + '</label>';
+    h += '</div>';
+    h += '<div style="font-size:14px;margin-bottom:8px"><b style="color:#4ade80">' + matched + ' matched</b> · <b style="color:' + (un.length ? '#fbbf24' : '#9ca3af') + '">' + un.length + ' unmatched</b>' + (res.dupes ? ' · ' + res.dupes + ' duplicate name(s) ignored' : '') + ' · site pool ' + res.poolSize + ' players</div>';
+    if(un.length){
+      h += '<div style="max-height:260px;overflow:auto;border:1px solid #334155;border-radius:8px;padding:8px;margin-bottom:12px;font-size:13px">';
+      un.forEach(function(p){
+        h += '<div style="display:flex;gap:10px;align-items:center;padding:4px 0;border-bottom:1px solid #1f2937"><div style="min-width:220px"><b>' + esc(p.raw) + '</b></div><select data-rki-pick="' + p.key + '" style="background:#111827;color:#e5e7eb;border:1px solid #334155;border-radius:6px;padding:4px 6px;flex:1"><option value="">— skip this name —</option>';
+        p.cands.forEach(function(c){ h += '<option value="' + esc(c.pid) + '">' + esc(label(c)) + '</option>'; });
+        h += '</select></div>';
+      });
+      h += '</div>';
+    }
+    var top = plan.filter(function(p){ return p.pid; }).slice(0, 12).map(function(p, i){ return (i + 1) + '. ' + esc(p.hit.name) + (p.tier ? ' <span style="color:#6b7280">[' + esc(p.tier) + ']</span>' : ''); }).join(' · ');
+    h += '<div style="font-size:12px;color:#9ca3af;margin-bottom:12px">Preview of the top of the new Overall: ' + top + (matched > 12 ? ' …' : '') + '</div>';
+    h += '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-outline" onclick="window._rkImport.close()">Cancel</button><button class="btn btn-gold" id="rki-apply" onclick="window._rkImport.apply()"' + (matched ? '' : ' disabled') + '>Apply → replace ' + setName + ' Overall (' + matched + ' players)</button></div>';
+    box.innerHTML = h;
+    // wire the controls (re-render on change, keep picks)
+    $('rki-sheet').onchange = function(){ loadSheet(ST.sheetNames[Number(this.value)]); renderModal(); };
+    $('rki-name').onchange = function(){ ST.mapping.name = Number(this.value); renderModal(); };
+    $('rki-rank').onchange = function(){ ST.mapping.rank = Number(this.value); renderModal(); };
+    $('rki-tier').onchange = function(){ ST.mapping.tier = Number(this.value); var c = $('rki-cleartiers'); if(c) c.checked = ST.mapping.tier < 0; renderModal(); };
+    box.querySelectorAll('select[data-rki-pick]').forEach(function(s){ s.onchange = function(){ var k = s.getAttribute('data-rki-pick'); if(s.value) ST.picks[k] = s.value; else delete ST.picks[k]; renderModal(); }; });
+  }
+
+  // --- apply ----------------------------------------------------------------------------------------
+  async function apply(){
+    if(typeof _blockIfReadOnly === 'function' && _blockIfReadOnly('rankImportApply')) return;
+    var keep = !!($('rki-keep') && $('rki-keep').checked);
+    var clearTiers = !!($('rki-cleartiers') && $('rki-cleartiers').checked);
+    var res = buildPlan();
+    var ids = [], breaks = [], lastTier = null, haveTier = ST.mapping.tier >= 0;
+    res.plan.forEach(function(p){
+      if(!p.pid) return;
+      if(haveTier){ var t = p.tier || ''; if(lastTier !== null && t !== lastTier && ids.length) breaks.push(ids.length); lastTier = t; }
+      ids.push(p.pid);
+    });
+    if(!ids.length){ say('Nothing to import: no names matched.'); return; }
+    var fileLabel = ST.fileName;
+    var prev = (_rankings.Overall || []).slice();
+    if(keep){ var have = {}; ids.forEach(function(x){ have[x] = 1; }); prev.forEach(function(x){ if(!have[x] && _playerDB && _playerDB[x]) ids.push(x); }); }
+    // snapshot for undo (this browser only)
+    try { localStorage.setItem('watch101_nba_rank_import_undo_v1', JSON.stringify({ set: _rankSet, at: Date.now(), order: prev, breaks: (_rankBreaksGet('Overall') || []).slice() })); } catch(e){}
+    // write Overall
+    _rankings.Overall = ids;
+    _rankManual.Overall = true;
+    if(haveTier){ _rankBreaks[_rankTierKeyFor('Overall')] = breaks; }
+    else if(clearTiers){ _rankBreaks[_rankTierKeyFor('Overall')] = []; }
+    try { _rankBreaksPersistLocal(); } catch(e){}
+    closeModal();
+    // show Overall and save through the normal path (fan-out refreshes the position tabs on the server)
+    var ovBtn = document.querySelector('.rank-subnav-btn[data-rankpos="Overall"]');
+    if(typeof switchRankPos === 'function') switchRankPos('Overall', ovBtn); else renderRankings();
+    say('Imported ' + ids.length + ' players from ' + fileLabel + ' — saving…');
+    try { await saveRankings('Overall'); } catch(e){ console.warn('[RANK_IMPORT_XLSX_V1] save failed:', e); }
+    console.log('[RANK_IMPORT_XLSX_V1] applied ' + ids.length + ' from ' + fileLabel + ' (' + breaks.length + ' tier breaks, keep=' + keep + ')');
+  }
+  function undo(){
+    try {
+      var raw = localStorage.getItem('watch101_nba_rank_import_undo_v1'); if(!raw){ say('Nothing to undo.'); return; }
+      var u = JSON.parse(raw); if(u.set !== _rankSet){ say('The last import was on the ' + u.set + ' set; switch to it to undo.'); return; }
+      _rankings.Overall = u.order; _rankManual.Overall = true; _rankBreaks[_rankTierKeyFor('Overall')] = u.breaks || []; _rankBreaksPersistLocal();
+      renderRankings(); saveRankings('Overall'); say('Import undone — previous Overall restored and saved.');
+    } catch(e){ say('Undo failed: ' + e); }
+  }
+  function start(){
+    if(typeof _blockIfReadOnly === 'function' && _blockIfReadOnly('rankImportStart')) return;
+    if(!window._playerDB){ say('Players are still loading — try again in a moment.'); return; }
+    var inp = $('rki-file'); if(!inp) return; inp.value = ''; inp.click();
+  }
+  document.addEventListener('DOMContentLoaded', function(){ var inp = $('rki-file'); if(inp) inp.addEventListener('change', function(){ if(inp.files && inp.files[0]) readFile(inp.files[0]); }); });
+  if(document.readyState !== 'loading'){ var inp0 = $('rki-file'); if(inp0) inp0.addEventListener('change', function(){ if(inp0.files && inp0.files[0]) readFile(inp0.files[0]); }); }
+  window._rkImport = { start: start, close: closeModal, apply: apply, undo: undo, _st: ST, _norm: norm, _dice: dice, _buildPlan: buildPlan, _loadSheet: loadSheet };
+})();
+// ── /RANK_IMPORT_XLSX_V1 ───────────────────────────────
 </script>
 </body>
 </html>
