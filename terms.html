@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Use | Watch101</title>
+<meta name="description" content="Get in touch with Watch101.">
+<!-- Watch101 contact page. Chrome is generated from home.html so the two cannot drift.
+     Built 2026-07-29 20:15 by Walter. Links are relative on purpose (GitHub Pages subfolder). -->
+<script>
+/* EARLY THEME INIT. Must run before paint so there is no white flash.
+   Night is the default. Day applies only if the reader chose it. Copied from
+   the baseball page (NIGHT_DEFAULT_V1) so both pages behave identically. */
+(function(){
+  try {
+    if (localStorage.getItem('watch101-theme') === 'day') {
+      document.documentElement.setAttribute('data-early-day','1');
+    }
+  } catch(e) {}
+})();
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Nunito+Sans:wght@400;600;700;800&family=Caprasimo&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ---- THEME TOKENS. Same names and values as the baseball page. ---- */
+:root{
+  /* ==========================================================================
+     FONT_SWEEP_V1 pass 3 (2026-08-23 — Walter, per the Dude). Bowlby One is gone
+     from the wordmark. Caprasimo chosen off a side-by-side comparison built with
+     the real 101 mark; the Dude picked it from Google Fonts himself and emailed
+     Matt for a second opinion. "Let's go with Caprasimo FOR NOW" — so this is a
+     one-line change if Matt comes back with something else.
+       --font-display  everything a person READS  (Noto Serif)
+       --font-brand    the WORDMARK               (Caprasimo)
+     ⚠️ The 101 LOGO IS AN IMAGE. Neither variable touches it. Only the word
+     "Watch" beside it changes.
+     ========================================================================== */
+  --font-display:'Noto Serif','Times New Roman',Times,serif;
+  --font-brand:'Caprasimo',Georgia,serif;
+
+  --bg:#080c10;--surface:#0d1117;--surface2:#131920;--surface3:#1a2330;
+  --border:#1e2d3d;--border2:#253545;
+  --gold:#f0a500;--gold2:#c47f00;
+  --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--orange:#f97316;
+  --turquoise:#06b6d4;--turquoise2:#0891b2;
+  --title-blue:#1d4ed8;--title-red:#dc2626;
+  --text:#ffffff;--text2:#e2e8f0;--text3:#94a3b8;
+  --header-grad-1:#080c10;--header-grad-2:#0d1520;
+  /* per vertical accents, settled with Matt 2026-07-29 */
+  --mlb-accent:#1d4ed8;--nfl-accent:#15803d;--nba-accent:#f97316;
+}
+body.day-mode{
+  --bg:#e9ebef;--surface:#f4f5f8;--surface2:#dde0e5;--surface3:#cdd1d7;
+  --border:#c2c6cc;--border2:#a5aab2;
+  --gold:#a16207;--gold2:#854d0e;
+  --turquoise:#000000;--turquoise2:#000000;
+  --title-blue:#1d4ed8;--title-red:#b91c1c;
+  --text:#1a1a1a;--text2:#333333;--text3:#666666;
+  --header-grad-1:#f4f5f8;--header-grad-2:#e5e7ec;
+}
+
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Noto Serif',Georgia,serif;
+  font-size:16px;line-height:1.6;min-height:100vh;overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* =========================================================================
+   SITE_CHROME_V1  NAV START
+   Lift this whole block (CSS + the <header> markup) into the list pages.
+   Sticky from 768px up, static below, per the Dude 2026-07-29.
+   ========================================================================= */
+.w101-nav{
+  background:linear-gradient(135deg,var(--header-grad-1) 0%,var(--header-grad-2) 50%,var(--header-grad-1) 100%);
+  border-bottom:1px solid var(--title-red);
+  position:static;top:0;z-index:900;
+}
+/* NAV_STATIC_V1 (2026-07-30, the Dude's call, fixes Bug #24).
+   The nav used to go position:sticky from 768px up. That put it on the same
+   strip of screen as the tables' OWN sticky column header, and the nav won, so
+   scrolling into a long list left you with columns of numbers and no labels.
+   His decision: the stat columns are the ones that need to stay put, the site
+   nav does not. So the nav scrolls away and you go back to the top to reach it.
+   DO NOT re-add position:sticky to .w101-nav without solving the column header
+   collision first. Removing this line is what fixed the bug. */
+
+/* =========================================================================
+   CHROME_FIT_V1  (2026-09-21, PC Walter, per the Dude)
+   THE PAGE SHOULD LOOK THE SAME ON A WIDESCREEN AND ON A LAPTOP. His words,
+   and they are the whole specification: "everything should just shrink or get
+   a little bigger. Lines shouldn't break, things shouldn't move to different
+   places on the screen. That's what Matt means by amateurish."
+
+   At his 175% browser zoom the viewport is ~1148 CSS px. MEASURED on the live
+   GitHub page before a line of this was written:
+     - the site nav needs 1661px and had 1148, so it WRAPPED: the sister-site
+       minis and the social icons dropped to a second row and the bar went
+       54px tall -> 106px tall.
+     - the page header row needs 1145px and had 1116, so the Watch List /
+       Players tabs dropped to a second line, 38px tall -> 74px tall.
+
+   The fix is a UNIFORM BLOCK SCALE, not a rearrange. One CSS zoom on the whole
+   row, so every part shrinks together, in the same order, in the same places.
+   MEASURED after: nav settles at 0.6912 and is one row, 38px. Header settles at
+   0.9729 and is one row, 38px. 103px of chrome handed back to the list, with
+   nothing hidden and nothing moved.
+
+   At 175% browser zoom a 0.69 block scale still renders the bar LARGER than it
+   renders at 100% zoom today (54 x 0.69 x 1.75 = 66 physical px vs 54), so
+   nothing has to be dropped to make this fit.
+
+   zoom, NOT transform:scale — transform breaks the tables' sticky headers, the
+   same reason fitTables() uses zoom.
+
+   The .chrome-fit class is what turns wrapping OFF, so the row is allowed to
+   overflow and therefore be MEASURED. !important is required because
+   .list-title-stack carries flex-wrap:wrap as an INLINE style (HDR_ONE_ROW_V1's
+   phone safety net) and a stylesheet rule cannot beat an inline one without it.
+   Verified: with the rule written without !important the header row still
+   wrapped and the fitter reported "fits" on a broken layout.
+
+   Below 900px none of this applies and the phone layout is untouched.
+   ========================================================================= */
+@media (min-width:900px){
+  .w101-nav-inner.chrome-fit{flex-wrap:nowrap !important}
+  .w101-nav-inner.chrome-fit > *{flex-shrink:0 !important}
+  .w101-nav-inner.chrome-fit .w101-menu{flex-wrap:nowrap !important}
+  .list-title-stack.chrome-fit{flex-wrap:nowrap !important}
+  .list-title-stack.chrome-fit > *{flex-shrink:0 !important}
+  .list-title-stack.chrome-fit .page-nav{flex-wrap:nowrap !important}
+}
+.w101-nav-inner{
+  max-width:1240px;margin:0 auto;padding:14px 20px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+/* BRAND_TIGHTEN_V1 2026-08-23 — the Dude dialled these on the spacing preview page. Matt: "like it's one string of characters without any spaces anywhere." gap 8px->0, letter-spacing .04em->0, mark 34px->31px. */
+.w101-brand{display:flex;align-items:center;gap:0;text-decoration:none;flex-shrink:0}
+.w101-brand-word{font-family:var(--font-brand);font-size:26px;letter-spacing:0;color:var(--title-red);line-height:1}
+.w101-brand img{height:31px;width:auto;display:block}
+
+.w101-menu{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-left:auto}
+.w101-menu a,.w101-menu button{
+  font-family:'Noto Serif',serif;font-size:15px;font-weight:600;
+  color:var(--text2);background:none;border:none;cursor:pointer;
+  padding:9px 13px;border-radius:6px;text-decoration:none;
+  transition:background .15s,color .15s;white-space:nowrap;
+}
+.w101-menu a:hover,.w101-menu button:hover{background:var(--surface2);color:var(--text)}
+
+/* dropdown */
+.w101-drop{position:relative}
+.w101-drop>button::after{content:' \25BE';font-size:11px;opacity:.7}
+.w101-drop-panel{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:210px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+  box-shadow:0 12px 34px rgba(0,0,0,.45);overflow:hidden;padding:5px;
+  /* Bug #47 (2026-08-07): the panel had NO z-index, so later nav elements (Subscribe, socials)
+     painted OVER it and read as "transparency". The background was always opaque. */
+  z-index:1000;
+}
+.w101-drop.open .w101-drop-panel{display:block}
+.w101-drop-panel a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:5px;font-size:15px}
+.w101-drop-panel a span.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+
+.w101-sub{
+  font-family:'Noto Serif',serif;font-weight:700;font-size:15px;
+  background:var(--gold);color:#000;border:1px solid var(--gold);
+  padding:9px 16px;border-radius:6px;cursor:pointer;text-decoration:none;white-space:nowrap;
+}
+.w101-sub:hover{background:#fbbf24;border-color:#fbbf24}
+.w101-sub.pending{opacity:.62;cursor:default}
+
+.w101-theme{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text2);
+  width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:15px;line-height:1;
+}
+
+/* social row. Top and prominent, the Dude's call over Matt's bottom placement. */
+.w101-social{display:flex;align-items:center;gap:7px}
+.w101-social a{
+  width:34px;height:34px;border-radius:7px;display:grid;place-items:center;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text2);text-decoration:none;transition:transform .12s,background .15s,color .15s;
+}
+.w101-social a:hover{background:var(--title-red);color:#fff;transform:translateY(-2px)}
+.w101-social a svg{width:17px;height:17px;fill:currentColor;display:block}
+.w101-social a.pending{opacity:.45}
+.w101-social a.pending:hover{background:var(--surface2);color:var(--text2);transform:none}
+/* SITE_CHROME_V1  NAV END */
+
+/* ---------------- hero ---------------- */
+.hero{max-width:1240px;margin:0 auto;padding:56px 20px 30px;text-align:center}
+.hero-mark{font-family:var(--font-brand);font-size:clamp(40px,8vw,74px);line-height:1;letter-spacing:.03em;display:flex;align-items:center;justify-content:center;gap:.06em;flex-wrap:wrap}
+.hero-mark .w{color:var(--title-red)}
+.hero-mark img{height:1.55em;width:auto}
+.hero-tag{
+  margin:22px auto 0;max-width:640px;font-size:clamp(17px,2.3vw,21px);
+  color:var(--text2);line-height:1.55;
+}
+.hero-note{margin-top:14px;font-size:14px;color:var(--text3);font-family:'Nunito Sans',sans-serif}
+
+/* ---------------- the three tiles ---------------- */
+.tiles{
+  max-width:1240px;margin:0 auto;padding:24px 20px 10px;
+  display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(275px,1fr));
+}
+.tile{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:30px 24px 26px;text-align:center;text-decoration:none;color:inherit;
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  transition:transform .16s,border-color .16s,box-shadow .16s;
+  border-top:4px solid var(--tile-accent,var(--border2));
+}
+.tile:hover{transform:translateY(-4px);border-color:var(--tile-accent,var(--border2));box-shadow:0 14px 34px rgba(0,0,0,.34)}
+.tile img{width:100%;max-width:210px;height:auto;display:block}
+.tile h2{font-size:23px;font-weight:800;letter-spacing:.01em}
+.tile p{font-size:15px;color:var(--text3);line-height:1.5;max-width:250px}
+.tile .status{
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:.11em;
+  text-transform:uppercase;padding:4px 11px;border-radius:20px;
+  background:var(--surface2);color:var(--text3);border:1px solid var(--border2);
+}
+.tile .status.live{background:var(--tile-accent);color:#fff;border-color:var(--tile-accent)}
+
+/* ---------------- what this is ---------------- */
+.blurb{max-width:760px;margin:44px auto 0;padding:0 20px;text-align:center}
+.blurb h3{font-size:15px;font-family:'Nunito Sans',sans-serif;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.blurb p{font-size:17px;color:var(--text2);margin-bottom:15px}
+.blurb a.more{color:var(--gold);font-weight:700;text-decoration:none;border-bottom:1px solid var(--gold2)}
+
+/* ---------------- newsletter band ---------------- */
+.news-band{
+  max-width:760px;margin:52px auto 0;padding:30px 24px;text-align:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+}
+.news-band h3{font-size:22px;font-weight:800;margin-bottom:10px}
+.news-quote{font-style:italic;color:var(--text3);font-size:15px;margin-top:14px;line-height:1.5}
+.news-quote cite{display:block;font-style:normal;font-size:12.5px;margin-top:6px;color:var(--text3);opacity:.8;font-family:'Nunito Sans',sans-serif;letter-spacing:.04em}
+
+/* ---------------- footer, four bands ---------------- */
+.w101-foot{margin-top:64px;border-top:1px solid var(--border);background:var(--surface)}
+.w101-foot-inner{max-width:1240px;margin:0 auto;padding:32px 20px 26px;text-align:center}
+.w101-foot-links{display:flex;justify-content:center;gap:8px 22px;flex-wrap:wrap;margin-bottom:20px}
+.w101-foot-links a{color:var(--text2);text-decoration:none;font-size:15px;font-weight:600}
+.w101-foot-links a:hover{color:var(--gold)}
+.w101-foot .w101-social{justify-content:center;margin-bottom:20px}
+.w101-copy{font-size:13px;color:var(--text3);font-family:'Nunito Sans',sans-serif;margin-bottom:14px}
+.w101-top{
+  background:none;border:1px solid var(--border2);color:var(--text3);
+  font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:800;letter-spacing:.13em;
+  padding:9px 17px;border-radius:6px;cursor:pointer;text-transform:uppercase;
+}
+.w101-top:hover{color:var(--text);border-color:var(--text3)}
+
+@media(max-width:620px){
+  .w101-nav-inner{gap:12px}
+  .w101-menu{width:100%;margin-left:0;justify-content:center}
+  .w101-social{width:100%;justify-content:center;order:5}
+  .hero{padding-top:36px}
+}
+</style>
+
+<style>
+/* inner content pages. Reading column, not a dashboard. */
+.page{max-width:730px;margin:0 auto;padding:46px 20px 10px}
+.page h1{font-size:clamp(30px,5vw,42px);font-weight:800;letter-spacing:-.01em;margin-bottom:20px;color:var(--title-red)}
+.page h2{font-size:23px;font-weight:800;margin:38px 0 14px;color:var(--text)}
+.page p{font-size:17px;color:var(--text2);margin-bottom:17px}
+.page p.lead{font-size:20px;color:var(--text);line-height:1.5;margin-bottom:26px}
+.page a.more,.page a{color:var(--gold);font-weight:700;text-decoration:none;border-bottom:1px solid var(--gold2)}
+.page .contact-block{
+  background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--gold);
+  border-radius:0 10px 10px 0;padding:20px 22px;font-size:19px;
+}
+.page .contact-block .pending{color:var(--text3);font-size:16px;font-weight:400}
+.log{margin-top:12px}
+.entry{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:16px}
+.entry h2{margin:0 0 12px;font-size:18px;color:var(--gold);font-family:'Nunito Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.entry ul{margin:0;padding-left:20px}
+.entry li{font-size:16.5px;color:var(--text2);margin-bottom:9px;line-height:1.55}
+.entry li:last-child{margin-bottom:0}
+.entry.unseen{border-color:var(--title-red)}
+.entry.unseen h2::after{content:' NEW';background:var(--title-red);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:8px;letter-spacing:.08em;vertical-align:2px}
+/* the red dot Matt asked for, on the nav Updates link */
+#nav-updates.has-new{position:relative}
+#nav-updates.has-new::after{
+  content:'';position:absolute;top:6px;right:5px;width:8px;height:8px;
+  border-radius:50%;background:var(--title-red);
+}
+</style>
+</head>
+<body data-page="contact">
+
+<!-- ===================== SITE_CHROME_V1 NAV MARKUP START ===================== -->
+<header class="w101-nav">
+  <div class="w101-nav-inner">
+
+    <a class="w101-brand" href="./" title="Watch101 home">
+      <span class="w101-brand-word">Watch</span>
+      <img src="data:image/png;base64,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" alt="101">
+    </a>
+
+    <nav class="w101-menu">
+      <div class="w101-drop" id="drop-lists">
+        <button type="button" onclick="w101Drop('drop-lists',event)" aria-haspopup="true">The Lists</button>
+        <div class="w101-drop-panel">
+          <a href="nba/"><span class="dot" style="background:var(--nba-accent)"></span>Watch101NBA</a>
+          <a href="mlb/"><span class="dot" style="background:var(--mlb-accent)"></span>Watch101MLB</a>
+          <a href="nfl/"><span class="dot" style="background:var(--nfl-accent)"></span>Watch101NFL</a>
+          <a href="philly/"><span class="dot" style="background:#dc0c0e"></span>Watch101Philly</a>
+        </div>
+      </div>
+      <a href="about.html">About Us</a>
+      <a href="updates.html" id="nav-updates">Updates</a>
+      <a href="contact.html">Contact</a>
+      <a class="w101-sub" id="subscribe-btn" href="#">Subscribe</a>
+      <button class="w101-theme" id="theme-toggle" type="button" onclick="w101Theme()" title="Toggle day and night mode">&#127769;</button>
+    </nav>
+
+    <div class="w101-social" id="social-row"></div>
+  </div>
+</header>
+<!-- ====================== SITE_CHROME_V1 NAV MARKUP END ====================== -->
+
+<section class="page">
+  <h1>Terms of Use</h1>
+
+  <!-- TERMS_PAGE_V1 (2026-10-20, PC Walter at Jay's request). Draft text for Matt's review.
+       Source draft: 01 Business Plan/Watch101 Terms of Use - DRAFT 2026-10-20.md. Public-facing: no dashes. -->
+  <p class="lead">The rankings on this site are Matt Satten's work. Read them, argue with them, use them to win your league. Don't copy them, scrape them, or pass them off as your own.</p>
+
+  <h2>Who we are</h2>
+  <p>Watch101 (fantasywatch101.com) is owned and run by Satten Consulting LLC, doing business as Watch101, a Pennsylvania company. When these terms say "we" or "us," that's who they mean. By using this site you agree to these terms. If you don't agree, the exit is the back button.</p>
+
+  <h2>The rankings are ours</h2>
+  <p>Every ranking, tier, player note, write up, article and podcast segment on this site is original work created by Watch101. The order of the players, the tier lines, the "Satten Says" notes, the way the lists are put together: all of it is ours and protected by copyright. That is true whether a list is labeled Redraft, Dynasty, 101 List or anything else, and it is true the moment a list appears on the site.</p>
+  <p>Player names, teams and game statistics are facts, and nobody owns a fact. What we own is what we do with them.</p>
+
+  <h2>What you're welcome to do</h2>
+  <p>Use the site for yourself. Read the rankings, use them in your own fantasy leagues, print a copy for your draft, and share a link to any page with anyone you like. If you quote a few lines or mention a ranking somewhere, credit Watch101 and link back to the page. That's it. No permission needed for any of that.</p>
+
+  <h2>What you may not do</h2>
+  <p>You may not copy, republish, redistribute or sell our rankings or any substantial part of them, in any form, without our written permission. That includes posting a list on another site, a forum, a Discord, a newsletter or social media, and it includes rewriting the order slightly and calling it your own.</p>
+  <p>You may not access the site with bots, crawlers, scrapers, scripts, browser extensions or any other automated tool that pulls content off the pages, and you may not bulk download, harvest or mine the site's content. Reading the site in a normal web browser is the only access we grant.</p>
+  <p>You may not use our rankings, notes or articles to train, fine tune, test or feed any artificial intelligence or machine learning model.</p>
+  <p>You may not use our content to build a competing product, a paid service, a data feed or anything else that makes money off Matt's work, and you may not remove our name or branding from anything you are allowed to share.</p>
+  <p>If you do any of the above, we can block you from the site, and we keep every other right the law gives us.</p>
+
+  <h2>Rankings are opinions</h2>
+  <p>Our rankings and notes are opinions about how players will perform. We put real work into them and we stand behind them, but they are not predictions we can guarantee and they are not advice about betting, daily fantasy or money. Players get hurt, get benched and get traded. Use the site at your own risk and make your own decisions. We are not responsible for what happens in your league, your wallet or your group chat because of something you read here.</p>
+  <p>The site is provided as is. We try to keep it accurate and online but we make no promises that it will be either at any given moment.</p>
+
+  <h2>Your privacy</h2>
+  <p>We don't ask you to create an account and we never ask for a password. We don't run ad trackers or analytics on the site. A few settings, like your day or night theme and which players you mark as yours, are saved by your own browser on your own device, and they never leave it. If you email us, we'll use your address to write back and for nothing else.</p>
+
+  <h2>Other people's names</h2>
+  <p>Team names, league names, player names and the names of other companies that appear on this site belong to their owners. They are here to describe what we're talking about, not to suggest anyone else endorses us.</p>
+
+  <h2>Changes and contact</h2>
+  <p>We may update these terms from time to time, and the date at the bottom will change when we do. Keep using the site and you accept the current version. Questions, permission requests or a problem to report: <a class="more" href="contact.html">get in touch</a>.</p>
+  <p>These terms are governed by the laws of the Commonwealth of Pennsylvania.</p>
+  <p class="w101-datasrc" style="font-size:14px;color:var(--text3)">Last updated: October 20, 2026</p>
+</section>
+
+
+<!-- ==================== SITE_CHROME_V1 FOOTER MARKUP START ==================== -->
+<footer class="w101-foot">
+  <div class="w101-foot-inner">
+    <div class="w101-foot-links">
+      <a href="./">Home</a>
+      <a href="nba/">Watch101NBA</a>
+      <a href="mlb/">Watch101MLB</a>
+      <a href="nfl/">Watch101NFL</a>
+      <a href="philly/">Watch101Philly</a>
+      <a href="about.html">About Us</a>
+      <a href="updates.html">Updates</a>
+      <a href="contact.html">Contact</a>
+      <a href="terms.html">Terms</a>
+    </div>
+    <div class="w101-social" id="social-row-foot"></div>
+    <div class="w101-yahoo-attr" style="margin:2px 0 18px;display:flex;align-items:center;justify-content:center">
+  <a href="https://sports.yahoo.com/fantasy/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:9px;color:var(--text2);text-decoration:none;font-family:'Nunito Sans',sans-serif;font-size:13.5px;font-weight:600">
+    <span style="display:inline-flex;background:#ffffff;border-radius:5px;padding:5px 9px;flex:none;border:1px solid rgba(0,0,0,.08)"><span style="display:inline-block;width:117.9px;height:16px;overflow:hidden;position:relative;flex:none"><img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgMjkzIDI5MyI+CiAgPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI5LjAuMSwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDIuMS4wIEJ1aWxkIDE5MikgIC0tPgogIDxkZWZzPgogICAgPHN0eWxlPgogICAgICAuc3QwIHsKICAgICAgICBmaWxsOiBub25lOwogICAgICB9CgogICAgICAuc3QxIHsKICAgICAgICBmaWxsOiAjN2QyZWZmOwogICAgICB9CgogICAgICAuc3QyIHsKICAgICAgICBjbGlwLXBhdGg6IHVybCgjY2xpcHBhdGgpOwogICAgICB9CiAgICA8L3N0eWxlPgogICAgPGNsaXBQYXRoIGlkPSJjbGlwcGF0aCI+CiAgICAgIDxyZWN0IGNsYXNzPSJzdDAiIHg9IjYyLjMiIHk9IjEzNS4xIiB3aWR0aD0iMTY4LjUiIGhlaWdodD0iMjIuOSIvPgogICAgPC9jbGlwUGF0aD4KICA8L2RlZnM+CiAgPGcgY2xhc3M9InN0MiI+CiAgICA8Zz4KICAgICAgPHBhdGggZD0iTTE0OC40LDE0MC45aDN2My42aC0zdjguN2gtNC41di04LjdoLTEuN3YtMy42aDEuN3YtLjNjMC0zLjQsMi01LjQsNS41LTUuNHMxLjYuMSwyLjIuNHYzLjdjLS40LS4yLS44LS4zLTEuMy0uMy0xLjEsMC0xLjkuNS0xLjksMS43di4yaDBaIi8+CiAgICAgIDxwYXRoIGQ9Ik0xODYsMTM3LjR2My41aDIuOXYzLjZoLTIuOXYzLjNjMCwxLjMuNSwxLjcsMS41LDEuN3MuOS0uMSwxLjMtLjR2My44Yy0uNi4zLTEuNS42LTIuOS42LTIuOCwwLTQuNS0xLjctNC41LTQuNnYtNC40aC0xLjd2LTMuNmgxLjd2LTMuNWg0LjVaIi8+CiAgICAgIDxwYXRoIGQ9Ik0xNzQuOCwxNDAuN2MtMS40LDAtMi41LjUtMy4yLDEuNXYtMS4yaC00LjN2MTIuM2g0LjN2LTYuNmMwLTEuMy42LTIsMS42LTJzMS41LjcsMS41LDEuOXY2LjdoNC4zdi03LjdjMC0zLTEuNi00LjktNC4yLTQuOWgwWiIvPgogICAgICA8cGF0aCBkPSJNMjI2LjEsMTQxbC0yLjgsNy4yLTIuOC03LjJoLTQuN2w1LjMsMTIuNC0xLjksNC41aDQuNmw3LTE2LjloLTQuNloiLz4KICAgICAgPHBhdGggZD0iTTE1OC42LDE0OS43Yy0xLjQsMC0yLjUtMS4xLTIuNS0yLjVzMS4xLTIuNSwyLjUtMi41LDIuNSwxLjEsMi41LDIuNS0xLjEsMi41LTIuNSwyLjVaTTE2MS4xLDE0Mi4xYy0uNy0uOS0xLjktMS40LTMuMy0xLjQtMy40LDAtNS45LDMtNS45LDYuNXMyLjUsNi41LDUuOSw2LjUsMi42LS42LDMuMy0xLjV2MS4yaDQuMnYtMTIuM2gtNC4ydjEuMloiLz4KICAgICAgPHBhdGggZD0iTTE5Ni43LDE0OS43Yy0xLjQsMC0yLjUtMS4xLTIuNS0yLjVzMS4xLTIuNSwyLjUtMi41LDIuNSwxLjEsMi41LDIuNS0xLjEsMi41LTIuNSwyLjVaTTE5OS4xLDE0Mi4xYy0uNy0uOS0xLjktMS40LTMuMy0xLjQtMy40LDAtNS45LDMtNS45LDYuNXMyLjUsNi41LDUuOSw2LjUsMi42LS42LDMuMy0xLjV2MS4yaDQuMnYtMTIuM2gtNC4ydjEuMloiLz4KICAgICAgPHBhdGggZD0iTTIwOS44LDE1My42Yy0yLjIsMC00LjItLjYtNS43LTEuN2wxLjgtMy4xYzEuMi44LDMsMS4zLDQuMiwxLjNzMS4xLS4zLDEuMi0uNmMwLS40LS4xLS43LTEuNC0uOWwtLjktLjJjLTIuOS0uNy00LjItMS45LTQuMi0zLjYsMC0yLjUsMi4xLTQuMiw1LjMtNC4yczMuNC41LDUuMiwxLjRsLTEuNSwzLjJjLTEuMy0uNy0yLjgtMS4xLTMuOC0xLjFzLS45LjItLjkuNi4zLjYsMS40LjhsLjkuMmMyLjkuOCw0LjEsMS45LDQuMSwzLjYsMCwyLjctMi4yLDQuMy01LjUsNC4zaDBaIi8+CiAgICAgIDxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik04My4xLDE0OS42Yy0xLjQsMC0yLjUtMS4xLTIuNS0yLjVzMS4xLTIuNSwyLjUtMi41LDIuNSwxLjEsMi41LDIuNS0xLjEsMi41LTIuNSwyLjVaTTg1LjUsMTQyLjFjLS43LS45LTEuOS0xLjQtMy4zLTEuNC0zLjQsMC01LjksMy01LjksNi41czIuNSw2LjUsNS45LDYuNSwyLjYtLjYsMy4zLTEuNXYxLjJoNC4ydi0xMi4zaC00LjJ2MS4yWiIvPgogICAgICA8cGF0aCBjbGFzcz0ic3QxIiBkPSJNOTguOCwxNDAuNmMtMS40LDAtMi41LjUtMy4yLDEuNXYtNi43aC00LjN2MTcuOGg0LjN2LTYuNmMwLTEuMy42LTIsMS42LTJzMS41LjcsMS41LDEuOXY2LjdoNC4zdi03LjdjMC0zLTEuNi00LjktNC4yLTQuOWgwWiIvPgogICAgICA8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMTI0LjQsMTQ5LjZjLTEuNCwwLTIuNS0xLjEtMi41LTIuNXMxLTIuNSwyLjUtMi41LDIuNSwxLjEsMi41LDIuNS0xLDIuNS0yLjUsMi41Wk0xMjQuNCwxNDAuNmMtMy44LDAtNi42LDIuOC02LjYsNi41czIuOCw2LjUsNi42LDYuNSw2LjYtMi44LDYuNi02LjUtMi44LTYuNS02LjYtNi41WiIvPgogICAgICA8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMTEwLjUsMTQ5LjZjLTEuNCwwLTIuNS0xLjEtMi41LTIuNXMxLTIuNSwyLjUtMi41LDIuNSwxLjEsMi41LDIuNS0xLDIuNS0yLjUsMi41Wk0xMTAuNSwxNDAuNmMtMy44LDAtNi42LDIuOC02LjYsNi41czIuOCw2LjUsNi42LDYuNSw2LjYtMi44LDYuNi02LjUtMi44LTYuNS02LjYtNi41WiIvPgogICAgICA8cGF0aCBjbGFzcz0ic3QxIiBkPSJNNzIuNywxNDAuOWwtMi45LDcuMi0yLjgtNy4yaC00LjdsNS4zLDEyLjQtMS45LDQuNWg0LjZsNy0xNi45aC00LjZaIi8+CiAgICAgIDxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xMzQuNCwxNDcuN2MtMS43LDAtMi45LDEuMy0yLjksMi45czEuMiwyLjgsMi44LDIuOCwyLjktMS4zLDIuOS0yLjktMS4yLTIuOC0yLjgtMi44WiIvPgogICAgICA8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMTM3LjcsMTM1LjVsLTQuNiwxMS4yaDUuMmw0LjYtMTEuMmgtNS4yWiIvPgogICAgPC9nPgogIDwvZz4KPC9zdmc+" alt="Yahoo Fantasy" style="width:205px;height:205px;max-width:none;position:absolute;left:-43.6px;top:-94.5px;display:block"></span></span>
+    <span>Fantasy data provided by Yahoo Fantasy</span>
+  </a>
+</div>
+<p class="w101-datasrc" style="font-size:12.5px;color:var(--text3);font-family:'Nunito Sans',sans-serif;margin:0 0 16px">Player data from MLB.com, MiLB.com &amp; Sleeper &middot; Ownership data from CBS Sports</p>
+<p class="w101-copy">Copyright &copy; 2026 Watch101. All rights reserved.</p>
+    <button class="w101-top" type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back to top</button>
+  </div>
+</footer>
+<!-- ===================== SITE_CHROME_V1 FOOTER MARKUP END ===================== -->
+
+<script>
+/* ===========================================================================
+   SITE_CHROME_V1 SCRIPT. Lift this with the nav.
+
+   🔧 THE ONLY PART YOU EVER NEED TO EDIT IS THE CONFIG BLOCK BELOW.
+   Fill in a URL and that icon or button turns on by itself. Leave it empty
+   and it renders dimmed and unclickable, which is deliberate: Matt wanted the
+   social links visible early to put pressure on himself to finish the accounts.
+   =========================================================================== */
+var W101 = {
+  // Paste the real URLs here as Matt creates the accounts. Empty string = dimmed.
+  substack : '',
+  email    : '',   // 🔧 the public contact address goes here
+  social   : {
+    x        : '',
+    instagram: '',
+    facebook : '',
+    bluesky  : '',
+    youtube  : '',
+    linkedin : ''
+  }
+};
+
+/* --- tiny inline SVG icons, so there is no icon font or external request --- */
+var W101_ICONS = {
+  x:'<svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.4l-5-6.6L5.8 22H2.7l8.1-9.3L1.5 2H8l4.7 6.2zm-1.1 18h1.8L6.3 3.8H4.4z"/></svg>',
+  instagram:'<svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.07 1.2.05 1.8.25 2.2.42.6.22 1 .5 1.5.94.44.44.72.85.94 1.45.17.43.37 1.05.42 2.25.06 1.28.07 1.68.07 4.9s0 3.6-.07 4.9c-.05 1.2-.25 1.8-.42 2.2-.22.6-.5 1-.94 1.5-.44.44-.85.72-1.45.94-.43.17-1.05.37-2.25.42-1.28.06-1.68.07-4.9.07s-3.6 0-4.9-.07c-1.2-.05-1.8-.25-2.2-.42-.6-.22-1-.5-1.5-.94-.44-.44-.72-.85-.94-1.45-.17-.43-.37-1.05-.42-2.25C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.9c.05-1.2.25-1.8.42-2.2.22-.6.5-1 .94-1.5.44-.44.85-.72 1.45-.94.43-.17 1.05-.37 2.25-.42C8.4 2.2 8.8 2.2 12 2.2zm0 1.98c-3.14 0-3.5.01-4.74.07-.95.04-1.47.2-1.81.33-.46.18-.78.39-1.12.73-.34.34-.55.66-.73 1.12-.13.34-.29.86-.33 1.81-.06 1.24-.07 1.6-.07 4.74s.01 3.5.07 4.74c.04.95.2 1.47.33 1.81.18.46.39.78.73 1.12.34.34.66.55 1.12.73.34.13.86.29 1.81.33 1.24.06 1.6.07 4.74.07s3.5-.01 4.74-.07c.95-.04 1.47-.2 1.81-.33.46-.18.78-.39 1.12-.73.34-.34.55-.66.73-1.12.13-.34.29-.86.33-1.81.06-1.24.07-1.6.07-4.74s-.01-3.5-.07-4.74c-.04-.95-.2-1.47-.33-1.81a3.02 3.02 0 00-.73-1.12 3.02 3.02 0 00-1.12-.73c-.34-.13-.86-.29-1.81-.33-1.24-.06-1.6-.07-4.74-.07zM12 7.9a4.1 4.1 0 110 8.2 4.1 4.1 0 010-8.2zm0 1.98a2.12 2.12 0 100 4.24 2.12 2.12 0 000-4.24zm5.23-2.2a.96.96 0 11-1.92 0 .96.96 0 011.92 0z"/></svg>',
+  facebook:'<svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 10-11.56 9.88v-7H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.88h-2.33v7A10 10 0 0022 12z"/></svg>',
+  bluesky:'<svg viewBox="0 0 24 24"><path d="M6.2 4.2C8.5 5.9 11 9.5 12 11.4c1-1.9 3.5-5.5 5.8-7.2 1.7-1.2 4.2-2.2 4.2 1 0 .6-.4 4.9-.6 5.6-.7 2.4-3.1 3-5.3 2.6 3.8.7 4.8 2.9 2.7 5.1-3.9 4.1-5.6-1-6-2.3-.1-.4-.2-.6-.3-.6s-.2.2-.3.6c-.4 1.3-2.1 6.4-6 2.3-2.1-2.2-1.1-4.4 2.7-5.1-2.2.4-4.6-.2-5.3-2.6C2.4 10.1 2 5.8 2 5.2c0-3.2 2.5-2.2 4.2-1z"/></svg>',
+  youtube:'<svg viewBox="0 0 24 24"><path d="M23 12s0-3.2-.4-4.7c-.2-.9-.9-1.5-1.7-1.7C19.3 5.2 12 5.2 12 5.2s-7.3 0-8.9.4c-.8.2-1.5.8-1.7 1.7C1 8.8 1 12 1 12s0 3.2.4 4.7c.2.9.9 1.5 1.7 1.7 1.6.4 8.9.4 8.9.4s7.3 0 8.9-.4c.8-.2 1.5-.8 1.7-1.7.4-1.5.4-4.7.4-4.7zM9.8 15.3V8.7l6 3.3z"/></svg>',
+  linkedin:'<svg viewBox="0 0 24 24"><path d="M20.4 20.4h-3.6v-5.6c0-1.3-.5-2.2-1.7-2.2-.9 0-1.4.6-1.7 1.2-.1.2-.1.5-.1.8v5.8H9.7s.05-9.4 0-10.4h3.6v1.5c.5-.7 1.3-1.8 3.2-1.8 2.3 0 4 1.5 4 4.8v6zM5.9 8.6h-.02c-1.2 0-2-.8-2-1.8s.8-1.8 2.05-1.8c1.2 0 1.98.8 2 1.8 0 1-.78 1.8-2.03 1.8zM7.7 20.4H4.1V10h3.6z"/></svg>'
+};
+var W101_LABELS = {x:'X',instagram:'Instagram',facebook:'Facebook',bluesky:'Bluesky',youtube:'YouTube',linkedin:'LinkedIn'};
+
+/* build the social rows from config, top and footer */
+(function(){
+  var html='';
+  for (var k in W101.social){
+    if(!W101_ICONS[k]) continue;
+    var url=(W101.social[k]||'').trim();
+    html += url
+      ? '<a href="'+url+'" target="_blank" rel="noopener" title="'+W101_LABELS[k]+'" aria-label="'+W101_LABELS[k]+'">'+W101_ICONS[k]+'</a>'
+      : '<a class="pending" href="#" title="'+W101_LABELS[k]+' account is not up yet" aria-label="'+W101_LABELS[k]+' coming soon" onclick="return false">'+W101_ICONS[k]+'</a>';
+  }
+  ['social-row','social-row-foot'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.innerHTML=html;
+  });
+})();
+
+/* wire the Subscribe buttons. No Substack URL yet = dimmed and honest. */
+(function(){
+  var url=(W101.substack||'').trim();
+  ['subscribe-btn','subscribe-btn-2'].forEach(function(id){
+    var b=document.getElementById(id); if(!b) return;
+    if(url){ b.href=url; b.target='_blank'; b.rel='noopener'; }
+    else{
+      b.classList.add('pending');
+      b.href='#';
+      b.title='The newsletter is not open yet. Check back shortly.';
+      b.onclick=function(){ return false; };
+    }
+  });
+})();
+
+/* dropdown. Click to open, click anywhere else or press Escape to close. */
+function w101Drop(id,ev){
+  if(ev) ev.stopPropagation();
+  var d=document.getElementById(id); if(!d) return;
+  var open=d.classList.contains('open');
+  document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+  if(!open) d.classList.add('open');
+}
+document.addEventListener('click',function(){
+  document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') document.querySelectorAll('.w101-drop.open').forEach(function(o){o.classList.remove('open')});
+});
+
+/* theme toggle. Same class, same storage key as the baseball page. */
+function w101Theme(){
+  var isDay=document.body.classList.toggle('day-mode');
+  try{ localStorage.setItem('watch101-theme',isDay?'day':'night'); }catch(e){}
+  var b=document.getElementById('theme-toggle');
+  if(b){ b.innerHTML=isDay?'&#9728;&#65039;':'&#127769;'; b.title=isDay?'Switch to night mode':'Switch to day mode'; }
+}
+(function(){
+  if(document.documentElement.getAttribute('data-early-day')==='1'){
+    document.body.classList.add('day-mode');
+    var b=document.getElementById('theme-toggle');
+    if(b){ b.innerHTML='&#9728;&#65039;'; b.title='Switch to night mode'; }
+  }
+})();
+</script>
+
+<script>
+/* ---------------------------------------------------------------------------
+   UPDATES RED DOT.  Matt asked for a mark when a returning reader has missed
+   something.  It compares the newest entry date against a value in the
+   reader's own browser.  No login, no server, nothing stored by us.
+
+   🔧 WHEN YOU ADD AN UPDATES ENTRY: bump W101_UPDATES_LATEST to that date.
+   That is the only edit needed for the dot to appear for everybody.
+   --------------------------------------------------------------------------- */
+var W101_UPDATES_LATEST = '2026-07-29';
+var W101_SEEN_KEY = 'watch101-updates-seen';
+
+(function(){
+  var seen='';
+  try{ seen=localStorage.getItem(W101_SEEN_KEY)||''; }catch(e){}
+  var link=document.getElementById('nav-updates');
+  if(link && W101_UPDATES_LATEST > seen){
+    link.classList.add('has-new');
+    link.title='New updates since your last visit';
+  }
+  /* On the Updates page itself: flag which entries are new, then mark as seen. */
+  if(document.body.getAttribute('data-page')==='updates'){
+    document.querySelectorAll('.entry').forEach(function(el){
+      if((el.getAttribute('data-date')||'') > seen) el.classList.add('unseen');
+    });
+    try{ localStorage.setItem(W101_SEEN_KEY, W101_UPDATES_LATEST); }catch(e){}
+    if(link){ link.classList.remove('has-new'); link.removeAttribute('title'); }
+  }
+  /* Contact address comes from the config block so there is one place to edit. */
+  var cb=document.getElementById('contact-block');
+  if(cb){
+    var e=(W101.email||'').trim();
+    cb.innerHTML = e
+      ? '<a href="mailto:'+e+'">'+e+'</a>'
+      : '<span class="pending">The public address is being set up. It will appear here shortly.</span>';
+  }
+})();
+</script>
+
+<!-- ===================== CHROME_FIT_V1 START ===================== -->
+<script>
+/* CHROME_FIT_V1 (2026-09-21, PC Walter, per the Dude). Read the CSS block of the
+   same name up in the stylesheet for the measurements and the reasoning.
+   Shrink the whole row as one block until it fits on one line. Never rearrange,
+   never hide. If the readability floor is reached and it STILL does not fit, the
+   nowrap is released so the row wraps instead of anything being cut off. */
+(function(){
+  var CHROME_FIT_MIN_VW = 900;          // below this the phone layout owns these rows
+  var TARGETS = [
+    // [selector, shrink floor]
+    ['.w101-nav-inner',   0.62],        // his 175% bench needs 0.6912; 0.62 holds down to about 1030px wide
+    ['.list-title-stack', 0.75]         // bench needs 0.9729; this row carries real content so it wraps sooner
+  ];
+  function fitChrome(){
+    var phone = window.innerWidth < CHROME_FIT_MIN_VW;
+    for(var i = 0; i < TARGETS.length; i++){
+      var sel = TARGETS[i][0], floor = TARGETS[i][1];
+      var el = document.querySelector(sel);
+      if(!el) continue;                               // the hub pages carry a nav and no title stack
+      el.style.zoom = '';                             // always reset first, so the natural width is the real one
+      if(phone || el.offsetParent === null){ el.classList.remove('chrome-fit'); continue; }
+      el.classList.add('chrome-fit');                 // wrapping off, so the row can overflow and be measured
+      var need = el.scrollWidth, avail = el.clientWidth;
+      if(need <= 0 || avail <= 0 || need <= avail) continue;   // already fits, leave it at full size
+      var z = (avail - 2) / need;
+      if(z < floor) z = floor;
+      el.style.zoom = z.toFixed(4);
+      if(el.scrollWidth > el.clientWidth + 1){        // floor reached and still too wide:
+        el.classList.remove('chrome-fit');            // wrap rather than cut anything off
+        el.style.zoom = '';
+      }
+    }
+  }
+  window.fitChrome = fitChrome;
+  window.addEventListener('resize', fitChrome);
+  window.addEventListener('load', fitChrome);         // the brand logo is an <img>; its width lands late
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fitChrome); }  // web fonts change every width in the bar
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fitChrome); } else { fitChrome(); }
+  /* Re-fit when the row's CONTENTS change. Two observers, both on things fitChrome
+     never touches, so neither can trigger itself:
+       - the title stack's subtree: switching lists rewrites the list name and the stamp
+       - #page-nav's style: showRankingsView() hides the tab row, the others put it back */
+  if(window.MutationObserver){
+    var stack = document.querySelector('.list-title-stack');
+    if(stack){ new MutationObserver(fitChrome).observe(stack, {childList:true, subtree:true, characterData:true}); }
+    var pn = document.getElementById('page-nav');
+    if(pn){ new MutationObserver(fitChrome).observe(pn, {attributes:true, attributeFilter:['style']}); }
+  }
+})();
+</script>
+<!-- ===================== CHROME_FIT_V1 END ===================== -->
+</body>
+</html>
