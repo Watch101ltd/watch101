@@ -1890,6 +1890,9 @@ table.watch-list tbody td.empty-state{text-align:left}
   .hero{padding-top:36px}
 }
 
+/* POOL_FILTER_LAYOUT_V1 (2026-10-20): no up/down arrows on the pool Rank and Age boxes; the arrows took ~15px and clipped "min" to "mir" and "193" to "19:". */
+#nflpf-rankmin,#nflpf-rankmax,#nflpf-agemin,#nflpf-agemax{-moz-appearance:textfield;appearance:textfield}
+#nflpf-rankmin::-webkit-inner-spin-button,#nflpf-rankmin::-webkit-outer-spin-button,#nflpf-rankmax::-webkit-inner-spin-button,#nflpf-rankmax::-webkit-outer-spin-button,#nflpf-agemin::-webkit-inner-spin-button,#nflpf-agemin::-webkit-outer-spin-button,#nflpf-agemax::-webkit-inner-spin-button,#nflpf-agemax::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
 </head>
@@ -2280,35 +2283,45 @@ document.addEventListener('DOMContentLoaded',function(){
     <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
       <div>
         <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Position <span style="color:var(--text3);font-weight:400">(any checked)</span></div>
-        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;min-height:32px;max-width:300px"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="QB" style="cursor:pointer"> QB</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="RB" style="cursor:pointer"> RB</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="WR" style="cursor:pointer"> WR</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="TE" style="cursor:pointer"> TE</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="DEF" style="cursor:pointer"> DEF</label></div>
+        <div style="display:grid;grid-template-columns:repeat(3,auto);align-items:center;gap:6px 12px;min-height:32px"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="QB" style="cursor:pointer"> QB</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="RB" style="cursor:pointer"> RB</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="WR" style="cursor:pointer"> WR</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="TE" style="cursor:pointer"> TE</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" class="nflpf-pos" value="DEF" style="cursor:pointer"> DEF</label></div>
       </div>
-      <div>
-        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Min FPts</div>
-        <input id="nflpf-fpts" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
-      </div>
-      <div>
-        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Min Games</div>
-        <input id="nflpf-games" type="number" min="0" placeholder="0" title="Filters by games played (s.gp). Inert in the offseason until Sleeper provides games-played for the new season." style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
-      </div>
-      <div>
-        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Age</div>
-        <div style="display:flex;align-items:center;gap:5px">
-          <input id="nflpf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
-          <span style="font-size:11px;color:var(--text3)">to</span>
-          <input id="nflpf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+      <div class="pool-filter-grid" style="display:grid;grid-template-columns:repeat(4,auto);gap:10px 20px;align-items:end">   <!-- POOL_FILTER_LAYOUT_V1 (2026-10-20, Matt): fill the box, two rows -->
+        <div id="nflpf-rank-box" class="pool-rank-filter">  <!-- POOL_RANK_COL_V1: back end (GitHub) only; hidden on the public site by _npRankColInit() -->
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Rank</div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <input id="nflpf-rankmin" type="number" min="1" placeholder="min" title="Overall rank in the current sort, from" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+            <span style="font-size:11px;color:var(--text3)">to</span>
+            <input id="nflpf-rankmax" type="number" min="1" placeholder="max" title="Overall rank in the current sort, to" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
         </div>
-      </div>
-      <div>
-        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Max % Owned <span style="color:#6001D2">(Y!)</span></div>
-        <input id="nflpf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
-      </div>
-      <div>
-        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Max % Owned <span style="color:#003C7C">(CBS)</span></div>
-        <input id="nflpf-cbsowned" type="number" min="0" max="100" placeholder="any" title="Max CBS rostered %" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
-      </div>
-      <div>
-        <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Team</div>
-        <select id="nflpf-team" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="ALL">All Teams</option></select>
+        <div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Age</div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <input id="nflpf-agemin" type="number" min="0" placeholder="min" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+            <span style="font-size:11px;color:var(--text3)">to</span>
+            <input id="nflpf-agemax" type="number" min="0" placeholder="max" style="width:52px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Min FPts</div>
+          <input id="nflpf-fpts" type="number" min="0" placeholder="0" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Min Games</div>
+          <input id="nflpf-games" type="number" min="0" placeholder="0" title="Filters by games played (s.gp). Inert in the offseason until Sleeper provides games-played for the new season." style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Max % Owned <span style="color:#6001D2">(Y!)</span></div>
+          <input id="nflpf-owned" type="number" min="0" max="100" placeholder="any" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Max % Owned <span style="color:#003C7C">(CBS)</span></div>
+          <input id="nflpf-cbsowned" type="number" min="0" max="100" placeholder="any" title="Max CBS rostered %" style="width:64px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.06em;margin-bottom:4px">Team</div>
+          <select id="nflpf-team" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;cursor:pointer;outline:none"><option value="ALL">All Teams</option></select>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
         <button onclick="applyNflPoolFilters()" style="background:var(--turf,#16a34a);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Apply</button>
@@ -2331,6 +2344,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <col class="col-team">
         <col class="col-bye">
         <col class="col-age">
+        <col class="col-exp">   <!-- POOL_EXP_COL_V1 -->
         <col class="col-adp">
         <col class="col-yrank">
         <col class="col-yowned">
@@ -2354,7 +2368,7 @@ document.addEventListener('DOMContentLoaded',function(){
              HTMLParser: 5 blank + Sleeper 1 + Y! 2 + CBS 1 + FPts + Passing 2 + Rushing 4 + Receiving 5 + 1 blank for Add = 22.
              OWNERSHIP_GROUP_HEADERS_V1 (2026-08-26) split the old 9-wide blank: 6 still blank (Pos..ADP). -->
           <tr class="grouprow">
-            <th class="grp-blank" colspan="5"></th>
+            <th class="grp-blank" colspan="6"></th>
             <th class="grp-lbl grp-slp" colspan="1">Sleeper</th>   <!-- SLEEPER_SOURCE_LABEL_V1: spans ADP -->
             <th class="grp-lbl grp-y" colspan="2">Y!</th>      <!-- OWNERSHIP_GROUP_HEADERS_V1: spans Rank + Owned -->
             <th class="grp-lbl grp-cbs" colspan="1">CBS</th>   <!-- OWNERSHIP_GROUP_HEADERS_V1: spans Owned -->
@@ -2370,6 +2384,7 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-team" data-npsort="team">Team <span class="sort-arrow">↕</span></th>
           <th class="col-bye" data-npsort="bye" title="Bye week — BYE_WEEK_COL_V1">Bye <span class="sort-arrow">↕</span></th>
           <th class="col-age" data-npsort="age">Age <span class="sort-arrow">↕</span></th>
+          <th class="col-exp" data-npsort="exp" title="Years of NFL experience (R for rookies)">Exp <span class="sort-arrow">↕</span></th><!-- POOL_EXP_COL_V1 -->
           <th class="col-adp col-zone-divider" data-npsort="adp" title="Average draft position, straight out of Sleeper’s own draft rooms. We do not calculate it. Follows the scoring box for STD, .5 PPR and PPR — each one a separate real Sleeper feed. Sleeper publishes NO TE premium ADP, so TE Prem shows nothing rather than another format’s number under the wrong label.">ADP <span class="sort-arrow">↕</span></th>
           <th class="col-yrank" data-npsort="yrank">Rank <span class="sort-arrow">↕</span></th>
           <th class="col-yowned" data-npsort="yowned">Owned <span class="sort-arrow">↕</span></th>
@@ -4872,7 +4887,7 @@ let _npBuilt     = false;
 // pipeline). MIN GAMES reads s.gp (Sleeper games-played) — INERT in the offseason until Sleeper
 // populates it for the new season, then live automatically (no rebuild needed). Date Range + CBS are
 // inert (no pipeline / no data). All Apply-gated.
-let _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
+let _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[], rankMin:null, rankMax:null };   // POOL_RANK_COL_V1: rankMin/rankMax
 let _npTeamSelectBuilt = false;
 function _npfNum(id){ const el=document.getElementById(id); if(!el) return null; const v=(el.value||'').trim(); if(v==='') return null; const n=parseFloat(v); return isNaN(n)?null:n; }
 async function applyNflPoolFilters(){
@@ -4881,6 +4896,8 @@ async function applyNflPoolFilters(){
   _npFilters.minGames = _npfNum('nflpf-games');
   _npFilters.ageMin   = _npfNum('nflpf-agemin');
   _npFilters.ageMax   = _npfNum('nflpf-agemax');
+  _npFilters.rankMin  = _npfNum('nflpf-rankmin');   // POOL_RANK_COL_V1
+  _npFilters.rankMax  = _npfNum('nflpf-rankmax');   // POOL_RANK_COL_V1
   _npFilters.maxOwned = _npfNum('nflpf-owned');
   _npFilters.maxCbsOwned = _npfNum('nflpf-cbsowned');
   _npFilters.posPositions = Array.from(document.querySelectorAll('.nflpf-pos:checked')).map(cb => cb.value);
@@ -4888,14 +4905,14 @@ async function applyNflPoolFilters(){
   renderNflPlayers();
 }
 function resetNflPoolFilters(){
-  ['nflpf-fpts','nflpf-games','nflpf-agemin','nflpf-agemax','nflpf-owned','nflpf-cbsowned'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['nflpf-fpts','nflpf-games','nflpf-agemin','nflpf-agemax','nflpf-owned','nflpf-cbsowned','nflpf-rankmin','nflpf-rankmax'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const t=document.getElementById('nflpf-team'); if(t) t.value='ALL';
   const dr=document.getElementById('nflp-instant-daterange'); if(dr) dr.value=_defaultDateRange();
   const dr2=document.getElementById('nflwl-instant-daterange'); if(dr2) dr2.value=_defaultDateRange();
   const dr3=document.getElementById('nflrk-instant-daterange'); if(dr3) dr3.value=_defaultDateRange();   // NFL_RANK_STATFILTER_V1
   document.querySelectorAll('.nflpf-pos').forEach(cb => { cb.checked = false; });
   _dateRange = _defaultDateRange();
-  _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[] };
+  _npFilters = { team:'ALL', minFpts:null, minGames:null, ageMin:null, ageMax:null, maxOwned:null, maxCbsOwned:null, posPositions:[], rankMin:null, rankMax:null };   // POOL_RANK_COL_V1
   renderNflPlayers();
 }
 function _npBuildTeamSelect(){
@@ -4915,6 +4932,7 @@ function _npStatValue(field, p, s, pid){
     case 'team': return p.team || 'zzz';
     case 'bye': return _byeFor(pid);   // BYE_WEEK_COL_V1 (null sinks)
     case 'age':  return nflDecimalAgeNum(p);
+    case 'exp':  { const e = p.years_exp; return (e != null && e !== '') ? Number(e) : null; }   // POOL_EXP_COL_V1
     case 'fpts': return (_fptsOf(s, p) || 0);
     case 'payd': return (s.pass_yd || 0);
     case 'patd': return (s.pass_td || 0);
@@ -4950,13 +4968,14 @@ function _foldSearch(s){
   return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 var _npSearchQ = '';
-function _npSortedIds(){
+function _npSortedIds(_all){   // POOL_RANK_COL_V1: _all=true -> whole pool, no search, no filters (the overall rank order)
   if(!_playerDB) return [];
   // NFLP_POOL_SEARCH_V1 — refresh the search query from the box each pass.
   var _se = document.getElementById('nflp-search');
   _npSearchQ = _se ? _foldSearch((_se.value||'').trim()) : '';
+  if(_all){ var _q0=_npSearchQ; _npSearchQ=''; }
   // NFL_POOL_STATFILTER_V1 — apply the STAT FILTERING box (team / min FPts / min games / age / max %owned).
-  const F = _npFilters || {};
+  const F = _all ? {} : (_npFilters || {});   // POOL_RANK_COL_V1
   const ids = [];
   for(const id in _playerDB){
     const p = _playerDB[id];
@@ -5005,6 +5024,7 @@ function _npSortedIds(){
     if(_npSortDir === 'desc') cmp = -cmp;
     return cmp;
   });
+  if(_all) _npSearchQ = _q0;   // POOL_RANK_COL_V1
   return ids;
 }
 
@@ -5510,6 +5530,50 @@ document.addEventListener('keydown', function(e){
 });
 
 
+// POOL_FILTER_FIT_V1 (2026-10-20, Matt): the pool's Stat Filtering row scales down as ONE unit
+// to fit the box (the shrink-the-block rule); only at the 0.70 floor (same floor as the tables)
+// may it wrap. Never grows past 1. Runs on open, on resize and after every pool render.
+function _poolFilterFit(id){
+  var p = document.getElementById(id);
+  if(!p || !p.offsetParent || p.classList.contains('filt-collapsed')) return;
+  var row = p.children[1]; if(!row) return;
+  Array.prototype.forEach.call(row.children, function(c){ c.style.flexShrink = '0'; });
+  row.style.zoom = ''; p.style.maxWidth = '100%';
+  row.style.flexWrap = 'nowrap'; row.style.width = 'max-content';
+  var nat = row.getBoundingClientRect().width; row.style.width = '';
+  var cs = getComputedStyle(p);
+  var avail = p.parentElement.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+  if(!(nat > 0) || !(avail > 0)) return;
+  var z = Math.min(1, (avail - 1) / nat), atFloor = z < 0.70;
+  if(atFloor) z = 0.70;
+  row.style.zoom = (z < 1) ? z.toFixed(4) : '';
+  if(atFloor){ row.style.flexWrap = ''; Array.prototype.forEach.call(row.children, function(c){ c.style.flexShrink = ''; }); }
+}
+function _poolFilterFitWire(id){
+  var p = document.getElementById(id); if(!p || p.dataset.fitWired || typeof ResizeObserver === 'undefined') return;
+  p.dataset.fitWired = '1';
+  var ro = new ResizeObserver(function(){ if(p._fitBusy) return; p._fitBusy = true; requestAnimationFrame(function(){ _poolFilterFit(id); p._fitBusy = false; }); });
+  ro.observe(p.parentElement); ro.observe(p);
+  window.addEventListener('resize', function(){ _poolFilterFit(id); });
+}
+
+// POOL_RANK_COL_V1: show the Rank header (+ its colgroup column) and filter box on the back end (GitHub) only. Idempotent.
+function _npRankColInit(){
+  const ro = (typeof _isReadOnlyMode === 'function') && _isReadOnlyMode();
+  const box = document.getElementById('nflpf-rank-box');
+  if(box) box.style.display = ro ? 'none' : '';
+  if(ro) return false;
+  const t = document.getElementById('nfl-players-table');
+  if(t && !t.querySelector('thead th.col-rank')){
+    const hr = t.querySelector('thead tr:not(.grouprow)');
+    const th = document.createElement('th'); th.className = 'col-rank'; th.textContent = 'Rank';
+    if(hr) hr.insertBefore(th, hr.firstElementChild);
+    const cg = t.querySelector('colgroup');
+    if(cg){ const c = document.createElement('col'); c.className = 'col-rank'; cg.insertBefore(c, cg.firstElementChild); }
+    const g = t.querySelector('thead tr.grouprow th.grp-blank'); if(g) g.colSpan = g.colSpan + 1;
+  }
+  return true;
+}
 function renderNflPlayers(){
   const tbody = document.getElementById('nfl-players-body');
   const statusEl = document.getElementById('nflplayers-status');
@@ -5520,6 +5584,21 @@ function renderNflPlayers(){
   }
   if(typeof _npBuildTeamSelect === 'function') _npBuildTeamSelect();  // NFL_POOL_STATFILTER_V1
   let allIds = _npSortedIds();
+  // POOL_RANK_COL_V1 (2026-10-20, Matt): Rank column + Rank min/max filter, back end (GitHub) only.
+  // Overall rank = place in the WHOLE pool in the current sort (no search, no filters).
+  // The min/max filter picks by that overall rank. The number shown renumbers 1..n for what is
+  // on screen, EXCEPT under a Team filter, a name search or a spotlight, where it keeps the overall rank.
+  const _rkOn = _npRankColInit();
+  let _rkMap = null;
+  if(_rkOn){
+    const _F = _npFilters || {};
+    const _needMap = (_F.rankMin != null || _F.rankMax != null || (_F.team && _F.team !== 'ALL') || _npSearchQ || (typeof _npSpotlight !== 'undefined' && _npSpotlight != null));
+    if(_needMap){ _rkMap = {}; _npSortedIds(true).forEach(function(id, i){ _rkMap[id] = i + 1; }); }
+    if(_F.rankMin != null || _F.rankMax != null){
+      allIds = allIds.filter(function(id){ const r = _rkMap[id]; return r != null && (_F.rankMin == null || r >= _F.rankMin) && (_F.rankMax == null || r <= _F.rankMax); });
+    }
+  }
+  const _rkKeepOverall = _rkOn && !!_rkMap && (((_npFilters||{}).team && _npFilters.team !== 'ALL') || !!_npSearchQ || (typeof _npSpotlight !== 'undefined' && _npSpotlight != null));
   // SPOTLIGHT_TWINS_V1: baseball's Bug #45 rule - the spotlighted player REPLACES the list
   // wholesale, after every other filter AND outside the 200-row render cap, so
   // "find me this guy" never loses to a filter box or the cap.
@@ -5564,10 +5643,10 @@ function renderNflPlayers(){
       ? ('Found ' + ids.length.toLocaleString() + ' match' + (ids.length===1?'':'es') + ' for "' + _npSearchQ + '"')
       : ((allIds.length > POOL_CAP
             ? ('Showing top ' + ids.length.toLocaleString() + ' of ' + allIds.length.toLocaleString())
-            : ('Showing all ' + ids.length.toLocaleString()))
-          + ' NFL players · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='yrank'?' (Yahoo rank)':''));
+            : (((((_npFilters||{}).rankMin != null) || ((_npFilters||{}).rankMax != null)) ? 'Showing ' : 'Showing all ') + ids.length.toLocaleString()))
+          + ' NFL players' + ((((_npFilters||{}).rankMin != null) || ((_npFilters||{}).rankMax != null)) ? ' (Rank filter on)' : '') + ' · sorted by ' + _npSortField.toUpperCase() + (_npSortField==='yrank'?' (Yahoo rank)':''));
   }
-  tbody.innerHTML = ids.map(pid => {
+  tbody.innerHTML = ids.map((pid, _rowI) => {
     const p = _playerDB[pid];
     const s = _statsRow(pid);
     const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '(unnamed)';
@@ -5577,11 +5656,13 @@ function renderNflPlayers(){
     const onList = (_wlIndexOf(pid) >= 0);
     const _pidJson = escapeHtml(JSON.stringify(pid));
     return '<tr data-np-pid="' + escapeHtml(pid) + '">' +
+      (_rkOn ? ('<td class="col-rank">' + (_rkKeepOverall ? (_rkMap[pid] || '') : (_rowI + 1)) + '</td>') : '') +   // POOL_RANK_COL_V1
       '<td class="center"><span class="pos-badge ' + posClassFor(pos) + '">' + pos + '</span></td>' +
       '<td class="left col-player"><div class="name-cell"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + '</div></td>' +   // INJ_TAG_V1 + FITNAMES_NFL_V1
       '<td class="col-team">' + team + '</td>' +   // FIRST_CHAR_ALIGN_V1: the team cell was a bare <td> on BOTH static surfaces, so td.col-team matched nothing. The width came from the colgroup; alignment cannot.
       '<td class="col-bye">' + _byeCell(pid) + '</td>' +   // BYE_WEEK_COL_V1
       '<td>' + age + '</td>' +
+      ((p.years_exp != null && p.years_exp !== '') ? ('<td class="col-exp">' + (Number(p.years_exp) === 0 ? 'R' : p.years_exp) + '</td>') : '<td class="col-exp placeholder">—</td>') +   // POOL_EXP_COL_V1 (same rule as the watch list, EXP_FILL_V1)
       // NFL_PLAYERS_PAGE_V1 — Yahoo rank + ownership (football HAS the Yahoo pipeline,
       // unlike NBA). Same lookup the watch list uses; placeholder class when no value.
       '<td class="col-adp col-zone-divider">' + _adpCell(pid) + '</td>' +   // ADP_COL_V1 (zone divider moved here: ADP now opens the market zone)
@@ -5609,6 +5690,7 @@ function renderNflPlayers(){
   if(!_npBuilt){ _npWireSortHeaders(); _npBuilt = true; }
   _npUpdateSortArrows();
   setTimeout(function(){ _fitPlayerNamesIn('#nfl-players-body'); }, 60);   // FITNAMES_NFL_V1
+  _poolFilterFitWire('nflp-filter-panel'); _poolFilterFit('nflp-filter-panel');   // POOL_FILTER_FIT_V1
 }
 
 function npAddToList(pid, btnEl){
