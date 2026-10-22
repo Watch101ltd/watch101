@@ -6015,6 +6015,7 @@ function _rankDeriveFromOverall(pos){
     var p = _playerDB && _playerDB[pid];
     if(!p) return;
     if(!p.team || p.position === 'DEF') return;
+    if(_nbaRetired(p)) return;   // RETIRED_OUT_NBA_V2: position tabs derive from Overall; an old saved Overall (dynasty 8/18) can still carry retired pids
     if(!_rankEligible(p, pos)) return;
     if(false) return;
     if(seen[pid]) return;
@@ -7571,6 +7572,7 @@ function npPoolSearchInput(val){
   for(var id in _playerDB){
     var p = _playerDB[id];
     if(!p || !p.position || !p.team) continue;   // the pool's own "real player" reality filter
+    if(_nbaRetired(p)) continue;   // RETIRED_OUT_NBA_V2 (the Dude's find 10/21 23:39: Kevin Garnett via this picker, which spotlights past the pool filter)
     var nm = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
     if(nm && _foldSearch(nm).indexOf(q) > -1){
       matches.push({ pid:String(id), name:nm, team:p.team, pos:_nbaPosText(p) });   // YAHOO_POS_NBA_V1
@@ -13860,6 +13862,7 @@ function _ftlNoteDelete(){
     for(var id in _playerDB){
       var p = _playerDB[id];
       if(!p || !p.position || !p.team || p.position === 'DEF') continue;
+      if(typeof _nbaRetired === 'function' && _nbaRetired(p)) continue;   // RETIRED_OUT_NBA_V2: the Excel import never matches a retired player
       var name = p.full_name || ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
       if(!name) continue;
       out.push({ pid: id, name: name, n: norm(name), team: p.team || '', pos: (typeof _nbaPosList === 'function') ? _nbaPosList(p).join('/') : (p.position || '') });
