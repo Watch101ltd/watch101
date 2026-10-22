@@ -7174,10 +7174,6 @@ async function saveRankingsToFile(pos){
   var statusEl = document.getElementById('rankings-status');
   function say(m){ if(statusEl) statusEl.textContent = m; }
   _rankSaveCancelled = false;   // RANK_SAVE_ALL_V1: reset per call, see the flag's declaration
-  if(!window.showDirectoryPicker){
-    say('\u26a0\ufe0f This browser cannot write files to a folder. Use Chrome or Edge. Your rankings are still saved on the server.');
-    return false;
-  }
   try {
     var folder   = _rankStagingFolder(pos);
     var nowIso   = new Date().toISOString();
@@ -7206,23 +7202,24 @@ async function saveRankingsToFile(pos){
       say('\u26a0\ufe0f Nothing to save: this tab has no players loaded yet. Let it finish loading, then try again. Your rankings on the server are untouched.');
       return false;
     }
-    // A handle kept from earlier in the session can lose its permission. Re-ask rather
-    // than throw, and drop it if the answer is no so the next click re-prompts cleanly.
-    if(_rankStagingDir && _rankStagingDir.queryPermission){
-      var perm = await _rankStagingDir.queryPermission({ mode: 'readwrite' });
-      if(perm !== 'granted') perm = await _rankStagingDir.requestPermission({ mode: 'readwrite' });
-      if(perm !== 'granted') _rankStagingDir = null;
+    // RANK_NO_PICKER_V1 (2026-10-22, the Dude's ask after the 10/21 call, where Matt picked one folder
+    // too deep and his save landed where the Publish tool never looks). NO FOLDER PICKER ANY MORE. The
+    // server writes the file into List Data\_Staging\<folder> itself: the same folder the NAS reads, the
+    // drag auto-save writes, and the Publish tools promote from. Nothing to pick, so nothing to pick wrong,
+    // and it works in any browser. (The old picker copy was never a separate backup: it landed in that
+    // same synced _Staging folder. The real backup is Claude\Watch101 Deploy Scripts\Snapshot NAS Lists.bat.)
+    var _rnpBody = { players: payload.players, manual: payload.manual, tiers: payload.tiers };
+    if(typeof _rankHiddenList === 'function'){ try { _rnpBody.hidden = _rankHiddenList(); } catch(_rnpH){} }   // RANK_HIDE_V1 parity with saveRankings()
+    var _rnpRes = await fetch(SERVER_URL + '/list-staging/' + encodeURIComponent(payload.list_id), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_rnpBody)
+    });
+    if(!_rnpRes.ok){
+      say('\u26a0\ufe0f ' + pos + ' save to the server returned HTTP ' + _rnpRes.status + '. Nothing was lost; try Done Ranking again in a minute.');
+      return false;
     }
-    if(!_rankStagingDir){
-      say('Pick your List Data\\_Staging folder. You only have to do this once per session.');
-      _rankStagingDir = await window.showDirectoryPicker({ id: 'watch101-nba-staging', mode: 'readwrite', startIn: 'documents' });
-    }
-    var dir = await _rankStagingDir.getDirectoryHandle(folder, { create: true });
-    var fh  = await dir.getFileHandle(fileName, { create: true });
-    var w   = await fh.createWritable();
-    await w.write(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
-    await w.close();
-    say('\u2713 Saved ' + payload.player_count + ' players and ' + payload.tiers.length + ' tiers to _Staging\\' + folder + '\\' + fileName);
+    var _rnpSaved = null; try { _rnpSaved = await _rnpRes.json(); } catch(_rnpJ){}
+    say('\u2713 Saved ' + payload.player_count + ' players and ' + payload.tiers.length + ' tiers to _Staging\\' + folder + ((_rnpSaved && _rnpSaved.filename) ? ('\\' + _rnpSaved.filename) : ''));
     return true;
   } catch(e){
     _rankStagingDir = null;
