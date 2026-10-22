@@ -5950,6 +5950,18 @@ function _rankFlowsFromOverall(pos){
   var set = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'dynasty' : 'redraft';
   return !!RANK_FLOW_SETS[set];
 }
+// RANK_PUBLIC_CAP_V1 (2026-10-21, Matt): "cut them off at 200 for display on the public facing site."
+// Fans (read-only, fantasywatch101.com) see only Matt's Overall top 200, Redraft and Dynasty alike; a
+// position tab shows only the players inside that Overall top 200 (Matt: "only top 200"); the list
+// just ends, no note (Matt). The saved and published rankings stay whole, and the GitHub back end
+// shows everything. The card's "Redraft Rank #" pill hides for a player outside the 200 as well.
+var RANK_PUBLIC_CAP = 200;
+function _rankPublicAllow(){
+  if(!((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())) return null;
+  var a = {};
+  _rankOverallOrderNow().slice(0, RANK_PUBLIC_CAP).forEach(function(pid){ a[String(pid)] = true; });
+  return a;
+}
 function _rankOverallOrderNow(){
   var ov = (_rankManual.Overall && Array.isArray(_rankings.Overall) && _rankings.Overall.length) ? _rankings.Overall : _rankingsIdsFor('Overall');
   return (ov || []).slice();
@@ -6050,6 +6062,8 @@ function renderRankings(){
   // (never mutates the saved order). Dragging clears the sort and re-snaps to the manual order.
   var manualIds = _provisional ? seed : _rankings[_rankPos];
   var ids = _rankSortField ? _rankSortedView(manualIds) : manualIds;
+  var _pubAllow = _rankPublicAllow();   // RANK_PUBLIC_CAP_V1: fans see the Overall top 200 only
+  if(_pubAllow){ ids = ids.filter(function(pid){ return _pubAllow[String(pid)]; }); }
   // NBA_RANK_STATFILTER_V1 (2026-08-20) — build the team dropdown once, then apply the STAT
   // FILTERING box to the DISPLAY list only. .filter() returns a NEW array, so Matt's saved
   // order in _rankings[_rankPos] is never touched; dragLocked below includes the filter so a
@@ -11640,6 +11654,8 @@ function openFromTheLogo(pid, _keepRange){
   // active set (Redraft / Dynasty) and names the position tab whenever it is not Overall.
   var _rkIdx = _ftlRkIndexOf(pid);
   var _rkEl  = document.getElementById('ftl-rankrk');
+  var _rkPub = (_rkIdx >= 0) ? _rankPublicAllow() : null;   // RANK_PUBLIC_CAP_V1
+  if(_rkPub && !_rkPub[String(pid)]) _rkIdx = -1;             // outside the public top 200: no pill for fans
   if(_rkEl){
     if(_rkIdx >= 0){
       var _setWord = ((typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dynasty' : 'Redraft');
