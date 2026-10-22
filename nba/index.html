@@ -5759,7 +5759,10 @@ function showRankingsView(set){
   // Without this they keep whatever the watch-list loader wrote at page load.
   try {
     var _eSub = document.getElementById('logo-sub');
-    if(_eSub && window._rkTealText) _eSub.textContent = window._rkTealText;
+    if(_eSub){
+      if(_rankHoldActive()) _eSub.textContent = ((_rankSet === 'dynasty') ? 'Dynasty/Keeper Rankings' : 'Redraft Rankings') + ' \u00b7 Loading\u2026';   // RANK_NO_FLASH_V1
+      else if(window._rkTealText) _eSub.textContent = window._rkTealText;
+    }
   } catch(_eSubErr){}
   if(typeof fitHeaders === 'function'){ try{ fitHeaders(); }catch(e){} }   // HEADER_FIT_V1
 }
@@ -6062,6 +6065,18 @@ function renderRankings(){
   if(!tbody) return;
   if(!_playerDB){
     tbody.innerHTML = '<tr><td colspan="31" class="empty-state"><strong>Loading players…</strong>The ' + _rankPos + ' rankings will fill in a moment.</td></tr>';
+    return;
+  }
+  if(_rankHoldActive()){
+    // RANK_NO_FLASH_V1 (Bug #238): Matt's saved order has not arrived yet. Painting the Yahoo seed here is
+    // what flashed the wrong list on the live site, so hold on a loading line instead (same look as Dynasty's).
+    var _hMsg = '<strong>Loading rankings\u2026</strong>They will fill in a moment.';
+    var _hCols = []; try { _hCols = _rankColsFor(_rankPos) || []; } catch(_hc){}
+    try { _rankRenderHead(_hCols); } catch(_hh){}
+    tbody.innerHTML = '<tr><td colspan="' + (_hCols.length + 5) + '" class="empty-state">' + _hMsg + '</td></tr>';
+    if(statusEl) statusEl.textContent = '';
+    try { renderRankTiers(); } catch(_ht){}
+    try { var _hPh = document.getElementById('rank-phone-card-list'); if(_hPh) _hPh.innerHTML = '<div class="empty-state" style="text-align:center;padding:18px">' + _hMsg + '</div>'; } catch(_hp){}
     return;
   }
   // _rankings[pos] is the source of truth for ORDER. First render with no saved order seeds from the
@@ -7268,7 +7283,27 @@ function _rankLoadLocal(){
     if(raw){ var obj = JSON.parse(raw); if(obj && obj.orders && obj.manual){ ['Overall','PG','SG','SF','PF','C'].forEach(function(k){ if(obj.manual[k] === true && Array.isArray(obj.orders[k])){ _rankings[k] = obj.orders[k]; _rankManual[k] = true; } }); } }  // NBA_RANKINGS_LIVE_SEED_V1: only hand-dragged orders hydrate
   } catch(e){ console.warn('[NBA_RANKINGS_LOAD_V1] localStorage load failed:', e); }
 }
+// ── RANK_NO_FLASH_V1 (2026-10-22, PC Walter, Bug #238, the Dude's catch on the live site) ──────────
+// WAS: the table painted the live Yahoo seed the moment Yahoo, CBS or Fantrax answered, then flipped to
+// Matt's saved order when the NAS answered: a second list visibly loading on top of the first. Now
+// renderRankings() holds on "Loading rankings…" until this loader has finished at least once and
+// nothing is in flight. A 10 s safety release falls back to the old behaviour (seed order) so a slow or
+// dead NAS can never leave the table stuck on Loading. _rkViewUp() also stops the watch list loader
+// writing the shared teal line while the rankings are the view on screen.
+var _rankNasInFlight = 0, _rankNasLoadedOnce = false, _rankHoldOff = false, _rankHoldTimer = null;
+function _rankHoldActive(){ return (!_rankNasLoadedOnce || _rankNasInFlight > 0) && !_rankHoldOff; }
+function _rkViewUp(){ var r = document.getElementById('rankings-view'); return !!(r && r.style.display !== 'none'); }
 async function loadRankingsFromNAS(){
+  _rankNasInFlight++; _rankHoldOff = false;   // RANK_NO_FLASH_V1: hold the table until this load lands
+  if(_rankHoldTimer) clearTimeout(_rankHoldTimer);
+  _rankHoldTimer = setTimeout(function(){
+    _rankHoldTimer = null;
+    if(_rankNasInFlight > 0){
+      _rankHoldOff = true;
+      console.warn('[RANK_NO_FLASH_V1] rankings still loading after 10 s, showing the live order meanwhile');
+      try { if(_rkViewUp()) renderRankings(); } catch(_hE){}
+    }
+  }, 10000);
   // RANKINGS_PUBLISH_V1 (2026-08-08 - PC Walter, per the Dude): env-aware source,
   // baseball's split - FANS (Cloudflare) read approved Production first, falling
   // back to staging until the first approval; the GitHub backend reads staging
@@ -7291,16 +7326,26 @@ async function loadRankingsFromNAS(){
   _rankAvLoadLocal();      // AV_COL_NBA_V1
   _rankTypesLoadLocal(); _rankPrioLoadLocal();   // RANKINGS_WL_CLONE_NBA_V1
   var positions = ['Overall','PG','SG','SF','PF','C'];
+  // RANK_NO_FLASH_V1: ask the NAS for all six tabs AT ONCE (was one after another, six round trips
+  // stacked end to end). The answers are still READ in the old order below, so anything that depends
+  // on Overall being handled first behaves exactly as before.
+  var _rkAsk = positions.map(function(p){
+    var _id = _rankListId(p);   // DYNASTY_RANKINGS_V1 (set-aware NAS id)
+    var _envs = _rkFan ? ['list', 'list-staging'] : ['list-staging'];   // RANKINGS_PUBLISH_V1
+    return (async function(){
+      for(var _e = 0; _e < _envs.length; _e++){
+        var _t = await fetch(SERVER_URL + '/' + _envs[_e] + '/' + _id, {cache:'no-cache'});
+        if(_t.ok) return { res: _t, env: _envs[_e] };
+      }
+      return { res: null, env: null };
+    })().catch(function(_aE){ return { res: null, env: null }; });
+  });
   for(var i=0;i<positions.length;i++){
     var pos = positions[i];
     var listId = _rankListId(pos);   // DYNASTY_RANKINGS_V1 (set-aware NAS id)
     try {
-      var _rkEnvs = _rkFan ? ['list', 'list-staging'] : ['list-staging'];   // RANKINGS_PUBLISH_V1
-      var res = null, _rkEnvHit = null;
-      for(var _re = 0; _re < _rkEnvs.length; _re++){
-        var _rkTry = await fetch(SERVER_URL + '/' + _rkEnvs[_re] + '/' + listId, {cache:'no-cache'});
-        if(_rkTry.ok){ res = _rkTry; _rkEnvHit = _rkEnvs[_re]; break; }
-      }
+      var _rkGot = await _rkAsk[i];   // RANK_NO_FLASH_V1 (asked in parallel above; RANKINGS_PUBLISH_V1 env order kept)
+      var res = _rkGot.res, _rkEnvHit = _rkGot.env;
       if(res && res.ok){
         var data = await res.json();
         // RANK_TEAL_V1 - track the newest stamp across the set for the teal line
@@ -7376,6 +7421,8 @@ async function loadRankingsFromNAS(){
       if(_elRk) _elRk.textContent = _txtRk;
     }
   } catch(_te2){}
+  _rankNasInFlight = Math.max(0, _rankNasInFlight - 1); _rankNasLoadedOnce = true;   // RANK_NO_FLASH_V1: release the hold
+  if(_rankNasInFlight === 0 && _rankHoldTimer){ clearTimeout(_rankHoldTimer); _rankHoldTimer = null; }
   if(document.getElementById('rankings-view') && document.getElementById('rankings-view').style.display !== 'none') renderRankings();
 }
 // ══════════ /NBA_RANKINGS_PAGE_V1 ══════════
@@ -9186,7 +9233,7 @@ async function loadListFromStorage(){
           const _word = (env === 'list') ? 'Published:' : 'Staged:';
           const _badge = (env === 'list') ? '' : ' [STAGING]';
           const _elT = document.getElementById('logo-sub');
-          if(_elT) _elT.textContent = (_badge ? _badge.trim() + ' ' : '') + (_ts ? (_word + ' ' + _ts) : 'Loaded');   // META_ROW_V1: keep [STAGING], drop the repeated name
+          if(_elT && !_rkViewUp() /* RANK_NO_FLASH_V1 */) _elT.textContent = (_badge ? _badge.trim() + ' ' : '') + (_ts ? (_word + ' ' + _ts) : 'Loaded');   // META_ROW_V1: keep [STAGING], drop the repeated name
         } catch(_e){}
         return;
       }
@@ -9207,7 +9254,7 @@ async function loadListFromStorage(){
       // exits above it. Trace the path the affected user actually takes, not the one the code reads like.
       try {
         const _elE = document.getElementById('logo-sub');
-        if(_elE) _elE.textContent = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())
+        if(_elE && !_rkViewUp() /* RANK_NO_FLASH_V1 */) _elE.textContent = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())
           ? 'Not published yet'
           : 'not yet saved';
       } catch(_e){}
@@ -9223,7 +9270,7 @@ async function loadListFromStorage(){
       // WATCHLIST_PUBLISH_V1 (2026-08-25) — a CUSTOMER must never be shown editor language here.
       // With the fan now reading Production only, an unpublished list lands in this fallback, and the
       // old line printed "not yet saved" under the logo, which is Matt's vocabulary, not a visitor's.
-      if(_elF) _elF.textContent = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())
+      if(_elF && !_rkViewUp() /* RANK_NO_FLASH_V1 */) _elF.textContent = ((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())
         ? 'Not published yet'
         : (_lsTs ? ('local draft (this browser): ' + _lsTs) : 'not yet saved');   // META_ROW_V1: name dropped
     } catch(_e){}
