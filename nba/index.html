@@ -5832,6 +5832,26 @@ function _rankEligible(p, pos){
   var arr = _nbaPosList(p);   // YAHOO_POS_NBA_V1
   return arr.indexOf(pos) !== -1;
 }
+// RETIRED_OUT_NBA_V1 (2026-10-21 ~23:55 ET, PC Walter, Bug #237, Matt + the Dude on the 10/21 call).
+// Sleeper keeps retired players in its feed WITH their last team (Chris Bosh MIA, Kevin Garnett BKN,
+// status 'RET', 118 of them with a team and a position on 10/21), so the old "has a team = real
+// player" test let them into the rankings seed, the NBA Players pool and the search box. All three
+// now skip status 'RET'. Only 'RET': the one other active:false row with a position (a duplicate
+// Anthony Black) has no team and was already out. A manual (hand-ranked) tab drops them on its own:
+// RANK_INTEGRATE_V1 parks any player who leaves the seed.
+function _nbaRetired(p){ return !!(p && p.status === 'RET'); }
+// RANK_TAIL_ORDER_V1 (same night, same bug): below Yahoo's ranked players the seed fell back to points
+// per game and then the ALPHABET, which on day two of the season is nearly everyone (Yahoo's actual
+// rank covered 15 of 319 real players past Matt's #200). Matt: "it should default to the sleeper ADP
+// or ownership percentage or at some point minutes per game". Unranked players now order by Yahoo
+// ownership (roster_pct, covered all 319), then Sleeper's search_rank (296 of 319), then PPG, then name.
+function _rankSeedOwned(pid){
+  try { var y = _yahooFor(pid); var v = y ? Number(y.roster_pct) : NaN; return isFinite(v) ? v : -1; } catch(e){ return -1; }
+}
+function _rankSeedSleeper(pid){
+  var p = _playerDB && _playerDB[pid]; var v = p ? Number(p.search_rank) : NaN;
+  return (isFinite(v) && v < 9999999) ? v : Infinity;
+}
 function _rankSeedPpg(pid){
   var s = (_seasonStats && _seasonStats[pid]) || {};   // SEASON on purpose — the seed must be stable, not date-range
   var gp = Number(s.gp) || 0;
@@ -5857,6 +5877,7 @@ function _rankingsIdsFor(pos){
     var p = _playerDB[id];
     if(!p || !p.position) continue;
     if(!p.team) continue;                 // active / on-a-team only
+    if(_nbaRetired(p)) continue;          // RETIRED_OUT_NBA_V1
     // 🪨 RANK_DEPTH_NBA_V1 — DROP THE TEAM ENTRIES. Sleeper's NBA feed carries 30 rows with
     // position 'DEF' that are not players at all: Brooklyn Nets, Utah Jazz, Oklahoma City
     // Thunder and so on. Basketball has no defence slot, they have no Yahoo rank, no
@@ -5878,7 +5899,12 @@ function _rankingsIdsFor(pos){
     // NBA_YAHOO_SEED_V1 — primary: Yahoo overall rank ASC (1 first); unranked (Infinity) sink.
     var ya = _rankSeedYahoo(a), yb = _rankSeedYahoo(b);
     if(ya !== yb) return ya - yb;
-    // tiebreak among same/unranked: points-per-game DESC (keeps the unranked tail meaningful)
+    // RANK_TAIL_ORDER_V1: unranked tail = Yahoo ownership DESC, then Sleeper search_rank ASC
+    var oa = _rankSeedOwned(a), ob = _rankSeedOwned(b);
+    if(ob !== oa) return ob - oa;
+    var sa = _rankSeedSleeper(a), sb = _rankSeedSleeper(b);
+    if(sa !== sb) return (sa === Infinity) ? 1 : ((sb === Infinity) ? -1 : sa - sb);
+    // then points-per-game DESC (keeps the unranked tail meaningful)
     var pa = _rankSeedPpg(a), pb = _rankSeedPpg(b);
     if(pb !== pa) return pb - pa;
     var na=(_playerDB[a].full_name||''), nb=(_playerDB[b].full_name||'');
@@ -5956,8 +5982,24 @@ function _rankFlowsFromOverall(pos){
 // just ends, no note (Matt). The saved and published rankings stay whole, and the GitHub back end
 // shows everything. The card's "Redraft Rank #" pill hides for a player outside the 200 as well.
 var RANK_PUBLIC_CAP = 200;
+// DYN_UNPUBLISHED_FAN_V1 (2026-10-21 ~23:20 ET, PC Walter, Bug #236). Matt on the 10/21 call: "I haven't
+// published a dynasty keeper list yet or made one. What if I don't want this showing on the site yet?" The
+// Dude: give it the same message as the Watch 101 list. Fans were seeing the 8/18 Production dynasty list
+// (and, with no Production copy, would fall back to STAGING). Now, FAN VIEW + DYNASTY SET ONLY, the table
+// shows WATCHLIST_PUBLISH_V1's sentence unless the Overall dynasty file came from Production ('list') with
+// saved_at on or after RANK_DYN_FAN_SINCE. Matt approving a new Dynasty list makes it appear by itself, no
+// code change. The GitHub back end is untouched (read-only mode only). TO RETIRE: delete this block and its
+// four DYN_UNPUBLISHED_FAN_V1 call sites.
+var RANK_DYN_FAN_SINCE = '2026-10-21T00:00:00Z';
+var _rankDynFanState = 'pending';   // 'pending' until the dynasty load finishes, then 'ok' or 'hidden'
+function _rankDynFanHidden(){
+  if(!((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())) return false;
+  if(typeof _rankSet === 'undefined' || _rankSet !== 'dynasty') return false;
+  return _rankDynFanState !== 'ok';
+}
 function _rankPublicAllow(){
   if(!((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode())) return null;
+  if(_rankDynFanHidden()) return {};   // DYN_UNPUBLISHED_FAN_V1: nothing public (also hides the card's Dynasty Rank pill)
   var a = {};
   _rankOverallOrderNow().slice(0, RANK_PUBLIC_CAP).forEach(function(pid){ a[String(pid)] = true; });
   return a;
@@ -6064,6 +6106,18 @@ function renderRankings(){
   var ids = _rankSortField ? _rankSortedView(manualIds) : manualIds;
   var _pubAllow = _rankPublicAllow();   // RANK_PUBLIC_CAP_V1: fans see the Overall top 200 only
   if(_pubAllow){ ids = ids.filter(function(pid){ return _pubAllow[String(pid)]; }); }
+  if(_rankDynFanHidden()){   // DYN_UNPUBLISHED_FAN_V1 (Bug #236): fans, Dynasty, nothing current published
+    var _dynMsg = (_rankDynFanState === 'pending')
+      ? '<strong>Loading rankings\u2026</strong>They will fill in a moment.'
+      : '<strong>Not published yet.</strong>Matt is building this list for the season. Check back soon.';
+    var _dynCols = _rankColsFor(_rankPos);
+    try { _rankRenderHead(_dynCols); } catch(_dh){}
+    tbody.innerHTML = '<tr><td colspan="' + (_dynCols.length + 5) + '" class="empty-state">' + _dynMsg + '</td></tr>';
+    if(statusEl) statusEl.textContent = '';
+    try { renderRankTiers(); } catch(_dt){}
+    try { var _dynPh = document.getElementById('rank-phone-card-list'); if(_dynPh) _dynPh.innerHTML = '<div class="empty-state" style="text-align:center;padding:18px">' + _dynMsg + '</div>'; } catch(_dp){}
+    return;
+  }
   // NBA_RANK_STATFILTER_V1 (2026-08-20) — build the team dropdown once, then apply the STAT
   // FILTERING box to the DISPLAY list only. .filter() returns a NEW array, so Matt's saved
   // order in _rankings[_rankPos] is never touched; dragLocked below includes the filter so a
@@ -7227,6 +7281,8 @@ async function loadRankingsFromNAS(){
   // kept quoting that list. The loader now tracks the newest stamp across the
   // set's positions and writes the teal line itself when the rankings view is up.
   var _rkNewestIso = null, _rkNewestLocal = null, _rkNewestEnv = null;
+  var _dynLoad = (_rankSet === 'dynasty'), _dynOvEnv = null, _dynOvIso = null;   // DYN_UNPUBLISHED_FAN_V1
+  if(_dynLoad) _rankDynFanState = 'pending';
   _rankLoadLocal();
   _rankBreaksLoadLocal();  // RANK_TIER_BREAK_V1 (the NAS payload below overrides per tab)
   _rankNotesLoadLocal();   // RANKINGS_NOTES_NBA_V1
@@ -7250,6 +7306,7 @@ async function loadRankingsFromNAS(){
         try {
           var _rkIso = (data && data.data && data.data.saved_at) || (data && data.saved_at) || null;
           var _rkLoc = (data && data.data && data.data.saved_at_local) || _rkIso;
+          if(pos === 'Overall'){ _dynOvEnv = _rkEnvHit; _dynOvIso = _rkIso; }   // DYN_UNPUBLISHED_FAN_V1
           if(_rkIso && (!_rkNewestIso || _rkIso > _rkNewestIso)){ _rkNewestIso = _rkIso; _rkNewestLocal = _rkLoc; _rkNewestEnv = _rkEnvHit; }
         } catch(_te){}
         var payload = (data && data.data && Array.isArray(data.data.players)) ? data.data
@@ -7273,6 +7330,11 @@ async function loadRankingsFromNAS(){
       }
     } catch(e){ /* no saved ranking yet for this position — renderRankings will seed it */ }
   }
+  if(_dynLoad && _rankSet === 'dynasty'){   // DYN_UNPUBLISHED_FAN_V1: decide once the Overall answer is in
+    var _dynOk = false;
+    try { _dynOk = (_dynOvEnv === 'list') && !!_dynOvIso && (Date.parse(_dynOvIso) >= Date.parse(RANK_DYN_FAN_SINCE)); } catch(_dE){ _dynOk = false; }
+    _rankDynFanState = _dynOk ? 'ok' : 'hidden';
+  }
   // RANK_TEAL_V1 - write the teal line for the rankings view (baseball's stampWord
   // rule: env 'list' = Published:, staging = Staged: + [STAGING] badge).
   try {
@@ -7294,7 +7356,7 @@ async function loadRankingsFromNAS(){
     // reloads and rewrites the line on its way past.
     var _setNm = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'Dynasty/Keeper Rankings' : 'Redraft Rankings';
     var _txtRk;
-    if(_rkNewestLocal){
+    if(_rkNewestLocal && !_rankDynFanHidden()){   // DYN_UNPUBLISHED_FAN_V1
       var _wRk = (_rkNewestEnv === 'list') ? 'Published:' : 'Staged:';
       var _bRk = (_rkNewestEnv === 'list') ? '' : ' [STAGING]';
       var _tsRk = (String(_rkNewestLocal).indexOf('T') > -1) ? new Date(_rkNewestLocal).toLocaleString() : _rkNewestLocal;
@@ -7437,6 +7499,7 @@ function _npSortedIds(_all){   // POOL_RANK_COL_V1: _all=true -> whole pool, no 
     const p = _playerDB[id];
     if(!p || !p.position) continue;
     if(!p.team) continue;
+    if(_nbaRetired(p)) continue;   // RETIRED_OUT_NBA_V1
     // NBAP_POOL_SEARCH_V1 — instant name search (whole pool). Empty box => no constraint.
     if(typeof _npSearchQ === 'string' && _npSearchQ){
       var _nm = _foldSearch(p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || '');
@@ -8292,6 +8355,7 @@ function renderSearchResults(term){
     const p = _playerDB[id];
     if(!p || !p.position) continue;
     if(!p.team) continue;  // skip free agents / inactive with no team
+    if(_nbaRetired(p)) continue;   // RETIRED_OUT_NBA_V1
     const name = _foldSearch(p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim());
     if(!name.includes(t)) continue;
     matches.push({id, p});
