@@ -2136,6 +2136,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="count-badge" id="count-badge">0 players</div>
     <button class="btn btn-turf backend-only" id="save-btn" onclick="saveList()">💾 Save</button>
     <button class="btn btn-turf backend-only" id="save-all-btn" onclick="saveAllLists(this)" title="Checks every watch list you edited in this browser against the NAS staging folder, sends any that did not make it, then pings Jay once. No folder picker. LIST_SAVE_ALL_V1">💾 Save All</button>
+    <button class="btn btn-turf backend-only" id="publish-list-btn" onclick="publishCurrentList(this)" title="Publishes the list you have up to the public site. Click once to arm it, then click again within 6 seconds. It sends this list to the server first, then the server publishes it on the NAS: top 101 for fans, rank history, +/- arrows. (LIST_PUBLISH_BTN_V1)">📣 Publish</button>
   </div>
 </div>
 
@@ -2448,6 +2449,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
     <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px;display:none !important">&#127991;&#65039; Tier</button>
     <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="saveAllRankings(this)" title="Saves EVERY position tab of this rankings set to JSON files in List Data\_Staging, then pings Jay's phone once. It saves them all no matter which tab you are on." style="margin-left:14px">💾 Done Ranking</button>
+    <button class="btn btn-outline backend-only" id="publish-ranking-btn" onclick="publishRankingSet(this)" title="Publishes this whole rankings set (every position tab) to the public site. Click once to arm it, then click again within 6 seconds. It saves every tab first, exactly like Done Ranking, then the server copies those saves to Production on the NAS. (RANK_PUBLISH_BTN_V1)" style="margin-left:6px">📣 Publish</button>
     <button class="btn btn-outline backend-only" id="rank-hidden-btn" onclick="openHiddenList()" style="display:none;margin-left:6px" title="Players hidden from this rankings set — click to restore">♻️ Hidden (0)</button><!-- RANK_HIDE_V1 -->
   </div>
 <!-- NFL_RANK_SEARCH_V1 (2026-08-31 - PC Walter, per the Dude). Player-name search on the
@@ -4649,6 +4651,98 @@ async function saveAllRankings(btn){
     btn.disabled = false;
     btn.textContent = cancelled ? '\u2713 Stopped' : ('\u2713 ' + saved.length + '/' + RANK_ALL_POSITIONS.length + ' + pinged');
     setTimeout(function(){ btn.textContent = restore; }, 4000);
+  }
+}
+
+/* ══════════ RANK_PUBLISH_BTN_V1 (2026-10-23, PC Walter, per the Dude; Bug #241) ══════════
+   His words: "I 100% want you to do number one. I want a publish button on the website."
+   WHY: since RANK_NO_PICKER_V1 (10/22) Done Ranking saves are written only by the NAS server,
+   and Synology Drive never notices files the server writes. So the saves never reached Matt's
+   Mac (or the Dude's PC), and the Desktop publish tools, which read the local synced _Staging
+   folder, could not see them. Matt texted the Dude he could not publish.
+   WHAT THIS DOES: two clicks (the first only arms it, so a stray click cannot put rankings in
+   front of fans). Then it saves every tab of the loaded set with the same saveRankingsToFile()
+   that Done Ranking uses, so Production gets exactly what is on screen, and asks the server to
+   publish: POST /publish-rankings/<redraft|dynasty>. The server copies each tab's newest staging
+   file into Production on the NAS itself. No sync involved, works on any computer.
+   If any tab fails to save, NOTHING is published. Backend only (.backend-only + _blockIfReadOnly). */
+var _rankPublishArmedAt = 0;
+async function publishRankingSet(btn){
+  if(_blockIfReadOnly('publishRankingSet')) return;
+  var statusEl = document.getElementById('rankings-status');
+  function say(m){ if(statusEl) statusEl.textContent = m; }
+  var setKey  = (typeof _rankSet !== 'undefined' && _rankSet === 'dynasty') ? 'dynasty' : 'redraft';
+  var setName = (setKey === 'dynasty') ? 'Dynasty' : 'Redraft';
+  if(btn && !btn.getAttribute('data-label')) btn.setAttribute('data-label', btn.textContent);
+  var label = btn ? btn.getAttribute('data-label') : '';
+  function done(text){
+    if(!btn) return;
+    btn.disabled = false;
+    btn.textContent = text;
+    setTimeout(function(){ if(!btn.disabled && !_rankPublishArmedAt) btn.textContent = label; }, 5000);
+  }
+  var now = Date.now();
+  if(!_rankPublishArmedAt || (now - _rankPublishArmedAt) > 6000){
+    _rankPublishArmedAt = now;
+    if(btn) btn.textContent = 'Click again to publish ' + setName;
+    say('Publish the ' + setName + ' rankings to the public site? Click Publish again within 6 seconds to confirm.');
+    setTimeout(function(){
+      if(_rankPublishArmedAt === now){
+        _rankPublishArmedAt = 0;
+        if(btn && !btn.disabled) btn.textContent = label;
+        say('Publish not confirmed. Nothing changed on the public site.');
+      }
+    }, 6000);
+    return;
+  }
+  _rankPublishArmedAt = 0;
+  if(btn) btn.disabled = true;
+  // Step 1: save every tab first, so what gets published is what is on screen right now.
+  var saved = [], failed = [];
+  for(var i = 0; i < RANK_ALL_POSITIONS.length; i++){
+    var pos = RANK_ALL_POSITIONS[i];
+    if(btn) btn.textContent = '… saving ' + (i + 1) + ' of ' + RANK_ALL_POSITIONS.length;
+    var ok = false;
+    try { ok = await saveRankingsToFile(pos); }
+    catch(e){ console.warn('[RANK_PUBLISH_BTN_V1] save ' + pos + ' threw:', e); }
+    if(ok) saved.push(pos); else failed.push(pos);
+  }
+  if(failed.length){
+    say('⚠️ Did NOT publish: ' + failed.join(', ') + ' could not be saved first. Nothing changed on the public site. Let every tab finish loading, then try again.');
+    done('⚠️ Not published');
+    return;
+  }
+  // Step 2: the server copies each tab's newest save into Production on the NAS.
+  if(btn) btn.textContent = '… publishing';
+  try {
+    var res = await fetch(SERVER_URL + '/publish-rankings/' + setKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+    });
+    var data = null; try { data = await res.json(); } catch(_j){}
+    if(!res.ok){
+      say('⚠️ Publish failed (HTTP ' + res.status + ((data && data.error) ? (': ' + data.error) : '') + '). Nothing changed on the public site.');
+      done('⚠️ Not published');
+      return;
+    }
+    var results = (data && data.results) || [];
+    function tab(r){ return String(r.folder || '').replace(/^Rankings_(Dyn_)?/, ''); }
+    var pub = [], other = [];
+    results.forEach(function(r){
+      if(r.status === 'published') pub.push(tab(r));
+      else other.push(tab(r) + ' (' + (r.reason || r.status) + ')');
+    });
+    if(pub.length){
+      say('✓ ' + setName + ' rankings published: ' + pub.join(', ')
+        + (other.length ? ('. Not changed: ' + other.join(', ')) : '') + '. Fans see it on their next page load.');
+      done('✓ Published');
+    } else {
+      say('Nothing new to publish for ' + setName + ': ' + (other.join(', ') || 'no tabs found') + '.');
+      done('✓ Up to date');
+    }
+  } catch(e){
+    console.error('[RANK_PUBLISH_BTN_V1]', e);
+    say('⚠️ Could not reach the server to publish (' + (e && e.message) + '). Nothing changed on the public site.');
+    done('⚠️ Not published');
   }
 }
 
@@ -10420,6 +10514,102 @@ async function saveAllLists(btn){
     btn.disabled = false;
     btn.textContent = (failed.length ? '\u26a0\ufe0f ' : '\u2713 ') + okCount + '/' + LIST_SAVE_ALL_IDS.length + ' + pinged';
     setTimeout(function(){ btn.textContent = restore; }, 4000);
+  }
+}
+
+/* ══════════ LIST_PUBLISH_BTN_V1 (2026-10-23, PC Walter, per the Dude) ══════════
+   His words: "every single list to have a publish button on it. And if you hit that button, it
+   publishes that particular list that you have up... So Matt can just hit the publish button when
+   he's done." Lives in the watch list toolbar beside Save All. Rankings have their own Publish
+   button (RANK_PUBLISH_BTN_V1) because a rankings set is six tabs published together.
+   Two clicks (the first only arms it). Then: wait for any auto-save already in flight, send the
+   list on screen to the server (same body as the auto-save, so the server holds exactly what Matt
+   sees), and ask the server to publish it: POST /publish-list/<LIST_ID>. The server does what the
+   Desktop approve tools did: top 101 public cut, rank history, +/- baseline, all on the NAS.
+   Backend only (.backend-only + _blockIfReadOnly). Never publishes an empty list. */
+var _listPublishArmedAt = 0;
+async function publishCurrentList(btn){
+  if(_blockIfReadOnly('publishCurrentList')) return;
+  var statusEl = document.getElementById('status-bar');
+  function say(m){ if(statusEl) statusEl.textContent = m; }
+  var listId = LIST_ID;
+  var al = (typeof _activeList === 'function') ? _activeList() : null;
+  var name = (al && al.name) ? al.name : listId;
+  if(btn && !btn.getAttribute('data-label')) btn.setAttribute('data-label', btn.textContent);
+  var label = btn ? btn.getAttribute('data-label') : '';
+  function done(text){
+    if(!btn) return;
+    btn.disabled = false;
+    btn.textContent = text;
+    setTimeout(function(){ if(!btn.disabled && !_listPublishArmedAt) btn.textContent = label; }, 5000);
+  }
+  if(!_watchList || !_watchList.length){
+    say('⚠️ ' + name + ' has no players on screen, so there is nothing to publish.');
+    return;
+  }
+  var now = Date.now();
+  if(!_listPublishArmedAt || (now - _listPublishArmedAt) > 6000){
+    _listPublishArmedAt = now;
+    if(btn) btn.textContent = 'Click again to publish';
+    say('Publish ' + name + ' (' + _watchList.length + ' players) to the public site? Click Publish again within 6 seconds to confirm.');
+    setTimeout(function(){
+      if(_listPublishArmedAt === now){
+        _listPublishArmedAt = 0;
+        if(btn && !btn.disabled) btn.textContent = label;
+        say('Publish not confirmed. Nothing changed on the public site.');
+      }
+    }, 6000);
+    return;
+  }
+  _listPublishArmedAt = 0;
+  if(btn){ btn.disabled = true; btn.textContent = '… saving'; }
+  // Step 1: let an auto-save already in flight finish, then send exactly what is on screen.
+  for(var w = 0; w < 40 && (typeof _nflNasSaving !== 'undefined' && _nflNasSaving); w++){ await new Promise(function(r){ setTimeout(r, 200); }); }
+  try {
+    var sres = await fetch(SERVER_URL + '/list-staging/' + encodeURIComponent(listId), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ players: _watchList, tiers: _tiersForSave() })
+    });
+    if(!sres.ok){
+      say('⚠️ Did NOT publish: saving ' + name + ' to the server returned HTTP ' + sres.status + '. Nothing changed on the public site.');
+      done('⚠️ Not published');
+      return;
+    }
+  } catch(e){
+    say('⚠️ Did NOT publish: could not reach the server to save ' + name + ' (' + (e && e.message) + '). Nothing changed on the public site.');
+    done('⚠️ Not published');
+    return;
+  }
+  // Step 2: the server publishes it on the NAS.
+  if(btn) btn.textContent = '… publishing';
+  try {
+    var res = await fetch(SERVER_URL + '/publish-list/' + encodeURIComponent(listId), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+    });
+    var d = null; try { d = await res.json(); } catch(_j){}
+    if(!res.ok || !d){
+      say('⚠️ Publish failed (HTTP ' + res.status + ((d && (d.error || d.reason)) ? (': ' + (d.error || d.reason)) : '') + '). Nothing changed on the public site.');
+      done('⚠️ Not published');
+      return;
+    }
+    if(d.status === 'published'){
+      var msg = '✓ ' + name + ' published: fans see ' + d.public_players
+        + (d.staged_players > d.public_players ? (' (the top ' + d.public_players + ' of your ' + d.staged_players + ')') : '') + ' players';
+      if(d.baseline){ msg += ', ' + d.baseline.new + ' marked NEW'; }
+      if(d.history && d.history.warning){ msg += '. Note: ' + d.history.warning; }
+      say(msg + '. Live on their next page load.');
+      done('✓ Published');
+    } else if(d.status === 'skipped'){
+      say(name + ': ' + (d.reason || 'nothing new to publish') + '.');
+      done('✓ Up to date');
+    } else {
+      say('⚠️ ' + name + ' was not published: ' + (d.reason || d.status) + '. Nothing changed on the public site.');
+      done('⚠️ Not published');
+    }
+  } catch(e){
+    console.error('[LIST_PUBLISH_BTN_V1]', e);
+    say('⚠️ Could not reach the server to publish (' + (e && e.message) + '). Nothing changed on the public site.');
+    done('⚠️ Not published');
   }
 }
 
