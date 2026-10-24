@@ -2134,8 +2134,7 @@ document.addEventListener('DOMContentLoaded',function(){
          the player count, and Save. -->
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of players">&#127991;&#65039; Tier</button>
     <div class="count-badge" id="count-badge">0 players</div>
-    <button class="btn btn-turf backend-only" id="save-btn" onclick="saveList()">💾 Save</button>
-    <button class="btn btn-turf backend-only" id="save-all-btn" onclick="saveAllLists(this)" title="Checks every watch list you edited in this browser against the NAS staging folder, sends any that did not make it, then pings Jay once. No folder picker. LIST_SAVE_ALL_V1">💾 Save All</button>
+    <!-- PUBLISH_ONLY_TOOLBAR_V1 (2026-10-23, the Dude): the Save (folder picker) and Save All buttons were removed. Every change already auto-saves to the NAS, and Publish sends the list on screen before publishing. saveList() and saveAllLists() are left in place, unused. -->
     <button class="btn btn-turf backend-only" id="publish-list-btn" onclick="publishCurrentList(this)" title="Publishes the list you have up to the public site. Click once to arm it, then click again within 6 seconds. It sends this list to the server first, then the server publishes it on the NAS: top 101 for fans, rank history, +/- arrows. (LIST_PUBLISH_BTN_V1)">📣 Publish</button>
   </div>
 </div>
@@ -2448,8 +2447,8 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="rank-subnav-btn" data-rankpos="TE" onclick="switchRankPos('TE', this)">TE</button>
     <button class="rank-subnav-btn" data-rankpos="DEF" onclick="switchRankPos('DEF', this)">DEF</button>
     <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px;display:none !important">&#127991;&#65039; Tier</button>
-    <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="saveAllRankings(this)" title="Saves EVERY position tab of this rankings set to JSON files in List Data\_Staging, then pings Jay's phone once. It saves them all no matter which tab you are on." style="margin-left:14px">💾 Done Ranking</button>
-    <button class="btn btn-outline backend-only" id="publish-ranking-btn" onclick="publishRankingSet(this)" title="Publishes this whole rankings set (every position tab) to the public site. Click once to arm it, then click again within 6 seconds. It saves every tab first, exactly like Done Ranking, then the server copies those saves to Production on the NAS. (RANK_PUBLISH_BTN_V1)" style="margin-left:6px">📣 Publish</button>
+    <!-- PUBLISH_ONLY_TOOLBAR_V1 (2026-10-23, the Dude): Done Ranking removed, redundant now that Publish saves every tab first. saveAllRankings() left in place, unused. -->
+    <button class="btn btn-outline backend-only" id="publish-ranking-btn" onclick="publishRankingSet(this)" title="Publishes this whole rankings set (every position tab) to the public site. Click once to arm it, then click again within 6 seconds. It saves every tab first, exactly like Done Ranking, then the server copies those saves to Production on the NAS. (RANK_PUBLISH_BTN_V1)" style="margin-left:14px">📣 Publish</button>
     <button class="btn btn-outline backend-only" id="rank-hidden-btn" onclick="openHiddenList()" style="display:none;margin-left:6px" title="Players hidden from this rankings set — click to restore">♻️ Hidden (0)</button><!-- RANK_HIDE_V1 -->
   </div>
 <!-- NFL_RANK_SEARCH_V1 (2026-08-31 - PC Walter, per the Dude). Player-name search on the
@@ -4735,6 +4734,7 @@ async function publishRankingSet(btn){
       say('✓ ' + setName + ' rankings published: ' + pub.join(', ')
         + (other.length ? ('. Not changed: ' + other.join(', ')) : '') + '. Fans see it on their next page load.');
       done('✓ Published');
+      _rankPingJay();   // PUBLISH_ONLY_TOOLBAR_V1: ping Jay when a rankings set is actually published
     } else {
       say('Nothing new to publish for ' + setName + ': ' + (other.join(', ') || 'no tabs found') + '.');
       done('✓ Up to date');
@@ -10599,6 +10599,7 @@ async function publishCurrentList(btn){
       if(d.history && d.history.warning){ msg += '. Note: ' + d.history.warning; }
       say(msg + '. Live on their next page load.');
       done('✓ Published');
+      _notifyHomeAssistantOnSave(listId);   // PUBLISH_ONLY_TOOLBAR_V1: the ping the old Save button sent, now sent when a list is published
     } else if(d.status === 'skipped'){
       say(name + ': ' + (d.reason || 'nothing new to publish') + '.');
       done('✓ Up to date');
@@ -10626,7 +10627,7 @@ async function autoSaveToNflNAS(){
       try { localStorage.setItem(_wlStorageKey() + '_saved', _now); } catch(_e2){}
       const _alS = (typeof _activeList === 'function') ? _activeList() : null;
       const _elS = document.getElementById('logo-sub');
-      if(_elS) _elS.textContent = 'local draft saved: ' + _now + ' (use "Save to Excel" to publish)';   // META_ROW_V1: name dropped, the title above already says it
+      if(_elS) _elS.textContent = 'local draft saved: ' + _now + ' (click Publish to make it live)';   // META_ROW_V1: name dropped, the title above already says it
     }
   } catch(_e){}
   if(_nflNasSaving) return;  // coalesce rapid mutations; the latest list is what posts
