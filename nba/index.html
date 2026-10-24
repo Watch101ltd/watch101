@@ -1994,8 +1994,7 @@ document.addEventListener('DOMContentLoaded',function(){
     
     <button class="btn btn-outline backend-only" id="create-tier-btn" onclick="openCreateTierModal()" title="Draw a colored bracket around a range of players">&#127991;&#65039; Tier</button>
     <div class="count-badge" id="count-badge">0 players</div>
-    <button class="btn btn-court backend-only" id="save-btn" onclick="saveList()">💾 Save</button>
-    <button class="btn btn-court backend-only" id="save-all-btn" onclick="saveAllLists(this)" title="Checks every watch list you edited in this browser against the NAS staging folder, sends any that did not make it, then pings Jay once. No folder picker. LIST_SAVE_ALL_V1">💾 Save All</button>
+    <!-- PUBLISH_ONLY_TOOLBAR_V1 (2026-10-23, the Dude): the Save (folder picker) and Save All buttons were removed. Every change already auto-saves to the NAS, and Publish sends the list on screen before publishing. saveList() and saveAllLists() are left in place, unused. -->
     <button class="btn btn-court backend-only" id="publish-list-btn" onclick="publishCurrentList(this)" title="Publishes the list you have up to the public site. Click once to arm it, then click again within 6 seconds. It sends this list to the server first, then the server publishes it on the NAS: top 101 for fans, rank history, +/- arrows. (LIST_PUBLISH_BTN_V1)">📣 Publish</button>
     
       <!-- LEGEND_KEY_TWINS_V1: beside the moon, baseball's spot -->
@@ -2256,8 +2255,8 @@ document.addEventListener('DOMContentLoaded',function(){
     <button class="rank-subnav-btn" data-rankpos="PF" onclick="switchRankPos('PF', this)">PF</button>
     <button class="rank-subnav-btn" data-rankpos="C" onclick="switchRankPos('C', this)">C</button>
     <button class="btn btn-outline backend-only" id="create-rank-tier-btn" onclick="openCreateRankTierModal()" title="Draw a colored bracket around a range of players on this tab" style="margin-left:14px;display:none !important">&#127991;&#65039; Tier</button>
-    <button class="btn btn-outline backend-only" id="done-ranking-btn" onclick="saveAllRankings(this)" title="Saves EVERY position tab of this rankings set to JSON files in List Data\_Staging, then pings Jay's phone once. It saves them all no matter which tab you are on." style="margin-left:14px">💾 Done Ranking</button>
-    <button class="btn btn-outline backend-only" id="publish-ranking-btn" onclick="publishRankingSet(this)" title="Publishes this whole rankings set (every position tab) to the public site. Click once to arm it, then click again within 6 seconds. It saves every tab first, exactly like Done Ranking, then the server copies those saves to Production on the NAS. (RANK_PUBLISH_BTN_V1)" style="margin-left:6px">📣 Publish</button>
+    <!-- PUBLISH_ONLY_TOOLBAR_V1 (2026-10-23, the Dude): Done Ranking removed, redundant now that Publish saves every tab first. saveAllRankings() left in place, unused. -->
+    <button class="btn btn-outline backend-only" id="publish-ranking-btn" onclick="publishRankingSet(this)" title="Publishes this whole rankings set (every position tab) to the public site. Click once to arm it, then click again within 6 seconds. It saves every tab first, exactly like Done Ranking, then the server copies those saves to Production on the NAS. (RANK_PUBLISH_BTN_V1)" style="margin-left:14px">📣 Publish</button>
     <button class="btn btn-outline backend-only" id="rank-import-btn" onclick="window._rkImport &amp;&amp; window._rkImport.start()" title="Import an Excel or CSV file as this set's OVERALL rankings. Names are matched to the site's players, you confirm the unmatched ones, then the position tabs rebuild themselves from Overall. (RANK_IMPORT_XLSX_V1)" style="margin-left:6px">📥 Import</button><input type="file" id="rki-file" accept=".xlsx,.xls,.csv" style="display:none">
   </div>
 <!-- RANK_SEARCH_V1 (2026-08-31 - PC Walter, per the Dude). Player-name search on the RANKINGS
@@ -7251,6 +7250,7 @@ async function publishRankingSet(btn){
       say('✓ ' + setName + ' rankings published: ' + pub.join(', ')
         + (other.length ? ('. Not changed: ' + other.join(', ')) : '') + '. Fans see it on their next page load.');
       done('✓ Published');
+      _rankPingJay();   // PUBLISH_ONLY_TOOLBAR_V1: ping Jay when a rankings set is actually published
     } else {
       say('Nothing new to publish for ' + setName + ': ' + (other.join(', ') || 'no tabs found') + '.');
       done('✓ Up to date');
@@ -8200,7 +8200,16 @@ function _npRankColInit(){
   const t = document.getElementById('nba-players-table');
   if(t && !t.querySelector('thead th.col-rank')){
     const hr = t.querySelector('thead tr:nth-child(2)');
-    const th = document.createElement('th'); th.className = 'col-rank'; th.textContent = 'Rank';
+    const th = document.createElement('th'); th.className = 'col-rank';
+    // RANK_TOP_ARROW_NBA_V1 (2026-10-23, Matt's Claude, Matt's ask): baseball's circled back-to-top arrow beside
+    // "Rank" (Matt: "Arrow, shrink text if you must", no widening). Word 9px -> 8px, circle 13px (baseball 18px)
+    // so it fits the 40px column. Click = back to the top of the list: #1 sits just under the pinned header.
+    th.innerHTML = '<span style="display:inline-flex;align-items:center;gap:2px;white-space:nowrap"><span style="font-size:8px">Rank</span>'
+      + '<span style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border:1.5px solid currentColor;border-radius:50%;font-size:9px;line-height:1;font-weight:700;box-sizing:border-box">\u2191</span></span>';
+    th.title = 'Back to top of the list'; th.style.cursor = 'pointer';
+    th.addEventListener('mouseover', function(){ th.style.color = 'var(--gold)'; });
+    th.addEventListener('mouseout', function(){ th.style.color = ''; });
+    th.addEventListener('click', function(){ const tb = document.getElementById('nba-players-table'); if(tb) window.scrollTo({ top: tb.getBoundingClientRect().top + window.scrollY, behavior: 'smooth' }); });
     if(hr) hr.insertBefore(th, hr.firstElementChild);
     const g = t.querySelector('thead .own-grp-blank'); if(g) g.colSpan = g.colSpan + 1;
   }
@@ -9324,6 +9333,7 @@ async function publishCurrentList(btn){
       if(d.history && d.history.warning){ msg += '. Note: ' + d.history.warning; }
       say(msg + '. Live on their next page load.');
       done('✓ Published');
+      _notifyHomeAssistantOnSave(listId);   // PUBLISH_ONLY_TOOLBAR_V1: the ping the old Save button sent, now sent when a list is published
     } else if(d.status === 'skipped'){
       say(name + ': ' + (d.reason || 'nothing new to publish') + '.');
       done('✓ Up to date');
@@ -9351,7 +9361,7 @@ async function autoSaveToNbaNAS(){
       try { localStorage.setItem(_wlStorageKey() + '_saved', _now); } catch(_e2){}
       const _alS = (typeof _activeList === 'function') ? _activeList() : null;
       const _elS = document.getElementById('logo-sub');
-      if(_elS) _elS.textContent = 'local draft saved: ' + _now + ' (use "Save to Excel" to publish)';   // META_ROW_V1: name dropped, the title above already says it
+      if(_elS) _elS.textContent = 'local draft saved: ' + _now + ' (click Publish to make it live)';   // META_ROW_V1: name dropped, the title above already says it
     }
   } catch(_e){}
   if(_nbaNasSaving) return;  // coalesce rapid mutations; the latest list is what posts
