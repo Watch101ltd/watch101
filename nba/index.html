@@ -8225,8 +8225,8 @@ function _npRankColInit(){
     // RANK_TOP_ARROW_NBA_V1 (2026-10-23, Matt's Claude, Matt's ask): baseball's circled back-to-top arrow beside
     // "Rank" (Matt: "Arrow, shrink text if you must", no widening). Word 9px -> 8px, circle 13px (baseball 18px)
     // so it fits the 40px column. Click = back to the top of the list: #1 sits just under the pinned header.
-    th.innerHTML = '<span style="display:inline-flex;align-items:center;gap:2px;white-space:nowrap"><span style="font-size:8px">Rank</span>'
-      + '<span style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border:1.5px solid currentColor;border-radius:50%;font-size:9px;line-height:1;font-weight:700;box-sizing:border-box">\u2191</span></span>';
+    th.innerHTML = '<span style="display:inline-flex;align-items:center;gap:2px;white-space:nowrap"><span style="font-size:0.89em">Rank</span>'
+      + '<span style="display:inline-flex;align-items:center;justify-content:center;width:1.45em;height:1.45em;border:1.5px solid currentColor;border-radius:50%;font-size:1em;line-height:1;font-weight:700;box-sizing:border-box">\u2191</span></span>';   // POS_ONE_LINE_NBA_V1: em sizes so HEADER_FIT shrinks word + arrow together in the 30px Rank column
     th.title = 'Back to top of the list'; th.style.cursor = 'pointer';
     th.addEventListener('mouseover', function(){ th.style.color = 'var(--gold)'; });
     th.addEventListener('mouseout', function(){ th.style.color = ''; });
@@ -13435,6 +13435,20 @@ table.watch-list thead th.col-player,table.watch-list tbody td.col-player,
 table.watch-list thead th.col-note,table.watch-list tbody td.col-note{text-align:left!important}
 table.watch-list tbody td .stat-cell{display:inline!important;min-width:0!important;text-align:inherit!important}
 /* end UNIFORM_ALIGN_V1 */
+/* POS_ONE_LINE_NBA_V1 (2026-10-26, Matt's Claude; Matt: "Shrink the space between the columns a bit" and
+   "Make this happen everywhere in basketball"). A player's position badges stay on ONE line on every basketball
+   table (watch list, rankings, NBA Players). Was a 2-across grid, so a third badge (Jaylon Tyson SG SF PF) dropped
+   to a second line and made the row taller. Room comes from the Rank column, not from the table: Rank 40px -> 30px
+   (ranks are at most 3 digits, 19.8px measured), Pos 44px -> 54px, badge side padding 3px -> 2px and badge min-width 18px -> 16px, so three
+   badges (50px) fit inside the 54px cell's padding and the table width is unchanged. The Rank header word shrinks to fit
+   (HEADER_FIT_V1). Measured at his 977px window and at 1460px before writing. */
+table.watch-list colgroup col.col-rank{width:30px!important;max-width:30px!important;min-width:30px!important}
+table.watch-list thead th.col-rank,table.watch-list tbody td.col-rank,table.watch-list thead tr th.col-rank,table.watch-list tbody tr td.col-rank{width:30px!important;max-width:30px!important;min-width:30px!important;padding-left:2px!important;padding-right:2px!important}
+table.watch-list colgroup col.col-pos{width:54px!important;max-width:54px!important;min-width:54px!important}
+table.watch-list thead th.col-pos,table.watch-list tbody td.col-pos,table.watch-list thead tr th.col-pos,table.watch-list tbody tr td.col-pos{width:54px!important;max-width:54px!important;min-width:54px!important;padding-left:2px!important;padding-right:2px!important}
+table.watch-list tbody td:has(> .pos-stack){padding-left:2px!important;padding-right:2px!important}
+table.watch-list tbody td .pos-stack{grid-template-columns:none!important;grid-auto-flow:column;grid-auto-columns:auto}
+table.watch-list tbody td .pos-stack .pos-badge{padding-left:2px!important;padding-right:2px!important;min-width:16px!important}
 </style>
 <script>
 (function(){
