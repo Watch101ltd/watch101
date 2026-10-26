@@ -2573,7 +2573,22 @@ function fitNameCells(){
     todo.push({ nm: nm, box: box, key: key });
   });
   if(!todo.length) return;
-  function over(o){ return (o.nm.scrollWidth > o.nm.clientWidth) || (o.box.scrollWidth > o.box.clientWidth); }
+  // NAMECELL_FIT_V2 (2026-10-26, Matt's Claude; Matt: "no elipses. Shrink the fucking text"). V1 compared whole-pixel
+  // scrollWidth/clientWidth, which cannot see an overflow smaller than a pixel. Under the table's CSS zoom
+  // (0.7 at his ~977px window) Kentavious Caldwell-Pope ran 0.18px past his cell: V1 read 142 vs 142 and
+  // left him alone, while Chrome still drew the dots. V2 also measures the real painted edges (fractional,
+  // zoom included) and wants half a pixel of room inside the cell's padding, so rounding never draws dots.
+  function _nmPaintedOver(o){
+    var br = o.box.getBoundingClientRect();
+    if(!(br.width > 0) || !(o.box.offsetWidth > 0)) return false;
+    var z = br.width / o.box.offsetWidth;
+    var cs = getComputedStyle(o.box);
+    var right = br.right - ((parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderRightWidth) || 0)) * z;
+    var rg = document.createRange(); rg.selectNodeContents(o.box);
+    var cr = rg.getBoundingClientRect();
+    return cr.right > right - 0.5 * z;
+  }
+  function over(o){ return (o.nm.scrollWidth > o.nm.clientWidth) || (o.box.scrollWidth > o.box.clientWidth) || _nmPaintedOver(o); }
   // WRITE: back to the stylesheet's own size before measuring again
   todo.forEach(function(o){ o.nm.style.removeProperty('font-size'); o.nm.style.removeProperty('text-overflow'); });
   // READ
@@ -2946,7 +2961,13 @@ function _yahooApply(data){
       // percent_owned leaves out the number when a player is 0% and sends only the week's change.
       // Change present + no number = 0%, same as baseball. No change either = Yahoo said nothing, keep the dash.
       if(yp.roster_pct == null && yp.roster_delta != null) yp.roster_pct = 0;
-      yp.yahoo_actual_rank = (yp.yahoo_rank != null) ? Number(yp.yahoo_rank) : null;
+      // YAHOO_APPLY_ONCE_V1 (2026-10-26, Matt's Claude; Matt: "why am I not seeing ranks"). YAHOO_EARLY_V1 runs this
+      // twice on the SAME payload (first draw at ~line 8468, then syncYahooNBA). The second pass copied the already
+      // swapped preseason_rank into yahoo_actual_rank, so the Rank column showed preseason rank for 187 players and a
+      // dash for the other 557 (Jaxson Hayes: Yahoo says 71, page showed a dash). Measured 2026-10-26: Yahoo sends
+      // yahoo_rank for all 744. The raw value is now kept once, so a second pass changes nothing.
+      if(!('_yr_raw' in yp)) yp._yr_raw = (yp.yahoo_rank != null) ? Number(yp.yahoo_rank) : null;
+      yp.yahoo_actual_rank = yp._yr_raw;
       yp.yahoo_rank = (yp.preseason_rank != null) ? yp.preseason_rank : null;
       if(yp.yahoo_player_id != null) _yahooByYid[String(yp.yahoo_player_id)] = yp;
       if(yp.name) _yahooByName[_nbaYahooNorm(yp.name)] = yp;
