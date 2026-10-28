@@ -4947,6 +4947,37 @@ function _rankBreaksFromPlayers(pos, players){
   var arr = [];
   (players || []).forEach(function(it, i){ if(it && it.tb) arr.push(i + 1); });
   _rankBreaks[_rankTierKeyFor(pos)] = arr;
+  if(pos === 'Overall' && _rankNRSet()){   // RANK_NOT_RANKED_NBA_V1: the saved Overall says who is still Not Ranked
+    _rankNR = {};
+    (players || []).forEach(function(it){ if(it && it.nr && it.pid != null) _rankNR[String(it.pid)] = true; });
+    _rankNRPersist();
+  }
+}
+// RANK_NOT_RANKED_NBA_V1 (2026-10-28, Matt's Claude, Session 56; Matt's answers on WAITING ON MATT item 22).
+// Redraft only (Matt: "I havent figured out dynasty ranks yet so hold off"). A player who arrives on the
+// site and is NOT on Matt's saved Overall no longer goes in at his Yahoo spot (RANK_INTEGRATE_V1's 10/9 rule):
+// he goes to the BOTTOM of Overall, in Yahoo order, below a line labelled "Not Ranked" (Matt: "yes put
+// them at the bottom and not ranked"). The position tabs derive from Overall (OVERALL_FLOW_NBA_V2), so they
+// end with the same players under the same line. The flag rides the Overall save as nr:1 (no server
+// change). Only the run of Not Ranked players at the very bottom keeps the flag: drag one above the line
+// and he counts as ranked. A player parked by RANK_INTEGRATE_V1 still returns to his old spot.
+var RANK_NR_LS_KEY = 'watch101_nba_rank_notranked_v1';
+var _rankNR = (function(){ try { var o = JSON.parse(localStorage.getItem(RANK_NR_LS_KEY) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch(e){ return {}; } })();
+function _rankNRPersist(){ try { localStorage.setItem(RANK_NR_LS_KEY, JSON.stringify(_rankNR)); } catch(e){} }
+function _rankNRSet(){ return !(typeof _rankSet !== 'undefined' && _rankSet === 'dynasty'); }
+function _rankNRPrune(){
+  var ov = _rankings.Overall || [], keep = {}, changed = false;
+  for(var i = ov.length - 1; i >= 0 && _rankNR[String(ov[i])]; i--) keep[String(ov[i])] = true;
+  Object.keys(_rankNR).forEach(function(pid){ if(!keep[pid]){ delete _rankNR[pid]; changed = true; } });
+  if(changed) _rankNRPersist();
+}
+function _rankNotRankedAt(pos){
+  // How many players sit above the Not Ranked line on this tab (0 = no line). Matt's own order only.
+  if(!_rankNRSet() || !_rankTiersDefaultOrder()) return 0;
+  if(pos === 'Overall') _rankNRPrune();
+  var ids = _rankings[pos] || [], i = ids.length;
+  while(i > 0 && _rankNR[String(ids[i - 1])]) i--;
+  return (i > 0 && i < ids.length) ? i : 0;
 }
 function _rankBreakToggle(n){
   if(_blockIfReadOnly('rankBreakToggle')) return;
@@ -4964,13 +4995,20 @@ function _rankBreaksInject(){
   tbody.querySelectorAll('tr.rank-break-row').forEach(function(r){ r.remove(); });
   if(!_rankTiersDefaultOrder()) return;
   var arr = _rankBreaksGet(_rankPos);
-  if(!arr.length) return;
   var rows = tbody.querySelectorAll('tr[data-rank-pid]');
   if(!rows.length) return;
   var cols = rows[0].children.length;
+  var _nrAt = _rankNotRankedAt(_rankPos);   // RANK_NOT_RANKED_NBA_V1
+  if(_nrAt > 0 && rows[_nrAt - 1] && _nrAt < rows.length){
+    var _nrTr = document.createElement('tr');
+    _nrTr.className = 'rank-break-row rank-notranked-row';
+    _nrTr.innerHTML = '<td colspan="' + cols + '"><div class="rank-break-line">Not Ranked</div></td>';
+    rows[_nrAt - 1].parentNode.insertBefore(_nrTr, rows[_nrAt - 1].nextSibling);
+  }
+  if(!arr.length) return;
   arr.forEach(function(n, i){
     var row = rows[n - 1];
-    if(!row || n >= rows.length) return;   // a break past the last player draws nothing
+    if(!row || n >= rows.length || n === _nrAt) return;   // a break past the last player draws nothing; Not Ranked wins its own spot
     var tr = document.createElement('tr');
     tr.className = 'rank-break-row';
     tr.setAttribute('data-break-after', String(n));
@@ -5974,6 +6012,8 @@ function _rankIntegrate(pos, cur, seed){
       if(pk.after == null) at = 0;
       else { var ai = kept.indexOf(pk.after); at = (ai >= 0) ? ai + 1 : Math.min(Number(pk.idx) || 0, kept.length); }
       delete parked[np]; changed = true;
+    } else if(pos === 'Overall' && _rankNRSet()){
+      at = kept.length; _rankNR[String(np)] = true; _rankNRPersist();   // RANK_NOT_RANKED_NBA_V1: bottom, Not Ranked
     } else {
       at = Math.min(k, kept.length);
     }
@@ -7083,7 +7123,8 @@ function _rankPlayersForSave(pos){
   // RANK_FILE_SAVE_V1: lifted VERBATIM out of saveRankings() so the JSON written to disk is
   // byte-for-byte the same shape the NAS receives. 🪨 Two pieces of code answering the same
   // question is what caused Bug #160. There is now one.
-  return (_rankings[pos]||[]).map(function(pid, _rbi){ var o={ pid: pid }; if(_rankBreakAt(pos, _rbi + 1)) o.tb = 1;   /* RANK_TIER_BREAK_V1 */ var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankStampBucket()[pid]);   /* NOTE_SET_SPLIT_V1 */ if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; /* RANK_NOTE_HISTORY_V1: the dated timeline rides the same payload, so it reaches the NAS and survives a browser wipe exactly like the note itself. Copied, never handed out by reference. */ try { var _rkH = _rankHistBucketOfSet(_rankCurSet())[pid]; if(Array.isArray(_rkH) && _rkH.length) o.notes = _rkH.map(function(e){ return { t: String(e.t || ''), at: (e.at == null ? null : Number(e.at)) }; }); } catch(_he){} return o; });
+  var _nrOn = (pos === 'Overall' && _rankNRSet()); if(_nrOn) _rankNRPrune();   // RANK_NOT_RANKED_NBA_V1
+  return (_rankings[pos]||[]).map(function(pid, _rbi){ var o={ pid: pid }; if(_rankBreakAt(pos, _rbi + 1)) o.tb = 1;   /* RANK_TIER_BREAK_V1 */ if(_nrOn && _rankNR[String(pid)]) o.nr = 1;   /* RANK_NOT_RANKED_NBA_V1 */ var nt=_rankNoteFor(pid); if(nt) o.note=nt; var _nst=Number(_rankStampBucket()[pid]);   /* NOTE_SET_SPLIT_V1 */ if(nt && isFinite(_nst) && _nst>0) o.note_saved_at=_nst; var tt=_rankTypeTagsFor(pid); if(tt.length) o.type_tags=tt.slice(); var pv=_rankPriorityFor(pid); if(pv) o.priority=pv; var av=_rankAvFor(pid); if(av!=null) o.av=av; /* RANK_NOTE_HISTORY_V1: the dated timeline rides the same payload, so it reaches the NAS and survives a browser wipe exactly like the note itself. Copied, never handed out by reference. */ try { var _rkH = _rankHistBucketOfSet(_rankCurSet())[pid]; if(Array.isArray(_rkH) && _rkH.length) o.notes = _rkH.map(function(e){ return { t: String(e.t || ''), at: (e.at == null ? null : Number(e.at)) }; }); } catch(_he){} return o; });
 }
 
 /* ══════════ RANK_FILE_SAVE_V1 (2026-08-23, the Dude's ask) ══════════
@@ -9014,9 +9055,11 @@ function _renderRankPhoneList(ids){
   // RANK_TIER_BREAK_V1: the same tier breaks between the phone cards, in Matt's own order only.
   try {
     if(_rankTiersDefaultOrder()){
+      var _nrAtP = _rankNotRankedAt(_rankPos);   // RANK_NOT_RANKED_NBA_V1
       _rankBreaksGet(_rankPos).forEach(function(n, bi){
-        if(n >= 1 && n < cards.length) cards[n - 1] += '<div class="rank-break-card"><div class="rank-break-line">Tier ' + (bi + 2) + '</div></div>';
+        if(n >= 1 && n < cards.length && n !== _nrAtP) cards[n - 1] += '<div class="rank-break-card"><div class="rank-break-line">Tier ' + (bi + 2) + '</div></div>';
       });
+      if(_nrAtP > 0 && _nrAtP < cards.length) cards[_nrAtP - 1] += '<div class="rank-break-card"><div class="rank-break-line">Not Ranked</div></div>';
     }
   } catch(_rbE){}
   host.innerHTML = _phoneTierWrapRank(ids, cards);
