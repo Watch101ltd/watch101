@@ -3395,7 +3395,7 @@ function _exportRows(){
     var cv = (typeof _cbsForNum === 'function') ? _cbsForNum(pid) : null;
     var nm = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
     var age = (typeof nbaDecimalAgeNum === 'function') ? nbaDecimalAgeNum(p) : null;
-    var tags = _wlTypeTags(it).map(function(id){ var d=_typeTagById(id); return d ? d.label : id; }).join(' / ');
+    var tags = _typeTagsDisplay(_wlTypeTags(it)).map(function(id){   /* TAG_ORDER_ACT_FIRST_V1 */ var d=_typeTagById(id); return d ? d.label : id; }).join(' / ');
     rows.push([
       i+1, nm || '', _nbaPosText(p), p.team || '',   /* YAHOO_POS_NBA_V1 */
       (age==null) ? '' : age, s.gp || '',
@@ -6789,7 +6789,7 @@ function _rankCol_team(){ return { key:'team', label:'Team', headClass:'col-team
 function _rankCol_type(){ return { key:'type', label:'Type', headClass:'col-type', tdClass:'col-type-cell',
   num:function(pid){ return _rankTypeTagsFor(pid).length; },
   render:function(pid){
-    var tags=_rankTypeTagsFor(pid);
+    var tags=_typeTagsDisplay(_rankTypeTagsFor(pid));   // TAG_ORDER_ACT_FIRST_V1
     if(!tags.length) return '<span class="placeholder">—</span>';
     var chips=''; for(var i=0;i<tags.length;i++){ var d=_typeTagById(tags[i]); if(d) chips += '<span class="type-chip" title="' + d.label + ' — ' + d.tagline + '">' + d.emoji + '</span>'; }
     return '<div class="type-stack" data-rank-pid="' + String(pid).replace(/"/g,'&quot;') + '">' + (chips||'—') + '</div>';
@@ -8898,7 +8898,7 @@ function _renderPhoneList(sortedIds){
     var emojis = '';
     try {
       if(typeof _wlTypeTags==='function' && typeof _typeTagById==='function'){
-        var _tags = _wlTypeTags(item);
+        var _tags = _typeTagsDisplay(_wlTypeTags(item));   // TAG_ORDER_ACT_FIRST_V1
         for(var _e = 0; _e < _tags.length; _e++){ var _d = _typeTagById(_tags[_e]); if(_d && _d.emoji) emojis += _d.emoji; }
       }
     } catch(e){}
@@ -9028,7 +9028,7 @@ function _renderRankPhoneList(ids){
     var age = ''; try { age = (typeof nbaDecimalAge==='function') ? (nbaDecimalAge(p) || '') : ''; } catch(e){}
     var emojis = '';
     try {
-      var tags = _rankTypes[pid];
+      var tags = _rankTypes[pid]; if(Array.isArray(tags)) tags = _typeTagsDisplay(tags);   // TAG_ORDER_ACT_FIRST_V1
       if(Array.isArray(tags) && typeof _typeTagById==='function'){
         for(var t = 0; t < tags.length; t++){ var d = _typeTagById(tags[t]); if(d) emojis += d.emoji; }
       }
@@ -9909,13 +9909,22 @@ function _typeTagById(id){
   for(let i = 0; i < TYPE_TAGS_V1.length; i++){ if(TYPE_TAGS_V1[i].id === id) return TYPE_TAGS_V1[i]; }
   return null;
 }
+// TAG_ORDER_ACT_FIRST_V1 (2026-10-28, Matt's Claude, Session 56). Tags print in the order they were added
+// to the player, so the same two tags showed in different orders on different players. Matt: "make sure
+// the must watch and alert, always appear first", and the rest "staying in the order they were added".
+// (A player never carries both.) DISPLAY ONLY: the saved array is never reordered.
+function _typeTagsDisplay(arr){
+  var first = [], rest = [];
+  (Array.isArray(arr) ? arr : []).forEach(function(id){ ((id === 'must_watch' || id === 'alert_add_now') ? first : rest).push(id); });
+  return first.concat(rest);
+}
 function _wlTypeTags(item){
   if(!item || typeof item !== 'object' || !Array.isArray(item.type_tags)) return [];
   return item.type_tags;
 }
 function _wlTypeCellHtml(pid){
   const idx = _wlIndexOf(pid);
-  const tags = (idx >= 0) ? _wlTypeTags(_watchList[idx]) : [];
+  const tags = _typeTagsDisplay((idx >= 0) ? _wlTypeTags(_watchList[idx]) : []);   // TAG_ORDER_ACT_FIRST_V1
   if(!tags.length) return '<td class="placeholder col-type-cell">—</td>';
   let chips = '';
   for(let i = 0; i < tags.length; i++){
@@ -9950,6 +9959,7 @@ function _showTypeTagTooltip(pid, anchorEl, tagsOverride){
   // RANKINGS_WL_CLONE_NBA_V1: rankings stacks pass their own tag array; watch-list callers change nothing.
   var tags = Array.isArray(tagsOverride) ? tagsOverride : (function(){ var idx = _wlIndexOf(pid); return (idx >= 0) ? _wlTypeTags(_watchList[idx]) : []; })();
   if(!tags.length) return;
+  tags = _typeTagsDisplay(tags);   // TAG_ORDER_ACT_FIRST_V1
   var p = (_playerDB && _playerDB[pid]) || null;
   var nm = p ? (p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim()) : '(unnamed)';
   var safeName = String(nm).replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -10055,7 +10065,7 @@ function _ftlRenderTypeTags(pid){
     const rkTags = _rankTypeTagsFor(pid);
     if((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode()){
       let rkChips = '';
-      rkTags.forEach(function(id){ const d = _typeTagById(id); if(d) rkChips += '<span class="type-chip" title="' + d.tagline + '">' + d.emoji + ' ' + d.label + '</span> &nbsp;'; });
+      _typeTagsDisplay(rkTags).forEach(function(id){ const d = _typeTagById(id); if(d) rkChips += '<span class="type-chip" title="' + d.tagline + '">' + d.emoji + ' ' + d.label + '</span> &nbsp;'; });
       body.innerHTML = rkChips || '<em>No type tags on this player.</em>';
       return;
     }
@@ -10070,7 +10080,7 @@ function _ftlRenderTypeTags(pid){
     const idxR = _wlIndexOf(pid);
     const tagsR = (idxR >= 0) ? _wlTypeTags(_watchList[idxR]) : [];
     let chips = '';
-    tagsR.forEach(function(id){ const d = _typeTagById(id); if(d) chips += '<span class="type-chip" title="' + d.tagline + '">' + d.emoji + ' ' + d.label + '</span> &nbsp;'; });
+    _typeTagsDisplay(tagsR).forEach(function(id){ const d = _typeTagById(id); if(d) chips += '<span class="type-chip" title="' + d.tagline + '">' + d.emoji + ' ' + d.label + '</span> &nbsp;'; });
     body.innerHTML = chips || '<em>No type tags on this player.</em>';
     return;
   }
