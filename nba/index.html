@@ -14494,7 +14494,11 @@ td.sch-cell.sch-tot.sch-g8{color:#22c55e!important}
     var day = [], gi = [];
     tds.forEach(function(td, k){ if(!/sch-wk|sch-tot/.test(td.className)){ if(td.textContent) gi.push(day.length); day.push(k); } });
     function runs(n, span, cls){ var out = []; for(var i = 0; i + n <= gi.length; i++){ if(gi[i + n - 1] - gi[i] <= span - 1) out.push({ a: day[gi[i]], b: day[gi[i + n - 1]], c: cls }); } return out; }
-    var boxes = runs(5, 7, 's57').concat(runs(3, 4, 's34')), placed = [];
+    // SCHEDULE_BOXES_NBA_V1.1 (2026-10-29 12:02, Matt): "youre not supposed to show the pink boxes inside" a
+    // yellow 5-in-7. A 3-in-4 whose games all sit inside a yellow box is not drawn; one that runs past the
+    // yellow box's edge still is.
+    var _y57 = runs(5, 7, 's57');
+    var boxes = _y57.concat(runs(3, 4, 's34').filter(function(bx){ return !_y57.some(function(q){ return q.a <= bx.a && bx.b <= q.b; }); })), placed = [];
     boxes.forEach(function(bx){ var L = 0; while(placed.some(function(p){ return p.L === L && p.a <= bx.b && bx.a <= p.b; })) L++; bx.L = L; placed.push(bx); });
     placed.forEach(function(bx){
       var inset = (1 + 3 * bx.L) + 'px';
