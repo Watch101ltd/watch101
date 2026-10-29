@@ -14426,6 +14426,13 @@ th.sch-cell .sch-m{display:block;color:var(--text3,#6b7280);font-weight:600}
 .sch-cell.sch-wk{min-width:14px!important;width:14px!important;padding:0 1px!important;color:var(--gold,#f59e0b);font-weight:800;border-left:1px solid var(--court-bright,#f97316)!important;border-right:2px solid var(--court-bright,#f97316)!important;background:rgba(245,158,11,.07)}
 .sch-cell.sch-tot{min-width:22px!important;width:22px!important;padding:0 2px!important;color:var(--gold,#f59e0b);font-weight:800;border-left:2px solid var(--court-bright,#f97316)!important}
 th.sch-cell.sch-wk, th.sch-cell.sch-tot{font-size:9px}
+/* SCHEDULE_BOXES_NBA_V1 (2026-10-29): busy-stretch boxes and the green 14-day total */
+td.sch-boxhost{position:relative;overflow:visible!important}
+.sch-seg{position:absolute;pointer-events:none;border-top:1px solid var(--sb);border-bottom:1px solid var(--sb);box-sizing:border-box;z-index:1}
+.sch-seg.s34{--sb:#f472b6} .sch-seg.s57{--sb:#facc15}
+.sch-seg.sf{border-left:1px solid var(--sb);border-top-left-radius:3px;border-bottom-left-radius:3px}
+.sch-seg.sl{border-right:1px solid var(--sb);border-top-right-radius:3px;border-bottom-right-radius:3px}
+td.sch-cell.sch-tot.sch-g8{color:#22c55e!important}
 </style>
 <script>
 /* ══════════ SCHEDULE_VIEW_NBA_V1 (2026-10-28, Matt's Claude, Session 56, Matt's ask) ══════════
@@ -14470,9 +14477,35 @@ th.sch-cell.sch-wk, th.sch-cell.sch-tot{font-size:9px}
     return _schCols.map(function(c, k){
       var td = document.createElement('td');
       if(c.wk){ td.className = 'sch-cell sch-wk'; td.textContent = wk; wk = 0; }
-      else if(c.tot){ td.className = 'sch-cell sch-tot'; td.textContent = tot; }
+      else if(c.tot){ td.className = 'sch-cell sch-tot' + (tot >= 8 ? ' sch-g8' : ''); td.textContent = tot; }   // SCHEDULE_BOXES_NBA_V1: 8+ in 14 days is green
       else { var o = sch[_schDays[c.day].iso]; td.className = 'sch-cell' + (k === 0 ? ' sch-first' : '') + (o ? (o.charAt(0) === '@' ? ' away' : ' home') : ''); td.textContent = o || ''; if(o){ wk++; tot++; } }
       return td;
+    });
+  }
+  // SCHEDULE_BOXES_NBA_V1 (2026-10-29, Matt's Claude, Session 56/57). Matt: a thin box around the games any
+  // time there are 3 games in 4 days or 5 games in 7 days, two colors; then "box both sets of 3 games in 4 days,
+  // they can overlap. Do not miss any"; colors "yellow and pink, no red" (3-in-4 pink, 5-in-7 yellow); a
+  // 4-in-6 third box was tried and dropped (10/29: "go back to circling the 3 games in 4 days with the overlap").
+  // Every run of 3 consecutive games whose first and last fall within 4 days gets its own box (5 games within 7
+  // for yellow). Boxes run from the first game's day to the last's. Overlapping boxes nest: each takes the
+  // next free level, drawn 3px further in. Drawn as one segment per cell (no measuring), so a table that was
+  // hidden when it rendered still gets correct boxes.
+  function boxRow(tds){
+    var day = [], gi = [];
+    tds.forEach(function(td, k){ if(!/sch-wk|sch-tot/.test(td.className)){ if(td.textContent) gi.push(day.length); day.push(k); } });
+    function runs(n, span, cls){ var out = []; for(var i = 0; i + n <= gi.length; i++){ if(gi[i + n - 1] - gi[i] <= span - 1) out.push({ a: day[gi[i]], b: day[gi[i + n - 1]], c: cls }); } return out; }
+    var boxes = runs(5, 7, 's57').concat(runs(3, 4, 's34')), placed = [];
+    boxes.forEach(function(bx){ var L = 0; while(placed.some(function(p){ return p.L === L && p.a <= bx.b && bx.a <= p.b; })) L++; bx.L = L; placed.push(bx); });
+    placed.forEach(function(bx){
+      var inset = (1 + 3 * bx.L) + 'px';
+      for(var k = bx.a; k <= bx.b; k++){
+        var seg = document.createElement('div');
+        seg.className = 'sch-seg ' + bx.c + (k === bx.a ? ' sf' : '') + (k === bx.b ? ' sl' : '');
+        seg.style.top = inset; seg.style.bottom = inset;
+        seg.style.left = (k === bx.a) ? '1px' : '-3px';
+        seg.style.right = (k === bx.b) ? '1px' : '-3px';
+        tds[k].classList.add('sch-boxhost'); tds[k].appendChild(seg);
+      }
     });
   }
   function applyTable(tbId, pidAttr){
@@ -14499,7 +14532,9 @@ th.sch-cell.sch-wk, th.sch-cell.sch-tot{font-size:9px}
       tr.querySelectorAll('td.sch-cell').forEach(function(x){ x.remove(); });
       var p = (typeof _playerDB !== 'undefined' && _playerDB) ? _playerDB[tr.getAttribute(pidAttr)] : null;
       var act = tr.querySelector('td.col-action');
-      rowCells(p && p.team).forEach(function(td){ tr.insertBefore(td, act); });
+      var _cells = rowCells(p && p.team);
+      _cells.forEach(function(td){ tr.insertBefore(td, act); });
+      try { boxRow(_cells); } catch(_bE){}   // SCHEDULE_BOXES_NBA_V1
       tr.setAttribute('data-sch-key', _schKey);
     });
     // Tier and break lines span the whole row
