@@ -3015,6 +3015,16 @@ let _cbsByNameTeam = {};     // "normname|TEAM" -> rostered_pct
 let _cbsByName = {};         // "normname" -> rostered_pct (last-wins fallback)
 let _cbsByLastTeamPos = {};  // "lastname|TEAM|POS" -> pct (null if collision)
 let _cbsDataLoaded = false;
+// CBS_INITIAL_MATCH_V1 (2026-10-30, per Matt): "firstinitial|lastname|TEAM" -> pct (null if collision).
+// Catches short/long first names CBS and Sleeper spell differently (Ron/Ronald Holland,
+// Dom/Dominick Barlow, Gregory/GG Jackson) when position labels also differ (F vs SF).
+let _cbsByInitLastTeam = {};
+function _cbsInitKey(s, tm){
+  var n = String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  var f = n.replace(/[^a-z]/g,'').charAt(0);
+  var l = _cbsLastName(s);
+  return (f && l && tm) ? (f + '|' + l + '|' + tm) : '';
+}
 function _cbsNorm(s){
   // suffix strip BEFORE punctuation strip (so "michaeljr" never blocks "michael")
   var n = String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -3045,7 +3055,7 @@ async function loadCbsNBA(){
     if(!res.ok){ console.warn('[NBA_CBS] no CBS data yet (HTTP ' + res.status + ')'); return; }
     const data = await res.json();
     const players = (data && data.players) || [];
-    _cbsByNameTeam = {}; _cbsByName = {}; _cbsByLastTeamPos = {};
+    _cbsByNameTeam = {}; _cbsByName = {}; _cbsByLastTeamPos = {}; _cbsByInitLastTeam = {};
     let n = 0;
     for(const p of players){
       if(p.rostered_pct == null) continue;
@@ -3060,6 +3070,8 @@ async function loadCbsNBA(){
         if(!(lk in _cbsByLastTeamPos)) _cbsByLastTeamPos[lk] = p.rostered_pct;  // first wins
         else _cbsByLastTeamPos[lk] = null;                                       // collision -> dead
       }
+      const ik = _cbsInitKey(p.name, tm);
+      if(ik){ if(!(ik in _cbsByInitLastTeam)) _cbsByInitLastTeam[ik] = p.rostered_pct; else _cbsByInitLastTeam[ik] = null; }
       n++;
     }
     _cbsDataLoaded = true;
@@ -3081,6 +3093,10 @@ function _cbsForNum(pid){
   if((typeof v !== 'number') && tm && p.position){
     const lk = _cbsLastName(full) + '|' + tm + '|' + String(p.position).toUpperCase();
     if(lk in _cbsByLastTeamPos && typeof _cbsByLastTeamPos[lk] === 'number') v = _cbsByLastTeamPos[lk];
+  }
+  if((typeof v !== 'number') && tm){
+    const ik = _cbsInitKey(full, tm);
+    if(ik && typeof _cbsByInitLastTeam[ik] === 'number') v = _cbsByInitLastTeam[ik];
   }
   return (typeof v === 'number') ? v : null;
 }
