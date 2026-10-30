@@ -1188,7 +1188,7 @@ body.day-mode td.col-gold-sprint-k9 span[style*="--gold"] {
 /* NOTE_HYPERLINK_V1 (April 25, 2026) — switched to flex so the chain icon
    never gets clipped by the text-overflow:ellipsis on long notes. The text
    span truncates with ellipsis; the icon stays visible on the right. */
-.note-display{font-size:12px;color:var(--text);font-style:italic;cursor:pointer;width:100%;max-width:100%;box-sizing:border-box;display:flex;align-items:center;gap:4px;padding:3px 6px;border-radius:4px;border:1px solid transparent;transition:all 0.15s;white-space:nowrap;overflow:hidden}
+.note-display{font-size:12px;color:var(--text);font-style:normal;cursor:pointer;width:100%;max-width:100%;box-sizing:border-box;display:flex;align-items:center;gap:4px;padding:3px 6px;border-radius:4px;border:1px solid transparent;transition:all 0.15s;white-space:nowrap;overflow:hidden}
 .note-display .note-text{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .note-display .note-link-badge{flex:0 0 auto}
 .note-display:hover{border-color:var(--gold);background:var(--surface2);color:var(--gold)}
@@ -1799,7 +1799,7 @@ body.day-mode #player-page-overlay .ppo-close:hover{background:var(--red,#b91c1c
   .pc-nm .player-name{font-weight:800;}
   .pc-prio{font-size:11px;line-height:1;}
   .pc-meta{font-size:10px;color:var(--text3);font-weight:600;margin-top:2px;}
-  .pc-note{font-size:12px;color:var(--text2);font-style:italic;font-weight:600;line-height:1.3;margin-top:5px;
+  .pc-note{font-size:12px;color:var(--text2);font-style:normal;font-weight:600;line-height:1.3;margin-top:5px;
            background:rgba(240,165,0,0.06);border-left:2px solid var(--gold);border-radius:3px;padding:5px 8px;}
   .pc-note .note-link-badge{font-style:normal;}
   .pc-note-empty{color:var(--text3);font-style:normal;opacity:.6;}
@@ -2133,6 +2133,17 @@ body.day-mode #player-page-overlay .ppo-statbar{background:rgba(0,0,0,0.015);}
 body.day-mode #player-page-overlay .ppo-adv-row.open{background:rgba(99,102,241,0.08);}
 
 
+/* NOTE_RICH_V1 (2026-10-30): note formatting toolbar, highlight, hover popup */
+mark.nr-m, #nr-tip mark, .col-note mark, .rk-note mark, .pc-note mark, .ftl-note-body mark, .ftl-note-hist-entry mark, #note-editor-history mark{background:rgba(240,165,0,0.32);color:inherit;border-radius:2px;padding:0 1px}
+.nr-bar{display:flex;gap:6px;margin:0 0 6px 0}
+.nr-bar button{width:32px;height:28px;background:transparent;border:1px solid var(--border2,#253545);color:var(--text2,#e2e8f0);border-radius:6px;font-family:inherit;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.nr-bar button:hover{border-color:var(--gold2,#f0a500)}
+.nr-bar button.on{border-color:var(--gold2,#f0a500);color:var(--gold2,#f0a500);background:rgba(240,165,0,0.12)}
+.nr-bar .nr-hl span{background:rgba(240,165,0,0.45);color:#fff;padding:1px 4px;border-radius:2px;font-weight:800;font-size:12px}
+.nr-ed{outline:none;font-weight:400;font-style:normal}
+.nr-ed.nr-empty:before{content:attr(data-ph);color:var(--text3,#94a3b8);pointer-events:none}
+#nr-tip{position:fixed;z-index:10050;display:none;background:var(--surface,#0d1117);border:1px solid var(--gold2,#f0a500);border-radius:8px;padding:10px 12px;font-family:'Nunito Sans',sans-serif;font-size:12.5px;font-style:normal;font-weight:400;line-height:1.5;color:var(--text2,#e2e8f0);white-space:pre-wrap;word-break:break-word;box-shadow:0 10px 30px rgba(0,0,0,0.65);pointer-events:none;text-align:left}
+.note-display mark,.ppo-note-body mark{background:rgba(240,165,0,0.32);color:inherit;border-radius:2px;padding:0 1px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
 <!-- GAMELOG_LAZYLOAD_V1 (2026-07-23): player_game_log.js + player_pitching_game_log.js
@@ -3470,7 +3481,7 @@ html.mlb-gated body > #mlb-gate { display:flex !important; }
     <h2 style="margin:0 0 2px 0;font-size:16px">&#128221; Note</h2>
     <div id="note-editor-player" style="font-size:13px;font-weight:800;color:var(--gold);margin:0 0 10px 0;font-family:'Nunito Sans',sans-serif"></div>
     <textarea id="note-editor-textarea" rows="7" onkeydown="_notePopupKeydown(event)" style="width:100%;box-sizing:border-box;resize:vertical;background:var(--surface3);border:1px solid var(--gold2);border-radius:6px;color:var(--text);font-size:13px;line-height:1.5;padding:10px 12px;font-family:'Nunito Sans',sans-serif;outline:none"></textarea>
-    <div style="font-size:11px;color:var(--text3);margin:6px 0 12px 0;font-family:'Nunito Sans',sans-serif">Paste a link anywhere in the note and it shows as the &#128279; chip. Ctrl+Enter saves, Esc cancels, clicking outside saves.</div>
+    <div style="font-size:11px;color:var(--text3);margin:6px 0 12px 0;font-family:'Nunito Sans',sans-serif">Select words, then click a button (&#8984;B bold &middot; &#8984;I italic &middot; &#8984;U underline &middot; &#8984;&#8679;X strikethrough &middot; &#8984;&#8679;H highlight). Paste a link anywhere in the note and it shows as the &#128279; chip. Ctrl+Enter saves, Esc cancels, clicking outside saves.</div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-outline" onclick="closeNotePopup()">Cancel</button>
       <button class="btn btn-gold" onclick="_notePopupSaveClick()">Save Note</button>
@@ -7309,6 +7320,9 @@ function noteBadge(p){
 // Per the Dude's spec (April 25 2026): only http:// or https:// counts. Bare
 // domains like "espn.com" are intentionally NOT detected to avoid false
 // positives. Matt knows to include the protocol.
+// NOTE_RICH_V1 (2026-10-30): a note's only markup is <b> <i> <u> <s> <mark>; everything else is escaped.
+function _noteRich(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }).replace(/&lt;(\/?)(b|i|u|s|mark)&gt;/g, '<$1$2>'); }
+function _notePlain(t){ return String(t == null ? '' : t).replace(/<\/?(b|i|u|s|mark)>/g, ''); }
 function _splitNoteAndUrl(noteText){
   if(noteText == null) return { text: '', url: null };
   var s = String(noteText);
@@ -9324,8 +9338,8 @@ function renderTable(){
           const _displayText = _split.text || (_shown ? '' : 'Add note...');
           const _linkBadge = _renderNoteLinkBadge(_split.url);
           // Title tooltip uses the full original note so Matt can see the URL
-          const _titleAttr = (_shown || '').replace(/"/g,'&quot;');
-          return `<div class="note-display ${_emptyClass}${_archivedClass}" onclick="editNote('${p.id}',this)" title="${_titleAttr}"><span class="note-text">${_displayText}</span>${_linkBadge}</div>`;
+          const _titleAttr = escapeHtml(_shown || '');   // NOTE_RICH_V1: full note feeds the site hover popup
+          return `<div class="note-display ${_emptyClass}${_archivedClass}" onclick="editNote('${p.id}',this)"${_shown ? ` data-note-full="${_titleAttr}"` : ''}><span class="note-text">${_noteRich(_displayText)}</span>${_linkBadge}</div>`;
         })()}</td>
       <td class="yahoo-rank col-yahoo-rank col-zone-divider">${fmt(p.yahoo_rank)}</td>
       <td class="stat-cell col-owned">${p.roster_pct!==null&&p.roster_pct!==undefined&&p.roster_pct!==''?parseFloat(p.roster_pct).toFixed(0)+'%':'0%'}</td>
@@ -9484,7 +9498,7 @@ function renderPhoneCards(){
     var _noteText = _split.text || '';
     var _noteBadge = (typeof _renderNoteLinkBadge==='function') ? _renderNoteLinkBadge(_split.url) : '';
     var _noteHtml = _noteText
-      ? ('<div class="pc-note">'+_noteText+_noteBadge+'</div>')
+      ? ('<div class="pc-note">'+_noteRich(_noteText)+_noteBadge+'</div>')
       : '<div class="pc-note"><span class="pc-note-empty">No note yet</span></div>';
 
     var yOwn = (p.roster_pct!=null && p.roster_pct!=='') ? parseFloat(p.roster_pct).toFixed(0)+'%' : '0%';
@@ -17985,7 +17999,7 @@ function openPlayerPage(p){
     }
     var _curDateLabel = _curStamp || 'Pending save';
     notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date current">' + escapeHtml(_curDateLabel) + '</div>'
-               + '<div class="ppo-note-body">' + escapeHtml(_curSplit.text || currentNote) + _curBadge + '</div>'
+               + '<div class="ppo-note-body">' + _noteRich(_curSplit.text || currentNote) + _curBadge + '</div>'
                + _markFreshHtml
                + '</div>';
   }
@@ -18008,7 +18022,7 @@ function openPlayerPage(p){
       // rendered empty. Now reads h.date_time with h.date as a legacy fallback in case
       // any older entries used that field name.
       notesHtml += '<div class="ppo-note-entry"><div class="ppo-comment-date">' + escapeHtml(h.date_time || h.date || '') + '</div>'
-                 + '<div class="ppo-note-body">' + escapeHtml(_hSplit.text || h.body || h.note || '') + _hBadge + '</div></div>';
+                 + '<div class="ppo-note-body">' + _noteRich(_hSplit.text || h.body || h.note || '') + _hBadge + '</div></div>';
     }
     notesHtml += '</div>';
     // JARGON_CLEANUP_V1 Part C (May 27, 2026 — PC Walter, per JP) — tagged
@@ -21725,5 +21739,181 @@ document.addEventListener('keydown',function(e){
 })();
 </script>
 <!-- ===================== CHROME_FIT_V1 END ===================== -->
+<script>
+// ══════════ NOTE_RICH_V1 (2026-10-30, per Matt) ══════════
+// Bold / italic / underline / strikethrough / highlight inside notes, plus the site-styled hover
+// popup (preview 3b, approved 14:32). Storage stays a plain string: the five tags <b> <i> <u> <s>
+// <mark> are the only markup; _noteRich() escapes everything else, so old notes are untouched.
+// The two note textareas (popup editor + player-card box) stay the source of truth: their .value
+// is intercepted, so every existing caller (save, copy, import, history, trim checks) works as-is.
+(function(){
+  var HL = 'rgba(240, 165, 0, 0.32)';
+  var TAGS = ['b','i','u','s','mark'];
+  function editorHtml(v){
+    return _noteRich(v).replace(/<mark>/g, '<span style="background-color:' + HL + '">').replace(/<\/mark>/g, '</span>');
+  }
+  function serialize(root){
+    var out = '';
+    function walk(n){
+      if(n.nodeType === 3){ out += n.nodeValue.replace(/ /g, ' '); return; }
+      if(n.nodeType !== 1) return;
+      var tag = n.nodeName.toLowerCase(), st = n.style || {};
+      if(tag === 'br'){ out += '\n'; return; }
+      if((tag === 'div' || tag === 'p') && out && out.slice(-1) !== '\n') out += '\n';
+      var deco = String(st.textDecorationLine || st.textDecoration || '');
+      var fw = String(st.fontWeight || '');
+      var bg = String(st.backgroundColor || '');
+      var w = [];
+      if(tag === 'b' || tag === 'strong' || fw === 'bold' || parseInt(fw, 10) >= 600) w.push('b');
+      if(tag === 'i' || tag === 'em' || st.fontStyle === 'italic') w.push('i');
+      if(tag === 'u' || /underline/.test(deco)) w.push('u');
+      if(tag === 's' || tag === 'strike' || tag === 'del' || /line-through/.test(deco)) w.push('s');
+      if(tag === 'mark' || (bg && bg !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(bg))) w.push('mark');
+      w.forEach(function(t){ out += '<' + t + '>'; });
+      Array.prototype.forEach.call(n.childNodes, walk);
+      w.slice().reverse().forEach(function(t){ out += '</' + t + '>'; });
+    }
+    Array.prototype.forEach.call(root.childNodes, walk);
+    var prev;
+    do { prev = out; out = out.replace(/<(b|i|u|s|mark)><\/\1>/g, '').replace(/<\/(b|i|u|s|mark)><\1>/g, ''); } while(out !== prev);
+    return out.replace(/\n$/, '');
+  }
+  function caretEnd(ed){
+    var r = document.createRange(); r.selectNodeContents(ed); r.collapse(false);
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  function isHl(){
+    var v = String(document.queryCommandValue('backColor') || '').replace(/\s/g, '');
+    return v === HL.replace(/\s/g, '');
+  }
+  function apply(cmd, ed){
+    ed.focus();
+    try { document.execCommand('styleWithCSS', false, false); } catch(e){}
+    if(cmd === 'mark'){
+      try { document.execCommand('styleWithCSS', false, true); } catch(e){}
+      document.execCommand('hiliteColor', false, isHl() ? 'transparent' : HL);
+      try { document.execCommand('styleWithCSS', false, false); } catch(e){}
+    } else {
+      document.execCommand({b:'bold', i:'italic', u:'underline', s:'strikeThrough'}[cmd], false, null);
+    }
+    ed.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  function syncButtons(bar){
+    if(!bar) return;
+    Array.prototype.forEach.call(bar.querySelectorAll('button[data-cmd]'), function(b){
+      var c = b.getAttribute('data-cmd'), on = false;
+      try { on = (c === 'mark') ? isHl() : document.queryCommandState({b:'bold', i:'italic', u:'underline', s:'strikeThrough'}[c]); } catch(e){}
+      b.classList.toggle('on', !!on);
+    });
+  }
+  window._noteRichUpgrade = function(ta){
+    if(!ta || ta._nrDone) return; ta._nrDone = true;
+    var desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+    var bar = document.createElement('div'); bar.className = 'nr-bar';
+    bar.innerHTML =
+      '<button type="button" data-cmd="b" title="Bold (⌘B)"><b>B</b></button>' +
+      '<button type="button" data-cmd="i" title="Italic (⌘I)"><i>I</i></button>' +
+      '<button type="button" data-cmd="u" title="Underline (⌘U)"><u>U</u></button>' +
+      '<button type="button" data-cmd="s" title="Strikethrough (⌘⇧X)"><s>S</s></button>' +
+      '<button type="button" data-cmd="mark" class="nr-hl" title="Highlight (⌘⇧H)"><span>H</span></button>';
+    var ed = document.createElement('div'); ed.className = 'nr-ed nr-empty'; ed.contentEditable = 'true';
+    ed.setAttribute('role', 'textbox'); ed.setAttribute('aria-multiline', 'true');
+    ed.style.cssText = ta.style.cssText; ed.style.display = 'block';
+    if(!ta.getAttribute('style')){   // styled by the page's CSS (card box, baseball forms): copy the look
+      var cs = getComputedStyle(ta);
+      ['backgroundColor','borderTopWidth','borderTopStyle','borderTopColor','borderRightWidth','borderRightStyle','borderRightColor',
+       'borderBottomWidth','borderBottomStyle','borderBottomColor','borderLeftWidth','borderLeftStyle','borderLeftColor',
+       'borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','color','fontFamily','fontSize',
+       'lineHeight','paddingTop','paddingRight','paddingBottom','paddingLeft'].forEach(function(k){ ed.style[k] = cs[k]; });
+      ed.style.boxSizing = 'border-box'; ed.style.width = '100%';
+    }
+    ed.style.minHeight = ((parseInt(ta.getAttribute('rows'), 10) || 5) * 1.5) + 'em';
+    ed.style.resize = 'none'; ed.style.overflowY = 'auto'; ed.style.maxHeight = '50vh';
+    ed.style.whiteSpace = 'pre-wrap'; ed.style.wordBreak = 'break-word'; ed.style.cursor = 'text';
+    ta.parentNode.insertBefore(bar, ta);
+    ta.parentNode.insertBefore(ed, ta);
+    ta.style.display = 'none';
+    function refreshEmpty(){ ed.classList.toggle('nr-empty', !serialize(ed)); ed.setAttribute('data-ph', ta.getAttribute('placeholder') || ''); }
+    Object.defineProperty(ta, 'value', {
+      configurable: true,
+      get: function(){ return serialize(ed); },
+      set: function(v){ desc.set.call(ta, v == null ? '' : String(v)); ed.innerHTML = editorHtml(v == null ? '' : String(v)); refreshEmpty(); }
+    });
+    ta.focus = function(){ ed.focus(); caretEnd(ed); };
+    ta.setSelectionRange = function(){ caretEnd(ed); };
+    new MutationObserver(refreshEmpty).observe(ta, { attributes: true, attributeFilter: ['placeholder'] });
+    bar.addEventListener('mousedown', function(e){ e.preventDefault(); });   // keep the selection
+    bar.addEventListener('click', function(e){
+      var b = e.target.closest('button[data-cmd]'); if(!b) return;
+      e.preventDefault(); e.stopPropagation();
+      apply(b.getAttribute('data-cmd'), ed); syncButtons(bar);
+    });
+    ed.addEventListener('keydown', function(e){
+      var k = String(e.key || '').toLowerCase();
+      if((e.metaKey || e.ctrlKey) && e.shiftKey && (k === 'x' || k === 'h')){
+        e.preventDefault(); e.stopPropagation(); apply(k === 'x' ? 's' : 'mark', ed); syncButtons(bar); return;
+      }
+      if((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (k === 'b' || k === 'i' || k === 'u')){
+        e.preventDefault(); e.stopPropagation(); apply(k, ed); syncButtons(bar); return;
+      }
+      // hand every other key to the textarea's own handlers (Esc, Ctrl+Enter, Enter guards)
+      var ke = new KeyboardEvent('keydown', { key: e.key, code: e.code, keyCode: e.keyCode, which: e.which,
+        ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey, bubbles: false, cancelable: true });
+      try { Object.defineProperty(ke, 'keyCode', { get: function(){ return e.keyCode; } }); } catch(x){}
+      ta.dispatchEvent(ke);
+      if(ke.cancelBubble) e.stopPropagation();
+      if(ke.defaultPrevented){ e.preventDefault(); return; }
+      if(e.key === 'Enter' && !e.ctrlKey && !e.metaKey){
+        e.preventDefault(); e.stopPropagation(); document.execCommand('insertLineBreak');
+      }
+    });
+    ed.addEventListener('paste', function(e){   // paste arrives as plain text (no outside formatting)
+      var t = (e.clipboardData || window.clipboardData).getData('text/plain');
+      e.preventDefault(); document.execCommand('insertText', false, t);
+    });
+    ed.addEventListener('input', function(){ refreshEmpty(); ta.dispatchEvent(new Event('input', { bubbles: true })); });
+    document.addEventListener('selectionchange', function(){
+      var s = window.getSelection(); if(s && s.anchorNode && ed.contains(s.anchorNode)) syncButtons(bar);
+    });
+    refreshEmpty();
+  };
+
+  // ── the hover popup (3b): shows after a short pause on a CUT-OFF note, gone when the mouse leaves ──
+  var tip = null, timer = null, cur = null;
+  function hide(){ clearTimeout(timer); timer = null; cur = null; if(tip) tip.style.display = 'none'; }
+  function clipped(el){
+    var t = el.querySelector('.rk-note-text, .note-text') || el;
+    return t.scrollWidth > t.clientWidth + 1;
+  }
+  function show(el){
+    var raw = el.getAttribute('data-note-full'); if(!raw) return;
+    if(!tip){ tip = document.createElement('div'); tip.id = 'nr-tip'; document.body.appendChild(tip); }
+    tip.innerHTML = _noteRich(raw);
+    tip.style.display = 'block'; tip.style.visibility = 'hidden';
+    var r = el.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    var w = Math.min(420, vw - 16); tip.style.width = w + 'px';
+    var left = Math.max(8, Math.min(r.left, vw - w - 8));
+    var h = tip.offsetHeight;
+    var top = (r.bottom + 6 + h <= vh - 8) ? (r.bottom + 6) : Math.max(8, r.top - 6 - h);
+    tip.style.left = left + 'px'; tip.style.top = top + 'px'; tip.style.visibility = 'visible';
+  }
+  document.addEventListener('pointerover', function(e){
+    if(e.pointerType && e.pointerType !== 'mouse') return;
+    var el = e.target && e.target.closest ? e.target.closest('[data-note-full]') : null;
+    if(el === cur) return;
+    hide();
+    if(!el || !clipped(el)) return;
+    cur = el; timer = setTimeout(function(){ if(cur === el) show(el); }, 450);
+  });
+  document.addEventListener('mousedown', hide, true);
+  window.addEventListener('scroll', hide, true);
+  window.addEventListener('blur', hide);
+  document.addEventListener('mouseleave', hide);
+
+  ['note-editor-textarea', 'ftl-noteadd-text', 'f-note', 'acp-note'].forEach(function(id){ _noteRichUpgrade(document.getElementById(id)); });
+})();
+// ── /NOTE_RICH_V1 ──
+
+</script>
 </body>
 </html>
