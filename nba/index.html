@@ -1236,7 +1236,16 @@ body.view-matts-take #nbamain-wrap th.col-cbsowned,  body.view-matts-take #nbama
 body.view-matts-take #nbamain-wrap th.col-stat-info, body.view-matts-take #nbamain-wrap td.col-stat-info,
 body.view-matts-take #nbamain-wrap th.col-stat-a,    body.view-matts-take #nbamain-wrap td.col-stat-a,
 body.view-matts-take #nbamain-wrap th.col-stat-b,    body.view-matts-take #nbamain-wrap td.col-stat-b{display:none !important;}
-body.view-matts-take #nbamain-wrap th.col-note,body.view-matts-take #nbamain-wrap td.col-note{max-width:none;width:55%;white-space:normal;}
+/* SATTEN_SAYS_WIDE_V1 (2026-10-31, per Matt: "The note should read all the way across the screen and maybe like up to 3
+   lines each before a popout/hoverover is needed"). The table was sizing to its content (width:max-content, fixed layout),
+   so the note column came out ~90px wide and every row was hundreds of pixels tall. In Satten Says the table now fills the
+   window, the other columns keep their content width, the note takes the rest, and each note shows up to 3 lines; a longer
+   note opens in full in the hover popup (NOTE_RICH_V1). */
+body.view-matts-take #nbamain-wrap table{width:100% !important;min-width:0 !important;table-layout:auto !important}
+body.view-matts-take #nbamain-wrap th:not(.col-note),body.view-matts-take #nbamain-wrap td:not(.col-note){white-space:nowrap}
+body.view-matts-take #nbamain-wrap th.col-note,body.view-matts-take #nbamain-wrap td.col-note{width:auto !important;max-width:none !important;white-space:normal !important}
+body.view-matts-take #nbamain-wrap td.col-note .wl-note-txt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
+.wl-note-txt{white-space:inherit}
 
 /* ── 9 CAT and 13 CAT ─────────────────────────────────────────────────────────────────────────
    Each view keeps GP + MIN (informational in BOTH formats, which is why they are green and sit
@@ -10997,7 +11006,7 @@ function _wlNoteCellHtml(pid){
   }
   const sp = _splitNoteAndUrl(raw);
   // NOTE_HOVER_ALL_V1 (2026-10-30, per Matt): hovering a note shows it in full on every page, same as Rankings.
-  return '<td class="left col-note wl-note-cell" data-note-full="' + escapeHtml(raw) + '" ' + onclick + '>' + _noteRich(sp.text) + _renderNoteLinkBadge(sp.url) + '</td>';
+  return '<td class="left col-note wl-note-cell" data-note-full="' + escapeHtml(raw) + '" ' + onclick + '><span class="wl-note-txt">' + _noteRich(sp.text) + '</span>' + _renderNoteLinkBadge(sp.url) + '</td>';
 }
 // NEW_NOTE_48H_V1 (2026-08-03 — PC Walter). Baseball's 📝 badge ported — the June 9
 // timestamp design, NOT the retired publish-count one: _setWlNote stamps note_saved_at
@@ -14756,6 +14765,8 @@ td.sch-cell.sch-tot.sch-g8{color:#22c55e!important}
   function hide(){ clearTimeout(timer); timer = null; cur = null; if(tip) tip.style.display = 'none'; }
   function clipped(el){
     var t = el.querySelector('.rk-note-text, .note-text') || el;
+    var w = el.querySelector('.wl-note-txt');   // SATTEN_SAYS_WIDE_V1: a 3-line clamp is cut off vertically
+    if(w && w.scrollHeight > w.clientHeight + 1) return true;
     return t.scrollWidth > t.clientWidth + 1;
   }
   function show(el){
