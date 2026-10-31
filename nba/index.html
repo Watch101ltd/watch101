@@ -1801,6 +1801,10 @@ mark.nr-m, #nr-tip mark, .col-note mark, .rk-note mark, .pc-note mark, .ftl-note
 #ftl-overlay .ftl-noteadd .nr-ed{width:100%;box-sizing:border-box;min-height:150px;background:var(--surface2,#111827);color:var(--text,#e5e7eb);border:1px solid var(--border2,#334155);border-radius:8px;padding:8px 10px;font:14px/1.5 'Nunito Sans',sans-serif;}
 #ftl-overlay .ftl-noteadd .nr-ed:focus{outline:none;border-color:var(--court,#ea580c) !important;}
 #ftl-overlay .ftl-noteadd .nr-bar{margin:0}
+/* SEARCH_CLEAR_V1 (2026-10-31): the x that empties a search box */
+.sc-clear{position:absolute;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;border:none;background:rgba(148,163,184,0.22);color:inherit;font-size:15px;line-height:20px;text-align:center;cursor:pointer;padding:0;display:none;z-index:3;font-family:Arial,sans-serif}
+.sc-clear:hover{background:#ea580c;color:#fff}
+input.sc-has-text{padding-right:32px !important}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
 </head>
@@ -14782,6 +14786,52 @@ td.sch-cell.sch-tot.sch-g8{color:#22c55e!important}
   ['note-editor-textarea', 'ftl-noteadd-text', 'f-note', 'acp-note'].forEach(function(id){ _noteRichUpgrade(document.getElementById(id)); });
 })();
 // ── /NOTE_RICH_V1 ──
+
+</script>
+<script>
+// ══════════ SEARCH_CLEAR_V1 (2026-10-31, per Matt: "a little x in the corner", every search box, all sports) ══════════
+// A small x appears at the right end of a search box while it has text; one click empties it and fires the
+// box's own 'input' handlers, so the list/filter resets exactly as if the text had been deleted by hand.
+(function(){
+  var IDS = ["player-search","nbap-search","nbark-search"];
+  function place(inp, btn){
+    var par = inp.parentElement;
+    btn.style.top = (inp.offsetTop + inp.offsetHeight / 2) + 'px';
+    btn.style.right = Math.max(4, par.clientWidth - (inp.offsetLeft + inp.offsetWidth) + 7) + 'px';
+  }
+  function sync(inp, btn){
+    var on = !!(inp.value && inp.value.length);
+    btn.style.display = on ? 'block' : 'none';
+    inp.classList.toggle('sc-has-text', on);
+    if(on) place(inp, btn);
+  }
+  function attach(inp){
+    if(!inp || inp._scDone) return; inp._scDone = true;
+    var par = inp.parentElement; if(!par) return;
+    if(getComputedStyle(par).position === 'static') par.style.position = 'relative';
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'sc-clear'; btn.title = 'Clear'; btn.setAttribute('aria-label', 'Clear search');
+    btn.innerHTML = '&times;';
+    par.appendChild(btn);
+    btn.addEventListener('mousedown', function(e){ e.preventDefault(); });
+    btn.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      inp.value = '';
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+      sync(inp, btn); inp.focus();
+    });
+    inp.addEventListener('input', function(){ sync(inp, btn); });
+    inp.addEventListener('focus', function(){ sync(inp, btn); });
+    var d = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');   // code that sets .value directly
+    try { Object.defineProperty(inp, 'value', { configurable: true, get: function(){ return d.get.call(inp); }, set: function(v){ d.set.call(inp, v); sync(inp, btn); } }); } catch(e){}
+    window.addEventListener('resize', function(){ if(btn.style.display === 'block') place(inp, btn); });
+    sync(inp, btn);
+  }
+  function run(){ IDS.forEach(function(id){ document.querySelectorAll('input[id="' + id + '"]').forEach(attach); }); }
+  run(); setTimeout(run, 1500);   // a few boxes are built after load
+})();
+// ── /SEARCH_CLEAR_V1 ──
 
 </script>
 </body>
