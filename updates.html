@@ -282,6 +282,13 @@ body{
 .entry ul{margin:0;padding-left:20px}
 .entry li{font-size:16.5px;color:var(--text2);margin-bottom:9px;line-height:1.55}
 .entry li:last-child{margin-bottom:0}
+.entry li .tags{display:inline-flex;gap:5px;margin-right:8px;vertical-align:2px}
+.tag{display:inline-block;font-family:'Nunito Sans',sans-serif;font-size:10.5px;font-weight:800;letter-spacing:.06em;padding:2px 7px;border-radius:9px;color:#fff;line-height:1.3}
+.tag.nba{background:var(--nba-accent)}.tag.nfl{background:var(--nfl-accent)}.tag.mlb{background:var(--mlb-accent)}.tag.all{background:var(--text3)}
+.upd-filter{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px}
+.upd-filter button{background:var(--surface);border:1px solid var(--border);color:var(--text2);border-radius:18px;padding:6px 16px;font-family:'Nunito Sans',sans-serif;font-size:13px;font-weight:800;cursor:pointer}
+.upd-filter button.on{background:var(--gold);border-color:var(--gold);color:#0d1117}
+.entry.hide,.entry li.hide{display:none}
 .entry.unseen{border-color:var(--title-red)}
 .entry.unseen h2::after{content:' NEW';background:var(--title-red);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:8px;letter-spacing:.08em;vertical-align:2px}
 /* the red dot Matt asked for, on the nav Updates link */
@@ -329,37 +336,47 @@ body{
   <h1>Updates</h1>
   <p class="lead">What has changed on the site, newest first.</p>
 
+  <div class="upd-filter" id="upd-filter"><button data-f="" class="on">All</button><button data-f="nba">NBA</button><button data-f="nfl">NFL</button><button data-f="mlb">MLB</button></div>
+
   <div class="log">
-    <article class="entry" data-date="2026-07-29">
-      <h2>July 29, 2026</h2>
+    <article class="entry" data-date="2026-10-30">
+      <h2>October 30, 2026</h2>
       <ul>
-        <li>Each sport has its own colors now. Baseball is red and blue, football is brown and green, basketball is orange and white.</li>
-        <li>New home page, so the three sports finally live under one roof.</li>
-        <li>The baseball page got quite a bit lighter and should load faster, especially on a phone.</li>
-        <li>Added this page, plus About Us and Contact.</li>
+        <li data-sport="all"><span class="tags"><span class="tag all">All Sports</span></span>When a note is too long to fit in its column, rest your mouse on it and the whole note pops up.</li>
       </ul>
     </article>
 
-    <article class="entry" data-date="2026-07-24">
-      <h2>July 24, 2026</h2>
+    <article class="entry" data-date="2026-10-29">
+      <h2>October 29, 2026</h2>
       <ul>
-        <li>Big speed pass on the baseball player pool. It was taking as long as twenty seconds to open for some people and it no longer does.</li>
+        <li data-sport="nba"><span class="tags"><span class="tag nba">NBA</span></span>Schedule View now outlines busy stretches: pink for 3 games in 4 days, yellow for 5 games in 7 days. A 14-day total of 8 or more games turns green.</li>
       </ul>
     </article>
 
-    <article class="entry" data-date="2026-07-22">
-      <h2>July 22, 2026</h2>
+    <article class="entry" data-date="2026-10-28">
+      <h2>October 28, 2026</h2>
       <ul>
-        <li>Rebuilt how minor league stats work with the date range picker. If a player has not played in the window you picked, the site now says so instead of showing you a number from somewhere else.</li>
+        <li data-sport="nba"><span class="tags"><span class="tag nba">NBA</span></span>New Schedule View on every basketball page. Pick it from the View menu to see each player&rsquo;s next 14 days of games in place of the stats, with a games-left count after each week.</li>
+        <li data-sport="nba"><span class="tags"><span class="tag nba">NBA</span></span>Redraft Rankings now show a &ldquo;Not Ranked&rdquo; line. Players below it have not been ranked yet.</li>
       </ul>
     </article>
 
-    <article class="entry" data-date="2026-07-17">
-      <h2>July 17, 2026</h2>
+    <article class="entry" data-date="2026-10-21">
+      <h2>October 21, 2026</h2>
       <ul>
-        <li>Day mode came to the football and basketball pages.</li>
+        <li data-sport="nba"><span class="tags"><span class="tag nba">NBA</span></span>The 2026-27 Redraft Rankings are live: the top 200 overall, plus each position.</li>
+        <li data-sport="nba nfl"><span class="tags"><span class="tag nba">NBA</span><span class="tag nfl">NFL</span></span>The NBA Players and NFL Players pages have a new Exp column showing years in the league.</li>
       </ul>
     </article>
+
+    <article class="entry" data-date="2026-10-16">
+      <h2>October 16, 2026</h2>
+      <ul>
+        <li data-sport="nba"><span class="tags"><span class="tag nba">NBA</span></span>Player positions now match Yahoo across the whole basketball site.</li>
+        <li data-sport="nba nfl"><span class="tags"><span class="tag nba">NBA</span><span class="tag nfl">NFL</span></span>Rankings show tier breaks: a thin labeled line where one tier ends and the next begins.</li>
+      </ul>
+    </article>
+
   </div>
 </section>
 
@@ -496,7 +513,7 @@ function w101Theme(){
    🔧 WHEN YOU ADD AN UPDATES ENTRY: bump W101_UPDATES_LATEST to that date.
    That is the only edit needed for the dot to appear for everybody.
    --------------------------------------------------------------------------- */
-var W101_UPDATES_LATEST = '2026-07-29';
+var W101_UPDATES_LATEST = '2026-10-30';
 var W101_SEEN_KEY = 'watch101-updates-seen';
 
 (function(){
@@ -578,5 +595,27 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
 })();
 </script>
 <!-- ===================== CHROME_FIT_V1 END ===================== -->
+
+<script>
+/* UPDATES_TAGS_V1 (2026-10-31): sport tags + All/NBA/NFL/MLB filter. "All Sports" items show under every sport.
+   A sport page can link straight to its view: updates.html#nba (or #nfl, #mlb). */
+(function(){
+  var bar=document.getElementById('upd-filter'); if(!bar) return;
+  function apply(f){
+    bar.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-f')===f); });
+    document.querySelectorAll('.log .entry').forEach(function(a){
+      var any=false;
+      a.querySelectorAll('li').forEach(function(li){
+        var s=(li.getAttribute('data-sport')||'all').split(' ');
+        var show=!f || s.indexOf(f)!==-1 || s.indexOf('all')!==-1;
+        li.classList.toggle('hide',!show); if(show) any=true;
+      });
+      a.classList.toggle('hide',!any);
+    });
+  }
+  bar.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var f=b.getAttribute('data-f'); apply(f); try{ history.replaceState(null,'',f?('#'+f):location.pathname); }catch(x){} });
+  var h=(location.hash||'').replace('#','').toLowerCase(); apply(['nba','nfl','mlb'].indexOf(h)!==-1?h:'');
+})();
+</script>
 </body>
 </html>
