@@ -1955,6 +1955,16 @@ mark.nr-m, #nr-tip mark, .col-note mark, .rk-note mark, .pc-note mark, .ftl-note
 .sc-clear{position:absolute;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;border:none;background:rgba(148,163,184,0.22);color:inherit;font-size:15px;line-height:20px;text-align:center;cursor:pointer;padding:0;display:none;z-index:3;font-family:Arial,sans-serif}
 .sc-clear:hover{background:#16a34a;color:#fff}
 input.sc-has-text{padding-right:32px !important}
+
+/* SATTEN_SAYS_NFL_V1 (2026-11-03, Matt's Claude, Matt's ask): the Compact button is now "Satten Says" and
+   stretches like basketball's SATTEN_SAYS_WIDE_V1 + SATTEN_SAYS_FULL_V1: the table fills the window, every other
+   column keeps its content width, the note takes the rest and prints in full (no clamp). The stat group headers
+   over the hidden columns are hidden too, or they held the table wide and the note stayed ~150px. */
+body.compact-mode #nflmain-wrap table{width:100% !important;min-width:0 !important;table-layout:auto !important}
+body.compact-mode #nflmain-wrap colgroup col{width:auto !important}
+body.compact-mode #nflmain-wrap thead tr:first-child th:not(:first-child):not(:last-child){display:none !important}
+body.compact-mode #nflmain-wrap th:not(.col-note),body.compact-mode #nflmain-wrap td:not(.col-note){white-space:nowrap}
+body.compact-mode #nflmain-wrap th.col-note,body.compact-mode #nflmain-wrap td.col-note{width:auto !important;max-width:none !important;white-space:normal !important;overflow:visible !important;text-overflow:clip !important;line-height:1.4}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
 <!-- SPORT_NO_PHILLY_V1 (2026-11-02, Matt's Claude, Session 60; WAITING ON MATT 37): Philly removed from the top row logos, The Lists menu and the footer on sport pages. ONE_LINE_ALWAYS_V1 in the fit script. -->
@@ -2189,7 +2199,7 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="status-bar-wl" id="status-bar">Loading…</div>
   <div class="toolbar-right">
     <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" disabled title="Nothing to undo yet">&#8617; Undo</button>
-    <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: hide the stat and ownership columns and stretch the Note column so Matt's notes take center stage.">&#8596; Compact</button>
+    <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: hide the stat and ownership columns and stretch the Note column so Matt's notes take center stage.">&#8596; Satten Says</button>
     <!-- HDR_COMPACT_NFL_V1 (2026-08-21 night): Present, Trending (was labeled More), Refresh,
          Export, Clear All, the Yahoo badge, The Key and the moon all MOVED to the chrome's More
          dropdown (#drop-tools). Kept here on the Dude's call: Undo (contextual), Compact, Tier,
@@ -9095,6 +9105,7 @@ function toggleCompactMode(el){
   const on = document.body.classList.toggle('compact-mode');
   if(el){ el.classList.toggle('active', on); }
   if(typeof fitTables === 'function'){ try{ fitTables(); }catch(e){} }
+  try { if(typeof renderTiers === 'function'){ renderTiers(); requestAnimationFrame(function(){ try{ renderTiers(); }catch(e){} }); } } catch(e){}   // SATTEN_TIER_REDRAW_V1
 }
 
 // WL_NOTES_V1 (August 2, 2026 -- Walter, per the Dude). Checklist item 2.
