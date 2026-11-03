@@ -7663,8 +7663,8 @@ function _tierDrawBoxes(){
       var h = tb.offsetHeight;
       if(h === _lastH) return;
       _lastH = h;
-      if(_raf) cancelAnimationFrame(_raf);
-      _raf = requestAnimationFrame(function(){ _raf = 0; _tierDrawBoxes(); });
+      if(_raf) clearTimeout(_raf);
+      _raf = setTimeout(function(){ _raf = 0; _tierDrawBoxes(); }, 30);   // TIER_BOX_REDRAW_V2
     });
     var hook = function(){ var tb = document.getElementById('watch-list-body'); if(tb) ro.observe(tb); else setTimeout(hook, 500); };
     hook();
@@ -9105,7 +9105,7 @@ function toggleCompactMode(el){
   const on = document.body.classList.toggle('compact-mode');
   if(el){ el.classList.toggle('active', on); }
   if(typeof fitTables === 'function'){ try{ fitTables(); }catch(e){} }
-  try { if(typeof renderTiers === 'function'){ renderTiers(); requestAnimationFrame(function(){ try{ renderTiers(); }catch(e){} }); } } catch(e){}   // SATTEN_TIER_REDRAW_V1
+  try { if(typeof renderTiers === 'function'){ renderTiers(); setTimeout(function(){ try{ renderTiers(); }catch(e){} }, 60); } } catch(e){}   // SATTEN_TIER_REDRAW_V1
 }
 
 // WL_NOTES_V1 (August 2, 2026 -- Walter, per the Dude). Checklist item 2.
