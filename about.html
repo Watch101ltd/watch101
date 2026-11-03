@@ -383,10 +383,11 @@ body{
     </div>
   </div>
 
-  <!-- NOT EDITABLE ON PURPOSE (round one): this line carries the contact link, and
-       a plain-text editor would strip the link out the first time it was saved.
-       Left fixed so a save can never break the way people reach you. -->
-  <p>If you want to tell us we are wrong about somebody, that is genuinely half the fun. <a class="more" href="contact.html">Get in touch.</a></p>
+  <!-- ABOUT_CLOSING_EDITABLE_V1 (2026-11-03): Matt edits this line too. The editor's first box is the link
+       words (the .w101-copy-head is the link), the second is the sentence. The link always points at contact.html. -->
+  <div class="w101-block w101-closing" data-copy-block="closing" data-copy-link="1">
+    <div class="w101-copy-body"><p>If you want to tell us we are wrong about somebody, that is genuinely half the fun.</p></div> <a class="more w101-copy-head" href="contact.html">Get in touch.</a>
+  </div>
 </section>
 <!-- ======================= SITE_COPY_V1 EDITABLE PROSE END ======================= -->
 
@@ -577,6 +578,9 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
   /* Editor chrome. Loaded on every page but only ever shown on the backend —
      .w101-copy-editing is put on the body tag by the editor half, nothing else. */
   .w101-block{position:relative}
+  /* ABOUT_CLOSING_EDITABLE_V1: the closing line reads as one paragraph with the link at its end, as before */
+  .w101-closing{margin:1em 0}
+  .w101-closing .w101-copy-body,.w101-closing .w101-copy-body p{display:inline;margin:0}
   .w101-copy-editing .w101-block{
     border:1px dashed transparent;border-radius:10px;
     margin:0 -14px;padding:6px 14px;transition:border-color .15s,background .15s;
@@ -770,7 +774,7 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
     wrap.className = 'w101-editor';
     wrap.innerHTML =
       (cur.heading !== null
-        ? '<input type="text" class="w101-h" value="' + esc(cur.heading) + '" placeholder="Section heading">'
+        ? '<input type="text" class="w101-h" value="' + esc(cur.heading) + '" placeholder="' + (el.hasAttribute('data-copy-link') ? 'Link words (the link always goes to the Contact page)' : 'Section heading') + '">'
         : '') +
       '<textarea class="w101-b" spellcheck="true"></textarea>' +
       '<div class="w101-editor-bar">' +
@@ -804,7 +808,7 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
       banner.className = 'w101-copy-banner';
       banner.innerHTML = '<b>Matt — this page is yours to rewrite.</b> Hover any section and click ' +
                          '<b>Edit</b>. What you save goes onto the public site straight away, in your words. ' +
-                         'The contact line at the bottom is fixed because it holds a link.';
+                         'On the last line, the first box is the link words; the link always goes to the Contact page.';
       var h1 = page.querySelector('h1');
       if(h1 && h1.nextSibling) page.insertBefore(banner, h1.nextSibling);
       else page.insertBefore(banner, page.firstChild);
