@@ -4597,8 +4597,8 @@ function _tierDrawBoxes(){
       var h = tb.offsetHeight;
       if(h === _lastH) return;
       _lastH = h;
-      if(_raf) cancelAnimationFrame(_raf);
-      _raf = requestAnimationFrame(function(){ _raf = 0; _tierDrawBoxes(); });
+      if(_raf) clearTimeout(_raf);
+      _raf = setTimeout(function(){ _raf = 0; _tierDrawBoxes(); }, 30);   // TIER_BOX_REDRAW_V2
     });
     var hook = function(){ var tb = document.getElementById('watch-list-body'); if(tb) ro.observe(tb); else setTimeout(hook, 500); };
     hook();
@@ -9846,6 +9846,7 @@ function setViewMode(mode){
   if(typeof renderRankings === 'function'){ try{ renderRankings(); }catch(e){} }   // rebuild with the filtered column set
   if(typeof fitTables === 'function'){ try{ fitTables(); }catch(e){} }
   if(mode === 'schedule' && typeof window._schViewOn === 'function'){ try{ window._schViewOn(); }catch(e){} }   // SCHEDULE_VIEW_NBA_V1
+  try { if(typeof _tierDrawBoxes === 'function'){ _tierDrawBoxes(); setTimeout(function(){ try{ _tierDrawBoxes(); }catch(e){} }, 60); } } catch(e){}   // TIER_BOX_REDRAW_V2
 }
 // RANK_VIEW_MODES_NBA_V1: fans never see the Ranking Mode option at all.
 (function _trimRankWorkOption(){
