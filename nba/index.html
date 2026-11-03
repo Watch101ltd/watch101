@@ -1289,7 +1289,10 @@ body.view-matts-take #nbamain-wrap th.col-stat-b,    body.view-matts-take #nbama
 body.view-matts-take #nbamain-wrap table{width:100% !important;min-width:0 !important;table-layout:auto !important}
 body.view-matts-take #nbamain-wrap th:not(.col-note),body.view-matts-take #nbamain-wrap td:not(.col-note){white-space:nowrap}
 body.view-matts-take #nbamain-wrap th.col-note,body.view-matts-take #nbamain-wrap td.col-note{width:auto !important;max-width:none !important;white-space:normal !important}
-body.view-matts-take #nbamain-wrap td.col-note .wl-note-txt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
+/* SATTEN_SAYS_FULL_V1 (2026-11-03, Matt's Claude, Matt's ask): "instead of 3 rows, print the whole comment and adjust the height
+   of the list accordingly". The 3-line clamp is gone; each row grows to fit its whole note. The hover popup's cut-off test
+   (NOTE_RICH_V1) now finds nothing cut off here, so it stays quiet in this view. */
+body.view-matts-take #nbamain-wrap td.col-note .wl-note-txt{display:block;overflow:visible;line-height:1.4}
 .wl-note-txt{white-space:inherit}
 
 /* ── 9 CAT and 13 CAT ─────────────────────────────────────────────────────────────────────────
@@ -14625,7 +14628,7 @@ td.sch-cell.sch-tot.sch-g8{color:#22c55e!important}
   function todayET(){ return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); }
   function build(games){
     var t = todayET(), p = t.split('-').map(Number), days = [], cols = [];
-    for(var i = 0; i < 14; i++){ var dt = new Date(Date.UTC(p[0], p[1] - 1, p[2] + i)); days.push({ iso: dt.toISOString().slice(0, 10), dow: 'SMTWTFS'[dt.getUTCDay()], md: (dt.getUTCMonth() + 1) + '/' + dt.getUTCDate(), wd: dt.getUTCDay() }); }
+    for(var i = 0; i < 14; i++){ var dt = new Date(Date.UTC(p[0], p[1] - 1, p[2] + i)); days.push({ iso: dt.toISOString().slice(0, 10), dow: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getUTCDay()]   /* SCHED_DAY3_NBA_V1 (2026-11-03, Matt: "three letter day abbreviations, not one letter"; same column width as the date) */, md: (dt.getUTCMonth() + 1) + '/' + dt.getUTCDate(), wd: dt.getUTCDay() }); }
     days.forEach(function(d, i){ cols.push({ day: i }); if(d.wd === 0) cols.push({ wk: true }); });
     cols.push({ tot: true });
     var by = {};
