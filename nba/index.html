@@ -2111,7 +2111,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <th class="col-priority" data-sort="priority">Priority <span class="sort-arrow">↕</span></th>
         <th class="left col-note">Note</th>
         <th class="col-yrank col-zone-divider" data-sort="yrank" title="Fantrax ADP (2026-27), current as of 8/27">ADP <span class="sort-arrow">↕</span></th>
-        <th class="col-yahoorank" data-sort="yahoorank" title="Yahoo overall rank, live from Yahoo (2026-27 game)">Rank <span class="sort-arrow">↕</span></th><!-- YRANK_COL_NBA_V1 -->
+        <th class="col-yahoorank" data-sort="yahoorank" title="Yahoo rank in Matt's league on per-game averages for the selected date range (Yesterday shows Season)">Rank <span class="sort-arrow">↕</span></th><!-- YRANK_COL_NBA_V1 -->
         <th class="col-yowned" data-sort="yowned">Owned <span class="sort-arrow">↕</span></th>
         <th class="col-cbsowned" data-sort="cbsowned">Owned <span class="sort-arrow">↕</span></th>
         <th class="col-stat col-stat-info col-cat-always col-zone-divider" data-sort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
@@ -2236,7 +2236,7 @@ document.addEventListener('DOMContentLoaded',function(){
           <th class="col-exp" data-npsort="exp" title="Years of NBA experience (R for rookies)">Exp <span class="sort-arrow">↕</span></th><!-- POOL_EXP_COL_V1 -->
           <!-- OWNERSHIP_COLS_NBA_V1 (2026-06-26) — first col REPURPOSED to Fantrax ADP by FTX_ADP_V1 (2026-08-27, Bug #194); Y!Owned/CBS Owned unchanged. -->
           <th class="col-yrank col-zone-divider" data-npsort="yrank" title="Fantrax ADP (2026-27), current as of 8/27">ADP <span class="sort-arrow">↕</span></th>
-          <th class="col-yahoorank" data-npsort="yahoorank" title="Yahoo overall rank, live from Yahoo (2026-27 game)">Rank <span class="sort-arrow">↕</span></th><!-- YRANK_COL_NBA_V1 -->
+          <th class="col-yahoorank" data-npsort="yahoorank" title="Yahoo rank in Matt's league on per-game averages for the selected date range (Yesterday shows Season)">Rank <span class="sort-arrow">↕</span></th><!-- YRANK_COL_NBA_V1 -->
           <th class="col-yowned" data-npsort="yowned">Owned <span class="sort-arrow">↕</span></th>
           <th class="col-cbsowned" data-npsort="cbsowned">Owned <span class="sort-arrow">↕</span></th>
           <th class="col-stat col-stat-info col-zone-divider" data-npsort="gp" title="Games played — informational, not a scoring category">GP <span class="sort-arrow">↕</span></th>
@@ -3019,6 +3019,16 @@ async function syncYahooNBA(){
 // match is the real join. _nbaYahooNorm strips accents on both sides so Sleeper's
 // "Nikola Jokić" matches Yahoo's "Nikola Jokic". ID branch kept as a harmless
 // future-proof in case Sleeper ever populates yahoo_id.
+// YAHOO_RANGE_RANKS_NBA_V1 (2026-11-03, Jay + Matt): the Yahoo Rank shown follows the DATE RANGE dropdown,
+// like Yahoo's own Stats menu (Season avg / Last 7 / 14 / 30 avg / last season avg). Yahoo has no
+// 'yesterday' ranking, so Yesterday shows Season. A window with no rank (did not play) shows a dash.
+// An old payload with no yahoo_ranks falls back to the Season rank. The rankings SEED does NOT use this.
+function _yahooRankNow(y){
+  if(!y) return null;
+  var k = (_dateRange === 'yesterday') ? 'season' : _dateRange;
+  if(k !== 'season' && y.yahoo_ranks && (k in y.yahoo_ranks)) return (y.yahoo_ranks[k] != null) ? Number(y.yahoo_ranks[k]) : null;
+  return (y.yahoo_actual_rank != null) ? Number(y.yahoo_actual_rank) : null;
+}
 function _yahooFor(pid){
   const p = _playerDB && _playerDB[pid];
   if(!p) return null;
@@ -6382,8 +6392,8 @@ function _rankCol_yrank(){ return { key:'yrank', label:'ADP', group:'Ftx', headC
   num:function(pid){ var f=_ftxFor(pid); return f?parseFloat(f.a):Infinity; },
   render:function(pid){ var f=_ftxFor(pid); return f?f.a:'—'; } }; }
 function _rankCol_yahoorank(){ return { key:'yahoorank', label:'Rank', group:'Y!', headClass:'col-yahoorank', tdClass:'col-yahoorank',   // YRANK_COL_NBA_V1: the real Yahoo rank, back as its own column
-  num:function(pid){ var y=_yahooFor(pid); return (y&&y.yahoo_actual_rank!=null)?Number(y.yahoo_actual_rank):Infinity; },
-  render:function(pid){ var y=_yahooFor(pid); return (y&&y.yahoo_actual_rank!=null)?String(y.yahoo_actual_rank):'—'; } }; }
+  num:function(pid){ var r=_yahooRankNow(_yahooFor(pid)); return (r!=null)?r:Infinity; },   /* YAHOO_RANGE_RANKS_NBA_V1 */
+  render:function(pid){ var r=_yahooRankNow(_yahooFor(pid)); return (r!=null)?String(r):'—'; } }; }   /* YAHOO_RANGE_RANKS_NBA_V1 */
 function _rankCol_yowned(){ return { key:'yowned', label:'Owned', group:'Y!', headClass:'col-yowned', tdClass:'col-yowned',   // OWN_GROUP_HEADERS_NBA_V1
   num:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):-1; },
   render:function(pid){ var y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Math.round(y.roster_pct)+'%':'—'; } }; }
@@ -7733,7 +7743,7 @@ function _npStatValue(field, p, s, pid){
     case 'ftpct': return pctOrNull(s.ftm, s.fta);
     // POOL_OWNERSHIP_SORT_V1 — Y!Rank / Y!Owned / CBS sort cases (mirror the watch-list's; nulls sink via the sort's missing-value rule)
     case 'yrank':  { const f=_ftxFor(pid); return f?parseFloat(f.a):null; }   /* FTX_ADP_V1: was Yahoo rank */
-    case 'yahoorank': { const y=_yahooFor(pid); return (y&&y.yahoo_actual_rank!=null)?Number(y.yahoo_actual_rank):null; }   // YRANK_COL_NBA_V1
+    case 'yahoorank': { return _yahooRankNow(_yahooFor(pid)); }   /* YAHOO_RANGE_RANKS_NBA_V1 */   // YRANK_COL_NBA_V1
     case 'yowned': { const y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):null; }
     case 'cbsowned': { var cv=_cbsForNum(pid); return (cv!=null)?Number(cv):null; }
     default: return null;
@@ -8409,7 +8419,7 @@ function renderNbaPlayers(){
       (function(){ var _x = _nbaExpLabel(p); return _x == null ? '<td class="col-exp placeholder">—</td>' : '<td class="col-exp">' + _x + '</td>'; })() +   // POOL_EXP_COL_V1 (same label as the watch list)
       // OWNERSHIP_COLS_NBA_V1 + NBA_YAHOO_OWNERSHIP_V1 + NBA_CBS_OWNERSHIP_V1 — all three now live.
       (function(){ var _f=_ftxFor(pid); return '<td class="col-yrank col-zone-divider' + (_f?'':' placeholder') + '">' + (_f?_f.a:'—') + '</td>'; })() +   /* FTX_ADP_V1: was Yahoo rank */
-      '<td class="col-yahoorank' + ((_yh&&_yh.yahoo_actual_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_actual_rank!=null)?_yh.yahoo_actual_rank:'—') + '</td>' +   // YRANK_COL_NBA_V1
+      '<td class="col-yahoorank' + ((_yahooRankNow(_yh)!=null)?'':' placeholder') + '">' + ((_yahooRankNow(_yh)!=null)?_yahooRankNow(_yh):'—') + '</td>' +   /* YAHOO_RANGE_RANKS_NBA_V1 */   // YRANK_COL_NBA_V1
       '<td class="col-yowned ' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +
       '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +
       '<td class="col-stat-info col-cat-always col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
@@ -8874,7 +8884,7 @@ function renderWatchList(){
       '<td>' + renderPriorityStars(pid, priority) + '</td>' +
       _wlNoteCellHtml(pid) +   // WL_NOTES_V1 -- live Note column
       (function(){ var _f=_ftxFor(pid); return '<td class="col-yrank col-zone-divider' + (_f?'':' placeholder') + '">' + (_f?_f.a:'—') + '</td>'; })() +   /* FTX_ADP_V1: was Yahoo rank */   // Y!Rank (NBA_YAHOO_OWNERSHIP_V1)
-      '<td class="col-yahoorank' + ((_yh&&_yh.yahoo_actual_rank!=null)?'':' placeholder') + '">' + ((_yh&&_yh.yahoo_actual_rank!=null)?_yh.yahoo_actual_rank:'—') + '</td>' +   // YRANK_COL_NBA_V1
+      '<td class="col-yahoorank' + ((_yahooRankNow(_yh)!=null)?'':' placeholder') + '">' + ((_yahooRankNow(_yh)!=null)?_yahooRankNow(_yh):'—') + '</td>' +   /* YAHOO_RANGE_RANKS_NBA_V1 */   // YRANK_COL_NBA_V1
       '<td class="col-yowned ' + ((_yh&&_yh.roster_pct!=null)?'':'placeholder') + '">' + ((_yh&&_yh.roster_pct!=null)?Math.round(_yh.roster_pct)+'%':'—') + '</td>' +   // Y!Owned (NBA_YAHOO_OWNERSHIP_V1)
       '<td class="col-cbsowned ' + (_cbsForNum(pid)!=null?'':'placeholder') + '">' + (_cbsForNum(pid)!=null?_cbsForNum(pid)+'%':'—') + '</td>' +   // CBS Owned (NBA_CBS_OWNERSHIP_V1 / CBS_OWNED_PCT_V1)
       '<td class="col-stat-info col-cat-always col-zone-divider">' + statCellOrDash(s.gp, 0) + '</td>' +
@@ -9106,7 +9116,7 @@ function _renderRankPhoneList(ids){
     try {
       var y = (typeof _yahooFor==='function') ? _yahooFor(pid) : null;
       var _fr = (typeof _ftxFor==='function') ? _ftxFor(pid) : null; if(_fr) railBits += 'Ftx <b>' + _fr.a + '</b><br>';   /* FTX_ADP_V1: was Y!# yahoo_rank */
-      if(y && y.yahoo_actual_rank != null) railBits += 'Y!# <b>' + y.yahoo_actual_rank + '</b><br>';   /* YRANK_COL_NBA_V1 */
+      if(_yahooRankNow(y) != null) railBits += 'Y!# <b>' + _yahooRankNow(y) + '</b><br>';   /* YAHOO_RANGE_RANKS_NBA_V1 */   /* YRANK_COL_NBA_V1 */
       if(y && y.roster_pct != null) railBits += 'Y! <b>' + parseFloat(y.roster_pct).toFixed(0) + '%</b><br>';
     } catch(e){}
     try { var cw = (typeof _cbsForNum==='function') ? _cbsForNum(pid) : null; if(cw != null) railBits += 'CBS <b>' + parseFloat(cw).toFixed(0) + '%</b>'; } catch(e){}
@@ -11509,7 +11519,7 @@ function sortValueFor(field, p, s, pid){
     }
     // Planned columns — no data yet, always sort to bottom.
     case 'yrank':  { const f=_ftxFor(pid); return f?parseFloat(f.a):null; }   /* FTX_ADP_V1: was Yahoo rank */   // NBA_YAHOO_OWNERSHIP_V1
-    case 'yahoorank': { const y=_yahooFor(pid); return (y&&y.yahoo_actual_rank!=null)?Number(y.yahoo_actual_rank):null; }   // YRANK_COL_NBA_V1
+    case 'yahoorank': { return _yahooRankNow(_yahooFor(pid)); }   /* YAHOO_RANGE_RANKS_NBA_V1 */   // YRANK_COL_NBA_V1
     case 'yowned': { const y=_yahooFor(pid); return (y&&y.roster_pct!=null)?Number(y.roster_pct):null; }   // NBA_YAHOO_OWNERSHIP_V1
     case 'cbsowned': { var cv=_cbsForNum(pid); return (cv!=null)?Number(cv):null; }   // NBA_CBS_OWNERSHIP_V1
     case 'delta': return _wlDeltaFor(pid);   // WL_DELTA_V1 (null = unstamped, sorts to bottom)
@@ -12177,7 +12187,7 @@ function openFromTheLogo(pid, _keepRange){
   const _ocbs = (typeof _cbsForNum === 'function') ? _cbsForNum(pid) : null;
   const ownRow =
     _ftlStatCell('FTX ADP', (function(){ var f=(typeof _ftxFor==='function')?_ftxFor(pid):null; return f?f.a:null; })(), 'own', 'own-src-ftx') +   /* FTX_ADP_V1: was Y!RK */
-    _ftlStatCell('Y!RK', (_oyh && _oyh.yahoo_actual_rank != null) ? _oyh.yahoo_actual_rank : null, 'own', 'own-src-yh') +   /* YRANK_COL_NBA_V1: the tile FTX_ADP_V1 retired, back */
+    _ftlStatCell('Y!RK', _yahooRankNow(_oyh), 'own', 'own-src-yh') +   /* YAHOO_RANGE_RANKS_NBA_V1 */   /* YRANK_COL_NBA_V1: the tile FTX_ADP_V1 retired, back */
     _ftlStatCell('Y!ROS%', (_oyh && _oyh.roster_pct != null) ? Math.round(_oyh.roster_pct) + '%' : null, 'own', 'own-src-yh') +
     _ftlStatCell('CBS%',   (_ocbs != null) ? _ocbs + '%' : null, 'own', 'own-src-cbs') +
     '<div class="ftl-strip-break ftl-strip-break-own"></div>';   // STRIP_PTS_ROW2_V1: used only on the smallest phones
