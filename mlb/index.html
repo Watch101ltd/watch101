@@ -914,6 +914,23 @@ body.day-mode .tier-bracket-box.tier-armed::after {
   background: transparent !important;
 }
 /* /TIER_SPACER_ROW_V1 */
+/* ══════════ TIER_BOX_INCELL_MLB_V1 (2026-11-03, Matt's Claude, Matt's ask, Session 61) ══════════
+   Baseball's tier tab and box now live INSIDE the spacer row (see renderTiers), so the spacer row
+   sizes to its tab: 6px of air above the tab, the tab sitting on the box's top line. The last row of
+   each tier gets an 8px transparent bottom border so the box's bottom line has room before the next
+   player. Same numbers as basketball's TIER_BOX_WL_V1; the line is 2px (was 3px). */
+#tbody tr.tier-spacer-row{height:auto}
+#tbody tr.tier-spacer-row td{
+  padding:6px 0 0 0 !important;line-height:1 !important;text-align:left !important;vertical-align:bottom !important;
+  position:relative;overflow:visible !important;
+}
+#tbody .tier-bracket-tab{
+  display:inline-block;vertical-align:bottom;position:relative;z-index:6;margin-left:-4px;pointer-events:auto;cursor:pointer;
+  color:#fff;font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.05em;line-height:1.2;
+  padding:2px 10px;border-radius:4px 4px 0 0;white-space:nowrap;
+}
+#tbody tr.tier-last td{border-bottom:8px solid transparent !important;background-clip:padding-box}
+
 
 /* DAYMODE_BADGES_V1 (April 24, 2026) — day-mode overrides for position + injury badges.
    Night-mode badges use dark fill + bright text (perfect on black background).
@@ -8846,197 +8863,92 @@ function _tiersGetOrCreateLayer(){
 }
 
 function renderTiers(){
-  // Always start by clearing the previous paint so stale brackets don't
-  // pile up across renders.
-  _tiersClearOverlay();
-  // TIER_SPACER_ROW_V1 (May 22, 2026) — re-inject spacer rows on every
-  // renderTiers() call so external callers (tier save/delete/etc) get the
-  // spacers refreshed too, not just renderTable() paints. Idempotent —
-  // clears existing spacers first.
+  // TIER_BOX_INCELL_MLB_V1 (2026-11-03, Matt's Claude, Matt's ask, Session 61). Same look as basketball's
+  // TIER_BOX_WL_V1: filled tab in the tier colour, rounded outline with a soft glow, 2px line (was 3px),
+  // 6px above the tab, 2px inside the box, 8px gap after the last row. Matt: "We will make the same changes
+  // to football and baseball" and, on moving baseball off the floating overlay: "the thing that seems new
+  // and improved and correct".
+  // 🪨 WHY THE BOX NOW LIVES IN THE SPACER CELL: the old box sat on an overlay layer OUTSIDE the table and was
+  // placed with getBoundingClientRect() + scrollTop. fitTables() puts a CSS zoom on the TABLE, so the box and
+  // the rows were measured in two different pixel spaces and drifted apart at most zoom levels. Inside the
+  // tier's own spacer cell the box rides the same zoom as the rows and is measured in the table's own units.
+  // Kept on purpose: the class names .tier-bracket-box / .tier-bracket-tab and data-tier-id, because
+  // armTier(), disarmTier(), the click-outside disarm and the drag code all find the box and tab by them.
+  _tiersClearOverlay();      // empties the retired overlay layer if an older render left anything in it
   try { if(typeof _tiersInjectSpacerRows === 'function') _tiersInjectSpacerRows(); } catch(e){ console.warn('[TIER_SPACER_ROW_V1] inject from renderTiers crashed:', e); }
+  var tbody = document.getElementById('tbody');
+  if(tbody) tbody.querySelectorAll('tr.tier-last').forEach(function(r){ r.classList.remove('tier-last'); });
   if(!Array.isArray(currentTiers) || currentTiers.length === 0) return;
   if(!_tiersDefaultOrder()) {
-    // tiers hidden — also clean up any lingering spacers from a prior visible state
     try { _tiersClearSpacerRows(); } catch(e){}
     return;
   }
-
-  var ctx = _tiersGetOrCreateLayer();
-  if(!ctx) return;
-  var layer = ctx.layer;
-  var anchor = ctx.anchor;
-  var anchorRect = anchor.getBoundingClientRect();
-
+  if(!tbody) return;
+  var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+  var jobs = [];
   currentTiers.forEach(function(tier){
     try {
-      // TIER_SELFHEAL_V1 — use the shared resolver so the box draws on the SAME
-      // condition the spacer injects on (no orphan gap). null → tier can't draw, skip.
       var _range = _tiersResolveRange(tier);
-      if(!_range){ return; }
-      var startRow = _range.startRow;
-      var endRow   = _range.endRow;
-      if(!startRow || !endRow) return;  // player not on screen — skip
-
-      var sRect = startRow.getBoundingClientRect();
-      var eRect = endRow.getBoundingClientRect();
-      // Translate to anchor-local coords (since the overlay layer lives
-      // inside the anchor, not the document).
-      var top    = sRect.top - anchorRect.top + anchor.scrollTop;
-      var bottom = eRect.bottom - anchorRect.top + anchor.scrollTop;
-      var left   = sRect.left - anchorRect.left + anchor.scrollLeft;
-      var height = bottom - top;
-      if(height <= 0) return;
-
+      if(!_range || !_range.startRow || !_range.endRow) return;
+      var sp = tbody.querySelector('tr.tier-spacer-row[data-tier-spacer-for="' + String(tier.id).replace(/"/g,'\\"') + '"]');
+      if(!sp || !sp.firstElementChild) return;
       var hex = TIER_COLOR_HEX[tier.color] || '#94a3b8';
-
-      // Full-box bracket: 4-sided colored outline that wraps the row range,
-      // matching Matt's iPad sketch. We measure the table width so the box
-      // spans every column (not just where the rows happen to start). The
-      // outline floats above the table on its own layer — no row HTML
-      // touched — so it never interferes with sort, drag, filter, etc.
-      /* BRACKET_HUGS_ROWS_V1 (2026-08-20 — the Dude's spec, in his words: "if the tier
-         brackets take up the whole screen and the stats don't, and they're disagreeing,
-         then something has to be wrong in the code." He was right. The old code asked the
-         TBODY for its width, and a tbody can be wider than the cells it actually paints
-         (Bug #163's visible face: brackets fencing a void right of the stats). The rows
-         are the honest witnesses: the box now measures the wrapped rows' OWN first and
-         last cells, so bracket and stats are one measurement and can never disagree. */
-      var _sCells = startRow.children, _eCells = endRow.children;
-      var _fCell = _sCells.length ? _sCells[0] : startRow;
-      var _sLast = _sCells.length ? _sCells[_sCells.length - 1] : startRow;
-      var _eLast = _eCells.length ? _eCells[_eCells.length - 1] : endRow;
-      var _rowRight = Math.max(_sLast.getBoundingClientRect().right, _eLast.getBoundingClientRect().right);
-      var boxLeft   = _fCell.getBoundingClientRect().left - anchorRect.left + anchor.scrollLeft;
-      var boxRight  = _rowRight - anchorRect.left + anchor.scrollLeft;
-      var boxWidth  = boxRight - boxLeft;
-      // Pad the box outward a few pixels so the outline doesn't kiss the
-      // first/last column text — gives it the "drawn around it" feel.
-      var pad = 4;
-
-      var box = document.createElement('div');
-      box.className = 'tier-bracket-box';
-      box.setAttribute('data-tier-id', tier.id);
-      box.style.cssText =
-        'position:absolute;' +
-        'top:' + (top - pad) + 'px;' +
-        'left:' + (boxLeft - pad) + 'px;' +
-        'width:' + (boxWidth + pad * 2) + 'px;' +
-        'height:' + (height + pad * 2) + 'px;' +
-        'border:3px solid ' + hex + ';' +
-        'border-radius:6px;' +
-        'box-shadow:0 0 8px ' + hex + '55, inset 0 0 4px ' + hex + '22;' +
-        'background:transparent;' +
-        'pointer-events:none;' +
-        'box-sizing:border-box;';
-      box.title = tier.name;
-
-      // Label tab anchored to the top-left of the box, sitting on top of
-      // the border so it reads as part of the bracket (like a folder tab).
-      var tab = document.createElement('div');
+      var td = sp.firstElementChild;
+      td.innerHTML = '';
+      var tab = document.createElement('span');
       tab.className = 'tier-bracket-tab';
       tab.setAttribute('data-tier-id', tier.id);
       tab.textContent = tier.name;
-      // TIER_SPACER_ROW_V1 (May 22, 2026 — PC Walter, per Matt's 5/22 meeting + Jay's spec)
-      // The tab now sits INSIDE the blank spacer row above the tier (no more
-      // overlap with player rows). Find that spacer row and position the tab
-      // vertically centered inside it. If for any reason the spacer isn't
-      // present (e.g. render-order race), fall back to the legacy
-      // TIER_TAB_FLIP_V1 behavior so the tab still appears somewhere.
-      var spacerRow = document.querySelector('tr.tier-spacer-row[data-tier-spacer-for="' + String(tier.id).replace(/"/g,'\\"') + '"]');
-      var tabTop, tabRadius, tabShadow;
-      if(spacerRow){
-        // Position the tab inside the spacer row, vertically centered.
-        // Tab is ~18px tall (11px font + 2px*2 padding + ~3px line-height).
-        // Spacer row is 28px (CSS). Center it: (28 - 18) / 2 = ~5px from top of spacer.
-        var spacerRect = spacerRow.getBoundingClientRect();
-        var spacerTop = spacerRect.top - anchorRect.top + anchor.scrollTop;
-        tabTop = spacerTop + 5;
-        tabRadius = '4px 4px 4px 4px';  // all four corners rounded since it sits free
-        tabShadow = '0 1px 4px ' + hex + '55';
-      } else {
-        // Legacy fallback — TIER_TAB_FLIP_V1 (May 20, 2026 21:10 ET) row-1 special case.
-        // Keep this so a render-race never leaves a tier without a visible tab.
-        var firstTbodyRow = document.querySelector('#tbody tr[data-mlb-id]');
-        var tierStartsAtRow1 = firstTbodyRow && firstTbodyRow === startRow;
-        if(tierStartsAtRow1){
-          tabTop = (top + height + pad - 2);
-          tabRadius = '0 0 6px 6px';
-          tabShadow = '0 1px 4px ' + hex + '55';
-        } else {
-          tabTop = (top - pad - 14);
-          tabRadius = '6px 6px 0 0';
-          tabShadow = '0 -1px 4px ' + hex + '55';
-        }
-      }
-      // TIER_TAB_TRANSPARENT_V1 (5/21 12:30 ET) — was the workaround for tabs
-      // overlapping player rows. TIER_SPACER_ROW_V1 (5/22) gives the tab its
-      // own row, so we can go back to full opacity. _hexToRgba retained
-      // because the legacy fallback path (no spacer found) still benefits
-      // from the see-through treatment.
-      function _hexToRgba(h, alpha){
-        var c = String(h || '').replace('#', '');
-        if(c.length !== 6) return 'rgba(0,0,0,' + alpha + ')';
-        var r = parseInt(c.substring(0, 2), 16);
-        var g = parseInt(c.substring(2, 4), 16);
-        var b = parseInt(c.substring(4, 6), 16);
-        if(isNaN(r) || isNaN(g) || isNaN(b)) return 'rgba(0,0,0,' + alpha + ')';
-        return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
-      }
-      // Use full opacity when the tab sits in its own spacer row (no overlap
-      // to worry about); fall back to 50% alpha only on the legacy code path.
-      var tabBg = spacerRow ? hex : _hexToRgba(hex, 0.5);
-      tab.style.cssText =
-        'position:absolute;' +
-        'top:' + tabTop + 'px;' +
-        'left:' + (boxLeft - pad) + 'px;' +
-        'background:' + tabBg + ';' +
-        'color:#fff;' +
-        'font-family:"Nunito Sans",sans-serif;' +
-        'font-size:11px;' +
-        'font-weight:700;' +
-        'letter-spacing:0.05em;' +
-        '' +
-        'padding:2px 10px;' +
-        'border-radius:' + tabRadius + ';' +
-        'box-shadow:' + tabShadow + ';' +
-        'pointer-events:auto;' +
-        'cursor:pointer;' +
-        'white-space:nowrap;';
-      // TIERS_V1 (Phase F) — read-only fans see a passive tab (no edit
-     // affordance, default cursor). Backend admins get the click handler
-     // and a "click to edit" tooltip.
-      var isFan = (typeof _isReadOnlyMode === 'function') ? _isReadOnlyMode() : false;
+      tab.style.background = hex;
+      tab.style.boxShadow = '0 1px 4px ' + hex + '55';
       if(isFan){
         tab.title = 'Tier: ' + tier.name;
         tab.style.cursor = 'default';
       } else {
         tab.title = 'Tier: ' + tier.name + ' — click to edit or delete';
-        // Phase E — click the tab to edit/delete this tier.
-        // Captured in a closure so each tab knows its own tier id.
         (function(tid){
           tab.addEventListener('click', function(ev){
             ev.stopPropagation();
             if(typeof openEditTierModal === 'function') openEditTierModal(tid);
           });
         })(tier.id);
+        tab.addEventListener('mouseenter', function(){ tab.style.filter = 'brightness(1.12)'; });
+        tab.addEventListener('mouseleave', function(){ tab.style.filter = ''; });
       }
-      // Hover keeps full opacity. The mouseleave handler reverts to whatever
-      // the idle background was (full hex for spacer-mode tabs, 50% alpha for
-      // legacy-fallback tabs). Closure captures hex AND the idle bg per-tier.
-      (function(_hex, _idleBg){
-        tab.addEventListener('mouseenter', function(){
-          tab.style.background = _hex;
-        });
-        tab.addEventListener('mouseleave', function(){
-          tab.style.background = _idleBg;
-        });
-      })(hex, tabBg);
-
-      layer.appendChild(box);
-      layer.appendChild(tab);
-    } catch(e){
-      console.warn('[TIERS_V1] failed to render tier:', tier, e);
-    }
+      td.appendChild(tab);
+      _range.endRow.classList.add('tier-last');
+      jobs.push({ tier: tier, td: td, hex: hex, startRow: _range.startRow, endRow: _range.endRow });
+    } catch(e){ console.warn('[TIERS_V1] failed to render tier:', tier, e); }
+  });
+  // Measure only after every tier-last class is on, so no box is measured against a row that grows later.
+  jobs.forEach(function(J){
+    try {
+      var td = J.td;
+      if(!td.offsetWidth) return;
+      var T = td.getBoundingClientRect();
+      var z = T.width / td.offsetWidth;                 // the table's fitTables() zoom, as the browser applied it
+      if(!(z > 0)) return;
+      var vis = Array.prototype.filter.call(J.startRow.children, function(c){ return c.getBoundingClientRect().width > 0; });
+      if(!vis.length) return;
+      var pad = 4;
+      var F = J.startRow.getBoundingClientRect(), C0 = vis[0].getBoundingClientRect(), CN = vis[vis.length - 1].getBoundingClientRect();
+      var lastContentBottom = J.endRow.getBoundingClientRect().bottom - 8 * z;   // minus the tier-last 8px border
+      var left = (C0.left - T.left) / z - pad, right = (CN.right - T.left) / z + pad;
+      var top = (F.top - T.top) / z - 2, bottom = (lastContentBottom - T.top) / z + 2;
+      if(bottom - top <= 0) return;
+      var box = document.createElement('div');
+      box.className = 'tier-bracket-box';
+      box.setAttribute('data-tier-id', J.tier.id);
+      box.title = J.tier.name;
+      box.style.cssText =
+        'position:absolute;z-index:5;' +
+        'top:' + top + 'px;left:' + left + 'px;' +
+        'width:' + (right - left) + 'px;height:' + (bottom - top) + 'px;' +
+        'border:2px solid ' + J.hex + ';border-radius:6px;' +
+        'box-shadow:0 0 8px ' + J.hex + '55, inset 0 0 4px ' + J.hex + '22;' +
+        'background:transparent;pointer-events:none;box-sizing:border-box;';
+      td.appendChild(box);
+    } catch(e){ console.warn('[TIER_BOX_INCELL_MLB_V1] box failed:', J.tier, e); }
   });
 }
 
