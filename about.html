@@ -657,7 +657,7 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
     var ps   = el.querySelectorAll('.w101-copy-body p');
     var body = Array.prototype.map.call(ps, function(p){
       /* textContent, so any stray markup is reduced to the words themselves. */
-      return (p.textContent || '').replace(/\s+/g,' ').trim();
+      return w101RichText(p);   /* SITE_COPY_RICH_V1: keeps bold/italic/etc */
     }).filter(Boolean).join('\n\n');
     return { heading: head ? (head.textContent||'').trim() : null, body: body };
   }
@@ -680,7 +680,7 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
     bodyEl.innerHTML = paras.map(function(p, i){
       /* the intro's first paragraph keeps its larger "lead" styling */
       var cls = (isIntro && i === 0) ? ' class="lead"' : '';
-      return '<p' + cls + '>' + esc(p) + '</p>';
+      return '<p' + cls + '>' + w101Rich(p) + '</p>';
     }).join('\n');
   }
 
@@ -781,8 +781,9 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
     el.appendChild(wrap);
 
     var ta = wrap.querySelector('.w101-b');
+    if(window.w101RichUpgrade) w101RichUpgrade(ta);   /* SITE_COPY_RICH_V1 */
     ta.value = cur.body;                 /* set as a value, never as markup */
-    ta.style.height = Math.max(190, ta.scrollHeight + 20) + 'px';
+    
     ta.focus();
 
     wrap.querySelector('.w101-cancel').addEventListener('click', function(){ closeEditor(el); });
@@ -890,5 +891,137 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
 })();
 </script>
 <!-- ===================== CHROME_FIT_V1 END ===================== -->
+
+<!-- ======================= SITE_COPY_RICH_V1 (2026-11-03) =======================
+     Matt's page text boxes get the same toolbar as his note boxes (NOTE_RICH_V1): bold, italic,
+     underline, strikethrough, highlight, with the same shortcuts (Cmd B / I / U, Cmd Shift X, Cmd Shift H).
+     Storage stays a plain string; the only markup it can ever carry is <b> <i> <u> <s> <mark>, and
+     w101Rich() escapes everything else, so words saved before today paint exactly as they did.
+     ============================================================================== -->
+<style>
+  .w101-copy-body mark, [data-copy-block] mark{background:rgba(240,165,0,0.32);color:inherit;border-radius:2px;padding:0 1px}
+  .w101-editor .nr-bar{display:flex;gap:6px;margin:0 0 8px 0}
+  .w101-editor .nr-bar button{width:34px;height:30px;background:transparent;border:1px solid var(--border,#253545);color:var(--text2,#e2e8f0);border-radius:6px;font:400 15px/1 'Nunito Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .w101-editor .nr-bar button:hover{border-color:#c8102e}
+  .w101-editor .nr-bar button.on{border-color:#c8102e;color:#c8102e;background:rgba(200,16,46,0.10)}
+  .w101-editor .nr-bar .nr-hl span{background:rgba(240,165,0,0.45);color:#fff;padding:1px 4px;border-radius:2px;font-weight:800;font-size:12px}
+  .w101-editor .nr-ed{outline:none}
+  .w101-editor .nr-ed:focus{outline:2px solid #c8102e;outline-offset:1px}
+  .w101-editor .nr-ed.nr-empty:before{content:attr(data-ph);color:var(--text3,#94a3b8);pointer-events:none}
+</style>
+<script>
+(function(){
+  'use strict';
+  var HL = 'rgba(240, 165, 0, 0.32)';
+  function escAll(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  /* paint: escape everything, then let the five formatting tags back through */
+  window.w101Rich = function(s){ return escAll(s).replace(/&lt;(\/?)(b|i|u|s|mark)&gt;/g, '<$1$2>'); };
+  /* read what a visitor sees back into the stored form, keeping only the five tags */
+  window.w101RichText = function(node){
+    var out = '';
+    (function walk(n){
+      if(n.nodeType === 3){ out += n.nodeValue; return; }
+      if(n.nodeType !== 1) return;
+      if(n.classList && (n.classList.contains('w101-edit-btn') || n.classList.contains('w101-editor'))) return;
+      var t = n.nodeName.toLowerCase();
+      var m = { b:'b', strong:'b', i:'i', em:'i', u:'u', s:'s', strike:'s', del:'s', mark:'mark' }[t];
+      if(m) out += '<' + m + '>';
+      Array.prototype.forEach.call(n.childNodes, walk);
+      if(m) out += '</' + m + '>';
+    })(node);
+    return out.replace(/\s+/g, ' ').trim();
+  };
+  function serialize(root){
+    var out = '';
+    function walk(n){
+      if(n.nodeType === 3){ out += n.nodeValue.replace(/ /g, ' '); return; }
+      if(n.nodeType !== 1) return;
+      var tag = n.nodeName.toLowerCase(), st = n.style || {};
+      if(tag === 'br'){ out += '\n'; return; }
+      if((tag === 'div' || tag === 'p') && out && out.slice(-1) !== '\n') out += '\n';
+      var deco = String(st.textDecorationLine || st.textDecoration || '');
+      var fw = String(st.fontWeight || ''), bg = String(st.backgroundColor || '');
+      var w = [];
+      if(tag === 'b' || tag === 'strong' || fw === 'bold' || parseInt(fw, 10) >= 600) w.push('b');
+      if(tag === 'i' || tag === 'em' || st.fontStyle === 'italic') w.push('i');
+      if(tag === 'u' || /underline/.test(deco)) w.push('u');
+      if(tag === 's' || tag === 'strike' || tag === 'del' || /line-through/.test(deco)) w.push('s');
+      if(tag === 'mark' || (bg && bg !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(bg))) w.push('mark');
+      w.forEach(function(t){ out += '<' + t + '>'; });
+      Array.prototype.forEach.call(n.childNodes, walk);
+      w.slice().reverse().forEach(function(t){ out += '</' + t + '>'; });
+    }
+    Array.prototype.forEach.call(root.childNodes, walk);
+    var prev;
+    do { prev = out; out = out.replace(/<(b|i|u|s|mark)><\/\1>/g, '').replace(/<\/(b|i|u|s|mark)><\1>/g, ''); } while(out !== prev);
+    return out.replace(/\n$/, '');
+  }
+  function editorHtml(v){ return window.w101Rich(v).replace(/<mark>/g, '<span style="background-color:' + HL + '">').replace(/<\/mark>/g, '</span>'); }
+  function caretEnd(ed){ var r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+  function isHl(){ return String(document.queryCommandValue('backColor') || '').replace(/\s/g, '') === HL.replace(/\s/g, ''); }
+  var CMD = { b:'bold', i:'italic', u:'underline', s:'strikeThrough' };
+  function apply(cmd, ed){
+    ed.focus();
+    try { document.execCommand('styleWithCSS', false, false); } catch(e){}
+    if(cmd === 'mark'){
+      try { document.execCommand('styleWithCSS', false, true); } catch(e){}
+      document.execCommand('hiliteColor', false, isHl() ? 'transparent' : HL);
+      try { document.execCommand('styleWithCSS', false, false); } catch(e){}
+    } else { document.execCommand(CMD[cmd], false, null); }
+    ed.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  function syncButtons(bar){
+    Array.prototype.forEach.call(bar.querySelectorAll('button[data-cmd]'), function(b){
+      var c = b.getAttribute('data-cmd'), on = false;
+      try { on = (c === 'mark') ? isHl() : document.queryCommandState(CMD[c]); } catch(e){}
+      b.classList.toggle('on', !!on);
+    });
+  }
+  /* Same upgrade as NOTE_RICH_V1's _noteRichUpgrade: the textarea stays the source of truth (its .value is
+     intercepted), so the page's own Save / Cancel / empty-box checks work unchanged. */
+  window.w101RichUpgrade = function(ta){
+    if(!ta || ta._nrDone) return; ta._nrDone = true;
+    var desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+    var bar = document.createElement('div'); bar.className = 'nr-bar';
+    bar.innerHTML =
+      '<button type="button" data-cmd="b" title="Bold (⌘B)"><b>B</b></button>' +
+      '<button type="button" data-cmd="i" title="Italic (⌘I)"><i>I</i></button>' +
+      '<button type="button" data-cmd="u" title="Underline (⌘U)"><u>U</u></button>' +
+      '<button type="button" data-cmd="s" title="Strikethrough (⌘⇧X)"><s>S</s></button>' +
+      '<button type="button" data-cmd="mark" class="nr-hl" title="Highlight (⌘⇧H)"><span>H</span></button>';
+    var ed = document.createElement('div'); ed.className = 'nr-ed'; ed.contentEditable = 'true'; ed.spellcheck = true;
+    ed.setAttribute('role', 'textbox'); ed.setAttribute('aria-multiline', 'true');
+    var cs = getComputedStyle(ta);
+    ['backgroundColor','borderTopWidth','borderTopStyle','borderTopColor','borderRightWidth','borderRightStyle','borderRightColor',
+     'borderBottomWidth','borderBottomStyle','borderBottomColor','borderLeftWidth','borderLeftStyle','borderLeftColor',
+     'borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','color','fontFamily','fontSize',
+     'fontWeight','lineHeight','paddingTop','paddingRight','paddingBottom','paddingLeft','minHeight'].forEach(function(k){ ed.style[k] = cs[k]; });
+    ed.style.boxSizing = 'border-box'; ed.style.width = '100%'; ed.style.display = 'block';
+    ed.style.whiteSpace = 'pre-wrap'; ed.style.wordBreak = 'break-word'; ed.style.cursor = 'text';
+    ta.parentNode.insertBefore(bar, ta); ta.parentNode.insertBefore(ed, ta); ta.style.display = 'none';
+    function refreshEmpty(){ ed.classList.toggle('nr-empty', !serialize(ed)); ed.setAttribute('data-ph', ta.getAttribute('placeholder') || ''); }
+    Object.defineProperty(ta, 'value', { configurable: true,
+      get: function(){ return serialize(ed); },
+      set: function(v){ desc.set.call(ta, v == null ? '' : String(v)); ed.innerHTML = editorHtml(v == null ? '' : String(v)); refreshEmpty(); } });
+    ta.focus = function(){ ed.focus(); caretEnd(ed); };
+    bar.addEventListener('mousedown', function(e){ e.preventDefault(); });
+    bar.addEventListener('click', function(e){
+      var b = e.target.closest('button[data-cmd]'); if(!b) return;
+      e.preventDefault(); e.stopPropagation(); apply(b.getAttribute('data-cmd'), ed); syncButtons(bar);
+    });
+    ed.addEventListener('keydown', function(e){
+      var k = String(e.key || '').toLowerCase();
+      if((e.metaKey || e.ctrlKey) && e.shiftKey && (k === 'x' || k === 'h')){ e.preventDefault(); apply(k === 'x' ? 's' : 'mark', ed); syncButtons(bar); return; }
+      if((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (k === 'b' || k === 'i' || k === 'u')){ e.preventDefault(); apply(k, ed); syncButtons(bar); return; }
+      if(e.key === 'Enter' && !e.ctrlKey && !e.metaKey){ e.preventDefault(); document.execCommand('insertLineBreak'); }
+    });
+    ed.addEventListener('paste', function(e){ var t = (e.clipboardData || window.clipboardData).getData('text/plain'); e.preventDefault(); document.execCommand('insertText', false, t); });
+    ed.addEventListener('input', refreshEmpty);
+    document.addEventListener('selectionchange', function(){ var s = window.getSelection(); if(s && s.anchorNode && ed.contains(s.anchorNode)) syncButtons(bar); });
+    refreshEmpty();
+  };
+})();
+</script>
+<!-- ======================= /SITE_COPY_RICH_V1 ======================= -->
 </body>
 </html>
