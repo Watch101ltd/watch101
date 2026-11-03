@@ -291,6 +291,16 @@ body{
   border-radius:50%;background:var(--title-red);
 }
 </style>
+<style>/* HOME_TOPROW_V1 (2026-11-02, Matt's Claude, Session 60; WAITING ON MATT 37): the four sport logos on the
+   right of the top row on the home-style pages, same mini style as the sport pages. */
+.logo-mini{font-family:var(--font-brand);letter-spacing:0.04em;line-height:1;display:flex;align-items:center;gap:0.1em;opacity:0.9;text-decoration:none;cursor:pointer}
+.logo-mini:hover{opacity:1}
+.logo-mini .logo-mini-img{height:1.6em;width:auto;display:block;flex-shrink:0}
+.logo-mini .logo-mini-sport{font-weight:800;letter-spacing:0.06em}
+.logo-mini.nba .logo-mini-sport{color:#ea580c}.logo-mini.mlb .logo-mini-sport{color:#1d4ed8}.logo-mini.nfl .logo-mini-sport{color:#16a34a}.logo-mini.philly .logo-mini-sport{color:#d4111b}
+.w101-minis{display:flex;align-items:center;gap:10px}
+.w101-minis .logo-mini{font-size:14px}
+</style>
 </head>
 <body data-page="contact">
 
@@ -320,6 +330,9 @@ body{
       <button class="w101-theme" id="theme-toggle" type="button" onclick="w101Theme()" title="Toggle day and night mode">&#127769;</button>
     </nav>
 
+    <div class="w101-minis"><!-- HOME_TOPROW_V1 (2026-11-02): NBA, MLB, NFL, Philly logos, each a link to its page. -->
+      <a class="logo-mini nba" href="nba/" title="Watch101NBA"><img class="logo-mini-img" src="nba/images/watch101_basketball_logo.png" alt="101"><span class="logo-mini-sport">NBA</span></a><a class="logo-mini mlb" href="mlb/" title="Watch101MLB"><img class="logo-mini-img" src="nba/images/watch101_baseball_logo.png" alt="101"><span class="logo-mini-sport">MLB</span></a><a class="logo-mini nfl" href="nfl/" title="Watch101NFL"><img class="logo-mini-img" src="nba/images/watch101_football_logo.png" alt="101"><span class="logo-mini-sport">NFL</span></a><a class="logo-mini philly" href="philly/" title="Watch101Philly"><img class="logo-mini-img" src="nba/images/watch101_food_logo.png" alt="101"><span class="logo-mini-sport">Philly</span></a>
+    </div>
     <div class="w101-social" id="social-row"></div>
   </div>
 </header>
@@ -889,7 +902,7 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
   var CHROME_FIT_MIN_VW = 900;          // below this the phone layout owns these rows
   var TARGETS = [
     // [selector, shrink floor]
-    ['.w101-nav-inner',   0.62],        // his 175% bench needs 0.6912; 0.62 holds down to about 1030px wide
+    ['.w101-nav-inner',   0.50],        // ONE_LINE_ALWAYS_V1 (2026-11-02, Matt: "Everything needs to be on one line no matter what", desktop only): was 0.62, which let sport rows wrap below about 1020px
     ['.list-title-stack', 0.75]         // bench needs 0.9729; this row carries real content so it wraps sooner
   ];
   function fitChrome(){
@@ -900,15 +913,23 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
       if(!el) continue;                               // the hub pages carry a nav and no title stack
       el.style.zoom = '';                             // always reset first, so the natural width is the real one
       if(phone || el.offsetParent === null){ el.classList.remove('chrome-fit'); continue; }
+      el.style.maxWidth = '';                         // CHROME_FIT_BOX_V1: reset the box too
       el.classList.add('chrome-fit');                 // wrapping off, so the row can overflow and be measured
       var need = el.scrollWidth, avail = el.clientWidth;
       if(need <= 0 || avail <= 0 || need <= avail) continue;   // already fits, leave it at full size
+      /* CHROME_FIT_BOX_V1 (2026-11-02, Matt's Claude): the row's 1240px cap is not allowed to force a shrink.
+         First let the box grow to the room the window really has; only then shrink the row. */
+      var room = document.documentElement.clientWidth;
+      el.style.maxWidth = Math.min(need, room) + 'px';
+      avail = el.clientWidth;
+      if(need <= avail) continue;
       var z = (avail - 2) / need;
       if(z < floor) z = floor;
       el.style.zoom = z.toFixed(4);
+      el.style.maxWidth = (avail / z) + 'px';         // zoom also shrinks the box; keep it the same size on screen
       if(el.scrollWidth > el.clientWidth + 1){        // floor reached and still too wide:
         el.classList.remove('chrome-fit');            // wrap rather than cut anything off
-        el.style.zoom = '';
+        el.style.zoom = ''; el.style.maxWidth = '';
       }
     }
   }
