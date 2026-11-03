@@ -2165,6 +2165,16 @@ mark.nr-m, #nr-tip mark, .col-note mark, .rk-note mark, .pc-note mark, .ftl-note
 .sc-clear{position:absolute;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;border:none;background:rgba(148,163,184,0.22);color:inherit;font-size:15px;line-height:20px;text-align:center;cursor:pointer;padding:0;display:none;z-index:3;font-family:Arial,sans-serif}
 .sc-clear:hover{background:#c47f00;color:#fff}
 input.sc-has-text{padding-right:32px !important}
+
+/* SATTEN_SAYS_MLB_V1 (2026-11-03, Matt's Claude, Matt's ask): the Compact button is now "Satten Says" and
+   stretches like basketball's: the main table fills the window, every other column shrinks to its content,
+   the note takes the rest, prints in full and reads left to right. (MLB Players / Prospects keep the classic
+   compact, gold columns hidden; these rules are scoped to #main-table.) */
+body.compact-mode #main-table{width:100% !important;min-width:0 !important;table-layout:auto !important}
+body.compact-mode #main-table colgroup col{width:auto !important}
+body.compact-mode #main-table th:not(.col-note),body.compact-mode #main-table td:not(.col-note){white-space:nowrap;width:1px !important}
+body.compact-mode #main-table th.col-note,body.compact-mode #main-table td.col-note{width:auto !important;max-width:none !important;white-space:normal !important;overflow:visible !important;text-align:left !important;line-height:1.4}
+body.compact-mode #main-table td.col-note *{text-align:left !important;max-width:none !important}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.mini.min.js"></script>
 <!-- GAMELOG_LAZYLOAD_V1 (2026-07-23): player_game_log.js + player_pitching_game_log.js
@@ -2613,7 +2623,7 @@ html.mlb-gated body > #mlb-gate { display:flex !important; }
     </div>
     <button class="btn btn-outline backend-only" id="undo-btn" onclick="undoLastMove()" title="Undo last change — drag or removal (Ctrl+Z)" disabled style="opacity:0.4;cursor:not-allowed">↶ Undo</button>
     <!-- COMPACT_MODE_V1 (June 7, 2026) + COMPACT_MATT_FOCUS_V1 (June 12, 2026): on the Watch101 lists, Compact hides ALL stat columns (regular + gold) and stretches Matt's Note column wide with wrapping; on MLB Players / Prospects / Tank it still hides just the gold Statcast block. Visible to everyone (no backend-only). -->
-    <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: on the Watch101 lists, hide ALL stat columns and stretch the Note column so Matt's notes take center stage. MLB Players / Prospects keep the classic compact (gold columns hidden).">↔ Compact</button>
+    <button class="btn btn-outline" id="compact-toggle-btn" onclick="toggleCompactMode(this)" title="Compact view: on the Watch101 lists, hide ALL stat columns and stretch the Note column so Matt's notes take center stage. MLB Players / Prospects keep the classic compact (gold columns hidden).">↔ Satten Says</button>
     <div class="hdr-dd" id="dd-more">
       <button class="hdr-dd-btn" onclick="hdrToggleDropdown('dd-more', event)" title="More actions">⋯ More <span class="hdr-dd-caret">▾</span></button>
       <div class="hdr-dd-menu">
@@ -6601,6 +6611,7 @@ function toggleCompactMode(el){
   const on = document.body.classList.toggle('compact-mode');
   if(el){ el.classList.toggle('active', on); }
   fitTables();
+  try { if(typeof renderTiers === 'function'){ renderTiers(); requestAnimationFrame(function(){ try{ renderTiers(); }catch(e){} }); } } catch(e){}   // SATTEN_TIER_REDRAW_V1
 }
 
 // AUTO_SHRINK_V1 (June 7, 2026 — PC Walter, per The Dude) — the real squish fix.
