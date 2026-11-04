@@ -2498,7 +2498,7 @@ function fitTables(){
       // an ordinary .watch-list table down the SAME path as the watch list and the pool. If a future
       // session finds itself writing another `if(wrap.id === ...)` here, that is the exact shape of the
       // bug this removal cured -- read the CSS tombstone above first.
-      table.style.zoom = '1';                       // reset to read true natural width
+      const _zNow = parseFloat(table.style.zoom) || 1;   // FIT_NO_RESET_V1: no zoom reset, it cost two full relayouts per pass
       /* TABLEFIT_PADDING_V1 (2026-09-21, PC Walter, per the Dude) - THIS IS THE RIGHT-EDGE CUTOFF,
          and it had been here since the shrinker was written. His words: "it's getting the whole screen
          to fit without cutting anything off on the right... just half of the E at the end of Remove is
@@ -2520,9 +2520,11 @@ function fitTables(){
       const avail = wrap.clientWidth
                   - (parseFloat(_wcs.paddingLeft)  || 0)
                   - (parseFloat(_wcs.paddingRight) || 0);
-      const natural = table.offsetWidth;
-      if(natural <= 0 || avail <= 0){ return; }
+      let natural = table.offsetWidth;   // FIT_NO_RESET_V1: Chrome reports this unzoomed
+      if(_zNow !== 1 && Math.abs(table.getBoundingClientRect().width / _zNow - natural) > 2){ table.style.zoom = '1'; natural = table.offsetWidth; }   // a browser that reports zoomed widths gets the old reset
+      if(natural <= 0 || avail <= 0){ table.style.zoom = '1'; return; }
       if(natural <= avail){
+        table.style.zoom = '1';
         // STRETCH_KILL_NBA_V1 (2026-08-22): GROW-to-fill retired, ported from football. The old line
         // magnified the whole table -- fonts included -- until it filled the wrap, which rebuilt the
         // spread-out look no matter how tight the columns got. No amount of column work could win
