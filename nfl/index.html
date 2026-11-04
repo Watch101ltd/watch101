@@ -7612,6 +7612,8 @@ function _tiersMemberRows(range){
 // ResizeObserver whenever the rows change height (note edits, fonts, phone rotation) without a render.
 // Left and right edges come from the first and last cells that actually SHOW (the drag handle and
 // Action columns are 0px / hidden on the public page, and both show on the backend).
+var _tierBoxTries = 0, _tierBoxTimer = 0;   // TIER_BOX_RETRY_V1
+function _tierBoxRetry(){ if(_tierBoxTimer || _tierBoxTries >= 30) return; _tierBoxTries++; _tierBoxTimer = setTimeout(function(){ _tierBoxTimer = 0; _tierDrawBoxes(); }, 400); }
 function _tierDrawBoxes(){
   try {
     var tbody = document.getElementById('watch-list-body');
@@ -7633,7 +7635,8 @@ function _tierDrawBoxes(){
     // Measure only after every tier-last class is on, so no box is measured against a row that grows later.
     jobs.forEach(function(J){
       var td = J.sp.firstElementChild;
-      if(!td || !td.offsetWidth) return;
+      if(!td) return;
+      if(!td.offsetWidth){ _tierBoxRetry(); return; }   // TIER_BOX_RETRY_V1
       var T = td.getBoundingClientRect();
       var z = T.width / td.offsetWidth;           // the table's TABLEFIT zoom, as the browser applied it
       if(!(z > 0)) return;
@@ -7649,7 +7652,7 @@ function _tierDrawBoxes(){
       box.className = 'tier-box';
       box.style.left = left + 'px'; box.style.top = top + 'px';
       box.style.width = (right - left) + 'px'; box.style.height = (bottom - top) + 'px';
-      td.appendChild(box);
+      td.appendChild(box); _tierBoxTries = 0;   // TIER_BOX_RETRY_V1: drawn, so the retry budget resets
     });
   } catch(e){ console.warn('[TIER_BOX_WL_V1] draw failed:', e); }
 }
