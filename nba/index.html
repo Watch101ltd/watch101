@@ -4546,6 +4546,8 @@ function _tiersMemberRows(range){
 // ResizeObserver whenever the rows change height (note edits, fonts, phone rotation) without a render.
 // Left and right edges come from the first and last cells that actually SHOW (the drag handle and
 // Action columns are 0px / hidden on the public page, and both show on the backend).
+var _tierBoxTries = 0, _tierBoxTimer = 0;   // TIER_BOX_RETRY_V1
+function _tierBoxRetry(){ if(_tierBoxTimer || _tierBoxTries >= 30) return; _tierBoxTries++; _tierBoxTimer = setTimeout(function(){ _tierBoxTimer = 0; _tierDrawBoxes(); }, 400); }
 function _tierDrawBoxes(){
   try {
     var tbody = document.getElementById('watch-list-body');
@@ -4567,7 +4569,8 @@ function _tierDrawBoxes(){
     // Measure only after every tier-last class is on, so no box is measured against a row that grows later.
     jobs.forEach(function(J){
       var td = J.sp.firstElementChild;
-      if(!td || !td.offsetWidth) return;
+      if(!td) return;
+      if(!td.offsetWidth){ _tierBoxRetry(); return; }   // TIER_BOX_RETRY_V1
       var T = td.getBoundingClientRect();
       var z = T.width / td.offsetWidth;           // the table's TABLEFIT zoom, as the browser applied it
       if(!(z > 0)) return;
@@ -4583,7 +4586,7 @@ function _tierDrawBoxes(){
       box.className = 'tier-box';
       box.style.left = left + 'px'; box.style.top = top + 'px';
       box.style.width = (right - left) + 'px'; box.style.height = (bottom - top) + 'px';
-      td.appendChild(box);
+      td.appendChild(box); _tierBoxTries = 0;   // TIER_BOX_RETRY_V1: drawn, so the retry budget resets
     });
   } catch(e){ console.warn('[TIER_BOX_WL_V1] draw failed:', e); }
 }
@@ -6963,7 +6966,7 @@ function _rankCol_type(){ return { key:'type', label:'Type', headClass:'col-type
   render:function(pid){
     var tags=_typeTagsDisplay(_rankTypeTagsFor(pid));   // TAG_ORDER_ACT_FIRST_V1
     if(!tags.length) return '<span class="placeholder">—</span>';
-    var chips=''; for(var i=0;i<tags.length;i++){ var d=_typeTagById(tags[i]); if(d) chips += '<span class="type-chip" title="' + d.label + ' — ' + d.tagline + '">' + d.emoji + '</span>'; }
+    var chips=''; for(var i=0;i<tags.length;i++){ var d=_typeTagById(tags[i]); if(d) chips += '<span class="type-chip" title="' + d.label + (d.tagline ? ' — ' + d.tagline : '') + '">' + d.emoji + '</span>'; }
     return '<div class="type-stack" data-rank-pid="' + String(pid).replace(/"/g,'&quot;') + '">' + (chips||'—') + '</div>';
   } }; }
 function _rankCol_priority(){ return { key:'priority', label:'Priority', headClass:'col-priority', tdClass:'',
@@ -9968,11 +9971,14 @@ const TYPE_TAGS_V1 = [
   // ---- Act now ----
   { id: 'must_watch',       emoji: '👀', label: 'Must Watch',       tagline: "Drop everything. Read this player's notes first." },
   { id: 'alert_add_now',    emoji: '🚨', label: 'Alert — Add Now',  tagline: 'Stop what you are doing and put in the claim.' },
+  { id: 'streamer',         emoji: '🔄', label: 'Streamer',         tagline: '' },   // NBA_TAGS_NOV3_V1: Matt writes the description in The Key
+  { id: 'disappearing_value', emoji: '👻', label: 'Disappearing Value', tagline: '' },   // NBA_TAGS_NOV3_V1
 
   // ---- Buy, sell, hold ----
   { id: 'buy_low',          emoji: '🚀', label: 'Buy Low',          tagline: 'Cheap right now. Not for much longer.' },
+  { id: 'sell_high',        emoji: '🤝', label: 'Sell High',        tagline: 'Public has him too high. Trade before the regression.' },   // NBA_TAGS_NOV3_V1: moved next to Buy Low
   { id: 'undervalued',      emoji: '🔍', label: 'Undervalued',      tagline: 'Yahoo and the public have him too low. We saw him first.' },
-  { id: 'sell_high',        emoji: '🤝', label: 'Sell High',        tagline: 'Public has him too high. Trade before the regression.' },
+  { id: 'overvalued',       emoji: '🫧', label: 'Overvalued',       tagline: '' },   // NBA_TAGS_NOV3_V1
   { id: 'future_stash',     emoji: '🏦', label: 'Future Stash',     tagline: 'Not paying off now. Will later. Bank him.' },
   { id: 'probably_owned',   emoji: '😕', label: 'Probably Owned',   tagline: 'Likely already rostered in your league. Still worth watching.' },
 
@@ -9985,6 +9991,7 @@ const TYPE_TAGS_V1 = [
   { id: 'injury_soon',      emoji: '🌈', label: 'Back Soon',        tagline: 'Practising again. Grab him before he plays.' },
   { id: 'injury_prone',     emoji: '🤕', label: 'Injury Prone',     tagline: 'Talented, but the body keeps interrupting.' },
   { id: 'injury_promotion', emoji: '🫡', label: 'Injury Promotion', tagline: 'The starter went down. He got the call.' },
+  { id: 'playing_hurt',     emoji: '😣', label: 'Playing Hurt',     tagline: '' },   // NBA_TAGS_NOV3_V1
 
   // ---- What he gives you ----
   { id: 'blocks_spec',      emoji: '☝️', label: 'Blocks Specialist', tagline: 'Erases shots. Carries the category on his own.' },
@@ -9992,14 +9999,17 @@ const TYPE_TAGS_V1 = [
   { id: 'stocks',           emoji: '🪙', label: 'Stocks',           tagline: "Steals and blocks together. Found gold in the categories nobody drafts for." },
   { id: 'three_and_d',      emoji: '🔱', label: '3 and D',          tagline: 'Shoots it and defends it. Fills the thin categories.' },
   { id: 'triple_single',    emoji: '🦄', label: 'Triple Single',    tagline: 'A block, a steal and a three every night. Rare and quietly valuable.' },
+  { id: 'assist_spec',      emoji: '🎁', label: 'Assist Specialist', tagline: '' },   // NBA_TAGS_NOV3_V1
 
   // ---- Category risks ----
   { id: 'bricks',           emoji: '🧱', label: 'Bricks',           tagline: 'The counting stats cost you percentages.' },
   { id: 'punt_ft',          emoji: '🏈', label: 'Punt FT Build',    tagline: 'For rosters that gave up on free throw percentage.' },
+  { id: 'no_d',             emoji: '🧀', label: 'No D',             tagline: '' },   // NBA_TAGS_NOV3_V1
 
   // ---- Situation ----
   { id: 'rookie',           emoji: '👶', label: 'Rookie',           tagline: 'First-year player. Worth knowing before everyone else does.' },
   { id: 'high_iq',          emoji: '🧠', label: 'High Basketball IQ', tagline: 'Reads the floor. The box score undersells him.' },
+  { id: 'top_reserve',      emoji: '🪑', label: 'Top Reserve',      tagline: '' },   // NBA_TAGS_NOV3_V1
 ];
 // ============================================================================
 // TYPE_TAG_GROUPS_V1 (2026-08-23 — Walter, per the Dude).
@@ -10035,13 +10045,13 @@ const TYPE_TAGS_V1 = [
 // groups stays a code change. Flagged to the Dude before this was written.
 // ============================================================================
 var TYPE_TAG_GROUPS_V1 = [
-  { label: 'Act now',         ids: ['must_watch','alert_add_now'] },
-  { label: 'Buy, sell, hold', ids: ['buy_low','undervalued','sell_high','future_stash','probably_owned'] },
+  { label: 'Act now',         ids: ['must_watch','alert_add_now','streamer','disappearing_value'] },
+  { label: 'Buy, sell, hold', ids: ['buy_low','sell_high','undervalued','overvalued','future_stash','probably_owned'] },
   { label: 'Form',            ids: ['hot_streak','cold_streak'] },
-  { label: 'Injuries',        ids: ['il_return','injury_soon','injury_prone','injury_promotion'] },
-  { label: 'What he gives you', ids: ['blocks_spec','three_pt_spec','stocks','three_and_d','triple_single'] },
-  { label: 'Category risks',  ids: ['bricks','punt_ft'] },
-  { label: 'Situation',       ids: ['rookie','high_iq'] }
+  { label: 'Injuries',        ids: ['il_return','injury_soon','injury_prone','injury_promotion','playing_hurt'] },
+  { label: 'What he gives you', ids: ['blocks_spec','three_pt_spec','stocks','three_and_d','triple_single','assist_spec'] },
+  { label: 'Category risks',  ids: ['bricks','punt_ft','no_d'] },
+  { label: 'Situation',       ids: ['rookie','high_iq','top_reserve'] }
 ];
 // Returns [{label, tags:[...]}, ...] in group order. Within a group, tags keep
 // their TYPE_TAGS_V1 order, so Matt's own drag-reorder in The Key still counts.
@@ -10107,7 +10117,7 @@ function _wlTypeCellHtml(pid){
   let chips = '';
   for(let i = 0; i < tags.length; i++){
     const def = _typeTagById(tags[i]);
-    if(def) chips += '<span class="type-chip" title="' + def.label + ' — ' + def.tagline + '">' + def.emoji + '</span>';
+    if(def) chips += '<span class="type-chip" title="' + def.label + (def.tagline ? ' — ' + def.tagline : '') + '">' + def.emoji + '</span>';
   }
   return '<td class="col-type-cell"><div class="type-stack" data-pid="' + pid + '">' + (chips || '—') + '</div></td>';   // TYPE_TAG_TOOLTIPS_V1 — data-pid feeds the click delegator
 }
@@ -10243,7 +10253,7 @@ function _ftlRenderTypeTags(pid){
     const rkTags = _rankTypeTagsFor(pid);
     if((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode()){
       let rkChips = '';
-      _typeTagsDisplay(rkTags).forEach(function(id){ const d = _typeTagById(id); if(d) rkChips += '<span class="type-chip" title="' + d.tagline + '">' + d.emoji + ' ' + d.label + '</span> &nbsp;'; });
+      _typeTagsDisplay(rkTags).forEach(function(id){ const d = _typeTagById(id); if(d) rkChips += '<span class="type-chip" title="' + (d.tagline || d.label) + '">' + d.emoji + ' ' + d.label + '</span> &nbsp;'; });
       body.innerHTML = rkChips || '<em>No type tags on this player.</em>';
       return;
     }
@@ -10258,7 +10268,7 @@ function _ftlRenderTypeTags(pid){
     const idxR = _wlIndexOf(pid);
     const tagsR = (idxR >= 0) ? _wlTypeTags(_watchList[idxR]) : [];
     let chips = '';
-    _typeTagsDisplay(tagsR).forEach(function(id){ const d = _typeTagById(id); if(d) chips += '<span class="type-chip" title="' + d.tagline + '">' + d.emoji + ' ' + d.label + '</span> &nbsp;'; });
+    _typeTagsDisplay(tagsR).forEach(function(id){ const d = _typeTagById(id); if(d) chips += '<span class="type-chip" title="' + (d.tagline || d.label) + '">' + d.emoji + ' ' + d.label + '</span> &nbsp;'; });
     body.innerHTML = chips || '<em>No type tags on this player.</em>';
     return;
   }
