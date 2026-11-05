@@ -419,7 +419,7 @@ body{
 
   <!-- NOT EDITABLE ON PURPOSE (same as About): this line carries the contact link, and a plain-text
        editor would strip it out the first time it was saved. -->
-  <p>Questions, permission requests or a problem to report: <a class="more" href="contact.html">get in touch</a>.</p>
+  <p>Questions, permission requests or a problem to report: <a class="more" id="terms-email" href="contact.html">get in touch</a>.</p>
 
   <div class="w101-block" data-copy-block="law">
     <div class="w101-copy-body">
@@ -583,11 +583,14 @@ var W101_SEEN_KEY = 'watch101-updates-seen';
     if(link){ link.classList.remove('has-new'); link.removeAttribute('title'); }
   }
   /* Contact address comes from the config block so there is one place to edit. */
+  /* EMAIL_LINK_V1: Terms "get in touch" opens an email to the config address (falls back to the Contact page if blank). */
+  var te=document.getElementById('terms-email');
+  if(te && (W101.email||'').trim()) te.setAttribute('href','mailto:'+(W101.email||'').trim());
   var cb=document.getElementById('contact-block');
   if(cb){
     var e=(W101.email||'').trim();
     cb.innerHTML = e
-      ? '<a href="mailto:'+e+'">'+e.replace('@',' @ ')+'</a>'   /* CONTACT_EMAIL_V1: shown as name @ domain, link is the real address */
+      ? '<a href="mailto:'+e+'">Email us</a>'   /* EMAIL_LINK_V1 (2026-11-05, Matt): link text only, the address is never written on the page */
       : '<span class="pending">The public address is being set up. It will appear here shortly.</span>';
   }
 })();
