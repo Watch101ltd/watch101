@@ -976,7 +976,7 @@ function w101Theme(){
   var HL = 'rgba(240, 165, 0, 0.32)';
   function escAll(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   /* paint: escape everything, then let the five formatting tags back through */
-  window.w101Rich = function(s){ return escAll(s).replace(/&lt;(\/?)(b|i|u|s|mark)&gt;/g, '<$1$2>'); };
+  window.w101Rich = function(s){ return escAll(s).replace(/&lt;(\/?)(b|i|u|s|mark)&gt;/g, '<$1$2>').replace(/&lt;a&gt;/g, '<a class="more" href="contact.html#contact-form">').replace(/&lt;\/a&gt;/g, '</a>'); };   /* CONTACT_LINK_RICH_V1 (2026-11-06): <a> = a link to the Contact form, nothing else */
   /* read what a visitor sees back into the stored form, keeping only the five tags */
   window.w101RichText = function(node){
     var out = '';
@@ -985,7 +985,7 @@ function w101Theme(){
       if(n.nodeType !== 1) return;
       if(n.classList && (n.classList.contains('w101-edit-btn') || n.classList.contains('w101-editor'))) return;
       var t = n.nodeName.toLowerCase();
-      var m = { b:'b', strong:'b', i:'i', em:'i', u:'u', s:'s', strike:'s', del:'s', mark:'mark' }[t];
+      var m = { b:'b', strong:'b', i:'i', em:'i', u:'u', s:'s', strike:'s', del:'s', mark:'mark', a:'a' }[t];
       if(m) out += '<' + m + '>';
       Array.prototype.forEach.call(n.childNodes, walk);
       if(m) out += '</' + m + '>';
@@ -1008,13 +1008,14 @@ function w101Theme(){
       if(tag === 'u' || /underline/.test(deco)) w.push('u');
       if(tag === 's' || tag === 'strike' || tag === 'del' || /line-through/.test(deco)) w.push('s');
       if(tag === 'mark' || (bg && bg !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(bg))) w.push('mark');
+      if(tag === 'a') w.push('a');   /* CONTACT_LINK_RICH_V1 */
       w.forEach(function(t){ out += '<' + t + '>'; });
       Array.prototype.forEach.call(n.childNodes, walk);
       w.slice().reverse().forEach(function(t){ out += '</' + t + '>'; });
     }
     Array.prototype.forEach.call(root.childNodes, walk);
     var prev;
-    do { prev = out; out = out.replace(/<(b|i|u|s|mark)><\/\1>/g, '').replace(/<\/(b|i|u|s|mark)><\1>/g, ''); } while(out !== prev);
+    do { prev = out; out = out.replace(/<(b|i|u|s|mark|a)><\/\1>/g, '').replace(/<\/(b|i|u|s|mark|a)><\1>/g, ''); } while(out !== prev);
     return out.replace(/\n$/, '');
   }
   function editorHtml(v){ return window.w101Rich(v).replace(/<mark>/g, '<span style="background-color:' + HL + '">').replace(/<\/mark>/g, '</span>'); }
@@ -1024,17 +1025,20 @@ function w101Theme(){
   function apply(cmd, ed){
     ed.focus();
     try { document.execCommand('styleWithCSS', false, false); } catch(e){}
-    if(cmd === 'mark'){
+    if(cmd === 'a'){   /* CONTACT_LINK_RICH_V1: link the selected words to the Contact form, or unlink */
+      if(inLink(ed)) document.execCommand('unlink', false, null); else document.execCommand('createLink', false, 'contact.html#contact-form');
+    } else if(cmd === 'mark'){
       try { document.execCommand('styleWithCSS', false, true); } catch(e){}
       document.execCommand('hiliteColor', false, isHl() ? 'transparent' : HL);
       try { document.execCommand('styleWithCSS', false, false); } catch(e){}
     } else { document.execCommand(CMD[cmd], false, null); }
     ed.dispatchEvent(new Event('input', { bubbles: true }));
   }
+  function inLink(ed){ var s = window.getSelection(); var n = s && s.anchorNode; while(n && n !== ed){ if(n.nodeName === 'A') return true; n = n.parentNode; } return false; }
   function syncButtons(bar){
     Array.prototype.forEach.call(bar.querySelectorAll('button[data-cmd]'), function(b){
       var c = b.getAttribute('data-cmd'), on = false;
-      try { on = (c === 'mark') ? isHl() : document.queryCommandState(CMD[c]); } catch(e){}
+      try { on = (c === 'a') ? inLink(b.closest('.w101-editor') ? b.closest('.w101-editor').querySelector('.nr-ed') : null) : (c === 'mark') ? isHl() : document.queryCommandState(CMD[c]); } catch(e){}
       b.classList.toggle('on', !!on);
     });
   }
@@ -1049,7 +1053,8 @@ function w101Theme(){
       '<button type="button" data-cmd="i" title="Italic (⌘I)"><i>I</i></button>' +
       '<button type="button" data-cmd="u" title="Underline (⌘U)"><u>U</u></button>' +
       '<button type="button" data-cmd="s" title="Strikethrough (⌘⇧X)"><s>S</s></button>' +
-      '<button type="button" data-cmd="mark" class="nr-hl" title="Highlight (⌘⇧H)"><span>H</span></button>';
+      '<button type="button" data-cmd="mark" class="nr-hl" title="Highlight (⌘⇧H)"><span>H</span></button>' +
+      '<button type="button" data-cmd="a" title="Link the selected words to the Contact form (click again to remove)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg></button>';
     var ed = document.createElement('div'); ed.className = 'nr-ed'; ed.contentEditable = 'true'; ed.spellcheck = true;
     ed.setAttribute('role', 'textbox'); ed.setAttribute('aria-multiline', 'true');
     var cs = getComputedStyle(ta);
