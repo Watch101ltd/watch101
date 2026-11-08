@@ -31,7 +31,7 @@
   ============================================================================
 -->
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=Caprasimo&family=Noto+Serif:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800;900&family=Roboto+Slab:wght@900&family=Noto+Serif:wght@400;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 
 /* ── COLOR TOKENS ──────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@
      an IMAGE and neither variable touches it.
      ========================================================================== */
   --font-display:'Noto Serif','Times New Roman',Times,serif;
-  --font-brand:'Caprasimo',Georgia,serif;
+  --font-brand:'Roboto Slab',Georgia,serif;   /* WORDMARK_ROBOTO_V1 (2026-11-08, Matt): Roboto Slab Black */
 
   --bg:#080c10;--surface:#0d1117;--surface2:#131920;--surface3:#1a2330;
   --border:#1e2d3d;--border2:#253545;
@@ -1766,6 +1766,13 @@ table.watch-list tbody td.empty-state{text-align:left}
 .w101-brand{display:flex;align-items:center;gap:0;text-decoration:none;flex-shrink:0}
 .w101-brand-word{font-family:var(--font-brand);font-size:26px;letter-spacing:0;color:var(--court);line-height:1}
 .w101-brand img{height:31px;width:auto;display:block}
+/* WORDMARK_ROBOTO_V1 (2026-11-08, Matt: Roboto Slab; "the bottom of the words on the same plane the whole way across").
+   Logo is 1.4x the letters' cap height (0.72 of the font size), tucked 16% under "Watch". The bottom of the
+   logo's two legs sits on the words' baseline: each logo image has a few rows below its legs (the ball or the 0
+   dips lower), so the image is moved down by exactly that share of its height. */
+.w101-brand{align-items:baseline}
+.w101-brand-word,.logo-mini{font-weight:900}
+.w101-brand img{height:calc(26px * .72 * 1.4);margin-left:calc(26px * .72 * 1.4 * -.16);position:relative;z-index:2;top:calc(26px * .72 * 1.4 * 7 / 344)}
 #drop-tools-panel .btn{display:flex;width:100%;box-sizing:border-box;justify-content:flex-start;text-align:left;margin:2px 0;font-size:12px}  /* HDR_COMPACT_NBA_V1 */
 /* HDR_COMPACT_NBA_V1: the chrome carries the sister-site minis, shrunk from the old 26px header size
    to 14px, and hidden on narrow screens where The Lists dropdown already covers the trip. */
@@ -11005,48 +11012,8 @@ else { _applyReadOnlyBodyClass(); }
   else { run(); }
 })();
 
-// FAN_BOOT_RANKINGS_V1 (2026-08-27 -- PC Walter, the Dude's call). Customers land on
-// REDRAFT RANKINGS instead of the flagship 101 list.
-//
-// WHY: the 101 lists are not published yet, so a visitor opening the page today lands on
-// "Not published yet" and an empty table, while Redraft Rankings is full.
-//
-// SCOPE IS DELIBERATE AND NARROW -- READ-ONLY ONLY. Matt works this same file as his
-// backend on GitHub and builds the lists daily. He keeps booting on the 101 and his
-// workflow is untouched. Do NOT widen this to everyone without telling him first.
-//
-// TEMPORARY BY DESIGN. His words: "once we have our 101 lists set up" the default goes
-// back. TO REVERT: delete this whole block. Nothing else references it.
-//
-// WHY IT WAITS: basketball builds its switcher options in JS, so the Redraft option does
-// not exist at DOMContentLoaded -- and assigning a <select> a value with no matching
-// option fails SILENTLY. We wait for the option itself, not just for the functions.
-(function fanBootOnRedraftRankings(){
-  var tries = 0, done = false;
-  function run(){
-    try {
-      if(done) return;
-      if(!_isReadOnlyMode()) return;                  // customers only
-      var sel = document.getElementById('list-switcher');
-      var ready = sel
-        && typeof showRankingsView === 'function'
-        && typeof switchActiveList === 'function'
-        && Array.prototype.some.call(sel.options, function(o){ return o.value === 'view:rankings'; });
-      if(!ready){
-        if(++tries < 60){ setTimeout(run, 250); }     // 15s cap, then give up quietly
-        return;
-      }
-      // Never yank a visitor who already picked something while we were waiting.
-      if(sel.value !== 'integrity-nba'){ done = true; return; }
-      done = true;
-      sel.value = 'view:rankings';
-      switchActiveList('view:rankings');              // diverts to showRankingsView('redraft')
-      console.log('[FAN_BOOT_RANKINGS_V1] fan view booted on Redraft Rankings');
-    } catch(e){ /* never break the page over this */ }
-  }
-  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', run); }
-  else { run(); }
-})();
+// FAN_BOOT_WATCHLIST_V1 (2026-11-08, Matt): fans now land on the 12 Team Daily 9-Cat watch list (the page default).
+// FAN_BOOT_RANKINGS_V1 (2026-08-27), which sent fans to Redraft Rankings while the 101 lists were unpublished, is removed as its own note said to do.
 
 // (MATT_CONTROLS_V1 continues below)
 function _ftlUpdateShowNewHint(on){
