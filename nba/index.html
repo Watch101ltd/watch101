@@ -2493,7 +2493,12 @@ const AUTOSHRINK_MIN = 0.70; // never shrink below 70% — readability floor
 let _fitRaf = null;
 function fitTables(){
   if(_fitRaf) cancelAnimationFrame(_fitRaf);
-  _fitRaf = requestAnimationFrame(function(){
+  _fitRaf = requestAnimationFrame(_fitTablesNow);
+}
+// VIEW_SWITCH_FIT_NOW_V1 (2026-11-10, Bug #242): the fit itself, runnable right away. setViewMode() calls it
+// directly so the first frame of a new view is already the right size (no visible grow/shrink after a switch).
+function _fitTablesNow(){
+    if(_fitRaf){ cancelAnimationFrame(_fitRaf); }
     _fitRaf = null;
     const wraps = document.querySelectorAll('.table-wrap');
     wraps.forEach(function(wrap){
@@ -2505,7 +2510,13 @@ function fitTables(){
       // an ordinary .watch-list table down the SAME path as the watch list and the pool. If a future
       // session finds itself writing another `if(wrap.id === ...)` here, that is the exact shape of the
       // bug this removal cured -- read the CSS tombstone above first.
-      const _zNow = parseFloat(table.style.zoom) || 1;   // FIT_NO_RESET_V1: no zoom reset, it cost two full relayouts per pass
+      let _zNow = parseFloat(table.style.zoom) || 1;   // FIT_NO_RESET_V1: no zoom reset, it cost two full relayouts per pass
+      /* SATTEN_FIT_RESET_V1 (2026-11-10, PC Walter, Bug #242, the Dude: "the font size kind of shrinks right before your eyes").
+         Satten Says stretches the table to width:100%, so measured while zoomed it always reads (room / zoom) and looks too
+         wide; FIT_NO_RESET_V1 then kept the zoom and shaved a bit more every pass (measured 0.848 -> 0.839 over 5 s, while at
+         zoom 1 the table is 1151px in an 1151px room). In Satten Says only, measure from zoom 1 again. Full View keeps the
+         no-reset speed. Keyed to the VIEW, not to a wrap id (see the RANK_AUTOSHRINK_NBA_V1 note above). */
+      if(_zNow !== 1 && document.body.classList.contains('view-matts-take')){ table.style.zoom = '1'; _zNow = 1; }
       /* TABLEFIT_PADDING_V1 (2026-09-21, PC Walter, per the Dude) - THIS IS THE RIGHT-EDGE CUTOFF,
          and it had been here since the shrinker was written. His words: "it's getting the whole screen
          to fit without cutting anything off on the right... just half of the E at the end of Remove is
@@ -2560,7 +2571,6 @@ function fitTables(){
       wrap.style.overflowX = _clamped ? 'auto' : '';
     });
     if(typeof fitHeaders === 'function'){ try{ fitHeaders(); }catch(e){} }   // HEADER_FIT_V1 (Bug #221): after zoom is settled, make every header word fit
-  });
 }
 window.addEventListener('resize', fitTables);
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fitTables); } else { fitTables(); }
@@ -9856,7 +9866,8 @@ function setViewMode(mode){
     sel.classList.toggle('active', has && mode !== 'full');
   });
   if(typeof renderRankings === 'function'){ try{ renderRankings(); }catch(e){} }   // rebuild with the filtered column set
-  if(typeof fitTables === 'function'){ try{ fitTables(); }catch(e){} }
+  if(typeof _fitTablesNow === 'function'){ try{ _fitTablesNow(); }catch(e){} }   // VIEW_SWITCH_FIT_NOW_V1: fit before the first frame of the new view
+  else if(typeof fitTables === 'function'){ try{ fitTables(); }catch(e){} }
   if(mode === 'schedule' && typeof window._schViewOn === 'function'){ try{ window._schViewOn(); }catch(e){} }   // SCHEDULE_VIEW_NBA_V1
   try { if(typeof _tierDrawBoxes === 'function'){ _tierDrawBoxes(); setTimeout(function(){ try{ _tierDrawBoxes(); }catch(e){} }, 60); } } catch(e){}   // TIER_BOX_REDRAW_V2
 }
