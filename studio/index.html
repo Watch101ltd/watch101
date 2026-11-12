@@ -273,6 +273,7 @@ button.go:hover{filter:brightness(1.1)}
         <option value="tier">One of Matt's tiers</option>
         <option value="toplist">Top of one of our lists</option>
         <option value="slice">A portion of one of our lists</option>
+        <option value="custom">Your own list (type the players)</option>
         <option value="stat">Stat leaders</option>
         <option value="cover">Just a headline over a photo</option>
         <option value="detail">Headline plus a written card</option>
@@ -307,6 +308,14 @@ button.go:hover{filter:brightness(1.1)}
         <div class="hint" id="sliceNote"></div>
       </div>
 
+      <!-- CUSTOM_LIST_V1 (2026-11-12, Matt's Claude; Matt said yes to "a post type where you type the players
+           and the right-side value"). One player per line, a | and what shows on the right. -->
+      <div id="customPick" style="display:none">
+        <label>Players, one per line</label>
+        <textarea id="customRows" rows="8" placeholder="Paul Reed | 11/3/26&#10;Jared McCain | 11/3/26" oninput="buildCustom()"></textarea>
+        <div class="hint" id="customNote">Type the name, then a | and whatever shows on the right (a date, a %, a stat). Leave the | off for nothing on the right. Headshot, team and positions fill in by themselves.</div>
+      </div>
+
       <div id="countPick">
         <label>How many players</label>
         <input type="number" id="countSel" min="3" max="10" value="5" oninput="render()">
@@ -315,6 +324,19 @@ button.go:hover{filter:brightness(1.1)}
       <div id="headsPick">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="headsOn" checked onchange="render()" style="width:auto;margin:0"> Show headshots (10 rows max)</label>
       </div>
+    </div>
+
+    <!-- SAVE_POSTS_V1 (2026-11-12, Matt's Claude; Matt said yes to "a Save button that keeps a post so
+         you can reopen and update it"). Saved in this browser (IndexedDB), photo included. -->
+    <div class="box">
+      <h2>Saved posts</h2>
+      <label class="first">Name this post</label>
+      <input type="text" id="saveName" placeholder="e.g. The Graduates, Nov 2026">
+      <button style="margin-top:7px;width:100%" onclick="savePost()">Save this post</button>
+      <label>Open a saved post</label>
+      <select id="savedSel"><option value="">no saved posts yet</option></select>
+      <div class="row" style="margin-top:7px"><button onclick="openSaved()">Open</button><button onclick="deleteSaved()">Delete</button></div>
+      <div class="hint">Kept in this browser on this computer, photo and layout included. Saving under a name that already exists replaces it.</div>
     </div>
 
     <div class="box">
@@ -349,6 +371,7 @@ button.go:hover{filter:brightness(1.1)}
       <textarea id="f-text1" rows="2" oninput="render()" placeholder="Anything. Drag it where you want it."></textarea>
       <div class="row">
         <select id="textSize1" onchange="render()">
+          <option value="26">Tiny</option>
           <option value="36">Small</option>
           <option value="48" selected>Medium</option>
           <option value="64">Large</option>
@@ -365,6 +388,7 @@ button.go:hover{filter:brightness(1.1)}
       <textarea id="f-text2" rows="2" oninput="render()"></textarea>
       <div class="row">
         <select id="textSize2" onchange="render()">
+          <option value="26">Tiny</option>
           <option value="36">Small</option>
           <option value="48" selected>Medium</option>
           <option value="64">Large</option>
@@ -381,6 +405,7 @@ button.go:hover{filter:brightness(1.1)}
       <textarea id="f-text3" rows="2" oninput="render()"></textarea>
       <div class="row">
         <select id="textSize3" onchange="render()">
+          <option value="26">Tiny</option>
           <option value="36">Small</option>
           <option value="48" selected>Medium</option>
           <option value="64">Large</option>
@@ -614,12 +639,39 @@ async function getList(id){
 }
 
 /* ------------------------------------------------------------ the templates */
+/* YAHOO_POS_PM_V1 (2026-11-12, Matt's Claude, Matt: "we need everyone's actual yahoo positions on
+   here, not just one of them"; standing rule 11/2: Watch101 positions come from Yahoo only, never
+   Sleeper). Basketball only. Read from the same Cloudflare Worker cache the site reads first
+   (never the NAS directly, so this tool can never add a Yahoo call), matched by name the way the
+   site's _nbaYahooNorm does. `pos` stays the first position so the stat-leader filter still works;
+   `posShow` is what the row prints, e.g. "PF,C". No Yahoo match = Sleeper's position, as before. */
+const NBA_YAHOO_WORKER='https://watch101-nba-cache.wild-fog-21df.workers.dev/yahoo/league-ranks/478.l.17116';
+let YPOS=null;
+function ynorm(str){
+  return (str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\b(iii|ii|iv|jr|sr)\b\.?/gi,'').replace(/\s+/g,' ').trim().toLowerCase();
+}
+async function getYahooPos(){
+  if(YPOS) return YPOS;
+  try{
+    const r=await fetch(NBA_YAHOO_WORKER);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const j=await r.json(); const m={};
+    (j.players||[]).forEach(function(y){ const k=ynorm(y.name); if(k && y.eligible_positions && y.eligible_positions.length) m[k]=y.eligible_positions.join(','); });
+    YPOS=m;
+  }catch(e){ YPOS={}; }
+  return YPOS;
+}
 function resolveName(players,pid){
   const p = players[pid] || players[String(pid)];
   if(!p) return null;
+  const name = p.full_name || ((p.first_name||'')+' '+(p.last_name||'')).trim();
+  const sPos = (p.fantasy_positions||[])[0] || p.depth_chart_position || '';
+  const yPos = (SPORT==='nba' && YPOS) ? (YPOS[ynorm(name)] || '') : '';   /* YAHOO_POS_PM_V1 */
   return {pid:String(p.player_id || pid),   /* HEADSHOTS_V1: the row needs it for the photo */
-          name:p.full_name || ((p.first_name||'')+' '+(p.last_name||'')).trim(),
-          pos:(p.fantasy_positions||[])[0] || p.depth_chart_position || '',
+          name:name,
+          pos:yPos ? yPos.split(',')[0] : sPos,
+          posShow:yPos || sPos,
           team:p.team || p.team_abbr || ''};
 }
 
@@ -703,11 +755,41 @@ function loadHeadshot(pid){
   const key=SPORT+':'+pid;
   if(HS_CACHE[key]!==undefined) return;
   HS_CACHE[key]=null;   /* in flight */
-  const url='https://sleepercdn.com/content/'+SPORT+'/players/'+encodeURIComponent(pid)+'.jpg';
-  fetch(url,{mode:'cors'}).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
+  /* HS_SQUARE_V1 (2026-11-12, Matt's Claude, at Matt's ask "Why is everyone's head squeezed? Fix that"
+     and "get another image in for Precious"). Two fixes:
+     (a) Sleeper's headshots are wide (300x201). The preview crops them with CSS object-fit:cover, but
+         the PNG/MP4 export (html2canvas) ignores object-fit and stretched every face into the circle.
+         The photo is now cropped to a square HERE, the same way the preview showed it (centred,
+         12% from the top), so the export and the preview are the same picture.
+     (b) Some players have no full-size Sleeper photo (Precious Achiuwa, 11/12) but do have the
+         /thumb/ one, so the thumb is tried before falling back to initials. */
+  const base='https://sleepercdn.com/content/'+SPORT+'/players/';
+  const urls=[base+encodeURIComponent(pid)+'.jpg', base+'thumb/'+encodeURIComponent(pid)+'.jpg'];
+  const tryUrl=function(i){
+    if(i>=urls.length) return Promise.reject(new Error('no photo'));
+    return fetch(urls[i],{mode:'cors'}).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
+      .catch(function(){ return tryUrl(i+1); });
+  };
+  tryUrl(0)
     .then(function(b){ return new Promise(function(res,rej){ const rd=new FileReader(); rd.onload=function(){ res(rd.result); }; rd.onerror=rej; rd.readAsDataURL(b); }); })
+    .then(squareHeadshot)
     .then(function(dataUrl){ HS_CACHE[key]=dataUrl; applyHeadshot(pid,dataUrl); })
     .catch(function(){ HS_CACHE[key]='none'; });
+}
+function squareHeadshot(dataUrl){   /* HS_SQUARE_V1 */
+  return new Promise(function(res){
+    const im=new Image();
+    im.onload=function(){
+      const w=im.naturalWidth, h=im.naturalHeight, side=Math.min(w,h);
+      if(!side){ res(dataUrl); return; }
+      const sx=(w-side)/2, sy=(h-side)*0.12;
+      const c=document.createElement('canvas'); c.width=c.height=side;
+      c.getContext('2d').drawImage(im,sx,sy,side,side,0,0,side,side);
+      try{ res(c.toDataURL('image/png')); }catch(_){ res(dataUrl); }
+    };
+    im.onerror=function(){ res(dataUrl); };
+    im.src=dataUrl;
+  });
 }
 function applyHeadshot(pid,dataUrl){
   const cells=$('o-rank').querySelectorAll('.hs[data-pid="'+pid+'"]');
@@ -744,7 +826,7 @@ function drawRows(rows,valLabel){
       /* HEADSHOTS_V1: the circle, with a cached data URI if we already have it */
       (heads && r.pid ? ('<div class="hs'+(typeof HS_CACHE[SPORT+':'+r.pid]==='string'&&HS_CACHE[SPORT+':'+r.pid]!=='none'?' got':'')+'" data-pid="'+esc(r.pid)+'"><span>'+esc(initials(r.name))+'</span><img alt=""'+(typeof HS_CACHE[SPORT+':'+r.pid]==='string'&&HS_CACHE[SPORT+':'+r.pid]!=='none'?' src="'+HS_CACHE[SPORT+':'+r.pid]+'"':'')+'></div>') : '')+
       '<div class="nm" style="font-size:'+nameSz+'px">'+esc(r.name)+'</div>'+
-      (r.pos?'<div class="pos" style="font-size:'+(nameSz-11)+'px">'+esc(r.pos)+(r.team?' · '+esc(r.team):'')+'</div>':'')+
+      (r.pos?'<div class="pos" style="font-size:'+(nameSz-11)+'px">'+esc(r.posShow||r.pos)+(r.team?' · '+esc(r.team):'')+'</div>':'')+
       (r.val!=null?'<div class="val" style="font-size:'+(nameSz-2)+'px">'+esc(String(r.val))+'</div>':'')+
     '</div>').join('');
   if(heads) rows.forEach(function(r){ if(r.pid) loadHeadshot(r.pid); });   /* HEADSHOTS_V1: fill the circles as they arrive */
@@ -764,7 +846,7 @@ function render(){
   const tpl=$('tpl').value;
   const S=SPORTS[SPORT];
   const isDetail = tpl==='detail';
-  const isRanked = (tpl==='tier'||tpl==='toplist'||tpl==='stat'||tpl==='slice');
+  const isRanked = (tpl==='tier'||tpl==='toplist'||tpl==='stat'||tpl==='slice'||tpl==='custom');   /* CUSTOM_LIST_V1 */
 
   $('detailOnly').style.display = isDetail?'block':'none';
   $('o-card').style.display     = isDetail?'block':'none';
@@ -842,6 +924,11 @@ function placeMarks(){
       m.y=((m.corner==='tl'||m.corner==='tr') ? MARK_PAD_Y : H-MARK_PAD_Y-h) + (m.dy||0);
       m.placed=true;
     }
+    /* HANDLE_RIGHT_V1 (2026-11-12, Matt: "right justify the @watch101NBA with the edge of the names/post
+       content. right now it sticks over to the right"). A right-anchored mark that nobody has dragged keeps
+       its RIGHT edge on the content edge (W - MARK_PAD_X) every pass. Before, x was fixed when it was first
+       placed, so a longer handle typed afterwards (@Watch101NBA) grew rightward past the rows to the canvas edge. */
+    if((m.corner==='br'||m.corner==='tr') && !m.dragged && w) m.x=W-MARK_PAD_X-w;
     /* clamp EVERY pass, not just on drop. Switching 1080x1350 -> 1080x1080 drops
        the floor 270px and would strand a bottom-anchored mark off the canvas. */
     m.x=Math.max(0,Math.min(m.x, W-w));
@@ -849,7 +936,7 @@ function placeMarks(){
     el.style.left=m.x+'px'; el.style.top=m.y+'px';
   }
 }
-function resetMarks(){ for(const id in MARKS) MARKS[id].placed=false; placeMarks(); }
+function resetMarks(){ for(const id in MARKS){ MARKS[id].placed=false; MARKS[id].dragged=false; } placeMarks(); }   /* HANDLE_RIGHT_V1 */
 
 function initMarkDrag(id){
   const el=$(id); if(!el) return;
@@ -860,6 +947,7 @@ function initMarkDrag(id){
     try{ el.setPointerCapture(e.pointerId); }catch(_){}
     el.classList.add('grabbing');
     function move(ev){
+      m.dragged=true;   /* HANDLE_RIGHT_V1 */
       m.x=ox+(ev.clientX-sx)/SCALE;      /* <-- the scale division. see note above */
       m.y=oy+(ev.clientY-sy)/SCALE;
       placeMarks();
@@ -1008,6 +1096,7 @@ function buildListOptions(lists){
 }
 
 /* ------------------------------------------------------------- wiring it up */
+function defaultHandle(){ return SPORT==='nba' ? '@Watch101NBA' : '@watch101'; }   /* HANDLE_NBA_V1 */
 function setSport(s){
   SPORT=s;
   $('sp-nfl').dataset.on = s==='nfl'?'1':'0';
@@ -1015,20 +1104,59 @@ function setSport(s){
   document.documentElement.style.setProperty('--sport', SPORTS[s].colour);
   resetAccent();   /* R16: a sport switch always lands on that sport's default colour */
   $('f-where').value = SPORTS[s].tag;
+  /* HANDLE_NBA_V1 (2026-11-12, Matt: "correct @watch101 to @Watch101NBA"): basketball posts carry
+     @Watch101NBA. Only swapped while the box still holds a default, so a typed handle is kept. */
+  if(/^@watch101(nba)?$/i.test($('f-handle').value.trim())) $('f-handle').value = defaultHandle();
   $('listSel').innerHTML = buildListOptions(SPORTS[s].lists);
-  bootSport();
+  return bootSport();   /* SAVE_POSTS_V1: returned so Open can wait for the sport to load */
 }
 
-function onTemplate(){
-  const t=$('tpl').value;
+function showPanels(t){
   $('listPick').style.display  = (t==='tier'||t==='toplist'||t==='slice')?'block':'none';
   $('tierPick').style.display  = (t==='tier')?'block':'none';
   $('statPick').style.display  = (t==='stat')?'block':'none';
   $('slicePick').style.display = (t==='slice')?'block':'none';
+  $('customPick').style.display = (t==='custom')?'block':'none';   /* CUSTOM_LIST_V1 */
   $('countPick').style.display = (t==='toplist'||t==='stat')?'block':'none';
-  $('headsPick').style.display = (t==='tier'||t==='toplist'||t==='slice'||t==='stat')?'block':'none';   /* HEADSHOTS_V1 */
+  $('headsPick').style.display = (t==='tier'||t==='toplist'||t==='slice'||t==='stat'||t==='custom')?'block':'none';   /* HEADSHOTS_V1 */
+}
+function onTemplate(){
+  const t=$('tpl').value;
+  showPanels(t);
   HEAD_TOUCHED=false;
-  if(t==='tier'||t==='toplist'||t==='slice') loadList(); else if(t==='stat') loadStats(); else { ROWS=[]; TIERNAME=''; AUTOHEAD=''; render(); }
+  if(t==='tier'||t==='toplist'||t==='slice') loadList(); else if(t==='stat') loadStats(); else if(t==='custom') buildCustom(); else { ROWS=[]; TIERNAME=''; AUTOHEAD=''; render(); }
+}
+
+/* CUSTOM_LIST_V1 - his own rows. Names are matched to the sport's player file the way the site
+   matches Yahoo (accents, Jr./II dropped, case ignored); a player with a team wins a tie.
+   A name that matches nobody still prints, with no headshot, and the note says so. */
+async function buildCustom(){
+  if($('tpl').value!=='custom') return;
+  let players=null;
+  try{ players=await getPlayers(); }catch(e){}
+  const b=bucket();
+  if(players && !b.nameIdx){
+    b.nameIdx={};
+    for(const pid in players){ const p=players[pid]; const nm=p.full_name || ((p.first_name||'')+' '+(p.last_name||'')).trim();
+      const k=ynorm(nm); if(!k) continue; const cur=b.nameIdx[k];
+      if(!cur || (!players[cur].team && p.team)) b.nameIdx[k]=pid; }
+  }
+  const lines=($('customRows').value||'').split(/\n/).map(x=>x.trim()).filter(Boolean);
+  const missing=[];
+  ROWS=lines.slice(0, sliceMax()).map(function(line){
+    const cut=line.indexOf('|');
+    const name=(cut>=0?line.slice(0,cut):line).trim(), val=cut>=0?line.slice(cut+1).trim():'';
+    const pid=(b.nameIdx||{})[ynorm(name)];
+    const r=pid && players ? resolveName(players,pid) : null;
+    if(!r) missing.push(name);
+    return r ? Object.assign({}, r, {val: val||null}) : {name:name, pos:'', team:'', val: val||null};
+  });
+  TIERNAME=''; AUTOHEAD='';
+  let note=ROWS.length+' player'+(ROWS.length===1?'':'s')+'.';
+  if(lines.length>sliceMax()) note+=' Capped at '+sliceMax()+(headsOn()?' with headshots on':'')+'.';
+  if(missing.length) note+=' Not found (no photo or team): '+missing.join(', ')+'.';
+  $('customNote').textContent=lines.length?note:'Type the name, then a | and whatever shows on the right (a date, a %, a stat). Leave the | off for nothing on the right. Headshot, team and positions fill in by themselves.';
+  render();
 }
 
 async function bootSport(){
@@ -1036,6 +1164,7 @@ async function bootSport(){
   setStatus('Loading ' + SPORTS[SPORT].word + ' data…');
   try{
     await getPlayers();
+    if(SPORT==='nba') await getYahooPos();   /* YAHOO_POS_PM_V1 */
     const st = await getJSON('/sleeper/state').catch(()=>null);
     const yr = st && st.season ? +st.season : new Date().getFullYear();
     /* ⚠️ A SEASON THAT HAS NOT STARTED HAS NO NUMBERS. Sleeper reports football
@@ -1379,7 +1508,7 @@ function newPost(){
   $('f-head').value=''; $('f-date').value='';
   $('f-body').value='Full write-ups are on the site.';
   $('f-where').value=SPORTS[SPORT].tag; $('f-when').value='Free';
-  $('f-handle').value='@watch101';
+  $('f-handle').value=defaultHandle();   /* HANDLE_NBA_V1 */
   $('countSel').value=5; $('sliceFrom').value=20; $('sliceTo').value=25; $('sliceNote').textContent='';
   $('headsOn').checked=true;   /* HEADSHOTS_V1 */
   $('zoom').value=100;
@@ -1563,6 +1692,93 @@ function download(){
 window.addEventListener('resize',fit);
 document.fonts && document.fonts.ready.then(()=>render());
 /* file:// can never reach the servers — say so up front instead of failing later */
+/* ================= SAVE_POSTS_V1 (2026-11-12, Matt's Claude) =================
+   A post is saved as the settings that make it (sport, post type, list, rows typed, words, sizes,
+   colours, where every piece was dragged, the photo), not as a picture, so an opened post can still
+   be edited. IndexedDB, not localStorage: a photo is several MB and localStorage holds ~5 MB in all. */
+const SAVE_FIELDS=['listSel','countSel','sliceFrom','sliceTo','customRows','f-head','f-date','f-body','f-where','f-when',
+  'f-handle','handleStyle','f-text1','f-text2','f-text3','textSize1','textSize2','textSize3','textStyle1','textStyle2','textStyle3',
+  'textColor1','textColor2','textColor3','size','zoom','accentIn','rowIn','yearSel','posSel','statSel'];
+function pmDB(){ return new Promise(function(res,rej){ const q=indexedDB.open('w101_postmaker',1);
+  q.onupgradeneeded=function(){ q.result.createObjectStore('posts'); };
+  q.onsuccess=function(){ res(q.result); }; q.onerror=function(){ rej(q.error); }; }); }
+async function pmDo(mode, fn){ const db=await pmDB(); return new Promise(function(res,rej){
+  const tx=db.transaction('posts',mode), st=tx.objectStore('posts'); const r=fn(st);
+  tx.oncomplete=function(){ res(r && r.result); }; tx.onerror=function(){ rej(tx.error); }; tx.onabort=function(){ rej(tx.error); }; }); }
+async function refreshSaved(pick){
+  try{
+    const keys=(await pmDo('readonly',function(st){ return st.getAllKeys(); }))||[];
+    keys.sort(function(a,b){ return String(a).localeCompare(String(b)); });
+    $('savedSel').innerHTML = keys.length ? keys.map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+'</option>'; }).join('') : '<option value="">no saved posts yet</option>';
+    if(pick && keys.indexOf(pick)>=0) $('savedSel').value=pick;
+  }catch(e){ $('savedSel').innerHTML='<option value="">saving is not available in this browser</option>'; }
+}
+async function savePost(){
+  const name=($('saveName').value||'').trim() || ($('f-head').value||'').trim();
+  if(!name){ setStatus('Give the post a name first.',true); return; }
+  const st={v:1, savedAt:new Date().toISOString(), sport:SPORT, tpl:$('tpl').value, tierSel:$('tierSel').value,
+    fields:{}, headsOn:$('headsOn').checked, headTouched:HEAD_TOUCHED, light:$('post').classList.contains('light'),
+    colorCustom:[1,2,3].map(function(i){ return $('textColor'+i).dataset.custom==='1'; }),
+    marks:JSON.parse(JSON.stringify(MARKS)), blks:JSON.parse(JSON.stringify(BLKS)), pan:{x:PAN.x,y:PAN.y},
+    photo:(MEDIA==='image' && typeof PHOTO==='string' && PHOTO.indexOf('data:')===0) ? PHOTO : null};
+  SAVE_FIELDS.forEach(function(id){ const el=$(id); if(el) st.fields[id]=el.value; });
+  try{
+    await pmDo('readwrite',function(s){ return s.put(st,name); });
+    $('saveName').value=name; await refreshSaved(name);
+    setStatus('Saved as "'+name+'".'+((MEDIA!=='image' && PHOTO)?' A video or GIF background is not saved; add it again after opening.':''));
+  }catch(e){ setStatus('Could not save: '+e.message,true); }
+}
+function liftBlock(id,b){   /* the same lift initBlkDrag does on a first drag, at a saved spot */
+  const el=$(id); if(!el || !b || !b.lifted) return;
+  const cs=getComputedStyle(el);
+  const hole=document.createElement('div'); hole.className='hole'; hole.dataset.for=id;
+  hole.style.height=el.offsetHeight+'px'; hole.style.marginTop=cs.marginTop; hole.style.marginBottom=cs.marginBottom;
+  el.parentNode.insertBefore(hole, el);
+  el.classList.add('lifted'); el.style.left=b.x+'px'; el.style.top=b.y+'px'; el.style.width=b.w+'px';
+  BLKS[id]={lifted:true, x:b.x, y:b.y, w:b.w};
+}
+async function openSaved(){
+  const name=$('savedSel').value; if(!name) return;
+  let st=null;
+  try{ st=await pmDo('readonly',function(s){ return s.get(name); }); }catch(e){}
+  if(!st){ setStatus('Could not open "'+name+'".',true); return; }
+  setStatus('Opening "'+name+'"…');
+  $('tpl').value=st.tpl; showPanels(st.tpl);
+  if(st.sport!==SPORT){ const p=setSport(st.sport); await p; }
+  const f=st.fields||{};
+  SAVE_FIELDS.forEach(function(id){ const el=$(id); if(el && f[id]!=null) el.value=f[id]; });
+  $('headsOn').checked=st.headsOn!==false;
+  [1,2,3].forEach(function(i,k){ $('textColor'+i).dataset.custom=(st.colorCustom&&st.colorCustom[k])?'1':''; });
+  HEAD_TOUCHED=!!st.headTouched;
+  if(st.tpl==='tier'||st.tpl==='toplist'||st.tpl==='slice'){
+    await loadList();
+    if(st.tpl==='tier' && st.tierSel!=null){ $('tierSel').value=st.tierSel; await applyTier(); }
+  } else if(st.tpl==='custom'){ await buildCustom(); }
+  else if(st.tpl==='stat'){ await loadStats(); if(f.posSel) $('posSel').value=f.posSel; if(f.statSel) $('statSel').value=f.statSel; buildStatRows(); }
+  else { ROWS=[]; TIERNAME=''; AUTOHEAD=''; }
+  HEAD_TOUCHED=!!st.headTouched;
+  if(f['f-head']!=null) $('f-head').value=f['f-head'];
+  applyAccent(f.accentIn||SPORTS[SPORT].colour); if(f.rowIn) applyRowColor(f.rowIn);
+  setPostTheme(st.light?'light':'dark');
+  _dropMedia(); PAN.x=(st.pan&&st.pan.x)||0; PAN.y=(st.pan&&st.pan.y)||0;
+  if(st.photo){ await new Promise(function(res){ const probe=new Image();
+    probe.onload=function(){ PHOTO=st.photo; MEDIA='image'; PHOTO_W=probe.naturalWidth; PHOTO_H=probe.naturalHeight; $('photo').src=PHOTO; res(); };
+    probe.onerror=function(){ res(); }; probe.src=st.photo; }); }
+  setSize();
+  resetLayout();
+  for(const id in (st.marks||{})){ if(MARKS[id]) Object.assign(MARKS[id], st.marks[id]); }
+  for(const id in (st.blks||{})) liftBlock(id, st.blks[id]);
+  render(); placeMarks();
+  $('saveName').value=name;
+  setStatus('Opened "'+name+'".');
+}
+async function deleteSaved(){
+  const name=$('savedSel').value; if(!name) return;
+  try{ await pmDo('readwrite',function(s){ return s.delete(name); }); await refreshSaved(); setStatus('Deleted "'+name+'".'); }
+  catch(e){ setStatus('Could not delete: '+e.message,true); }
+}
+refreshSaved();
+
 if(location.protocol==='file:') { setSport('nfl'); goOffline('opened from the drive'); }
 else setSport('nfl');
 setSize();
