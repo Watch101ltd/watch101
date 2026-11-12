@@ -1172,6 +1172,7 @@ body.day-mode .red-alert-flash{color:#b91c1c !important;}
 #ftl-overlay .ftl-gl-table tr:last-child td{border-bottom:none;}
 #ftl-overlay .ftl-gl-table td.gl-res.win{color:#10b981;font-weight:600;}
 #ftl-overlay .ftl-gl-table td.gl-res.loss{color:#ec4899;font-weight:600;}
+#ftl-overlay .ftl-gl-table td.gl-dnp-note{text-align:center;font-style:italic;color:var(--text3,#8b95a5);letter-spacing:.02em;}  /* GL_DNP_NBA_V1 */
 #ftl-overlay .ftl-gl-table tr.gl-totals td{border-top:2px solid var(--court);color:var(--text1,#fff);font-weight:700;}
 #ftl-overlay .ftl-up-row{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid var(--border2);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--text2);}
 #ftl-overlay .ftl-up-row .up-date{min-width:74px;color:var(--text1,#fff);font-weight:700;}
@@ -10485,67 +10486,110 @@ async function _ftlRenderNbaGames(pid){
   nextEl.innerHTML = '<div class="ftl-gl-note">Loading…</div>';
 
   // ---- Previous 7 ----
+  /* GL_DNP_NBA_V1 (2026-11-12, Matt's Claude, Session 66). Matt: "if a player doesn't play, that is
+     reflected along with the NBA injury report reason they didn't play. Ex, 11/2 - DNP (Foot)... you need
+     to show the DNP games", "put that note across the stat line". His answers 13:29 ET: the box is the
+     TEAM's last 7 completed games, so a player who missed 3 shows 4 played + 3 DNP; the W-L and every
+     average count only the games he played; the reason is the fuller injury-report wording
+     ("Left Foot; Fracture"); a game he missed while not on the injury report reads "Coach's Decision".
+     DNP games come from the team schedule this page already loads (/nba/schedule). The REASON comes from
+     the server (WAITING ON JAY 20): the page reads log.dnp_reasons = { "YYYY-MM-DD": { status, reason } }
+     when /nba/gamelog/:pid carries it. Until the server sends that object a DNP row reads just "DNP",
+     never a guessed reason. Once it does, a missed date with no entry reads "DNP (Coach's Decision)". */
   try {
     const log = await _ftlFetchNbaGamelog(pid);
+    const curSeason = _ftlNbaSeason();
+    let sched = [];
+    try { sched = await _ftlFetchNbaSchedule(curSeason); } catch(_s){ sched = []; }
     if (_ftlCurrentPid !== pid) return;
-    const games = (log && log.games) || [];
-    if (!games.length){
+    const logGames = (log && log.games) || [];
+    const now = new Date();
+    const todayIso = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    const teamGames = (team ? sched : []).filter(function(sg){
+      return sg && sg.date && sg.date <= todayIso && (sg.home === team || sg.away === team)
+          && (sg.status === 'complete' || (typeof sg.home_pts === 'number' && typeof sg.away_pts === 'number' && (sg.home_pts + sg.away_pts) > 0));
+    });
+    // A player with no game yet this season gets LAST season's log from the server (SEASON_ROLL_GUARDS).
+    // Once his team has played this season, those old games are not his last 7: the team's games this
+    // season are, all DNP. Last season's log is only shown before this season has a completed game.
+    const useCur = teamGames.length > 0;
+    const played = useCur ? logGames.filter(function(g){ return Number(log.season) === curSeason; }) : logGames;
+    const seasonLabel = useCur ? curSeason : Number(log && log.season);
+    // one list of dates: every completed team game plus every game he played (a traded player's games
+    // for his old team are not on his new team's schedule), newest first, the last 7
+    const rowsByDate = {};
+    teamGames.forEach(function(sg){ rowsByDate[sg.date] = { date: sg.date, sched: sg }; });
+    played.forEach(function(g){ if (g && g.date){ rowsByDate[g.date] = Object.assign(rowsByDate[g.date] || { date: g.date }, { game: g }); } });
+    const rows = Object.keys(rowsByDate).sort().reverse().slice(0, 7).map(function(d){ return rowsByDate[d]; });
+    if (!rows.length){
       prevEl.innerHTML = '<div class="ftl-gl-note">No games played yet.</div>';
     } else {
+      const reasons = (log && log.dnp_reasons && typeof log.dnp_reasons === 'object') ? log.dnp_reasons : null;
+      const dnpText = function(d){
+        if (!reasons) return 'DNP';
+        const r = reasons[d];
+        if (!r) return "DNP (Coach's Decision)";
+        let why = String((r && (r.reason || r)) || '').trim();
+        why = why.replace(/^Injury\/Illness\s*-\s*/i, '');
+        return why ? 'DNP (' + why + ')' : "DNP (Coach's Decision)";
+      };
+      const playedRows = rows.filter(function(r){ return r.game; });
+      const n = playedRows.length;
+      const dnpCount = rows.length - n;
       let w = 0, l = 0;
-      /* GL_SUMMARY_FIVE_NBA_V1 (2026-09-01, Matt on the 9/1 call: "those are the generic five, you
-         know, point rebounds assist blocks"). This strip carried PPG/RPG/APG only. The Avg row at the
-         BOTTOM of the same table has had all eight (incl. Stl and Blk) the whole time, so the ask was
-         never about missing data, it was about the quick-glance line not matching the five he thinks in.
-         Two stats added: SPG and BPG. The Dude's call to accept the small duplication with the Avg row
-         rather than redesign either one, because Matt has not seen a redesign and did not ask for one.
-         ALSO FIXED IN PASSING, and it is the reason these lines were rewritten rather than appended to:
-         the old sums read `g.stats.pts` UNGUARDED while the table below it reads `g.stats || {}`. One
-         game with no stats object would have thrown, and the throw is caught upstream by the handler
-         that replaces the WHOLE game log with "Game log unavailable right now." A latent whole-panel
-         failure sitting in the two lines being edited. Now guarded the same way the table already was. */
-      const sums = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0 };
-      games.forEach(function(g){
+      const t = { min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tpm: 0, to: 0 };
+      playedRows.forEach(function(r){
+        const g = r.game, s = g.stats || {};
         if (g.result === 'W') w++;
         if (g.result === 'L') l++;
-        const st = g.stats || {};
-        sums.pts += (st.pts || 0); sums.reb += (st.reb || 0); sums.ast += (st.ast || 0);
-        sums.stl += (st.stl || 0); sums.blk += (st.blk || 0);
+        if (typeof s.sp === 'number') t.min += Math.round(s.sp / 60);
+        t.pts += (s.pts||0); t.reb += (s.reb||0); t.ast += (s.ast||0); t.stl += (s.stl||0); t.blk += (s.blk||0); t.tpm += (s.tpm||0); t.to += (s.to||0);
       });
-      const n = games.length;
-      let html = '<div class="ftl-gl-summary"><b>L' + n + '</b><span><b>' + w + '-' + l + '</b></span>'
-               + '<span><b>' + (sums.pts / n).toFixed(1) + '</b> PPG</span>'
-               + '<span><b>' + (sums.reb / n).toFixed(1) + '</b> RPG</span>'
-               + '<span><b>' + (sums.ast / n).toFixed(1) + '</b> APG</span>'
-               + '<span><b>' + (sums.stl / n).toFixed(1) + '</b> SPG</span>'   /* GL_SUMMARY_FIVE_NBA_V1 */
-               + '<span><b>' + (sums.blk / n).toFixed(1) + '</b> BPG</span>'   /* GL_SUMMARY_FIVE_NBA_V1 */
-               + '<span>' + log.season + '-' + String(Number(log.season) + 1).slice(2) + ' season</span></div>';
+      const avg = function(v, dp){ return n ? (v / n).toFixed(dp) : '—'; };
+      let html = '<div class="ftl-gl-summary"><b>L' + rows.length + '</b><span><b>' + w + '-' + l + '</b></span>'
+               + '<span><b>' + avg(t.pts, 1) + '</b> PPG</span>'
+               + '<span><b>' + avg(t.reb, 1) + '</b> RPG</span>'
+               + '<span><b>' + avg(t.ast, 1) + '</b> APG</span>'
+               + '<span><b>' + avg(t.stl, 1) + '</b> SPG</span>'   /* GL_SUMMARY_FIVE_NBA_V1 */
+               + '<span><b>' + avg(t.blk, 1) + '</b> BPG</span>'   /* GL_SUMMARY_FIVE_NBA_V1 */
+               + (dnpCount ? '<span><b>' + dnpCount + '</b> DNP</span>' : '')   /* GL_DNP_NBA_V1 */
+               + '<span>' + seasonLabel + '-' + String(seasonLabel + 1).slice(2) + ' season</span></div>';
       html += '<div class="ftl-gl-tablewrap"><table class="ftl-gl-table"><thead><tr>'
             + '<th class="gl-left">Date</th><th class="gl-left">Opp</th><th class="gl-left">Res</th>'
             + '<th>Min</th><th>Pts</th><th>Reb</th><th>Ast</th><th>Stl</th><th>Blk</th><th>3P</th><th>TO</th></tr></thead><tbody>';
-      const t = { min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tpm: 0, to: 0 };
-      games.forEach(function(g){
-        const s = g.stats || {};
-        const mins = (typeof s.sp === 'number') ? Math.round(s.sp / 60) : null;
-        if (mins != null) t.min += mins;
-        t.pts += (s.pts||0); t.reb += (s.reb||0); t.ast += (s.ast||0); t.stl += (s.stl||0); t.blk += (s.blk||0); t.tpm += (s.tpm||0); t.to += (s.to||0);
-        let resCell;
-        if (g.result){
-          const cls = g.result === 'W' ? ' win' : (g.result === 'L' ? ' loss' : '');
-          resCell = '<td class="gl-left gl-res' + cls + '">' + g.result + ' ' + (g.score || '') + '</td>';
+      rows.forEach(function(r){
+        if (r.game){
+          const g = r.game, s = g.stats || {};
+          const mins = (typeof s.sp === 'number') ? Math.round(s.sp / 60) : null;
+          let resCell;
+          if (g.result){
+            const cls = g.result === 'W' ? ' win' : (g.result === 'L' ? ' loss' : '');
+            resCell = '<td class="gl-left gl-res' + cls + '">' + g.result + ' ' + (g.score || '') + '</td>';
+          } else {
+            resCell = '<td class="gl-left">—</td>';
+          }
+          html += '<tr><td class="gl-left">' + _ftlGlDate(g.date) + '</td>'
+                + '<td class="gl-left">' + (g.away ? '@' : '') + (g.opp || '—') + '</td>' + resCell
+                + '<td>' + (mins != null ? mins : 0) + '</td>'   // GAMELOG_ZEROS_V1
+                + '<td>' + _ftlGlNum(s.pts) + '</td><td>' + _ftlGlNum(s.reb) + '</td><td>' + _ftlGlNum(s.ast) + '</td>'
+                + '<td>' + _ftlGlNum(s.stl) + '</td><td>' + _ftlGlNum(s.blk) + '</td><td>' + _ftlGlNum(s.tpm) + '</td><td>' + _ftlGlNum(s.to) + '</td></tr>';
         } else {
-          resCell = '<td class="gl-left">—</td>';
+          const sg = r.sched, away = sg.away === team;
+          const us = away ? sg.away_pts : sg.home_pts, them = away ? sg.home_pts : sg.away_pts;
+          let resCell = '<td class="gl-left">—</td>';
+          if (typeof us === 'number' && typeof them === 'number' && us !== them){
+            const res = us > them ? 'W' : 'L';
+            resCell = '<td class="gl-left gl-res ' + (res === 'W' ? 'win' : 'loss') + '">' + res + ' ' + us + '-' + them + '</td>';
+          }
+          html += '<tr class="gl-dnp"><td class="gl-left">' + _ftlGlDate(sg.date) + '</td>'
+                + '<td class="gl-left">' + (away ? '@' + sg.home : sg.away) + '</td>' + resCell
+                + '<td colspan="8" class="gl-dnp-note">' + escapeHtml(dnpText(sg.date)) + '</td></tr>';
         }
-        html += '<tr><td class="gl-left">' + _ftlGlDate(g.date) + '</td>'
-              + '<td class="gl-left">' + (g.away ? '@' : '') + (g.opp || '—') + '</td>' + resCell
-              + '<td>' + (mins != null ? mins : 0) + '</td>'   // GAMELOG_ZEROS_V1
-              + '<td>' + _ftlGlNum(s.pts) + '</td><td>' + _ftlGlNum(s.reb) + '</td><td>' + _ftlGlNum(s.ast) + '</td>'
-              + '<td>' + _ftlGlNum(s.stl) + '</td><td>' + _ftlGlNum(s.blk) + '</td><td>' + _ftlGlNum(s.tpm) + '</td><td>' + _ftlGlNum(s.to) + '</td></tr>';
       });
       html += '<tr class="gl-totals"><td class="gl-left">Avg</td><td class="gl-left"></td><td class="gl-left"></td>'
-            + '<td>' + (t.min / n).toFixed(0) + '</td><td>' + (t.pts / n).toFixed(1) + '</td><td>' + (t.reb / n).toFixed(1) + '</td>'
-            + '<td>' + (t.ast / n).toFixed(1) + '</td><td>' + (t.stl / n).toFixed(1) + '</td><td>' + (t.blk / n).toFixed(1) + '</td>'
-            + '<td>' + (t.tpm / n).toFixed(1) + '</td><td>' + (t.to / n).toFixed(1) + '</td></tr>';
+            + '<td>' + avg(t.min, 0) + '</td><td>' + avg(t.pts, 1) + '</td><td>' + avg(t.reb, 1) + '</td>'
+            + '<td>' + avg(t.ast, 1) + '</td><td>' + avg(t.stl, 1) + '</td><td>' + avg(t.blk, 1) + '</td>'
+            + '<td>' + avg(t.tpm, 1) + '</td><td>' + avg(t.to, 1) + '</td></tr>';
       html += '</tbody></table></div>';
       prevEl.innerHTML = html;
     }
@@ -12814,7 +12858,7 @@ body:not(.readonly-mode) #ftl-overlay #ftl-satten-card{cursor:text;}
       <div class="ftl-takewrap" id="ftl-gameswrap">
         <div class="ftl-take-card">
           <div class="ftl-take-title">Previous Games</div>
-          <div class="ftl-take-hint" style="margin:0 0 10px">Per-game box scores &#8226; newest first &#8226; last 7 played</div>
+          <div class="ftl-take-hint" style="margin:0 0 10px">Per-game box scores &#8226; newest first &#8226; team's last 7 games</div>
           <div id="ftl-prevgames-body"><div class="ftl-gl-note">Loading&#8230;</div></div>
         </div>
         <div class="ftl-take-card">
