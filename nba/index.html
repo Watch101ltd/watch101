@@ -4510,26 +4510,7 @@ function _tiersInjectSpacerRows(){
     } catch(e){ console.warn('[TIER_SPACER_ROW_V1] spacer inject failed:', tier, e); }
   });
 }
-function _tiersGetOrCreateLayer(){
-  var tbody = document.getElementById('watch-list-body');
-  if(!tbody) return null;
-  var table = tbody.closest('table');
-  if(!table) return null;
-  var anchor = table.parentElement;
-  if(!anchor) return null;
-  var cs = window.getComputedStyle(anchor);
-  if(cs.position === 'static') anchor.style.position = 'relative';
-  var layer = document.getElementById('tier-overlay-layer');
-  if(!layer){
-    layer = document.createElement('div');
-    layer.id = 'tier-overlay-layer';
-    layer.style.cssText = 'position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;z-index:5';
-    anchor.appendChild(layer);
-  } else if(layer.parentElement !== anchor){
-    anchor.appendChild(layer);
-  }
-  return { layer: layer, anchor: anchor };
-}
+/* DEAD_CODE_SWEEP_NBA_V1 (2026-11-17): _tiersGetOrCreateLayer() removed, nothing called it */
 // ══════════ TIER_TINT_WL_V1 (2026-08-22) ══════════
 // THE OVERLAY IS GONE HERE TOO. Same cure as the rankings side: a tinted background on the
 // member rows plus a coloured line and label above them, all in normal document flow.
@@ -5051,24 +5032,7 @@ function _rankTiersInjectSpacerRows(){
     } catch(e){ console.warn('[RANK_TIERS_V1] spacer inject failed:', tier, e); }
   });
 }
-function _rankTiersGetOrCreateLayer(){
-  var tbody = document.getElementById('rankings-body');
-  if(!tbody) return null;
-  var table = tbody.closest('table');
-  if(!table) return null;
-  var anchor = table.parentElement;
-  if(!anchor) return null;
-  var cs = window.getComputedStyle(anchor);
-  if(cs.position === 'static') anchor.style.position = 'relative';
-  var layer = document.getElementById('rank-tier-overlay-layer');
-  if(!layer){
-    layer = document.createElement('div');
-    layer.id = 'rank-tier-overlay-layer';
-    layer.style.cssText = 'position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;z-index:5';
-    anchor.appendChild(layer);
-  } else if(layer.parentElement !== anchor){ anchor.appendChild(layer); }
-  return { layer: layer, anchor: anchor };
-}
+/* DEAD_CODE_SWEEP_NBA_V1 (2026-11-17): _rankTiersGetOrCreateLayer() removed, nothing called it */
 // ══════════ TIER_TINT_V1 (2026-08-22, the Dude's design call) ══════════
 // THE OVERLAY IS GONE. Tiers are now a TINTED BACKGROUND on the member rows plus a coloured line
 // and label above them -- all in normal document flow, nothing measured, nothing absolutely positioned.
@@ -5926,11 +5890,7 @@ function setLastUpdated(text){
   if(el) el.textContent = text;
 }
 
-async function reloadWatchList(){
-  _playerDB = null;
-  _seasonStats = null;
-  await bootstrap();
-}
+/* DEAD_CODE_SWEEP_NBA_V1 (2026-11-17): reloadWatchList() removed, nothing called it */
 
 // ──────────────────────────────────────────────────────────────────────────
 // NBA_PLAYERS_PAGE_V1 (2026-06-06 — PC Walter, per the Dude) — Stage 1: view toggle.
@@ -5944,6 +5904,7 @@ async function reloadWatchList(){
 function _hideAllViews(){
   ['watchlist-view','nbaplayers-view','rankings-view'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
   ['nav-watchlist','nav-nbaplayers'].forEach(function(id){ var b=document.getElementById(id); if(b) b.classList.remove('active'); });   // RANKINGS_TAB_REMOVAL_V1: the rankings tab id is gone from this list on purpose
+  var _npb = document.getElementById('nba-players-body'); if(_npb && _npb.firstChild) _npb.textContent = '';   // POOL_BUILD_ON_OPEN_NBA_V1: hidden pool rows are released; showNbaPlayersView rebuilds them, as it always did
 }
 function showWatchListView(){
   _hideAllViews();
@@ -6468,12 +6429,12 @@ function renderRankings(){
         ' ondragleave="this.classList.remove(\'nba-drag-over\')"' +
         ' ondragend="rankDragEnd(event)"';
     var handleCell = dragLocked
-        ? '<td class="center col-handle nba-drag-handle disabled" title="Clear the sort to drag-rank">☰</td>'
-        : '<td class="center col-handle nba-drag-handle" title="Drag to re-rank">☰</td>';
+        ? '<td class="center col-handle nba-drag-handle disabled">☰</td>'
+        : '<td class="center col-handle nba-drag-handle">☰</td>';
     return '<tr data-rank-pid="' + escapeHtml(pid) + '"' + dragAttrs + '>' +
       handleCell +
       (_rkRo ? ('<td class="col-rank">' + _trueRank + '</td>')
-             : ('<td class="col-rank rank-editable" title="Click to type a new rank -- works even while sorted" onclick="event.stopPropagation();editRankNum(&quot;' + _pidAttr + '&quot;,this)">' + _trueRank + '</td>')) +   // RANK_TYPEIN_NBA_V1 + RANK_TRUE_NUM_V1
+             : ('<td class="col-rank rank-editable" onclick="event.stopPropagation();editRankNum(&quot;' + _pidAttr + '&quot;,this)">' + _trueRank + '</td>')) +   // RANK_TYPEIN_NBA_V1 + RANK_TRUE_NUM_V1
       '<td class="col-av">' + _rankAvCellHtml(pid) + '</td>' +   // AV_COL_NBA_V1
       '<td class="center">' + _nbaPosBadges(p) + '</td>' +
       '<td class="left col-player"><span class="player-name ftl-clickable" onclick="openFromTheLogo(&quot;' + _pidAttr + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + ' ' + _badgeCol.render(pid) + '</td>' +   // RANKINGS_WL_CLONE_NBA_V1 + INJ_TAG_NBA_V1
@@ -8503,6 +8464,12 @@ function renderNbaPlayers(){
   const tbody = document.getElementById('nba-players-body');
   const statusEl = document.getElementById('nbaplayers-status');
   if(!tbody) return;
+  // POOL_BUILD_ON_OPEN_NBA_V1 (2026-11-17, Matt's Claude). The NBA Players table (~550 players, measured 31,475 of
+  // the page's 41,776 elements) was built on every data load and kept while hidden, so the watch list page carried
+  // three times its own weight. It is now built only while the NBA Players view is open (showNbaPlayersView makes
+  // the view visible and then calls this, exactly as before) and emptied when another view is shown.
+  var _npView = document.getElementById('nbaplayers-view');
+  if(_npView && _npView.style.display === 'none'){ if(tbody.firstChild) tbody.textContent = ''; return; }
   if(!_playerDB){
     tbody.innerHTML = '<tr><td colspan="24" class="empty-state"><strong>NBA Players pool</strong>Player data still loading — try again in a moment.</td></tr>';
     return;
@@ -8777,44 +8744,7 @@ searchEl.addEventListener('input', () => {
   if(typeof renderWatchList === 'function') renderWatchList();
 });
 
-function renderSearchResults(term){
-  const t = _foldSearch((term || '').trim());
-  if(!t || !_playerDB){
-    resultsEl.classList.remove('open');
-    return;
-  }
-  const matches = [];
-  for(const id in _playerDB){
-    const p = _playerDB[id];
-    if(!p || !p.position) continue;
-    if(!p.team) continue;  // skip free agents / inactive with no team
-    if(_nbaRetired(p)) continue;   // RETIRED_OUT_NBA_V1
-    const name = _foldSearch(p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim());
-    if(!name.includes(t)) continue;
-    matches.push({id, p});
-    if(matches.length >= MAX_SEARCH_RESULTS) break;
-  }
-  if(matches.length === 0){
-    resultsEl.innerHTML = '<div class="search-result-item"><span class="sri-meta">No matches.</span></div>';
-    resultsEl.classList.add('open');
-    return;
-  }
-  resultsEl.innerHTML = matches.map(({id, p}) => {
-    const onList = _wlIndexOf(id) >= 0;
-    const name = p.full_name || ((p.first_name||'') + ' ' + (p.last_name||'')).trim();
-    const pos  = p.position || '?';
-    const team = p.team || '—';
-    const age  = nbaDecimalAge(p);  // NBA_DECIMAL_AGE_V1
-    const _srPos = _nbaPosSorted(p);   // YAHOO_POS_NBA_V1: every eligible position, one badge each
-    const _srBadges = _srPos.length ? _srPos.map(function(v){ return '<span class="pos-badge ' + posClassFor(v) + '">' + v + '</span>'; }).join('') : '<span class="stat-na">—</span>';   // POS_SAVED_NBA_V1: no Sleeper position, a dash
-    return '<div class="search-result-item' + (onList ? ' already-on-list' : '') + '" data-player-id="' + id + '">' +
-      '<span class="sri-pos" style="display:inline-flex;gap:3px;flex:none;min-width:98px">' + _srBadges + '</span>' +
-      '<span class="sri-name">' + escapeHtml(name) + '</span>' +
-      '<span class="sri-meta">' + team + ' · Age ' + age + (onList ? ' · already on list' : '') + '</span>' +
-    '</div>';
-  }).join('');
-  resultsEl.classList.add('open');
-}
+/* DEAD_CODE_SWEEP_NBA_V1 (2026-11-17): renderSearchResults() removed, nothing called it */
 
 resultsEl.addEventListener('mousedown', (e) => {
   const item = e.target.closest('.search-result-item');
@@ -8864,11 +8794,7 @@ function pctOrNull(makes, attempts){
 // TOTALS only (s.pts), plus games played (s.gp). PPG is derived = pts / gp, guarded
 // against divide-by-zero (gp missing or 0 -> null -> the column shows an em-dash,
 // same as any other missing stat). Same derive-from-totals trick as FG%/FT%.
-function nbaPpg(s){
-  const pts = Number(s && s.pts), gp = Number(s && s.gp);
-  if(!isFinite(pts) || !isFinite(gp) || gp <= 0) return null;
-  return pts / gp;
-}
+/* DEAD_CODE_SWEEP_NBA_V1 (2026-11-17): nbaPpg() removed, nothing called it */
 
 // NBA_FULL_STATS_V1 (2026-06-07 — PC Walter, per the Dude). The whole table is now
 // PER-GAME (the Dude's call). Sleeper serves season TOTALS, so every counting stat
@@ -8937,6 +8863,71 @@ function nbaDecimalAgeNum(p){
   return null;
 }
 
+// WL_ROW_REUSE_NBA_V1 (2026-11-17, Matt's Claude; Matt's drag lag). The watch list used to throw away all
+// ~116 rows and rebuild them from one big HTML string on every render (every drop, sort, note, star), and the
+// browser then had to lay the whole table out from scratch: measured 19 ms build + 79 ms layout per pass, vs
+// 6 ms to move one existing row. Rows are still BUILT exactly as before (same HTML string per row), but a row
+// whose HTML is unchanged apart from its rank number and +/- cell keeps its existing element: those two cells
+// are swapped in place and the element is moved into position only if it is out of place. Anything else that
+// differs (name, stats, note, stars, tags, a new player) gets a fresh element from its new HTML, so the finished
+// table is the same markup a full rebuild would give. Rows without a player id (unknown ids, empty state) and the
+// tier gap rows are always rebuilt; renderTiers re-injects the gaps right after, as before. A view switch
+// (Full, 9 Cat, 13 Cat, Satten Says, Schedule, Rostership, Rank Work) always rebuilds every row.
+function _wlReconcileRows(tbody, ids, htmls){
+  var RANK_RE = /<td class="col-rank[^>]*>[\s\S]*?<\/td>/;
+  function parts(i){
+    var h = htmls[i], pid = ids[i];
+    var rank = (h.match(RANK_RE) || [''])[0];
+    var delta = (typeof renderDeltaCell === 'function') ? renderDeltaCell(pid) : '';
+    var stable = h;
+    if(rank) stable = stable.replace(rank, '');
+    if(delta && stable.indexOf(delta) !== -1) stable = stable.replace(delta, ''); else delta = '';
+    return { pid: String(pid), html: h, rank: rank, delta: delta, stable: stable };
+  }
+  // A row is reused only inside the view it was built in. The Rostership and Schedule views add their own
+  // cells to the rows after each render (and mark them done); a full rebuild threw those away on a view switch,
+  // so a switch still gets every row fresh. Drops, sorts and notes inside one view reuse rows.
+  var viewKey = (document.body.className.match(/\bview-[a-z-]+/g) || []).sort().join(' ');
+  var have = {};
+  Array.prototype.forEach.call(tbody.children, function(tr){
+    var k = tr.getAttribute && tr.getAttribute('data-nba-pid');
+    if(k != null && tr._wlStable != null && tr._wlView === viewKey && !have[k]) have[k] = tr;
+  });
+  var plan = [], fresh = [];
+  for(var i = 0; i < htmls.length; i++){
+    var pr = parts(i), node = have[pr.pid];
+    if(node && node._wlStable === pr.stable && /^<tr[^>]*data-nba-pid=/.test(pr.html)){
+      delete have[pr.pid];
+      if(node._wlRank !== pr.rank && pr.rank){ var rc = node.querySelector('td.col-rank'); if(rc){ var t1 = document.createElement('tbody'); t1.innerHTML = '<tr>' + pr.rank + '</tr>'; rc.replaceWith(t1.firstChild.firstChild); } }
+      if(node._wlDelta !== pr.delta && pr.delta){ var cells = node.cells, done = false; for(var c = 0; c < cells.length && !done; c++){ if(cells[c].outerHTML === node._wlDelta){ var t2 = document.createElement('tbody'); t2.innerHTML = '<tr>' + pr.delta + '</tr>'; cells[c].replaceWith(t2.firstChild.firstChild); done = true; } } if(!done){ node = null; } }
+      if(node){ node._wlRank = pr.rank; node._wlDelta = pr.delta; node._wlHtml = pr.html; plan.push(node); continue; }
+    }
+    plan.push(null); fresh.push({ at: plan.length - 1, p: pr });
+  }
+  if(fresh.length){
+    var tmp = document.createElement('tbody');
+    tmp.innerHTML = fresh.map(function(f){ return f.p.html; }).join('');
+    var made = Array.prototype.slice.call(tmp.children);
+    fresh.forEach(function(f, j){
+      var n = made[j]; if(!n) return;
+      n._wlStable = /^<tr[^>]*data-nba-pid=/.test(f.p.html) ? f.p.stable : null;
+      n._wlRank = f.p.rank; n._wlDelta = f.p.delta; n._wlHtml = f.p.html; n._wlView = viewKey;
+      plan[f.at] = n;
+    });
+  }
+  // drop everything that is not in the new plan (old rows, tier gaps, empty-state rows)
+  var keep = new Set(plan);
+  Array.prototype.slice.call(tbody.children).forEach(function(tr){ if(!keep.has(tr)) tr.remove(); });
+  // put the planned rows in order, touching only the ones that are out of place
+  for(var k = 0; k < plan.length; k++){
+    var want = plan[k]; if(!want) continue;
+    var at = tbody.children[k];
+    if(at !== want) tbody.insertBefore(want, at || null);
+  }
+}
+// RANK_HOVER_OFF_V1 (2026-11-17, Matt): "remove the hoverover note ... on the ranking sorters on the far left and the rank
+// numbers, I know how they work and the hoverovers keep getting in the way when i try to type a new number. Leave the rest."
+// The drag handle and the click-to-type rank cell carry no title on the Watch List and the Rankings view; every other hover stays.
 function renderWatchList(){
   const tbody = document.getElementById('watch-list-body');
   const countEl = document.getElementById('count-badge');
@@ -8978,7 +8969,7 @@ function renderWatchList(){
   // the SAVED order (lands next to the player dropped on) and the view stays sorted.
   // FILTERED_DRAG_V1 (same night, Matt): the Stat Filtering box (incl. max Owned) no longer locks it either.
   const dragEnabled = true;
-  tbody.innerHTML = sortedIds.map((pid, displayIdx) => {
+  const _wlRowHtml = sortedIds.map((pid, displayIdx) => {   // WL_ROW_REUSE_NBA_V1: rows built exactly as before, then reconciled below
     const p = (_playerDB && _playerDB[pid]) || null;
     const s = _statsRow(pid);
     const originalIdx = _wlIndexOf(pid);
@@ -9009,11 +9000,11 @@ function renderWatchList(){
           ' ondragend="nbaDragEnd(event)">'
       : '<tr data-nba-pid="' + escapeHtml(pid) + '">';
     const _handleCell = dragEnabled
-      ? '<td class="center col-handle nba-drag-handle" title="Drag to re-rank">☰</td>'
-      : '<td class="center col-handle nba-drag-handle disabled" title="Clear the stat filter to drag-rank">☰</td>';
+      ? '<td class="center col-handle nba-drag-handle">☰</td>'
+      : '<td class="center col-handle nba-drag-handle disabled">☰</td>';
     return _trOpen +
       _handleCell +
-      (((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode()) ? ('<td class="col-rank">' + rank + '</td>') : ('<td class="col-rank rank-editable" title="Click to type a new rank -- works even while sorted" onclick="event.stopPropagation();wlEditRankNum(' + _pidJson + ',this)">' + rank + '</td>')) +   // WL_RANK_TYPEIN_NBA_V1
+      (((typeof _isReadOnlyMode === 'function') && _isReadOnlyMode()) ? ('<td class="col-rank">' + rank + '</td>') : ('<td class="col-rank rank-editable" onclick="event.stopPropagation();wlEditRankNum(' + _pidJson + ',this)">' + rank + '</td>')) +   // WL_RANK_TYPEIN_NBA_V1
       '<td class="center">' + _nbaPosBadges(p) + '</td>' +
       '<td class="left col-player"><span class="player-name ftl-clickable' + _mustWatchFlashClass(pid) + '" onclick="event.stopPropagation();openFromTheLogo(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">' + escapeHtml(name) + '</span>' + _injTagHtml(pid) + _noteBadgeHtml(pid) + '</td>' +   // INJ_TAG_NBA_V1
       '<td>' + team + '</td>' +
@@ -9049,7 +9040,8 @@ function renderWatchList(){
       '<td class="col-stat-a col-cat9 col-cat13">' + statCellOrDash(perGame(s.to, gp), 1) + '</td>' +
       '<td class="center col-action"><button class="remove-btn" onclick="event.stopPropagation();removePlayerFromList(&quot;' + String(pid).replace(/"/g,'&quot;') + '&quot;)">Remove</button></td>' +
     '</tr>';
-  }).join('');
+  });
+  _wlReconcileRows(tbody, sortedIds, _wlRowHtml);   // WL_ROW_REUSE_NBA_V1
   // PHONE_NOTE_STAR_NBA_V1 — paint the phone list from the SAME ids the table just rendered (no drift).
   if(typeof _renderPhoneList==='function'){ try{ _renderPhoneList(sortedIds); }catch(e){} }
   // TIERS_V1 — repaint tier brackets after every table paint (spacers re-inject inside renderTiers).
@@ -9830,7 +9822,7 @@ function escapeHtml(s){
 }
 // NOTE_RICH_V1 (2026-10-30): a note's only markup is <b> <i> <u> <s> <mark>; everything else is escaped.
 function _noteRich(t){ return escapeHtml(t == null ? '' : t).replace(/&lt;(\/?)(b|i|u|s|mark)&gt;/g, '<$1$2>'); }
-function _notePlain(t){ return String(t == null ? '' : t).replace(/<\/?(b|i|u|s|mark)>/g, ''); }
+/* DEAD_CODE_SWEEP_NBA_V1 (2026-11-17): _notePlain() removed, nothing called it */
 
 // PRIORITY_STARS — per-player 1-5 priority rating, stored on each list item.
 function _wlPid(item){ return (typeof item === 'string') ? item : (item && item.pid); }
@@ -9906,10 +9898,7 @@ function togglePresentMode(){
     else { btn.classList.remove('active'); btn.textContent = '🔍 Present'; }
   }
 }
-function toggleCompactMode(el){
-  const goingOn = !document.body.classList.contains('view-matts-take');
-  setViewMode(goingOn ? 'matts-take' : 'full');
-}
+/* DEAD_CODE_SWEEP_NBA_V1 (2026-11-17): toggleCompactMode() removed, nothing called it */
 
 // WL_NOTES_V1 (August 2, 2026 -- Walter, per the Dude). Checklist item 2.
 // ----------------------------------------------------------------------------
@@ -10957,25 +10946,37 @@ function _rankIndicatorOnOver(e, pid){
   } catch(err){ /* cosmetic */ }
 }
 
-// Edge auto-scroll during any HTML5 drag (baseball's scroller, ported intact).
+// DRAG_SCROLL_FAST_NBA_V1 (2026-11-17, Matt's Claude; Matt: "scrolls way too slowly, especially if i move
+// them up and down before releasing. it jumps and stutters."). Edge auto-scroll during any HTML5 drag.
+// Was (baseball's port): 4-20 px per 16 ms tick inside a 100 px edge zone, counted per tick, so the speed rose
+// and fell with how often the browser got round to the timer, and most of the zone crawled at 4 px (~250 px/s).
+// Now: 140 px zone; 400 px/s at the zone's inner edge rising to 3000 px/s at the window edge; distance = speed x
+// the real time since the last tick, so a late tick moves farther instead of the scroll stalling and jumping.
+// Still setInterval, not rAF (browsers throttle rAF during a drag, baseball's earned lesson).
 (function(){
-  const EDGE_ZONE = 100, MAX_STEP = 20, MIN_STEP = 4, TICK_MS = 16;
-  let intervalId = null, scrollDir = 0, scrollStep = 0;
+  const EDGE_ZONE = 140, MIN_SPEED = 400, MAX_SPEED = 3000, TICK_MS = 16;
+  let intervalId = null, scrollDir = 0, scrollSpeed = 0, lastTick = 0, carry = 0;
   function stopEdgeScroll(){
     if(intervalId){ clearInterval(intervalId); intervalId = null; }
-    scrollDir = 0; scrollStep = 0;
+    scrollDir = 0; scrollSpeed = 0; carry = 0;
   }
   function tick(){
     if(!scrollDir){ stopEdgeScroll(); return; }
-    window.scrollBy(0, scrollDir * scrollStep);
+    const now = performance.now(), dt = Math.min(100, now - lastTick);
+    lastTick = now;
+    carry += scrollDir * scrollSpeed * dt / 1000;
+    const px = carry < 0 ? Math.ceil(carry) : Math.floor(carry);
+    if(px){ window.scrollBy(0, px); carry -= px; }
   }
   document.addEventListener('dragover', function(e){
     const y = e.clientY, h = window.innerHeight;
-    let dir = 0, step = 0;
-    if(y < EDGE_ZONE){ dir = -1; step = Math.max(MIN_STEP, MAX_STEP * (1 - y / EDGE_ZONE)); }
-    else if(y > h - EDGE_ZONE){ dir = 1; step = Math.max(MIN_STEP, MAX_STEP * (1 - (h - y) / EDGE_ZONE)); }
-    scrollDir = dir; scrollStep = step;
-    if(dir && !intervalId){ intervalId = setInterval(tick, TICK_MS); }
+    let dir = 0, depth = 0;
+    if(y < EDGE_ZONE){ dir = -1; depth = 1 - y / EDGE_ZONE; }
+    else if(y > h - EDGE_ZONE){ dir = 1; depth = 1 - (h - y) / EDGE_ZONE; }
+    depth = Math.max(0, Math.min(1, depth));
+    scrollDir = dir;
+    scrollSpeed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * depth * depth;
+    if(dir && !intervalId){ lastTick = performance.now(); intervalId = setInterval(tick, TICK_MS); }
     if(!dir){ stopEdgeScroll(); }
   });
   document.addEventListener('dragend', function(){ stopEdgeScroll(); _hideDropIndicator(); });
@@ -11605,6 +11606,57 @@ function nbaDrop(e, pid){
   renderWatchList();        // rank is re-derived from array position on render
   autoSaveToNbaNAS();       // NBA_AUTOSAVE_NAS_V1 — persist the new order to the NAS
 }
+// DRAG_GAP_DROP_NBA_V1 (2026-11-17, Matt's Claude; Matt: "sometimes the player goes back to the original
+// position like I didnt drop him in the right place"). The watch list's tier gap rows (.tier-spacer-row, 28 px)
+// are pointer-events:none, so a player let go over one landed on the table itself, which accepted no drop: the
+// browser cancelled the drag and the player snapped back. The table now accepts a player drop anywhere outside a
+// player row (not the header) and lands it on the nearest player row, exactly as if dropped on that row.
+(function(){
+  function nearestRow(tbody, y){
+    var rows = tbody.querySelectorAll('tr[data-nba-pid]'), best = null, bd = Infinity;
+    for(var i = 0; i < rows.length; i++){
+      var r = rows[i].getBoundingClientRect();
+      var d = y < r.top ? r.top - y : (y > r.bottom ? y - r.bottom : 0);
+      if(d < bd){ bd = d; best = rows[i]; if(d === 0) break; }
+    }
+    return best;
+  }
+  function pidOf(row){
+    var a = row.getAttribute('data-nba-pid');
+    for(var i = 0; i < _watchList.length; i++){ var p = _wlPid(_watchList[i]); if(String(p) === a) return p; }
+    return null;
+  }
+  function mine(e){
+    if(_nbaDragSrcPid == null) return false;
+    if(typeof _tierDragPayload !== 'undefined' && _tierDragPayload) return false;   // tier drags have their own interceptor
+    var t = e.target;
+    if(t && t.closest && (t.closest('tr[data-nba-pid]') || t.closest('thead'))) return false;   // a row handles its own drop
+    return true;
+  }
+  function attach(){
+    var tbody = document.getElementById('watch-list-body');
+    if(!tbody) return false;
+    var table = tbody.closest('table') || tbody;
+    if(table._gapDropWired) return true;
+    table._gapDropWired = true;
+    table.addEventListener('dragover', function(e){
+      if(!mine(e)) return;
+      var row = nearestRow(tbody, e.clientY); if(!row) return;
+      var pid = pidOf(row); if(pid == null) return;
+      e.preventDefault();
+      try { e.dataTransfer.dropEffect = 'move'; } catch(_){}
+      _dragIndicatorOnOver({ currentTarget: row, clientX: e.clientX, clientY: e.clientY }, pid, _nbaDragSrcPid);
+    });
+    table.addEventListener('drop', function(e){
+      if(!mine(e)) return;
+      var row = nearestRow(tbody, e.clientY); if(!row) return;
+      var pid = pidOf(row); if(pid == null) return;
+      nbaDrop({ preventDefault: function(){ e.preventDefault(); }, currentTarget: row }, pid);
+    });
+    return true;
+  }
+  if(!attach()){ var poll = setInterval(function(){ if(attach()) clearInterval(poll); }, 250); }
+})();
 // WL_RANK_TYPEIN_NBA_V1 (2026-09-28, Matt): click the Rank number on the Watch 101 table, type the new rank,
 // Enter. Same four steps as the card's _ftlEditRank: Undo snapshot, tier self-repair, splice the SAVED order,
 // render + autosave. Works while sorted (the rank shown is always the saved rank). Esc cancels, blur applies.
