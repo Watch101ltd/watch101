@@ -1905,6 +1905,16 @@ input.sc-has-text{padding-right:32px !important}
       <a href="../updates.html" id="nav-updates">Updates</a>
       <a href="../contact.html">Contact</a>
       <a class="w101-sub" id="subscribe-btn" href="#">Subscribe</a>
+      <!-- MANAGE_LINK_V1 (2026-11-18, Matt's Claude): "Manage membership" menu. OFF until memberships open:
+           turn on by setting ON=true and STRIPE to the Stripe customer portal login link in the script below. -->
+      <div class="w101-drop" id="drop-manage" style="display:none">
+        <button type="button" onclick="w101Drop('drop-manage',event)" aria-haspopup="true">Manage membership</button>
+        <div class="w101-drop-panel">
+          <a id="manage-stripe" href="#">Joined on fantasywatch101.com</a>
+          <a id="manage-patreon" href="https://www.patreon.com/settings/memberships" target="_blank" rel="noopener">Joined through Patreon</a>
+        </div>
+      </div>
+      <script>/* MANAGE_LINK_V1 switch */(function(){var ON=false, STRIPE='';if(!ON||!STRIPE)return;var d=document.getElementById('drop-manage'),s=document.getElementById('manage-stripe');if(!d||!s)return;s.href=STRIPE;s.target='_blank';s.rel='noopener';d.style.display='';})();</script>
       <!-- HDR_COMPACT_NBA_V1 (2026-08-22), ported from football: every toolbar button the Dude called
            "random buttons floating all over the place" now lives under this one chrome dropdown.
            Kept OUT in the toolbar, matching football's call: Undo, the view-mode picker (NBA's Compact
@@ -10502,7 +10512,11 @@ async function _ftlRenderNbaGames(pid){
     const todayIso = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     const teamGames = (team ? sched : []).filter(function(sg){
       return sg && sg.date && sg.date <= todayIso && (sg.home === team || sg.away === team)
-          && (sg.status === 'complete' || (typeof sg.home_pts === 'number' && typeof sg.away_pts === 'number' && (sg.home_pts + sg.away_pts) > 0));
+          /* FINAL_SCORES_ONLY_NBA_V1 (2026-11-18): a game counts once Sleeper marks it complete. A game from an earlier
+             day still marked in_game (the saved schedule was pulled mid-game) is kept as a row with no score;
+             a game still being played today is left out until it ends. Was: any score above 0 counted as played,
+             which showed Grayson Allen's 11/17 game as "W 66-59" (the halftime score). */
+          && (sg.status === 'complete' || (sg.status === 'in_game' && sg.date < todayIso));
     });
     // A player with no game yet this season gets LAST season's log from the server (SEASON_ROLL_GUARDS).
     // Once his team has played this season, those old games are not his last 7: the team's games this
@@ -10572,7 +10586,7 @@ async function _ftlRenderNbaGames(pid){
           const sg = r.sched, away = sg.away === team;
           const us = away ? sg.away_pts : sg.home_pts, them = away ? sg.home_pts : sg.away_pts;
           let resCell = '<td class="gl-left">—</td>';
-          if (typeof us === 'number' && typeof them === 'number' && us !== them){
+          if (sg.status === 'complete' && typeof us === 'number' && typeof them === 'number' && us !== them){   /* FINAL_SCORES_ONLY_NBA_V1 */
             const res = us > them ? 'W' : 'L';
             resCell = '<td class="gl-left gl-res ' + (res === 'W' ? 'win' : 'loss') + '">' + res + ' ' + us + '-' + them + '</td>';
           }
