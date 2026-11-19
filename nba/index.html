@@ -10512,11 +10512,7 @@ async function _ftlRenderNbaGames(pid){
     const todayIso = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     const teamGames = (team ? sched : []).filter(function(sg){
       return sg && sg.date && sg.date <= todayIso && (sg.home === team || sg.away === team)
-          /* FINAL_SCORES_ONLY_NBA_V1 (2026-11-18): a game counts once Sleeper marks it complete. A game from an earlier
-             day still marked in_game (the saved schedule was pulled mid-game) is kept as a row with no score;
-             a game still being played today is left out until it ends. Was: any score above 0 counted as played,
-             which showed Grayson Allen's 11/17 game as "W 66-59" (the halftime score). */
-          && (sg.status === 'complete' || (sg.status === 'in_game' && sg.date < todayIso));
+          && (sg.status === 'complete' || (typeof sg.home_pts === 'number' && typeof sg.away_pts === 'number' && (sg.home_pts + sg.away_pts) > 0));
     });
     // A player with no game yet this season gets LAST season's log from the server (SEASON_ROLL_GUARDS).
     // Once his team has played this season, those old games are not his last 7: the team's games this
@@ -10586,7 +10582,7 @@ async function _ftlRenderNbaGames(pid){
           const sg = r.sched, away = sg.away === team;
           const us = away ? sg.away_pts : sg.home_pts, them = away ? sg.home_pts : sg.away_pts;
           let resCell = '<td class="gl-left">—</td>';
-          if (sg.status === 'complete' && typeof us === 'number' && typeof them === 'number' && us !== them){   /* FINAL_SCORES_ONLY_NBA_V1 */
+          if (typeof us === 'number' && typeof them === 'number' && us !== them){
             const res = us > them ? 'W' : 'L';
             resCell = '<td class="gl-left gl-res ' + (res === 'W' ? 'win' : 'loss') + '">' + res + ' ' + us + '-' + them + '</td>';
           }
