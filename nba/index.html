@@ -14885,7 +14885,7 @@ table.watch-list tbody td.col-delta-cell .rdelta-new-badge{display:block;box-siz
 th.col-ychg,td.col-ychg{width:30px!important;min-width:30px!important;max-width:30px!important;padding:0 2px!important;text-align:center!important;white-space:nowrap;font-weight:700}
 th.col-ychg{cursor:pointer;user-select:none}
 select.ychg-pick{margin:0;font-family:inherit;font-size:9px;font-weight:800;line-height:12px;height:14px;color:var(--gold,#f59e0b);background:var(--surface,#111827);border:1px solid var(--border2,#374151);border-radius:3px;padding:0 2px;vertical-align:middle;cursor:pointer;appearance:auto}
-.ros-up{color:var(--green,#22c55e)} .ros-dn{color:var(--red,#ef4444)} .ros-flat{color:var(--text2,#9ca3af)} .ros-na{color:var(--text3,#6b7280);font-weight:400} .ros-past{color:var(--text2,#9ca3af)}
+.ros-up{color:var(--green,#22c55e)} .ros-dn{color:var(--red,#ef4444)} .ros-flat{color:var(--text2,#9ca3af)} .ros-na{color:var(--text3,#6b7280);font-weight:400}
 body.view-matts-take th.col-ychg, body.view-matts-take td.col-ychg, body.view-rostership th.col-ychg, body.view-rostership td.col-ychg{display:none!important}
 /* Rostership view: the stats block is swapped for ownership change columns (same mechanism as Schedule View) */
 body.view-rostership th.col-stat, body.view-rostership td.col-stat-a, body.view-rostership td.col-stat-b, body.view-rostership td.col-stat-info{display:none!important}
@@ -14945,16 +14945,19 @@ table.sch-daysort tbody tr td.sch-cell.sch-hit{background:rgba(245,158,11,.10)}
     var nm = norm(p.full_name || ((p.first_name || '') + ' ' + (p.last_name || ''))), tm = String(p.team || '').toUpperCase();
     var r = cbsChg[nm + '|' + tm] || cbsChg[nm]; return r ? r[k] : null;
   }
-  // CBS_PAST_PCT_NBA_V1 (2026-11-23, PC Walter, Jay's call after the 11/23 meeting): the CBS 1wk / 2wk / 4wk cells show what the
-  // player's CBS rostered % WAS that many weeks ago (today's % minus the server's change), not the change. The changes are each
-  // measured from today, so "+20 / +72" read like two separate jumps (Jenkins 86% now: 66% a week ago, 14% two weeks ago).
-  function cbsPast(pid, k, lbl){
-    var d = cChg(pid, k), cur = null;
-    try { cur = (typeof _cbsForNum === 'function') ? _cbsForNum(pid) : null; } catch(e){ cur = null; }
-    if(d === null || d === undefined || d === '' || !isFinite(Number(d)) || cur === null || cur === undefined || !isFinite(Number(cur))) return { t: '—', c: 'ros-na' };
-    var was = Math.round(Number(cur) - Number(d)); if(was < 0) was = 0; if(was > 100) was = 100;
-    var ch = Math.round(Number(d));
-    return { t: was + '%', c: 'ros-past', tip: 'CBS rostered ' + lbl.replace('wk', ' wk') + ' ago: ' + was + '%. Now ' + Math.round(Number(cur)) + '% (' + (ch > 0 ? '+' : '') + ch + ' since then)' };
+  // CBS_WEEKLY_CHG_NBA_V1 (2026-11-23, PC Walter, Jay's call after the 11/23 meeting): the CBS 1wk / 2wk / 4wk cells are week by week.
+  // The server's w1 / w2 / w4 are each measured from today, so "+20 / +72" read like two separate jumps (Jenkins 86% now, 66% a
+  // week ago, 14% two weeks ago). Now: 1wk = the last 7 days (w1), 2wk = the 7 days before that (w2 - w1), 4wk = the two weeks
+  // before that (w4 - w2), so the three add up to the 4-week total. (Replaces CBS_PAST_PCT_NBA_V1 from the same evening, which
+  // showed the past percentages; Jay looked at it and did not like it.)
+  function cbsWeekly(pid, k){
+    function n(x){ return (x === null || x === undefined || x === '' || !isFinite(Number(x))) ? null : Number(x); }
+    var w1 = n(cChg(pid, 'w1')), w2 = n(cChg(pid, 'w2')), w4 = n(cChg(pid, 'w4')), v = null, what = '';
+    if(k === 'w1'){ v = w1; what = 'the last 7 days'; }
+    else if(k === 'w2'){ v = (w1 !== null && w2 !== null) ? (w2 - w1) : null; what = 'the 7 days before that (8 to 14 days ago)'; }
+    else { v = (w2 !== null && w4 !== null) ? (w4 - w2) : null; what = 'the two weeks before that (15 to 28 days ago)'; }
+    var f = fmt(v); if(v !== null) f.tip = 'CBS rostered % change over ' + what + ': ' + f.t;
+    return f;
   }
   function loadCbs(){
     if(cbsTried || typeof SERVER_URL === 'undefined') return; cbsTried = true;
@@ -15028,7 +15031,7 @@ table.sch-daysort tbody tr td.sch-cell.sch-hit{background:rgba(245,158,11,.10)}
         var yg = null, cg = null;
         Array.prototype.forEach.call(tr.children, function(th){ var x = (th.textContent || '').trim(); if(!yg && /^(Y!|Yahoo!)/.test(x)) yg = th; if(!cg && x === 'CBS') cg = th; });
         var a = document.createElement('th'); a.className = 'own-grp ros-cell ros-grp'; a.colSpan = 7; a.innerHTML = '<span class="y-prefix yahoo-lbl">Yahoo!</span> <span class="ros-sub">Owned &amp; +/–</span>';
-        var b = document.createElement('th'); b.className = 'own-grp ros-cell ros-grp ros-first'; b.colSpan = 4; b.innerHTML = '<span class="cbs-lbl">CBS</span> <span class="ros-sub">Owned now &amp; weeks ago</span>';   // CBS_PAST_PCT_NBA_V1
+        var b = document.createElement('th'); b.className = 'own-grp ros-cell ros-grp ros-first'; b.colSpan = 4; b.innerHTML = '<span class="cbs-lbl">CBS</span> <span class="ros-sub">Owned &amp; weekly +/–</span>';   // CBS_WEEKLY_CHG_NBA_V1
         if(yg) yg.before(a); else tr.appendChild(a);
         if(cg) cg.before(b); else a.after(b);
         return;
@@ -15038,7 +15041,7 @@ table.sch-daysort tbody tr td.sch-cell.sch-hit{background:rgba(245,158,11,.10)}
       if(!yo || !co) return;
       var at = yo; ROS.slice(0, 5).forEach(function(r, i){ var th = mk('th'); th.textContent = r[2]; at.after(th); at = th; });
       co.classList.add('ros-cbs-first');
-      at = co; ROS.slice(5).forEach(function(r, i){ var th = mk('th'); th.textContent = r[2]; th.title = 'CBS rostered % ' + r[2].replace('wk', ' wk') + ' ago'; at.after(th); at = th; });
+      at = co; ROS.slice(5).forEach(function(r, i){ var th = mk('th'); th.textContent = r[2]; th.title = ({ w1: 'CBS rostered % change over the last 7 days', w2: 'CBS rostered % change over the 7 days before that (8 to 14 days ago)', w4: 'CBS rostered % change over the two weeks before that (15 to 28 days ago)' })[r[1]]; at.after(th); at = th; });
     });
     tb.querySelectorAll('tr[' + attr + ']').forEach(function(tr){
       if(tr.hasAttribute('data-ros-done') && tr.querySelector('td.ros-cell')) return;
@@ -15048,7 +15051,7 @@ table.sch-daysort tbody tr td.sch-cell.sch-hit{background:rgba(245,158,11,.10)}
       if(!yo || !co) return;
       var at = yo; ROS.slice(0, 5).forEach(function(r, i){ var f = fmt(yChg(pid, r[1])); var td = mk('td'); td.className += ' ' + f.c; td.textContent = f.t; at.after(td); at = td; });
       co.classList.add('ros-cbs-first');
-      at = co; ROS.slice(5).forEach(function(r, i){ var f = cbsPast(pid, r[1], r[2]); var td = mk('td'); td.className += ' ' + f.c; td.textContent = f.t; if(f.tip) td.title = f.tip; at.after(td); at = td; });   // CBS_PAST_PCT_NBA_V1
+      at = co; ROS.slice(5).forEach(function(r, i){ var f = cbsWeekly(pid, r[1]); var td = mk('td'); td.className += ' ' + f.c; td.textContent = f.t; if(f.tip) td.title = f.tip; at.after(td); at = td; });   // CBS_WEEKLY_CHG_NBA_V1
       tr.setAttribute('data-ros-done', '1');
     });
     tb.querySelectorAll('tr:not([' + attr + ']) > td[colspan]').forEach(function(td){ if(Number(td.colSpan) < 60) td.colSpan = 99; });
