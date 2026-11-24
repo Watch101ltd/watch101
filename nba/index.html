@@ -3097,9 +3097,13 @@ async function syncYahooNBA(){
 // like Yahoo's own Stats menu (Season avg / Last 7 / 14 / 30 avg / last season avg). Yahoo has no
 // 'yesterday' ranking, so Yesterday shows Season. A window with no rank (did not play) shows a dash.
 // An old payload with no yahoo_ranks falls back to the Season rank. The rankings SEED does NOT use this.
-function _yahooRankNow(y){
+// CARD_YRANK_RANGE_NBA_V1 (2026-11-24, Matt's Claude, Matt: the card's Y!RK stayed put when the card's "Stats For"
+// changed): optional 2nd argument = the range to use. The player card passes its own _ftlDateRange; every table
+// caller passes nothing and keeps following the main dropdown (_dateRange).
+function _yahooRankNow(y, dr){
   if(!y) return null;
-  var k = (_dateRange === 'yesterday') ? 'season' : _dateRange;
+  var r = dr || _dateRange;
+  var k = (r === 'yesterday') ? 'season' : r;
   if(k !== 'season' && y.yahoo_ranks && (k in y.yahoo_ranks)) return (y.yahoo_ranks[k] != null) ? Number(y.yahoo_ranks[k]) : null;
   return (y.yahoo_actual_rank != null) ? Number(y.yahoo_actual_rank) : null;
 }
@@ -12418,7 +12422,7 @@ function openFromTheLogo(pid, _keepRange){
   const _ocbs = (typeof _cbsForNum === 'function') ? _cbsForNum(pid) : null;
   const ownRow =
     _ftlStatCell('FTX ADP', (function(){ var f=(typeof _ftxFor==='function')?_ftxFor(pid):null; return f?f.a:null; })(), 'own', 'own-src-ftx') +   /* FTX_ADP_V1: was Y!RK */
-    _ftlStatCell('Y!RK', _yahooRankNow(_oyh), 'own', 'own-src-yh') +   /* YAHOO_RANGE_RANKS_NBA_V1 */   /* YRANK_COL_NBA_V1: the tile FTX_ADP_V1 retired, back */
+    _ftlStatCell('Y!RK', _yahooRankNow(_oyh, _ftlDateRange), 'own', 'own-src-yh')   /* CARD_YRANK_RANGE_NBA_V1 */ +   /* YAHOO_RANGE_RANKS_NBA_V1 */   /* YRANK_COL_NBA_V1: the tile FTX_ADP_V1 retired, back */
     _ftlStatCell('Y!ROS%', (_oyh && _oyh.roster_pct != null) ? Math.round(_oyh.roster_pct) + '%' : null, 'own', 'own-src-yh') +
     _ftlStatCell('CBS%',   (_ocbs != null) ? _ocbs + '%' : null, 'own', 'own-src-cbs') +
     '<div class="ftl-strip-break ftl-strip-break-own"></div>';   // STRIP_PTS_ROW2_V1: used only on the smallest phones
@@ -14822,21 +14826,14 @@ td.sch-cell.sch-tot.sch-g8{color:#22c55e!important}
     if(_schLoading) return; _schLoading = true;
     var yr = (typeof _ftlNbaSeason === 'function') ? _ftlNbaSeason() : new Date().getFullYear();
     Promise.resolve(typeof _ftlFetchNbaSchedule === 'function' ? _ftlFetchNbaSchedule(yr) : [])
-      .then(function(g){ build(g); _schLoading = false; applyAll(); })
+      .then(function(g){ build(g); _schLoading = false; applyAll(); try { if(typeof window._w101ColsAfterDraw === 'function') window._w101ColsAfterDraw(); } catch(_adE){} try { if(typeof _tierDrawBoxes === 'function') _tierDrawBoxes(); } catch(_tbE){} })   /* COLS_AFTER_DRAW_NBA_V1; the tier box redraw is Bug: the first Schedule View of a visit could leave the tier outlines at the old width, because the day columns arrived after the boxes were measured */
       .catch(function(e){ _schLoading = false; console.warn('[SCHEDULE_VIEW_NBA_V1] schedule load failed:', e); });
   }
   window._schViewOn = function(){ if(_schByTeam && _schKey === todayET()) applyAll(); else load(); };
-  var _schRaf = 0;
-  function queue(){ if(!on() || _schBusy) return; if(_schRaf) return; _schRaf = requestAnimationFrame(function(){ _schRaf = 0; applyAll(); }); }
-  function watch(){
-    SCH_TBODIES.forEach(function(t){
-      var tb = document.getElementById(t[0]); if(!tb) return;
-      new MutationObserver(queue).observe(tb, { childList: true });
-      var tbl = tb.closest('table'), th = tbl && tbl.querySelector('thead');
-      if(th) new MutationObserver(queue).observe(th, { childList: true, subtree: true });
-    });
-  }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
+  /* COLS_AFTER_DRAW_NBA_V1 (2026-11-24, PC Walter, cleanup job A): the two watchers (MutationObserver on every
+     table body and header) that used to notice a redraw a frame later are gone. The draw functions now call
+     the column code themselves the moment they finish (see COLS_AFTER_DRAW_NBA_V1 in the block below). */
+  window._schApply = applyAll;
 })();
 </script>
 <style id="ros-chg-nba-css">
@@ -14929,7 +14926,7 @@ table.sch-daysort tbody tr td.sch-cell.sch-hit{background:rgba(245,158,11,.10)}
     fetch(SERVER_URL + '/cbs/rostered-changes', { cache: 'no-cache' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
       if(!d || !Array.isArray(d.players)) return;
       var m = {}; d.players.forEach(function(x){ var n = norm(x.name); var o = { w1: x.w1, w2: x.w2, w4: x.w4 }; m[n + '|' + String(x.team || '').toUpperCase()] = o; if(!(n in m)) m[n] = o; });
-      cbsChg = m; TB.forEach(function(t){ var tb = document.getElementById(t[0]); if(tb) tb.querySelectorAll('tr[data-ros-done]').forEach(function(tr){ tr.removeAttribute('data-ros-done'); }); }); queue();
+      cbsChg = m; TB.forEach(function(t){ var tb = document.getElementById(t[0]); if(tb) tb.querySelectorAll('tr[data-ros-done]').forEach(function(tr){ tr.removeAttribute('data-ros-done'); }); }); afterDraw();   /* COLS_AFTER_DRAW_NBA_V1 */
     }).catch(function(){});
   }
 
@@ -15088,10 +15085,10 @@ table.sch-daysort tbody tr td.sch-cell.sch-hit{background:rgba(245,158,11,.10)}
   document.addEventListener('dragstart', function(e){ var t = e.target && e.target.closest && e.target.closest('table.sch-daysort'); if(t){ e.preventDefault(); e.stopPropagation(); } }, true);
 
   // ---- driver -----------------------------------------------------------------------------------
-  var busy = false, raf = 0, lastSch = false, obs = [];
+  var busy = false, raf = 0, lastSch = false, obs = [], again = false, depth = 0, fitRaf = 0;
   function drain(){ obs.forEach(function(o){ try { o.takeRecords(); } catch(e){} }); }
-  function applyAll(){
-    if(busy) return; busy = true;
+  function applyAll(now){
+    if(busy){ again = true; return; } busy = true;
     try {
       TB.forEach(function(t){ ychgTable(t[0], t[1]); });
       if(rosOn()){ loadCbs(); TB.forEach(function(t){ rosTable(t[0], t[1]); }); }
@@ -15100,21 +15097,55 @@ table.sch-daysort tbody tr td.sch-cell.sch-hit{background:rgba(245,158,11,.10)}
       lastSch = s;
     } catch(e){ console.warn('[YCHG/ROSTERSHIP] apply failed:', e); }
     drain(); busy = false;
-    if(schOn()) setTimeout(function(){ try { TB.forEach(function(t){ schDecorate(t[0], t[1]); }); } catch(e){} drain(); }, 30);
+    if(schOn()){
+      if(now === true){ try { TB.forEach(function(t){ schDecorate(t[0], t[1]); }); } catch(e){} }   /* COLS_AFTER_DRAW_NBA_V1: same frame as the draw */
+      else setTimeout(function(){ try { TB.forEach(function(t){ schDecorate(t[0], t[1]); }); } catch(e){} drain(); }, 30);
+    }
     try { if(typeof fitTables === 'function') fitTables(); } catch(e){}
   }
   function queue(){ if(busy || raf) return; raf = requestAnimationFrame(function(){ raf = 0; requestAnimationFrame(applyAll); }); }
   window._rosViewOn = function(){ queue(); };
   window._ychgApply = applyAll;
+  /* COLS_AFTER_DRAW_NBA_V1 (2026-11-24, PC Walter, cleanup job A, the Dude's ask). Until today twelve watchers
+     (MutationObserver, four per table) sat on the table bodies and headers; every redraw, and every sort-arrow repaint,
+     woke them, and the Schedule / Rostership / Yahoo! +/- cells were added one or two frames AFTER the table was
+     already on screen. Now the functions that draw (the three table renderers, the two tier painters and
+     setViewMode) call the column code directly when they finish, so the cells are there in the same frame.
+     Every place that changes a table body or header was listed by machine before the watchers were removed
+     (Memory (Claude)/04 Features Added/COLS_AFTER_DRAW_NBA_V1_2026-11-24.md). The one body-class watcher stays:
+     it fires only on a theme / present-mode / player-card change, never on a redraw. */
+  function afterDraw(){
+    if(busy){ again = true; return; }
+    var guard = 0;
+    do {
+      again = false;
+      try { if(typeof window._schApply === 'function') window._schApply(); } catch(e){}
+      applyAll(true);
+    } while(again && ++guard < 3);
+    // One settling fit two frames later, exactly when the old watchers used to run theirs (the Add pill and
+    // header fits measure the finished layout then).
+    if(!fitRaf) fitRaf = requestAnimationFrame(function(){ requestAnimationFrame(function(){ fitRaf = 0; try { if(typeof fitTables === 'function') fitTables(); } catch(e){} }); });
+  }
+  window._w101ColsAfterDraw = afterDraw;
+  // The tier painters run on every window resize. They only need the column code when they actually put a
+  // tier label / tier break row into a table (or took one out), so they are checked for that first.
+  var TIERFN = { renderTiers: TB[0], renderRankTiers: TB[1] };
+  function extraRows(t){ var tb = document.getElementById(t[0]); return tb ? tb.querySelectorAll('tr:not([' + t[1] + '])').length : 0; }
+  ['renderWatchList','renderRankings','renderNbaPlayers','renderTiers','renderRankTiers','setViewMode'].forEach(function(n){
+    var f = window[n]; if(typeof f !== 'function'){ console.warn('[COLS_AFTER_DRAW_NBA_V1] missing draw function: ' + n); return; }
+    window[n] = function(){
+      var tt = TIERFN[n], had = (tt && depth === 0) ? extraRows(tt) : 0;
+      depth++;
+      try { return f.apply(this, arguments); }
+      finally {
+        depth--;
+        if(depth === 0 && (!tt || had > 0 || extraRows(tt) > 0)){ try { afterDraw(); } catch(e){ console.warn('[COLS_AFTER_DRAW_NBA_V1] apply failed:', e); } }
+      }
+    };
+  });
   function watch(){
-    TB.forEach(function(t){
-      var tb = document.getElementById(t[0]); if(!tb) return;
-      var o1 = new MutationObserver(function(){ if(!busy) queue(); }); o1.observe(tb, { childList: true }); obs.push(o1);
-      var tbl = tb.closest('table'), th = tbl && tbl.querySelector('thead');
-      if(th){ var o2 = new MutationObserver(function(){ if(!busy) queue(); }); o2.observe(th, { childList: true, subtree: true }); obs.push(o2); }
-    });
     new MutationObserver(function(){ queue(); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
-    queue();
+    afterDraw();
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
 })();
