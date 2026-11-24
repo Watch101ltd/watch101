@@ -2549,6 +2549,10 @@ function _fitTablesNow(){
       if(_zNow !== 1 && Math.abs(table.getBoundingClientRect().width / _zNow - natural) > 2){ table.style.zoom = '1'; natural = table.offsetWidth; }   // a browser that reports zoomed widths gets the old reset
       if(natural <= 0 || avail <= 0){ table.style.zoom = '1'; return; }
       if(natural <= avail){
+        // FIT_SETTLE_NBA_V1 (Bug #246), second face: a table shrunk by a hair (0.9984) measures as fitting, goes back to 1,
+        // measures as 3px too wide, shrinks again, forever (13 Cat at a 1310 window). If it is within a hair of full size
+        // and within a few px of the room, leave it where it is.
+        if(parseFloat(table.style.zoom) >= 0.996 && parseFloat(table.style.zoom) < 1 && (avail - natural) < 6){ wrap.style.overflowX = ''; return; }
         table.style.zoom = '1';
         // STRETCH_KILL_NBA_V1 (2026-08-22): GROW-to-fill retired, ported from football. The old line
         // magnified the whole table -- fonts included -- until it filled the wrap, which rebuilt the
@@ -2574,6 +2578,15 @@ function _fitTablesNow(){
       // RANK_FLOOR_060_V1 tried that 8/20 and was retired 8/22 — zoom is the wrong lever for width.
       var _clamped = false;
       if(scale < AUTOSHRINK_MIN){ scale = AUTOSHRINK_MIN; _clamped = true; }
+      // FIT_SETTLE_NBA_V1 (2026-11-24, Walter, Bug #246, the Dude: Schedule View "minutely shrinking and then getting large
+      // again"). The fit is not exactly repeatable: the header fitter picks fonts per zoom, the fonts move the natural
+      // width, and the next pass lands a hair off (0.9358 <-> 0.9365 at a 1366 window). With tiers on the list each
+      // flip changes row heights, the tier box ResizeObserver redraws the boxes inside the table body, that wakes the
+      // fit watcher, and the table breathes forever (about 33 fits a second, measured). So: when the table is already
+      // shrunk and the new answer is only a hair BIGGER (under 0.002, about 3px in 1,340), keep what is there. The
+      // smaller of the two always fits, so nothing can be cut off by this.
+      var _zHave = parseFloat(table.style.zoom) || 1;
+      if(!_clamped && _zHave < scale && (scale - _zHave) < 0.002){ wrap.style.overflowX = ''; return; }
       table.style.zoom = scale.toFixed(4);
       wrap.style.overflowX = _clamped ? 'auto' : '';
     });
@@ -3103,6 +3116,7 @@ async function syncYahooNBA(){
 function _yahooRankNow(y, dr){
   if(!y) return null;
   var r = dr || _dateRange;
+  if(dr && r === 'yesterday') return null;   // CARD_YRANK_RANGE_NBA_V1.1 (2026-11-24, Matt: "dash"): Yahoo has no Yesterday rank, so the card shows a dash; the tables still show Season
   var k = (r === 'yesterday') ? 'season' : r;
   if(k !== 'season' && y.yahoo_ranks && (k in y.yahoo_ranks)) return (y.yahoo_ranks[k] != null) ? Number(y.yahoo_ranks[k]) : null;
   return (y.yahoo_actual_rank != null) ? Number(y.yahoo_actual_rank) : null;
